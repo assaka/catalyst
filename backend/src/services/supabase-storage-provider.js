@@ -254,29 +254,8 @@ class SupabaseStorageProvider extends StorageInterface {
         };
       }
       
-      // Fallback: Check for environment variables (Render.com configuration)
-      const hasEnvConfig = process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY;
-      if (hasEnvConfig) {
-        // Test the environment variable connection
-        const { createClient } = require('@supabase/supabase-js');
-        const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-        
-        // Simple connection test
-        const { data, error } = await client.storage.listBuckets();
-        
-        if (!error) {
-          return {
-            success: true,
-            message: 'Supabase connection successful (Environment Variables)',
-            provider: 'supabase',
-            details: { 
-              connected: true, 
-              method: 'environment_variables',
-              buckets: data?.length || 0
-            }
-          };
-        }
-      }
+      // DEPRECATED: No global Supabase env vars in master-tenant architecture
+      // Storage is per-tenant, configured during onboarding
       
       return {
         success: false,

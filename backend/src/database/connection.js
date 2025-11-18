@@ -2,23 +2,10 @@ const { Sequelize } = require('sequelize');
 const { createClient } = require('@supabase/supabase-js');
 const { getDatabaseConfig } = require('../config/database-ipv4');
 
-// Initialize Supabase client with error handling
-let supabase;
-try {
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
-    supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_ANON_KEY
-    );
-    console.log('✅ Supabase client initialized');
-  } else {
-    console.warn('⚠️  Supabase credentials missing - client not initialized');
-    supabase = null;
-  }
-} catch (error) {
-  console.error('❌ Failed to initialize Supabase client:', error.message);
-  supabase = null;
-}
+// DEPRECATED: Global Supabase client is deprecated in master-tenant architecture
+// Use masterSupabaseClient for master DB or ConnectionManager for tenant DB
+let supabase = null;
+console.warn('⚠️ [DEPRECATED] Global supabase client from connection.js is deprecated');
 
 // Initialize Sequelize with IPv4 configuration directly
 let sequelize;

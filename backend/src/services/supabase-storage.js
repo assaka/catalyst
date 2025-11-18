@@ -78,14 +78,11 @@ class SupabaseStorageService extends StorageInterface {
       }
     }
 
-    // Fallback: Use environment variables (Render.com configuration)
-    if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
-      console.log('Using Supabase environment variables as fallback');
-      const { createClient } = require('@supabase/supabase-js');
-      return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-    }
-
-    throw new Error('No Supabase configuration found. Please configure via OAuth or environment variables.');
+    // DEPRECATED: No global fallback in master-tenant architecture
+    // Each tenant must have their own Supabase storage configuration
+    console.error('❌ No Supabase storage configured for store:', storeId);
+    console.error('⚠️ DEPRECATED: Global SUPABASE_URL/SUPABASE_ANON_KEY not supported');
+    throw new Error('No Supabase storage configured. Please connect a database for this store.');
   }
 
   /**
