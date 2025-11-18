@@ -1,11 +1,6 @@
 const express = require('express');
-const { Category, Store } = require('../models');
-const { Op } = require('sequelize');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
-const {
-  getCategoriesWithTranslations,
-  getCategoryById
-} = require('../utils/categoryHelpers');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
 const router = express.Router();
 
@@ -14,40 +9,93 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 100, store_id, parent_id, search } = req.query;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const { page = 1, limit = 100, parent_id, search } = req.query;
     const offset = (page - 1) * limit;
-
-    const where = {
-      is_active: true,  // Only show active categories
-      hide_in_menu: false  // Only show categories not hidden in menu
-    };
-
-    if (store_id) where.store_id = store_id;
-    if (parent_id !== undefined) where.parent_id = parent_id;
-
     const lang = getLanguageFromRequest(req);
 
-    // Get categories with SQL-based pagination and search
-    const { rows: categories, count } = await getCategoriesWithTranslations(
-      where,
-      lang,
-      { limit: parseInt(limit), offset: parseInt(offset), search }
-    );
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Apply cache headers based on store settings
-    if (store_id) {
-      await applyCacheHeaders(res, store_id);
+    // Build query
+    let query = tenantDb
+      .from('categories')
+      .select('*', { count: 'exact' })
+      .eq('store_id', store_id)
+      .eq('is_active', true)
+      .eq('hide_in_menu', false);
+
+    if (parent_id !== undefined) {
+      query = query.eq('parent_id', parent_id);
     }
+
+    if (search) {
+      query = query.ilike('name', `%${search}%`);
+    }
+
+    query = query
+      .order('sort_order', { ascending: true })
+      .range(offset, offset + parseInt(limit) - 1);
+
+    const { data: categories, error, count } = await query;
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    // Load translations for categories
+    const categoryIds = (categories || []).map(c => c.id);
+    let translations = [];
+
+    if (categoryIds.length > 0) {
+      const { data: trans } = await tenantDb
+        .from('category_translations')
+        .select('*')
+        .in('category_id', categoryIds)
+        .in('language_code', [lang, 'en']);
+
+      translations = trans || [];
+    }
+
+    // Build translation map
+    const transMap = {};
+    translations.forEach(t => {
+      if (!transMap[t.category_id]) transMap[t.category_id] = {};
+      transMap[t.category_id][t.language_code] = t;
+    });
+
+    // Apply translations
+    const categoriesWithTrans = (categories || []).map(cat => {
+      const trans = transMap[cat.id];
+      const reqLang = trans?.[lang];
+      const enLang = trans?.['en'];
+
+      return {
+        ...cat,
+        name: reqLang?.name || enLang?.name || cat.slug || cat.name,
+        description: reqLang?.description || enLang?.description || null
+      };
+    });
+
+    // Apply cache headers
+    await applyCacheHeaders(res, store_id);
 
     // Return structured response with pagination
     res.json({
       success: true,
-      data: categories,
+      data: categoriesWithTrans,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: count,
-        totalPages: Math.ceil(count / limit)
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit)
       }
     });
   } catch (error) {
@@ -75,7 +123,81 @@ router.get('/by-slug/:slug/full', async (req, res) => {
       });
     }
 
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // 1. Find category by slug
+    const { data: category, error: catError } = await tenantDb
+      .from('categories')
+      .select('*')
+      .eq('store_id', store_id)
+      .eq('slug', slug)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (catError || !category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    // Load category translation
+    const { data: categoryTrans } = await tenantDb
+      .from('category_translations')
+      .select('*')
+      .eq('category_id', category.id)
+      .in('language_code', [lang, 'en']);
+
+    const transMap = {};
+    (categoryTrans || []).forEach(t => {
+      transMap[t.language_code] = t;
+    });
+
+    const reqLang = transMap[lang];
+    const enLang = transMap['en'];
+
+    const categoryWithTrans = {
+      ...category,
+      name: reqLang?.name || enLang?.name || category.slug || category.name,
+      description: reqLang?.description || enLang?.description || null
+    };
+
+    // TODO: Load products for this category
+    // For now, skip complex product loading - can add later
+
+    res.json({
+      success: true,
+      data: {
+        category: categoryWithTrans,
+        products: [] // TODO: Load products
+      }
+    });
+  } catch (error) {
+    console.error('Get category by slug error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// Legacy route structure - keeping for compatibility
+router.get('/by-slug-old/:slug/full', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // OLD IMPLEMENTATION - using Sequelize models (deprecated)
+    const Category = require('../models').Category;
     const category = await Category.findOne({
       where: {
         store_id,
