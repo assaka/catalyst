@@ -17,29 +17,13 @@ const createSequelizeConnection = async () => {
   console.warn('⚠️  For master DB, use masterSequelize from masterConnection.js');
   console.warn('⚠️  For tenant DB, use ConnectionManager.getStoreConnection()');
 
-  // TEMPORARY: Throw error to identify what still uses this
-  // Most code should use masterSequelize or ConnectionManager
-  console.error('⚠️ WARNING: createSequelizeConnection() called - legacy code detected');
-  console.error('⚠️ Stack trace to identify caller:');
-  console.trace();
-
-  // For now, use DATABASE_URL to keep storefront working during migration
-  const legacyUrl = process.env.DATABASE_URL;
-  if (!legacyUrl) {
-    throw new Error('DATABASE_URL required for legacy queries. Migrate to masterSequelize/ConnectionManager.');
-  }
-
-  console.log('📍 Using legacy DATABASE_URL:', legacyUrl.substring(0, 50) + '...');
-  return new Sequelize(legacyUrl, {
-    dialect: 'postgres',
-    logging: false,
-    dialectOptions: {
-      ssl: process.env.NODE_ENV === 'production' ? {
-        require: true,
-        rejectUnauthorized: false
-      } : false
-    }
-  });
+  // DEPRECATED: This function should not be called
+  // All code must use explicit database connections
+  throw new Error(
+    'DEPRECATED: createSequelizeConnection() is not supported in master-tenant architecture.\n' +
+    'Use masterSequelize from masterConnection.js for master DB queries.\n' +
+    'Use ConnectionManager.getStoreConnection(storeId) for tenant DB queries.'
+  );
 
   if (!databaseUrl) {
     console.warn('⚠️  No database URL provided. Using SQLite for development.');
@@ -91,48 +75,31 @@ const createSequelizeConnection = async () => {
   }
 };
 
-// Initialize sequelize connection synchronously with database URL
-// TEMPORARY: Allows DATABASE_URL for legacy storefront/tenant queries during migration
-// Admin routes should use masterSequelize/masterSupabaseClient or ConnectionManager
-console.warn('⚠️ [LEGACY] Default Sequelize connection initialized');
-console.warn('⚠️ This should only be used by legacy storefront code during migration');
+// DEPRECATED: Default Sequelize connection is disabled
+// All code must explicitly use masterSequelize or ConnectionManager
+console.error('⚠️ [DEPRECATED] Default Sequelize connection is DISABLED');
+console.error('⚠️ DATABASE_URL and SUPABASE_DB_URL are no longer supported');
+console.error('⚠️ Use masterSequelize for master DB or ConnectionManager for tenant DB');
 
-const databaseUrl = process.env.DATABASE_URL;
-console.log('📍 Legacy Sequelize connection:', databaseUrl ? 'DATABASE_URL found' : 'NOT SET - will use SQLite');
+// Create in-memory SQLite that throws errors when used
+sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: ':memory:',
+  logging: false
+});
 
-if (!databaseUrl) {
-  console.warn('⚠️  No database URL provided. Using SQLite for development.');
-  sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: './database.sqlite',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    define: {
-      timestamps: true,
-      underscored: true,
-      freezeTableName: true
-    }
-  });
-} else {
-  sequelize = new Sequelize(databaseUrl, {
-    dialect: 'postgres',
-    logging: false,
-    dialectOptions: {
-      ssl: process.env.NODE_ENV === 'production' ? {
-        require: true,
-        rejectUnauthorized: false
-      } : false
-    },
-    define: {
-      timestamps: true,
-      underscored: true,
-      freezeTableName: true
-    }
-  });
-
-  // Test the connection
-  sequelize.authenticate()
-    .then(() => console.log('✅ Database connection established successfully'))
-    .catch(err => console.error('❌ Unable to connect to database:', err.message));
-}
+// Override query to throw helpful error
+const originalQuery = sequelize.query.bind(sequelize);
+sequelize.query = function() {
+  const error = new Error(
+    '❌ DEPRECATED: Default sequelize connection cannot be used.\n' +
+    '   For MASTER DB queries: use masterSequelize from masterConnection.js\n' +
+    '   For TENANT DB queries: use ConnectionManager.getStoreConnection(storeId)\n' +
+    '   See MASTER_TENANT_DATABASE_ARCHITECTURE.md for guidance'
+  );
+  console.error(error.message);
+  console.trace('Called from:');
+  throw error;
+};
 
 module.exports = { sequelize, supabase };
