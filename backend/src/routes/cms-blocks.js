@@ -6,6 +6,7 @@ const { sequelize } = require('../database/connection');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const router = express.Router();
 
 // @route   GET /api/public/cms-blocks
@@ -90,27 +91,35 @@ const checkStoreAccess = async (storeId, userId, userRole) => {
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 10, store_id, search } = req.query;
-    const offset = (page - 1) * limit;
-    const { getCMSBlocksWithAllTranslations } = require('../utils/cmsHelpers');
+    const { page = 1, limit = 10, search } = req.query;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
-    // Build where clause
-    const where = {};
-
-    // Filter by store ownership and team membership
-    if (req.user.role !== 'admin') {
-      const { getUserStoresForDropdown } = require('../utils/storeAccess');
-      const accessibleStores = await getUserStoresForDropdown(req.user.id);
-      const storeIds = accessibleStores.map(store => store.id);
-      where.store_id = { [Op.in]: storeIds };
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
     }
 
-    if (store_id) where.store_id = store_id;
+    const offset = (page - 1) * limit;
+    const { getCMSBlocksWithAllTranslations } = require('../utils/cmsTenantHelpers');
 
-    // Always use helper to get blocks with all translations (consistent with CMS pages route)
-    const blocks = await getCMSBlocksWithAllTranslations(where);
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
 
-    console.log(`🔍 CMS Blocks route - Fetched ${blocks.length} blocks with all translations`);
+    // Get blocks from tenant database
+    const blocks = await getCMSBlocksWithAllTranslations(store_id, {});
+
+    console.log(`🔍 CMS Blocks route - Fetched ${blocks.length} blocks with all translations from tenant DB`);
 
     // Apply search filter in memory if needed
     let filteredBlocks = blocks;
@@ -158,10 +167,31 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.get('/:id', async (req, res) => {
   try {
-    const { getCMSBlockWithAllTranslations } = require('../utils/cmsHelpers');
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
-    // Always use helper to get block with all translations (consistent with list endpoint)
-    const block = await getCMSBlockWithAllTranslations(req.params.id);
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    const { getCMSBlockWithAllTranslations } = require('../utils/cmsTenantHelpers');
+
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    // Get block from tenant database
+    const block = await getCMSBlockWithAllTranslations(store_id, req.params.id);
 
     if (!block) {
       return res.status(404).json({
@@ -170,29 +200,11 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    console.log(`🔍 CMS Block by ID - Fetched block ${req.params.id} with all translations:`, {
+    console.log(`🔍 CMS Block by ID - Fetched block ${req.params.id} with all translations from tenant DB:`, {
       blockId: block.id,
       identifier: block.identifier,
       translationKeys: Object.keys(block.translations || {})
     });
-
-    // Check ownership - fetch store separately for access check
-    const storeBlock = await CmsBlock.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
-
-    if (req.user.role !== 'admin') {
-      const hasAccess = await checkStoreAccess(storeBlock.Store.id, req.user.id, req.user.role);
-      if (!hasAccess) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied'
-        });
-      }
-    }
 
     res.json({
       success: true,
@@ -234,13 +246,15 @@ router.post('/', [
       });
     }
 
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // Process placement field - ensure it's an array
     const blockData = { ...req.body };
-    
+
     if (blockData.placement) {
       // Handle over-serialized JSON strings
       let placement = blockData.placement;
-      
+
       // If it's a string, try to parse it multiple times to handle over-serialization
       if (typeof placement === 'string') {
         try {
@@ -257,7 +271,7 @@ router.post('/', [
           placement = [blockData.placement]; // Use original string as single item
         }
       }
-      
+
       // Handle arrays that contain nested serialized strings
       if (Array.isArray(placement)) {
         const cleanedPlacement = [];
@@ -285,26 +299,49 @@ router.post('/', [
         }
         placement = cleanedPlacement;
       }
-      
+
       // Handle complex object format from original form
       if (typeof placement === 'object' && placement.position) {
-        placement = Array.isArray(placement.position) 
-          ? placement.position 
+        placement = Array.isArray(placement.position)
+          ? placement.position
           : [placement.position];
       }
-      
+
       // Ensure we have an array
       if (!Array.isArray(placement)) {
         placement = ['content']; // Default fallback
       }
-      
+
       blockData.placement = placement;
       console.log('✅ Processed placement data (CREATE):', blockData.placement);
     } else {
       blockData.placement = ['content']; // Default fallback
     }
 
-    const block = await CmsBlock.create(blockData);
+    // Create block in tenant database
+    const { data: block, error } = await tenantDb
+      .from('cms_blocks')
+      .insert({
+        identifier: blockData.identifier,
+        is_active: blockData.is_active !== undefined ? blockData.is_active : true,
+        placement: blockData.placement,
+        sort_order: blockData.sort_order || 0,
+        store_id: store_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    // Save translations if provided
+    if (blockData.translations) {
+      const { saveCMSBlockTranslations } = require('../utils/cmsTenantHelpers');
+      await saveCMSBlockTranslations(store_id, block.id, blockData.translations);
+    }
 
     res.status(201).json({
       success: true,
@@ -335,23 +372,18 @@ router.put('/:id', [
       });
     }
 
-    const block = await CmsBlock.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
-    
-    if (!block) {
-      return res.status(404).json({
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'CMS block not found'
+        message: 'Store ID is required'
       });
     }
 
-    // Check ownership or team membership
+    // Check store access
     if (req.user.role !== 'admin') {
-      const hasAccess = await checkStoreAccess(block.Store.id, req.user.id, req.user.role);
+      const hasAccess = await checkStoreAccess(store_id, req.user.id, req.user.role);
       if (!hasAccess) {
         return res.status(403).json({
           success: false,
@@ -360,13 +392,29 @@ router.put('/:id', [
       }
     }
 
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if block exists
+    const { data: existingBlock, error: fetchError } = await tenantDb
+      .from('cms_blocks')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError || !existingBlock) {
+      return res.status(404).json({
+        success: false,
+        message: 'CMS block not found'
+      });
+    }
+
     // Process placement field - ensure it's an array
     const updateData = { ...req.body };
-    
+
     if (updateData.placement) {
       // Handle over-serialized JSON strings
       let placement = updateData.placement;
-      
+
       // If it's a string, try to parse it multiple times to handle over-serialization
       if (typeof placement === 'string') {
         try {
@@ -383,7 +431,7 @@ router.put('/:id', [
           placement = [updateData.placement]; // Use original string as single item
         }
       }
-      
+
       // Handle arrays that contain nested serialized strings
       if (Array.isArray(placement)) {
         const cleanedPlacement = [];
@@ -411,19 +459,19 @@ router.put('/:id', [
         }
         placement = cleanedPlacement;
       }
-      
+
       // Handle complex object format from original form
       if (typeof placement === 'object' && placement.position) {
-        placement = Array.isArray(placement.position) 
-          ? placement.position 
+        placement = Array.isArray(placement.position)
+          ? placement.position
           : [placement.position];
       }
-      
+
       // Ensure we have an array
       if (!Array.isArray(placement)) {
         placement = ['content']; // Default fallback
       }
-      
+
       updateData.placement = placement;
       console.log('✅ Processed placement data:', updateData.placement);
     }
@@ -431,19 +479,34 @@ router.put('/:id', [
     // Handle translations if provided
     const { translations, ...blockData } = updateData;
 
+    // Build update object
+    const updateFields = {};
+    if (blockData.identifier !== undefined) updateFields.identifier = blockData.identifier;
+    if (blockData.is_active !== undefined) updateFields.is_active = blockData.is_active;
+    if (blockData.placement !== undefined) updateFields.placement = blockData.placement;
+    if (blockData.sort_order !== undefined) updateFields.sort_order = blockData.sort_order;
+    updateFields.updated_at = new Date().toISOString();
+
     // Update main block fields (excluding translations)
-    await block.update(blockData);
+    const { error: updateError } = await tenantDb
+      .from('cms_blocks')
+      .update(updateFields)
+      .eq('id', req.params.id);
+
+    if (updateError) {
+      throw updateError;
+    }
 
     // Save translations to normalized table if provided
     if (translations && typeof translations === 'object') {
-      const { saveCMSBlockTranslations } = require('../utils/cmsHelpers');
-      await saveCMSBlockTranslations(block.id, translations);
-      console.log(`✅ CMS block ${block.id} translations saved to normalized table`);
+      const { saveCMSBlockTranslations } = require('../utils/cmsTenantHelpers');
+      await saveCMSBlockTranslations(store_id, req.params.id, translations);
+      console.log(`✅ CMS block ${req.params.id} translations saved to tenant DB`);
     }
 
     // Fetch updated block with all translations
-    const { getCMSBlockWithAllTranslations } = require('../utils/cmsHelpers');
-    const updatedBlock = await getCMSBlockWithAllTranslations(block.id);
+    const { getCMSBlockWithAllTranslations } = require('../utils/cmsTenantHelpers');
+    const updatedBlock = await getCMSBlockWithAllTranslations(store_id, req.params.id);
 
     res.json({
       success: true,
@@ -464,23 +527,18 @@ router.put('/:id', [
 // @access  Private
 router.delete('/:id', async (req, res) => {
   try {
-    const block = await CmsBlock.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
-    
-    if (!block) {
-      return res.status(404).json({
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'CMS block not found'
+        message: 'Store ID is required'
       });
     }
 
-    // Check ownership or team membership
+    // Check store access
     if (req.user.role !== 'admin') {
-      const hasAccess = await checkStoreAccess(block.Store.id, req.user.id, req.user.role);
+      const hasAccess = await checkStoreAccess(store_id, req.user.id, req.user.role);
       if (!hasAccess) {
         return res.status(403).json({
           success: false,
@@ -489,7 +547,37 @@ router.delete('/:id', async (req, res) => {
       }
     }
 
-    await block.destroy();
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if block exists
+    const { data: block, error: fetchError } = await tenantDb
+      .from('cms_blocks')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (fetchError || !block) {
+      return res.status(404).json({
+        success: false,
+        message: 'CMS block not found'
+      });
+    }
+
+    // Delete translations first
+    await tenantDb
+      .from('cms_block_translations')
+      .delete()
+      .eq('cms_block_id', req.params.id);
+
+    // Delete the block
+    const { error: deleteError } = await tenantDb
+      .from('cms_blocks')
+      .delete()
+      .eq('id', req.params.id);
+
+    if (deleteError) {
+      throw deleteError;
+    }
 
     res.json({
       success: true,
@@ -601,9 +689,9 @@ router.post('/bulk-translate', authMiddleware, [
       }
     }
 
-    // Get all blocks for this store with all translations
-    const { getCMSBlocksWithAllTranslations } = require('../utils/cmsHelpers');
-    const blocks = await getCMSBlocksWithAllTranslations({ store_id });
+    // Get all blocks for this store with all translations from tenant DB
+    const { getCMSBlocksWithAllTranslations } = require('../utils/cmsTenantHelpers');
+    const blocks = await getCMSBlocksWithAllTranslations(store_id, {});
 
     console.log(`📦 Loaded ${blocks.length} CMS blocks from database with ALL translations`);
     if (blocks.length > 0) {
