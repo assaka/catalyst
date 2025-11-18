@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
-const CustomAnalyticsEvent = require('../models/CustomAnalyticsEvent');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
  * Get all custom events for a store (public - needed for frontend)
@@ -17,6 +17,10 @@ router.get('/:storeId', async (req, res) => {
   try {
     const { storeId } = req.params;
     const { enabled_only } = req.query;
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { CustomAnalyticsEvent } = connection.models;
 
     const where = { store_id: storeId };
 
@@ -49,6 +53,10 @@ router.get('/:storeId', async (req, res) => {
 router.get('/:storeId/by-trigger/:triggerType', async (req, res) => {
   try {
     const { storeId, triggerType } = req.params;
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { CustomAnalyticsEvent } = connection.models;
 
     const events = await CustomAnalyticsEvent.getEventsByTrigger(storeId, triggerType);
 
@@ -87,6 +95,10 @@ router.post('/:storeId', authMiddleware, checkStoreOwnership, async (req, res) =
       send_to_backend,
       metadata
     } = req.body;
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { CustomAnalyticsEvent } = connection.models;
 
     // Validate required fields
     if (!event_name || !display_name || !trigger_type) {
@@ -134,6 +146,10 @@ router.post('/:storeId', authMiddleware, checkStoreOwnership, async (req, res) =
 router.put('/:storeId/:eventId', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId, eventId } = req.params;
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { CustomAnalyticsEvent } = connection.models;
 
     const event = await CustomAnalyticsEvent.findOne({
       where: {
@@ -193,6 +209,10 @@ router.put('/:storeId/:eventId', authMiddleware, checkStoreOwnership, async (req
 router.delete('/:storeId/:eventId', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId, eventId } = req.params;
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { CustomAnalyticsEvent } = connection.models;
 
     const event = await CustomAnalyticsEvent.findOne({
       where: {
