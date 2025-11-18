@@ -79,12 +79,14 @@ async function getUserStoresForDropdown(userId) {
  */
 async function checkUserStoreAccess(userId, storeId) {
   try {
+    console.log('🔍 checkUserStoreAccess called:', { userId, storeId });
+
     const query = `
-      SELECT 
+      SELECT
         s.id,
         s.name,
         s.user_id as owner_id,
-        CASE 
+        CASE
           WHEN s.user_id = :userId THEN 'owner'
           WHEN st.role IS NOT NULL THEN st.role
           ELSE NULL
@@ -93,25 +95,32 @@ async function checkUserStoreAccess(userId, storeId) {
         st.role as team_role,
         st.status as team_status
       FROM stores s
-      LEFT JOIN store_teams st ON s.id = st.store_id 
-          AND st.user_id = :userId 
-          AND st.status = 'active' 
+      LEFT JOIN store_teams st ON s.id = st.store_id
+          AND st.user_id = :userId
+          AND st.status = 'active'
           AND st.is_active = true
-      WHERE s.id = :storeId 
+      WHERE s.id = :storeId
         AND s.is_active = true
         AND (
-          s.user_id = :userId 
+          s.user_id = :userId
           OR (st.user_id = :userId AND st.role IN ('admin', 'editor'))
         )
     `;
-    
+
     const result = await sequelize.query(query, {
       replacements: { storeId: storeId, userId: userId },
       type: QueryTypes.SELECT
     });
 
     const hasAccess = result.length > 0;
-    
+
+    console.log('🔑 checkUserStoreAccess result:', {
+      userId,
+      storeId,
+      hasAccess,
+      accessData: hasAccess ? result[0] : null
+    });
+
     return hasAccess ? result[0] : null;
   } catch (error) {
     console.error('❌ Error checking store access:', error);

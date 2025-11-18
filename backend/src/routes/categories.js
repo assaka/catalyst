@@ -161,14 +161,31 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
 
     const { store_id } = req.body;
 
+    console.log('🔍 POST /api/categories - Access check:', {
+      user_id: req.user.id,
+      user_role: req.user.role,
+      store_id: store_id,
+      body: req.body
+    });
+
     // Check store access
     const hasAccess = await checkStoreAccess(store_id, req.user.id, req.user.role);
+
+    console.log('🔑 Store access check result:', {
+      user_id: req.user.id,
+      store_id: store_id,
+      hasAccess: hasAccess
+    });
+
     if (!hasAccess) {
+      console.log('❌ Access denied for user', req.user.id, 'to store', store_id);
       return res.status(403).json({
         success: false,
         message: 'Access denied'
       });
     }
+
+    console.log('✅ Access granted for user', req.user.id, 'to store', store_id);
 
     // Extract translations from request body
     const { translations, ...categoryData } = req.body;
