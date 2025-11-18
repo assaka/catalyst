@@ -1,19 +1,260 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { authMiddleware } = require('../middleware/auth');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
-const {
-  getProductLabelsWithTranslations,
-  getProductLabelById,
-  getProductLabelWithAllTranslations,
-  createProductLabelWithTranslations,
-  updateProductLabelWithTranslations,
-  deleteProductLabel
-} = require('../utils/productLabelHelpers');
 
 const router = express.Router();
+
+/**
+ * Get product labels with translations from tenant DB
+ */
+async function getProductLabelsWithTranslations(tenantDb, where = {}, lang = 'en', allTranslations = false) {
+  const whereConditions = [];
+  const replacements = [];
+  let paramIndex = 1;
+
+  Object.entries(where).forEach(([key, value]) => {
+    whereConditions.push(`pl.${key} = $${paramIndex}`);
+    replacements.push(value);
+    paramIndex++;
+  });
+
+  const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+  if (allTranslations) {
+    // Return ALL translations for each label
+    const query = `
+      SELECT
+        pl.id,
+        pl.store_id,
+        pl.name,
+        pl.slug,
+        pl.text,
+        pl.background_color,
+        pl.color,
+        pl.position,
+        pl.priority,
+        pl.sort_order,
+        pl.is_active,
+        pl.conditions,
+        pl.created_at,
+        pl.updated_at,
+        COALESCE(
+          json_object_agg(
+            t.language_code,
+            json_build_object('name', t.name, 'text', t.text)
+          ) FILTER (WHERE t.language_code IS NOT NULL),
+          '{}'::json
+        ) as translations
+      FROM product_labels pl
+      LEFT JOIN product_label_translations t ON pl.id = t.product_label_id
+      ${whereClause}
+      GROUP BY pl.id
+      ORDER BY pl.sort_order ASC, pl.priority DESC, pl.name ASC
+    `;
+
+    const { data, error } = await tenantDb.rpc('exec_sql', {
+      sql_query: query,
+      params: replacements
+    });
+
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
+  // Single language query
+  const query = `
+    SELECT
+      pl.id,
+      pl.store_id,
+      pl.slug,
+      pl.background_color,
+      pl.color,
+      pl.position,
+      pl.priority,
+      pl.sort_order,
+      pl.is_active,
+      pl.conditions,
+      pl.created_at,
+      pl.updated_at,
+      COALESCE(plt.name, pl.name) as name,
+      COALESCE(plt.text, pl.text) as text
+    FROM product_labels pl
+    LEFT JOIN product_label_translations plt ON pl.id = plt.product_label_id AND plt.language_code = $${paramIndex}
+    ${whereClause}
+    ORDER BY pl.sort_order ASC, pl.priority DESC, pl.name ASC
+  `;
+
+  const { data, error } = await tenantDb.rpc('exec_sql', {
+    sql_query: query,
+    params: [...replacements, lang]
+  });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+/**
+ * Get single product label with ALL translations
+ */
+async function getProductLabelWithAllTranslations(tenantDb, id) {
+  const query = `
+    SELECT
+      pl.id,
+      pl.store_id,
+      pl.name,
+      pl.slug,
+      pl.text,
+      pl.background_color,
+      pl.color,
+      pl.position,
+      pl.priority,
+      pl.sort_order,
+      pl.is_active,
+      pl.conditions,
+      pl.created_at,
+      pl.updated_at,
+      COALESCE(
+        json_object_agg(
+          t.language_code,
+          json_build_object('name', t.name, 'text', t.text)
+        ) FILTER (WHERE t.language_code IS NOT NULL),
+        '{}'::json
+      ) as translations
+    FROM product_labels pl
+    LEFT JOIN product_label_translations t ON pl.id = t.product_label_id
+    WHERE pl.id = $1
+    GROUP BY pl.id
+  `;
+
+  const { data, error } = await tenantDb.rpc('exec_sql', {
+    sql_query: query,
+    params: [id]
+  });
+
+  if (error) throw new Error(error.message);
+  return data?.[0] || null;
+}
+
+/**
+ * Create product label with translations
+ */
+async function createProductLabelWithTranslations(tenantDb, labelData, translations = {}) {
+  // Insert product label
+  const { data: label, error: insertError } = await tenantDb
+    .from('product_labels')
+    .insert({
+      store_id: labelData.store_id,
+      name: labelData.name || '',
+      slug: labelData.slug,
+      text: labelData.text || '',
+      background_color: labelData.background_color,
+      color: labelData.color,
+      position: labelData.position || 'top-right',
+      priority: labelData.priority || 0,
+      sort_order: labelData.sort_order || 0,
+      is_active: labelData.is_active !== false,
+      conditions: labelData.conditions || {}
+    })
+    .select()
+    .single();
+
+  if (insertError) throw new Error(insertError.message);
+
+  // Insert translations
+  for (const [langCode, data] of Object.entries(translations)) {
+    if (data && (data.name || data.text)) {
+      const { error: transError } = await tenantDb
+        .from('product_label_translations')
+        .insert({
+          product_label_id: label.id,
+          language_code: langCode,
+          name: data.name || null,
+          text: data.text || null
+        });
+
+      if (transError) {
+        console.error('Error inserting translation:', transError);
+      }
+    }
+  }
+
+  // Return the created label with all translations
+  return await getProductLabelWithAllTranslations(tenantDb, label.id);
+}
+
+/**
+ * Update product label with translations
+ */
+async function updateProductLabelWithTranslations(tenantDb, id, labelData, translations = {}) {
+  // Build update object
+  const updateData = {};
+
+  if (labelData.name !== undefined) updateData.name = labelData.name;
+  if (labelData.slug !== undefined) updateData.slug = labelData.slug;
+  if (labelData.text !== undefined) updateData.text = labelData.text;
+  if (labelData.background_color !== undefined) updateData.background_color = labelData.background_color;
+  if (labelData.color !== undefined) updateData.color = labelData.color;
+  if (labelData.position !== undefined) updateData.position = labelData.position;
+  if (labelData.priority !== undefined) updateData.priority = labelData.priority;
+  if (labelData.sort_order !== undefined) updateData.sort_order = labelData.sort_order;
+  if (labelData.is_active !== undefined) updateData.is_active = labelData.is_active;
+  if (labelData.conditions !== undefined) updateData.conditions = labelData.conditions;
+
+  if (Object.keys(updateData).length > 0) {
+    updateData.updated_at = new Date().toISOString();
+
+    const { error: updateError } = await tenantDb
+      .from('product_labels')
+      .update(updateData)
+      .eq('id', id);
+
+    if (updateError) throw new Error(updateError.message);
+  }
+
+  // Update translations
+  for (const [langCode, data] of Object.entries(translations)) {
+    if (data && (data.name !== undefined || data.text !== undefined)) {
+      console.log('🔍 Updating product label translation:', { langCode, data });
+
+      // Use upsert pattern
+      const { error: transError } = await tenantDb
+        .from('product_label_translations')
+        .upsert({
+          product_label_id: id,
+          language_code: langCode,
+          name: data.name ?? null,
+          text: data.text ?? null,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'product_label_id,language_code'
+        });
+
+      if (transError) {
+        console.error('Error updating translation:', transError);
+      }
+    }
+  }
+
+  // Return the updated label with all translations
+  return await getProductLabelWithAllTranslations(tenantDb, id);
+}
+
+/**
+ * Delete product label (translations are CASCADE deleted)
+ */
+async function deleteProductLabel(tenantDb, id) {
+  const { error } = await tenantDb
+    .from('product_labels')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
+  return true;
+}
 
 // @route   GET /api/product-labels
 // @desc    Get all product labels for a store (authenticated)
@@ -28,6 +269,8 @@ router.get('/', authMiddleware, async (req, res) => {
         message: 'store_id is required'
       });
     }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     const whereClause = { store_id };
 
@@ -44,7 +287,7 @@ router.get('/', authMiddleware, async (req, res) => {
     });
 
     // Authenticated requests get all translations
-    const labels = await getProductLabelsWithTranslations(whereClause, lang, true); // true = include all translations
+    const labels = await getProductLabelsWithTranslations(tenantDb, whereClause, lang, true);
     console.log('🏷️ Product Labels (Admin): Retrieved', labels.length, 'labels for language:', lang, labels.slice(0, 2));
 
     // Return wrapped response for authenticated requests
@@ -66,7 +309,17 @@ router.get('/', authMiddleware, async (req, res) => {
 // @access  Private
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const label = await getProductLabelWithAllTranslations(req.params.id);
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    const label = await getProductLabelWithAllTranslations(tenantDb, req.params.id);
 
     if (!label) {
       return res.status(404).json({
@@ -104,8 +357,19 @@ router.post('/test', authMiddleware, async (req, res) => {
   try {
     console.log('🧪 Creating test product label...');
 
+    const store_id = req.body.store_id || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     const testLabelData = {
-      store_id: req.body.store_id || req.query.store_id,
+      store_id,
       name: 'Test Label - Debug',
       slug: 'test-label-debug',
       text: 'TEST',
@@ -118,7 +382,7 @@ router.post('/test', authMiddleware, async (req, res) => {
 
     console.log('🧪 Test label data:', testLabelData);
 
-    const label = await createProductLabelWithTranslations(testLabelData, {});
+    const label = await createProductLabelWithTranslations(tenantDb, testLabelData, {});
     console.log('✅ Test label created successfully:', label);
 
     res.status(201).json({
@@ -149,6 +413,17 @@ router.post('/', authMiddleware, async (req, res) => {
       sortOrderType: typeof req.body.sort_order
     });
 
+    const store_id = req.body.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // Extract translations from request body
     const { translations, ...labelData } = req.body;
 
@@ -164,7 +439,7 @@ router.post('/', authMiddleware, async (req, res) => {
       console.log('🔧 Fallback slug generation:', labelData.slug);
     }
 
-    const label = await createProductLabelWithTranslations(labelData, translations || {});
+    const label = await createProductLabelWithTranslations(tenantDb, labelData, translations || {});
     console.log('✅ Product label created successfully:', label);
     console.log('✅ Created label priority field:', {
       priority: label.priority,
@@ -179,8 +454,7 @@ router.post('/', authMiddleware, async (req, res) => {
     console.error('❌ Error details:', {
       message: error.message,
       name: error.name,
-      stack: error.stack,
-      sql: error.sql
+      stack: error.stack
     });
     res.status(500).json({
       success: false,
@@ -203,8 +477,25 @@ router.put('/:id', authMiddleware, async (req, res) => {
       sortOrderType: typeof req.body.sort_order
     });
 
+    const store_id = req.headers['x-store-id'] || req.body.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // Check if label exists
-    const existingLabel = await getProductLabelById(req.params.id);
+    const { data: existingLabel } = await tenantDb
+      .from('product_labels')
+      .select('id, store_id')
+      .eq('id', req.params.id)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
     if (!existingLabel) {
       return res.status(404).json({
         success: false,
@@ -221,7 +512,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
       translationValues: translations
     });
 
-    const label = await updateProductLabelWithTranslations(req.params.id, labelData, translations || {});
+    const label = await updateProductLabelWithTranslations(tenantDb, req.params.id, labelData, translations || {});
     console.log('✅ Updated label priority field:', {
       priority: label.priority,
       sort_order: label.sort_order
@@ -244,7 +535,24 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // @access  Private
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const label = await getProductLabelById(req.params.id);
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if label exists
+    const { data: label } = await tenantDb
+      .from('product_labels')
+      .select('id, store_id')
+      .eq('id', req.params.id)
+      .eq('store_id', store_id)
+      .maybeSingle();
 
     if (!label) {
       return res.status(404).json({
@@ -253,8 +561,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       });
     }
 
-    await deleteProductLabel(req.params.id);
-    console.log(`✅ Product Labels translation complete: ${results.translated} translated, ${results.skipped} skipped, ${results.failed} failed`);
+    await deleteProductLabel(tenantDb, req.params.id);
 
     res.json({
       success: true,
@@ -286,8 +593,17 @@ router.post('/:id/translate', authMiddleware, [
     }
 
     const { fromLang, toLang } = req.body;
-    const lang = getLanguageFromRequest(req);
-    const productLabel = await getProductLabelById(req.params.id, lang);
+    const store_id = req.headers['x-store-id'] || req.body.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    const productLabel = await getProductLabelWithAllTranslations(tenantDb, req.params.id);
 
     if (!productLabel) {
       return res.status(404).json({
@@ -333,6 +649,7 @@ router.post('/:id/translate', authMiddleware, [
     translations[toLang] = translatedData;
 
     const updatedLabel = await updateProductLabelWithTranslations(
+      tenantDb,
       req.params.id,
       {},
       translations
@@ -384,9 +701,11 @@ router.post('/bulk-translate', authMiddleware, [
       }
     }
 
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // Get all product labels for this store with ALL translations
     const lang = getLanguageFromRequest(req);
-    const labels = await getProductLabelsWithTranslations({ store_id }, lang, true);
+    const labels = await getProductLabelsWithTranslations(tenantDb, { store_id }, lang, true);
 
     if (labels.length === 0) {
       return res.json({
@@ -461,7 +780,7 @@ router.post('/bulk-translate', authMiddleware, [
         const translations = label.translations || {};
         translations[toLang] = translatedData;
 
-        await updateProductLabelWithTranslations(label.id, {}, translations);
+        await updateProductLabelWithTranslations(tenantDb, label.id, {}, translations);
         console.log(`✅ Successfully translated label "${labelText}"`);
         results.translated++;
       } catch (error) {
