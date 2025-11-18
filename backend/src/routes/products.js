@@ -18,78 +18,47 @@ const { authorize } = require('../middleware/auth');
 
 router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const { page = 1, limit = 100, store_id, category_id, status, search, slug, sku, id, include_all_translations } = req.query;
+    const { page = 1, limit = 100, category_id, status, search, slug, sku, id, include_all_translations } = req.query;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
     const offset = (page - 1) * limit;
-    
+
     console.log('🔍 Admin Products API called with params:', req.query);
     console.log('📊 Status parameter:', status, typeof status);
 
-    const where = {};
-    
-    // Filter by store access (ownership + team membership)
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    // Check store access
     if (req.user.role !== 'admin') {
-      const { getUserStoresForDropdown } = require('../utils/storeAccess');
-      const accessibleStores = await getUserStoresForDropdown(req.user.id);
-      const userStoreIds = accessibleStores.map(store => store.id);
-      
-
-      // If a specific store_id is requested, check if user owns it
-      if (store_id) {
-        if (userStoreIds.includes(store_id)) {
-          where.store_id = store_id;
-        } else {
-          // Return empty result if user doesn't own the requested store
-          return res.json({
-            success: true,
-            data: {
-              products: [],
-              pagination: {
-                current_page: parseInt(page),
-                per_page: parseInt(limit),
-                total: 0,
-                total_pages: 0
-              }
-            }
-          });
-        }
-      } else {
-        // No specific store requested, filter by all user's stores
-        where.store_id = { [Op.in]: userStoreIds };
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
       }
-    } else {
-      // Admin user - can access any store
-      if (store_id) where.store_id = store_id;
-    }
-    if (category_id) {
-      // category_ids is stored as JSON array, need to check if it contains the category_id
-      where.category_ids = { [Op.contains]: [category_id] };
-    }
-    if (status) where.status = status;
-    if (slug) {
-      where.slug = slug;
-    }
-    if (sku) {
-      where.sku = sku;
-    }
-    if (id) {
-      where.id = id;
-    }
-    if (search) {
-      // Note: Search limited to SKU only - Product model now uses translations JSON
-      // field instead of direct name/description columns
-      // TODO: Implement JSON-based search or add computed columns for search
-      where.sku = { [Op.iLike]: `%${search}%` };
     }
 
-    console.log('🔎 Final WHERE clause for products query:', JSON.stringify(where, null, 2));
+    const { getProducts } = require('../utils/productTenantHelpers');
 
-    // Temporarily remove Store include to avoid association errors
-    const { count, rows } = await Product.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['created_at', 'DESC']]
-    });
+    // Build filters
+    const filters = {};
+    if (category_id) filters.category_id = category_id;
+    if (status) filters.status = status;
+    if (slug) filters.slug = slug;
+    if (sku) filters.sku = sku;
+    if (id) filters.id = id;
+    if (search) filters.search = search;
+
+    console.log('🔎 Final filters for products query:', JSON.stringify(filters, null, 2));
+
+    // Get products from tenant database
+    const { rows, count } = await getProducts(store_id, filters, { limit: parseInt(limit), offset });
 
     // Apply all translations if requested (for admin translation management)
     let products = rows;
@@ -124,26 +93,35 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
 // @access  Private
 router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const product = await Product.findByPk(req.params.id);
-    
-    if (!product) {
-      return res.status(404).json({
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'Product not found'
+        message: 'Store ID is required'
       });
     }
 
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, product.store_id);
-
+      const access = await checkUserStoreAccess(req.user.id, store_id);
       if (!access) {
         return res.status(403).json({
           success: false,
           message: 'Access denied'
         });
       }
+    }
+
+    const { getProductById } = require('../utils/productTenantHelpers');
+    const product = await getProductById(store_id, req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
     }
 
     res.json({
@@ -182,22 +160,67 @@ router.post('/',
       });
     }
 
-    const { store_id } = req.body;
+    const { store_id, translations, formData_translations, name, description, ...productData } = req.body;
+
+    console.log('🔍 Product creation - separating fields:', {
+      hasTranslations: !!translations,
+      hasFormDataTranslations: !!formData_translations,
+      hasName: !!name,
+      hasDescription: !!description,
+      productDataKeys: Object.keys(productData)
+    });
 
     // Store ownership check is now handled by middleware
 
     // Get tenant database connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
+    // Prepare product data (exclude translation fields like name, description)
+    const productToInsert = {
+      ...productData,
+      store_id
+    };
+
     // Insert product using Supabase client
     const { data: product, error } = await tenantDb
       .from('products')
-      .insert(req.body)
+      .insert(productToInsert)
       .select()
       .single();
 
     if (error) {
       throw error;
+    }
+
+    console.log('✅ Product created:', product.id);
+
+    // Handle translations if provided
+    if (translations && typeof translations === 'object') {
+      console.log('📝 Saving translations for languages:', Object.keys(translations));
+
+      for (const [langCode, transData] of Object.entries(translations)) {
+        if (transData && Object.keys(transData).length > 0) {
+          const { error: transError } = await tenantDb
+            .from('product_translations')
+            .insert({
+              product_id: product.id,
+              language_code: langCode,
+              name: transData.name || null,
+              description: transData.description || null,
+              short_description: transData.short_description || null,
+              meta_title: transData.meta_title || null,
+              meta_description: transData.meta_description || null,
+              meta_keywords: transData.meta_keywords || null
+            })
+            .select();
+
+          if (transError) {
+            console.error('❌ Error saving translation for', langCode, ':', transError);
+          } else {
+            console.log('✅ Saved translation for', langCode);
+          }
+        }
+      }
     }
 
     res.status(201).json({
@@ -258,20 +281,19 @@ router.put('/:id',
       });
     }
 
-    const product = await Product.findByPk(req.params.id);
-    
-    if (!product) {
-      return res.status(404).json({
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'Product not found'
+        message: 'Store ID is required'
       });
     }
 
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, product.store_id);
-
+      const access = await checkUserStoreAccess(req.user.id, store_id);
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -280,21 +302,33 @@ router.put('/:id',
       }
     }
 
+    const { getProductById, updateProduct } = require('../utils/productTenantHelpers');
+
+    // Check if product exists
+    const product = await getProductById(store_id, req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
     // Extract translations from request body
     const { translations, ...productData } = req.body;
 
     // Update product data (excluding translations)
-    await product.update(productData);
+    const updatedProduct = await updateProduct(store_id, req.params.id, productData);
 
     // Update translations in normalized table if provided
     if (translations && Object.keys(translations).length > 0) {
-      await updateProductTranslations(product.id, translations);
+      await updateProductTranslations(req.params.id, translations);
     }
 
     res.json({
       success: true,
       message: 'Product updated successfully',
-      data: product
+      data: updatedProduct
     });
   } catch (error) {
     console.error('Update product error:', error);
@@ -310,20 +344,19 @@ router.put('/:id',
 // @access  Private
 router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const product = await Product.findByPk(req.params.id);
-    
-    if (!product) {
-      return res.status(404).json({
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'Product not found'
+        message: 'Store ID is required'
       });
     }
 
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, product.store_id);
-
+      const access = await checkUserStoreAccess(req.user.id, store_id);
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -332,7 +365,19 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
       }
     }
 
-    await product.destroy();
+    const { getProductById, deleteProduct } = require('../utils/productTenantHelpers');
+
+    // Check if product exists
+    const product = await getProductById(store_id, req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
+    await deleteProduct(store_id, req.params.id);
 
     res.json({
       success: true,
@@ -445,11 +490,9 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
 
     // Get all products for this store with ALL translations from product_translations table
     const { applyAllProductTranslations } = require('../utils/productHelpers');
+    const { getAllProducts } = require('../utils/productTenantHelpers');
 
-    const productsRaw = await Product.findAll({
-      where: { store_id },
-      order: [['created_at', 'DESC']]
-    });
+    const productsRaw = await getAllProducts(store_id);
 
     // Load all translations from product_translations table
     const products = await applyAllProductTranslations(productsRaw);
