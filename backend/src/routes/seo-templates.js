@@ -1,5 +1,5 @@
 const express = require('express');
-const { SeoTemplate } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -26,6 +26,9 @@ router.get('/', async (req, res) => {
       // For now, we'll skip authentication checks for admin routes
       // TODO: Implement proper authentication check here if needed
     }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { SeoTemplate } = connection.models;
 
     const whereClause = { store_id };
 
@@ -57,6 +60,18 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { SeoTemplate } = connection.models;
+
     const template = await SeoTemplate.findByPk(req.params.id);
 
     if (!template) {
@@ -82,6 +97,18 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // @access  Private
 router.post('/', authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { SeoTemplate } = connection.models;
+
     const template = await SeoTemplate.create(req.body);
     // Return format that frontend expects
     res.status(201).json(template);
@@ -115,6 +142,18 @@ router.post('/', authMiddleware, async (req, res) => {
 // @access  Private
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { SeoTemplate } = connection.models;
+
     const template = await SeoTemplate.findByPk(req.params.id);
 
     if (!template) {
@@ -141,6 +180,18 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // @access  Private
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { SeoTemplate } = connection.models;
+
     const template = await SeoTemplate.findByPk(req.params.id);
 
     if (!template) {

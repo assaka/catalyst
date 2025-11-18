@@ -1,5 +1,5 @@
 const express = require('express');
-const { CanonicalUrl } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -17,6 +17,9 @@ router.get('/check', async (req, res) => {
         message: 'store_id and path are required'
       });
     }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { CanonicalUrl } = connection.models;
 
     const canonicalUrl = await CanonicalUrl.findOne({
       where: {
@@ -81,6 +84,9 @@ router.get('/', authMiddleware, async (req, res) => {
       }
     }
 
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { CanonicalUrl } = connection.models;
+
     const canonicalUrls = await CanonicalUrl.findAll({
       where: { store_id },
       order: [['page_url', 'ASC']]
@@ -102,6 +108,20 @@ router.get('/', authMiddleware, async (req, res) => {
 // @access  Private
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
+    // Note: This route needs store_id to get the connection
+    // We'll need to fetch the record first or get store_id from query/body
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { CanonicalUrl } = connection.models;
+
     const canonicalUrl = await CanonicalUrl.findByPk(req.params.id);
 
     if (!canonicalUrl) {
@@ -126,6 +146,18 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // @access  Private
 router.post('/', authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { CanonicalUrl } = connection.models;
+
     const canonicalUrl = await CanonicalUrl.create({
       ...req.body,
       created_by: req.user?.id
@@ -145,6 +177,18 @@ router.post('/', authMiddleware, async (req, res) => {
 // @access  Private
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { CanonicalUrl } = connection.models;
+
     const canonicalUrl = await CanonicalUrl.findByPk(req.params.id);
 
     if (!canonicalUrl) {
@@ -170,6 +214,18 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // @access  Private
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { CanonicalUrl } = connection.models;
+
     const canonicalUrl = await CanonicalUrl.findByPk(req.params.id);
 
     if (!canonicalUrl) {

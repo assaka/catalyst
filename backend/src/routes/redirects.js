@@ -1,5 +1,5 @@
 const express = require('express');
-const { Redirect } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -29,13 +29,16 @@ const normalizeUrl = (url) => {
 router.get('/check', async (req, res) => {
   try {
     const { store_id, path } = req.query;
-    
+
     if (!store_id || !path) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'store_id and path are required' 
+        message: 'store_id and path are required'
       });
     }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Redirect } = connection.models;
 
     const redirect = await Redirect.findOne({
       where: {
@@ -100,7 +103,7 @@ router.get('/', authMiddleware, async (req, res) => {
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, store_id);
-      
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -108,6 +111,9 @@ router.get('/', authMiddleware, async (req, res) => {
         });
       }
     }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Redirect } = connection.models;
 
     const redirects = await Redirect.findAll({
       where: { store_id },
@@ -130,6 +136,18 @@ router.get('/', authMiddleware, async (req, res) => {
 // @access  Private
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Redirect } = connection.models;
+
     const redirect = await Redirect.findByPk(req.params.id);
 
     if (!redirect) {
@@ -155,6 +173,18 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // @access  Private
 router.post('/', authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Redirect } = connection.models;
+
     // Normalize URLs to ensure relative URLs start with /
     const redirectData = {
       ...req.body,
@@ -179,6 +209,18 @@ router.post('/', authMiddleware, async (req, res) => {
 // @access  Private
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Redirect } = connection.models;
+
     const redirect = await Redirect.findByPk(req.params.id);
 
     if (!redirect) {
@@ -214,6 +256,18 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // @access  Private
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Redirect } = connection.models;
+
     const redirect = await Redirect.findByPk(req.params.id);
 
     if (!redirect) {
@@ -252,18 +306,21 @@ router.post('/slug-change', authMiddleware, async (req, res) => {
     } = req.body;
 
     if (!store_id || !entity_type || !entity_id || !old_slug || !new_slug) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'All fields are required for slug change redirect' 
+        message: 'All fields are required for slug change redirect'
       });
     }
 
     if (old_slug === new_slug) {
-      return res.json({ 
+      return res.json({
         success: true,
-        message: 'No redirect needed - slug unchanged' 
+        message: 'No redirect needed - slug unchanged'
       });
     }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Redirect } = connection.models;
 
     const from_url = `${entity_path_prefix}/${old_slug}`;
     const to_url = `${entity_path_prefix}/${new_slug}`;
