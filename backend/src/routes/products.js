@@ -426,19 +426,19 @@ router.post('/:id/translate', authMiddleware, authorize(['admin', 'store_owner']
     }
 
     const { fromLang, toLang } = req.body;
-    const product = await Product.findByPk(req.params.id);
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
 
-    if (!product) {
-      return res.status(404).json({
+    if (!store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'Product not found'
+        message: 'Store ID is required'
       });
     }
 
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, product.store_id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({
@@ -448,8 +448,33 @@ router.post('/:id/translate', authMiddleware, authorize(['admin', 'store_owner']
       }
     }
 
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Get product from tenant DB
+    const { data: product, error } = await tenantDb
+      .from('products')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('store_id', store_id)
+      .single();
+
+    if (error || !product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
     // Check if source translation exists
-    if (!product.translations || !product.translations[fromLang]) {
+    const { data: sourceTranslation } = await tenantDb
+      .from('product_translations')
+      .select('*')
+      .eq('product_id', req.params.id)
+      .eq('language_code', fromLang)
+      .single();
+
+    if (!sourceTranslation) {
       return res.status(400).json({
         success: false,
         message: `No ${fromLang} translation found for this product`
