@@ -32,6 +32,16 @@ export { cachedApiCall, clearCache, clearCacheKeys } from '@/utils/cacheUtils';
 
 export const StoreProvider = ({ children }) => {
   const location = useLocation();
+
+  // Skip StoreProvider initialization for auth and onboarding pages
+  const isAuthPage = location.pathname === '/admin/auth' || location.pathname === '/auth';
+  const isOnboardingPage = location.pathname === '/admin/store-onboarding';
+
+  if (isAuthPage || isOnboardingPage) {
+    // Return children without store context
+    return <>{children}</>;
+  }
+
   const [loading, setLoading] = useState(true);
   const [storeData, setStoreData] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState(() => {
