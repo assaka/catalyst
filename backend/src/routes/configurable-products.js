@@ -5,6 +5,8 @@ const { Product: MasterProduct } = require('../models'); // Tenant DB model
 const { Op } = require('sequelize');
 const router = express.Router();
 
+const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 const { checkStoreOwnership, checkResourceOwnership } = require('../middleware/storeAuth');
 
 // @route   POST /api/configurable-products/:id/variants

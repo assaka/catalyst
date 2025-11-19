@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { User, StoreInvitation, Store } = require('../models');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const { Op } = require('sequelize');
 const { checkStoreOwnership, checkTeamMembership } = require('../middleware/storeAuth');
 const crypto = require('crypto');
