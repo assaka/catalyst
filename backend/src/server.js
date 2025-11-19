@@ -10,7 +10,7 @@ require('dotenv').config();
 
 const { sequelize } = require('./database/connection');
 const errorHandler = require('./middleware/errorHandler');
-const { authMiddleware } = require('./middleware/auth');
+const { authMiddleware } = require('./middleware/authMiddleware'); // Use same middleware as authMasterTenant
 
 // Import all models to ensure associations are loaded (Master DB)
 const models = require('./models');
