@@ -95,7 +95,7 @@ router.get('/', async (req, res) => {
 // @route   GET /api/cookie-consent-settings/:id
 // @desc    Get cookie consent settings by ID
 // @access  Private
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const lang = getLanguageFromRequest(req);
     const settings = await getCookieConsentSettingsById(req.params.id, lang);
@@ -144,7 +144,7 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/cookie-consent-settings
 // @desc    Create or update cookie consent settings (upsert based on store_id)
 // @access  Private
-router.post('/', [
+router.post('/', authMiddleware, [
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID')
 ], async (req, res) => {
   try {
@@ -215,7 +215,7 @@ router.post('/', [
 // @route   PUT /api/cookie-consent-settings/:id
 // @desc    Update cookie consent settings
 // @access  Private
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     // Get settings first to determine store_id
     const existingSettingsData = await getCookieConsentSettingsById(req.params.id);
@@ -280,7 +280,7 @@ router.put('/:id', async (req, res) => {
 // @route   DELETE /api/cookie-consent-settings/:id
 // @desc    Delete cookie consent settings
 // @access  Private
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     // Get settings first to determine store_id
     const existingSettingsData = await getCookieConsentSettingsById(req.params.id);
@@ -334,7 +334,7 @@ router.delete('/:id', async (req, res) => {
 // @route   POST /api/cookie-consent-settings/:id/translate
 // @desc    AI translate cookie consent settings to target language
 // @access  Private
-router.post('/:id/translate', [
+router.post('/:id/translate', authMiddleware, [
   body('fromLang').notEmpty().withMessage('Source language is required'),
   body('toLang').notEmpty().withMessage('Target language is required')
 ], async (req, res) => {

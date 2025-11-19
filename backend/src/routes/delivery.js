@@ -1,10 +1,11 @@
 const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const router = express.Router();
 const { checkStoreOwnership, checkResourceOwnership } = require('../middleware/storeAuth');
 
 // Basic CRUD operations for delivery settings
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -64,7 +65,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -165,7 +166,7 @@ router.post('/', checkStoreOwnership, async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.body.store_id;
 
@@ -251,7 +252,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
