@@ -1,16 +1,5 @@
 const express = require('express');
-const {
-  Product,
-  Attribute,
-  AttributeSet,
-  ProductLabel,
-  ProductTab,
-  Tax,
-  ShippingMethod,
-  PaymentMethod,
-  DeliverySettings,
-  CmsBlock
-} = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 const { applyProductTranslationsToMany } = require('../utils/productHelpers');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
@@ -52,6 +41,21 @@ router.get('/', cacheMiddleware({
         message: 'Page type is required'
       });
     }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const {
+      Product,
+      Attribute,
+      AttributeSet,
+      ProductLabel,
+      ProductTab,
+      Tax,
+      ShippingMethod,
+      PaymentMethod,
+      DeliverySettings,
+      CmsBlock
+    } = connection.models;
 
     let pageData = {};
 

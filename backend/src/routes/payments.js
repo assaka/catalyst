@@ -1,6 +1,6 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
-const { Store, Order, OrderItem, Product, Customer, BlacklistSettings, BlacklistIP, BlacklistEmail, BlacklistCountry } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 const router = express.Router();
 
@@ -59,6 +59,8 @@ router.get('/connect-status', authMiddleware, async (req, res) => {
     }
 
     // Get store and check for stripe_account_id
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Store } = connection.models;
     const store = await Store.findByPk(store_id);
     if (!store || !store.stripe_account_id) {
       return res.json({
@@ -177,6 +179,8 @@ router.post('/connect-account', authMiddleware, async (req, res) => {
     }
 
     // Get store
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Store } = connection.models;
     const store = await Store.findByPk(store_id);
     if (!store) {
       return res.status(404).json({
@@ -261,6 +265,8 @@ router.post('/connect-link', authMiddleware, async (req, res) => {
     }
 
     // Get store
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Store } = connection.models;
     const store = await Store.findByPk(store_id);
     if (!store) {
       return res.status(404).json({
@@ -409,7 +415,8 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
 
     // Verify the store exists and belongs to the user
     console.log(`🔍 [${requestId}] Looking up store:`, storeId);
-    const { Store: StoreModel } = require('../models');
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Store: StoreModel } = connection.models;
     const userStore = await StoreModel.findOne({ where: { id: storeId, user_id: userId } });
 
     if (!userStore) {
@@ -691,6 +698,8 @@ router.post('/create-checkout', async (req, res) => {
     }
 
     // Get store to check for Stripe account
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Store, BlacklistSettings, BlacklistIP, BlacklistEmail, BlacklistCountry, Customer, Product } = connection.models;
     const store = await Store.findByPk(store_id);
     if (!store) {
       return res.status(404).json({
@@ -1320,9 +1329,18 @@ router.post('/webhook', async (req, res) => {
       console.log('Processing checkout.session.completed for session:', session.id);
       console.log('Session metadata:', session.metadata);
       console.log('Session customer details:', session.customer_details);
-      
+
       try {
         // Check if preliminary order already exists
+        const store_id = session.metadata?.store_id;
+        if (!store_id) {
+          console.error('❌ No store_id in session metadata');
+          return res.status(400).json({ error: 'Missing store_id in session metadata' });
+        }
+
+        const connection = await ConnectionManager.getConnection(store_id);
+        const { Order, OrderItem, Product, Store: StoreModel, Customer } = connection.models;
+
         const existingOrder = await Order.findOne({
           where: { payment_reference: session.id }
         });
@@ -1388,7 +1406,6 @@ router.post('/webhook', async (req, res) => {
             console.log('📧 Sending order success email to:', finalOrder.customer_email);
 
             const emailService = require('../services/email-service');
-            const { Customer } = require('../models');
 
             // Get order with full details for email
             const orderWithDetails = await Order.findByPk(finalOrder.id, {
@@ -1400,7 +1417,7 @@ router.post('/webhook', async (req, res) => {
                   attributes: ['id', 'sku']
                 }]
               }, {
-                model: Store,
+                model: StoreModel,
                 as: 'Store',
                 attributes: ['id', 'name', 'slug', 'currency', 'settings'] // Explicitly include settings
               }]
@@ -1702,12 +1719,13 @@ router.post('/webhook', async (req, res) => {
           // Verify user credits were updated
           let finalUserBalance = null;
           try {
-            const { sequelize } = require('../database/connection');
-            const [user] = await sequelize.query(`
+            const masterConnection = require('../database/masterConnection');
+            const { masterSequelize } = masterConnection;
+            const [user] = await masterSequelize.query(`
               SELECT id, email, credits FROM users WHERE id = $1
             `, {
               bind: [paymentIntent.metadata.user_id],
-              type: sequelize.QueryTypes.SELECT
+              type: masterSequelize.QueryTypes.SELECT
             });
 
             finalUserBalance = user?.credits;
@@ -1725,10 +1743,14 @@ router.post('/webhook', async (req, res) => {
           try {
             console.log(`📧 [${piRequestId}] Sending credit purchase confirmation email...`);
 
-            const { User: UserModel, Store: StoreModel } = require('../models');
             const emailService = require('../services/email-service');
+            const masterConnection = require('../database/masterConnection');
+            const { User: UserModel } = masterConnection.models;
 
             const user = await UserModel.findByPk(result.user_id);
+
+            const connection = await ConnectionManager.getConnection(result.store_id);
+            const { Store: StoreModel } = connection.models;
             const store = await StoreModel.findByPk(result.store_id);
 
             if (user && store) {
@@ -1859,6 +1881,15 @@ router.post('/webhook-connect', async (req, res) => {
 
       try {
         // Check if preliminary order already exists
+        const store_id = session.metadata?.store_id;
+        if (!store_id) {
+          console.error('❌ No store_id in session metadata');
+          return res.status(400).json({ error: 'Missing store_id in session metadata' });
+        }
+
+        const connection = await ConnectionManager.getConnection(store_id);
+        const { Order, OrderItem, Product, Store: StoreModel, Customer } = connection.models;
+
         const existingOrder = await Order.findOne({
           where: { payment_reference: session.id }
         });
@@ -1905,7 +1936,6 @@ router.post('/webhook-connect', async (req, res) => {
           console.log('📧 NOTE: Sending from webhook (authoritative Stripe confirmation)');
 
           const emailService = require('../services/email-service');
-          const { Customer } = require('../models');
 
           // Get order with full details
           const orderWithDetails = await Order.findByPk(finalOrder.id, {
@@ -1917,7 +1947,7 @@ router.post('/webhook-connect', async (req, res) => {
                 attributes: ['id', 'sku']
               }]
             }, {
-              model: Store,
+              model: StoreModel,
               as: 'Store',
               attributes: ['id', 'name', 'slug', 'currency', 'settings']
             }]
@@ -2195,7 +2225,8 @@ async function createPreliminaryOrder(session, orderData) {
   let validatedCustomerId = null;
   if (customer_id) {
     try {
-      const { Customer } = require('../models');
+      const connection = await ConnectionManager.getConnection(store_id);
+      const { Customer } = connection.models;
       console.log('🔍 Looking up customer_id in database:', customer_id);
       console.log('🔍 Order email:', customer_email);
       const customerExists = await Customer.findByPk(customer_id);
@@ -2227,7 +2258,9 @@ async function createPreliminaryOrder(session, orderData) {
 
   console.log('🔍 Final validatedCustomerId to be used:', validatedCustomerId);
 
-  const { sequelize } = require('../database/connection');
+  const connection = await ConnectionManager.getConnection(store_id);
+  const { Order, OrderItem, Product, Store: StoreModel, Customer } = connection.models;
+  const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
 
   try {
@@ -2338,7 +2371,6 @@ async function createPreliminaryOrder(session, orderData) {
         console.log('📧 Sending order success email to:', order.customer_email);
 
         const emailService = require('../services/email-service');
-        const { Customer } = require('../models');
 
         // Get order with full details for email
         const orderWithDetails = await Order.findByPk(order.id, {
@@ -2350,7 +2382,7 @@ async function createPreliminaryOrder(session, orderData) {
               attributes: ['id', 'sku']
             }]
           }, {
-            model: Store,
+            model: StoreModel,
             as: 'Store',
             attributes: ['id', 'name', 'slug', 'currency', 'settings'] // Explicitly include settings
           }]
@@ -2406,19 +2438,21 @@ async function createPreliminaryOrder(session, orderData) {
 
 // Helper function to create order from Stripe checkout session
 async function createOrderFromCheckoutSession(session) {
-  const { sequelize } = require('../database/connection');
+  const { store_id } = session.metadata || {};
+  if (!store_id) {
+    throw new Error('store_id not found in session metadata');
+  }
+
+  const connection = await ConnectionManager.getConnection(store_id);
+  const { Store, Product, Order, OrderItem } = connection.models;
+  const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
-  
+
   try {
-    const { store_id, delivery_date, delivery_time_slot, delivery_instructions, coupon_code, shipping_method_name, shipping_method_id, payment_fee, payment_method, tax_amount } = session.metadata || {};
-    
-    // Validate store_id
-    if (!store_id) {
-      throw new Error('store_id not found in session metadata');
-    }
-    
+    const { delivery_date, delivery_time_slot, delivery_instructions, coupon_code, shipping_method_name, shipping_method_id, payment_fee, payment_method, tax_amount } = session.metadata || {};
+
     console.log('Creating order for store_id:', store_id);
-    
+
     // Get store to determine if we need Connect account context
     const store = await Store.findByPk(store_id);
     if (!store) {
@@ -2525,7 +2559,6 @@ async function createOrderFromCheckoutSession(session) {
 
     if (metadataCustomerId) {
       try {
-        const { Customer } = require('../models');
         const customerExists = await Customer.findByPk(metadataCustomerId);
         console.log('🔍 Customer lookup result from metadata:', customerExists ? 'Found' : 'Not found');
         console.log('🔍 Session email:', sessionEmail);
