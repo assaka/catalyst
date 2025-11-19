@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { BrevoConfiguration } = require('../models'); // Tenant DB model
+const ConnectionManager = require('./database/ConnectionManager');
 
 /**
  * Brevo Service
@@ -21,6 +21,8 @@ class BrevoService {
    */
   async saveConfiguration(storeId, apiKey, senderName, senderEmail) {
     try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
       // Validate API key by testing it
       const isValid = await this.validateApiKey(apiKey);
 
@@ -28,8 +30,14 @@ class BrevoService {
         throw new Error('Invalid Brevo API key');
       }
 
-      // Save or update configuration
-      const [config] = await BrevoConfiguration.upsert({
+      // Check if config exists
+      const { data: existing, error: fetchError } = await tenantDb
+        .from('brevo_configurations')
+        .select('*')
+        .eq('store_id', storeId)
+        .limit(1);
+
+      const configData = {
         store_id: storeId,
         access_token: apiKey, // Store API key in access_token field
         sender_name: senderName,
@@ -37,9 +45,35 @@ class BrevoService {
         is_active: true,
         token_expires_at: null, // API keys don't expire
         refresh_token: null // Not used for API keys
-      }, {
-        returning: true
-      });
+      };
+
+      let config;
+      if (!fetchError && existing && existing.length > 0) {
+        // Update existing
+        const { data: updated, error: updateError } = await tenantDb
+          .from('brevo_configurations')
+          .update(configData)
+          .eq('store_id', storeId)
+          .select()
+          .single();
+
+        if (updateError) {
+          throw new Error(`Failed to update configuration: ${updateError.message}`);
+        }
+        config = updated;
+      } else {
+        // Insert new
+        const { data: inserted, error: insertError } = await tenantDb
+          .from('brevo_configurations')
+          .insert(configData)
+          .select()
+          .single();
+
+        if (insertError) {
+          throw new Error(`Failed to insert configuration: ${insertError.message}`);
+        }
+        config = inserted;
+      }
 
       return {
         success: true,
@@ -105,11 +139,22 @@ class BrevoService {
    * @returns {Promise<string>} Valid API key
    */
   async getValidApiKey(storeId) {
-    const config = await BrevoConfiguration.findOne({
-      where: { store_id: storeId, is_active: true }
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    if (!config || !config.access_token) {
+    const { data: configs, error } = await tenantDb
+      .from('brevo_configurations')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('is_active', true)
+      .limit(1);
+
+    if (error || !configs || configs.length === 0) {
+      throw new Error('Brevo not configured for this store');
+    }
+
+    const config = configs[0];
+
+    if (!config.access_token) {
       throw new Error('Brevo not configured for this store');
     }
 
@@ -123,10 +168,23 @@ class BrevoService {
    */
   async disconnect(storeId) {
     try {
-      const config = await BrevoConfiguration.findOne({ where: { store_id: storeId } });
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      if (config) {
-        await config.update({ is_active: false });
+      const { data: configs, error: fetchError } = await tenantDb
+        .from('brevo_configurations')
+        .select('*')
+        .eq('store_id', storeId)
+        .limit(1);
+
+      if (!fetchError && configs && configs.length > 0) {
+        const { error: updateError } = await tenantDb
+          .from('brevo_configurations')
+          .update({ is_active: false })
+          .eq('store_id', storeId);
+
+        if (updateError) {
+          throw new Error(`Failed to disconnect: ${updateError.message}`);
+        }
       }
 
       return true;
@@ -178,9 +236,20 @@ class BrevoService {
    * @returns {Promise<boolean>} Configuration status
    */
   async isConfigured(storeId) {
-    const config = await BrevoConfiguration.findOne({
-      where: { store_id: storeId, is_active: true }
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: configs, error } = await tenantDb
+      .from('brevo_configurations')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('is_active', true)
+      .limit(1);
+
+    if (error || !configs || configs.length === 0) {
+      return false;
+    }
+
+    const config = configs[0];
     return !!config && !!config.access_token;
   }
 
@@ -190,10 +259,19 @@ class BrevoService {
    * @returns {Promise<Object|null>} Configuration object
    */
   async getConfiguration(storeId) {
-    return await BrevoConfiguration.findOne({
-      where: { store_id: storeId },
-      attributes: ['id', 'sender_name', 'sender_email', 'is_active', 'created_at', 'updated_at']
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: configs, error } = await tenantDb
+      .from('brevo_configurations')
+      .select('id, sender_name, sender_email, is_active, created_at, updated_at')
+      .eq('store_id', storeId)
+      .limit(1);
+
+    if (error || !configs || configs.length === 0) {
+      return null;
+    }
+
+    return configs[0];
   }
 }
 

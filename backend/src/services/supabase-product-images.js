@@ -1,5 +1,5 @@
 const supabaseStorage = require('./supabase-storage');
-const { Product, SupabaseOAuthToken } = require('../models'); // Tenant DB models
+const ConnectionManager = require('./database/ConnectionManager');
 
 class SupabaseProductImageService {
   constructor() {
@@ -12,9 +12,16 @@ class SupabaseProductImageService {
    */
   async uploadProductImages(storeId, productId, files, options = {}) {
     try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
       // Check if Supabase is connected
-      const token = await SupabaseOAuthToken.findByStore(storeId);
-      if (!token) {
+      const { data: tokens, error: tokenError } = await tenantDb
+        .from('supabase_oauth_tokens')
+        .select('*')
+        .eq('store_id', storeId)
+        .limit(1);
+
+      if (tokenError || !tokens || tokens.length === 0) {
         throw new Error('Supabase not connected for this store');
       }
 
@@ -28,7 +35,7 @@ class SupabaseProductImageService {
 
       // Update product with image URLs
       if (uploadResults.successful && uploadResults.successful.length > 0) {
-        await this.updateProductImages(productId, uploadResults.successful);
+        await this.updateProductImages(storeId, productId, uploadResults.successful);
       }
 
       return {
@@ -49,8 +56,15 @@ class SupabaseProductImageService {
    */
   async uploadProductImage(storeId, productId, file, options = {}) {
     try {
-      const token = await SupabaseOAuthToken.findByStore(storeId);
-      if (!token) {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      const { data: tokens, error: tokenError } = await tenantDb
+        .from('supabase_oauth_tokens')
+        .select('*')
+        .eq('store_id', storeId)
+        .limit(1);
+
+      if (tokenError || !tokens || tokens.length === 0) {
         throw new Error('Supabase not connected for this store');
       }
 
@@ -63,7 +77,7 @@ class SupabaseProductImageService {
       });
 
       if (uploadResult.success) {
-        await this.updateProductImage(productId, uploadResult, imageType);
+        await this.updateProductImage(storeId, productId, uploadResult, imageType);
       }
 
       return uploadResult;
@@ -76,16 +90,26 @@ class SupabaseProductImageService {
   /**
    * Update product with uploaded image URLs
    */
-  async updateProductImages(productId, uploadedImages) {
+  async updateProductImages(storeId, productId, uploadedImages) {
     try {
-      const product = await Product.findByPk(productId);
-      if (!product) {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      // Get product
+      const { data: products, error: fetchError } = await tenantDb
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .limit(1);
+
+      if (fetchError || !products || products.length === 0) {
         throw new Error('Product not found');
       }
 
+      const product = products[0];
+
       // Get existing images
       const existingImages = product.images || [];
-      
+
       // Add new images
       const newImages = uploadedImages.map(upload => ({
         url: upload.url,
@@ -101,9 +125,14 @@ class SupabaseProductImageService {
       const allImages = [...existingImages, ...newImages];
 
       // Update product
-      await product.update({
-        images: allImages
-      });
+      const { error: updateError } = await tenantDb
+        .from('products')
+        .update({ images: allImages })
+        .eq('id', productId);
+
+      if (updateError) {
+        throw new Error(`Failed to update product: ${updateError.message}`);
+      }
 
       return {
         success: true,
@@ -119,12 +148,22 @@ class SupabaseProductImageService {
   /**
    * Update product with single uploaded image
    */
-  async updateProductImage(productId, uploadResult, imageType = 'gallery') {
+  async updateProductImage(storeId, productId, uploadResult, imageType = 'gallery') {
     try {
-      const product = await Product.findByPk(productId);
-      if (!product) {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      // Get product
+      const { data: products, error: fetchError } = await tenantDb
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .limit(1);
+
+      if (fetchError || !products || products.length === 0) {
         throw new Error('Product not found');
       }
+
+      const product = products[0];
 
       const imageData = {
         url: uploadResult.url,
@@ -155,7 +194,14 @@ class SupabaseProductImageService {
           break;
       }
 
-      await product.update(updateData);
+      const { error: updateError } = await tenantDb
+        .from('products')
+        .update(updateData)
+        .eq('id', productId);
+
+      if (updateError) {
+        throw new Error(`Failed to update product: ${updateError.message}`);
+      }
 
       return { success: true, imageType, imageData };
     } catch (error) {
@@ -169,12 +215,20 @@ class SupabaseProductImageService {
    */
   async deleteProductImage(storeId, productId, imagePath) {
     try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
       // Delete from Supabase
       await supabaseStorage.deleteImage(storeId, imagePath);
 
-      // Update product to remove the image
-      const product = await Product.findByPk(productId);
-      if (product) {
+      // Get product
+      const { data: products, error: fetchError } = await tenantDb
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .limit(1);
+
+      if (!fetchError && products && products.length > 0) {
+        const product = products[0];
         let updateData = {};
 
         // Check if it's a base or thumbnail image
@@ -191,7 +245,14 @@ class SupabaseProductImageService {
         }
 
         if (Object.keys(updateData).length > 0) {
-          await product.update(updateData);
+          const { error: updateError } = await tenantDb
+            .from('products')
+            .update(updateData)
+            .eq('id', productId);
+
+          if (updateError) {
+            throw new Error(`Failed to update product: ${updateError.message}`);
+          }
         }
       }
 
@@ -207,15 +268,29 @@ class SupabaseProductImageService {
    */
   async migrateProductImagesToSupabase(storeId, productId) {
     try {
-      const token = await SupabaseOAuthToken.findByStore(storeId);
-      if (!token) {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      const { data: tokens, error: tokenError } = await tenantDb
+        .from('supabase_oauth_tokens')
+        .select('*')
+        .eq('store_id', storeId)
+        .limit(1);
+
+      if (tokenError || !tokens || tokens.length === 0) {
         throw new Error('Supabase not connected for this store');
       }
 
-      const product = await Product.findByPk(productId);
-      if (!product) {
+      const { data: products, error: fetchError } = await tenantDb
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .limit(1);
+
+      if (fetchError || !products || products.length === 0) {
         throw new Error('Product not found');
       }
+
+      const product = products[0];
 
       const migrationResults = {
         migrated: [],
@@ -228,15 +303,22 @@ class SupabaseProductImageService {
         try {
           const migratedBase = await this.migrateImageUrl(storeId, product.base_image, `${this.defaultFolder}/${productId}/base`);
           if (migratedBase.success) {
-            await product.update({
-              base_image: migratedBase.url,
-              base_image_data: {
-                url: migratedBase.url,
-                path: migratedBase.path,
-                source: 'supabase',
-                migratedAt: new Date()
-              }
-            });
+            const { error: updateError } = await tenantDb
+              .from('products')
+              .update({
+                base_image: migratedBase.url,
+                base_image_data: {
+                  url: migratedBase.url,
+                  path: migratedBase.path,
+                  source: 'supabase',
+                  migratedAt: new Date()
+                }
+              })
+              .eq('id', productId);
+
+            if (updateError) {
+              throw new Error(`Failed to update base image: ${updateError.message}`);
+            }
             migrationResults.migrated.push({ type: 'base', url: migratedBase.url });
           }
         } catch (error) {
@@ -251,15 +333,22 @@ class SupabaseProductImageService {
         try {
           const migratedThumb = await this.migrateImageUrl(storeId, product.thumbnail_image, `${this.thumbnailFolder}/${productId}`);
           if (migratedThumb.success) {
-            await product.update({
-              thumbnail_image: migratedThumb.url,
-              thumbnail_image_data: {
-                url: migratedThumb.url,
-                path: migratedThumb.path,
-                source: 'supabase',
-                migratedAt: new Date()
-              }
-            });
+            const { error: updateError } = await tenantDb
+              .from('products')
+              .update({
+                thumbnail_image: migratedThumb.url,
+                thumbnail_image_data: {
+                  url: migratedThumb.url,
+                  path: migratedThumb.path,
+                  source: 'supabase',
+                  migratedAt: new Date()
+                }
+              })
+              .eq('id', productId);
+
+            if (updateError) {
+              throw new Error(`Failed to update thumbnail image: ${updateError.message}`);
+            }
             migrationResults.migrated.push({ type: 'thumbnail', url: migratedThumb.url });
           }
         } catch (error) {
@@ -300,7 +389,14 @@ class SupabaseProductImageService {
 
       // Update product with migrated images
       if (migratedImages.length > 0) {
-        await product.update({ images: migratedImages });
+        const { error: updateError } = await tenantDb
+          .from('products')
+          .update({ images: migratedImages })
+          .eq('id', productId);
+
+        if (updateError) {
+          throw new Error(`Failed to update gallery images: ${updateError.message}`);
+        }
       }
 
       return {
@@ -356,12 +452,21 @@ class SupabaseProductImageService {
   /**
    * Get product images with CDN URLs
    */
-  async getProductImages(productId) {
+  async getProductImages(storeId, productId) {
     try {
-      const product = await Product.findByPk(productId);
-      if (!product) {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      const { data: products, error: fetchError } = await tenantDb
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .limit(1);
+
+      if (fetchError || !products || products.length === 0) {
         throw new Error('Product not found');
       }
+
+      const product = products[0];
 
       return {
         success: true,
