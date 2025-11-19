@@ -27,9 +27,16 @@ export const StoreSelectionProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(true);
 
-  // Check if we're on an admin page
+  // Check if we're on an admin page (exclude auth and onboarding)
   const isAdminPage = () => {
     const path = location.pathname;
+    const isAuth = path === '/admin/auth' || path === '/auth';
+    const isOnboarding = path === '/admin/store-onboarding';
+
+    if (isAuth || isOnboarding) {
+      return false; // Don't load stores on auth/onboarding
+    }
+
     return path.startsWith('/admin') || path.startsWith('/editor') || path.startsWith('/plugins');
   };
 
