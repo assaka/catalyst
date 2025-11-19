@@ -306,6 +306,9 @@ router.get('/', async (req, res) => {
   
   if (isPublicRequest) {
     try {
+      // Use master Supabase client for public store queries
+      const { masterSupabaseClient } = require('../database/masterConnection');
+
       const { id, slug, page = 1, limit = 10 } = req.query;
       const offset = (page - 1) * limit;
 
@@ -318,15 +321,18 @@ router.get('/', async (req, res) => {
       }
       else if (slug) {
         if (slug.includes('.')) {
-          const CustomDomain = require('../models/CustomDomain');
-          const domainRecord = await CustomDomain.findOne({
-            where: {
-              domain: slug,
-              is_active: true,
-              verification_status: 'verified'
-            },
-            attributes: ['store_id']
-          });
+          // Custom domain lookup
+          const { data: domainRecord, error: domainError } = await masterSupabaseClient
+            .from('custom_domains')
+            .select('store_id')
+            .eq('domain', slug)
+            .eq('is_active', true)
+            .eq('verification_status', 'verified')
+            .maybeSingle();
+
+          if (domainError) {
+            console.error('Error fetching custom domain:', domainError);
+          }
 
           if (domainRecord) {
             where.id = domainRecord.store_id;
@@ -338,15 +344,33 @@ router.get('/', async (req, res) => {
         }
       }
 
-      const { count, rows } = await Store.findAndCountAll({
-        where,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        order: [['created_at', 'DESC']]
-      });
+      // Query stores from master DB
+      let query = masterSupabaseClient
+        .from('stores')
+        .select('*', { count: 'exact' })
+        .eq('is_active', true)
+        .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1)
+        .order('created_at', { ascending: false });
+
+      if (where.id) {
+        query = query.eq('id', where.id);
+      }
+      if (where.slug) {
+        query = query.eq('slug', where.slug);
+      }
+
+      const { data: rows, error, count } = await query;
+
+      if (error) {
+        console.error('Error fetching stores:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to fetch stores'
+        });
+      }
 
       // Return just the data array for public requests (for compatibility with frontend)
-      return res.json(rows);
+      return res.json(rows || []);
     } catch (error) {
       console.error('Get public stores error:', error);
       return res.status(500).json({
