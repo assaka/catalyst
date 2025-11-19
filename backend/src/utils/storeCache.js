@@ -4,9 +4,11 @@
  * In-memory cache for store settings and cache configuration
  * to avoid repeated database queries. Integrates with cacheUtils.
  * Cache expires after 5 minutes or can be manually invalidated.
+ *
+ * Note: Store settings are fetched from Master DB as they're configuration data
  */
 
-const { Store } = require('../models'); // Master/Tenant hybrid model
+const { masterSupabaseClient } = require('../database/masterConnection');
 
 // In-memory cache: { store_id: { settings: {...}, cacheConfig: {...}, timestamp: Date } }
 const storeCache = new Map();
@@ -31,11 +33,18 @@ async function getStoreData(storeId) {
     return { settings: cached.settings, cacheConfig: cached.cacheConfig };
   }
 
-  // Fetch from database
+  // Fetch from Master DB using Supabase
   try {
-    const store = await Store.findByPk(storeId, {
-      attributes: ['settings']
-    });
+    const { data: store, error } = await masterSupabaseClient
+      .from('stores')
+      .select('settings')
+      .eq('id', storeId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching store data from master DB:', error);
+      return { settings: {}, cacheConfig: { enabled: true, duration: 60 } };
+    }
 
     const settings = store?.settings || {};
     const cacheSettings = settings.cache || {};

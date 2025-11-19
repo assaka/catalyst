@@ -1,12 +1,18 @@
-const { Product } = require('../models'); // Tenant DB model
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
  * Evaluate whether a method's conditions match the given products
  * @param {Object} conditions - The conditions object from payment/shipping method
  * @param {Array} productIds - Array of product IDs in the cart
+ * @param {string} storeId - Store ID for tenant database access
  * @returns {Promise<boolean>} - Whether conditions are met
  */
-async function evaluateConditions(conditions, productIds) {
+async function evaluateConditions(conditions, productIds, storeId) {
+  // Validate storeId
+  if (!storeId) {
+    console.error('conditionEvaluator: storeId is required');
+    return true; // Allow by default if storeId missing
+  }
   // If no conditions are specified or conditions is empty, method is always available
   if (!conditions || Object.keys(conditions).length === 0) {
     return true;
@@ -40,16 +46,23 @@ async function evaluateConditions(conditions, productIds) {
     return true; // Allow by default if we can't evaluate
   }
 
-  // Fetch all products in the cart
-  const products = await Product.findAll({
-    where: {
-      id: productIds
-    }
-  });
+  // Fetch all products in the cart using ConnectionManager
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  if (!products || products.length === 0) {
-    return true; // Allow by default if products not found
-  }
+    const { data: products, error } = await tenantDb
+      .from('products')
+      .select('id, sku, category_ids, attribute_set_id')
+      .in('id', productIds);
+
+    if (error) {
+      console.error('Error fetching products for condition evaluation:', error);
+      return true; // Allow by default on error
+    }
+
+    if (!products || products.length === 0) {
+      return true; // Allow by default if products not found
+    }
 
   // Evaluate conditions with OR logic (any match = available)
   for (const product of products) {
@@ -86,8 +99,12 @@ async function evaluateConditions(conditions, productIds) {
     }
   }
 
-  // No conditions matched
-  return false;
+    // No conditions matched
+    return false;
+  } catch (error) {
+    console.error('Error in condition evaluation:', error);
+    return true; // Allow by default on error
+  }
 }
 
 module.exports = {
