@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { PdfTemplate, PdfTemplateTranslation, Store } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const translationService = require('../services/translation-service');
@@ -34,6 +34,10 @@ router.get('/', async (req, res) => {
         else resolve();
       });
     });
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { PdfTemplate, PdfTemplateTranslation } = connection.models;
 
     const templates = await PdfTemplate.findAll({
       where: { store_id },
@@ -85,6 +89,27 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Check store access first
+    req.params.store_id = store_id;
+    await new Promise((resolve, reject) => {
+      checkStoreOwnership(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { PdfTemplate, PdfTemplateTranslation } = connection.models;
 
     const template = await PdfTemplate.findByPk(id, {
       include: [{
@@ -99,15 +124,6 @@ router.get('/:id', async (req, res) => {
         message: 'PDF template not found'
       });
     }
-
-    // Check store access
-    req.params.store_id = template.store_id;
-    await new Promise((resolve, reject) => {
-      checkStoreOwnership(req, res, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
 
     // Format translations
     const templateData = template.toJSON();
@@ -147,6 +163,27 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { settings, is_active, translations } = req.body;
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Check store access first
+    req.params.store_id = store_id;
+    await new Promise((resolve, reject) => {
+      checkStoreOwnership(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { PdfTemplate, PdfTemplateTranslation } = connection.models;
 
     const template = await PdfTemplate.findByPk(id);
 
@@ -156,15 +193,6 @@ router.put('/:id', async (req, res) => {
         message: 'PDF template not found'
       });
     }
-
-    // Check store access
-    req.params.store_id = template.store_id;
-    await new Promise((resolve, reject) => {
-      checkStoreOwnership(req, res, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
 
     // Build update object (content is now stored only in translations table)
     const updateData = {};

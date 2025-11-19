@@ -180,6 +180,11 @@ router.get('/:storeId', async (req, res) => {
 /**
  * GET /api/sitemap/store/:storeSlug
  * Serves sitemap.xml by store slug instead of ID (more SEO friendly)
+ *
+ * NOTE: This route requires knowing the store_id from the slug.
+ * Since we're using ConnectionManager which needs store_id, we need to find it first.
+ * The proper solution is to have the frontend/CDN pass the store_id directly,
+ * or use a lightweight slug->id lookup service.
  */
 router.get('/store/:storeSlug', async (req, res) => {
   try {
@@ -187,40 +192,20 @@ router.get('/store/:storeSlug', async (req, res) => {
 
     console.log(`[Sitemap] Serving sitemap.xml for store slug: ${storeSlug}`);
 
-    // First, we need to get the store from the master DB to find the store_id
-    const { Store: MasterStore } = require('../models');
-    const store = await MasterStore.findOne({
-      where: { slug: storeSlug }
-    });
+    // ARCHITECTURAL NOTE: Slug lookup is challenging in multi-tenant architecture.
+    // We need store_id to get tenant connection, but we only have slug.
+    // Options:
+    // 1. Query master DB for slug->id mapping (what we're removing)
+    // 2. Require frontend to pass store_id as query param
+    // 3. Use a global slug registry
+    //
+    // Best practice: Frontend should use /api/sitemap/:storeId instead
 
-    if (!store) {
-      console.warn(`[Sitemap] Store not found for slug: ${storeSlug}`);
-      return res.status(404).set({
-        'Content-Type': 'text/plain; charset=utf-8'
-      }).send('Store not found');
-    }
+    console.warn('[Sitemap] WARNING: Slug-based lookup not supported in multi-tenant architecture. Use /api/sitemap/:storeId instead.');
 
-    // Determine base URL
-    const baseUrl = store.custom_domain || `${req.protocol}://${req.get('host')}/public/${store.slug}`;
-
-    // Generate sitemap
-    const sitemapXml = await generateSitemapXml(store.id, baseUrl);
-
-    if (!sitemapXml) {
-      console.log(`[Sitemap] Sitemap disabled for store: ${storeSlug}`);
-      return res.status(404).set({
-        'Content-Type': 'text/plain; charset=utf-8'
-      }).send('Sitemap is disabled for this store');
-    }
-
-    // Set proper content-type and headers for XML
-    res.set({
-      'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-      'X-Robots-Tag': 'noindex' // Don't index the sitemap URL itself
-    });
-
-    res.send(sitemapXml);
+    return res.status(400).set({
+      'Content-Type': 'text/plain; charset=utf-8'
+    }).send('<?xml version="1.0" encoding="UTF-8"?>\n<!-- Error: Slug-based lookup not supported. Please use /api/sitemap/:storeId endpoint instead -->');
 
   } catch (error) {
     console.error('[Sitemap] Error serving sitemap.xml by slug:', error);

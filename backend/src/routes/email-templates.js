@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { EmailTemplate, EmailTemplateTranslation, Store } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const emailService = require('../services/email-service');
@@ -36,6 +36,10 @@ router.get('/', async (req, res) => {
         else resolve();
       });
     });
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { EmailTemplate, EmailTemplateTranslation } = connection.models;
 
     const templates = await EmailTemplate.findAll({
       where: { store_id },
@@ -89,6 +93,27 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Check store access first
+    req.params.store_id = store_id;
+    await new Promise((resolve, reject) => {
+      checkStoreOwnership(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { EmailTemplate, EmailTemplateTranslation } = connection.models;
 
     const template = await EmailTemplate.findByPk(id, {
       include: [{
@@ -103,15 +128,6 @@ router.get('/:id', async (req, res) => {
         message: 'Email template not found'
       });
     }
-
-    // Check store access
-    req.params.store_id = template.store_id;
-    await new Promise((resolve, reject) => {
-      checkStoreOwnership(req, res, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
 
     // Format translations
     const templateData = template.toJSON();
@@ -187,6 +203,10 @@ router.post('/', [
       });
     });
 
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { EmailTemplate, EmailTemplateTranslation } = connection.models;
+
     // Get available variables for this template type
     const variables = getVariablesForTemplate(identifier);
 
@@ -242,6 +262,27 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { identifier, content_type, is_active, sort_order, attachment_enabled, attachment_config, translations } = req.body;
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Check store access first
+    req.params.store_id = store_id;
+    await new Promise((resolve, reject) => {
+      checkStoreOwnership(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { EmailTemplate, EmailTemplateTranslation } = connection.models;
 
     const template = await EmailTemplate.findByPk(id);
 
@@ -251,15 +292,6 @@ router.put('/:id', async (req, res) => {
         message: 'Email template not found'
       });
     }
-
-    // Check store access
-    req.params.store_id = template.store_id;
-    await new Promise((resolve, reject) => {
-      checkStoreOwnership(req, res, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
 
     // Prevent changing identifier for system templates
     if (template.is_system && identifier && identifier !== template.identifier) {
@@ -332,6 +364,27 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Check store access first
+    req.params.store_id = store_id;
+    await new Promise((resolve, reject) => {
+      checkStoreOwnership(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { EmailTemplate } = connection.models;
 
     const template = await EmailTemplate.findByPk(id);
 
@@ -349,15 +402,6 @@ router.delete('/:id', async (req, res) => {
         message: 'System templates cannot be deleted. You can deactivate them instead.'
       });
     }
-
-    // Check store access
-    req.params.store_id = template.store_id;
-    await new Promise((resolve, reject) => {
-      checkStoreOwnership(req, res, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
 
     await template.destroy();
 
@@ -394,6 +438,27 @@ router.post('/:id/test', [
 
     const { id } = req.params;
     const { test_email, language_code = 'en' } = req.body;
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Check store access first
+    req.params.store_id = store_id;
+    await new Promise((resolve, reject) => {
+      checkStoreOwnership(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { EmailTemplate } = connection.models;
 
     const template = await EmailTemplate.findByPk(id);
 
@@ -403,15 +468,6 @@ router.post('/:id/test', [
         message: 'Email template not found'
       });
     }
-
-    // Check store access
-    req.params.store_id = template.store_id;
-    await new Promise((resolve, reject) => {
-      checkStoreOwnership(req, res, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
 
     // Send test email
     const result = await emailService.sendTestEmail(
@@ -464,6 +520,10 @@ router.post('/bulk-translate', [
         else resolve();
       });
     });
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { EmailTemplate, EmailTemplateTranslation } = connection.models;
 
     // Get all templates for the store with source language translations
     const templates = await EmailTemplate.findAll({
@@ -620,6 +680,27 @@ router.post('/bulk-translate', [
 router.post('/:id/restore-default', async (req, res) => {
   try {
     const { id } = req.params;
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Check store access first
+    req.params.store_id = store_id;
+    await new Promise((resolve, reject) => {
+      checkStoreOwnership(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { EmailTemplate, EmailTemplateTranslation } = connection.models;
 
     const template = await EmailTemplate.findByPk(id);
 
@@ -637,15 +718,6 @@ router.post('/:id/restore-default', async (req, res) => {
         message: 'Only system templates can be restored to default'
       });
     }
-
-    // Check store access
-    req.params.store_id = template.store_id;
-    await new Promise((resolve, reject) => {
-      checkStoreOwnership(req, res, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
 
     // Delete all existing translations
     await EmailTemplateTranslation.destroy({
