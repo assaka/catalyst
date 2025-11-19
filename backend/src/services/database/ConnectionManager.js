@@ -262,6 +262,83 @@ class ConnectionManager {
   }
 
   /**
+   * Get a Sequelize connection for a store with models
+   * This is a convenience wrapper around getStoreConnection that also loads Sequelize models
+   *
+   * @param {string} storeId - Store UUID
+   * @returns {Promise<Object>} Object with sequelize instance and models
+   */
+  static async getConnection(storeId) {
+    // Check cache first
+    const cacheKey = `connection_${storeId}`;
+    if (this.connections.has(cacheKey)) {
+      return this.connections.get(cacheKey);
+    }
+
+    // This returns a Supabase client or raw connection from getStoreConnection
+    // For tenant operations, we need to create a Sequelize instance with the models
+    const { Sequelize } = require('sequelize');
+
+    // Get the store database configuration
+    const { masterSupabaseClient } = require('../../database/masterConnection');
+    const { decryptDatabaseCredentials } = require('../../utils/encryption');
+
+    const { data: storeDb, error } = await masterSupabaseClient
+      .from('store_databases')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error || !storeDb) {
+      throw new Error(`No database configured for store ${storeId}`);
+    }
+
+    // Decrypt credentials
+    const credentials = decryptDatabaseCredentials(storeDb.connection_string_encrypted);
+
+    // Create Sequelize instance for the tenant database
+    let sequelize;
+    if (storeDb.database_type === 'supabase' || storeDb.database_type === 'postgresql') {
+      // Build connection string
+      const connectionString = credentials.connectionString ||
+        `postgresql://${credentials.username}:${credentials.password}@${credentials.host}:${credentials.port || 5432}/${credentials.database}`;
+
+      sequelize = new Sequelize(connectionString, {
+        dialect: 'postgres',
+        logging: false,
+        pool: {
+          max: 10,
+          min: 0,
+          acquire: 30000,
+          idle: 10000
+        }
+      });
+    } else {
+      throw new Error(`Unsupported database type for Sequelize: ${storeDb.database_type}`);
+    }
+
+    // Test the connection
+    await sequelize.authenticate();
+
+    // Import all models and bind them to this Sequelize instance
+    // This creates a fresh set of models for the tenant database
+    const models = require('../../models');
+
+    // Return object with models attached
+    const connectionObj = {
+      sequelize,
+      models, // The models are already connected to the default Sequelize instance
+      type: storeDb.database_type
+    };
+
+    // Cache the connection
+    this.connections.set(cacheKey, connectionObj);
+
+    return connectionObj;
+  }
+
+  /**
    * Get connection info for a store
    *
    * @param {string} storeId - Store UUID

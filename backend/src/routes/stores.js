@@ -1,9 +1,10 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { Store, User } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
+const { Store, User } = require('../models'); // Master DB models
 const UserModel = require('../models/User'); // Direct import
 const { authorize } = require('../middleware/auth');
-const { sequelize, supabase } = require('../database/connection');
+const { sequelize, supabase } = require('../database/connection'); // Master DB connection
 const { getUserAccessibleStores, getUserAccessibleStoresCount, getUserStoresForDropdown } = require('../utils/storeAccess');
 const { Op } = require('sequelize');
 const router = express.Router();
@@ -434,7 +435,7 @@ async function privateStoreAccess(req, res) {
 
 
 // @route   GET /api/stores/dropdown
-// @desc    Get stores for dropdown/selection (minimal data)
+// @desc    Get stores for dropdown/selection (Uses master DB)
 // @access  Private
 router.get('/dropdown', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
@@ -463,12 +464,12 @@ router.get('/dropdown', authorize(['admin', 'store_owner']), async (req, res) =>
 });
 
 // @route   GET /api/stores/:id
-// @desc    Get store by ID
+// @desc    Get store by ID (Uses master DB - for now, can be dual later if needed)
 // @access  Private
 router.get('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store = await Store.findByPk(req.params.id);
-    
+
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -480,14 +481,14 @@ router.get('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, store.id);
-      
+
       if (!access) {
         return res.status(403).json({
           success: false,
           message: 'Access denied'
         });
       }
-      
+
       // Add access info to response
       store.dataValues.access_info = {
         access_role: access.access_role,
@@ -510,7 +511,7 @@ router.get('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
 });
 
 // @route   POST /api/stores
-// @desc    Create new store
+// @desc    Create new store (DUAL: Uses master DB for initial creation)
 // @access  Private
 router.post('/', authorize(['admin', 'store_owner']), [
   body('name').notEmpty().withMessage('Store name is required'),
@@ -770,7 +771,7 @@ router.post('/', authorize(['admin', 'store_owner']), [
 });
 
 // @route   PUT /api/stores/:id
-// @desc    Update store
+// @desc    Update store (DUAL: Uses tenant DB for slug, status, settings updates)
 // @access  Private
 router.put('/:id', authorize(['admin', 'store_owner']), [
   body('name').optional().notEmpty().withMessage('Store name cannot be empty'),
@@ -794,9 +795,10 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
       });
     }
 
-    const store = await Store.findByPk(req.params.id);
-    
-    if (!store) {
+    // First, verify store exists in master DB (for access control)
+    const masterStore = await Store.findByPk(req.params.id);
+
+    if (!masterStore) {
       console.log('❌ Store not found with ID:', req.params.id);
       return res.status(404).json({
         success: false,
@@ -807,88 +809,106 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
     // Check ownership or team membership with editor+ permissions
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, masterStore.id);
+
       if (!access) {
-        console.log('❌ Access denied. User has no access to store:', store.id);
+        console.log('❌ Access denied. User has no access to store:', masterStore.id);
         return res.status(403).json({
           success: false,
           message: 'Access denied'
         });
       }
-      
+
       console.log('✅ Access granted:', {
         userId: req.user.id,
-        storeId: store.id,
+        storeId: masterStore.id,
         accessRole: access.access_role,
         isDirectOwner: access.is_direct_owner
       });
     }
 
-    console.log('🔄 Updating store with data:', {
+    // DUAL ARCHITECTURE: Use tenant DB for store updates
+    console.log('🔄 Getting tenant connection for store updates...');
+    const connection = await ConnectionManager.getConnection(req.params.id);
+    const { Store: TenantStore } = connection.models;
+
+    // Find store in tenant DB
+    const store = await TenantStore.findByPk(req.params.id);
+
+    if (!store) {
+      console.log('⚠️ Store not found in tenant DB, creating...');
+      // If store doesn't exist in tenant DB, create it
+      const newStore = await TenantStore.create({
+        id: masterStore.id,
+        name: masterStore.name,
+        slug: masterStore.slug,
+        description: masterStore.description,
+        settings: masterStore.settings,
+        is_active: masterStore.is_active,
+        user_id: masterStore.user_id
+      });
+    }
+
+    console.log('🔄 Updating store in tenant DB with data:', {
       storeId: req.params.id,
       hasSettings: !!req.body.settings,
       settingsKeys: req.body.settings ? Object.keys(req.body.settings) : [],
       settingsValues: req.body.settings ? JSON.stringify(req.body.settings).substring(0, 200) : 'none',
       otherFields: Object.keys(req.body).filter(key => key !== 'settings')
     });
-    
+
     // Log current settings before update
     console.log('📝 Current store settings before update:', JSON.stringify(store.settings));
     console.log('📝 Settings type:', typeof store.settings);
     console.log('📝 Incoming settings:', JSON.stringify(req.body.settings));
     console.log('📝 Incoming settings type:', typeof req.body.settings);
 
-    // Update the store directly
+    // Update the store in tenant DB
     if (req.body.settings) {
       console.log('🔧 Merging settings with existing store settings');
-      
+
       // Merge with existing settings to avoid overwriting other settings
       const currentSettings = store.settings || {};
       const mergedSettings = {
         ...currentSettings,
         ...req.body.settings
       };
-      
+
       console.log('🔄 Merged settings:', JSON.stringify(mergedSettings));
       await store.update({ settings: mergedSettings });
-      console.log('✅ Settings field updated with merge');
+      console.log('✅ Settings field updated with merge in tenant DB');
     }
-    
+
     // Update other fields if they exist
     const otherFields = { ...req.body };
     delete otherFields.settings;
-    
+
     if (Object.keys(otherFields).length > 0) {
-      console.log('🔧 Updating other fields:', Object.keys(otherFields));
+      console.log('🔧 Updating other fields in tenant DB:', Object.keys(otherFields));
       await store.update(otherFields);
-      console.log('✅ Other fields updated');
+      console.log('✅ Other fields updated in tenant DB');
     }
-    
-    console.log('✅ Store update completed');
-    
+
+    console.log('✅ Store update completed in tenant DB');
+
     // Reload the store to get the updated data
     await store.reload();
-    console.log('🔄 Reloaded store data:', {
+    console.log('🔄 Reloaded store data from tenant DB:', {
       hasSettings: !!store.settings,
       settingsKeys: store.settings ? Object.keys(store.settings) : [],
       settingsData: JSON.stringify(store.settings)
     });
-    
-    // Double-check by querying directly
-    const verifyStore = await Store.findByPk(store.id);
-    console.log('🔍 Verification query - settings:', JSON.stringify(verifyStore.settings));
 
     res.json({
       success: true,
       message: 'Store updated successfully',
-      data: verifyStore // Use the verification query result instead of the reloaded store
+      data: store
     });
   } catch (error) {
     console.error('Update store error:', error);
     console.error('Error details:', error.message);
     console.error('Error name:', error.name);
-    
+
     // Handle Sequelize validation errors
     if (error.name === 'SequelizeValidationError') {
       return res.status(400).json({
@@ -900,7 +920,7 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
         }))
       });
     }
-    
+
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -910,7 +930,7 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
 });
 
 // @route   DELETE /api/stores/:id
-// @desc    Delete store
+// @desc    Delete store (Uses master DB)
 // @access  Private
 router.delete('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
@@ -952,13 +972,14 @@ router.delete('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
 });
 
 // @route   GET /api/stores/:id/settings
-// @desc    Get store settings
+// @desc    Get store settings (DUAL: Uses tenant DB)
 // @access  Private
 router.get('/:id/settings', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const store = await Store.findByPk(req.params.id);
-    
-    if (!store) {
+    // First, verify store exists in master DB (for access control)
+    const masterStore = await Store.findByPk(req.params.id);
+
+    if (!masterStore) {
       return res.status(404).json({
         success: false,
         message: 'Store not found'
@@ -968,14 +989,30 @@ router.get('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
     // Check ownership or team access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, masterStore.id);
+
       if (!access) {
         return res.status(403).json({
           success: false,
           message: 'Access denied'
         });
       }
+    }
+
+    // DUAL ARCHITECTURE: Get settings from tenant DB
+    console.log('🔄 Getting tenant connection for settings retrieval...');
+    const connection = await ConnectionManager.getConnection(req.params.id);
+    const { Store: TenantStore } = connection.models;
+
+    const store = await TenantStore.findByPk(req.params.id);
+
+    if (!store) {
+      // If not in tenant DB yet, return master DB settings
+      console.log('⚠️ Store not found in tenant DB, returning master DB settings');
+      return res.json({
+        success: true,
+        settings: masterStore.settings || {}
+      });
     }
 
     res.json({
@@ -992,7 +1029,7 @@ router.get('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
 });
 
 // @route   PUT /api/stores/:id/settings
-// @desc    Update store settings
+// @desc    Update store settings (DUAL: Uses tenant DB)
 // @access  Private
 router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
@@ -1005,9 +1042,10 @@ router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
       user: req.user?.email
     });
 
-    const store = await Store.findByPk(req.params.id);
+    // First, verify store exists in master DB (for access control)
+    const masterStore = await Store.findByPk(req.params.id);
 
-    if (!store) {
+    if (!masterStore) {
       return res.status(404).json({
         success: false,
         message: 'Store not found'
@@ -1017,7 +1055,7 @@ router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
     // Check ownership or team access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, store.id);
+      const access = await checkUserStoreAccess(req.user.id, masterStore.id);
 
       if (!access) {
         return res.status(403).json({
@@ -1027,7 +1065,28 @@ router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
       }
     }
 
-    console.log('📝 Current store before update:', {
+    // DUAL ARCHITECTURE: Use tenant DB for settings updates
+    console.log('🔄 Getting tenant connection for settings update...');
+    const connection = await ConnectionManager.getConnection(req.params.id);
+    const { Store: TenantStore } = connection.models;
+
+    // Find or create store in tenant DB
+    let store = await TenantStore.findByPk(req.params.id);
+
+    if (!store) {
+      console.log('⚠️ Store not found in tenant DB, creating...');
+      store = await TenantStore.create({
+        id: masterStore.id,
+        name: masterStore.name,
+        slug: masterStore.slug,
+        description: masterStore.description,
+        settings: masterStore.settings,
+        is_active: masterStore.is_active,
+        user_id: masterStore.user_id
+      });
+    }
+
+    console.log('📝 Current store before update in tenant DB:', {
       currency: store.currency,
       settings: JSON.stringify(store.settings)
     });
@@ -1044,9 +1103,9 @@ router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
       ...incomingSettings
     };
 
-    console.log('🔄 Merged settings to save:', JSON.stringify(mergedSettings));
+    console.log('🔄 Merged settings to save in tenant DB:', JSON.stringify(mergedSettings));
 
-    // Update store with merged settings
+    // Update store with merged settings in tenant DB
     await store.update({ settings: mergedSettings });
 
     // Also update other fields if provided (like name, description, contact info, currency, etc.)
@@ -1054,13 +1113,13 @@ router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res
     delete otherFields.settings;
 
     if (Object.keys(otherFields).length > 0) {
-      console.log('🔧 Updating other fields:', Object.keys(otherFields), otherFields);
+      console.log('🔧 Updating other fields in tenant DB:', Object.keys(otherFields), otherFields);
       await store.update(otherFields);
     }
 
     // Reload to verify
     await store.reload();
-    console.log('✅ Store saved successfully:', {
+    console.log('✅ Store saved successfully in tenant DB:', {
       currency: store.currency,
       settings: JSON.stringify(store.settings)
     });
