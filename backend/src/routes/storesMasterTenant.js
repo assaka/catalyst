@@ -12,7 +12,7 @@
 const express = require('express');
 const router = express.Router();
 const { masterSupabaseClient } = require('../database/masterConnection');
-const { authMiddleware } = require('../middleware/auth'); // Use old working auth middleware
+const { authMiddleware } = require('../middleware/authMiddleware'); // Use same middleware as authMasterTenant
 const ConnectionManager = require('../services/database/ConnectionManager');
 const TenantProvisioningService = require('../services/database/TenantProvisioningService');
 const { encryptDatabaseCredentials } = require('../utils/encryption');
