@@ -53,9 +53,19 @@ export function AdminLayoutWrapper({ children }) {
     );
   }
 
-  // Skip TranslationProvider for auth page (no store context available)
+  // For auth page, provide minimal TranslationProvider with English fallback (no API calls)
   if (location.pathname === '/admin/auth') {
-    return <>{children}</>;
+    const defaultLanguages = [
+      { code: 'en', name: 'English', native_name: 'English', is_active: true, is_rtl: false }
+    ];
+    return (
+      <TranslationProvider
+        initialLanguages={defaultLanguages}
+        initialTranslations={{ labels: {}, customKeys: [] }}
+      >
+        {children}
+      </TranslationProvider>
+    );
   }
 
   return (
