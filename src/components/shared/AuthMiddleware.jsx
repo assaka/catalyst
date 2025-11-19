@@ -1039,13 +1039,14 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             
             // Clear logged out flag before setting token
             localStorage.removeItem('user_logged_out');
-            console.log('🔍 Cleared user_logged_out flag');
-            
+            apiClient.isLoggedOut = false; // Critical: Clear the logged out flag
+            console.log('🔍 Cleared user_logged_out flag and apiClient.isLoggedOut');
+
             // Store token based on role
             const tokenKey = role === 'customer' ? 'customer_auth_token' : 'store_owner_auth_token';
             localStorage.setItem(tokenKey, token);
             console.log('🔍 Stored token in localStorage with key:', tokenKey);
-            
+
             apiClient.setToken(token);
             console.log('🔍 Set token in apiClient, isLoggedOut:', apiClient.isLoggedOut);
             
@@ -1103,10 +1104,14 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                   navigate(dashboardUrl);
                 }
               } catch (error) {
-                console.error('Error checking stores:', error);
-                // Fallback to dashboard on error
-                const dashboardUrl = createAdminUrl("DASHBOARD");
-                navigate(dashboardUrl);
+                console.error('❌ Error checking stores:', error);
+                console.error('Error details:', error.message, error.status);
+
+                // If stores dropdown failed, redirect to onboarding
+                // (safer than dashboard without store context)
+                console.log('🔍 Stores fetch failed, redirecting to onboarding...');
+                const onboardingUrl = createAdminUrl("StoreOnboarding");
+                navigate(onboardingUrl || '/admin/store-onboarding');
               }
             }, 100); // Small delay to ensure token is set
           }
