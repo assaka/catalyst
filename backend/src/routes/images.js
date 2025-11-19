@@ -3,7 +3,7 @@ const router = express.Router();
 const AkeneoSyncService = require('../services/akeneo-sync-service');
 const CloudflareImageService = require('../services/cloudflare-image-service');
 const supabaseProductImages = require('../services/supabase-product-images');
-const { SupabaseOAuthToken } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 const multer = require('multer');
 
@@ -29,7 +29,7 @@ const upload = multer({
 router.post('/test-config', authMiddleware, async (req, res) => {
   try {
     const { store_id, test_url } = req.body;
-    
+
     if (!store_id) {
       return res.status(400).json({
         success: false,
@@ -39,9 +39,9 @@ router.post('/test-config', authMiddleware, async (req, res) => {
 
     const syncService = new AkeneoSyncService();
     await syncService.initialize(store_id);
-    
+
     const result = await syncService.testImageProcessing(test_url);
-    
+
     res.json(result);
   } catch (error) {
     console.error('Image config test failed:', error);
@@ -58,14 +58,14 @@ router.post('/test-config', authMiddleware, async (req, res) => {
  */
 router.post('/process-products', authMiddleware, async (req, res) => {
   try {
-    const { 
-      store_id, 
-      limit = 50, 
-      offset = 0, 
+    const {
+      store_id,
+      limit = 50,
+      offset = 0,
       force_reprocess = false,
-      concurrency = 2 
+      concurrency = 2
     } = req.body;
-    
+
     if (!store_id) {
       return res.status(400).json({
         success: false,
@@ -75,14 +75,14 @@ router.post('/process-products', authMiddleware, async (req, res) => {
 
     const syncService = new AkeneoSyncService();
     await syncService.initialize(store_id);
-    
+
     const result = await syncService.processProductImages({
       limit: parseInt(limit),
       offset: parseInt(offset),
       forceReprocess: force_reprocess,
       concurrency: parseInt(concurrency)
     });
-    
+
     res.json(result);
   } catch (error) {
     console.error('Product image processing failed:', error);
@@ -100,12 +100,12 @@ router.post('/process-products', authMiddleware, async (req, res) => {
 router.get('/stats/:store_id', authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.params;
-    
+
     const syncService = new AkeneoSyncService();
     await syncService.initialize(store_id);
-    
+
     const stats = await syncService.getImageStats();
-    
+
     res.json({
       success: true,
       stats
@@ -126,10 +126,10 @@ router.get('/stats/:store_id', authMiddleware, async (req, res) => {
 router.post('/test-cloudflare', authMiddleware, async (req, res) => {
   try {
     const config = req.body;
-    
+
     const imageService = new CloudflareImageService(config);
     const errors = imageService.validateConfig();
-    
+
     if (errors.length > 0) {
       return res.status(400).json({
         success: false,
@@ -137,9 +137,9 @@ router.post('/test-cloudflare', authMiddleware, async (req, res) => {
         errors
       });
     }
-    
+
     const result = await imageService.testConnection();
-    
+
     res.json({
       success: true,
       connection_test: result
@@ -160,7 +160,7 @@ router.post('/test-cloudflare', authMiddleware, async (req, res) => {
 router.post('/process-url', authMiddleware, async (req, res) => {
   try {
     const { image_url, metadata = {}, config = {} } = req.body;
-    
+
     if (!image_url) {
       return res.status(400).json({
         success: false,
@@ -170,7 +170,7 @@ router.post('/process-url', authMiddleware, async (req, res) => {
 
     const imageService = new CloudflareImageService(config);
     const result = await imageService.processImage(image_url, metadata);
-    
+
     res.json({
       success: true,
       result
@@ -192,9 +192,11 @@ router.get('/product-status/:store_id', authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.params;
     const { limit = 20, offset = 0 } = req.query;
-    
-    const { Product } = require('../models');
-    
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Product } = connection.models;
+
     const products = await Product.findAll({
       where: { store_id },
       attributes: ['id', 'sku', 'name', 'images'],
@@ -202,21 +204,21 @@ router.get('/product-status/:store_id', authMiddleware, async (req, res) => {
       offset: parseInt(offset),
       order: [['updated_at', 'DESC']]
     });
-    
+
     const productStatus = products.map(product => ({
       id: product.id,
       sku: product.sku,
       name: product.name,
       has_images: product.images && product.images.length > 0,
       image_count: product.images ? product.images.length : 0,
-      processed_images: product.images ? 
+      processed_images: product.images ?
         product.images.filter(img => img.metadata && img.metadata.processed_at).length : 0,
       cloudflare_images: product.images ?
         product.images.filter(img => img.metadata && img.metadata.cloudflare_id).length : 0,
       fallback_images: product.images ?
         product.images.filter(img => img.metadata && img.metadata.fallback).length : 0
     }));
-    
+
     res.json({
       success: true,
       products: productStatus,
@@ -241,13 +243,13 @@ router.get('/product-status/:store_id', authMiddleware, async (req, res) => {
  */
 router.post('/bulk-process', authMiddleware, async (req, res) => {
   try {
-    const { 
-      store_id, 
-      product_ids = [], 
+    const {
+      store_id,
+      product_ids = [],
       force_reprocess = false,
-      concurrency = 2 
+      concurrency = 2
     } = req.body;
-    
+
     if (!store_id) {
       return res.status(400).json({
         success: false,
@@ -262,18 +264,21 @@ router.post('/bulk-process', authMiddleware, async (req, res) => {
       });
     }
 
-    const { Product } = require('../models');
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Product } = connection.models;
+
     const syncService = new AkeneoSyncService();
     await syncService.initialize(store_id);
-    
+
     // Get selected products
     const products = await Product.findAll({
-      where: { 
+      where: {
         store_id,
         id: product_ids
       }
     });
-    
+
     if (products.length === 0) {
       return res.status(404).json({
         success: false,
@@ -283,33 +288,33 @@ router.post('/bulk-process', authMiddleware, async (req, res) => {
 
     let processedCount = 0;
     const errors = [];
-    
+
     // Process in batches
     for (let i = 0; i < products.length; i += concurrency) {
       const batch = products.slice(i, i + concurrency);
-      
+
       const batchPromises = batch.map(async (product) => {
         try {
           // Get fresh product data from Akeneo
           const akeneoProduct = await syncService.integration.client.getProduct(
             product.akeneo_uuid || product.sku
           );
-          
+
           // Process images
           const processedImages = await syncService.imageProcessor.processProductImages(
-            akeneoProduct, 
+            akeneoProduct,
             syncService.config.baseUrl
           );
 
           if (processedImages.length > 0) {
             // Convert to Catalyst format
             const catalystImages = syncService.imageProcessor.convertToCatalystFormat(processedImages);
-            
+
             // Update product
             await product.update({ images: catalystImages });
             return true;
           }
-          
+
           return false;
         } catch (error) {
           errors.push({
@@ -329,7 +334,7 @@ router.post('/bulk-process', authMiddleware, async (req, res) => {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
-    
+
     res.json({
       success: true,
       processed: processedCount,
@@ -354,8 +359,8 @@ router.post('/bulk-process', authMiddleware, async (req, res) => {
 /**
  * Upload product images to Supabase Storage
  */
-router.post('/supabase/upload-product/:productId', 
-  authMiddleware, 
+router.post('/supabase/upload-product/:productId',
+  authMiddleware,
   upload.array('images', 10),
   async (req, res) => {
     try {
@@ -376,6 +381,10 @@ router.post('/supabase/upload-product/:productId',
         });
       }
 
+      // Get tenant connection
+      const connection = await ConnectionManager.getConnection(store_id);
+      const { SupabaseOAuthToken } = connection.models;
+
       // Check if Supabase is connected
       const token = await SupabaseOAuthToken.findByStore(store_id);
       if (!token) {
@@ -386,9 +395,9 @@ router.post('/supabase/upload-product/:productId',
       }
 
       const result = await supabaseProductImages.uploadProductImages(
-        store_id, 
-        productId, 
-        req.files, 
+        store_id,
+        productId,
+        req.files,
         { folder, type: image_type }
       );
 
@@ -427,6 +436,10 @@ router.post('/supabase/upload-product/:productId/single',
           message: 'No image file provided'
         });
       }
+
+      // Get tenant connection
+      const connection = await ConnectionManager.getConnection(store_id);
+      const { SupabaseOAuthToken } = connection.models;
 
       const token = await SupabaseOAuthToken.findByStore(store_id);
       if (!token) {

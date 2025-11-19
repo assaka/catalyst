@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const storageManager = require('../services/storage-manager');
-const { Category } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 const { storeResolver } = require('../middleware/storeResolver');
 
@@ -34,7 +34,7 @@ router.post('/:categoryId/image', upload.single('image'), async (req, res) => {
   try {
     const { storeId } = req;
     const { categoryId } = req.params;
-    
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -42,11 +42,15 @@ router.post('/:categoryId/image', upload.single('image'), async (req, res) => {
       });
     }
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Category } = connection.models;
+
     // Verify category exists and belongs to store
     const category = await Category.findOne({
-      where: { 
-        id: categoryId, 
-        store_id: storeId 
+      where: {
+        id: categoryId,
+        store_id: storeId
       }
     });
 
@@ -85,7 +89,7 @@ router.post('/:categoryId/image', upload.single('image'), async (req, res) => {
     }
 
     // Update category image_url
-    await category.update({ 
+    await category.update({
       image_url: uploadResult.publicUrl || uploadResult.url,
       // Store additional metadata in a separate field if needed
       image_metadata: {
@@ -129,7 +133,7 @@ router.post('/:categoryId/banner', upload.single('banner'), async (req, res) => 
   try {
     const { storeId } = req;
     const { categoryId } = req.params;
-    
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -137,11 +141,15 @@ router.post('/:categoryId/banner', upload.single('banner'), async (req, res) => 
       });
     }
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Category } = connection.models;
+
     // Verify category exists and belongs to store
     const category = await Category.findOne({
-      where: { 
-        id: categoryId, 
-        store_id: storeId 
+      where: {
+        id: categoryId,
+        store_id: storeId
       }
     });
 
@@ -179,7 +187,7 @@ router.post('/:categoryId/banner', upload.single('banner'), async (req, res) => 
 
     // Get current banner images or initialize empty array
     const bannerImages = category.banner_images || [];
-    
+
     // Add new banner image
     const newBanner = {
       id: `banner_${Date.now()}`,
@@ -232,11 +240,15 @@ router.get('/:categoryId/images', async (req, res) => {
     const { storeId } = req;
     const { categoryId } = req.params;
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Category } = connection.models;
+
     // Verify category exists and belongs to store
     const category = await Category.findOne({
-      where: { 
-        id: categoryId, 
-        store_id: storeId 
+      where: {
+        id: categoryId,
+        store_id: storeId
       },
       attributes: ['id', 'name', 'image_url', 'image_metadata', 'banner_images']
     });
@@ -249,7 +261,7 @@ router.get('/:categoryId/images', async (req, res) => {
     }
 
     const banners = category.banner_images || [];
-    
+
     // Sort banners by sort_order
     banners.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
@@ -285,11 +297,15 @@ router.delete('/:categoryId/image', async (req, res) => {
     const { storeId } = req;
     const { categoryId } = req.params;
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Category } = connection.models;
+
     // Verify category exists and belongs to store
     const category = await Category.findOne({
-      where: { 
-        id: categoryId, 
-        store_id: storeId 
+      where: {
+        id: categoryId,
+        store_id: storeId
       }
     });
 
@@ -310,7 +326,7 @@ router.delete('/:categoryId/image', async (req, res) => {
     // Try to delete from Supabase storage
     try {
       let imagePath = null;
-      
+
       // Extract path from Supabase URL or use metadata
       if (category.image_metadata?.path) {
         imagePath = category.image_metadata.path;
@@ -344,7 +360,7 @@ router.delete('/:categoryId/image', async (req, res) => {
     }
 
     // Remove image from category
-    await category.update({ 
+    await category.update({
       image_url: null,
       image_metadata: null
     });
@@ -375,11 +391,15 @@ router.delete('/:categoryId/banners/:bannerId', async (req, res) => {
     const { storeId } = req;
     const { categoryId, bannerId } = req.params;
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Category } = connection.models;
+
     // Verify category exists and belongs to store
     const category = await Category.findOne({
-      where: { 
-        id: categoryId, 
-        store_id: storeId 
+      where: {
+        id: categoryId,
+        store_id: storeId
       }
     });
 
@@ -405,7 +425,7 @@ router.delete('/:categoryId/banners/:bannerId', async (req, res) => {
     // Try to delete from Supabase storage
     try {
       let imagePath = null;
-      
+
       // Extract path from Supabase URL or use metadata
       if (bannerToDelete.metadata?.path) {
         imagePath = bannerToDelete.metadata.path;
@@ -479,11 +499,15 @@ router.post('/:categoryId/banners/reorder', async (req, res) => {
       });
     }
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Category } = connection.models;
+
     // Verify category exists and belongs to store
     const category = await Category.findOne({
-      where: { 
-        id: categoryId, 
-        store_id: storeId 
+      where: {
+        id: categoryId,
+        store_id: storeId
       }
     });
 
@@ -498,7 +522,7 @@ router.post('/:categoryId/banners/reorder', async (req, res) => {
 
     // Create new ordered array
     const reorderedBanners = [];
-    
+
     // Add banners in the specified order
     bannerOrder.forEach((bannerId, index) => {
       const banner = banners.find(b => b.id === bannerId);
