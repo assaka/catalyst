@@ -985,6 +985,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
   };
 
   const handleAuth = async (formData, isLogin) => {
+    console.log('🚀 handleAuth called!', { isLogin, email: formData.email, role });
     setLoading(true);
     setError("");
     setSuccess("");
@@ -992,13 +993,15 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
     try {
       if (isLogin) {
         console.log('🔍 Starting login process...', { email: formData.email, role });
-        
+
+        console.log('📞 Calling AuthService.login...');
         const response = await AuthService.login(
-          formData.email, 
-          formData.password, 
-          formData.rememberMe, 
+          formData.email,
+          formData.password,
+          formData.rememberMe,
           role
         );
+        console.log('✅ AuthService.login returned:', response);
         
         console.log('🔍 Login response:', response);
         console.log('🔍 Response structure:', {
