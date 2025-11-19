@@ -112,7 +112,6 @@ export default function Settings() {
         description: storeData.description || '',
         logo_url: storeData.logo_url || '',
         domain: storeData.domain || '', // Keep existing domain if it's used internally
-        custom_domain: storeData.custom_domain || storeData.domain || '', // Map existing domain to custom_domain
         domain_status: storeData.domain_status || '',
         ssl_enabled: storeData.ssl_enabled || false,
         currency: storeData.currency || 'No Currency',
@@ -347,7 +346,6 @@ export default function Settings() {
         name: store.name,
         description: store.description,
         logo_url: store.logo_url,
-        custom_domain: store.custom_domain,
         contact_email: store.contact_details?.email || store.contact_email,
         contact_phone: store.contact_details?.phone || store.contact_phone,
         address_line1: store.contact_details?.address || store.address_line1,
