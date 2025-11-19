@@ -1,6 +1,6 @@
 const StorageInterface = require('./storage-interface');
 const { v4: uuidv4 } = require('uuid');
-const { MediaAsset } = require('../models'); // Tenant DB model
+const ConnectionManager = require('./database/ConnectionManager');
 
 /**
  * Flexible Storage Manager
@@ -126,8 +126,18 @@ class StorageManager {
   async getStorageProvider(storeId) {
     // First check if store has a default media storage provider configured
     try {
-      const { Store } = require('../models'); // Master/Tenant hybrid model
-      const store = await Store.findByPk(storeId);
+      const { masterSupabaseClient } = require('../database/masterConnection');
+
+      const { data: store, error } = await masterSupabaseClient
+        .from('stores')
+        .select('settings')
+        .eq('id', storeId)
+        .maybeSingle();
+
+      if (error) {
+        console.log(`Could not check store default provider:`, error.message);
+        throw error;
+      }
 
       // Check for default_mediastorage_provider first, then fall back to default_database_provider
       const defaultProvider = store?.settings?.default_mediastorage_provider ||
@@ -296,13 +306,69 @@ class StorageManager {
         } else if (options.folder) {
           folder = options.folder;
         }
-        
-        await MediaAsset.createFromUpload(storeId, {
-          ...result,
+
+        // Get tenant DB connection
+        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+        const filePath = result.path || result.fullPath;
+
+        // Check if asset already exists for this store and file path
+        const { data: existingAsset, error: findError } = await tenantDb
+          .from('media_assets')
+          .select('*')
+          .eq('store_id', storeId)
+          .eq('file_path', filePath)
+          .maybeSingle();
+
+        if (findError) {
+          throw findError;
+        }
+
+        const assetData = {
+          store_id: storeId,
+          file_name: result.filename || result.name,
+          original_name: result.originalname || file.originalname,
+          file_path: filePath,
+          file_url: result.url || result.publicUrl,
+          mime_type: result.mimetype || result.mimeType,
+          file_size: result.size,
           folder: folder,
-          originalname: file.originalname,
-          provider: storeProvider.type
-        }, options.userId);
+          uploaded_by: options.userId || null,
+          metadata: {
+            bucket: result.bucket,
+            provider: storeProvider.type,
+            ...result.metadata
+          },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        if (existingAsset) {
+          // Update existing record with new upload data
+          const { error: updateError } = await tenantDb
+            .from('media_assets')
+            .update({
+              ...assetData,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingAsset.id);
+
+          if (updateError) {
+            throw updateError;
+          }
+        } else {
+          // Create new record
+          const { error: insertError } = await tenantDb
+            .from('media_assets')
+            .insert({
+              id: uuidv4(),
+              ...assetData
+            });
+
+          if (insertError) {
+            throw insertError;
+          }
+        }
       } catch (dbError) {
         console.error('Failed to track media asset in database:', dbError.message);
         // Don't fail the upload if database tracking fails
