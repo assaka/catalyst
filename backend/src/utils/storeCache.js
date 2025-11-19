@@ -33,38 +33,21 @@ async function getStoreData(storeId) {
     return { settings: cached.settings, cacheConfig: cached.cacheConfig };
   }
 
-  // Fetch from Master DB using Supabase
-  try {
-    const { data: store, error } = await masterSupabaseClient
-      .from('stores')
-      .select('settings')
-      .eq('id', storeId)
-      .maybeSingle();
+  // Use default cache config (settings column is in tenant DB, not master DB)
+  // Master DB only has basic routing info (id, slug, name, user_id, is_active)
+  const cacheConfig = {
+    enabled: true,
+    duration: 60 // 1 minute default
+  };
 
-    if (error) {
-      console.error('Error fetching store data from master DB:', error);
-      return { settings: {}, cacheConfig: { enabled: true, duration: 60 } };
-    }
+  // Cache the result
+  storeCache.set(storeId, {
+    settings: {},
+    cacheConfig,
+    timestamp: now
+  });
 
-    const settings = store?.settings || {};
-    const cacheSettings = settings.cache || {};
-    const cacheConfig = {
-      enabled: cacheSettings.enabled !== false,
-      duration: cacheSettings.duration || 60
-    };
-
-    // Cache the result
-    storeCache.set(storeId, {
-      settings,
-      cacheConfig,
-      timestamp: now
-    });
-
-    return { settings, cacheConfig };
-  } catch (error) {
-    console.error('Error fetching store data:', error);
-    return { settings: {}, cacheConfig: { enabled: true, duration: 60 } };
-  }
+  return { settings: {}, cacheConfig };
 }
 
 /**
