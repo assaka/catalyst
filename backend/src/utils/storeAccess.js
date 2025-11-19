@@ -88,47 +88,60 @@ async function checkUserStoreAccess(userId, storeId) {
   try {
     console.log('🔍 checkUserStoreAccess called:', { userId, storeId });
 
-    const query = `
-      SELECT
-        s.id,
-        s.name,
-        s.user_id as owner_id,
-        CASE
-          WHEN s.user_id = :userId THEN 'owner'
-          WHEN st.role IS NOT NULL THEN st.role
-          ELSE NULL
-        END as access_role,
-        (s.user_id = :userId) as is_direct_owner,
-        st.role as team_role,
-        st.status as team_status
-      FROM stores s
-      LEFT JOIN store_teams st ON s.id = st.store_id
-          AND st.user_id = :userId
-          AND st.status = 'active'
-          AND st.is_active = true
-      WHERE s.id = :storeId
-        AND s.is_active = true
-        AND (
-          s.user_id = :userId
-          OR (st.user_id = :userId AND st.role IN ('admin', 'editor'))
-        )
-    `;
+    // First, check if user owns the store
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('id, name, user_id, is_active')
+      .eq('id', storeId)
+      .eq('is_active', true)
+      .single();
 
-    const result = await sequelize.query(query, {
-      replacements: { storeId: storeId, userId: userId },
-      type: QueryTypes.SELECT
-    });
+    if (storeError || !store) {
+      console.log('❌ Store not found or not active:', storeId);
+      return null;
+    }
 
-    const hasAccess = result.length > 0;
+    // Check direct ownership
+    if (store.user_id === userId) {
+      console.log('✅ User is direct owner of store');
+      return {
+        id: store.id,
+        name: store.name,
+        owner_id: store.user_id,
+        access_role: 'owner',
+        is_direct_owner: true,
+        team_role: null,
+        team_status: null
+      };
+    }
 
-    console.log('🔑 checkUserStoreAccess result:', {
-      userId,
-      storeId,
-      hasAccess,
-      accessData: hasAccess ? result[0] : null
-    });
+    // Check team membership
+    const { data: teamMember, error: teamError } = await masterDbClient
+      .from('store_teams')
+      .select('role, status')
+      .eq('store_id', storeId)
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .eq('is_active', true)
+      .in('role', ['admin', 'editor'])
+      .single();
 
-    return hasAccess ? result[0] : null;
+    if (teamError || !teamMember) {
+      console.log('❌ User is not a team member with sufficient permissions');
+      return null;
+    }
+
+    console.log('✅ User is team member with role:', teamMember.role);
+    return {
+      id: store.id,
+      name: store.name,
+      owner_id: store.user_id,
+      access_role: teamMember.role,
+      is_direct_owner: false,
+      team_role: teamMember.role,
+      team_status: teamMember.status
+    };
+
   } catch (error) {
     console.error('❌ Error checking store access:', error);
     return null;
