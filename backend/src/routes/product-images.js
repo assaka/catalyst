@@ -4,12 +4,12 @@ const multer = require('multer');
 const { authMiddleware } = require('../middleware/auth');
 const { storeResolver } = require('../middleware/storeResolver');
 
-const { Product } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const storageManager = require('../services/storage-manager');
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
@@ -37,7 +37,7 @@ router.post('/:productId/images', upload.array('images', 10), async (req, res) =
   try {
     const { storeId } = req;
     const { productId } = req.params;
-    
+
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
@@ -45,11 +45,15 @@ router.post('/:productId/images', upload.array('images', 10), async (req, res) =
       });
     }
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Product } = connection.models;
+
     // Verify product exists and belongs to store
     const product = await Product.findOne({
-      where: { 
-        id: productId, 
-        store_id: storeId 
+      where: {
+        id: productId,
+        store_id: storeId
       }
     });
 
@@ -62,7 +66,7 @@ router.post('/:productId/images', upload.array('images', 10), async (req, res) =
 
     console.log(`📤 Uploading ${req.files.length} images for product ${productId} in store ${storeId}`);
 
-    // Upload options with organized directory structure  
+    // Upload options with organized directory structure
     const uploadPromises = req.files.map(file => {
       const options = {
         useOrganizedStructure: true,
@@ -76,17 +80,17 @@ router.post('/:productId/images', upload.array('images', 10), async (req, res) =
           upload_type: 'product_image'
         }
       };
-      
+
       return storageManager.uploadFile(storeId, file, options);
     });
 
     // Upload all images in parallel
     const uploadResults = await Promise.allSettled(uploadPromises);
-    
+
     // Separate successful and failed uploads
     const uploaded = [];
     const failed = [];
-    
+
     uploadResults.forEach((result, index) => {
       if (result.status === 'fulfilled' && result.value.success) {
         uploaded.push(result.value);
@@ -166,11 +170,15 @@ router.put('/:productId/images/:imageId', async (req, res) => {
     const { productId, imageId } = req.params;
     const { alt, sort_order } = req.body;
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Product } = connection.models;
+
     // Verify product exists and belongs to store
     const product = await Product.findOne({
-      where: { 
-        id: productId, 
-        store_id: storeId 
+      where: {
+        id: productId,
+        store_id: storeId
       }
     });
 
@@ -195,7 +203,7 @@ router.put('/:productId/images/:imageId', async (req, res) => {
     const updatedImages = [...images];
     if (alt !== undefined) updatedImages[imageIndex].alt = alt;
     if (sort_order !== undefined) updatedImages[imageIndex].sort_order = parseInt(sort_order);
-    
+
     // Update metadata
     updatedImages[imageIndex].metadata = {
       ...updatedImages[imageIndex].metadata,
@@ -239,11 +247,15 @@ router.delete('/:productId/images/:imageId', async (req, res) => {
     const { storeId } = req;
     const { productId, imageId } = req.params;
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Product } = connection.models;
+
     // Verify product exists and belongs to store
     const product = await Product.findOne({
-      where: { 
-        id: productId, 
-        store_id: storeId 
+      where: {
+        id: productId,
+        store_id: storeId
       }
     });
 
@@ -269,7 +281,7 @@ router.delete('/:productId/images/:imageId', async (req, res) => {
     // Try to delete from Supabase storage
     try {
       let imagePath = null;
-      
+
       // Extract path from Supabase URL or use metadata
       if (imageToDelete.metadata?.path) {
         imagePath = imageToDelete.metadata.path;
@@ -341,11 +353,15 @@ router.get('/:productId/images', async (req, res) => {
     const { storeId } = req;
     const { productId } = req.params;
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Product } = connection.models;
+
     // Verify product exists and belongs to store
     const product = await Product.findOne({
-      where: { 
-        id: productId, 
-        store_id: storeId 
+      where: {
+        id: productId,
+        store_id: storeId
       },
       attributes: ['id', 'name', 'images']
     });
@@ -358,7 +374,7 @@ router.get('/:productId/images', async (req, res) => {
     }
 
     const images = product.images || [];
-    
+
     // Sort by sort_order
     images.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
@@ -398,11 +414,15 @@ router.post('/:productId/images/reorder', async (req, res) => {
       });
     }
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Product } = connection.models;
+
     // Verify product exists and belongs to store
     const product = await Product.findOne({
-      where: { 
-        id: productId, 
-        store_id: storeId 
+      where: {
+        id: productId,
+        store_id: storeId
       }
     });
 
@@ -417,7 +437,7 @@ router.post('/:productId/images/reorder', async (req, res) => {
 
     // Create new ordered array
     const reorderedImages = [];
-    
+
     // Add images in the specified order
     imageOrder.forEach((imageId, index) => {
       const image = images.find(img => img.id === imageId);

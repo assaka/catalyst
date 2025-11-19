@@ -3,18 +3,25 @@
  *
  * These helpers construct the same format that the frontend expects
  * from normalized translation tables.
+ *
+ * UPDATED for Multi-Tenant Architecture:
+ * - Accepts optional sequelize connection parameter for tenant databases
+ * - Falls back to master connection for backward compatibility
  */
 
-const { sequelize } = require('../database/connection');
+const { sequelize: masterSequelize } = require('../database/connection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
  * Get cookie consent settings with translations from normalized tables
  *
  * @param {Object} where - WHERE clause conditions
  * @param {string} lang - Language code (optional, not used but kept for compatibility)
+ * @param {Object} sequelizeConnection - Optional sequelize connection (tenant or master)
  * @returns {Promise<Array>} Cookie consent settings with full translations object
  */
-async function getCookieConsentSettingsWithTranslations(where = {}, lang = 'en') {
+async function getCookieConsentSettingsWithTranslations(where = {}, lang = 'en', sequelizeConnection = null) {
+  const sequelize = sequelizeConnection || masterSequelize;
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
       if (value === true || value === false) {
@@ -107,9 +114,11 @@ async function getCookieConsentSettingsWithTranslations(where = {}, lang = 'en')
  *
  * @param {string} id - Cookie consent settings ID
  * @param {string} lang - Language code (optional, not used but kept for compatibility)
+ * @param {Object} sequelizeConnection - Optional sequelize connection (tenant or master)
  * @returns {Promise<Object|null>} Cookie consent settings with full translations object
  */
-async function getCookieConsentSettingsById(id, lang = 'en') {
+async function getCookieConsentSettingsById(id, lang = 'en', sequelizeConnection = null) {
+  const sequelize = sequelizeConnection || masterSequelize;
   const query = `
     SELECT
       ccs.id,
@@ -190,9 +199,11 @@ async function getCookieConsentSettingsById(id, lang = 'en') {
  *
  * @param {Object} settingsData - Cookie consent settings data (without translations)
  * @param {Object} translations - Translations object { en: {...}, nl: {...} }
+ * @param {Object} sequelizeConnection - Optional sequelize connection (tenant or master)
  * @returns {Promise<Object>} Created cookie consent settings with translations
  */
-async function createCookieConsentSettingsWithTranslations(settingsData, translations = {}) {
+async function createCookieConsentSettingsWithTranslations(settingsData, translations = {}, sequelizeConnection = null) {
+  const sequelize = sequelizeConnection || masterSequelize;
   const transaction = await sequelize.transaction();
 
   try {
@@ -320,7 +331,7 @@ async function createCookieConsentSettingsWithTranslations(settingsData, transla
     await transaction.commit();
 
     // Return the created settings with translations
-    return await getCookieConsentSettingsById(settings.id);
+    return await getCookieConsentSettingsById(settings.id, 'en', sequelize);
   } catch (error) {
     await transaction.rollback();
     throw error;
@@ -333,9 +344,11 @@ async function createCookieConsentSettingsWithTranslations(settingsData, transla
  * @param {string} id - Cookie consent settings ID
  * @param {Object} settingsData - Cookie consent settings data (without translations)
  * @param {Object} translations - Translations object { en: {...}, nl: {...} }
+ * @param {Object} sequelizeConnection - Optional sequelize connection (tenant or master)
  * @returns {Promise<Object>} Updated cookie consent settings with translations
  */
-async function updateCookieConsentSettingsWithTranslations(id, settingsData, translations = {}) {
+async function updateCookieConsentSettingsWithTranslations(id, settingsData, translations = {}, sequelizeConnection = null) {
+  const sequelize = sequelizeConnection || masterSequelize;
   const transaction = await sequelize.transaction();
 
   try {
@@ -474,7 +487,7 @@ async function updateCookieConsentSettingsWithTranslations(id, settingsData, tra
     await transaction.commit();
 
     // Return the updated settings with translations
-    return await getCookieConsentSettingsById(id);
+    return await getCookieConsentSettingsById(id, 'en', sequelize);
   } catch (error) {
     await transaction.rollback();
     throw error;
@@ -485,9 +498,11 @@ async function updateCookieConsentSettingsWithTranslations(id, settingsData, tra
  * Delete cookie consent settings (translations are CASCADE deleted)
  *
  * @param {string} id - Cookie consent settings ID
+ * @param {Object} sequelizeConnection - Optional sequelize connection (tenant or master)
  * @returns {Promise<boolean>} Success status
  */
-async function deleteCookieConsentSettings(id) {
+async function deleteCookieConsentSettings(id, sequelizeConnection = null) {
+  const sequelize = sequelizeConnection || masterSequelize;
   await sequelize.query(`
     DELETE FROM cookie_consent_settings WHERE id = :id
   `, {

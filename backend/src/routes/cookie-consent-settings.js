@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { CookieConsentSettings, Store } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { Op } = require('sequelize');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
@@ -65,7 +65,14 @@ router.get('/', async (req, res) => {
 
     const lang = getLanguageFromRequest(req);
 
-    const settings = await getCookieConsentSettingsWithTranslations(where, lang);
+    // If store_id is specified, use tenant connection
+    let sequelizeConnection = null;
+    if (store_id) {
+      const connection = await ConnectionManager.getConnection(store_id);
+      sequelizeConnection = connection.sequelize;
+    }
+
+    const settings = await getCookieConsentSettingsWithTranslations(where, lang, sequelizeConnection);
 
     if (isPublicRequest) {
       // Return just the array for public requests (for compatibility)
@@ -100,7 +107,10 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    // Get store info for access check (still needed)
+    // Get tenant connection for store access check
+    const connection = await ConnectionManager.getConnection(settings.store_id);
+    const { Store } = connection.models;
+
     const storeInfo = await Store.findByPk(settings.store_id, {
       attributes: ['id', 'name', 'user_id']
     });
@@ -160,6 +170,10 @@ router.post('/', [
     // Extract translations from request body
     const { translations, ...settingsData } = req.body;
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { CookieConsentSettings } = connection.models;
+
     // UPSERT: Check if settings already exist for this store
     const existingSettings = await CookieConsentSettings.findOne({
       where: { store_id }
@@ -173,11 +187,12 @@ router.post('/', [
       settings = await updateCookieConsentSettingsWithTranslations(
         existingSettings.id,
         settingsData,
-        translations || {}
+        translations || {},
+        connection.sequelize
       );
     } else {
       // Create new settings
-      settings = await createCookieConsentSettingsWithTranslations(settingsData, translations || {});
+      settings = await createCookieConsentSettingsWithTranslations(settingsData, translations || {}, connection.sequelize);
       isNew = true;
     }
 
@@ -202,7 +217,20 @@ router.post('/', [
 // @access  Private
 router.put('/:id', async (req, res) => {
   try {
-    // First check if settings exist
+    // Get settings first to determine store_id
+    const settingsData = await getCookieConsentSettingsById(req.params.id);
+    if (!settingsData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cookie consent settings not found'
+      });
+    }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(settingsData.store_id);
+    const { CookieConsentSettings } = connection.models;
+
+    // Get the full model instance
     const existingSettings = await CookieConsentSettings.findByPk(req.params.id);
 
     if (!existingSettings) {
@@ -232,7 +260,8 @@ router.put('/:id', async (req, res) => {
     const settings = await updateCookieConsentSettingsWithTranslations(
       req.params.id,
       settingsData,
-      translations || {}
+      translations || {},
+      connection.sequelize
     );
 
     res.json({
@@ -253,6 +282,19 @@ router.put('/:id', async (req, res) => {
 // @access  Private
 router.delete('/:id', async (req, res) => {
   try {
+    // Get settings first to determine store_id
+    const settingsData = await getCookieConsentSettingsById(req.params.id);
+    if (!settingsData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cookie consent settings not found'
+      });
+    }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(settingsData.store_id);
+    const { CookieConsentSettings } = connection.models;
+
     const settings = await CookieConsentSettings.findByPk(req.params.id);
 
     if (!settings) {
@@ -275,7 +317,7 @@ router.delete('/:id', async (req, res) => {
       }
     }
 
-    await deleteCookieConsentSettings(req.params.id);
+    await deleteCookieConsentSettings(req.params.id, connection.sequelize);
 
     res.json({
       success: true,
@@ -306,6 +348,20 @@ router.post('/:id/translate', [
     }
 
     const { fromLang, toLang } = req.body;
+
+    // Get settings first to determine store_id
+    const settingsData = await getCookieConsentSettingsById(req.params.id);
+    if (!settingsData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cookie consent settings not found'
+      });
+    }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(settingsData.store_id);
+    const { CookieConsentSettings, Store } = connection.models;
+
     const settings = await CookieConsentSettings.findByPk(req.params.id, {
       include: [{
         model: Store,
@@ -389,9 +445,12 @@ router.post('/bulk-translate', authMiddleware, [
       }
     }
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+
     // Get cookie consent settings for this store with ALL translations
     const lang = getLanguageFromRequest(req);
-    const settingsRecords = await getCookieConsentSettingsWithTranslations({ store_id }, lang);
+    const settingsRecords = await getCookieConsentSettingsWithTranslations({ store_id }, lang, connection.sequelize);
 
     if (settingsRecords.length === 0) {
       return res.json({
@@ -472,7 +531,7 @@ router.post('/bulk-translate', authMiddleware, [
         const translations = settings.translations || {};
         translations[toLang] = translatedData;
 
-        await updateCookieConsentSettingsWithTranslations(settings.id, {}, translations);
+        await updateCookieConsentSettingsWithTranslations(settings.id, {}, translations, connection.sequelize);
         results.translated++;
       } catch (error) {
         const settingsName = settings.translations?.[fromLang]?.banner_title || `Settings ${settings.id}`;
