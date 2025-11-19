@@ -1,8 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { User, StoreInvitation, Store } = require('../models');
+const { masterSupabaseClient } = require('../database/masterConnection');
 const { authMiddleware } = require('../middleware/authMiddleware');
-const { Op } = require('sequelize');
 const { authorize, storeOwnerOnly } = require('../middleware/auth');
 const { checkStoreOwnership, checkTeamMembership } = require('../middleware/storeAuth');
 const crypto = require('crypto');
@@ -142,14 +141,14 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
       });
     }
 
-    // Check existing invitation in master DB
-    const existingInvitation = await StoreInvitation.findOne({
-      where: {
-        store_id,
-        invited_email: email,
-        status: 'pending'
-      }
-    });
+    // Check existing invitation in master DB using Supabase
+    const { data: existingInvitation, error: checkError } = await masterSupabaseClient
+      .from('store_invitations')
+      .select('*')
+      .eq('store_id', store_id)
+      .eq('invited_email', email)
+      .eq('status', 'pending')
+      .maybeSingle();
 
     if (existingInvitation) {
       return res.status(400).json({

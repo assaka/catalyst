@@ -649,32 +649,50 @@ router.post('/chat', authMiddleware, async (req, res) => {
       if (lastAssistantMessage?.data?.action === 'update_labels') {
         // User confirmed - update the translations
         const { translations, matchingKeys, original } = lastAssistantMessage.data;
-        const { sequelize } = require('../database/connection');
-        const Translation = require('../models/Translation');
+        const ConnectionManager = require('../services/database/ConnectionManager');
+        const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
 
+        if (!store_id) {
+          return res.status(400).json({
+            success: false,
+            message: 'store_id is required for updating translations'
+          });
+        }
+
+        const tenantDb = await ConnectionManager.getStoreConnection(store_id);
         let updatedCount = 0;
         const updates = [];
 
         for (const [key, langData] of Object.entries(matchingKeys)) {
           for (const targetLang of Object.keys(translations)) {
             try {
-              // Check if translation exists
-              const existing = await Translation.findOne({
-                where: { key, language_code: targetLang }
-              });
+              // Check if translation exists using Supabase
+              const { data: existing, error: checkError } = await tenantDb
+                .from('translations')
+                .select('*')
+                .eq('key', key)
+                .eq('language_code', targetLang)
+                .maybeSingle();
 
               if (existing) {
                 // Update existing
-                await existing.update({ value: translations[targetLang] });
+                await tenantDb
+                  .from('translations')
+                  .update({ value: translations[targetLang], updated_at: new Date().toISOString() })
+                  .eq('id', existing.id);
               } else {
                 // Create new translation
-                await Translation.create({
-                  key,
-                  language_code: targetLang,
-                  value: translations[targetLang],
-                  category: 'common',
-                  type: 'system'
-                });
+                await tenantDb
+                  .from('translations')
+                  .insert({
+                    key,
+                    language_code: targetLang,
+                    value: translations[targetLang],
+                    category: 'common',
+                    type: 'system',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  });
               }
               updatedCount++;
               updates.push(`${key} (${targetLang}): ${translations[targetLang]}`);
@@ -768,19 +786,33 @@ Return ONLY valid JSON.`;
 
     } else if (intent.intent === 'translation') {
       // AI-DRIVEN TRANSLATION HANDLER
-      // Let the AI understand the context and make decisions
-      const { sequelize } = require('../database/connection');
+      const ConnectionManager = require('../services/database/ConnectionManager');
       const translationService = require('../services/translation-service');
 
-      // Fetch active languages from the store
-      const activeLanguages = await sequelize.query(`
-        SELECT code, name, native_name, is_default, is_active
-        FROM languages
-        WHERE is_active = true
-        ORDER BY is_default DESC, name ASC
-      `, {
-        type: sequelize.QueryTypes.SELECT
-      });
+      const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
+      if (!store_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'store_id is required for translations'
+        });
+      }
+
+      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+      // Fetch active languages from tenant DB using Supabase
+      const { data: activeLanguages, error: langError } = await tenantDb
+        .from('languages')
+        .select('code, name, native_name, is_default, is_active')
+        .eq('is_active', true)
+        .order('is_default', { ascending: false })
+        .order('name', { ascending: true });
+
+      if (langError || !activeLanguages) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to fetch languages'
+        });
+      }
 
       const languageContext = activeLanguages.map(lang =>
         `${lang.name} (${lang.code})${lang.is_default ? ' [default]' : ''}`
@@ -874,16 +906,23 @@ If you need to ask for clarification (missing language or unclear text), set nee
         `%${term.replace(/\s+/g, '_').toLowerCase()}%`
       ]);
 
-      const matchingKeys = await sequelize.query(`
-        SELECT DISTINCT key, value, language_code
-        FROM translations
-        WHERE ${searchConditions}
-        ORDER BY language_code, key
-        LIMIT 20
-      `, {
-        bind: searchBindings,
-        type: sequelize.QueryTypes.SELECT
-      });
+      // Search translations using Supabase (simplified - search by first term)
+      const firstTerm = searchTerms[0] || '';
+      const { data: matchingKeys, error: searchError } = await tenantDb
+        .from('translations')
+        .select('key, value, language_code')
+        .or(`value.ilike.%${firstTerm.toLowerCase()}%,key.ilike.%${firstTerm.replace(/\s+/g, '_').toLowerCase()}%`)
+        .order('language_code')
+        .order('key')
+        .limit(20);
+
+      if (searchError) {
+        console.error('Translation search error:', searchError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to search translations'
+        });
+      }
 
       // Step 4: Let AI decide which keys are most relevant
       if (matchingKeys.length > 0) {
