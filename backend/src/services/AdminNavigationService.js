@@ -29,19 +29,18 @@ class AdminNavigationService {
         .from('plugins')
         .select('id, name, manifest')
         .eq('status', 'installed')
-        .eq('is_enabled', true)
-        .not('manifest->adminNavigation', 'is', null);
+        .eq('is_enabled', true);
 
       if (filePluginsError) {
         console.error('Error fetching file-based plugins:', filePluginsError.message);
       }
 
       // Parse adminNavigation from file-based plugins
-      const fileBasedNavItems = fileBasedPlugins
-        .filter(p => p.admin_nav)
+      const fileBasedNavItems = (fileBasedPlugins || [])
+        .filter(p => p.manifest?.adminNavigation)
         .map(p => {
           try {
-            const nav = JSON.parse(p.admin_nav);
+            const nav = p.manifest.adminNavigation;
             if (nav && nav.enabled) {
               return {
                 key: `plugin-${p.id}`,
@@ -67,8 +66,7 @@ class AdminNavigationService {
       const { data: registryPlugins, error: registryError } = await tenantDb
         .from('plugin_registry')
         .select('id, name, manifest')
-        .eq('status', 'active')
-        .not('manifest->adminNavigation', 'is', null);
+        .eq('status', 'active');
 
       if (registryError) {
         console.error('Error fetching plugin_registry:', registryError.message);
