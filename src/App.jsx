@@ -40,6 +40,12 @@ function PageWrapper({ Component, pageName }) {
 // Initialize database-driven plugins
 async function initializeDatabasePlugins() {
   try {
+    // Skip plugin loading if no store is selected (e.g., on auth page)
+    const selectedStoreId = localStorage.getItem('selectedStoreId');
+    if (!selectedStoreId) {
+      console.log('⏭️ Skipping plugin initialization - no store selected yet');
+      return;
+    }
 
     // Fetch active plugins from database (uses normalized tables structure)
     // Add timestamp to bust cache

@@ -53,6 +53,11 @@ export function AdminLayoutWrapper({ children }) {
     );
   }
 
+  // Skip TranslationProvider for auth page (no store context available)
+  if (location.pathname === '/admin/auth') {
+    return <>{children}</>;
+  }
+
   return (
     <TranslationProvider>
       {children}
