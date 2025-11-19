@@ -724,10 +724,10 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const { masterSupabaseClient } = require('../database/masterConnection');
 
-    // Get stores from master DB with name and slug (no need to query tenant DB)
+    // Get stores from master DB (master only has: id, slug, user_id, status, is_active)
     const { data: stores, error } = await masterSupabaseClient
       .from('stores')
-      .select('id, name, slug, status, is_active, created_at')
+      .select('id, slug, status, is_active, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -735,20 +735,45 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
       throw new Error(error.message);
     }
 
-    // Return stores directly from master DB (name and slug are now in master DB)
-    const formattedStores = (stores || []).map(store => ({
-      id: store.id,
-      name: store.name || 'Unnamed Store',
-      slug: store.slug,
-      status: store.status,
-      is_active: store.is_active
-    }));
+    // Fetch store names from tenant DB for each store
+    const enrichedStores = await Promise.all(
+      (stores || []).map(async (store) => {
+        let storeName = store.slug || 'Unnamed Store';
 
-    console.log(`[Dropdown] Returning ${formattedStores.length} stores for user ${userId}`);
+        // Only query tenant if store is active
+        if (store.is_active && store.status === 'active') {
+          try {
+            const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+            const { data: tenantStore, error: tenantError } = await tenantDb
+              .from('stores')
+              .select('name')
+              .eq('id', store.id)
+              .maybeSingle();
+
+            if (tenantStore && tenantStore.name) {
+              storeName = tenantStore.name;
+            }
+          } catch (err) {
+            console.warn(`[Dropdown] Could not fetch name for store ${store.id}:`, err.message);
+            // Use slug as fallback
+          }
+        }
+
+        return {
+          id: store.id,
+          name: storeName,
+          slug: store.slug,
+          status: store.status,
+          is_active: store.is_active
+        };
+      })
+    );
+
+    console.log(`[Dropdown] Returning ${enrichedStores.length} stores for user ${userId}`);
 
     res.json({
       success: true,
-      data: formattedStores
+      data: enrichedStores
     });
   } catch (error) {
     console.error('Get stores dropdown error:', error);
