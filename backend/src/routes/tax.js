@@ -1,5 +1,7 @@
 const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 const router = express.Router();
 
 // Basic CRUD operations for tax rules
@@ -176,7 +178,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id, ...taxData } = req.body;
 
@@ -237,7 +239,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.body.store_id || req.query.store_id || req.headers['x-store-id'];
 
@@ -311,7 +313,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.query.store_id || req.headers['x-store-id'];
 

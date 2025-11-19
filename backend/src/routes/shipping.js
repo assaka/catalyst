@@ -1,10 +1,12 @@
 const express = require('express');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 const router = express.Router();
 
 // Basic CRUD operations for shipping methods
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { page = 1, limit = 10, store_id } = req.query;
     const offset = (page - 1) * limit;
@@ -113,7 +115,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id } = req.query;
     if (!store_id) {
@@ -163,7 +165,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id, translations, ...methodData } = req.body;
 
@@ -242,7 +244,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id, translations, ...methodData } = req.body;
 
@@ -320,7 +322,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id } = req.query;
 
