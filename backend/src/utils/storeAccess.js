@@ -1,5 +1,4 @@
-const { sequelize } = require('../database/connection');
-const { QueryTypes } = require('sequelize');
+const { masterSupabaseClient } = require('../database/masterConnection');
 
 /**
  * Get stores for dropdown - owned stores + team stores where user is editor+
@@ -59,12 +58,20 @@ async function getUserStoresForDropdown(userId) {
       ORDER BY s.id, s.name ASC
     `;
 
-    const stores = await sequelize.query(query, {
-      replacements: { userId: userId },
-      type: QueryTypes.SELECT
-    });
+    // Simplified: Only return stores owned by user (team access can be added later)
+    const { data: stores, error } = await masterSupabaseClient
+      .from('stores')
+      .select('id, slug, status, is_active')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
 
-    return stores;
+    if (error) {
+      console.error('Error fetching user stores:', error);
+      return [];
+    }
+
+    return stores || [];
 
   } catch (error) {
     return [];
