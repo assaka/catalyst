@@ -5,6 +5,8 @@ const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 const {
   getCategoriesWithTranslations,
   getCategoriesWithAllTranslations,

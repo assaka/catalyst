@@ -2,6 +2,8 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const translationService = require('../services/translation-service');
+const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize, storeOwnerOnly } = require('../middleware/auth');
 const creditService = require('../services/credit-service');
 const {
   getAttributesWithTranslations,

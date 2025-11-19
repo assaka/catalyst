@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const { User, StoreInvitation, Store } = require('../models');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { Op } = require('sequelize');
+const { authorize, storeOwnerOnly } = require('../middleware/auth');
 const { checkStoreOwnership, checkTeamMembership } = require('../middleware/storeAuth');
 const crypto = require('crypto');
 const ConnectionManager = require('../services/database/ConnectionManager');

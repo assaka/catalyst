@@ -3,6 +3,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const { body, validationResult } = require('express-validator');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const Store = require('../models/Store');
+const { authorize, storeOwnerOnly } = require('../middleware/auth');
 const creditService = require('../services/credit-service');
 const autoRenderService = require('../services/auto-render-service');
 const autoSupabaseService = require('../services/auto-supabase-service');

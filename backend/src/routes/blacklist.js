@@ -3,6 +3,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const ConnectionManager = require('../services/database/ConnectionManager');
 
 const router = express.Router();
+const { authorize, storeOwnerOnly } = require('../middleware/auth');
 
 // @route   GET /api/blacklist/settings
 // @desc    Get blacklist settings for a store
