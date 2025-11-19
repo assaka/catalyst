@@ -246,7 +246,7 @@ class AkeneoSyncService {
       console.log(`🖼️ Processing images for products (limit: ${limit}, offset: ${offset})`);
       
       // Get products that need image processing
-      const { Product } = require('../models');
+      const { Product } = require('../models'); // Tenant DB model
       
       const { Op } = require('sequelize');
       
@@ -380,7 +380,7 @@ class AkeneoSyncService {
    */
   async getImageStats() {
     try {
-      const { Product } = require('../models');
+      const { Product } = require('../models'); // Tenant DB model
       const { Op } = require('sequelize');
       
       const totalProducts = await Product.count({ 

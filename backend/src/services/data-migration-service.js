@@ -19,7 +19,7 @@ class DataMigrationService {
    */
   async getSupabaseClient(storeId) {
     try {
-      const { StoreSupabaseConnection } = require('../models');
+      const { StoreSupabaseConnection } = require('../models'); // Tenant DB model
       
       const connection = await StoreSupabaseConnection.findOne({
         where: { store_id: storeId, is_active: true }

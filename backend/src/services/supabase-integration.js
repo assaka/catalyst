@@ -1,6 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
-const { IntegrationConfig } = require('../models');
+const { IntegrationConfig } = require('../models'); // Tenant DB model
 const SupabaseOAuthToken = require('../models/SupabaseOAuthToken'); // OAuth tokens in tenant DB
 const SupabaseProjectKeys = require('../models/SupabaseProjectKeys');
 const supabaseStorage = require('./supabase-storage');

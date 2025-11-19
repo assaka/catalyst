@@ -46,7 +46,7 @@ router.post('/connect', authMiddleware, async (req, res) => {
     }
 
     // Manual store ownership check with better error handling
-    const { Store } = require('../models');
+    const { Store } = require('../models'); // Master/Tenant hybrid model
     const store = await Store.findByPk(store_id);
     
     if (!store) {
@@ -141,7 +141,7 @@ router.post('/migrate', authMiddleware, async (req, res) => {
     }
 
     // Manual store ownership check with better error handling
-    const { Store } = require('../models');
+    const { Store } = require('../models'); // Master/Tenant hybrid model
     const store = await Store.findByPk(store_id);
     
     if (!store) {
@@ -247,7 +247,7 @@ router.post('/disconnect', authMiddleware, async (req, res) => {
     }
 
     // Manual store ownership check with better error handling
-    const { Store } = require('../models');
+    const { Store } = require('../models'); // Master/Tenant hybrid model
     const store = await Store.findByPk(store_id);
     
     if (!store) {

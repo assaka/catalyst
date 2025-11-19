@@ -1,6 +1,6 @@
 const StorageInterface = require('./storage-interface');
 const { v4: uuidv4 } = require('uuid');
-const { MediaAsset } = require('../models');
+const { MediaAsset } = require('../models'); // Tenant DB model
 
 /**
  * Flexible Storage Manager
@@ -126,7 +126,7 @@ class StorageManager {
   async getStorageProvider(storeId) {
     // First check if store has a default media storage provider configured
     try {
-      const { Store } = require('../models');
+      const { Store } = require('../models'); // Master/Tenant hybrid model
       const store = await Store.findByPk(storeId);
 
       // Check for default_mediastorage_provider first, then fall back to default_database_provider

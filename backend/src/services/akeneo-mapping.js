@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
-const { Attribute } = require('../models');
+const { Attribute } = require('../models'); // Tenant DB model
 const { sanitizeAkeneoProduct } = require('../utils/dataValidation');
 
 class AkeneoMapping {

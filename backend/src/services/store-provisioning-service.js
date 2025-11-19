@@ -4,7 +4,7 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
-const { Store } = require('../models');
+const { Store } = require('../models'); // Master/Tenant hybrid model
 const { MIGRATION_TYPES } = require('../config/migration-types');
 
 class StoreProvisioningService {
@@ -161,7 +161,7 @@ class StoreProvisioningService {
   async initializeStoreData(storeId) {
     try {
       // Create default categories
-      const { Category } = require('../models');
+      const { Category } = require('../models'); // Tenant DB model
       const defaultCategories = [
         { name: 'All Products', slug: 'all-products', is_active: true, level: 0, sort_order: 0 }
       ];
@@ -175,7 +175,7 @@ class StoreProvisioningService {
       }
 
       // Create default CMS pages
-      const { CmsPage } = require('../models');
+      const { CmsPage } = require('../models'); // Tenant DB model
       const defaultPages = [
         {
           title: 'Home',
@@ -288,7 +288,7 @@ class StoreProvisioningService {
    */
   async setupMigrationConfiguration(storeId) {
     try {
-      const { StoreDataMigration } = require('../models');
+      const { StoreDataMigration } = require('../models'); // Tenant DB model
       
       // Create migration records for critical types
       const criticalTypes = ['catalog', 'content'];
@@ -329,7 +329,7 @@ class StoreProvisioningService {
       }
 
       // Check various provisioning aspects
-      const { Category, CmsPage, StoreDataMigration } = require('../models');
+      const { Category, CmsPage, StoreDataMigration } = require('../models'); // Tenant DB models
       
       const [categoryCount] = await Category.count({ where: { store_id: storeId } });
       const [pageCount] = await CmsPage.count({ where: { store_id: storeId } });

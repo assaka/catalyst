@@ -35,7 +35,7 @@ class SupabaseStorageProvider extends StorageInterface {
 
     try {
       // First try to get files from media_assets table
-      const { MediaAsset } = require('../models');
+      const { MediaAsset } = require('../models'); // Tenant DB model
 
       const where = { store_id: storeId };
 
@@ -143,7 +143,7 @@ class SupabaseStorageProvider extends StorageInterface {
    * Sync files from Supabase to media_assets table
    */
   async syncFilesToDatabase(storeId, files, folder = 'library') {
-    const { MediaAsset } = require('../models');
+    const { MediaAsset } = require('../models'); // Tenant DB model
     
     for (const file of files) {
       try {

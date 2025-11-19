@@ -1,5 +1,5 @@
 const SibApiV3Sdk = require('@getbrevo/brevo');
-const { EmailTemplate, EmailTemplateTranslation, EmailSendLog, Store } = require('../models');
+const { EmailTemplate, EmailTemplateTranslation, EmailSendLog, Store } = require('../models'); // Tenant DB models
 const brevoService = require('./brevo-service');
 const {
   renderTemplate,

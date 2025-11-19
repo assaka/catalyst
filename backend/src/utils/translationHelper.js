@@ -1,4 +1,4 @@
-const { Translation } = require('../models');
+const { Translation } = require('../models'); // Tenant DB model
 
 /**
  * Get translation by key and language code

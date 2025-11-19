@@ -1,4 +1,4 @@
-const { CustomDomain, Store } = require('../models');
+const { CustomDomain, Store } = require('../models'); // Master DB models
 
 /**
  * Domain Resolution Middleware

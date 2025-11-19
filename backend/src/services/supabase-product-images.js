@@ -1,5 +1,5 @@
 const supabaseStorage = require('./supabase-storage');
-const { Product, SupabaseOAuthToken } = require('../models');
+const { Product, SupabaseOAuthToken } = require('../models'); // Tenant DB models
 
 class SupabaseProductImageService {
   constructor() {

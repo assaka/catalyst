@@ -1,4 +1,4 @@
-const { Product } = require('../models');
+const { Product } = require('../models'); // Tenant DB model
 
 /**
  * Evaluate whether a method's conditions match the given products

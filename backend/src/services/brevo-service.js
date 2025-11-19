@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { BrevoConfiguration } = require('../models');
+const { BrevoConfiguration } = require('../models'); // Tenant DB model
 
 /**
  * Brevo Service

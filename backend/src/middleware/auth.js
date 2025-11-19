@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { User, Customer } = require('../models');
+const { User, Customer } = require('../models'); // Tenant DB models (Sequelize fallback)
 const { supabase } = require('../database/connection');
 
 const authMiddleware = async (req, res, next) => {

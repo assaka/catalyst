@@ -1,6 +1,6 @@
 const axios = require('axios');
 const path = require('path');
-const { PdfTemplate, PdfTemplateTranslation, EmailTemplate, EmailTemplateTranslation } = require('../models');
+const { PdfTemplate, PdfTemplateTranslation, EmailTemplate, EmailTemplateTranslation } = require('../models'); // Tenant DB models
 
 /**
  * PDF Generation Service

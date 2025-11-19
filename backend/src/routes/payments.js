@@ -1474,7 +1474,7 @@ router.post('/webhook', async (req, res) => {
 
                 try {
                   // Generate invoice number and date BEFORE sending email
-                  const { Invoice } = require('../models');
+                  const { Invoice } = require('../models'); // Tenant DB model
                   const invoiceNumber = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
                   const invoiceDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -1554,7 +1554,7 @@ router.post('/webhook', async (req, res) => {
                   if (salesSettings.auto_ship_enabled) {
                     console.log('📦 Auto-ship enabled, sending shipment notification...');
                     try {
-                      const { Shipment } = require('../models');
+                      const { Shipment } = require('../models'); // Tenant DB model
 
                       // Generate shipment PDF if enabled
                       let shipmentAttachments = [];
@@ -1993,7 +1993,7 @@ router.post('/webhook-connect', async (req, res) => {
 
               try {
                 // Generate invoice number and date BEFORE sending email
-                const { Invoice } = require('../models');
+                const { Invoice } = require('../models'); // Tenant DB model
                 const invoiceNumber = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
                 const invoiceDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 

@@ -1,4 +1,4 @@
-const { UsageMetric } = require('../models');
+const { UsageMetric } = require('../models'); // Tenant DB model
 
 /**
  * Usage Tracking Middleware
@@ -228,7 +228,7 @@ const checkUsageLimits = async (req, res, next) => {
   }
 
   try {
-    const { Store, Subscription } = require('../models');
+    const { Store, Subscription } = require('../models'); // Store: Hybrid, Subscription: Master
 
     const store = await Store.findByPk(req.storeId, {
       include: [{

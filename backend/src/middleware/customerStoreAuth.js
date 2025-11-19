@@ -1,4 +1,4 @@
-const { Customer, Store } = require('../models');
+const { Customer, Store } = require('../models'); // Tenant DB models
 
 /**
  * Middleware to ensure customers can only access resources within their assigned store
@@ -100,7 +100,7 @@ const validateCustomerOrderAccess = async (req, res, next) => {
       return next();
     }
 
-    const { Order } = require('../models');
+    const { Order } = require('../models'); // Tenant DB model
     const order = await Order.findByPk(orderId, {
       attributes: ['id', 'customer_id', 'store_id', 'customer_email']
     });
@@ -169,7 +169,7 @@ const validateCustomerCartAccess = async (req, res, next) => {
 
     // If adding items to cart, validate products belong to customer's store
     if (req.body?.product_id) {
-      const { Product } = require('../models');
+      const { Product } = require('../models'); // Tenant DB model
       const product = await Product.findByPk(req.body.product_id, {
         attributes: ['id', 'store_id']
       });

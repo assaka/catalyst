@@ -12,7 +12,7 @@ const { sequelize } = require('./database/connection');
 const errorHandler = require('./middleware/errorHandler');
 const { authMiddleware } = require('./middleware/auth');
 
-// Import all models to ensure associations are loaded
+// Import all models to ensure associations are loaded (Master DB)
 const models = require('./models');
 
 // Import and start automatic migrations
@@ -232,7 +232,7 @@ app.use(cors({
 
     // Check if origin is a verified custom domain
     try {
-      const { CustomDomain } = require('./models');
+      const { CustomDomain } = require('./models'); // Master DB model
       const hostname = new URL(origin).hostname;
 
       const customDomain = await CustomDomain.findOne({
@@ -427,7 +427,7 @@ app.use('/api/preview', previewRoutes);
 // Store-specific robots.txt route (for multi-store)
 app.get('/public/:storeSlug/robots.txt', async (req, res) => {
   try {
-    const { Store, SeoSettings } = require('./models');
+    const { Store, SeoSettings } = require('./models'); // Master/Tenant hybrid models
     const { storeSlug } = req.params;
 
     // Find store by slug
@@ -488,7 +488,7 @@ Disallow: /admin/`);
 // Standard robots.txt route (for default store or custom domain)
 app.get('/robots.txt', async (req, res) => {
   try {
-    const { Store, SeoSettings } = require('./models');
+    const { Store, SeoSettings } = require('./models'); // Master/Tenant hybrid models
 
     // Check if request came from custom domain (set by domainResolver middleware)
     let targetStoreSlug = req.storeSlug;
@@ -572,7 +572,7 @@ Disallow: /admin/`);
 // Standard sitemap.xml route (for default store or custom domain)
 app.get('/sitemap.xml', async (req, res) => {
   try {
-    const { Store } = require('./models');
+    const { Store } = require('./models'); // Master/Tenant hybrid model
     const { generateSitemapXml } = require('./routes/sitemap');
 
     // Check if request came from custom domain (set by domainResolver middleware)
@@ -642,7 +642,7 @@ app.get('/sitemap.xml', async (req, res) => {
 // Public store-specific sitemap.xml route
 app.get('/public/:storeSlug/sitemap.xml', async (req, res) => {
   try {
-    const { Store } = require('./models');
+    const { Store } = require('./models'); // Master/Tenant hybrid model
     const { generateSitemapXml } = require('./routes/sitemap');
     const { storeSlug } = req.params;
 
@@ -709,7 +709,7 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
     }
 
     // Try simple lookup first
-    const { Order } = require('./models');
+    const { Order } = require('./models'); // Tenant DB model
     const order = await Order.findOne({
       where: { payment_reference }
     });
@@ -724,7 +724,7 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
     // Try to add associations gradually
     let orderWithDetails = order;
     try {
-      const { Store, OrderItem, Product, ProductTranslation } = require('./models');
+      const { Store, OrderItem, Product, ProductTranslation } = require('./models'); // Hybrid models
 
       // Get order items separately
       const orderItems = await OrderItem.findAll({
@@ -779,7 +779,7 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
 const publicOrderRouter = express.Router();
 
 // Import the finalization logic from orders.js
-const { Order, OrderItem, Product, Customer } = require('./models');
+const { Order, OrderItem, Product, Customer } = require('./models'); // Tenant DB models
 const { Op } = require('sequelize');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
@@ -819,7 +819,7 @@ publicOrderRouter.post('/finalize-order', async (req, res) => {
     }
 
     // Get the store for the connected account
-    const { Store } = require('./models');
+    const { Store } = require('./models'); // Master/Tenant hybrid model
     const store = await Store.findByPk(order.store_id);
     if (!store) {
       return res.status(404).json({
@@ -1093,7 +1093,7 @@ app.get('/preview/:storeId', async (req, res) => {
     }
 
     // Get store information
-    const Store = require('./models/Store');
+    const Store = require('./models/Store'); // Master/Tenant hybrid model
     const store = await Store.findByPk(storeId);
 
     if (!store) {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { sequelize } = require('./connection');
-const models = require('../models');
+const models = require('../models'); // Master DB models for sync utility
 
 async function syncModels() {
   try {

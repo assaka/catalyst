@@ -1,6 +1,6 @@
 // Import from master models for store ownership checks (master-tenant architecture)
 const { masterSupabaseClient } = require('../database/masterConnection');
-const { StoreTeam } = require('../models');
+const { StoreTeam } = require('../models'); // Master DB model
 
 /**
  * Helper function to check if user is a team member with specific permissions
@@ -179,7 +179,7 @@ const checkStoreOwnership = async (req, res, next) => {
 const checkResourceOwnership = (modelName) => {
   return async (req, res, next) => {
     try {
-      const Model = require('../models')[modelName];
+      const Model = require('../models')[modelName]; // Dynamic model access (tenant DB)
       const resourceId = req.params.id;
 
       if (!resourceId) {

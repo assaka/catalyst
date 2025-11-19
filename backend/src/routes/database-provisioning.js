@@ -4,7 +4,7 @@ const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const DatabaseProvisioningService = require('../services/database/DatabaseProvisioningService');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { Store, Subscription, UsageMetric } = require('../models');
+const { Store, Subscription, UsageMetric } = require('../models'); // Store: Hybrid, Subscription: Master, UsageMetric: Tenant
 const { Op } = require('sequelize');
 
 /**

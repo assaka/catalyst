@@ -1,4 +1,4 @@
-const { Store } = require('../models');
+const { Store } = require('../models'); // Master/Tenant hybrid model
 
 class DomainConfiguration {
   /**

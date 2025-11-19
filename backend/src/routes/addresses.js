@@ -196,7 +196,7 @@ router.post('/', optionalAuth, async (req, res) => {
 
     // Verify user exists before creating address
     // Note: User/Customer verification happens in MASTER DB, but Address is created in TENANT DB
-    const { User, Customer } = require('../models');
+    const { User, Customer } = require('../models'); // Master/Tenant hybrid models
 
     // Check the correct table based on user role
     const isCustomer = req.user.role === 'customer';

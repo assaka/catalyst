@@ -21,7 +21,7 @@
  * See: backend/src/services/aiContextService.js for context fetching
  */
 
-const { Translation, Language, Product, Category, Attribute, CmsPage, CmsBlock, EmailTemplate, PdfTemplate } = require('../models');
+const { Translation, Language, Product, Category, Attribute, CmsPage, CmsBlock, EmailTemplate, PdfTemplate } = require('../models'); // Tenant DB models
 const { Op } = require('sequelize');
 const aiContextService = require('./aiContextService');
 const creditService = require('./credit-service');

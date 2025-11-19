@@ -6,7 +6,7 @@
  * Cache expires after 5 minutes or can be manually invalidated.
  */
 
-const { Store } = require('../models');
+const { Store } = require('../models'); // Master/Tenant hybrid model
 
 // In-memory cache: { store_id: { settings: {...}, cacheConfig: {...}, timestamp: Date } }
 const storeCache = new Map();

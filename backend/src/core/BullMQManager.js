@@ -224,7 +224,7 @@ class BullMQManager {
 
             // Also update the database Job model
             if (job.data.jobRecord && job.data.jobRecord.id) {
-              const { Job } = require('../models');
+              const { Job } = require('../models'); // Master DB model for job tracking
               await Job.update(
                 {
                   progress,

@@ -1,6 +1,6 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const { User } = require('../models');
+const { User } = require('../models'); // Master DB model for OAuth authentication
 const { supabase } = require('../database/connection');
 const jwt = require('jsonwebtoken');
 
