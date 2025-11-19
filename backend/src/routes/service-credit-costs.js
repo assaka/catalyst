@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize, storeOwnerOnly, customerOnly, adminOnly } = require('../middleware/auth');
 const ServiceCreditCost = require('../models/ServiceCreditCost');
 
 // Admin middleware - check if user is admin

@@ -7,6 +7,7 @@ const IntegrationConfig = require('../models/IntegrationConfig');
 const AkeneoCustomMapping = require('../models/AkeneoCustomMapping');
 const creditService = require('../services/credit-service');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize, storeOwnerOnly, customerOnly, adminOnly } = require('../middleware/auth');
 const { storeResolver } = require('../middleware/storeResolver');
 
 // Debug route to test if integrations router is working

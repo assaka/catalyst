@@ -5,6 +5,7 @@ const shopifyIntegration = require('../services/shopify-integration');
 const ShopifyImportService = require('../services/shopify-import-service');
 const IntegrationConfig = require('../models/IntegrationConfig');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize, storeOwnerOnly, customerOnly, adminOnly } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const jobManager = require('../core/BackgroundJobManager');
 
