@@ -4,7 +4,8 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
-const { Store } = require('../models'); // Master/Tenant hybrid model
+const { masterSupabaseClient } = require('../database/masterConnection');
+const ConnectionManager = require('./database/ConnectionManager');
 const { MIGRATION_TYPES } = require('../config/migration-types');
 
 class StoreProvisioningService {
@@ -45,9 +46,16 @@ class StoreProvisioningService {
       return false;
     }
 
-    const existingStore = await Store.findOne({
-      where: { subdomain: subdomain.toLowerCase() }
-    });
+    const { data: existingStore, error } = await masterSupabaseClient
+      .from('stores')
+      .select('id')
+      .eq('subdomain', subdomain.toLowerCase())
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      // PGRST116 is "not found" error, which is expected when subdomain is available
+      throw error;
+    }
 
     return !existingStore;
   }
@@ -160,45 +168,64 @@ class StoreProvisioningService {
    */
   async initializeStoreData(storeId) {
     try {
-      // Create default categories
-      const { Category } = require('../models'); // Tenant DB model
-      const defaultCategories = [
-        { name: 'All Products', slug: 'all-products', is_active: true, level: 0, sort_order: 0 }
-      ];
+      // Get tenant database connection
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      for (const categoryData of defaultCategories) {
-        await Category.create({
+      // Create default categories
+      const defaultCategories = [
+        {
           id: uuidv4(),
           store_id: storeId,
-          ...categoryData
-        });
+          name: 'All Products',
+          slug: 'all-products',
+          is_active: true,
+          level: 0,
+          sort_order: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ];
+
+      const { error: categoryError } = await tenantDb
+        .from('categories')
+        .insert(defaultCategories);
+
+      if (categoryError) {
+        throw categoryError;
       }
 
       // Create default CMS pages
-      const { CmsPage } = require('../models'); // Tenant DB model
       const defaultPages = [
         {
+          id: uuidv4(),
+          store_id: storeId,
           title: 'Home',
           slug: 'home',
           content: '<h1>Welcome to Your Store</h1><p>Start customizing your storefront!</p>',
           is_active: true,
-          page_type: 'home'
+          page_type: 'home',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         },
         {
+          id: uuidv4(),
+          store_id: storeId,
           title: 'About Us',
           slug: 'about',
           content: '<h1>About Us</h1><p>Tell your story here.</p>',
           is_active: true,
-          page_type: 'page'
+          page_type: 'page',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }
       ];
 
-      for (const pageData of defaultPages) {
-        await CmsPage.create({
-          id: uuidv4(),
-          store_id: storeId,
-          ...pageData
-        });
+      const { error: pageError } = await tenantDb
+        .from('cms_pages')
+        .insert(defaultPages);
+
+      if (pageError) {
+        throw pageError;
       }
 
       return { success: true, message: 'Default store data initialized' };
@@ -227,9 +254,10 @@ class StoreProvisioningService {
         throw new Error('Failed to setup DNS records');
       }
 
-      // 3. Create store record
-      const store = await Store.create({
-        id: uuidv4(),
+      // 3. Create store record in master DB
+      const storeId = uuidv4();
+      const storeRecord = {
+        id: storeId,
         user_id: userData.id,
         name: storeData.name,
         description: storeData.description || '',
@@ -241,9 +269,19 @@ class StoreProvisioningService {
           ...this.getDefaultStoreSettings(),
           ...storeData.settings
         },
-        created_at: new Date(),
-        updated_at: new Date()
-      });
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data: store, error: storeError } = await masterSupabaseClient
+        .from('stores')
+        .insert(storeRecord)
+        .select()
+        .single();
+
+      if (storeError) {
+        throw new Error(`Failed to create store: ${storeError.message}`);
+      }
 
       console.log(`✅ Store created with ID: ${store.id}`);
 
@@ -288,26 +326,33 @@ class StoreProvisioningService {
    */
   async setupMigrationConfiguration(storeId) {
     try {
-      const { StoreDataMigration } = require('../models'); // Tenant DB model
-      
+      // Get tenant database connection
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
       // Create migration records for critical types
       const criticalTypes = ['catalog', 'content'];
-      
-      for (const migrationType of criticalTypes) {
-        await StoreDataMigration.create({
-          id: uuidv4(),
-          store_id: storeId,
-          migration_type: migrationType,
-          status: 'pending',
-          target_system: 'supabase',
-          migration_config: {
-            auto_created: true,
-            preserve_relationships: true,
-            include_metadata: true
-          },
-          created_at: new Date(),
-          updated_at: new Date()
-        });
+
+      const migrationRecords = criticalTypes.map(migrationType => ({
+        id: uuidv4(),
+        store_id: storeId,
+        migration_type: migrationType,
+        status: 'pending',
+        target_system: 'supabase',
+        migration_config: {
+          auto_created: true,
+          preserve_relationships: true,
+          include_metadata: true
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }));
+
+      const { error } = await tenantDb
+        .from('store_data_migrations')
+        .insert(migrationRecords);
+
+      if (error) {
+        throw error;
       }
 
       console.log(`📊 Migration configuration created for store: ${storeId}`);
@@ -323,17 +368,37 @@ class StoreProvisioningService {
    */
   async getProvisioningStatus(storeId) {
     try {
-      const store = await Store.findById(storeId);
-      if (!store) {
+      // Get store from master DB
+      const { data: store, error: storeError } = await masterSupabaseClient
+        .from('stores')
+        .select('id, name, subdomain, domain, status')
+        .eq('id', storeId)
+        .single();
+
+      if (storeError || !store) {
         return { success: false, error: 'Store not found' };
       }
 
-      // Check various provisioning aspects
-      const { Category, CmsPage, StoreDataMigration } = require('../models'); // Tenant DB models
-      
-      const [categoryCount] = await Category.count({ where: { store_id: storeId } });
-      const [pageCount] = await CmsPage.count({ where: { store_id: storeId } });
-      const [migrationCount] = await StoreDataMigration.count({ where: { store_id: storeId } });
+      // Get tenant database connection for checking provisioning aspects
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      // Count categories
+      const { count: categoryCount, error: catError } = await tenantDb
+        .from('categories')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', storeId);
+
+      // Count CMS pages
+      const { count: pageCount, error: pageError } = await tenantDb
+        .from('cms_pages')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', storeId);
+
+      // Count migration configurations
+      const { count: migrationCount, error: migError } = await tenantDb
+        .from('store_data_migrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', storeId);
 
       return {
         success: true,
@@ -345,10 +410,10 @@ class StoreProvisioningService {
           status: store.status
         },
         provisioning: {
-          hasDefaultCategories: categoryCount > 0,
-          hasDefaultPages: pageCount > 0,
-          hasMigrationConfig: migrationCount > 0,
-          readyForUse: categoryCount > 0 && pageCount > 0
+          hasDefaultCategories: (categoryCount || 0) > 0,
+          hasDefaultPages: (pageCount || 0) > 0,
+          hasMigrationConfig: (migrationCount || 0) > 0,
+          readyForUse: (categoryCount || 0) > 0 && (pageCount || 0) > 0
         }
       };
     } catch (error) {
