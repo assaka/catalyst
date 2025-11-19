@@ -120,7 +120,6 @@ class CreditService {
     }
     console.log(`💳 Created credit_usage record:`, usage?.id);
 
-    const newBalance = await this.getBalance(userId);
     console.log(`💳 New balance after deduction: ${newBalance} credits`);
 
     const result = {
