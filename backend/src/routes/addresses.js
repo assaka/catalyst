@@ -1,5 +1,5 @@
 const express = require('express');
-const { Address } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -45,7 +45,15 @@ const optionalAuth = (req, res, next) => {
 // @access  Public (supports both user_id parameter and authentication)
 router.get('/', optionalAuth, async (req, res) => {
   try {
-    const { user_id, session_id } = req.query;
+    const { user_id, session_id, store_id } = req.query;
+
+    // store_id is required for tenant-specific address lookup
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
 
     // Guest users (session_id only) have no saved addresses
     if (!user_id && session_id && !req.user) {
@@ -77,6 +85,10 @@ router.get('/', optionalAuth, async (req, res) => {
       });
     }
 
+    // Get tenant connection and Address model
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Address } = connection.models;
+
     const addresses = await Address.findAll({
       where: whereClause,
       order: [['is_default', 'DESC'], ['createdAt', 'DESC']]
@@ -102,6 +114,20 @@ router.get('/', optionalAuth, async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
+    const { store_id } = req.query;
+
+    // store_id is required for tenant-specific address lookup
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection and Address model
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Address } = connection.models;
+
     const address = await Address.findByPk(req.params.id);
 
     if (!address) {
@@ -129,18 +155,27 @@ router.get('/:id', async (req, res) => {
 // @access  Private (requires authentication) or Public (guest sessions return error)
 router.post('/', optionalAuth, async (req, res) => {
   try {
-    const { session_id } = req.query;
-    
+    const { session_id, store_id } = req.query;
+
+    // store_id is required for tenant-specific address creation
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
     console.log('🔍 Address creation attempt:', {
       hasUser: !!req.user,
       userId: req.user?.id,
       sessionId: session_id,
+      storeId: store_id,
       headers: {
         authorization: req.headers.authorization ? 'Present' : 'Missing',
         userAgent: req.headers['user-agent']?.substring(0, 50)
       }
     });
-    
+
     // Check authentication first (prioritize over session_id)
     if (req.user && req.user.id) {
       console.log('✅ Authenticated user creating address:', req.user.id);
@@ -160,16 +195,17 @@ router.post('/', optionalAuth, async (req, res) => {
     }
 
     // Verify user exists before creating address
+    // Note: User/Customer verification happens in MASTER DB, but Address is created in TENANT DB
     const { User, Customer } = require('../models');
-    
+
     // Check the correct table based on user role
     const isCustomer = req.user.role === 'customer';
     const ModelClass = isCustomer ? Customer : User;
     const tableName = isCustomer ? 'customers' : 'users';
-    
+
     console.log(`🔍 Checking ${tableName} table for user:`, req.user.id);
     const userExists = await ModelClass.findByPk(req.user.id);
-    
+
     if (!userExists) {
       console.log(`❌ User not found in ${tableName} table:`, req.user.id);
       return res.status(400).json({
@@ -182,14 +218,14 @@ router.post('/', optionalAuth, async (req, res) => {
         }
       });
     }
-    
+
     console.log(`✅ User verified in ${tableName} table:`, req.user.id);
 
     // Set the correct foreign key field based on user role
     const addressData = {
       ...req.body
     };
-    
+
     if (isCustomer) {
       addressData.customer_id = req.user.id;
       console.log('💾 Setting customer_id for address:', req.user.id);
@@ -197,6 +233,10 @@ router.post('/', optionalAuth, async (req, res) => {
       addressData.user_id = req.user.id;
       console.log('💾 Setting user_id for address:', req.user.id);
     }
+
+    // Get tenant connection and Address model
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Address } = connection.models;
 
     console.log('💾 Creating address for verified user:', req.user.id);
     const address = await Address.create(addressData);
@@ -220,15 +260,29 @@ router.post('/', optionalAuth, async (req, res) => {
 // @access  Private
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.query;
+
+    // store_id is required for tenant-specific address update
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
     // Build where clause based on user role
     const isCustomer = req.user.role === 'customer';
     const whereClause = { id: req.params.id };
-    
+
     if (isCustomer) {
       whereClause.customer_id = req.user.id;
     } else {
       whereClause.user_id = req.user.id;
     }
+
+    // Get tenant connection and Address model
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Address } = connection.models;
 
     const address = await Address.findOne({ where: whereClause });
 
@@ -259,15 +313,29 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // @access  Private
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.query;
+
+    // store_id is required for tenant-specific address deletion
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
     // Build where clause based on user role
     const isCustomer = req.user.role === 'customer';
     const whereClause = { id: req.params.id };
-    
+
     if (isCustomer) {
       whereClause.customer_id = req.user.id;
     } else {
       whereClause.user_id = req.user.id;
     }
+
+    // Get tenant connection and Address model
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Address } = connection.models;
 
     const address = await Address.findOne({ where: whereClause });
 
