@@ -526,6 +526,9 @@ function App() {
           <Route path="/robots.txt" element={<PageWrapper Component={Pages.RobotsPublic} pageName="RobotsPublic" />} />
           <Route path="/cookie-consent" element={<PageWrapper Component={Pages.CookieConsent} pageName="CookieConsent" />} />
           
+          {/* Auth route - redirect to admin auth */}
+          <Route path="/auth" element={<Navigate to="/admin/auth" replace />} />
+
           {/* Homepage */}
           <Route path="/" element={<PageWrapper Component={Pages.Storefront} pageName="Storefront" />} />
 
