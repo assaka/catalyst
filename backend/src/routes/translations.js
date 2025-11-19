@@ -1,11 +1,10 @@
 const express = require('express');
 const { Op } = require('sequelize');
-const { sequelize } = require('../database/connection');
-const { Translation, Language, Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue, Store, EmailTemplate, PdfTemplate } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/auth');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
-const ServiceCreditCost = require('../models/ServiceCreditCost');
+const ServiceCreditCost = require('../models/ServiceCreditCost'); // Master DB model
 const { cacheMiddleware } = require('../middleware/cacheMiddleware');
 const jobManager = require('../core/BackgroundJobManager');
 
@@ -272,8 +271,44 @@ router.post('/ai-translate-entity', authMiddleware, async (req, res) => {
       });
     }
 
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'storeId is required'
+      });
+    }
+
+    // Get tenant connection for entity access
+    const connection = await ConnectionManager.getConnection(storeId);
+
+    // Map entity types to model names
+    const modelMap = {
+      product: 'Product',
+      category: 'Category',
+      attribute: 'Attribute',
+      cms_page: 'CmsPage',
+      cms_block: 'CmsBlock',
+      'email-template': 'EmailTemplate',
+      'pdf-template': 'PdfTemplate'
+    };
+
+    const modelName = modelMap[entityType.toLowerCase()];
+    if (!modelName) {
+      return res.status(400).json({
+        success: false,
+        message: `Unknown entity type: ${entityType}`
+      });
+    }
+
+    const Model = connection.models[modelName];
+    if (!Model) {
+      return res.status(500).json({
+        success: false,
+        message: `Model ${modelName} not found in tenant database`
+      });
+    }
+
     // Get the entity to count translatable fields
-    const Model = translationService._getEntityModel(entityType);
     const entityData = await Model.findByPk(entityId);
 
     if (!entityData || !entityData.translations || !entityData.translations[fromLang]) {
@@ -362,7 +397,11 @@ router.post('/auto-translate-ui-label', authMiddleware, async (req, res) => {
       });
     }
 
-    // Get all active languages
+    // Get tenant connection for language lookup
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Language } = connection.models;
+
+    // Get all active languages from tenant DB
     const languages = await Language.findAll({
       where: { is_active: true },
       attributes: ['code', 'name']
@@ -856,11 +895,59 @@ router.post('/ui-labels/bulk-translate', authMiddleware, async (req, res) => {
 router.get('/entity/:type/:id', async (req, res) => {
   try {
     const { type, id } = req.params;
-    const { lang } = req.query;
+    const { lang, store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+
+    // Map entity types to model names
+    const modelMap = {
+      product: 'Product',
+      category: 'Category',
+      attribute: 'Attribute',
+      cms_page: 'CmsPage',
+      cms_block: 'CmsBlock',
+      'email-template': 'EmailTemplate',
+      'pdf-template': 'PdfTemplate'
+    };
+
+    const modelName = modelMap[type.toLowerCase()];
+    if (!modelName) {
+      return res.status(400).json({
+        success: false,
+        message: `Unknown entity type: ${type}`
+      });
+    }
+
+    const Model = connection.models[modelName];
+    if (!Model) {
+      return res.status(500).json({
+        success: false,
+        message: `Model ${modelName} not found in tenant database`
+      });
+    }
 
     if (lang) {
       // Get specific language translation
-      const translation = await translationService.getEntityTranslation(type, id, lang);
+      const entity = await Model.findByPk(id, {
+        attributes: ['id', 'translations']
+      });
+
+      if (!entity) {
+        return res.status(404).json({
+          success: false,
+          message: `${type} not found`
+        });
+      }
+
+      const translation = entity.translations?.[lang] || null;
 
       res.json({
         success: true,
@@ -868,7 +955,6 @@ router.get('/entity/:type/:id', async (req, res) => {
       });
     } else {
       // Get all translations for entity
-      const Model = translationService._getEntityModel(type);
       const entity = await Model.findByPk(id, {
         attributes: ['id', 'translations']
       });
@@ -900,7 +986,7 @@ router.get('/entity/:type/:id', async (req, res) => {
 router.put('/entity/:type/:id', authMiddleware, async (req, res) => {
   try {
     const { type, id } = req.params;
-    const { language_code, translations } = req.body;
+    const { language_code, translations, store_id } = req.body;
 
     if (!language_code || !translations) {
       return res.status(400).json({
@@ -909,6 +995,15 @@ router.put('/entity/:type/:id', authMiddleware, async (req, res) => {
       });
     }
 
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // translationService.saveEntityTranslation uses helpers internally
+    // which handle ConnectionManager, but we pass store_id for context
     const entity = await translationService.saveEntityTranslation(
       type,
       id,
@@ -970,7 +1065,12 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
       });
     }
 
-    // Get all active languages
+    // Get tenant connection for store-specific entities
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue, Store, EmailTemplate, PdfTemplate, Language } = connection.models;
+    const tenantSequelize = connection.sequelize;
+
+    // Get all active languages from tenant DB
     const languages = await Language.findAll({
       where: { is_active: true },
       attributes: ['code', 'name', 'native_name']
@@ -1097,7 +1197,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
         let translatedCount = 0;
         try {
-          const [translatedEntities] = await sequelize.query(query, {
+          const [translatedEntities] = await tenantSequelize.query(query, {
             replacements: {
               storeId: store_id,
               languageCodes: languageCodes,
@@ -1115,7 +1215,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
         // Find which languages are missing across all entities (with actual content)
         const missingLanguages = [];
         for (const langCode of languageCodes) {
-          const [result] = await sequelize.query(`
+          const [result] = await tenantSequelize.query(`
             SELECT COUNT(*) as missing_count
             FROM ${entityType.model.tableName} e
             WHERE e.store_id = :storeId
@@ -1195,7 +1295,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
         });
       } else {
         // Get total count of attribute values
-        const [countResult] = await sequelize.query(`
+        const [countResult] = await tenantSequelize.query(`
           SELECT COUNT(*) as count
           FROM attribute_values
           WHERE attribute_id IN (:attributeIds)
@@ -1206,7 +1306,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
         const totalItems = parseInt(countResult[0].count);
 
         // Get count of attribute values with all translations
-        const [translatedResult] = await sequelize.query(`
+        const [translatedResult] = await tenantSequelize.query(`
           SELECT COUNT(DISTINCT av.id) as count
           FROM attribute_values av
           WHERE av.attribute_id IN (:attributeIds)
@@ -1229,7 +1329,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
         // Find missing languages for attribute values
         const missingLanguages = [];
         for (const langCode of languageCodes) {
-          const [result] = await sequelize.query(`
+          const [result] = await tenantSequelize.query(`
             SELECT COUNT(*) as missing_count
             FROM attribute_values av
             WHERE av.attribute_id IN (:attributeIds)
@@ -1288,7 +1388,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
     // Handle Custom Options separately (uses JSON translations, not normalized tables)
     try {
-      const [customOptions] = await sequelize.query(`
+      const [customOptions] = await tenantSequelize.query(`
         SELECT id, translations
         FROM custom_option_rules
         WHERE store_id = :storeId
@@ -1480,6 +1580,11 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
       }
     }
 
+    // Get tenant connection for store-specific entities
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue, Store, EmailTemplate, PdfTemplate } = connection.models;
+    const tenantSequelize = connection.sequelize;
+
     const entityTypeMap = {
       category: { model: Category, name: 'Categories' },
       product: { model: Product, name: 'Products' },
@@ -1575,7 +1680,7 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
           });
         } else if (entityConfig.special && entityType === 'custom_option') {
           // Handle Custom Options with raw query (no model defined)
-          const [customOptions] = await sequelize.query(`
+          const [customOptions] = await tenantSequelize.query(`
             SELECT id, translations
             FROM custom_option_rules
             WHERE store_id = :storeId
@@ -1741,6 +1846,14 @@ router.post('/preview', authMiddleware, async (req, res) => {
       });
     }
 
+    // Get tenant connection if store_id is provided
+    let connection, Product, Category, Attribute, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, EmailTemplate, PdfTemplate, AttributeValue, Store, tenantSequelize;
+    if (store_id) {
+      connection = await ConnectionManager.getConnection(store_id);
+      ({ Product, Category, Attribute, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, EmailTemplate, PdfTemplate, AttributeValue, Store } = connection.models);
+      tenantSequelize = connection.sequelize;
+    }
+
     const entityTypeMap = {
       product: { model: Product, name: 'Products', icon: '📦' },
       category: { model: Category, name: 'Categories', icon: '📁' },
@@ -1838,7 +1951,7 @@ router.post('/preview', authMiddleware, async (req, res) => {
           });
         } else if (entityType === 'custom-option') {
           if (!store_id) continue;
-          const [customOptions] = await sequelize.query(`
+          const [customOptions] = await tenantSequelize.query(`
             SELECT COUNT(*) as count
             FROM custom_option_rules
             WHERE store_id = :storeId
@@ -2043,6 +2156,14 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
       }
     }
 
+    // Get tenant connection if store_id is provided
+    let connection, Product, Category, Attribute, CmsPage, CmsBlock, ProductTab, ProductLabel, EmailTemplate, PdfTemplate, Store, tenantSequelize;
+    if (storeId) {
+      connection = await ConnectionManager.getConnection(storeId);
+      ({ Product, Category, Attribute, CmsPage, CmsBlock, ProductTab, ProductLabel, EmailTemplate, PdfTemplate, Store } = connection.models);
+      tenantSequelize = connection.sequelize;
+    }
+
     // Translate entities
     const entityTypeMap = {
       product: { model: Product, name: 'Products' },
@@ -2077,18 +2198,18 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
 
         // Handle special entity types
         if (entityType === 'custom-option') {
-          if (!store_id) continue;
-          const [customOptions] = await sequelize.query(`
+          if (!storeId) continue;
+          const [customOptions] = await tenantSequelize.query(`
             SELECT id, translations
             FROM custom_option_rules
             WHERE store_id = :storeId
           `, {
-            replacements: { storeId: store_id }
+            replacements: { storeId: storeId }
           });
           entities = customOptions;
         } else if (entityType === 'stock-label') {
-          if (!store_id) continue;
-          const store = await Store.findByPk(store_id, {
+          if (!storeId) continue;
+          const store = await Store.findByPk(storeId, {
             attributes: ['id', 'settings']
           });
           const stockSettings = store?.settings?.stock_settings || {};
@@ -2260,6 +2381,7 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
  * @access  Public
  * @query   ids - Comma-separated product IDs
  * @query   lang - Language code (default: 'en')
+ * @query   store_id - Store ID (required for multi-tenant)
  * @cache   1 hour (translations rarely change)
  */
 router.get('/products/batch', cacheMiddleware({
@@ -2268,16 +2390,24 @@ router.get('/products/batch', cacheMiddleware({
   keyGenerator: (req) => {
     const ids = (req.query.ids || '').split(',').sort().join(',');
     const lang = req.query.lang || 'en';
-    return `translations_products:${ids}:${lang}`;
+    const store_id = req.query.store_id || '';
+    return `translations_products:${store_id}:${ids}:${lang}`;
   }
 }), async (req, res) => {
   try {
-    const { ids, lang = 'en' } = req.query;
+    const { ids, lang = 'en', store_id } = req.query;
 
     if (!ids) {
       return res.status(400).json({
         success: false,
         message: 'ids parameter required (comma-separated product IDs)'
+      });
+    }
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
       });
     }
 
@@ -2287,8 +2417,12 @@ router.get('/products/batch', cacheMiddleware({
       return res.json({ success: true, data: {} });
     }
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const tenantSequelize = connection.sequelize;
+
     // Single optimized query instead of N queries
-    const translations = await sequelize.query(`
+    const translations = await tenantSequelize.query(`
       SELECT
         product_id,
         language_code,
@@ -2303,7 +2437,7 @@ router.get('/products/batch', cacheMiddleware({
         AND language_code = :lang
     `, {
       replacements: { productIds, lang },
-      type: sequelize.QueryTypes.SELECT
+      type: tenantSequelize.QueryTypes.SELECT
     });
 
     // Transform to object map for easy lookup: { productId: translation }
@@ -2340,6 +2474,7 @@ router.get('/products/batch', cacheMiddleware({
  * @route   GET /api/translations/categories/batch
  * @desc    Get category translations in batch
  * @access  Public
+ * @query   store_id - Store ID (required for multi-tenant)
  * @cache   1 hour
  */
 router.get('/categories/batch', cacheMiddleware({
@@ -2348,16 +2483,24 @@ router.get('/categories/batch', cacheMiddleware({
   keyGenerator: (req) => {
     const ids = (req.query.ids || '').split(',').sort().join(',');
     const lang = req.query.lang || 'en';
-    return `translations_categories:${ids}:${lang}`;
+    const store_id = req.query.store_id || '';
+    return `translations_categories:${store_id}:${ids}:${lang}`;
   }
 }), async (req, res) => {
   try {
-    const { ids, lang = 'en' } = req.query;
+    const { ids, lang = 'en', store_id } = req.query;
 
     if (!ids) {
       return res.status(400).json({
         success: false,
         message: 'ids parameter required'
+      });
+    }
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
       });
     }
 
@@ -2367,7 +2510,11 @@ router.get('/categories/batch', cacheMiddleware({
       return res.json({ success: true, data: {} });
     }
 
-    const translations = await sequelize.query(`
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const tenantSequelize = connection.sequelize;
+
+    const translations = await tenantSequelize.query(`
       SELECT
         category_id,
         language_code,
@@ -2381,7 +2528,7 @@ router.get('/categories/batch', cacheMiddleware({
         AND language_code = :lang
     `, {
       replacements: { categoryIds, lang },
-      type: sequelize.QueryTypes.SELECT
+      type: tenantSequelize.QueryTypes.SELECT
     });
 
     const translationMap = {};
@@ -2415,6 +2562,7 @@ router.get('/categories/batch', cacheMiddleware({
  * @route   GET /api/translations/attributes/batch
  * @desc    Get attribute translations in batch
  * @access  Public
+ * @query   store_id - Store ID (required for multi-tenant)
  * @cache   1 hour
  */
 router.get('/attributes/batch', cacheMiddleware({
@@ -2423,16 +2571,24 @@ router.get('/attributes/batch', cacheMiddleware({
   keyGenerator: (req) => {
     const ids = (req.query.ids || '').split(',').sort().join(',');
     const lang = req.query.lang || 'en';
-    return `translations_attributes:${ids}:${lang}`;
+    const store_id = req.query.store_id || '';
+    return `translations_attributes:${store_id}:${ids}:${lang}`;
   }
 }), async (req, res) => {
   try {
-    const { ids, lang = 'en' } = req.query;
+    const { ids, lang = 'en', store_id } = req.query;
 
     if (!ids) {
       return res.status(400).json({
         success: false,
         message: 'ids parameter required'
+      });
+    }
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
       });
     }
 
@@ -2442,7 +2598,11 @@ router.get('/attributes/batch', cacheMiddleware({
       return res.json({ success: true, data: {} });
     }
 
-    const translations = await sequelize.query(`
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const tenantSequelize = connection.sequelize;
+
+    const translations = await tenantSequelize.query(`
       SELECT
         attribute_id,
         language_code,
@@ -2453,7 +2613,7 @@ router.get('/attributes/batch', cacheMiddleware({
         AND language_code = :lang
     `, {
       replacements: { attributeIds, lang },
-      type: sequelize.QueryTypes.SELECT
+      type: tenantSequelize.QueryTypes.SELECT
     });
 
     const translationMap = {};
@@ -2484,6 +2644,7 @@ router.get('/attributes/batch', cacheMiddleware({
  * @route   GET /api/translations/attribute-values/batch
  * @desc    Get attribute value translations in batch
  * @access  Public
+ * @query   store_id - Store ID (required for multi-tenant)
  * @cache   1 hour
  */
 router.get('/attribute-values/batch', cacheMiddleware({
@@ -2492,16 +2653,24 @@ router.get('/attribute-values/batch', cacheMiddleware({
   keyGenerator: (req) => {
     const ids = (req.query.ids || '').split(',').sort().join(',');
     const lang = req.query.lang || 'en';
-    return `translations_attribute_values:${ids}:${lang}`;
+    const store_id = req.query.store_id || '';
+    return `translations_attribute_values:${store_id}:${ids}:${lang}`;
   }
 }), async (req, res) => {
   try {
-    const { ids, lang = 'en' } = req.query;
+    const { ids, lang = 'en', store_id } = req.query;
 
     if (!ids) {
       return res.status(400).json({
         success: false,
         message: 'ids parameter required'
+      });
+    }
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
       });
     }
 
@@ -2511,7 +2680,11 @@ router.get('/attribute-values/batch', cacheMiddleware({
       return res.json({ success: true, data: {} });
     }
 
-    const translations = await sequelize.query(`
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const tenantSequelize = connection.sequelize;
+
+    const translations = await tenantSequelize.query(`
       SELECT
         attribute_value_id,
         language_code,
@@ -2521,7 +2694,7 @@ router.get('/attribute-values/batch', cacheMiddleware({
         AND language_code = :lang
     `, {
       replacements: { valueIds, lang },
-      type: sequelize.QueryTypes.SELECT
+      type: tenantSequelize.QueryTypes.SELECT
     });
 
     const translationMap = {};
@@ -2551,7 +2724,7 @@ router.get('/attribute-values/batch', cacheMiddleware({
  * @route   GET /api/translations/all/batch
  * @desc    Get all entity translations in one request (ultimate optimization)
  * @access  Public
- * @query   product_ids, category_ids, attribute_ids, attribute_value_ids, lang
+ * @query   product_ids, category_ids, attribute_ids, attribute_value_ids, lang, store_id
  * @cache   1 hour
  */
 router.get('/all/batch', cacheMiddleware({
@@ -2563,7 +2736,8 @@ router.get('/all/batch', cacheMiddleware({
     const attributeIds = (req.query.attribute_ids || '').split(',').sort().join(',');
     const valueIds = (req.query.attribute_value_ids || '').split(',').sort().join(',');
     const lang = req.query.lang || 'en';
-    return `translations_all:p${productIds}:c${categoryIds}:a${attributeIds}:v${valueIds}:${lang}`;
+    const store_id = req.query.store_id || '';
+    return `translations_all:${store_id}:p${productIds}:c${categoryIds}:a${attributeIds}:v${valueIds}:${lang}`;
   }
 }), async (req, res) => {
   try {
@@ -2572,8 +2746,20 @@ router.get('/all/batch', cacheMiddleware({
       category_ids,
       attribute_ids,
       attribute_value_ids,
-      lang = 'en'
+      lang = 'en',
+      store_id
     } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const tenantSequelize = connection.sequelize;
 
     const results = {
       products: {},
@@ -2590,14 +2776,14 @@ router.get('/all/batch', cacheMiddleware({
       const productIds = product_ids.split(',').filter(Boolean);
       if (productIds.length > 0) {
         promises.push(
-          sequelize.query(`
+          tenantSequelize.query(`
             SELECT product_id, language_code, name, description, short_description,
                    meta_title, meta_description, meta_keywords
             FROM product_translations
             WHERE product_id IN (:productIds) AND language_code = :lang
           `, {
             replacements: { productIds, lang },
-            type: sequelize.QueryTypes.SELECT
+            type: tenantSequelize.QueryTypes.SELECT
           }).then(translations => {
             translations.forEach(t => {
               results.products[t.product_id] = {
@@ -2619,14 +2805,14 @@ router.get('/all/batch', cacheMiddleware({
       const categoryIds = category_ids.split(',').filter(Boolean);
       if (categoryIds.length > 0) {
         promises.push(
-          sequelize.query(`
+          tenantSequelize.query(`
             SELECT category_id, language_code, name, description,
                    meta_title, meta_description, meta_keywords
             FROM category_translations
             WHERE category_id IN (:categoryIds) AND language_code = :lang
           `, {
             replacements: { categoryIds, lang },
-            type: sequelize.QueryTypes.SELECT
+            type: tenantSequelize.QueryTypes.SELECT
           }).then(translations => {
             translations.forEach(t => {
               results.categories[t.category_id] = {
@@ -2647,13 +2833,13 @@ router.get('/all/batch', cacheMiddleware({
       const attributeIds = attribute_ids.split(',').filter(Boolean);
       if (attributeIds.length > 0) {
         promises.push(
-          sequelize.query(`
+          tenantSequelize.query(`
             SELECT attribute_id, language_code, label, description
             FROM attribute_translations
             WHERE attribute_id IN (:attributeIds) AND language_code = :lang
           `, {
             replacements: { attributeIds, lang },
-            type: sequelize.QueryTypes.SELECT
+            type: tenantSequelize.QueryTypes.SELECT
           }).then(translations => {
             translations.forEach(t => {
               results.attributes[t.attribute_id] = {
@@ -2671,13 +2857,13 @@ router.get('/all/batch', cacheMiddleware({
       const valueIds = attribute_value_ids.split(',').filter(Boolean);
       if (valueIds.length > 0) {
         promises.push(
-          sequelize.query(`
+          tenantSequelize.query(`
             SELECT attribute_value_id, language_code, label
             FROM attribute_value_translations
             WHERE attribute_value_id IN (:valueIds) AND language_code = :lang
           `, {
             replacements: { valueIds, lang },
-            type: sequelize.QueryTypes.SELECT
+            type: tenantSequelize.QueryTypes.SELECT
           }).then(translations => {
             translations.forEach(t => {
               results.attribute_values[t.attribute_value_id] = {
