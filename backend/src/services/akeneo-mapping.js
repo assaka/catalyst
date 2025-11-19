@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
-const { Attribute } = require('../models'); // Tenant DB model
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { sanitizeAkeneoProduct } = require('../utils/dataValidation');
 
 class AkeneoMapping {
@@ -1309,20 +1309,23 @@ class AkeneoMapping {
     let databaseAttributeTypes = {};
     if (storeId) {
       try {
-        const dbAttributes = await Attribute.findAll({
-          where: {
-            store_id: storeId
-          },
-          attributes: ['code', 'type', 'options']
-        });
-        
+        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+        const { data: dbAttributes, error } = await tenantDb
+          .from('attributes')
+          .select('code, type, options')
+          .eq('store_id', storeId);
+
+        if (error) throw error;
+
         // Create a lookup map for quick access
-        dbAttributes.forEach(attr => {
-          databaseAttributeTypes[attr.code] = {
-            type: attr.type,
-            options: attr.options || []
-          };
-        });
+        if (dbAttributes && dbAttributes.length > 0) {
+          dbAttributes.forEach(attr => {
+            databaseAttributeTypes[attr.code] = {
+              type: attr.type,
+              options: attr.options || []
+            };
+          });
+        }
       } catch (error) {
         console.warn('Could not fetch attribute definitions from database:', error.message);
       }
