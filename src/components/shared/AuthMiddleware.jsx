@@ -1090,7 +1090,14 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                   const onboardingUrl = createAdminUrl("StoreOnboarding");
                   navigate(onboardingUrl || '/admin/store-onboarding');
                 } else {
-                  // Has stores - redirect to dashboard
+                  // Has stores - set first store as selected and redirect to dashboard
+                  const stores = storesResponse.data;
+                  const firstStore = stores[0];
+
+                  console.log('🔍 Setting first store as selected:', firstStore.id, firstStore.name);
+                  localStorage.setItem('selectedStoreId', firstStore.id);
+                  localStorage.setItem('selectedStoreSlug', firstStore.slug || firstStore.code);
+
                   const dashboardUrl = createAdminUrl("DASHBOARD");
                   console.log('🔍 Redirecting to dashboard:', dashboardUrl);
                   navigate(dashboardUrl);
