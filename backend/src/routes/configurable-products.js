@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { Product: MasterProduct } = require('../models'); // For getting store_id
+const { Product: MasterProduct } = require('../models'); // Tenant DB model
 const { Op } = require('sequelize');
 const router = express.Router();
 

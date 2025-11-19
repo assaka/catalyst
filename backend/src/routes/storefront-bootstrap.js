@@ -1,12 +1,66 @@
 const express = require('express');
-const { User } = require('../models');
 const translationService = require('../services/translation-service');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
 const { cacheMiddleware } = require('../middleware/cacheMiddleware');
-const { masterSupabaseClient } = require('../database/masterConnection');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
+
+/**
+ * Get store by slug - TENANT ONLY approach
+ *
+ * ARCHITECTURAL NOTE: This is a public route that receives a slug, not a store_id.
+ * The challenge: We need store_id to get the tenant connection, but we're looking up BY slug.
+ *
+ * SOLUTION: Master DB stores table acts as a "directory service" - it only contains the
+ * minimal routing info (id, slug, is_active) to route requests to the correct tenant DB.
+ * The full store data still lives in tenant DB.
+ *
+ * This is different from other routes because:
+ * - Most routes receive store_id directly (from x-store-id header or query param)
+ * - Bootstrap is the FIRST call from storefront, so it only has the slug
+ * - We use master for routing (slug -> store_id), then fetch all data from tenant
+ *
+ * @param {string} slug - Store slug to look up
+ * @returns {Promise<Object>} { storeId, store, tenantDb }
+ */
+async function getStoreBySlug(slug) {
+  const { masterSupabaseClient } = require('../database/masterConnection');
+
+  // Step 1: Use master DB as directory service to get store_id for routing
+  // Master stores table contains: id, slug, is_active, user_id (minimal routing info)
+  const { data: masterStore, error: masterError } = await masterSupabaseClient
+    .from('stores')
+    .select('id, is_active')
+    .eq('slug', slug)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (masterError || !masterStore) {
+    throw new Error(`Store not found with slug: ${slug}`);
+  }
+
+  console.log(`✅ Resolved slug "${slug}" to store_id: ${masterStore.id}`);
+
+  // Step 2: Get tenant connection using store_id
+  const tenantDb = await ConnectionManager.getStoreConnection(masterStore.id);
+
+  // Step 3: Fetch full store data from tenant DB (authoritative source)
+  const { data: store, error: tenantError } = await tenantDb
+    .from('stores')
+    .select('*')
+    .eq('id', masterStore.id)
+    .eq('slug', slug)
+    .maybeSingle();
+
+  if (tenantError || !store) {
+    throw new Error(`Store data not found in tenant DB for store_id: ${masterStore.id}`);
+  }
+
+  console.log(`✅ Loaded full store data from tenant DB:`, store.name);
+
+  return { storeId: masterStore.id, store, tenantDb };
+}
 
 /**
  * @route   GET /api/public/storefront/bootstrap
@@ -63,51 +117,42 @@ router.get('/', cacheMiddleware({
       try {
         const token = authHeader.substring(7);
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-        authenticatedUser = await User.findByPk(decoded.id, {
-          attributes: { exclude: ['password'] }
-        });
+
+        // Lookup user in master DB (users are platform-level data)
+        const { masterSupabaseClient } = require('../database/masterConnection');
+        const { data: user, error: userError } = await masterSupabaseClient
+          .from('users')
+          .select('*')
+          .eq('id', decoded.id)
+          .maybeSingle();
+
+        if (!userError && user) {
+          // Remove password from response
+          const { password, ...userWithoutPassword } = user;
+          authenticatedUser = userWithoutPassword;
+        }
       } catch (err) {
         // Invalid token - continue without auth
         console.warn('Invalid auth token in bootstrap request:', err.message);
       }
     }
 
-    // CRITICAL FIX: Fetch store from master DB by slug, then get tenant DB connection
-    console.log('🔍 Looking up store by slug in master DB:', slug);
-    const { data: masterStore, error: masterError } = await masterSupabaseClient
-      .from('stores')
-      .select('id, slug, status, is_active')
-      .eq('slug', slug)
-      .eq('is_active', true)
-      .maybeSingle();
+    // Get store by slug - uses master for routing, tenant for data
+    console.log('🔍 Looking up store by slug:', slug);
+    let storeId, store, tenantDb;
 
-    if (masterError || !masterStore) {
-      console.log('❌ Store not found in master DB for slug:', slug);
+    try {
+      const result = await getStoreBySlug(slug);
+      storeId = result.storeId;
+      store = result.store;
+      tenantDb = result.tenantDb;
+    } catch (err) {
+      console.log('❌ Store not found for slug:', slug, err.message);
       return res.status(404).json({
         success: false,
         message: 'Store not found'
       });
     }
-
-    console.log('✅ Found store in master DB:', masterStore.id);
-
-    // Get full store data from tenant DB
-    const tenantDb = await ConnectionManager.getStoreConnection(masterStore.id);
-    const { data: store, error: tenantError } = await tenantDb
-      .from('stores')
-      .select('*')
-      .eq('id', masterStore.id)
-      .single();
-
-    if (tenantError || !store) {
-      console.error('❌ Failed to get store from tenant DB:', tenantError?.message);
-      return res.status(500).json({
-        success: false,
-        message: 'Store configuration error'
-      });
-    }
-
-    console.log('✅ Loaded store from tenant DB:', store.name);
 
     // Execute all other queries in parallel using tenantDb connection
     const [

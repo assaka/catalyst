@@ -5,65 +5,73 @@
  * and cms_block_translations tables.
  */
 
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
  * Get CMS pages with translations
  *
+ * @param {string} storeId - Store ID
  * @param {Object} where - WHERE clause conditions
  * @param {string} lang - Language code (default: 'en')
  * @returns {Promise<Array>} CMS pages with translated fields
  */
-async function getCMSPagesWithTranslations(where = {}, lang = 'en') {
+async function getCMSPagesWithTranslations(storeId, where = {}, lang = 'en') {
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === true || value === false) {
-        return `p.${key} = ${value}`;
-      }
-      if (Array.isArray(value)) {
-        return `p.${key} IN (${value.map(v => `'${v}'`).join(', ')})`;
-      }
-      return `p.${key} = '${value}'`;
-    })
-    .join(' AND ');
+  // Fetch cms_pages
+  let pagesQuery = tenantDb.from('cms_pages').select('*');
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    pagesQuery = pagesQuery.eq(key, value);
+  }
 
-  const query = `
-    SELECT
-      p.id,
-      p.slug,
-      p.is_active,
-      p.is_system,
-      p.sort_order,
-      p.seo,
-      p.store_id,
-      p.related_product_ids,
-      p.published_at,
-      p.created_at,
-      p.updated_at,
-      pt.title as pt_title,
-      pt_en.title as pt_en_title,
-      pt.content as pt_content,
-      pt_en.content as pt_en_content,
-      COALESCE(pt.title, pt_en.title, p.slug) as title,
-      COALESCE(pt.content, pt_en.content) as content
-    FROM cms_pages p
-    LEFT JOIN cms_page_translations pt
-      ON p.id = pt.cms_page_id AND pt.language_code = :lang
-    LEFT JOIN cms_page_translations pt_en
-      ON p.id = pt_en.cms_page_id AND pt_en.language_code = 'en'
-    ${whereClause}
-    ORDER BY p.sort_order ASC, p.created_at DESC
-  `;
+  pagesQuery = pagesQuery.order('sort_order', { ascending: true }).order('created_at', { ascending: false });
 
-  const results = await sequelize.query(query, {
-    replacements: { lang },
-    type: sequelize.QueryTypes.SELECT
+  const { data: pages, error: pagesError } = await pagesQuery;
+
+  if (pagesError) {
+    console.error('Error fetching cms_pages:', pagesError);
+    throw pagesError;
+  }
+
+  if (!pages || pages.length === 0) {
+    return [];
+  }
+
+  // Fetch translations
+  const pageIds = pages.map(p => p.id);
+  const { data: translations, error: transError } = await tenantDb
+    .from('cms_page_translations')
+    .select('*')
+    .in('cms_page_id', pageIds)
+    .in('language_code', [lang, 'en']);
+
+  if (transError) {
+    console.error('Error fetching cms_page_translations:', transError);
+    throw transError;
+  }
+
+  // Build translation map
+  const transMap = {};
+  (translations || []).forEach(t => {
+    if (!transMap[t.cms_page_id]) transMap[t.cms_page_id] = {};
+    transMap[t.cms_page_id][t.language_code] = t;
   });
 
-  return results;
+  // Merge pages with translations
+  return pages.map(page => {
+    const trans = transMap[page.id];
+    const reqLang = trans?.[lang];
+    const enLang = trans?.['en'];
+
+    return {
+      ...page,
+      title: reqLang?.title || enLang?.title || page.slug,
+      content: reqLang?.content || enLang?.content || null,
+      excerpt: reqLang?.excerpt || enLang?.excerpt || null
+    };
+  });
 }
 
 /**
@@ -108,57 +116,67 @@ async function getCMSPageById(id, lang = 'en') {
 /**
  * Get CMS blocks with translations
  *
+ * @param {string} storeId - Store ID
  * @param {Object} where - WHERE clause conditions
  * @param {string} lang - Language code (default: 'en')
  * @returns {Promise<Array>} CMS blocks with translated fields
  */
-async function getCMSBlocksWithTranslations(where = {}, lang = 'en') {
+async function getCMSBlocksWithTranslations(storeId, where = {}, lang = 'en') {
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === true || value === false) {
-        return `b.${key} = ${value}`;
-      }
-      if (Array.isArray(value)) {
-        return `b.${key} IN (${value.map(v => `'${v}'`).join(', ')})`;
-      }
-      return `b.${key} = '${value}'`;
-    })
-    .join(' AND ');
+  // Fetch cms_blocks
+  let blocksQuery = tenantDb.from('cms_blocks').select('*');
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    blocksQuery = blocksQuery.eq(key, value);
+  }
 
-  const query = `
-    SELECT
-      b.id,
-      b.identifier,
-      b.is_active,
-      b.placement,
-      b.sort_order,
-      b.store_id,
-      b.created_at,
-      b.updated_at,
-      bt.title as bt_title,
-      bt_en.title as bt_en_title,
-      bt.content as bt_content,
-      bt_en.content as bt_en_content,
-      COALESCE(bt.title, bt_en.title, b.identifier) as title,
-      COALESCE(bt.content, bt_en.content) as content
-    FROM cms_blocks b
-    LEFT JOIN cms_block_translations bt
-      ON b.id = bt.cms_block_id AND bt.language_code = :lang
-    LEFT JOIN cms_block_translations bt_en
-      ON b.id = bt_en.cms_block_id AND bt_en.language_code = 'en'
-    ${whereClause}
-    ORDER BY b.sort_order ASC, b.created_at DESC
-  `;
+  blocksQuery = blocksQuery.order('sort_order', { ascending: true }).order('created_at', { ascending: false });
 
-  const results = await sequelize.query(query, {
-    replacements: { lang },
-    type: sequelize.QueryTypes.SELECT
+  const { data: blocks, error: blocksError } = await blocksQuery;
+
+  if (blocksError) {
+    console.error('Error fetching cms_blocks:', blocksError);
+    throw blocksError;
+  }
+
+  if (!blocks || blocks.length === 0) {
+    return [];
+  }
+
+  // Fetch translations
+  const blockIds = blocks.map(b => b.id);
+  const { data: translations, error: transError } = await tenantDb
+    .from('cms_block_translations')
+    .select('*')
+    .in('cms_block_id', blockIds)
+    .in('language_code', [lang, 'en']);
+
+  if (transError) {
+    console.error('Error fetching cms_block_translations:', transError);
+    throw transError;
+  }
+
+  // Build translation map
+  const transMap = {};
+  (translations || []).forEach(t => {
+    if (!transMap[t.cms_block_id]) transMap[t.cms_block_id] = {};
+    transMap[t.cms_block_id][t.language_code] = t;
   });
 
-  return results;
+  // Merge blocks with translations
+  return blocks.map(block => {
+    const trans = transMap[block.id];
+    const reqLang = trans?.[lang];
+    const enLang = trans?.['en'];
+
+    return {
+      ...block,
+      title: reqLang?.title || enLang?.title || block.identifier,
+      content: reqLang?.content || enLang?.content || null
+    };
+  });
 }
 
 /**

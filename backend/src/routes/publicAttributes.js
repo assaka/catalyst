@@ -1,11 +1,7 @@
 const express = require('express');
-const { Attribute, AttributeValue, Store } = require('../models');
-const { Op } = require('sequelize');
-const {
-  getAttributesWithTranslations,
-  getAttributeValuesWithTranslations
-} = require('../utils/attributeHelpers');
+const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const router = express.Router();
 
 // @route   GET /api/public/attributes
@@ -13,87 +9,114 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 100, store_id, is_filterable } = req.query;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+    const { page = 1, limit = 100, is_filterable } = req.query;
     const offset = (page - 1) * limit;
 
-    const where = {};
-
-    // Public access - return all attributes for specific store
-    if (store_id) {
-      where.store_id = store_id;
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
     }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    const lang = getLanguageFromRequest(req);
+
+    // Build where conditions
+    let query = tenantDb
+      .from('attributes')
+      .select(`
+        attributes.id,
+        attributes.store_id,
+        attributes.code,
+        attributes.type,
+        attributes.is_required,
+        attributes.is_filterable,
+        attributes.is_visible,
+        attributes.sort_order,
+        attributes.created_at,
+        attributes.updated_at,
+        COALESCE(at.name, attributes.name) as name,
+        COALESCE(at.description, attributes.description) as description
+      `)
+      .leftJoin(
+        'attribute_translations as at',
+        'attributes.id',
+        'at.attribute_id'
+      )
+      .where('attributes.store_id', '=', store_id)
+      .where((builder) => {
+        builder.where('at.language_code', '=', lang).orWhereNull('at.language_code');
+      });
 
     // Filter by is_filterable if provided
     if (is_filterable !== undefined) {
-      where.is_filterable = is_filterable === 'true' || is_filterable === true;
+      query = query.where('attributes.is_filterable', '=', is_filterable === 'true' || is_filterable === true);
     }
 
-    const { count, rows } = await Attribute.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['sort_order', 'ASC'], ['name', 'ASC']],
-      attributes: { exclude: ['translations'] }, // Exclude translations JSON column - using normalized table
-      include: [{ model: Store, attributes: ['id', 'name'] }]
-    });
+    // Apply pagination and ordering
+    query = query
+      .order('attributes.sort_order', { ascending: true })
+      .order('attributes.name', { ascending: true })
+      .range(offset, offset + parseInt(limit) - 1);
 
-    // Get attribute IDs for translation lookup
-    const attributeIds = rows.map(attr => attr.id);
+    const { data: attributes, error, count } = await query;
 
-    // Fetch translations from normalized tables
-    const attributesWithTranslations = attributeIds.length > 0
-      ? await getAttributesWithTranslations({ id: { [Op.in]: attributeIds } })
-      : [];
-
-    // Create a map for quick lookup
-    const translationsMap = new Map(
-      attributesWithTranslations.map(attr => [attr.id, attr.translations])
-    );
+    if (error) {
+      console.error('Error fetching attributes:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch attributes',
+        error: error.message
+      });
+    }
 
     // Fetch attribute values for select/multiselect attributes
-    const attributesWithValues = await Promise.all(rows.map(async (attr) => {
-      const attrData = attr.toJSON();
-
-      // Replace translations with normalized data
-      attrData.translations = translationsMap.get(attr.id) || {};
-
+    const attributesWithValues = await Promise.all(attributes.map(async (attr) => {
       if (attr.type === 'select' || attr.type === 'multiselect') {
-        const values = await AttributeValue.findAll({
-          where: { attribute_id: attr.id },
-          order: [['sort_order', 'ASC'], ['code', 'ASC']],
-          attributes: { exclude: ['translations'] }, // Exclude translations JSON column - using normalized table
-          // For filterable attributes, include all values; otherwise limit to 10
-          limit: attr.is_filterable ? undefined : 10
-        });
+        // Get attribute values with translations
+        const valueLimit = attr.is_filterable ? 1000 : 10; // Use high limit for filterable, otherwise 10
 
-        // Get value IDs for translation lookup
-        const valueIds = values.map(v => v.id);
-        const valuesWithTranslations = valueIds.length > 0
-          ? await getAttributeValuesWithTranslations({ id: { [Op.in]: valueIds } })
-          : [];
+        const { data: values, error: valuesError } = await tenantDb
+          .from('attribute_values')
+          .select(`
+            attribute_values.id,
+            attribute_values.attribute_id,
+            attribute_values.code,
+            attribute_values.sort_order,
+            attribute_values.created_at,
+            attribute_values.updated_at,
+            COALESCE(avt.value, attribute_values.value) as value
+          `)
+          .leftJoin(
+            'attribute_value_translations as avt',
+            'attribute_values.id',
+            'avt.attribute_value_id'
+          )
+          .where('attribute_values.attribute_id', '=', attr.id)
+          .where((builder) => {
+            builder.where('avt.language_code', '=', lang).orWhereNull('avt.language_code');
+          })
+          .order('attribute_values.sort_order', { ascending: true })
+          .order('attribute_values.code', { ascending: true })
+          .limit(valueLimit);
 
-        // Create translation map for values
-        const valueTranslationsMap = new Map(
-          valuesWithTranslations.map(val => [val.id, val.translations])
-        );
-
-        // Merge translations into values
-        attrData.values = values.map(v => {
-          const valData = v.toJSON();
-          valData.translations = valueTranslationsMap.get(v.id) || {};
-          return valData;
-        });
+        if (valuesError) {
+          console.error('Error fetching attribute values:', valuesError);
+          attr.values = [];
+        } else {
+          attr.values = values || [];
+        }
       } else {
-        attrData.values = [];
+        attr.values = [];
       }
 
-      return attrData;
+      return attr;
     }));
 
     // Apply cache headers based on store settings
-    if (store_id) {
-      await applyCacheHeaders(res, store_id);
-    }
+    await applyCacheHeaders(res, store_id);
 
     // Return just the array for public requests (for compatibility with StorefrontBaseEntity)
     res.json(attributesWithValues);

@@ -1,6 +1,5 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { CmsBlock, Store } = require('../models');
 const { Op, QueryTypes } = require('sequelize');
 const { sequelize } = require('../database/connection');
 const { authMiddleware } = require('../middleware/auth');

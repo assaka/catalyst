@@ -1,29 +1,19 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const { User, Customer, LoginAttempt, Store } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const passport = require('../config/passport');
 const emailService = require('../services/email-service');
 const router = express.Router();
 
-// Helper function to determine which model to use based on role
-const getModelForRole = (role) => {
+// Helper function to determine tenant table name based on role
+const getTableForRole = (role) => {
   if (role === 'customer') {
-    return Customer;
+    return 'customers';
   } else if (role === 'store_owner' || role === 'admin') {
-    return User;
+    return 'users';
   }
   throw new Error('Invalid role specified');
-};
-
-// Helper function to determine which model to use based on context
-const getModelForContext = (endpoint) => {
-  // Check if this is a customer-specific endpoint
-  if (endpoint.includes('/customer') || endpoint.includes('customerauth')) {
-    return Customer;
-  }
-  // Default to User model for store owners and admins
-  return User;
 };
 
 // Generate JWT token with role-specific session data
@@ -81,29 +71,30 @@ const validatePasswordStrength = (password) => {
 };
 
 // Helper: Create addresses for customer or user
-const createCustomerAddresses = async (userId, firstName, lastName, phone, email, addressData, role = 'customer') => {
+const createCustomerAddresses = async (tenantDb, userId, firstName, lastName, phone, email, addressData, role = 'customer') => {
   try {
-    const { Address } = require('../models');
     const fullName = `${firstName} ${lastName}`;
     const foreignKey = role === 'customer' ? 'customer_id' : 'user_id';
 
     // Create shipping address
     if (addressData.shipping_address?.street) {
       const addr = addressData.shipping_address;
-      await Address.create({
-        [foreignKey]: userId,
-        type: 'shipping',
-        full_name: fullName,
-        street: addr.street,
-        street_2: addr.street2 || null,
-        city: addr.city,
-        state: addr.state,
-        postal_code: addr.postal_code,
-        country: addr.country || 'US',
-        phone: phone || null,
-        email: email,
-        is_default: true
-      });
+      await tenantDb
+        .from('addresses')
+        .insert({
+          [foreignKey]: userId,
+          type: 'shipping',
+          full_name: fullName,
+          street: addr.street,
+          street_2: addr.street2 || null,
+          city: addr.city,
+          state: addr.state,
+          postal_code: addr.postal_code,
+          country: addr.country || 'US',
+          phone: phone || null,
+          email: email,
+          is_default: true
+        });
     }
 
     // Create billing address if different
@@ -118,25 +109,28 @@ const createCustomerAddresses = async (userId, firstName, lastName, phone, email
       );
 
       if (isDifferent) {
-        await Address.create({
-          [foreignKey]: userId,
-          type: 'billing',
-          full_name: fullName,
-          street: billing.street,
-          street_2: billing.street2 || null,
-          city: billing.city,
-          state: billing.state,
-          postal_code: billing.postal_code,
-          country: billing.country || 'US',
-          phone: phone || null,
-          email: email,
-          is_default: true
-        });
+        await tenantDb
+          .from('addresses')
+          .insert({
+            [foreignKey]: userId,
+            type: 'billing',
+            full_name: fullName,
+            street: billing.street,
+            street_2: billing.street2 || null,
+            city: billing.city,
+            state: billing.state,
+            postal_code: billing.postal_code,
+            country: billing.country || 'US',
+            phone: phone || null,
+            email: email,
+            is_default: true
+          });
       } else {
-        await Address.update(
-          { type: 'both' },
-          { where: { [foreignKey]: userId, type: 'shipping' } }
-        );
+        await tenantDb
+          .from('addresses')
+          .update({ type: 'both' })
+          .eq(foreignKey, userId)
+          .eq('type', 'shipping');
       }
     }
   } catch (error) {
@@ -145,14 +139,18 @@ const createCustomerAddresses = async (userId, firstName, lastName, phone, email
 };
 
 // Helper: Send welcome email
-const sendWelcomeEmail = async (storeId, email, customer) => {
+const sendWelcomeEmail = async (tenantDb, storeId, email, customer) => {
   try {
-    const store = await Store.findByPk(storeId);
+    const { data: store } = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .maybeSingle();
 
     emailService.sendTransactionalEmail(storeId, 'signup_email', {
       recipientEmail: email,
-      customer: customer.toJSON(),
-      store: store ? store.toJSON() : null,
+      customer: customer,
+      store: store,
       languageCode: 'en'
     }).catch(err => {
       // Welcome email failed
@@ -163,9 +161,13 @@ const sendWelcomeEmail = async (storeId, email, customer) => {
 };
 
 // Helper: Send verification email with code
-const sendVerificationEmail = async (storeId, email, customer, verificationCode) => {
+const sendVerificationEmail = async (tenantDb, storeId, email, customer, verificationCode) => {
   try {
-    const store = await Store.findByPk(storeId);
+    const { data: store } = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .maybeSingle();
 
     // Try to send via email template if exists, otherwise send simple email
     emailService.sendEmail(storeId, 'email_verification', email, {
@@ -197,8 +199,9 @@ const sendVerificationEmail = async (storeId, email, customer, verificationCode)
 };
 
 // @route   POST /api/auth/register
-// @desc    Register a new user
+// @desc    Register a new user in tenant database
 // @access  Public
+// @note    TENANT ONLY - requires store_id
 router.post('/register', [
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
   body('password').custom(value => {
@@ -207,7 +210,8 @@ router.post('/register', [
     return true;
   }),
   body('first_name').trim().notEmpty().withMessage('First name is required'),
-  body('last_name').trim().notEmpty().withMessage('Last name is required')
+  body('last_name').trim().notEmpty().withMessage('Last name is required'),
+  body('store_id').notEmpty().withMessage('store_id is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -218,14 +222,21 @@ router.post('/register', [
       });
     }
 
-    const { email, password, first_name, last_name, phone, role = 'store_owner', account_type = 'agency', send_welcome_email = false, address_data } = req.body;
+    const { email, password, first_name, last_name, phone, role = 'store_owner', account_type = 'agency', send_welcome_email = false, address_data, store_id } = req.body;
 
-    // Determine which model to use based on role
-    const ModelClass = getModelForRole(role);
-    const tableName = role === 'customer' ? 'customers' : 'users';
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Determine table name based on role
+    const tableName = getTableForRole(role);
 
     // Check if user exists with same email in the appropriate table
-    const existingUser = await ModelClass.findOne({ where: { email } });
+    const { data: existingUser } = await tenantDb
+      .from(tableName)
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -233,25 +244,45 @@ router.post('/register', [
       });
     }
 
-    // Create user in the appropriate table
-    const user = await ModelClass.create({
-      email,
-      password,
-      first_name,
-      last_name,
-      phone,
-      role,
-      account_type
-    });
+    // Hash password before inserting
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user in the appropriate tenant table
+    const { data: user, error: createError } = await tenantDb
+      .from(tableName)
+      .insert({
+        email,
+        password: hashedPassword,
+        first_name,
+        last_name,
+        phone,
+        role,
+        account_type,
+        store_id: role === 'customer' ? store_id : null,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('User creation error:', createError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create user'
+      });
+    }
 
     // Create addresses if provided
     if (address_data && role === 'customer') {
-      await createCustomerAddresses(user.id, first_name, last_name, phone, email, address_data, role);
+      await createCustomerAddresses(tenantDb, user.id, first_name, last_name, phone, email, address_data, role);
     }
 
     // Send welcome email if requested (for customer registrations)
-    if (send_welcome_email && role === 'customer' && user.store_id) {
-      sendWelcomeEmail(user.store_id, email, user);
+    if (send_welcome_email && role === 'customer' && store_id) {
+      sendWelcomeEmail(tenantDb, store_id, email, user);
     }
 
     // Generate token
@@ -268,6 +299,7 @@ router.post('/register', [
       }
     });
   } catch (error) {
+    console.error('Register error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -278,6 +310,7 @@ router.post('/register', [
 // @route   POST /api/auth/upgrade-guest
 // @desc    Upgrade guest customer to registered account (for post-order account creation)
 // @access  Public
+// @note    TENANT ONLY - requires store_id
 router.post('/upgrade-guest', [
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
@@ -294,14 +327,17 @@ router.post('/upgrade-guest', [
 
     const { email, password, store_id } = req.body;
 
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // Find existing guest customer (password is null)
-    const guestCustomer = await Customer.findOne({
-      where: {
-        email,
-        store_id,
-        password: null // Only upgrade true guest customers
-      }
-    });
+    const { data: guestCustomer } = await tenantDb
+      .from('customers')
+      .select('*')
+      .eq('email', email)
+      .eq('store_id', store_id)
+      .is('password', null)
+      .maybeSingle();
 
     if (!guestCustomer) {
       return res.status(404).json({
@@ -310,67 +346,64 @@ router.post('/upgrade-guest', [
       });
     }
 
-    // Update the guest customer with password (this will be hashed by the beforeUpdate hook)
-    await guestCustomer.update({
-      password: password,
-      email_verified: false // They'll need to verify their email
-    });
+    // Hash password
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Reload customer to get the fresh data with hashed password
-    await guestCustomer.reload();
+    // Update the guest customer with password
+    const { data: updatedCustomer, error: updateError } = await tenantDb
+      .from('customers')
+      .update({
+        password: hashedPassword,
+        email_verified: false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', guestCustomer.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Upgrade guest error:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to upgrade account'
+      });
+    }
 
     // Link all guest orders to this customer account
     try {
-      const { Order } = require('../models');
-      const updatedOrders = await Order.update(
-        { customer_id: guestCustomer.id },
-        {
-          where: {
-            customer_email: email,
-            store_id: store_id,
-            customer_id: null // Only update orders that don't have a customer_id
-          }
-        }
-      );
+      await tenantDb
+        .from('orders')
+        .update({ customer_id: updatedCustomer.id })
+        .eq('customer_email', email)
+        .eq('store_id', store_id)
+        .is('customer_id', null);
     } catch (orderLinkError) {
       // Don't fail the account upgrade if order linking fails
+      console.error('Order linking error:', orderLinkError);
     }
 
     // Generate token for auto-login
-    const token = generateToken(guestCustomer);
+    const token = generateToken(updatedCustomer);
 
-    // Send welcome email
-    try {
-      // Get store for email context
-      const store = store_id ? await Store.findByPk(store_id) : null;
-
-      // Send welcome email asynchronously (don't block account upgrade)
-      emailService.sendTransactionalEmail(store_id, 'signup_email', {
-        recipientEmail: email,
-        customer: guestCustomer.toJSON(),
-        store: store ? store.toJSON() : null,
-        languageCode: 'en' // TODO: Get from customer preferences
-      }).then(() => {
-        // Welcome email sent successfully
-      }).catch(emailError => {
-        // Don't fail account upgrade if email fails
-      });
-    } catch (emailError) {
-      // Failed to send welcome email
-    }
+    // Send welcome email asynchronously
+    sendWelcomeEmail(tenantDb, store_id, email, updatedCustomer).catch(err => {
+      console.error('Welcome email error:', err);
+    });
 
     res.status(200).json({
       success: true,
       message: 'Account upgraded successfully',
       data: {
-        user: guestCustomer,
-        customer: guestCustomer, // Include customer key for consistency with OrderSuccess.jsx
+        user: updatedCustomer,
+        customer: updatedCustomer,
         token,
         sessionRole: 'customer',
         sessionContext: 'storefront'
       }
     });
   } catch (error) {
+    console.error('Upgrade guest error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -382,14 +415,20 @@ router.post('/upgrade-guest', [
 // @route   GET /api/auth/check-customer-status/:email/:store_id
 // @desc    Check if a customer has already registered (has password)
 // @access  Public
+// @note    TENANT ONLY
 router.get('/check-customer-status/:email/:store_id', async (req, res) => {
   try {
     const { email, store_id } = req.params;
 
-    const customer = await Customer.findOne({
-      where: { email, store_id },
-      attributes: ['id', 'email', 'password']
-    });
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    const { data: customer } = await tenantDb
+      .from('customers')
+      .select('id, email, password')
+      .eq('email', email)
+      .eq('store_id', store_id)
+      .maybeSingle();
 
     if (!customer) {
       return res.json({
@@ -409,6 +448,7 @@ router.get('/check-customer-status/:email/:store_id', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Check customer status error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -417,10 +457,12 @@ router.get('/check-customer-status/:email/:store_id', async (req, res) => {
 });
 
 // @route   POST /api/auth/check-email
-// @desc    Check what roles are available for an email
+// @desc    Check what roles are available for an email in a specific store
 // @access  Public
+// @note    TENANT ONLY - requires store_id
 router.post('/check-email', [
-  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email')
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
+  body('store_id').notEmpty().withMessage('store_id is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -431,14 +473,17 @@ router.post('/check-email', [
       });
     }
 
-    const { email } = req.body;
-    
-    // Find all accounts with this email
-    const users = await User.findAll({ 
-      where: { email },
-      attributes: ['role', 'account_type', 'first_name', 'last_name', 'is_active']
-    });
-    
+    const { email, store_id } = req.body;
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Find all accounts with this email in users table
+    const { data: users } = await tenantDb
+      .from('users')
+      .select('role, account_type, first_name, last_name, is_active')
+      .eq('email', email);
+
     if (!users || users.length === 0) {
       return res.json({
         success: true,
@@ -449,13 +494,13 @@ router.post('/check-email', [
         }
       });
     }
-    
+
     const accounts = users.filter(user => user.is_active).map(user => ({
       role: user.role,
       account_type: user.account_type,
       name: `${user.first_name} ${user.last_name}`
     }));
-    
+
     res.json({
       success: true,
       data: {
@@ -466,6 +511,7 @@ router.post('/check-email', [
       }
     });
   } catch (error) {
+    console.error('Check email error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -474,11 +520,13 @@ router.post('/check-email', [
 });
 
 // @route   POST /api/auth/login
-// @desc    Login user
+// @desc    Login user from tenant database
 // @access  Public
+// @note    TENANT ONLY - requires store_id
 router.post('/login', [
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
   body('password').notEmpty().withMessage('Password is required'),
+  body('store_id').notEmpty().withMessage('store_id is required'),
   body('role').optional().isIn(['admin', 'store_owner', 'customer']).withMessage('Invalid role'),
   body('rememberMe').optional().isBoolean().withMessage('Remember me must be a boolean')
 ], async (req, res) => {
@@ -491,88 +539,80 @@ router.post('/login', [
       });
     }
 
-    const { email, password, role, rememberMe } = req.body;
+    const { email, password, store_id, role, rememberMe } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress;
 
-    // Check rate limiting
-    const isRateLimited = await LoginAttempt.checkRateLimit(email, ipAddress);
-    if (isRateLimited) {
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check rate limiting (from tenant DB)
+    const recentAttempts = await tenantDb
+      .from('login_attempts')
+      .select('*')
+      .or(`email.eq.${email},ip_address.eq.${ipAddress}`)
+      .gte('attempted_at', new Date(Date.now() - 15 * 60 * 1000).toISOString())
+      .order('attempted_at', { ascending: false });
+
+    if (recentAttempts.data && recentAttempts.data.length >= 5) {
       return res.status(429).json({
         success: false,
         message: 'Too many login attempts. Please try again later.'
       });
     }
 
-    // Find users/customers with this email based on role
+    // Find users with this email based on role
     let users = [];
+    const bcrypt = require('bcryptjs');
 
     if (role === 'customer') {
       // Search in customers table (tenant DB)
-      users = await Customer.findAll({ where: { email } });
+      const { data: customers } = await tenantDb
+        .from('customers')
+        .select('*')
+        .eq('email', email)
+        .eq('store_id', store_id);
+
+      users = customers || [];
     } else if (role === 'store_owner' || role === 'admin') {
-      // Query MASTER DB for agency users (master-tenant architecture)
-      const { masterSupabaseClient } = require('../database/masterConnection');
-
-      const { data: masterUsers, error } = await masterSupabaseClient
+      // Search in users table (tenant DB)
+      const { data: tenantUsers } = await tenantDb
         .from('users')
         .select('*')
-        .eq('email', email)
-        .eq('account_type', 'agency');
+        .eq('email', email);
 
-      if (!error && masterUsers && masterUsers.length > 0) {
-        // Found in master DB - convert to model-like objects
-        users = masterUsers.map(u => ({
-          ...u,
-          comparePassword: async (candidatePassword) => {
-            const bcrypt = require('bcryptjs');
-            return bcrypt.compare(candidatePassword, u.password);
-          },
-          toJSON: () => {
-            const { password, email_verification_token, password_reset_token, ...rest } = u;
-            return rest;
-          }
-        }));
-      } else {
-        // No fallback - store_owner/admin must exist in master DB
-        console.log('⚠️ No users found in master DB for:', email, role);
-        users = [];
-      }
+      users = tenantUsers || [];
     } else {
-      // No role specified - search master DB first, then tenant DB
-      const { masterSupabaseClient } = require('../database/masterConnection');
-      const { data: masterUsers } = await masterSupabaseClient
+      // No role specified - search users table first, then customers
+      const { data: tenantUsers } = await tenantDb
         .from('users')
         .select('*')
-        .eq('email', email)
-        .eq('account_type', 'agency');
+        .eq('email', email);
 
-      if (masterUsers && masterUsers.length > 0) {
-        users = masterUsers.map(u => ({
-          ...u,
-          comparePassword: async (candidatePassword) => {
-            const bcrypt = require('bcryptjs');
-            return bcrypt.compare(candidatePassword, u.password);
-          },
-          toJSON: () => {
-            const { password, email_verification_token, password_reset_token, ...rest } = u;
-            return rest;
-          }
-        }));
+      if (tenantUsers && tenantUsers.length > 0) {
+        users = tenantUsers;
       } else {
-        // No users found in master DB - agency users must be in master DB
-        console.log('⚠️ No agency users found in master DB for:', email);
-        users = [];
+        const { data: customers } = await tenantDb
+          .from('customers')
+          .select('*')
+          .eq('email', email)
+          .eq('store_id', store_id);
+
+        users = customers || [];
       }
     }
-    
+
     if (!users || users.length === 0) {
       // Log failed attempt
-      await LoginAttempt.create({
-        email,
-        ip_address: ipAddress,
-        success: false
-      });
-      
+      await tenantDb
+        .from('login_attempts')
+        .insert({
+          email,
+          ip_address: ipAddress,
+          success: false,
+          attempted_at: new Date().toISOString(),
+          store_id
+        });
+
       return res.status(400).json({
         success: false,
         message: 'Invalid credentials'
@@ -580,39 +620,44 @@ router.post('/login', [
     }
 
     // Try to find a user account that matches the password
-    // If role is specified, prioritize that role
     let authenticatedUser = null;
-    
+
     if (role) {
       // First try the specified role
       const roleUser = users.find(u => u.role === role);
-      if (roleUser) {
-        const isMatch = await roleUser.comparePassword(password);
+      if (roleUser && roleUser.password) {
+        const isMatch = await bcrypt.compare(password, roleUser.password);
         if (isMatch) {
           authenticatedUser = roleUser;
         }
       }
     }
-    
+
     // If no role specified or role-specific auth failed, try all accounts
     if (!authenticatedUser) {
       for (const user of users) {
-        const isMatch = await user.comparePassword(password);
-        if (isMatch) {
-          authenticatedUser = user;
-          break;
+        if (user.password) {
+          const isMatch = await bcrypt.compare(password, user.password);
+          if (isMatch) {
+            authenticatedUser = user;
+            break;
+          }
         }
       }
     }
 
     if (!authenticatedUser) {
       // Log failed attempt
-      await LoginAttempt.create({
-        email,
-        ip_address: ipAddress,
-        success: false
-      });
-      
+      await tenantDb
+        .from('login_attempts')
+        .insert({
+          email,
+          ip_address: ipAddress,
+          success: false,
+          attempted_at: new Date().toISOString(),
+          store_id
+        });
+
       return res.status(400).json({
         success: false,
         message: 'Invalid credentials'
@@ -638,44 +683,42 @@ router.post('/login', [
       });
     }
 
-    // Use the authenticated user
-    const user = authenticatedUser;
-
     // Log successful attempt
-    await LoginAttempt.create({
-      email,
-      ip_address: ipAddress,
-      success: true
-    });
+    await tenantDb
+      .from('login_attempts')
+      .insert({
+        email,
+        ip_address: ipAddress,
+        success: true,
+        attempted_at: new Date().toISOString(),
+        store_id
+      });
 
     // Update last login
-    if (user.update && typeof user.update === 'function') {
-      // Sequelize model (tenant DB)
-      await user.update({ last_login: new Date() });
-    } else if (user.account_type === 'agency') {
-      // Master DB user (plain object) - update via Supabase client
-      const { masterSupabaseClient } = require('../database/masterConnection');
-      await masterSupabaseClient
-        .from('users')
-        .update({ last_login: new Date().toISOString() })
-        .eq('id', user.id);
+    const tableName = authenticatedUser.role === 'customer' ? 'customers' : 'users';
+    await tenantDb
+      .from(tableName)
+      .update({ last_login: new Date().toISOString() })
+      .eq('id', authenticatedUser.id);
 
-      // Update local object
-      user.last_login = new Date().toISOString();
-    }
+    // Update local object
+    authenticatedUser.last_login = new Date().toISOString();
 
     // Generate token with remember me option
-    const token = generateToken(user, rememberMe);
+    const token = generateToken(authenticatedUser, rememberMe);
+
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = authenticatedUser;
 
     res.json({
       success: true,
       message: 'Login successful',
       data: {
-        user,
+        user: userWithoutPassword,
         token,
         expiresIn: rememberMe ? '30 days' : '24 hours',
-        sessionRole: user.role,
-        sessionContext: user.role === 'customer' ? 'storefront' : 'dashboard'
+        sessionRole: authenticatedUser.role,
+        sessionContext: authenticatedUser.role === 'customer' ? 'storefront' : 'dashboard'
       }
     });
   } catch (error) {
@@ -701,34 +744,63 @@ router.get('/me', require('../middleware/auth').authMiddleware, async (req, res)
 });
 
 // @route   PATCH /api/auth/me
-// @desc    Update current user
+// @desc    Update current user in tenant database
 // @access  Private
+// @note    TENANT ONLY - requires store_id from user context
 router.patch('/me', require('../middleware/auth').authMiddleware, async (req, res) => {
   try {
-    const { role, account_type } = req.body;
+    const { role, account_type, store_id } = req.body;
     const updateData = {};
-    
+
     if (role) updateData.role = role;
     if (account_type) updateData.account_type = account_type;
-    
+
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({
         success: false,
         message: 'No valid fields to update'
       });
     }
-    
-    await User.update(updateData, { where: { id: req.user.id } });
-    
-    // Fetch updated user
-    const updatedUser = await User.findByPk(req.user.id);
-    
+
+    // Require store_id for tenant lookup
+    const userStoreId = store_id || req.user.store_id;
+    if (!userStoreId) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(userStoreId);
+
+    // Determine table based on user role
+    const tableName = req.user.role === 'customer' ? 'customers' : 'users';
+
+    // Update user
+    updateData.updated_at = new Date().toISOString();
+    const { data: updatedUser, error } = await tenantDb
+      .from(tableName)
+      .update(updateData)
+      .eq('id', req.user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Update user error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update user'
+      });
+    }
+
     res.json({
       success: true,
       data: updatedUser,
       message: 'User updated successfully'
     });
   } catch (error) {
+    console.error('PATCH /me error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -736,98 +808,70 @@ router.patch('/me', require('../middleware/auth').authMiddleware, async (req, re
   }
 });
 
+// TODO: Google OAuth endpoints need refactoring for TENANT ONLY architecture
+// They currently depend on master DB User model and need to be updated to:
+// 1. Accept store_id in the OAuth flow
+// 2. Create/update users in tenant DB instead of master DB
+// 3. Update passport configuration to work with tenant databases
+//
 // @route   GET /api/auth/google
-// @desc    Initiate Google OAuth (store_owner only)
+// @desc    Initiate Google OAuth (DISABLED - needs tenant refactoring)
 // @access  Public
-router.get('/google', (req, res, next) => {
-  // Google OAuth is only for store owners
-  req.session.intendedRole = 'store_owner';
-
-  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+router.get('/google', (req, res) => {
+  res.status(501).json({
+    success: false,
+    message: 'Google OAuth is temporarily disabled during tenant migration. Please use email/password login.'
+  });
 });
 
 // @route   GET /api/auth/google/callback
-// @desc    Google OAuth callback
+// @desc    Google OAuth callback (DISABLED - needs tenant refactoring)
 // @access  Public
-router.get('/google/callback', (req, res, next) => {
-  passport.authenticate('google', { session: false }, async (err, user, info) => {
-    const corsOrigin = process.env.CORS_ORIGIN || 'https://catalyst-pearl.vercel.app';
-    // Google OAuth is always for store_owner
-    const intendedRole = 'store_owner';
-
-    if (err) {
-      // Handle database connection errors specifically
-      if (err.message && err.message.includes('ENETUNREACH')) {
-        return res.redirect(`${corsOrigin}/auth?error=database_connection_failed`);
-      }
-      
-      if (err.message && err.message.includes('Database connection failed')) {
-        return res.redirect(`${corsOrigin}/auth?error=database_connection_failed`);
-      }
-      
-      // Pass along more specific error info
-      const errorParam = err.message ? err.message.replace(/\s+/g, '_').toLowerCase() : 'oauth_failed';
-      return res.redirect(`${corsOrigin}/auth?error=${errorParam}`);
-    }
-
-    if (!user) {
-      return res.redirect(`${corsOrigin}/auth?error=oauth_failed`);
-    }
-    
-    try {
-      // Always set user role to store_owner for Google OAuth
-      if (!user.role || user.role !== 'store_owner') {
-        await User.update(
-          { 
-            role: 'store_owner',
-            account_type: 'agency'
-          },
-          { where: { id: user.id } }
-        );
-        
-        // Update user object with new role
-        user.role = 'store_owner';
-        user.account_type = 'agency';
-      }
-
-      const token = generateToken(user);
-
-      // Always redirect to store owner auth page for Google OAuth
-      res.redirect(`${corsOrigin}/auth?token=${token}&oauth=success`);
-    } catch (tokenError) {
-      res.redirect(`${corsOrigin}/auth?error=token_generation_failed`);
-    }
-  })(req, res, next);
+router.get('/google/callback', (req, res) => {
+  const corsOrigin = process.env.CORS_ORIGIN || 'https://catalyst-pearl.vercel.app';
+  res.redirect(`${corsOrigin}/auth?error=oauth_disabled`);
 });
 
 // @route   POST /api/auth/logout
-// @desc    Logout user and log the event
+// @desc    Logout user and log the event in tenant database
 // @access  Private
+// @note    TENANT ONLY - requires store_id
 router.post('/logout', require('../middleware/auth').authMiddleware, async (req, res) => {
   try {
+    const { store_id } = req.body;
+    const userStoreId = store_id || req.user.store_id;
+
     // Log the logout event for security auditing
-    try {
-      await LoginAttempt.create({
-        email: req.user.email,
-        ip_address: req.ip || req.connection.remoteAddress,
-        user_agent: req.get('User-Agent'),
-        success: true,
-        action: 'logout',
-        attempted_at: new Date()
-      });
-    } catch (logError) {
-      // Don't fail the logout if logging fails
+    if (userStoreId) {
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(userStoreId);
+        await tenantDb
+          .from('login_attempts')
+          .insert({
+            email: req.user.email,
+            ip_address: req.ip || req.connection.remoteAddress,
+            user_agent: req.get('User-Agent'),
+            success: true,
+            action: 'logout',
+            attempted_at: new Date().toISOString(),
+            store_id: userStoreId
+          });
+      } catch (logError) {
+        // Don't fail the logout if logging fails
+        console.error('Logout logging error:', logError);
+      }
     }
-    
+
     // In a JWT-based system, we can't invalidate tokens server-side without a blacklist
     // For now, we'll just log the event and return success
     // TODO: Implement token blacklisting for enhanced security
-    
+
     res.json({
       success: true,
       message: 'Logged out successfully'
     });
   } catch (error) {
+    console.error('Logout error:', error);
     res.status(500).json({
       success: false,
       message: 'Logout failed'
@@ -836,8 +880,9 @@ router.post('/logout', require('../middleware/auth').authMiddleware, async (req,
 });
 
 // @route   POST /api/auth/customer/register
-// @desc    Register a new customer
+// @desc    Register a new customer in tenant database
 // @access  Public
+// @note    TENANT ONLY - requires store_id
 router.post('/customer/register', [
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
   body('password').custom(value => {
@@ -846,7 +891,8 @@ router.post('/customer/register', [
     return true;
   }),
   body('first_name').trim().notEmpty().withMessage('First name is required'),
-  body('last_name').trim().notEmpty().withMessage('Last name is required')
+  body('last_name').trim().notEmpty().withMessage('Last name is required'),
+  body('store_id').notEmpty().withMessage('store_id is required')
 ], async (req, res) => {
   try {
     // Validate request
@@ -860,8 +906,17 @@ router.post('/customer/register', [
 
     const { email, password, first_name, last_name, phone, send_welcome_email = false, address_data, store_id } = req.body;
 
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // Check if customer exists
-    const existingCustomer = await Customer.findOne({ where: { email } });
+    const { data: existingCustomer } = await tenantDb
+      .from('customers')
+      .select('id')
+      .eq('email', email)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
     if (existingCustomer) {
       return res.status(400).json({
         success: false,
@@ -869,52 +924,63 @@ router.post('/customer/register', [
       });
     }
 
-    // Determine store_id
-    let customerStoreId = store_id;
-    if (!customerStoreId) {
-      const defaultStore = await Store.findOne();
-      if (defaultStore) {
-        customerStoreId = defaultStore.id;
-      }
-    }
+    // Hash password
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Generate 6-digit verification code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Create customer with verification code
-    const customer = await Customer.create({
-      email,
-      password,
-      first_name,
-      last_name,
-      phone,
-      role: 'customer',
-      account_type: 'individual',
-      store_id: customerStoreId,
-      email_verified: false,
-      email_verification_token: verificationCode,
-      password_reset_expires: verificationExpiry // Using this field for verification expiry
-    });
+    const { data: customer, error: createError } = await tenantDb
+      .from('customers')
+      .insert({
+        email,
+        password: hashedPassword,
+        first_name,
+        last_name,
+        phone,
+        role: 'customer',
+        account_type: 'individual',
+        store_id: store_id,
+        email_verified: false,
+        email_verification_token: verificationCode,
+        password_reset_expires: verificationExpiry.toISOString(),
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('Customer creation error:', createError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create customer'
+      });
+    }
 
     // Create addresses if provided
     if (address_data) {
-      await createCustomerAddresses(customer.id, first_name, last_name, phone, email, address_data);
+      await createCustomerAddresses(tenantDb, customer.id, first_name, last_name, phone, email, address_data, 'customer');
     }
 
     // Send verification email with code
-    if (customerStoreId) {
-      await sendVerificationEmail(customerStoreId, email, customer, verificationCode);
-    }
+    await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode);
 
     // Generate token (user can login but will be blocked until verified)
     const token = generateToken(customer);
+
+    // Remove password from response
+    const { password: _, ...customerWithoutPassword } = customer;
 
     res.status(201).json({
       success: true,
       message: 'Registration successful! Please check your email for a verification code.',
       data: {
-        user: customer,
+        user: customerWithoutPassword,
         token,
         sessionRole: customer.role,
         sessionContext: 'storefront',
@@ -922,22 +988,7 @@ router.post('/customer/register', [
       }
     });
   } catch (error) {
-    // Handle specific error types
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({
-        success: false,
-        message: 'A customer with this email already exists'
-      });
-    }
-
-    if (error.name === 'SequelizeValidationError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error: ' + error.message,
-        errors: error.errors?.map(e => ({ field: e.path, message: e.message }))
-      });
-    }
-
+    console.error('Customer registration error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during registration. Please try again.'
@@ -946,8 +997,9 @@ router.post('/customer/register', [
 });
 
 // @route   POST /api/auth/customer/login
-// @desc    Login customer
+// @desc    Login customer from tenant database
 // @access  Public
+// @note    TENANT ONLY - already properly scoped with store_id
 router.post('/customer/login', [
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
   body('password').notEmpty().withMessage('Password is required'),
@@ -966,40 +1018,44 @@ router.post('/customer/login', [
     const { email, password, store_id, rememberMe } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress;
 
-    // Check rate limiting
-    const isRateLimited = await LoginAttempt.checkRateLimit(email, ipAddress);
-    if (isRateLimited) {
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    const bcrypt = require('bcryptjs');
+
+    // Check rate limiting (from tenant DB)
+    const recentAttempts = await tenantDb
+      .from('login_attempts')
+      .select('*')
+      .or(`email.eq.${email},ip_address.eq.${ipAddress}`)
+      .gte('attempted_at', new Date(Date.now() - 15 * 60 * 1000).toISOString())
+      .order('attempted_at', { ascending: false });
+
+    if (recentAttempts.data && recentAttempts.data.length >= 5) {
       return res.status(429).json({
         success: false,
         message: 'Too many login attempts. Please try again later.'
       });
     }
 
-    // CRITICAL SECURITY: store_id is REQUIRED for customer login to prevent cross-store access
-    if (!store_id) {
-      await LoginAttempt.create({
-        email,
-        ip_address: ipAddress,
-        success: false
-      });
-
-      return res.status(400).json({
-        success: false,
-        message: 'Store information is required for customer login'
-      });
-    }
-
     // CRITICAL: Find customer with this email AND store_id to prevent cross-store login
-    const customer = await Customer.findOne({ where: { email, store_id } });
+    const { data: customer } = await tenantDb
+      .from('customers')
+      .select('*')
+      .eq('email', email)
+      .eq('store_id', store_id)
+      .maybeSingle();
 
     if (!customer) {
-      await LoginAttempt.create({
-        email,
-        ip_address: ipAddress,
-        success: false
-      });
+      await tenantDb
+        .from('login_attempts')
+        .insert({
+          email,
+          ip_address: ipAddress,
+          success: false,
+          attempted_at: new Date().toISOString(),
+          store_id
+        });
 
-      // Don't reveal whether email exists in different store
       return res.status(400).json({
         success: false,
         message: 'Invalid credentials or you don\'t have an account for this store'
@@ -1014,15 +1070,19 @@ router.post('/customer/login', [
       });
     }
 
-    const isMatch = await customer.comparePassword(password);
+    const isMatch = await bcrypt.compare(password, customer.password);
 
     if (!isMatch) {
-      await LoginAttempt.create({
-        email,
-        ip_address: ipAddress,
-        success: false
-      });
-      
+      await tenantDb
+        .from('login_attempts')
+        .insert({
+          email,
+          ip_address: ipAddress,
+          success: false,
+          attempted_at: new Date().toISOString(),
+          store_id
+        });
+
       return res.status(400).json({
         success: false,
         message: 'Invalid credentials'
@@ -1057,23 +1117,33 @@ router.post('/customer/login', [
     }
 
     // Log successful attempt
-    await LoginAttempt.create({
-      email,
-      ip_address: ipAddress,
-      success: true
-    });
+    await tenantDb
+      .from('login_attempts')
+      .insert({
+        email,
+        ip_address: ipAddress,
+        success: true,
+        attempted_at: new Date().toISOString(),
+        store_id
+      });
 
     // Update last login
-    await customer.update({ last_login: new Date() });
+    await tenantDb
+      .from('customers')
+      .update({ last_login: new Date().toISOString() })
+      .eq('id', customer.id);
 
     // Generate token
     const token = generateToken(customer, rememberMe);
+
+    // Remove password from response
+    const { password: _, ...customerWithoutPassword } = customer;
 
     res.json({
       success: true,
       message: 'Login successful',
       data: {
-        user: customer,
+        user: customerWithoutPassword,
         token,
         expiresIn: rememberMe ? '30 days' : '24 hours',
         sessionRole: customer.role,
@@ -1081,6 +1151,7 @@ router.post('/customer/login', [
       }
     });
   } catch (error) {
+    console.error('Customer login error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -1091,9 +1162,11 @@ router.post('/customer/login', [
 // @route   POST /api/auth/verify-email
 // @desc    Verify customer email with code
 // @access  Public
+// @note    TENANT ONLY - requires store_id
 router.post('/verify-email', [
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
-  body('code').trim().notEmpty().withMessage('Verification code is required')
+  body('code').trim().notEmpty().withMessage('Verification code is required'),
+  body('store_id').notEmpty().withMessage('store_id is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -1104,10 +1177,18 @@ router.post('/verify-email', [
       });
     }
 
-    const { email, code } = req.body;
+    const { email, code, store_id } = req.body;
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Find customer by email
-    const customer = await Customer.findOne({ where: { email } });
+    const { data: customer } = await tenantDb
+      .from('customers')
+      .select('*')
+      .eq('email', email)
+      .eq('store_id', store_id)
+      .maybeSingle();
 
     if (!customer) {
       return res.status(404).json({
@@ -1133,7 +1214,7 @@ router.post('/verify-email', [
     }
 
     // Check if code expired (15 minutes)
-    if (customer.password_reset_expires && new Date() > customer.password_reset_expires) {
+    if (customer.password_reset_expires && new Date() > new Date(customer.password_reset_expires)) {
       return res.status(400).json({
         success: false,
         message: 'Verification code has expired. Please request a new one.'
@@ -1141,17 +1222,22 @@ router.post('/verify-email', [
     }
 
     // Mark as verified
-    await customer.update({
-      email_verified: true,
-      email_verification_token: null,
-      password_reset_expires: null
-    });
+    await tenantDb
+      .from('customers')
+      .update({
+        email_verified: true,
+        email_verification_token: null,
+        password_reset_expires: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', customer.id);
 
     res.json({
       success: true,
       message: 'Email verified successfully!'
     });
   } catch (error) {
+    console.error('Email verification error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during verification'
@@ -1162,8 +1248,10 @@ router.post('/verify-email', [
 // @route   POST /api/auth/resend-verification
 // @desc    Resend verification code
 // @access  Public
+// @note    TENANT ONLY - requires store_id
 router.post('/resend-verification', [
-  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email')
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
+  body('store_id').notEmpty().withMessage('store_id is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -1174,10 +1262,18 @@ router.post('/resend-verification', [
       });
     }
 
-    const { email } = req.body;
+    const { email, store_id } = req.body;
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Find customer by email
-    const customer = await Customer.findOne({ where: { email } });
+    const { data: customer } = await tenantDb
+      .from('customers')
+      .select('*')
+      .eq('email', email)
+      .eq('store_id', store_id)
+      .maybeSingle();
 
     if (!customer) {
       return res.status(404).json({
@@ -1199,21 +1295,24 @@ router.post('/resend-verification', [
     const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Update customer with new code
-    await customer.update({
-      email_verification_token: verificationCode,
-      password_reset_expires: verificationExpiry
-    });
+    await tenantDb
+      .from('customers')
+      .update({
+        email_verification_token: verificationCode,
+        password_reset_expires: verificationExpiry.toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', customer.id);
 
     // Send verification email
-    if (customer.store_id) {
-      await sendVerificationEmail(customer.store_id, email, customer, verificationCode);
-    }
+    await sendVerificationEmail(tenantDb, store_id, email, customer, verificationCode);
 
     res.json({
       success: true,
       message: 'Verification code sent! Please check your email.'
     });
   } catch (error) {
+    console.error('Resend verification error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -1221,49 +1320,44 @@ router.post('/resend-verification', [
   }
 });
 
-// Debug endpoint to check customers (REMOVE IN PRODUCTION)
+// Debug endpoint to check customers (TENANT ONLY VERSION)
 router.get('/debug/customers', async (req, res) => {
   try {
-    const customers = await Customer.findAll({
-      attributes: ['id', 'email', 'first_name', 'last_name', 'store_id', 'created_at'],
-      limit: 10
-    });
-    
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    const { data: customers } = await tenantDb
+      .from('customers')
+      .select('id, email, first_name, last_name, store_id, created_at')
+      .eq('store_id', store_id)
+      .limit(10);
+
     res.json({
       success: true,
-      count: customers.length,
-      customers: customers
+      count: customers?.length || 0,
+      customers: customers || []
     });
   } catch (error) {
+    console.error('Debug customers error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Fix endpoint to assign store_id to customers with null store_id
+// Fix endpoint disabled - no longer needed in tenant-only architecture
 router.post('/debug/fix-customer-stores', async (req, res) => {
-  try {
-    const { Store } = require('../models');
-    
-    // Get the first available store as default
-    const defaultStore = await Store.findOne();
-    if (!defaultStore) {
-      return res.status(400).json({ error: 'No active store found' });
-    }
-    
-    // Update customers with null store_id
-    const result = await Customer.update(
-      { store_id: defaultStore.id },
-      { where: { store_id: null } }
-    );
-
-    res.json({
-      success: true,
-      message: `Updated ${result[0]} customers with store_id: ${defaultStore.id}`,
-      store: { id: defaultStore.id, name: defaultStore.name }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  res.status(410).json({
+    success: false,
+    message: 'This endpoint is deprecated in tenant-only architecture. All customers must be created with a store_id.'
+  });
 });
 
 module.exports = router;

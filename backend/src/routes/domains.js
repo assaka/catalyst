@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
-const { Store } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { v4: uuidv4 } = require('uuid');
 const dns = require('dns').promises;
 const https = require('https');
@@ -14,7 +14,17 @@ const https = require('https');
 router.get('/storefront-url', async (req, res) => {
   try {
     const storeId = req.params.store_id;
-    
+
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store ID is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Store } = connection.models;
+
     const store = await Store.findByPk(storeId);
     if (!store) {
       return res.status(404).json({
@@ -84,7 +94,17 @@ router.use(checkStoreOwnership);
 router.get('/', async (req, res) => {
   try {
     const storeId = req.params.store_id;
-    
+
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store ID is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Store } = connection.models;
+
     const store = await Store.findByPk(storeId);
     if (!store) {
       return res.status(404).json({
@@ -134,6 +154,13 @@ router.post('/', async (req, res) => {
     const storeId = req.params.store_id;
     const { domain, auto_setup_dns = false, ssl_enabled = true } = req.body;
 
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store ID is required'
+      });
+    }
+
     if (!domain) {
       return res.status(400).json({
         success: false,
@@ -149,6 +176,9 @@ router.post('/', async (req, res) => {
         error: 'Invalid domain format'
       });
     }
+
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Store } = connection.models;
 
     const store = await Store.findByPk(storeId);
     if (!store) {
@@ -222,6 +252,16 @@ router.post('/:domain_id/verify', async (req, res) => {
     const storeId = req.params.store_id;
     const { domain_id } = req.params;
 
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store ID is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Store } = connection.models;
+
     const store = await Store.findByPk(storeId);
     if (!store) {
       return res.status(404).json({
@@ -289,7 +329,24 @@ router.post('/:domain_id/ssl/setup', async (req, res) => {
     const storeId = req.params.store_id;
     const { domain_id } = req.params;
 
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store ID is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Store } = connection.models;
+
     const store = await Store.findByPk(storeId);
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        error: 'Store not found'
+      });
+    }
+
     const domains = store.settings?.custom_domains || [];
     const domain = domains.find(d => d.id === domain_id);
 
@@ -352,6 +409,16 @@ router.delete('/:domain_id', async (req, res) => {
     const storeId = req.params.store_id;
     const { domain_id } = req.params;
 
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store ID is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Store } = connection.models;
+
     const store = await Store.findByPk(storeId);
     if (!store) {
       return res.status(404).json({
@@ -405,7 +472,17 @@ router.delete('/:domain_id', async (req, res) => {
 router.get('/dns-records', async (req, res) => {
   try {
     const storeId = req.params.store_id;
-    
+
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store ID is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Store } = connection.models;
+
     const store = await Store.findByPk(storeId);
     const domains = store?.settings?.custom_domains || [];
     
@@ -436,7 +513,17 @@ router.get('/dns-records', async (req, res) => {
 router.get('/ssl-status', async (req, res) => {
   try {
     const storeId = req.params.store_id;
-    
+
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store ID is required'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { Store } = connection.models;
+
     const store = await Store.findByPk(storeId);
     const domains = store?.settings?.custom_domains || [];
     

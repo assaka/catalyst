@@ -5,90 +5,87 @@
  * and merge them with payment method data.
  */
 
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
  * Get payment methods with translations from normalized table
  *
+ * @param {string} storeId - Store ID
  * @param {Object} where - WHERE clause conditions
  * @param {string} lang - Language code (default: 'en')
  * @returns {Promise<Array>} Payment methods with translated fields
  */
-async function getPaymentMethodsWithTranslations(where = {}, lang = 'en') {
-  console.log('🔍 [Helper] getPaymentMethodsWithTranslations called with:', { where, lang });
+async function getPaymentMethodsWithTranslations(storeId, where = {}, lang = 'en') {
+  console.log('🔍 [Helper] getPaymentMethodsWithTranslations called with:', { storeId, where, lang });
 
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === true || value === false) {
-        return `pm.${key} = ${value}`;
-      }
-      if (Array.isArray(value)) {
-        return `pm.${key} IN (${value.map(v => `'${v}'`).join(', ')})`;
-      }
-      return `pm.${key} = '${value}'`;
-    })
-    .join(' AND ');
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+  // Fetch payment methods
+  let methodsQuery = tenantDb.from('payment_methods').select('*');
 
-  const query = `
-    SELECT
-      pm.id,
-      pm.code,
-      pm.type,
-      pm.payment_flow,
-      pm.is_active,
-      pm.sort_order,
-      pm.settings,
-      pm.fee_type,
-      pm.fee_amount,
-      pm.min_amount,
-      pm.max_amount,
-      pm.availability,
-      pm.countries,
-      pm.conditions,
-      pm.store_id,
-      pm.created_at,
-      pm.updated_at,
-      pm.name as pm_name,
-      pmt.name as pmt_name,
-      pmt_en.name as pmt_en_name,
-      COALESCE(pmt.name, pmt_en.name, pm.name) as name,
-      COALESCE(pmt.description, pmt_en.description, pm.description) as description
-    FROM payment_methods pm
-    LEFT JOIN payment_method_translations pmt
-      ON pm.id = pmt.payment_method_id AND pmt.language_code = :lang
-    LEFT JOIN payment_method_translations pmt_en
-      ON pm.id = pmt_en.payment_method_id AND pmt_en.language_code = 'en'
-    ${whereClause}
-    ORDER BY pm.sort_order ASC, pm.created_at DESC
-  `;
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    methodsQuery = methodsQuery.eq(key, value);
+  }
 
-  console.log('📋 [Helper] Executing SQL query with lang:', lang);
+  methodsQuery = methodsQuery.order('sort_order', { ascending: true }).order('created_at', { ascending: false });
 
-  const results = await sequelize.query(query, {
-    replacements: { lang },
-    type: sequelize.QueryTypes.SELECT
+  const { data: methods, error: methodsError } = await methodsQuery;
+
+  if (methodsError) {
+    console.error('Error fetching payment_methods:', methodsError);
+    throw methodsError;
+  }
+
+  if (!methods || methods.length === 0) {
+    return [];
+  }
+
+  // Fetch translations
+  const methodIds = methods.map(m => m.id);
+  const { data: translations, error: transError } = await tenantDb
+    .from('payment_method_translations')
+    .select('*')
+    .in('payment_method_id', methodIds)
+    .in('language_code', [lang, 'en']);
+
+  if (transError) {
+    console.error('Error fetching payment_method_translations:', transError);
+    throw transError;
+  }
+
+  // Build translation map
+  const transMap = {};
+  (translations || []).forEach(t => {
+    if (!transMap[t.payment_method_id]) transMap[t.payment_method_id] = {};
+    transMap[t.payment_method_id][t.language_code] = t;
+  });
+
+  // Merge methods with translations
+  const results = methods.map(method => {
+    const trans = transMap[method.id];
+    const reqLang = trans?.[lang];
+    const enLang = trans?.['en'];
+
+    return {
+      ...method,
+      name: reqLang?.name || enLang?.name || method.name || method.code,
+      description: reqLang?.description || enLang?.description || method.description || null
+    };
   });
 
   console.log(`📦 [Helper] Query returned ${results.length} payment methods`);
 
   if (results.length > 0) {
-    console.log('📝 [Helper] First payment method details:', {
+    console.log('📝 [Helper] First payment method:', {
       id: results[0].id,
       code: results[0].code,
-      pm_name: results[0].pm_name,
-      pmt_name: results[0].pmt_name,
-      pmt_en_name: results[0].pmt_en_name,
-      final_name: results[0].name,
+      name: results[0].name,
       lang: lang
     });
   }
 
-  // Remove debug fields before returning
-  const cleanResults = results.map(({ pm_name, pmt_name, pmt_en_name, ...rest }) => rest);
-
-  return cleanResults;
+  return results;
 }
 
 /**

@@ -129,10 +129,61 @@ router.get('/', cacheProducts(180), async (req, res) => {
     // Apply product translations from normalized table
     const productsWithTranslations = await applyProductTranslationsToMany(rows || [], lang);
 
-    // TODO: Load attribute values and translations (complex joins)
-    // For now, return products with basic translations
+    // Load attribute values for all products (full feature preservation)
+    const productIds = (rows || []).map(p => p.id);
+    let attributeValuesData = [];
+
+    if (productIds.length > 0) {
+      const { data: pavs, error: pavError } = await tenantDb
+        .from('product_attribute_values')
+        .select('*')
+        .in('product_id', productIds);
+
+      if (pavError) {
+        console.error('Error loading product attribute values:', pavError.message);
+      } else {
+        attributeValuesData = pavs || [];
+      }
+    }
+
+    // Load attributes and attribute values referenced
+    const attributeIds = [...new Set(attributeValuesData.map(pav => pav.attribute_id))];
+    const attributeValueIds = [...new Set(attributeValuesData.filter(pav => pav.value_id).map(pav => pav.value_id))];
+
+    const [attributesData, attributeValuesListData] = await Promise.all([
+      attributeIds.length > 0
+        ? tenantDb.from('attributes').select('id, code, type, is_filterable').in('id', attributeIds).then(r => r.data || [])
+        : Promise.resolve([]),
+      attributeValueIds.length > 0
+        ? tenantDb.from('attribute_values').select('id, code, metadata').in('id', attributeValueIds).then(r => r.data || [])
+        : Promise.resolve([])
+    ]);
+
+    // Create lookup maps
+    const attrMap = new Map(attributesData.map(a => [a.id, a]));
+    const valMap = new Map(attributeValuesListData.map(v => [v.id, v]));
+
+    // Fetch attribute and value translations
+    const attributeTranslations = attributeIds.length > 0
+      ? await getAttributesWithTranslations({ id: attributeIds })
+      : [];
+    const valueTranslations = attributeValueIds.length > 0
+      ? await getAttributeValuesWithTranslations({ id: attributeValueIds })
+      : [];
+
+    const attrTransMap = new Map(attributeTranslations.map(a => [a.id, a.translations]));
+    const valTransMap = new Map(valueTranslations.map(v => [v.id, v.translations]));
+
+    // Group attribute values by product
+    const pavByProduct = {};
+    attributeValuesData.forEach(pav => {
+      if (!pavByProduct[pav.product_id]) pavByProduct[pav.product_id] = [];
+      pavByProduct[pav.product_id].push(pav);
+    });
+
+    // Transform products with full attribute data
     const productsWithAttributes = productsWithTranslations.map(productData => {
-      // Ensure images is properly parsed as JSON array
+      // Parse images
       if (productData.images && typeof productData.images === 'string') {
         try {
           productData.images = JSON.parse(productData.images);
@@ -141,10 +192,42 @@ router.get('/', cacheProducts(180), async (req, res) => {
         }
       }
 
-      return {
-        ...productData,
-        attributes: [] // TODO: Load from product_attribute_values table
-      };
+      // Add formatted attributes
+      const productPavs = pavByProduct[productData.id] || [];
+      productData.attributes = productPavs.map(pav => {
+        const attr = attrMap.get(pav.attribute_id);
+        if (!attr) return null;
+
+        const attrTrans = attrTransMap.get(attr.id) || {};
+        const attrLabel = attrTrans[lang]?.label || attrTrans.en?.label || attr.code;
+
+        let value, valueLabel, metadata = null;
+
+        if (pav.value_id) {
+          const val = valMap.get(pav.value_id);
+          if (val) {
+            value = val.code;
+            const valTrans = valTransMap.get(val.id) || {};
+            valueLabel = valTrans[lang]?.label || valTrans.en?.label || val.code;
+            metadata = val.metadata;
+          }
+        } else {
+          value = pav.text_value || pav.number_value || pav.date_value || pav.boolean_value;
+          valueLabel = String(value);
+        }
+
+        return {
+          id: attr.id,
+          code: attr.code,
+          label: attrLabel,
+          value: valueLabel,
+          rawValue: value,
+          type: attr.type,
+          metadata
+        };
+      }).filter(Boolean);
+
+      return productData;
     });
 
     // Add cache headers
