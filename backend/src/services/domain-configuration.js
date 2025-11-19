@@ -1,4 +1,4 @@
-const { Store } = require('../models'); // Master/Tenant hybrid model
+const { masterSupabaseClient } = require('../database/masterConnection');
 
 class DomainConfiguration {
   /**
@@ -6,14 +6,19 @@ class DomainConfiguration {
    */
   async saveDomainConfig(storeId, domainConfig) {
     try {
-      const store = await Store.findByPk(storeId);
-      
-      if (!store) {
+      // Fetch store from Master DB
+      const { data: store, error: fetchError } = await masterSupabaseClient
+        .from('stores')
+        .select('id, settings')
+        .eq('id', storeId)
+        .single();
+
+      if (fetchError || !store) {
         throw new Error('Store not found');
       }
 
       const currentSettings = store.settings || {};
-      
+
       // Update domain configuration in store settings
       const updatedSettings = {
         ...currentSettings,
@@ -24,7 +29,15 @@ class DomainConfiguration {
         }
       };
 
-      await store.update({ settings: updatedSettings });
+      // Update store in Master DB
+      const { error: updateError } = await masterSupabaseClient
+        .from('stores')
+        .update({ settings: updatedSettings })
+        .eq('id', storeId);
+
+      if (updateError) {
+        throw new Error(`Failed to update store settings: ${updateError.message}`);
+      }
 
       return {
         success: true,
@@ -46,14 +59,19 @@ class DomainConfiguration {
    */
   async getDomainConfig(storeId) {
     try {
-      const store = await Store.findByPk(storeId);
-      
-      if (!store) {
+      // Fetch store from Master DB
+      const { data: store, error: fetchError } = await masterSupabaseClient
+        .from('stores')
+        .select('id, settings')
+        .eq('id', storeId)
+        .single();
+
+      if (fetchError || !store) {
         throw new Error('Store not found');
       }
 
       const domainConfig = store.settings?.domain || {};
-      
+
       return {
         success: true,
         domain_config: domainConfig
@@ -86,8 +104,14 @@ class DomainConfiguration {
         throw new Error('Invalid domain format');
       }
 
-      const store = await Store.findByPk(storeId);
-      if (!store) {
+      // Verify store exists in Master DB
+      const { data: store, error: fetchError } = await masterSupabaseClient
+        .from('stores')
+        .select('id')
+        .eq('id', storeId)
+        .single();
+
+      if (fetchError || !store) {
         throw new Error('Store not found');
       }
 
@@ -148,8 +172,14 @@ class DomainConfiguration {
    */
   async removeDomain(storeId, domain) {
     try {
-      const store = await Store.findByPk(storeId);
-      if (!store) {
+      // Fetch store from Master DB
+      const { data: store, error: fetchError } = await masterSupabaseClient
+        .from('stores')
+        .select('id, settings')
+        .eq('id', storeId)
+        .single();
+
+      if (fetchError || !store) {
         throw new Error('Store not found');
       }
 
@@ -159,7 +189,15 @@ class DomainConfiguration {
       const currentSettings = store.settings || {};
       const { domain: removedDomain, ...remainingSettings } = currentSettings;
 
-      await store.update({ settings: remainingSettings });
+      // Update store in Master DB
+      const { error: updateError } = await masterSupabaseClient
+        .from('stores')
+        .update({ settings: remainingSettings })
+        .eq('id', storeId);
+
+      if (updateError) {
+        throw new Error(`Failed to update store settings: ${updateError.message}`);
+      }
 
       return {
         success: true,
@@ -180,13 +218,19 @@ class DomainConfiguration {
    */
   async checkDomainStatus(storeId) {
     try {
-      const store = await Store.findByPk(storeId);
-      if (!store) {
+      // Fetch store from Master DB
+      const { data: store, error: fetchError } = await masterSupabaseClient
+        .from('stores')
+        .select('id, settings')
+        .eq('id', storeId)
+        .single();
+
+      if (fetchError || !store) {
         throw new Error('Store not found');
       }
 
       const domainConfig = store.settings?.domain || {};
-      
+
       if (!domainConfig.primary_domain) {
         return {
           success: true,
@@ -222,13 +266,19 @@ class DomainConfiguration {
    */
   async updateDNSStatus(storeId, dnsConfigured, additionalData = {}) {
     try {
-      const store = await Store.findByPk(storeId);
-      if (!store) {
+      // Fetch store from Master DB
+      const { data: store, error: fetchError } = await masterSupabaseClient
+        .from('stores')
+        .select('id, settings')
+        .eq('id', storeId)
+        .single();
+
+      if (fetchError || !store) {
         throw new Error('Store not found');
       }
 
       const currentDomainConfig = store.settings?.domain || {};
-      
+
       const updatedConfig = {
         ...currentDomainConfig,
         dns_configured: dnsConfigured,

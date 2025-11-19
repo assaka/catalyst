@@ -4,7 +4,7 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('./database/ConnectionManager');
 const { MIGRATION_TYPES, validateMigrationOrder } = require('../config/migration-types');
 
 class DataMigrationService {
@@ -19,11 +19,20 @@ class DataMigrationService {
    */
   async getSupabaseClient(storeId) {
     try {
-      const { StoreSupabaseConnection } = require('../models'); // Tenant DB model
-      
-      const connection = await StoreSupabaseConnection.findOne({
-        where: { store_id: storeId, is_active: true }
-      });
+      // Get tenant DB connection
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      // Query store_supabase_connections table from tenant DB
+      const { data: connection, error } = await tenantDb
+        .from('store_supabase_connections')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error) {
+        throw new Error(`Failed to fetch Supabase connection: ${error.message}`);
+      }
 
       if (!connection) {
         throw new Error('No active Supabase connection found for store');
@@ -31,7 +40,7 @@ class DataMigrationService {
 
       const client = createClient(
         connection.project_url,
-        connection.decryptedServiceKey // This should decrypt the stored key
+        connection.decrypted_service_key // This should decrypt the stored key
       );
 
       return { client, connection };
@@ -48,21 +57,32 @@ class DataMigrationService {
     try {
       console.log(`📋 Creating schema for table: ${tableName}`);
 
-      // Get table structure from source database
-      const [columns] = await sequelize.query(`
-        SELECT 
-          column_name,
-          data_type,
-          is_nullable,
-          column_default,
-          character_maximum_length
-        FROM information_schema.columns 
-        WHERE table_name = '${tableName}' 
-        AND table_schema = 'public'
-        ORDER BY ordinal_position;
-      `);
+      // Get tenant DB connection for source database
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      if (columns.length === 0) {
+      // Get table structure from source database using raw SQL
+      // Note: Supabase client doesn't support information_schema queries directly,
+      // so we need to use rpc or raw connection
+      const { data: columns, error: columnsError } = await tenantDb.rpc('exec_sql', {
+        sql: `
+          SELECT
+            column_name,
+            data_type,
+            is_nullable,
+            column_default,
+            character_maximum_length
+          FROM information_schema.columns
+          WHERE table_name = '${tableName}'
+          AND table_schema = 'public'
+          ORDER BY ordinal_position;
+        `
+      });
+
+      if (columnsError) {
+        throw new Error(`Failed to get table schema: ${columnsError.message}`);
+      }
+
+      if (!columns || columns.length === 0) {
         throw new Error(`Table ${tableName} not found in source database`);
       }
 
@@ -140,12 +160,20 @@ class DataMigrationService {
     try {
       console.log(`🔄 Starting migration for table: ${tableName}`);
 
-      // Get total record count
-      const [countResult] = await sequelize.query(
-        `SELECT COUNT(*) as total FROM ${tableName} WHERE store_id = :storeId`,
-        { replacements: { storeId } }
-      );
-      const totalRecords = parseInt(countResult[0].total);
+      // Get tenant DB connection for source database
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      // Get total record count using Supabase client
+      const { count, error: countError } = await tenantDb
+        .from(tableName)
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', storeId);
+
+      if (countError) {
+        throw new Error(`Failed to count records: ${countError.message}`);
+      }
+
+      const totalRecords = count || 0;
 
       if (totalRecords === 0) {
         console.log(`ℹ️ No records found for ${tableName}`);
@@ -162,14 +190,18 @@ class DataMigrationService {
 
       // Process in batches
       while (offset < totalRecords) {
-        const [batchData] = await sequelize.query(
-          `SELECT * FROM ${tableName} WHERE store_id = :storeId LIMIT :batchSize OFFSET :offset`,
-          { 
-            replacements: { storeId, batchSize: this.batchSize, offset }
-          }
-        );
+        // Fetch batch data from tenant DB
+        const { data: batchData, error: batchError } = await tenantDb
+          .from(tableName)
+          .select('*')
+          .eq('store_id', storeId)
+          .range(offset, offset + this.batchSize - 1);
 
-        if (batchData.length === 0) break;
+        if (batchError) {
+          throw new Error(`Failed to fetch batch: ${batchError.message}`);
+        }
+
+        if (!batchData || batchData.length === 0) break;
 
         // Insert batch into Supabase
         const { error } = await supabaseClient
@@ -342,9 +374,12 @@ class DataMigrationService {
     try {
       console.log(`🔍 Verifying migration for ${migrationType}`);
 
+      // Get tenant DB connection for source database
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
       const { client: supabaseClient } = await this.getSupabaseClient(storeId);
       const migrationConfig = MIGRATION_TYPES[migrationType];
-      
+
       const verification = {
         type: migrationType,
         tables: {},
@@ -353,21 +388,33 @@ class DataMigrationService {
       };
 
       for (const tableName of migrationConfig.tables) {
-        // Count records in source
-        const [sourceCount] = await sequelize.query(
-          `SELECT COUNT(*) as count FROM ${tableName} WHERE store_id = :storeId`,
-          { replacements: { storeId } }
-        );
+        // Count records in source using Supabase client
+        const { count: sourceCount, error: sourceError } = await tenantDb
+          .from(tableName)
+          .select('*', { count: 'exact', head: true })
+          .eq('store_id', storeId);
+
+        if (sourceError) {
+          console.error(`Error counting source records for ${tableName}:`, sourceError);
+          verification.tables[tableName] = {
+            source: 0,
+            target: 0,
+            match: false,
+            error: sourceError.message
+          };
+          verification.isValid = false;
+          continue;
+        }
 
         // Count records in target
-        const { data: targetData, error } = await supabaseClient
+        const { count: targetCount, error } = await supabaseClient
           .from(tableName)
           .select('*', { count: 'exact', head: true })
           .eq('store_id', storeId);
 
         if (error) {
           verification.tables[tableName] = {
-            source: sourceCount[0].count,
+            source: sourceCount || 0,
             target: 0,
             match: false,
             error: error.message
@@ -376,8 +423,8 @@ class DataMigrationService {
           continue;
         }
 
-        const sourceTotal = parseInt(sourceCount[0].count);
-        const targetTotal = targetData?.length || 0;
+        const sourceTotal = sourceCount || 0;
+        const targetTotal = targetCount || 0;
         const match = sourceTotal === targetTotal;
 
         verification.tables[tableName] = {
