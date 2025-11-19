@@ -23,45 +23,21 @@ router.get('/', async (req, res) => {
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
     const lang = getLanguageFromRequest(req);
 
-    // Build where conditions
-    let query = tenantDb
+    // Query attributes from tenant DB (Supabase doesn't support joins, so query separately)
+    let attributesQuery = tenantDb
       .from('attributes')
-      .select(`
-        attributes.id,
-        attributes.store_id,
-        attributes.code,
-        attributes.type,
-        attributes.is_required,
-        attributes.is_filterable,
-        attributes.is_visible,
-        attributes.sort_order,
-        attributes.created_at,
-        attributes.updated_at,
-        COALESCE(at.name, attributes.name) as name,
-        COALESCE(at.description, attributes.description) as description
-      `)
-      .leftJoin(
-        'attribute_translations as at',
-        'attributes.id',
-        'at.attribute_id'
-      )
-      .where('attributes.store_id', '=', store_id)
-      .where((builder) => {
-        builder.where('at.language_code', '=', lang).orWhereNull('at.language_code');
-      });
+      .select('*')
+      .eq('store_id', store_id)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true })
+      .range(offset, offset + parseInt(limit) - 1);
 
     // Filter by is_filterable if provided
     if (is_filterable !== undefined) {
-      query = query.where('attributes.is_filterable', '=', is_filterable === 'true' || is_filterable === true);
+      attributesQuery = attributesQuery.eq('is_filterable', is_filterable === 'true' || is_filterable === true);
     }
 
-    // Apply pagination and ordering
-    query = query
-      .order('attributes.sort_order', { ascending: true })
-      .order('attributes.name', { ascending: true })
-      .range(offset, offset + parseInt(limit) - 1);
-
-    const { data: attributes, error, count } = await query;
+    const { data: attributes, error, count } = await attributesQuery;
 
     if (error) {
       console.error('Error fetching attributes:', error);
@@ -72,47 +48,95 @@ router.get('/', async (req, res) => {
       });
     }
 
+    if (!attributes || attributes.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+        count: 0
+      });
+    }
+
+    // Get attribute translations
+    const attributeIds = attributes.map(a => a.id);
+    const { data: translations, error: transError } = await tenantDb
+      .from('attribute_translations')
+      .select('*')
+      .in('attribute_id', attributeIds)
+      .in('language_code', [lang, 'en']); // Get requested lang + English fallback
+
+    // Build translation map
+    const translationMap = {};
+    (translations || []).forEach(t => {
+      if (!translationMap[t.attribute_id]) {
+        translationMap[t.attribute_id] = {};
+      }
+      translationMap[t.attribute_id][t.language_code] = t;
+    });
+
+    // Apply translations to attributes
+    const attributesWithTranslations = attributes.map(attr => {
+      const trans = translationMap[attr.id];
+      const requestedLang = trans?.[lang];
+      const englishLang = trans?.['en'];
+
+      return {
+        ...attr,
+        name: requestedLang?.name || englishLang?.name || attr.name,
+        description: requestedLang?.description || englishLang?.description || attr.description
+      };
+    });
+
     // Fetch attribute values for select/multiselect attributes
-    const attributesWithValues = await Promise.all(attributes.map(async (attr) => {
+    const attributesWithValues = await Promise.all(attributesWithTranslations.map(async (attr) => {
       if (attr.type === 'select' || attr.type === 'multiselect') {
         // Get attribute values with translations
         const valueLimit = attr.is_filterable ? 1000 : 10; // Use high limit for filterable, otherwise 10
 
+        // Query attribute values
         const { data: values, error: valuesError } = await tenantDb
           .from('attribute_values')
-          .select(`
-            attribute_values.id,
-            attribute_values.attribute_id,
-            attribute_values.code,
-            attribute_values.sort_order,
-            attribute_values.created_at,
-            attribute_values.updated_at,
-            COALESCE(avt.value, attribute_values.value) as value
-          `)
-          .leftJoin(
-            'attribute_value_translations as avt',
-            'attribute_values.id',
-            'avt.attribute_value_id'
-          )
-          .where('attribute_values.attribute_id', '=', attr.id)
-          .where((builder) => {
-            builder.where('avt.language_code', '=', lang).orWhereNull('avt.language_code');
-          })
-          .order('attribute_values.sort_order', { ascending: true })
-          .order('attribute_values.code', { ascending: true })
+          .select('*')
+          .eq('attribute_id', attr.id)
+          .order('sort_order', { ascending: true })
           .limit(valueLimit);
 
-        if (valuesError) {
-          console.error('Error fetching attribute values:', valuesError);
-          attr.values = [];
-        } else {
-          attr.values = values || [];
+        if (valuesError || !values || values.length === 0) {
+          return { ...attr, values: [] };
         }
-      } else {
-        attr.values = [];
-      }
 
-      return attr;
+        // Get value translations
+        const valueIds = values.map(v => v.id);
+        const { data: valueTranslations } = await tenantDb
+          .from('attribute_value_translations')
+          .select('*')
+          .in('attribute_value_id', valueIds)
+          .in('language_code', [lang, 'en']);
+
+        // Build value translation map
+        const valueTransMap = {};
+        (valueTranslations || []).forEach(vt => {
+          if (!valueTransMap[vt.attribute_value_id]) {
+            valueTransMap[vt.attribute_value_id] = {};
+          }
+          valueTransMap[vt.attribute_value_id][vt.language_code] = vt;
+        });
+
+        // Apply translations to values
+        const translatedValues = values.map(val => {
+          const valTrans = valueTransMap[val.id];
+          const reqLang = valTrans?.[lang];
+          const enLang = valTrans?.['en'];
+
+          return {
+            ...val,
+            value: reqLang?.value || enLang?.value || val.value
+          };
+        });
+
+        return { ...attr, values: translatedValues };
+      } else {
+        return { ...attr, values: [] };
+      }
     }));
 
     // Apply cache headers based on store settings
