@@ -254,26 +254,60 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { store_id } = req.body;
-    const store = await Store.findByPk(store_id);
-    
-    if (!store) return res.status(404).json({ success: false, message: 'Store not found' });
-    
+    const store_id = req.headers['x-store-id'] || req.body.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
+
+    // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, store.id);
-      
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+
       if (!access) {
         return res.status(403).json({ success: false, message: 'Access denied' });
       }
     }
 
-    const attribute = await Attribute.create(req.body);
-    res.status(201).json({ success: true, message: 'Attribute created successfully', data: attribute });
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Prepare attribute data
+    const { translations, ...attributeData } = req.body;
+
+    // Ensure store_id is set
+    attributeData.store_id = store_id;
+
+    // Insert attribute into tenant database
+    const { data: attribute, error } = await tenantDb
+      .from('attributes')
+      .insert(attributeData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Create attribute error:', error);
+      throw new Error(error.message);
+    }
+
+    // Save translations if provided
+    if (translations && typeof translations === 'object') {
+      await saveAttributeTranslations(attribute.id, translations);
+    }
+
+    // Fetch complete attribute with translations
+    const completeAttribute = await getAttributeWithValues(attribute.id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Attribute created successfully',
+      data: completeAttribute
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('❌ Create attribute error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -392,30 +426,49 @@ router.delete('/:id', async (req, res) => {
 // Get all values for an attribute
 router.get('/:attributeId/values', async (req, res) => {
   try {
-    const attribute = await Attribute.findByPk(req.params.attributeId, {
-      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-    });
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
-    if (!attribute) {
+    if (!store_id) {
+      return res.status(400).json({ success: false, error: 'store_id is required' });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if attribute exists and belongs to store
+    const { data: attribute, error: attrError } = await tenantDb
+      .from('attributes')
+      .select('id, store_id')
+      .eq('id', req.params.attributeId)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
+    if (attrError || !attribute) {
       return res.status(404).json({ success: false, error: 'Attribute not found' });
     }
 
     // Check access if authenticated request
     if (req.user && req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, attribute.Store.id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({ success: false, error: 'Access denied' });
       }
     }
 
-    const values = await AttributeValue.findAll({
-      where: { attribute_id: req.params.attributeId },
-      order: [['sort_order', 'ASC'], ['code', 'ASC']]
-    });
+    // Get attribute values
+    const { data: values, error: valuesError } = await tenantDb
+      .from('attribute_values')
+      .select('*')
+      .eq('attribute_id', req.params.attributeId)
+      .order('sort_order', { ascending: true })
+      .order('code', { ascending: true });
 
-    res.json({ success: true, data: values });
+    if (valuesError) {
+      throw valuesError;
+    }
+
+    res.json({ success: true, data: values || [] });
   } catch (error) {
     console.error('❌ Get attribute values error:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -423,19 +476,31 @@ router.get('/:attributeId/values', async (req, res) => {
 });
 
 // Create attribute value
-router.post('/:attributeId/values', async (req, res) => {
+router.post('/:attributeId/values', authMiddleware, async (req, res) => {
   try {
-    const attribute = await Attribute.findByPk(req.params.attributeId, {
-      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-    });
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
-    if (!attribute) {
+    if (!store_id) {
+      return res.status(400).json({ success: false, error: 'store_id is required' });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if attribute exists and belongs to store
+    const { data: attribute, error: attrError } = await tenantDb
+      .from('attributes')
+      .select('id, store_id')
+      .eq('id', req.params.attributeId)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
+    if (attrError || !attribute) {
       return res.status(404).json({ success: false, error: 'Attribute not found' });
     }
 
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, attribute.Store.id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({ success: false, error: 'Access denied' });
@@ -444,13 +509,25 @@ router.post('/:attributeId/values', async (req, res) => {
 
     const { code, translations, metadata, sort_order } = req.body;
 
-    const value = await AttributeValue.create({
-      attribute_id: req.params.attributeId,
-      code,
-      translations: translations || {},
-      metadata: metadata || {},
-      sort_order: sort_order || 0
-    });
+    // Insert attribute value
+    const { data: value, error: insertError } = await tenantDb
+      .from('attribute_values')
+      .insert({
+        attribute_id: req.params.attributeId,
+        code,
+        sort_order: sort_order || 0
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    // Save translations if provided
+    if (translations && typeof translations === 'object') {
+      await saveAttributeValueTranslations(value.id, translations);
+    }
 
     res.json({ success: true, data: value });
   } catch (error) {
@@ -460,22 +537,43 @@ router.post('/:attributeId/values', async (req, res) => {
 });
 
 // Update attribute value
-router.put('/:attributeId/values/:valueId', async (req, res) => {
+router.put('/:attributeId/values/:valueId', authMiddleware, async (req, res) => {
   try {
-    const value = await AttributeValue.findByPk(req.params.valueId, {
-      include: [{
-        model: Attribute,
-        include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-      }]
-    });
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
 
-    if (!value) {
+    if (!store_id) {
+      return res.status(400).json({ success: false, error: 'store_id is required' });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if attribute exists and belongs to store
+    const { data: attribute, error: attrError } = await tenantDb
+      .from('attributes')
+      .select('id, store_id')
+      .eq('id', req.params.attributeId)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
+    if (attrError || !attribute) {
+      return res.status(404).json({ success: false, error: 'Attribute not found' });
+    }
+
+    // Check if value exists
+    const { data: value, error: valueError } = await tenantDb
+      .from('attribute_values')
+      .select('*')
+      .eq('id', req.params.valueId)
+      .eq('attribute_id', req.params.attributeId)
+      .maybeSingle();
+
+    if (valueError || !value) {
       return res.status(404).json({ success: false, error: 'Value not found' });
     }
 
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, value.Attribute.Store.id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({ success: false, error: 'Access denied' });
@@ -486,7 +584,15 @@ router.put('/:attributeId/values/:valueId', async (req, res) => {
     const { translations, ...valueData } = req.body;
 
     // Update value fields (excluding translations)
-    await value.update(valueData);
+    const { error: updateError } = await tenantDb
+      .from('attribute_values')
+      .update(valueData)
+      .eq('id', req.params.valueId)
+      .eq('attribute_id', req.params.attributeId);
+
+    if (updateError) {
+      throw updateError;
+    }
 
     // Save translations to normalized table if provided
     if (translations && typeof translations === 'object') {
@@ -505,29 +611,60 @@ router.put('/:attributeId/values/:valueId', async (req, res) => {
 });
 
 // Delete attribute value
-router.delete('/:attributeId/values/:valueId', async (req, res) => {
+router.delete('/:attributeId/values/:valueId', authMiddleware, async (req, res) => {
   try {
-    const value = await AttributeValue.findByPk(req.params.valueId, {
-      include: [{
-        model: Attribute,
-        include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-      }]
-    });
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
-    if (!value) {
+    if (!store_id) {
+      return res.status(400).json({ success: false, error: 'store_id is required' });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if attribute exists and belongs to store
+    const { data: attribute, error: attrError } = await tenantDb
+      .from('attributes')
+      .select('id, store_id')
+      .eq('id', req.params.attributeId)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
+    if (attrError || !attribute) {
+      return res.status(404).json({ success: false, error: 'Attribute not found' });
+    }
+
+    // Check if value exists
+    const { data: value, error: valueError } = await tenantDb
+      .from('attribute_values')
+      .select('id')
+      .eq('id', req.params.valueId)
+      .eq('attribute_id', req.params.attributeId)
+      .maybeSingle();
+
+    if (valueError || !value) {
       return res.status(404).json({ success: false, error: 'Value not found' });
     }
 
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, value.Attribute.Store.id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({ success: false, error: 'Access denied' });
       }
     }
 
-    await value.destroy();
+    // Delete the value
+    const { error: deleteError } = await tenantDb
+      .from('attribute_values')
+      .delete()
+      .eq('id', req.params.valueId)
+      .eq('attribute_id', req.params.attributeId);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
     res.json({ success: true, message: 'Value deleted' });
   } catch (error) {
     console.error('❌ Delete attribute value error:', error);
@@ -552,11 +689,26 @@ router.post('/:id/translate', authMiddleware, authorize(['admin', 'store_owner']
     }
 
     const { fromLang, toLang } = req.body;
-    const attribute = await Attribute.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-    });
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
 
-    if (!attribute) {
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if attribute exists and belongs to store
+    const { data: attribute, error: attrError } = await tenantDb
+      .from('attributes')
+      .select('id, store_id, code')
+      .eq('id', req.params.id)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
+    if (attrError || !attribute) {
       return res.status(404).json({
         success: false,
         message: 'Attribute not found'
@@ -566,7 +718,7 @@ router.post('/:id/translate', authMiddleware, authorize(['admin', 'store_owner']
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, attribute.Store.id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({
@@ -577,7 +729,14 @@ router.post('/:id/translate', authMiddleware, authorize(['admin', 'store_owner']
     }
 
     // Check if source translation exists
-    if (!attribute.translations || !attribute.translations[fromLang]) {
+    const { data: sourceTrans } = await tenantDb
+      .from('attribute_translations')
+      .select('*')
+      .eq('attribute_id', req.params.id)
+      .eq('language_code', fromLang)
+      .maybeSingle();
+
+    if (!sourceTrans || !sourceTrans.label) {
       return res.status(400).json({
         success: false,
         message: `No ${fromLang} translation found for this attribute`
@@ -785,24 +944,50 @@ router.post('/values/:valueId/translate', authMiddleware, authorize(['admin', 's
     }
 
     const { fromLang, toLang } = req.body;
-    const value = await AttributeValue.findByPk(req.params.valueId, {
-      include: [{
-        model: Attribute,
-        include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
-      }]
-    });
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
 
-    if (!value) {
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Get attribute value and check if it exists
+    const { data: value, error: valueError } = await tenantDb
+      .from('attribute_values')
+      .select('id, attribute_id, code')
+      .eq('id', req.params.valueId)
+      .maybeSingle();
+
+    if (valueError || !value) {
       return res.status(404).json({
         success: false,
         message: 'Attribute value not found'
       });
     }
 
+    // Get the attribute to verify store ownership
+    const { data: attribute, error: attrError } = await tenantDb
+      .from('attributes')
+      .select('id, store_id')
+      .eq('id', value.attribute_id)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
+    if (attrError || !attribute) {
+      return res.status(404).json({
+        success: false,
+        message: 'Attribute not found or access denied'
+      });
+    }
+
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, value.Attribute.Store.id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({
@@ -813,7 +998,14 @@ router.post('/values/:valueId/translate', authMiddleware, authorize(['admin', 's
     }
 
     // Check if source translation exists
-    if (!value.translations || !value.translations[fromLang]) {
+    const { data: sourceTrans } = await tenantDb
+      .from('attribute_value_translations')
+      .select('*')
+      .eq('attribute_value_id', req.params.valueId)
+      .eq('language_code', fromLang)
+      .maybeSingle();
+
+    if (!sourceTrans || !sourceTrans.label) {
       return res.status(400).json({
         success: false,
         message: `No ${fromLang} translation found for this attribute value`
@@ -869,13 +1061,19 @@ router.post('/values/bulk-translate', authMiddleware, authorize(['admin', 'store
       }
     }
 
-    // Get all attribute values for attributes belonging to this store
-    const attributes = await Attribute.findAll({
-      where: { store_id },
-      attributes: ['id']
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    if (attributes.length === 0) {
+    // Get all attribute values for attributes belonging to this store
+    const { data: attributes, error: attrError } = await tenantDb
+      .from('attributes')
+      .select('id')
+      .eq('store_id', store_id);
+
+    if (attrError) {
+      throw attrError;
+    }
+
+    if (!attributes || attributes.length === 0) {
       return res.json({
         success: true,
         message: 'No attributes found for this store',
@@ -889,12 +1087,18 @@ router.post('/values/bulk-translate', authMiddleware, authorize(['admin', 'store
     }
 
     const attributeIds = attributes.map(attr => attr.id);
-    const values = await AttributeValue.findAll({
-      where: { attribute_id: { [Op.in]: attributeIds } },
-      order: [['sort_order', 'ASC'], ['code', 'ASC']]
-    });
+    const { data: values, error: valuesError } = await tenantDb
+      .from('attribute_values')
+      .select('*')
+      .in('attribute_id', attributeIds)
+      .order('sort_order', { ascending: true })
+      .order('code', { ascending: true });
 
-    if (values.length === 0) {
+    if (valuesError) {
+      throw valuesError;
+    }
+
+    if (!values || values.length === 0) {
       return res.json({
         success: true,
         message: 'No attribute values found to translate',
@@ -907,6 +1111,21 @@ router.post('/values/bulk-translate', authMiddleware, authorize(['admin', 'store
       });
     }
 
+    // Load translations for all values
+    const valueIds = values.map(v => v.id);
+    const { data: translations } = await tenantDb
+      .from('attribute_value_translations')
+      .select('*')
+      .in('attribute_value_id', valueIds)
+      .in('language_code', [fromLang, toLang]);
+
+    // Build translation map: valueId -> { fromLang: {...}, toLang: {...} }
+    const transMap = {};
+    (translations || []).forEach(t => {
+      if (!transMap[t.attribute_value_id]) transMap[t.attribute_value_id] = {};
+      transMap[t.attribute_value_id][t.language_code] = t;
+    });
+
     // Translate each value
     const results = {
       total: values.length,
@@ -918,19 +1137,18 @@ router.post('/values/bulk-translate', authMiddleware, authorize(['admin', 'store
 
     for (const value of values) {
       try {
+        const valueTrans = transMap[value.id] || {};
+        const sourceTranslation = valueTrans[fromLang];
+        const targetTranslation = valueTrans[toLang];
+
         // Check if source translation exists
-        if (!value.translations || !value.translations[fromLang]) {
+        if (!sourceTranslation || !sourceTranslation.label) {
           results.skipped++;
           continue;
         }
 
         // Check if target translation already exists
-        const hasTargetTranslation = value.translations[toLang] &&
-          Object.values(value.translations[toLang]).some(val =>
-            typeof val === 'string' && val.trim().length > 0
-          );
-
-        if (hasTargetTranslation) {
+        if (targetTranslation && targetTranslation.label && targetTranslation.label.trim().length > 0) {
           results.skipped++;
           continue;
         }
