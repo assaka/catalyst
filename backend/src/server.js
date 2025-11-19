@@ -22,7 +22,7 @@ require('./database/auto-migrations');
 const extensionService = require('./services/extension-service');
 
 // Import routes
-const authRoutes = require('./routes/auth');
+const authRoutes = require('./routes/authMasterTenant'); // Use master-tenant auth (no store_id required for login)
 const userRoutes = require('./routes/users');
 const storeRoutes = require('./routes/stores');
 const productRoutes = require('./routes/products');
