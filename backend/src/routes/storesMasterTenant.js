@@ -740,21 +740,38 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
       (stores || []).map(async (store) => {
         let storeName = store.slug || 'Unnamed Store';
 
+        let storeSettings = null;
+        let adminNavigation = null;
+
         // Only query tenant if store is active
         if (store.is_active && store.status === 'active') {
           try {
             const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+
+            // Fetch full store data from tenant DB
             const { data: tenantStore, error: tenantError } = await tenantDb
               .from('stores')
-              .select('name')
+              .select('name, settings')
               .eq('id', store.id)
               .maybeSingle();
 
-            if (tenantStore && tenantStore.name) {
-              storeName = tenantStore.name;
+            if (tenantStore) {
+              storeName = tenantStore.name || storeName;
+              storeSettings = tenantStore.settings;
+            }
+
+            // Fetch admin navigation registry
+            const { data: navRegistry, error: navError } = await tenantDb
+              .from('admin_navigation_registry')
+              .select('*')
+              .eq('store_id', store.id)
+              .order('sort_order', { ascending: true });
+
+            if (!navError && navRegistry) {
+              adminNavigation = navRegistry;
             }
           } catch (err) {
-            console.warn(`[Dropdown] Could not fetch name for store ${store.id}:`, err.message);
+            console.warn(`[Dropdown] Could not fetch tenant data for store ${store.id}:`, err.message);
             // Use slug as fallback
           }
         }
@@ -764,7 +781,9 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
           name: storeName,
           slug: store.slug,
           status: store.status,
-          is_active: store.is_active
+          is_active: store.is_active,
+          settings: storeSettings,
+          admin_navigation: adminNavigation
         };
       })
     );
