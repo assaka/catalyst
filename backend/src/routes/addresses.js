@@ -194,13 +194,13 @@ router.post('/', optionalAuth, async (req, res) => {
       });
     }
 
-    // Verify user exists before creating address
-    // Note: User/Customer verification happens in MASTER DB, but Address is created in TENANT DB
-    const { User, Customer } = require('../models'); // Master/Tenant hybrid models
+    // Verify user exists before creating address using ConnectionManager
+    // Get tenant connection for user verification
+    const connection = await ConnectionManager.getConnection(store_id);
 
     // Check the correct table based on user role
     const isCustomer = req.user.role === 'customer';
-    const ModelClass = isCustomer ? Customer : User;
+    const ModelClass = isCustomer ? connection.models.Customer : connection.models.User;
     const tableName = isCustomer ? 'customers' : 'users';
 
     console.log(`🔍 Checking ${tableName} table for user:`, req.user.id);
@@ -234,8 +234,7 @@ router.post('/', optionalAuth, async (req, res) => {
       console.log('💾 Setting user_id for address:', req.user.id);
     }
 
-    // Get tenant connection and Address model
-    const connection = await ConnectionManager.getConnection(store_id);
+    // Use the tenant connection we already have for Address model
     const { Address } = connection.models;
 
     console.log('💾 Creating address for verified user:', req.user.id);
