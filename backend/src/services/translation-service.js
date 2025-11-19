@@ -21,8 +21,7 @@
  * See: backend/src/services/aiContextService.js for context fetching
  */
 
-const { Translation, Language, Product, Category, Attribute, CmsPage, CmsBlock, EmailTemplate, PdfTemplate } = require('../models'); // Tenant DB models
-const { Op } = require('sequelize');
+const ConnectionManager = require('./database/ConnectionManager');
 const aiContextService = require('./aiContextService');
 const creditService = require('./credit-service');
 const ServiceCreditCost = require('../models/ServiceCreditCost');
@@ -37,13 +36,17 @@ class TranslationService {
    * Get all UI labels for a specific language and store
    */
   async getUILabels(storeId, languageCode) {
-    const translations = await Translation.findAll({
-      where: {
-        store_id: storeId,
-        language_code: languageCode
-      },
-      attributes: ['key', 'value', 'category', 'type']
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: translations, error } = await tenantDb
+      .from('translations')
+      .select('key, value, category, type')
+      .eq('store_id', storeId)
+      .eq('language_code', languageCode);
+
+    if (error) {
+      throw new Error(`Failed to fetch UI labels: ${error.message}`);
+    }
 
     // Convert to nested object structure
     // e.g., "common.home" becomes { common: { home: "Home" } }
@@ -94,10 +97,16 @@ class TranslationService {
    * Get UI labels for all languages for a specific store
    */
   async getAllUILabels(storeId) {
-    const translations = await Translation.findAll({
-      where: { store_id: storeId },
-      attributes: ['key', 'language_code', 'value', 'category']
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: translations, error } = await tenantDb
+      .from('translations')
+      .select('key, language_code, value, category')
+      .eq('store_id', storeId);
+
+    if (error) {
+      throw new Error(`Failed to fetch all UI labels: ${error.message}`);
+    }
 
     // Group by key
     const result = {};
@@ -118,30 +127,30 @@ class TranslationService {
    * Save or update a UI label translation for a specific store
    */
   async saveUILabel(storeId, key, languageCode, value, category = 'common', type = 'custom') {
-    const [translation, created] = await Translation.findOrCreate({
-      where: {
-        store_id: storeId,
-        key,
-        language_code: languageCode
-      },
-      defaults: {
-        store_id: storeId,
-        key,
-        language_code: languageCode,
-        value,
-        category,
-        type
-      }
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    if (!created) {
-      translation.value = value;
-      if (category) translation.category = category;
-      if (type) translation.type = type;
-      await translation.save();
+    const translationData = {
+      store_id: storeId,
+      key,
+      language_code: languageCode,
+      value,
+      category,
+      type
+    };
+
+    const { data, error } = await tenantDb
+      .from('translations')
+      .upsert(translationData, {
+        onConflict: 'store_id,key,language_code'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to save UI label: ${error.message}`);
     }
 
-    return translation;
+    return data;
   }
 
   /**
@@ -158,13 +167,20 @@ class TranslationService {
    * Delete a UI label translation for a specific store
    */
   async deleteUILabel(storeId, key, languageCode) {
-    return await Translation.destroy({
-      where: {
-        store_id: storeId,
-        key,
-        language_code: languageCode
-      }
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { error } = await tenantDb
+      .from('translations')
+      .delete()
+      .eq('store_id', storeId)
+      .eq('key', key)
+      .eq('language_code', languageCode);
+
+    if (error) {
+      throw new Error(`Failed to delete UI label: ${error.message}`);
+    }
+
+    return true;
   }
 
   /**
@@ -282,11 +298,17 @@ class TranslationService {
   /**
    * Get entity translation (Product, Category, CmsPage, CmsBlock)
    */
-  async getEntityTranslation(entityType, entityId, languageCode) {
-    const Model = this._getEntityModel(entityType);
-    const entity = await Model.findByPk(entityId);
+  async getEntityTranslation(storeId, entityType, entityId, languageCode) {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    const tableName = this._getEntityTableName(entityType);
 
-    if (!entity || !entity.translations) {
+    const { data: entity, error } = await tenantDb
+      .from(tableName)
+      .select('translations')
+      .eq('id', entityId)
+      .single();
+
+    if (error || !entity || !entity.translations) {
       return null;
     }
 
@@ -296,95 +318,156 @@ class TranslationService {
   /**
    * Save entity translation (uses normalized tables for most entities)
    */
-  async saveEntityTranslation(entityType, entityId, languageCode, translationData) {
+  async saveEntityTranslation(storeId, entityType, entityId, languageCode, translationData) {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
     // Products, Categories, Attributes, etc. use separate translation tables
     // Only CMS Pages/Blocks still use JSONB translations column
 
     if (entityType === 'product') {
       const { updateProductTranslations } = require('../utils/productHelpers');
       const translations = { [languageCode]: translationData };
-      await updateProductTranslations(entityId, translations);
-      const Product = this._getEntityModel(entityType);
-      return await Product.findByPk(entityId);
+      await updateProductTranslations(storeId, entityId, translations);
+
+      const { data: product, error } = await tenantDb
+        .from('products')
+        .select('*')
+        .eq('id', entityId)
+        .single();
+
+      if (error) throw new Error(`Failed to fetch product: ${error.message}`);
+      return product;
     } else if (entityType === 'category') {
       const { updateCategoryWithTranslations } = require('../utils/categoryHelpers');
-      const entity = await this._getEntityModel(entityType).findByPk(entityId);
-      await updateCategoryWithTranslations(entityId, {}, { [languageCode]: translationData });
-      return entity;
+      await updateCategoryWithTranslations(storeId, entityId, {}, { [languageCode]: translationData });
+
+      const { data: category, error } = await tenantDb
+        .from('categories')
+        .select('*')
+        .eq('id', entityId)
+        .single();
+
+      if (error) throw new Error(`Failed to fetch category: ${error.message}`);
+      return category;
     } else if (entityType === 'attribute') {
       const { saveAttributeTranslations } = require('../utils/attributeHelpers');
-      await saveAttributeTranslations(entityId, { [languageCode]: translationData });
-      const Attribute = this._getEntityModel(entityType);
-      return await Attribute.findByPk(entityId);
+      await saveAttributeTranslations(storeId, entityId, { [languageCode]: translationData });
+
+      const { data: attribute, error } = await tenantDb
+        .from('attributes')
+        .select('*')
+        .eq('id', entityId)
+        .single();
+
+      if (error) throw new Error(`Failed to fetch attribute: ${error.message}`);
+      return attribute;
     } else if (entityType === 'cms_page') {
       const { saveCMSPageTranslations } = require('../utils/cmsHelpers');
-      await saveCMSPageTranslations(entityId, { [languageCode]: translationData });
-      const CmsPage = this._getEntityModel(entityType);
-      return await CmsPage.findByPk(entityId);
+      await saveCMSPageTranslations(storeId, entityId, { [languageCode]: translationData });
+
+      const { data: cmsPage, error } = await tenantDb
+        .from('cms_pages')
+        .select('*')
+        .eq('id', entityId)
+        .single();
+
+      if (error) throw new Error(`Failed to fetch CMS page: ${error.message}`);
+      return cmsPage;
     } else if (entityType === 'cms_block') {
       const { saveCMSBlockTranslations } = require('../utils/cmsHelpers');
-      await saveCMSBlockTranslations(entityId, { [languageCode]: translationData });
-      const CmsBlock = this._getEntityModel(entityType);
-      return await CmsBlock.findByPk(entityId);
+      await saveCMSBlockTranslations(storeId, entityId, { [languageCode]: translationData });
+
+      const { data: cmsBlock, error } = await tenantDb
+        .from('cms_blocks')
+        .select('*')
+        .eq('id', entityId)
+        .single();
+
+      if (error) throw new Error(`Failed to fetch CMS block: ${error.message}`);
+      return cmsBlock;
     }
 
     // Fallback for other entity types with JSONB translations column
-    const Model = this._getEntityModel(entityType);
-    const entity = await Model.findByPk(entityId);
+    const tableName = this._getEntityTableName(entityType);
+    const { data: entity, error: fetchError } = await tenantDb
+      .from(tableName)
+      .select('*')
+      .eq('id', entityId)
+      .single();
 
-    if (!entity) {
+    if (fetchError || !entity) {
       throw new Error(`${entityType} not found`);
     }
 
     const translations = entity.translations || {};
     translations[languageCode] = translationData;
 
-    entity.translations = translations;
-    entity.changed('translations', true); // Mark as changed for Sequelize
-    await entity.save();
+    const { data: updatedEntity, error: updateError } = await tenantDb
+      .from(tableName)
+      .update({ translations })
+      .eq('id', entityId)
+      .select()
+      .single();
 
-    return entity;
+    if (updateError) {
+      throw new Error(`Failed to update ${entityType} translations: ${updateError.message}`);
+    }
+
+    return updatedEntity;
   }
 
   /**
    * Translate all fields of an entity using AI (with field-level merging)
    */
-  async aiTranslateEntity(entityType, entityId, fromLang, toLang) {
+  async aiTranslateEntity(storeId, entityType, entityId, fromLang, toLang) {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
     // Load entity with translations from appropriate source
     let entity;
 
     if (entityType === 'product') {
       const { applyAllProductTranslations } = require('../utils/productHelpers');
-      const Model = this._getEntityModel(entityType);
-      const productRaw = await Model.findByPk(entityId);
-      if (!productRaw) throw new Error('Product not found');
-      const [productWithTranslations] = await applyAllProductTranslations([productRaw]);
+
+      const { data: productRaw, error } = await tenantDb
+        .from('products')
+        .select('*')
+        .eq('id', entityId)
+        .single();
+
+      if (error || !productRaw) throw new Error('Product not found');
+      const [productWithTranslations] = await applyAllProductTranslations(storeId, [productRaw]);
       entity = productWithTranslations;
     } else if (entityType === 'category') {
       const { getCategoriesWithAllTranslations } = require('../utils/categoryHelpers');
-      const categories = await getCategoriesWithAllTranslations({ id: entityId });
+      const categories = await getCategoriesWithAllTranslations(storeId, { id: entityId });
       entity = categories[0];
       if (!entity) throw new Error('Category not found');
     } else if (entityType === 'attribute') {
       const { getAttributesWithTranslations } = require('../utils/attributeHelpers');
-      const attributes = await getAttributesWithTranslations({ id: entityId });
+      const attributes = await getAttributesWithTranslations(storeId, { id: entityId });
       entity = attributes[0];
       if (!entity) throw new Error('Attribute not found');
     } else if (entityType === 'cms_page') {
       const { getCMSPagesWithAllTranslations } = require('../utils/cmsHelpers');
-      const pages = await getCMSPagesWithAllTranslations({ id: entityId });
+      const pages = await getCMSPagesWithAllTranslations(storeId, { id: entityId });
       entity = pages[0];
       if (!entity) throw new Error('CMS page not found');
     } else if (entityType === 'cms_block') {
       const { getCMSBlocksWithAllTranslations } = require('../utils/cmsHelpers');
-      const blocks = await getCMSBlocksWithAllTranslations({ id: entityId });
+      const blocks = await getCMSBlocksWithAllTranslations(storeId, { id: entityId });
       entity = blocks[0];
       if (!entity) throw new Error('CMS block not found');
     } else {
       // Fallback for any other entity types
-      const Model = this._getEntityModel(entityType);
-      entity = await Model.findByPk(entityId);
-      if (!entity) throw new Error(`${entityType} not found`);
+      const tableName = this._getEntityTableName(entityType);
+      const { data: entityData, error } = await tenantDb
+        .from(tableName)
+        .select('*')
+        .eq('id', entityId)
+        .single();
+
+      if (error || !entityData) throw new Error(`${entityType} not found`);
+      entity = entityData;
 
       console.log(`   📦 Loaded ${entityType} from database:`, {
         id: entity.id,
@@ -437,23 +520,35 @@ class TranslationService {
     console.log(`   ✅ Translated ${fieldsTranslated} field(s) for ${entityType}`);
 
     // Save the translation
-    return await this.saveEntityTranslation(entityType, entityId, toLang, translatedData);
+    return await this.saveEntityTranslation(storeId, entityType, entityId, toLang, translatedData);
   }
 
   /**
    * Get missing translations report
    */
-  async getMissingTranslationsReport() {
-    const languages = await Language.findAll({
-      where: { is_active: true },
-      attributes: ['code', 'name']
-    });
+  async getMissingTranslationsReport(storeId) {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: languages, error: langError } = await tenantDb
+      .from('languages')
+      .select('code, name')
+      .eq('is_active', true);
+
+    if (langError) {
+      throw new Error(`Failed to fetch languages: ${langError.message}`);
+    }
 
     const defaultLang = languages.find(l => l.code === 'en') || languages[0];
-    const uiLabels = await Translation.findAll({
-      where: { language_code: defaultLang.code },
-      attributes: ['key']
-    });
+
+    const { data: uiLabels, error: labelsError } = await tenantDb
+      .from('translations')
+      .select('key')
+      .eq('language_code', defaultLang.code)
+      .eq('store_id', storeId);
+
+    if (labelsError) {
+      throw new Error(`Failed to fetch UI labels: ${labelsError.message}`);
+    }
 
     const report = {
       ui_labels: {},
@@ -465,9 +560,17 @@ class TranslationService {
       for (const lang of languages) {
         if (lang.code === defaultLang.code) continue;
 
-        const exists = await Translation.findOne({
-          where: { key: label.key, language_code: lang.code }
-        });
+        const { data: exists, error } = await tenantDb
+          .from('translations')
+          .select('id')
+          .eq('key', label.key)
+          .eq('language_code', lang.code)
+          .eq('store_id', storeId)
+          .maybeSingle();
+
+        if (error) {
+          throw new Error(`Failed to check translation: ${error.message}`);
+        }
 
         if (!exists) {
           if (!report.ui_labels[lang.code]) {
@@ -482,25 +585,25 @@ class TranslationService {
   }
 
   /**
-   * Helper to get entity model
+   * Helper to get entity table name
    */
-  _getEntityModel(entityType) {
-    const models = {
-      product: Product,
-      category: Category,
-      attribute: Attribute,
-      cms_page: CmsPage,
-      cms_block: CmsBlock,
-      'email-template': EmailTemplate,
-      'pdf-template': PdfTemplate
+  _getEntityTableName(entityType) {
+    const tableNames = {
+      product: 'products',
+      category: 'categories',
+      attribute: 'attributes',
+      cms_page: 'cms_pages',
+      cms_block: 'cms_blocks',
+      'email-template': 'email_templates',
+      'pdf-template': 'pdf_templates'
     };
 
-    const Model = models[entityType.toLowerCase()];
-    if (!Model) {
+    const tableName = tableNames[entityType.toLowerCase()];
+    if (!tableName) {
       throw new Error(`Unknown entity type: ${entityType}`);
     }
 
-    return Model;
+    return tableName;
   }
 
   /**
