@@ -121,6 +121,9 @@ export function determineStoreSlug(location) {
     return savedSlug;
   }
 
-  // Final fallback: use hamid2 for testing
-  return 'hamid2';
+  // No store found - redirect to Landing page
+  if (typeof window !== 'undefined' && !path.startsWith('/Landing')) {
+    window.location.href = '/Landing';
+  }
+  return null;
 }
