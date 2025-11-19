@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { masterSupabaseClient } = require('../database/masterConnection'); // Use Supabase client to avoid Sequelize auth issues
+const { masterDbClient } = require('../database/masterConnection'); // Use Supabase client to avoid Sequelize auth issues
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/auth'); // Role validation
 const router = express.Router();
@@ -14,7 +14,7 @@ router.get('/', authorize(['admin']), async (req, res) => {
     const offset = (page - 1) * limit;
 
     // Build Supabase query
-    let query = masterSupabaseClient.from('users').select('*', { count: 'exact' });
+    let query = masterDbClient.from('users').select('*', { count: 'exact' });
 
     // Apply filters
     if (role) {
@@ -63,7 +63,7 @@ router.get('/', authorize(['admin']), async (req, res) => {
 // @access  Private
 router.get('/:id', async (req, res) => {
   try {
-    const { data: user, error } = await masterSupabaseClient
+    const { data: user, error } = await masterDbClient
       .from('users')
       .select('*')
       .eq('id', req.params.id)
@@ -114,7 +114,7 @@ router.put('/:id', [
       });
     }
 
-    const { data: user, error: findError } = await masterSupabaseClient
+    const { data: user, error: findError } = await masterDbClient
       .from('users')
       .select('*')
       .eq('id', req.params.id)
@@ -144,7 +144,7 @@ router.put('/:id', [
       if (role !== undefined) updateData.role = role;
     }
 
-    const { data: updatedUser, error: updateError } = await masterSupabaseClient
+    const { data: updatedUser, error: updateError } = await masterDbClient
       .from('users')
       .update(updateData)
       .eq('id', req.params.id)
@@ -174,7 +174,7 @@ router.put('/:id', [
 // @access  Private (admin only)
 router.delete('/:id', authorize(['admin']), async (req, res) => {
   try {
-    const { data: user, error: findError } = await masterSupabaseClient
+    const { data: user, error: findError } = await masterDbClient
       .from('users')
       .select('*')
       .eq('id', req.params.id)
@@ -187,7 +187,7 @@ router.delete('/:id', authorize(['admin']), async (req, res) => {
       });
     }
 
-    const { error: deleteError } = await masterSupabaseClient
+    const { error: deleteError } = await masterDbClient
       .from('users')
       .delete()
       .eq('id', req.params.id);

@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { authorize, storeOwnerOnly } = require('../middleware/auth');
 const { checkStoreOwnership, checkTeamMembership } = require('../middleware/storeAuth');
@@ -142,7 +142,7 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
     }
 
     // Check existing invitation in master DB using Supabase
-    const { data: existingInvitation, error: checkError } = await masterSupabaseClient
+    const { data: existingInvitation, error: checkError } = await masterDbClient
       .from('store_invitations')
       .select('*')
       .eq('store_id', store_id)
@@ -172,7 +172,7 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
       updated_at: new Date().toISOString()
     };
 
-    const { data: invitation, error: inviteError } = await masterSupabaseClient
+    const { data: invitation, error: inviteError } = await masterDbClient
       .from('store_invitations')
       .insert(invitationData)
       .select()
@@ -366,7 +366,7 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
     const { token } = req.params;
 
     // Find invitation in master DB using Supabase
-    const { data: invitation, error: inviteError } = await masterSupabaseClient
+    const { data: invitation, error: inviteError } = await masterDbClient
       .from('store_invitations')
       .select('*')
       .eq('invitation_token', token)
@@ -466,7 +466,7 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
 router.get('/my-invitations', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     // Get invitations using Supabase
-    const { data: invitations, error } = await masterSupabaseClient
+    const { data: invitations, error } = await masterDbClient
       .from('store_invitations')
       .select('*')
       .eq('invited_email', req.user.email)

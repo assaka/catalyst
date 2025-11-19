@@ -1,6 +1,6 @@
 const SibApiV3Sdk = require('@getbrevo/brevo');
 const ConnectionManager = require('./database/ConnectionManager');
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 const brevoService = require('./brevo-service');
 const {
   renderTemplate,
@@ -479,7 +479,7 @@ class EmailService {
     const exampleData = getExampleData(templateIdentifier);
 
     // Add store context - get from master DB
-    const { data: store, error } = await masterSupabaseClient
+    const { data: store, error } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', storeId)

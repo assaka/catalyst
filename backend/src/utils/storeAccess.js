@@ -1,4 +1,4 @@
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 
 /**
  * Get stores for dropdown - owned stores + team stores where user is editor+
@@ -59,7 +59,7 @@ async function getUserStoresForDropdown(userId) {
     `;
 
     // Simplified: Only return stores owned by user (team access can be added later)
-    const { data: stores, error } = await masterSupabaseClient
+    const { data: stores, error } = await masterDbClient
       .from('stores')
       .select('id, slug, status, is_active')
       .eq('user_id', userId)

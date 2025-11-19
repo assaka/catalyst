@@ -12,7 +12,7 @@
  */
 
 const { verifyToken, extractTokenFromHeader } = require('../utils/jwt');
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
@@ -57,7 +57,7 @@ async function authMiddleware(req, res, next) {
     // 4. Fetch FULL user object from master DB (matching old auth middleware)
     const selectFields = 'id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, account_type, created_at, updated_at, credits';
 
-    const { data: user, error: userError } = await masterSupabaseClient
+    const { data: user, error: userError } = await masterDbClient
       .from('users')
       .select(selectFields)
       .eq('id', decoded.userId)
@@ -217,7 +217,7 @@ async function requireStoreOwnership(req, res, next) {
     // Check if user's authenticated storeId matches route param
     if (req.user.store_id !== storeId) {
       // Alternatively, check if user owns this store in master DB (using Supabase client)
-      const { data: store, error: storeError } = await masterSupabaseClient
+      const { data: store, error: storeError } = await masterDbClient
         .from('stores')
         .select('id')
         .eq('id', storeId)

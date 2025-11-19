@@ -113,10 +113,10 @@ const masterSequelize = useMasterDbUrl
 // SUPABASE CLIENT (if using Supabase for master DB)
 // ============================================
 
-let masterSupabaseClient = null;
+let masterDbClient = null;
 
 if (process.env.MASTER_SUPABASE_URL && process.env.MASTER_SUPABASE_SERVICE_KEY) {
-  masterSupabaseClient = createClient(
+  masterDbClient = createClient(
     process.env.MASTER_SUPABASE_URL,
     process.env.MASTER_SUPABASE_SERVICE_KEY,
     {
@@ -181,7 +181,7 @@ process.on('SIGTERM', async () => {
 
 module.exports = {
   masterSequelize,
-  masterSupabaseClient,
+  masterDbClient,
   testMasterConnection,
   closeMasterConnection
 };

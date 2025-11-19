@@ -25,11 +25,11 @@ const router = express.Router();
  * @returns {Promise<Object>} { storeId, store, tenantDb }
  */
 async function getStoreBySlug(slug) {
-  const { masterSupabaseClient } = require('../database/masterConnection');
+  const { masterDbClient } = require('../database/masterConnection');
 
   // Step 1: Use master DB as directory service to get store_id for routing
   // Master stores table contains: id, slug, is_active, user_id (minimal routing info)
-  const { data: masterStore, error: masterError } = await masterSupabaseClient
+  const { data: masterStore, error: masterError } = await masterDbClient
     .from('stores')
     .select('id, is_active')
     .eq('slug', slug)
@@ -119,8 +119,8 @@ router.get('/', cacheMiddleware({
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
 
         // Lookup user in master DB (users are platform-level data)
-        const { masterSupabaseClient } = require('../database/masterConnection');
-        const { data: user, error: userError } = await masterSupabaseClient
+        const { masterDbClient } = require('../database/masterConnection');
+        const { data: user, error: userError } = await masterDbClient
           .from('users')
           .select('*')
           .eq('id', decoded.id)

@@ -7,7 +7,7 @@
  * Provides consistent API for all master DB queries
  */
 
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 
 class MasterDB {
   /**
@@ -16,10 +16,10 @@ class MasterDB {
    * @returns {Object} Supabase query builder
    */
   static from(table) {
-    if (!masterSupabaseClient) {
+    if (!masterDbClient) {
       throw new Error('Master Supabase client not initialized. Check MASTER_SUPABASE_URL and MASTER_SUPABASE_SERVICE_KEY');
     }
-    return masterSupabaseClient.from(table);
+    return masterDbClient.from(table);
   }
 
   /**
@@ -29,12 +29,12 @@ class MasterDB {
    * @returns {Promise<Object>} Query result
    */
   static async query(sql, params = {}) {
-    if (!masterSupabaseClient) {
+    if (!masterDbClient) {
       throw new Error('Master Supabase client not initialized');
     }
 
     // Use Supabase RPC for raw SQL
-    const { data, error } = await masterSupabaseClient.rpc('exec_sql', {
+    const { data, error } = await masterDbClient.rpc('exec_sql', {
       query: sql,
       params
     });

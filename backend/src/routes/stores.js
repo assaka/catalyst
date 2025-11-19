@@ -1,5 +1,5 @@
 const express = require('express');
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 const router = express.Router();
 
 /**
@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
     const offset = (page - 1) * limit;
 
     // Build query
-    let query = masterSupabaseClient
+    let query = masterDbClient
       .from('stores')
       .select('*', { count: 'exact' })
       .eq('is_active', true)
@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
     if (slug) {
       if (slug.includes('.')) {
         // Custom domain lookup
-        const { data: domainRecord, error: domainError } = await masterSupabaseClient
+        const { data: domainRecord, error: domainError } = await masterDbClient
           .from('custom_domains')
           .select('store_id')
           .eq('domain', slug)

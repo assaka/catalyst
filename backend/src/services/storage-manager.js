@@ -126,9 +126,9 @@ class StorageManager {
   async getStorageProvider(storeId) {
     // First check if store has a default media storage provider configured
     try {
-      const { masterSupabaseClient } = require('../database/masterConnection');
+      const { masterDbClient } = require('../database/masterConnection');
 
-      const { data: store, error } = await masterSupabaseClient
+      const { data: store, error } = await masterDbClient
         .from('stores')
         .select('settings')
         .eq('id', storeId)

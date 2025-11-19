@@ -16,7 +16,7 @@ const router = express.Router();
 const { generateTokenPair, refreshAccessToken } = require('../utils/jwt');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 
@@ -37,7 +37,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Check if user already exists (using Supabase client)
-    const { data: existingUsers, error: checkError } = await masterSupabaseClient
+    const { data: existingUsers, error: checkError } = await masterDbClient
       .from('users')
       .select('id')
       .eq('email', email)
@@ -60,7 +60,7 @@ router.post('/register', async (req, res) => {
 
     // Create user in master DB (using Supabase client)
     const userId = uuidv4();
-    const { data: user, error: userError } = await masterSupabaseClient
+    const { data: user, error: userError } = await masterDbClient
       .from('users')
       .insert({
         id: userId,
@@ -84,7 +84,7 @@ router.post('/register', async (req, res) => {
 
     // Create initial store in master DB
     const storeId = uuidv4();
-    const { data: store, error: storeError } = await masterSupabaseClient
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .insert({
         id: storeId,
@@ -102,7 +102,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Initialize credit balance
-    const { error: balanceError } = await masterSupabaseClient
+    const { error: balanceError } = await masterDbClient
       .from('credit_balances')
       .insert({
         id: uuidv4(),
@@ -230,7 +230,7 @@ router.post('/login', async (req, res) => {
     } else {
       // === MASTER LOGIN ===
       // Query master DB for agency user (using Supabase client)
-      const { data: users, error: userError } = await masterSupabaseClient
+      const { data: users, error: userError } = await masterDbClient
         .from('users')
         .select('*')
         .eq('email', email)
@@ -267,7 +267,7 @@ router.post('/login', async (req, res) => {
       }
 
       // Get user's first active store (using Supabase client)
-      const { data: stores, error: storesError } = await masterSupabaseClient
+      const { data: stores, error: storesError } = await masterDbClient
         .from('stores')
         .select('*')
         .eq('user_id', user.id)

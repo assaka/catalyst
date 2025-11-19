@@ -50,10 +50,10 @@ class ConnectionManager {
     }
 
     // Get connection configuration from master DB (use Supabase client to avoid Sequelize auth issues)
-    const { masterSupabaseClient } = require('../../database/masterConnection');
+    const { masterDbClient } = require('../../database/masterConnection');
     const { decryptDatabaseCredentials } = require('../../utils/encryption');
 
-    const { data: storeDb, error } = await masterSupabaseClient
+    const { data: storeDb, error } = await masterDbClient
       .from('store_databases')
       .select('*')
       .eq('store_id', storeId)
@@ -280,10 +280,10 @@ class ConnectionManager {
     const { Sequelize } = require('sequelize');
 
     // Get the store database configuration
-    const { masterSupabaseClient } = require('../../database/masterConnection');
+    const { masterDbClient } = require('../../database/masterConnection');
     const { decryptDatabaseCredentials } = require('../../utils/encryption');
 
-    const { data: storeDb, error } = await masterSupabaseClient
+    const { data: storeDb, error } = await masterDbClient
       .from('store_databases')
       .select('*')
       .eq('store_id', storeId)

@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const { Sequelize } = require('sequelize');
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 const { encryptDatabaseCredentials } = require('../utils/encryption');
 
 router.get('/', async (req, res) => {
@@ -162,7 +162,7 @@ router.get('/', async (req, res) => {
 
     // Test 7: Test Supabase client connection
     try {
-      const { data: supabaseStores, error: supabaseError } = await masterSupabaseClient
+      const { data: supabaseStores, error: supabaseError } = await masterDbClient
         .from('stores')
         .select('id')
         .limit(1);
@@ -193,7 +193,7 @@ router.get('/', async (req, res) => {
       const { v4: uuidv4 } = require('uuid');
 
       // Get a store ID to use
-      const { data: testStores } = await masterSupabaseClient
+      const { data: testStores } = await masterDbClient
         .from('stores')
         .select('id')
         .limit(1);
@@ -211,7 +211,7 @@ router.get('/', async (req, res) => {
         });
 
         // Insert
-        const { data: insertedRecord, error: insertError } = await masterSupabaseClient
+        const { data: insertedRecord, error: insertError } = await masterDbClient
           .from('store_databases')
           .insert({
             id: testId,
@@ -235,7 +235,7 @@ router.get('/', async (req, res) => {
           });
         } else {
           // Delete the test record
-          await masterSupabaseClient
+          await masterDbClient
             .from('store_databases')
             .delete()
             .eq('id', testId);

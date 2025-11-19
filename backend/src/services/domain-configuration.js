@@ -1,4 +1,4 @@
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 
 class DomainConfiguration {
   /**
@@ -7,7 +7,7 @@ class DomainConfiguration {
   async saveDomainConfig(storeId, domainConfig) {
     try {
       // Fetch store from Master DB
-      const { data: store, error: fetchError } = await masterSupabaseClient
+      const { data: store, error: fetchError } = await masterDbClient
         .from('stores')
         .select('id, settings')
         .eq('id', storeId)
@@ -30,7 +30,7 @@ class DomainConfiguration {
       };
 
       // Update store in Master DB
-      const { error: updateError } = await masterSupabaseClient
+      const { error: updateError } = await masterDbClient
         .from('stores')
         .update({ settings: updatedSettings })
         .eq('id', storeId);
@@ -60,7 +60,7 @@ class DomainConfiguration {
   async getDomainConfig(storeId) {
     try {
       // Fetch store from Master DB
-      const { data: store, error: fetchError } = await masterSupabaseClient
+      const { data: store, error: fetchError } = await masterDbClient
         .from('stores')
         .select('id, settings')
         .eq('id', storeId)
@@ -105,7 +105,7 @@ class DomainConfiguration {
       }
 
       // Verify store exists in Master DB
-      const { data: store, error: fetchError } = await masterSupabaseClient
+      const { data: store, error: fetchError } = await masterDbClient
         .from('stores')
         .select('id')
         .eq('id', storeId)
@@ -173,7 +173,7 @@ class DomainConfiguration {
   async removeDomain(storeId, domain) {
     try {
       // Fetch store from Master DB
-      const { data: store, error: fetchError } = await masterSupabaseClient
+      const { data: store, error: fetchError } = await masterDbClient
         .from('stores')
         .select('id, settings')
         .eq('id', storeId)
@@ -190,7 +190,7 @@ class DomainConfiguration {
       const { domain: removedDomain, ...remainingSettings } = currentSettings;
 
       // Update store in Master DB
-      const { error: updateError } = await masterSupabaseClient
+      const { error: updateError } = await masterDbClient
         .from('stores')
         .update({ settings: remainingSettings })
         .eq('id', storeId);
@@ -219,7 +219,7 @@ class DomainConfiguration {
   async checkDomainStatus(storeId) {
     try {
       // Fetch store from Master DB
-      const { data: store, error: fetchError } = await masterSupabaseClient
+      const { data: store, error: fetchError } = await masterDbClient
         .from('stores')
         .select('id, settings')
         .eq('id', storeId)
@@ -267,7 +267,7 @@ class DomainConfiguration {
   async updateDNSStatus(storeId, dnsConfigured, additionalData = {}) {
     try {
       // Fetch store from Master DB
-      const { data: store, error: fetchError } = await masterSupabaseClient
+      const { data: store, error: fetchError } = await masterDbClient
         .from('stores')
         .select('id, settings')
         .eq('id', storeId)

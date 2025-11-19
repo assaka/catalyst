@@ -3,7 +3,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { getDatabaseConfig } = require('../config/database-ipv4');
 
 // DEPRECATED: Global Supabase client is deprecated in master-tenant architecture
-// Use masterSupabaseClient for master DB or ConnectionManager for tenant DB
+// Use masterDbClient for master DB or ConnectionManager for tenant DB
 let supabase = null;
 console.warn('⚠️ [DEPRECATED] Global supabase client from connection.js is deprecated');
 

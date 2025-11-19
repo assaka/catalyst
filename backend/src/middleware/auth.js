@@ -26,8 +26,8 @@ const authMiddleware = async (req, res, next) => {
 
     // For agency users, query MASTER DB
     if (isAgency && !isCustomer) {
-      const { masterSupabaseClient } = require('../database/masterConnection');
-      const { data: masterUser, error } = await masterSupabaseClient
+      const { masterDbClient } = require('../database/masterConnection');
+      const { data: masterUser, error } = await masterDbClient
         .from('users')
         .select('id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, account_type, created_at, updated_at, credits')
         .eq('id', decoded.id)

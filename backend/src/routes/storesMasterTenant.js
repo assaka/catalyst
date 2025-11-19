@@ -11,7 +11,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 const { authMiddleware } = require('../middleware/authMiddleware'); // Use same middleware as authMasterTenant
 const ConnectionManager = require('../services/database/ConnectionManager');
 const TenantProvisioningService = require('../services/database/TenantProvisioningService');
@@ -43,7 +43,7 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 
     // Check store limit using Supabase client
-    const { count, error: countError } = await masterSupabaseClient
+    const { count, error: countError } = await masterDbClient
       .from('stores')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId);
@@ -61,7 +61,7 @@ router.post('/', authMiddleware, async (req, res) => {
     const { v4: uuidv4 } = require('uuid');
     const storeId = uuidv4();
 
-    const { data: store, error: storeError } = await masterSupabaseClient
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .insert({
         id: storeId,
@@ -79,7 +79,7 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 
     // Initialize credit balance
-    const { error: balanceError } = await masterSupabaseClient
+    const { error: balanceError } = await masterDbClient
       .from('credit_balances')
       .insert({
         id: uuidv4(),
@@ -282,9 +282,9 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     // Get store from master DB (use Supabase client to avoid Sequelize connection issues)
     console.log('🔍 Fetching store from master DB via Supabase client...');
     console.log('   StoreId:', storeId);
-    console.log('   masterSupabaseClient available:', !!masterSupabaseClient);
+    console.log('   masterDbClient available:', !!masterDbClient);
 
-    const { data: store, error: storeError } = await masterSupabaseClient
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', storeId)
@@ -303,7 +303,7 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
       // Try to list all stores to debug
       try {
-        const { data: allStores } = await masterSupabaseClient
+        const { data: allStores } = await masterDbClient
           .from('stores')
           .select('id')
           .limit(5);
@@ -334,7 +334,7 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     // Update store status to provisioning (use Supabase client)
     console.log('🔄 Updating store status to provisioning...');
-    const { error: updateError } = await masterSupabaseClient
+    const { error: updateError } = await masterDbClient
       .from('stores')
       .update({ status: 'provisioning', updated_at: new Date().toISOString() })
       .eq('id', storeId);
@@ -532,7 +532,7 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     // 4. Get user password hash from master DB
     console.log('🔍 Fetching user details from master DB for tenant provisioning...');
-    const { data: masterUser, error: userError } = await masterSupabaseClient
+    const { data: masterUser, error: userError } = await masterDbClient
       .from('users')
       .select('password, first_name, last_name')
       .eq('id', req.user.id)
@@ -573,13 +573,13 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     if (!provisioningResult.success) {
       // Revert store status using Supabase client
-      await masterSupabaseClient
+      await masterDbClient
         .from('stores')
         .update({ status: 'pending_database', updated_at: new Date().toISOString() })
         .eq('id', storeId);
 
-      console.log('masterSupabaseClient storeId', storeId);
-      console.log('masterSupabaseClient', res);
+      console.log('masterDbClient storeId', storeId);
+      console.log('masterDbClient', res);
 
       return res.status(500).json({
         success: false,
@@ -660,7 +660,7 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     // 7. Activate store and save slug (use Supabase client)
     console.log('🎉 Activating store and saving slug...');
     const slug = storeSlug || `store-${Date.now()}`;
-    const { error: activateError } = await masterSupabaseClient
+    const { error: activateError } = await masterDbClient
       .from('stores')
       .update({
         status: 'active',
@@ -698,7 +698,7 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     // Revert store status (use Supabase client)
     try {
-      await masterSupabaseClient
+      await masterDbClient
         .from('stores')
         .update({ status: 'pending_database', updated_at: new Date().toISOString() })
         .eq('id', req.params.id);
@@ -722,10 +722,10 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 router.get('/dropdown', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { masterSupabaseClient } = require('../database/masterConnection');
+    const { masterDbClient } = require('../database/masterConnection');
 
     // Get stores from master DB (master only has: id, slug, user_id, status, is_active)
-    const { data: stores, error } = await masterSupabaseClient
+    const { data: stores, error } = await masterDbClient
       .from('stores')
       .select('id, slug, status, is_active, created_at')
       .eq('user_id', userId)
@@ -856,7 +856,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
     const storeId = req.params.id;
 
     // Get from master DB using Supabase client
-    const { data: store, error: storeError } = await masterSupabaseClient
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', storeId)
@@ -878,7 +878,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
     // Get credit balance using Supabase client
     let creditBalance = null;
     try {
-      const { data: balance } = await masterSupabaseClient
+      const { data: balance } = await masterDbClient
         .from('credit_balances')
         .select('*')
         .eq('store_id', storeId)
@@ -944,7 +944,7 @@ router.patch('/:id', authMiddleware, async (req, res) => {
     const updates = req.body;
 
     // Get store from master DB using Supabase client
-    const { data: store, error: storeError } = await masterSupabaseClient
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', storeId)
@@ -995,7 +995,7 @@ router.get('/:id/settings', authMiddleware, async (req, res) => {
     const storeId = req.params.id;
 
     // Get store from master DB using Supabase client
-    const { data: store, error: storeError } = await masterSupabaseClient
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', storeId)
@@ -1052,7 +1052,7 @@ router.put('/:id/settings', authMiddleware, async (req, res) => {
     });
 
     // Get store from master DB using Supabase client
-    const { data: store, error: storeError } = await masterSupabaseClient
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', storeId)
@@ -1130,7 +1130,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     const storeId = req.params.id;
 
     // Get store from master DB using Supabase client
-    const { data: store, error: storeError } = await masterSupabaseClient
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', storeId)
@@ -1144,7 +1144,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     }
 
     // Soft delete - suspend the store
-    const { error: suspendError } = await masterSupabaseClient
+    const { error: suspendError } = await masterDbClient
       .from('stores')
       .update({
         status: 'suspended',

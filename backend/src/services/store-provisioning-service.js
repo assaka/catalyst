@@ -4,7 +4,7 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 const ConnectionManager = require('./database/ConnectionManager');
 const { MIGRATION_TYPES } = require('../config/migration-types');
 
@@ -46,7 +46,7 @@ class StoreProvisioningService {
       return false;
     }
 
-    const { data: existingStore, error } = await masterSupabaseClient
+    const { data: existingStore, error } = await masterDbClient
       .from('stores')
       .select('id')
       .eq('subdomain', subdomain.toLowerCase())
@@ -273,7 +273,7 @@ class StoreProvisioningService {
         updated_at: new Date().toISOString()
       };
 
-      const { data: store, error: storeError } = await masterSupabaseClient
+      const { data: store, error: storeError } = await masterDbClient
         .from('stores')
         .insert(storeRecord)
         .select()
@@ -369,7 +369,7 @@ class StoreProvisioningService {
   async getProvisioningStatus(storeId) {
     try {
       // Get store from master DB
-      const { data: store, error: storeError } = await masterSupabaseClient
+      const { data: store, error: storeError } = await masterDbClient
         .from('stores')
         .select('id, name, subdomain, domain, status')
         .eq('id', storeId)

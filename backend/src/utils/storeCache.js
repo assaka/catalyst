@@ -8,7 +8,7 @@
  * Note: Store settings are fetched from Master DB as they're configuration data
  */
 
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 
 // In-memory cache: { store_id: { settings: {...}, cacheConfig: {...}, timestamp: Date } }
 const storeCache = new Map();

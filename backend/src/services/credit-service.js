@@ -1,4 +1,4 @@
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 
 class CreditService {
   constructor() {
@@ -10,7 +10,7 @@ class CreditService {
    * Note: storeId parameter kept for backward compatibility but not used
    */
   async getBalance(userId, storeId = null) {
-    const { data: user, error } = await masterSupabaseClient
+    const { data: user, error } = await masterDbClient
       .from('users')
       .select('credits')
       .eq('id', userId)
@@ -74,7 +74,7 @@ class CreditService {
     // Deduct from users.credits using Supabase
     console.log(`💳 Updating users.credits: ${balance} - ${creditAmount} = ${balance - creditAmount}`);
     const newBalance = balance - creditAmount;
-    const { data: updatedUser, error: updateError } = await masterSupabaseClient
+    const { data: updatedUser, error: updateError } = await masterDbClient
       .from('users')
       .update({
         credits: newBalance,
@@ -108,7 +108,7 @@ class CreditService {
       updated_at: new Date().toISOString()
     };
 
-    const { data: usage, error: usageError } = await masterSupabaseClient
+    const { data: usage, error: usageError } = await masterDbClient
       .from('credit_usage')
       .insert(usageData)
       .select()
@@ -628,7 +628,7 @@ class CreditService {
     const usageStats = await CreditUsage.getUsageStats(userId, storeId, startDate);
     
     // Get daily usage for charting using Supabase
-    const { data: usageRecords, error: usageError } = await masterSupabaseClient
+    const { data: usageRecords, error: usageError } = await masterDbClient
       .from('credit_usage')
       .select('created_at, credits_used')
       .eq('user_id', userId)

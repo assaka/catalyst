@@ -228,7 +228,7 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
     });
 
     // Use Supabase client instead of Sequelize to avoid connection issues
-    const { masterSupabaseClient } = require('../../database/masterConnection');
+    const { masterDbClient } = require('../../database/masterConnection');
     const { v4: uuidv4 } = require('uuid');
 
     // Encrypt credentials
@@ -247,7 +247,7 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
 
     // Create record via Supabase client
     console.log('🔧 Creating record in master DB via Supabase client...');
-    const { data, error } = await masterSupabaseClient
+    const { data, error } = await masterDbClient
       .from('store_databases')
       .insert({
         id: uuidv4(),
