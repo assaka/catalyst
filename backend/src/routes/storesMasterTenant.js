@@ -724,10 +724,10 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const { masterSupabaseClient } = require('../database/masterConnection');
 
-    // Get stores from master DB (using Supabase client)
+    // Get stores from master DB with name and slug (no need to query tenant DB)
     const { data: stores, error } = await masterSupabaseClient
       .from('stores')
-      .select('id, status, is_active, created_at')
+      .select('id, name, slug, status, is_active, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -735,79 +735,20 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
       throw new Error(error.message);
     }
 
-    // Enrich with hostname info (using Supabase client, not Sequelize model)
-    const enrichedStores = await Promise.all(
-      (stores || []).map(async (store) => {
-        // Get tenant store name and slug (skip store_hostnames - not used in this setup)
-        let storeName = 'Unnamed Store';
-        let storeSlug = null;
+    // Return stores directly from master DB (name and slug are now in master DB)
+    const formattedStores = (stores || []).map(store => ({
+      id: store.id,
+      name: store.name || 'Unnamed Store',
+      slug: store.slug,
+      status: store.status,
+      is_active: store.is_active
+    }));
 
-        console.log(`[Dropdown] Processing store ${store.id}:`, {
-          is_active: store.is_active,
-          status: store.status,
-          will_query_tenant: store.is_active && store.status === 'active'
-        });
-
-        if (store.is_active && store.status === 'active') {
-          try {
-            console.log(`[Dropdown] Getting tenant connection for store ${store.id}...`);
-            const tenantDb = await ConnectionManager.getStoreConnection(store.id);
-            console.log(`[Dropdown] Tenant connection obtained, querying stores table...`);
-            console.log(`[Dropdown] Looking for store with ID: ${store.id}`);
-
-            // First check if ANY stores exist in tenant DB
-            const { data: allStores, error: allStoresError } = await tenantDb
-              .from('stores')
-              .select('id, name, slug')
-              .limit(5);
-
-            console.log(`[Dropdown] All stores in tenant DB:`, {
-              count: allStores?.length || 0,
-              stores: allStores,
-              error: allStoresError?.message
-            });
-
-            // Now query for the specific store
-            const { data: tenantStore, error: queryError } = await tenantDb
-              .from('stores')
-              .select('name, slug')
-              .eq('id', store.id)
-              .maybeSingle();
-
-            console.log(`[Dropdown] Query result for ${store.id}:`, {
-              has_data: !!tenantStore,
-              data: tenantStore,
-              error: queryError?.message
-            });
-
-            if (tenantStore) {
-              storeName = tenantStore.name;
-              storeSlug = tenantStore.slug;
-              console.log(`[Dropdown] ✅ Store name set to: ${storeName}`);
-            } else {
-              console.warn(`[Dropdown] ⚠️ No tenant store data returned`);
-            }
-          } catch (err) {
-            console.error(`[Dropdown] ❌ Failed to get tenant store data for ${store.id}:`, err.message);
-            console.error(`[Dropdown] Error stack:`, err.stack);
-          }
-        } else {
-          console.log(`[Dropdown] ⏭️ Skipping tenant query - store not active`);
-        }
-
-        return {
-          id: store.id,
-          name: storeName,
-          slug: storeSlug,
-          status: store.status,
-          is_active: store.is_active
-        };
-      })
-    );
+    console.log(`[Dropdown] Returning ${formattedStores.length} stores for user ${userId}`);
 
     res.json({
       success: true,
-      data: enrichedStores
+      data: formattedStores
     });
   } catch (error) {
     console.error('Get stores dropdown error:', error);
