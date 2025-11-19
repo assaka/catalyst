@@ -157,8 +157,8 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
       });
     }
 
-    // Create invitation
-    const invitation = await StoreInvitation.create({
+    // Create invitation using Supabase
+    const invitationData = {
       store_id,
       invited_email: email,
       invited_by: req.user.id,
@@ -166,8 +166,25 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
       permissions,
       message,
       invitation_token: crypto.randomBytes(32).toString('hex'),
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-    });
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data: invitation, error: inviteError } = await masterSupabaseClient
+      .from('store_invitations')
+      .insert(invitationData)
+      .select()
+      .single();
+
+    if (inviteError) {
+      console.error('Error creating invitation:', inviteError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create invitation'
+      });
+    }
 
     // TODO: Send email invitation
     console.log('📧 Email invitation should be sent:', {
@@ -348,18 +365,22 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
   try {
     const { token } = req.params;
 
-    // Find invitation in master DB
-    const invitation = await StoreInvitation.findOne({
-      where: {
-        invitation_token: token,
-        status: 'pending',
-        expires_at: { [Op.gt]: new Date() }
-      },
-      include: [
-        { model: Store, attributes: ['id', 'name'] },
-        { model: User, as: 'inviter', attributes: ['id', 'email', 'first_name', 'last_name'] }
-      ]
-    });
+    // Find invitation in master DB using Supabase
+    const { data: invitation, error: inviteError } = await masterSupabaseClient
+      .from('store_invitations')
+      .select('*')
+      .eq('invitation_token', token)
+      .eq('status', 'pending')
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    if (inviteError) {
+      console.error('Error fetching invitation:', inviteError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch invitation'
+      });
+    }
 
     if (!invitation) {
       return res.status(404).json({
@@ -444,22 +465,28 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
 // @access  Private
 router.get('/my-invitations', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const invitations = await StoreInvitation.findAll({
-      where: {
-        invited_email: req.user.email,
-        status: 'pending',
-        expires_at: { [Op.gt]: new Date() }
-      },
-      include: [
-        { model: Store, attributes: ['id', 'name', 'logo_url'] },
-        { model: User, as: 'inviter', attributes: ['id', 'email', 'first_name', 'last_name'] }
-      ],
-      order: [['created_at', 'DESC']]
-    });
+    // Get invitations using Supabase
+    const { data: invitations, error } = await masterSupabaseClient
+      .from('store_invitations')
+      .select('*')
+      .eq('invited_email', req.user.email)
+      .eq('status', 'pending')
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false });
 
+    if (error) {
+      console.error('Error fetching invitations:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch invitations'
+      });
+    }
+
+    // Note: Store and User data removed (were from includes)
+    // Can be fetched separately if needed
     res.json({
       success: true,
-      data: invitations
+      data: invitations || []
     });
   } catch (error) {
     console.error('❌ Get my invitations error:', error);

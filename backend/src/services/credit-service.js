@@ -1,9 +1,4 @@
-const Credit = require('../models/Credit');
-const CreditTransaction = require('../models/CreditTransaction');
-const CreditUsage = require('../models/CreditUsage');
-const AkeneoSchedule = require('../models/AkeneoSchedule');
-const ServiceCreditCost = require('../models/ServiceCreditCost');
-const { sequelize } = require('../database/connection');
+const { masterSupabaseClient } = require('../database/masterConnection');
 
 class CreditService {
   constructor() {
@@ -15,14 +10,18 @@ class CreditService {
    * Note: storeId parameter kept for backward compatibility but not used
    */
   async getBalance(userId, storeId = null) {
-    const [result] = await sequelize.query(`
-      SELECT credits FROM users WHERE id = $1
-    `, {
-      bind: [userId],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: user, error } = await masterSupabaseClient
+      .from('users')
+      .select('credits')
+      .eq('id', userId)
+      .maybeSingle();
 
-    return result ? parseFloat(result.credits || 0) : 0;
+    if (error) {
+      console.error('Error fetching user credits:', error);
+      return 0;
+    }
+
+    return user ? parseFloat(user.credits || 0) : 0;
   }
 
   /**
@@ -72,36 +71,54 @@ class CreditService {
       throw new Error(`Insufficient credits. Required: ${creditAmount}, Available: ${balance}`);
     }
 
-    // Deduct from users.credits (single source of truth)
+    // Deduct from users.credits using Supabase
     console.log(`💳 Updating users.credits: ${balance} - ${creditAmount} = ${balance - creditAmount}`);
-    const updateResult = await sequelize.query(`
-      UPDATE users
-      SET credits = credits - $1::numeric,
-          updated_at = NOW()
-      WHERE id = $2
-      RETURNING id, credits
-    `, {
-      bind: [creditAmount, userId],
-      type: sequelize.QueryTypes.UPDATE
-    });
-    console.log(`💳 Update result:`, updateResult);
+    const newBalance = balance - creditAmount;
+    const { data: updatedUser, error: updateError } = await masterSupabaseClient
+      .from('users')
+      .update({
+        credits: newBalance,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId)
+      .select('id, credits')
+      .single();
 
-    // Record usage for tracking (store_id kept for analytics)
+    if (updateError) {
+      console.error('Error updating user credits:', updateError);
+      throw new Error('Failed to deduct credits');
+    }
+    console.log(`💳 Update result:`, updatedUser);
+
+    // Record usage for tracking using Supabase
     console.log(`💳 Creating credit_usage record...`);
-    const usage = await CreditUsage.create({
+    const usageData = {
       user_id: userId,
       store_id: storeId,
       credits_used: creditAmount,
-      usage_type: 'other', // Generic type - description tells the real story
+      usage_type: 'other',
       reference_id: referenceId,
       reference_type: referenceType,
       description: description,
       metadata: {
         deduction_time: new Date().toISOString(),
         ...metadata
-      }
-    });
-    console.log(`💳 Created credit_usage record:`, usage.id);
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data: usage, error: usageError } = await masterSupabaseClient
+      .from('credit_usage')
+      .insert(usageData)
+      .select()
+      .single();
+
+    if (usageError) {
+      console.error('Error creating credit usage record:', usageError);
+      // Don't fail the deduction if usage tracking fails
+    }
+    console.log(`💳 Created credit_usage record:`, usage?.id);
 
     const newBalance = await this.getBalance(userId);
     console.log(`💳 New balance after deduction: ${newBalance} credits`);
@@ -610,28 +627,32 @@ class CreditService {
 
     const usageStats = await CreditUsage.getUsageStats(userId, storeId, startDate);
     
-    // Get daily usage for charting
-    const dailyUsage = await CreditUsage.findAll({
-      where: {
-        user_id: userId,
-        store_id: storeId,
-        createdAt: {
-          [require('sequelize').Op.gte]: startDate
-        }
-      },
-      attributes: [
-        [require('sequelize').fn('DATE', require('sequelize').col('createdAt')), 'date'],
-        [require('sequelize').fn('SUM', require('sequelize').col('credits_used')), 'credits_used'],
-        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'usage_count']
-      ],
-      group: [require('sequelize').fn('DATE', require('sequelize').col('createdAt'))],
-      order: [[require('sequelize').fn('DATE', require('sequelize').col('createdAt')), 'ASC']]
+    // Get daily usage for charting using Supabase
+    const { data: usageRecords, error: usageError } = await masterSupabaseClient
+      .from('credit_usage')
+      .select('created_at, credits_used')
+      .eq('user_id', userId)
+      .eq('store_id', storeId)
+      .gte('created_at', startDate.toISOString())
+      .order('created_at', { ascending: true });
+
+    // Aggregate by date in JavaScript (Supabase doesn't have GROUP BY)
+    const dailyUsage = {};
+    (usageRecords || []).forEach(record => {
+      const date = record.created_at.split('T')[0]; // Get YYYY-MM-DD
+      if (!dailyUsage[date]) {
+        dailyUsage[date] = { date, credits_used: 0, usage_count: 0 };
+      }
+      dailyUsage[date].credits_used += parseFloat(record.credits_used || 0);
+      dailyUsage[date].usage_count += 1;
     });
+
+    const dailyUsageArray = Object.values(dailyUsage);
 
     return {
       period_days: days,
       usage_stats: usageStats,
-      daily_usage: dailyUsage,
+      daily_usage: dailyUsageArray,
       total_credits_used: Object.values(usageStats).reduce((sum, stat) => sum + stat.total_credits_used, 0),
       total_operations: Object.values(usageStats).reduce((sum, stat) => sum + stat.usage_count, 0)
     };
