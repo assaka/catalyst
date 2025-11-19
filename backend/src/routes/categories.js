@@ -1,10 +1,10 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { Category, Store, Language } = require('../models');
 const { Op } = require('sequelize');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const {
   getCategoriesWithTranslations,
   getCategoriesWithAllTranslations,
@@ -12,7 +12,7 @@ const {
   createCategoryWithTranslations,
   updateCategoryWithTranslations,
   deleteCategory
-} = require('../utils/categoryHelpers');
+} = require('../utils/categoryTenantHelpers');
 const router = express.Router();
 
 // Helper function to check store access (ownership or team membership)
@@ -31,32 +31,40 @@ const { authMiddleware, authorize } = require('../middleware/auth');
 
 router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const { page = 1, limit = 100, store_id, parent_id, search, include_all_translations } = req.query;
+    const { page = 1, limit = 100, parent_id, search, include_all_translations } = req.query;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
     const offset = (page - 1) * limit;
 
-    const where = {};
-
-    // Filter by store access (ownership + team membership)
-    if (req.user.role !== 'admin') {
-      const { getUserStoresForDropdown } = require('../utils/storeAccess');
-      const accessibleStores = await getUserStoresForDropdown(req.user.id);
-      const storeIds = accessibleStores.map(store => store.id);
-      where.store_id = { [Op.in]: storeIds };
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
     }
 
-    if (store_id) where.store_id = store_id;
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    const where = {};
     if (parent_id) where.parent_id = parent_id;
 
     const lang = getLanguageFromRequest(req);
 
     // Get categories with translations (all or single language)
-    // Use optimized SQL-based pagination and search for single language queries
     let categories, total;
 
     if (include_all_translations === 'true') {
-      // For admin translation management, fetch all translations
-      // (Less common operation, in-memory pagination acceptable)
-      const allCategories = await getCategoriesWithAllTranslations(where);
+      // For admin translation management, fetch all translations from tenant DB
+      const allCategories = await getCategoriesWithAllTranslations(store_id, where);
 
       // Apply search filter if needed
       let filteredCategories = allCategories;
@@ -71,8 +79,9 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
       total = filteredCategories.length;
       categories = filteredCategories.slice(offset, offset + parseInt(limit));
     } else {
-      // Use optimized SQL-based pagination and search
+      // Use optimized pagination and search from tenant DB
       const result = await getCategoriesWithTranslations(
+        store_id,
         where,
         lang,
         { limit: parseInt(limit), offset, search }
@@ -107,27 +116,35 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
 // @access  Private
 router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const lang = getLanguageFromRequest(req);
-    const category = await getCategoryById(req.params.id, lang);
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
-    if (!category) {
-      return res.status(404).json({
+    if (!store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'Category not found'
+        message: 'Store ID is required'
       });
     }
 
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, category.store_id);
-
+      const access = await checkUserStoreAccess(req.user.id, store_id);
       if (!access) {
         return res.status(403).json({
           success: false,
           message: 'Access denied'
         });
       }
+    }
+
+    const lang = getLanguageFromRequest(req);
+    const category = await getCategoryById(store_id, req.params.id, lang);
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
     }
 
     res.json({
@@ -190,7 +207,7 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
     // Extract translations from request body
     const { translations, ...categoryData } = req.body;
 
-    const category = await createCategoryWithTranslations(categoryData, translations || {});
+    const category = await createCategoryWithTranslations(store_id, categoryData, translations || {});
 
     res.status(201).json({
       success: true,
@@ -221,20 +238,20 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
       });
     }
 
-    // Check if category exists
-    const existingCategory = await Category.findByPk(req.params.id);
+    // Get store_id from request body
+    const { store_id } = req.body;
 
-    if (!existingCategory) {
-      return res.status(404).json({
+    if (!store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'Category not found'
+        message: 'store_id is required'
       });
     }
 
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, existingCategory.store_id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({
@@ -247,7 +264,7 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
     // Extract translations from request body
     const { translations, ...categoryData } = req.body;
 
-    const category = await updateCategoryWithTranslations(req.params.id, categoryData, translations || {});
+    const category = await updateCategoryWithTranslations(store_id, req.params.id, categoryData, translations || {});
 
     res.json({
       success: true,
@@ -268,19 +285,20 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
 // @access  Private
 router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const category = await Category.findByPk(req.params.id);
+    // Get store_id from query params
+    const { store_id } = req.query;
 
-    if (!category) {
-      return res.status(404).json({
+    if (!store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'Category not found'
+        message: 'store_id is required'
       });
     }
 
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, category.store_id);
+      const access = await checkUserStoreAccess(req.user.id, store_id);
 
       if (!access) {
         return res.status(403).json({
@@ -290,7 +308,7 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
       }
     }
 
-    await deleteCategory(req.params.id);
+    await deleteCategory(store_id, req.params.id);
 
     res.json({
       success: true,
@@ -413,8 +431,8 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
       });
     }
 
-    // Get all categories for this store with all translations
-    const categories = await getCategoriesWithAllTranslations({ store_id });
+    // Get all categories for this store with all translations from tenant DB
+    const categories = await getCategoriesWithAllTranslations(store_id, {});
 
     if (categories.length === 0) {
       return res.json({
