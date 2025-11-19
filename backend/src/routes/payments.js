@@ -1,6 +1,7 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
 
@@ -1474,7 +1475,6 @@ router.post('/webhook', async (req, res) => {
 
                 try {
                   // Generate invoice number and date BEFORE sending email
-                  const { Invoice } = require('../models'); // Tenant DB model
                   const invoiceNumber = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
                   const invoiceDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -1536,14 +1536,24 @@ router.post('/webhook', async (req, res) => {
 
                   // Create invoice record to track that invoice was sent
                   try {
-                    await Invoice.create({
-                      invoice_number: invoiceNumber,
-                      order_id: finalOrder.id,
-                      store_id: finalOrder.store_id,
-                      customer_email: finalOrder.customer_email,
-                      pdf_generated: salesSettings.auto_invoice_pdf_enabled || false,
-                      email_status: 'sent'
-                    });
+                    const tenantDb = await ConnectionManager.getStoreConnection(finalOrder.store_id);
+                    const { data: invoice, error } = await tenantDb
+                      .from('invoices')
+                      .insert({
+                        id: uuidv4(),
+                        invoice_number: invoiceNumber,
+                        order_id: finalOrder.id,
+                        store_id: finalOrder.store_id,
+                        customer_email: finalOrder.customer_email,
+                        pdf_generated: salesSettings.auto_invoice_pdf_enabled || false,
+                        email_status: 'sent',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                      })
+                      .select()
+                      .single();
+
+                    if (error) throw error;
                     console.log('✅ Invoice record created:', invoiceNumber);
                   } catch (invoiceCreateError) {
                     console.error('❌ Failed to create invoice record:', invoiceCreateError);
@@ -1554,8 +1564,6 @@ router.post('/webhook', async (req, res) => {
                   if (salesSettings.auto_ship_enabled) {
                     console.log('📦 Auto-ship enabled, sending shipment notification...');
                     try {
-                      const { Shipment } = require('../models'); // Tenant DB model
-
                       // Generate shipment PDF if enabled
                       let shipmentAttachments = [];
                       if (salesSettings.auto_shipment_pdf_enabled) {
@@ -1605,17 +1613,27 @@ router.post('/webhook', async (req, res) => {
                       // Create shipment record
                       const shipmentNumber = 'SHIP-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
 
-                      await Shipment.create({
-                        shipment_number: shipmentNumber,
-                        order_id: finalOrder.id,
-                        store_id: finalOrder.store_id,
-                        customer_email: finalOrder.customer_email,
-                        tracking_number: finalOrder.tracking_number,
-                        tracking_url: finalOrder.tracking_url,
-                        carrier: 'Standard',
-                        shipping_method: finalOrder.shipping_method,
-                        email_status: 'sent'
-                      });
+                      const tenantDb = await ConnectionManager.getStoreConnection(finalOrder.store_id);
+                      const { data: shipment, error: shipmentError } = await tenantDb
+                        .from('shipments')
+                        .insert({
+                          id: uuidv4(),
+                          shipment_number: shipmentNumber,
+                          order_id: finalOrder.id,
+                          store_id: finalOrder.store_id,
+                          customer_email: finalOrder.customer_email,
+                          tracking_number: finalOrder.tracking_number,
+                          tracking_url: finalOrder.tracking_url,
+                          carrier: 'Standard',
+                          shipping_method: finalOrder.shipping_method,
+                          email_status: 'sent',
+                          created_at: new Date().toISOString(),
+                          updated_at: new Date().toISOString()
+                        })
+                        .select()
+                        .single();
+
+                      if (shipmentError) throw shipmentError;
 
                       // Update order status to shipped
                       await orderWithDetails.update({
@@ -1993,7 +2011,6 @@ router.post('/webhook-connect', async (req, res) => {
 
               try {
                 // Generate invoice number and date BEFORE sending email
-                const { Invoice } = require('../models'); // Tenant DB model
                 const invoiceNumber = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
                 const invoiceDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -2040,14 +2057,24 @@ router.post('/webhook-connect', async (req, res) => {
 
                 // Create invoice record to track that invoice was sent
                 try {
-                  await Invoice.create({
-                    invoice_number: invoiceNumber,
-                    order_id: finalOrder.id,
-                    store_id: finalOrder.store_id,
-                    customer_email: finalOrder.customer_email,
-                    pdf_generated: salesSettings.auto_invoice_pdf_enabled || false,
-                    email_status: 'sent'
-                  });
+                  const tenantDb = await ConnectionManager.getStoreConnection(finalOrder.store_id);
+                  const { data: invoice, error } = await tenantDb
+                    .from('invoices')
+                    .insert({
+                      id: uuidv4(),
+                      invoice_number: invoiceNumber,
+                      order_id: finalOrder.id,
+                      store_id: finalOrder.store_id,
+                      customer_email: finalOrder.customer_email,
+                      pdf_generated: salesSettings.auto_invoice_pdf_enabled || false,
+                      email_status: 'sent',
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+
+                  if (error) throw error;
                   console.log('✅ Invoice record created:', invoiceNumber);
                 } catch (invoiceCreateError) {
                   console.error('❌ Failed to create invoice record:', invoiceCreateError);
