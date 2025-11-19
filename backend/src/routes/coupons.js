@@ -1,6 +1,5 @@
 const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { Op } = require('sequelize');
 const router = express.Router();
 
 // Basic CRUD operations for coupons

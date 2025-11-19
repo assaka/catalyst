@@ -1,7 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { Op } = require('sequelize');
 const router = express.Router();
 
 // Helper function to get client IP

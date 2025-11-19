@@ -6,7 +6,6 @@
 const express = require('express');
 const router = express.Router();
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { Op } = require('sequelize');
 
 /**
  * Request data deletion (Right to be Forgotten)

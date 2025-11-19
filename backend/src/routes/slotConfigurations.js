@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const SlotConfiguration = require('../models/SlotConfiguration');
 const { authMiddleware } = require('../middleware/authMiddleware');
-const { Op } = require('sequelize');
 const ABTest = require('../models/ABTest');
 const ABTestAssignment = require('../models/ABTestAssignment');
 const ABTestService = require('../services/ABTestService');
