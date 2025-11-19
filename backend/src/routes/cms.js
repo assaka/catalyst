@@ -4,6 +4,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const {
   getCMSPageWithAllTranslations,
   getCMSPagesWithAllTranslations,
@@ -84,7 +85,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -116,7 +117,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const { store_id, translations, ...pageData } = req.body;
 
@@ -173,7 +174,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.body.store_id;
 
@@ -245,7 +246,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 

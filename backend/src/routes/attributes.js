@@ -159,7 +159,7 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -311,7 +311,7 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
 
@@ -372,7 +372,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -424,7 +424,7 @@ router.delete('/:id', async (req, res) => {
 // ========== ATTRIBUTE VALUES ROUTES ==========
 
 // Get all values for an attribute
-router.get('/:attributeId/values', async (req, res) => {
+router.get('/:attributeId/values', authMiddleware, async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
