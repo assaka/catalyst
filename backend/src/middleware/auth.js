@@ -2,6 +2,9 @@ const jwt = require('jsonwebtoken');
 const { User, Customer } = require('../models'); // Tenant DB models (Sequelize fallback)
 const { supabase } = require('../database/connection');
 
+// Import the NEW authMiddleware for validateRoleSession to use
+const { authMiddleware: newAuthMiddleware } = require('./authMiddleware');
+
 const authMiddleware = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -146,9 +149,9 @@ const authorize = (roles) => {
 const validateRoleSession = (allowedRoles) => {
   return async (req, res, next) => {
     try {
-      // First run standard auth middleware
+      // First run NEW auth middleware (uses authMiddleware.js for consistent JWT validation)
       await new Promise((resolve, reject) => {
-        authMiddleware(req, res, (err) => {
+        newAuthMiddleware(req, res, (err) => {
           if (err) reject(err);
           else resolve();
         });
