@@ -218,8 +218,8 @@ router.post('/', [
 router.put('/:id', async (req, res) => {
   try {
     // Get settings first to determine store_id
-    const settingsData = await getCookieConsentSettingsById(req.params.id);
-    if (!settingsData) {
+    const existingSettingsData = await getCookieConsentSettingsById(req.params.id);
+    if (!existingSettingsData) {
       return res.status(404).json({
         success: false,
         message: 'Cookie consent settings not found'
@@ -227,7 +227,7 @@ router.put('/:id', async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(settingsData.store_id);
+    const connection = await ConnectionManager.getConnection(existingSettingsData.store_id);
     const { CookieConsentSettings } = connection.models;
 
     // Get the full model instance
@@ -283,8 +283,8 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     // Get settings first to determine store_id
-    const settingsData = await getCookieConsentSettingsById(req.params.id);
-    if (!settingsData) {
+    const existingSettingsData = await getCookieConsentSettingsById(req.params.id);
+    if (!existingSettingsData) {
       return res.status(404).json({
         success: false,
         message: 'Cookie consent settings not found'
@@ -292,7 +292,7 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(settingsData.store_id);
+    const connection = await ConnectionManager.getConnection(existingSettingsData.store_id);
     const { CookieConsentSettings } = connection.models;
 
     const settings = await CookieConsentSettings.findByPk(req.params.id);
@@ -350,8 +350,8 @@ router.post('/:id/translate', [
     const { fromLang, toLang } = req.body;
 
     // Get settings first to determine store_id
-    const settingsData = await getCookieConsentSettingsById(req.params.id);
-    if (!settingsData) {
+    const existingSettingsData = await getCookieConsentSettingsById(req.params.id);
+    if (!existingSettingsData) {
       return res.status(404).json({
         success: false,
         message: 'Cookie consent settings not found'
@@ -359,7 +359,7 @@ router.post('/:id/translate', [
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(settingsData.store_id);
+    const connection = await ConnectionManager.getConnection(existingSettingsData.store_id);
     const { CookieConsentSettings, Store } = connection.models;
 
     const settings = await CookieConsentSettings.findByPk(req.params.id, {
