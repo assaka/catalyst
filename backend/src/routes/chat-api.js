@@ -5,7 +5,13 @@
 
 const express = require('express');
 const router = express.Router();
-const { sequelize } = require('../database/connection');
+const { authMiddleware } = require('../middleware/auth');
+const { storeResolver } = require('../middleware/storeResolver');
+const ConnectionManager = require('../services/database/ConnectionManager');
+
+// All routes require authentication and automatic store resolution (optional for public chat)
+router.use(authMiddleware);
+router.use(storeResolver({ required: false }));
 
 /**
  * POST /api/chat/conversations
@@ -13,18 +19,23 @@ const { sequelize } = require('../database/connection');
  */
 router.post('/conversations', async (req, res) => {
   try {
+    const { storeId } = req;
     const { customer_name, customer_email, customer_id } = req.body;
 
     console.log('💬 Creating new conversation for:', customer_name || 'Guest');
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const sequelize = connection.sequelize;
+
     const result = await sequelize.query(`
       INSERT INTO chat_conversations (
-        id, customer_id, customer_name, customer_email, status, started_at, created_at
+        id, store_id, customer_id, customer_name, customer_email, status, started_at, created_at
       ) VALUES (
-        gen_random_uuid(), $1, $2, $3, 'open', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        gen_random_uuid(), $1, $2, $3, $4, 'open', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
       ) RETURNING *
     `, {
-      bind: [customer_id || null, customer_name || 'Guest', customer_email || ''],
+      bind: [storeId, customer_id || null, customer_name || 'Guest', customer_email || ''],
       type: sequelize.QueryTypes.INSERT
     });
 
@@ -51,14 +62,20 @@ router.post('/conversations', async (req, res) => {
  */
 router.get('/conversations/:id/messages', async (req, res) => {
   try {
+    const { storeId } = req;
     const { id } = req.params;
 
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const sequelize = connection.sequelize;
+
     const messages = await sequelize.query(`
-      SELECT * FROM chat_messages
-      WHERE conversation_id = $1
-      ORDER BY created_at ASC
+      SELECT m.* FROM chat_messages m
+      JOIN chat_conversations c ON m.conversation_id = c.id
+      WHERE m.conversation_id = $1 AND c.store_id = $2
+      ORDER BY m.created_at ASC
     `, {
-      bind: [id],
+      bind: [id, storeId],
       type: sequelize.QueryTypes.SELECT
     });
 
@@ -81,10 +98,30 @@ router.get('/conversations/:id/messages', async (req, res) => {
  */
 router.post('/conversations/:id/messages', async (req, res) => {
   try {
+    const { storeId } = req;
     const { id } = req.params;
     const { message_text, sender_type, sender_id, sender_name } = req.body;
 
     console.log(`💬 New message in conversation ${id}:`, message_text.substring(0, 50));
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const sequelize = connection.sequelize;
+
+    // Verify conversation belongs to this store
+    const conversationCheck = await sequelize.query(`
+      SELECT id FROM chat_conversations WHERE id = $1 AND store_id = $2
+    `, {
+      bind: [id, storeId],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    if (!conversationCheck || conversationCheck.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Conversation not found or access denied'
+      });
+    }
 
     // Insert message
     const result = await sequelize.query(`
@@ -111,9 +148,9 @@ router.post('/conversations/:id/messages', async (req, res) => {
       UPDATE chat_conversations
       SET last_message_at = CURRENT_TIMESTAMP,
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
+      WHERE id = $1 AND store_id = $2
     `, {
-      bind: [id],
+      bind: [id, storeId],
       type: sequelize.QueryTypes.UPDATE
     });
 
@@ -138,10 +175,15 @@ router.post('/conversations/:id/messages', async (req, res) => {
  */
 router.get('/conversations', async (req, res) => {
   try {
+    const { storeId } = req;
     const { status, limit = 50 } = req.query;
 
-    let query = 'SELECT * FROM chat_conversations WHERE 1=1';
-    const params = [];
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const sequelize = connection.sequelize;
+
+    let query = 'SELECT * FROM chat_conversations WHERE store_id = $1';
+    const params = [storeId];
 
     if (status) {
       params.push(status);
@@ -175,17 +217,22 @@ router.get('/conversations', async (req, res) => {
  */
 router.patch('/conversations/:id/assign', async (req, res) => {
   try {
+    const { storeId } = req;
     const { id } = req.params;
     const { agent_id } = req.body;
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const sequelize = connection.sequelize;
 
     await sequelize.query(`
       UPDATE chat_conversations
       SET assigned_agent_id = $1,
           status = 'assigned',
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = $2
+      WHERE id = $2 AND store_id = $3
     `, {
-      bind: [agent_id, id],
+      bind: [agent_id, id, storeId],
       type: sequelize.QueryTypes.UPDATE
     });
 
@@ -208,16 +255,21 @@ router.patch('/conversations/:id/assign', async (req, res) => {
  */
 router.patch('/conversations/:id/close', async (req, res) => {
   try {
+    const { storeId } = req;
     const { id } = req.params;
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(storeId);
+    const sequelize = connection.sequelize;
 
     await sequelize.query(`
       UPDATE chat_conversations
       SET status = 'closed',
           closed_at = CURRENT_TIMESTAMP,
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
+      WHERE id = $1 AND store_id = $2
     `, {
-      bind: [id],
+      bind: [id, storeId],
       type: sequelize.QueryTypes.UPDATE
     });
 

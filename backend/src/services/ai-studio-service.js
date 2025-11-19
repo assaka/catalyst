@@ -28,7 +28,7 @@
  * See: backend/src/services/aiContextService.js for context fetching
  */
 
-const { Product, Category, CmsPage, CmsBlock, Language, Store } = require('../models');
+const ConnectionManager = require('./database/ConnectionManager');
 const translationService = require('./translation-service');
 const aiContextService = require('./aiContextService');
 const aiPrompts = require('../config/ai-prompts');
@@ -51,10 +51,11 @@ class AIStudioService {
    * @param {Array} params.history - Conversation history
    * @param {Array} params.capabilities - Available AI capabilities
    * @param {number} params.userId - User ID
+   * @param {string} params.storeId - Store ID
    *
    * @returns {Promise<Object>} Response with message and metadata
    */
-  async processMessage({ message, context, history, capabilities, userId }) {
+  async processMessage({ message, context, history, capabilities, userId, storeId }) {
     // ⚡ RAG: Build context-aware system prompt with database knowledge
     const systemPrompt = await this._buildSystemPrompt(context, capabilities, message);
 
@@ -65,27 +66,27 @@ class AIStudioService {
     let response;
     switch (intent.type) {
       case 'translate':
-        response = await this._handleTranslation(message, intent, userId);
+        response = await this._handleTranslation(message, intent, userId, storeId);
         break;
       case 'design':
-        response = await this._handleDesign(message, intent, userId);
+        response = await this._handleDesign(message, intent, userId, storeId);
         break;
       case 'product':
-        response = await this._handleProduct(message, intent, userId);
+        response = await this._handleProduct(message, intent, userId, storeId);
         break;
       case 'plugin':
-        response = await this._handlePlugin(message, intent, userId);
+        response = await this._handlePlugin(message, intent, userId, storeId);
         break;
       case 'storefront':
-        response = await this._handleStorefront(message, intent, userId);
+        response = await this._handleStorefront(message, intent, userId, storeId);
         break;
       default:
         response = await this._handleGeneral(message, history, systemPrompt);
     }
 
     // Store conversation
-    this._addToHistory(userId, context, { role: 'user', content: message });
-    this._addToHistory(userId, context, { role: 'assistant', content: response.message });
+    this._addToHistory(userId, storeId, context, { role: 'user', content: message });
+    this._addToHistory(userId, storeId, context, { role: 'assistant', content: response.message });
 
     return response;
   }
@@ -192,10 +193,14 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
   /**
    * Handle translation requests
    */
-  async _handleTranslation(message, intent, userId) {
+  async _handleTranslation(message, intent, userId, storeId) {
     const action = intent.action;
 
     try {
+      // Get tenant connection
+      const connection = await ConnectionManager.getConnection(storeId);
+      const { Product, Category, CmsPage, CmsBlock } = connection.models;
+
       if (action.scope === 'all') {
         // Translate entire store
         const targetLanguages = action.languages;
@@ -209,37 +214,49 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
 
         for (const lang of targetLanguages) {
           // Translate products
-          const products = await Product.findAll({ attributes: ['id', 'translations'] });
+          const products = await Product.findAll({
+            where: { store_id: storeId },
+            attributes: ['id', 'translations']
+          });
           for (const product of products) {
             if (!product.translations[lang]) {
-              await translationService.aiTranslateEntity('product', product.id, 'en', lang);
+              await translationService.aiTranslateEntity('product', product.id, 'en', lang, storeId);
               results.products++;
             }
           }
 
           // Translate categories
-          const categories = await Category.findAll({ attributes: ['id', 'translations'] });
+          const categories = await Category.findAll({
+            where: { store_id: storeId },
+            attributes: ['id', 'translations']
+          });
           for (const category of categories) {
             if (!category.translations[lang]) {
-              await translationService.aiTranslateEntity('category', category.id, 'en', lang);
+              await translationService.aiTranslateEntity('category', category.id, 'en', lang, storeId);
               results.categories++;
             }
           }
 
           // Translate CMS pages
-          const pages = await CmsPage.findAll({ attributes: ['id', 'translations'] });
+          const pages = await CmsPage.findAll({
+            where: { store_id: storeId },
+            attributes: ['id', 'translations']
+          });
           for (const page of pages) {
             if (!page.translations[lang]) {
-              await translationService.aiTranslateEntity('cms_page', page.id, 'en', lang);
+              await translationService.aiTranslateEntity('cms_page', page.id, 'en', lang, storeId);
               results.pages++;
             }
           }
 
           // Translate CMS blocks
-          const blocks = await CmsBlock.findAll({ attributes: ['id', 'translations'] });
+          const blocks = await CmsBlock.findAll({
+            where: { store_id: storeId },
+            attributes: ['id', 'translations']
+          });
           for (const block of blocks) {
             if (!block.translations[lang]) {
-              await translationService.aiTranslateEntity('cms_block', block.id, 'en', lang);
+              await translationService.aiTranslateEntity('cms_block', block.id, 'en', lang, storeId);
               results.blocks++;
             }
           }
@@ -263,7 +280,8 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
           action.entityType,
           action.entityId,
           action.fromLang || 'en',
-          action.toLang
+          action.toLang,
+          storeId
         );
 
         return {
@@ -285,7 +303,7 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
   /**
    * Handle design requests
    */
-  async _handleDesign(message, intent, userId) {
+  async _handleDesign(message, intent, userId, storeId) {
     // TODO: Implement design handling (colors, themes, layouts)
     return {
       message: `Design customization is coming soon! For now, you can:\n\n` +
@@ -300,7 +318,7 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
   /**
    * Handle product requests
    */
-  async _handleProduct(message, intent, userId) {
+  async _handleProduct(message, intent, userId, storeId) {
     const action = intent.action;
 
     if (action.type === 'generate_descriptions') {
@@ -328,7 +346,7 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
   /**
    * Handle plugin requests
    */
-  async _handlePlugin(message, intent, userId) {
+  async _handlePlugin(message, intent, userId, storeId) {
     return {
       message: `Plugin system is coming soon! You'll be able to:\n\n` +
                `- Install payment gateways (Stripe, PayPal, etc.)\n` +
@@ -343,7 +361,7 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
   /**
    * Handle storefront requests
    */
-  async _handleStorefront(message, intent, userId) {
+  async _handleStorefront(message, intent, userId, storeId) {
     return {
       message: `I can help optimize your storefront! Common improvements:\n\n` +
                `- Simplify checkout process\n` +
@@ -438,7 +456,7 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
   /**
    * Execute AI-generated actions
    */
-  async executeAction(action, params, userId) {
+  async executeAction(action, params, userId, storeId) {
     switch (action) {
       case 'refresh_data':
         return { success: true, message: 'Data refreshed' };
@@ -452,8 +470,8 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
   /**
    * Get conversation history
    */
-  async getHistory(userId, context, limit = 50) {
-    const key = `${userId}:${context || 'general'}`;
+  async getHistory(userId, storeId, context, limit = 50) {
+    const key = `${userId}:${storeId}:${context || 'general'}`;
     const history = this.conversationHistory.get(key) || [];
     return history.slice(-limit);
   }
@@ -461,8 +479,8 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
   /**
    * Clear conversation history
    */
-  async clearHistory(userId, context) {
-    const key = `${userId}:${context || 'general'}`;
+  async clearHistory(userId, storeId, context) {
+    const key = `${userId}:${storeId}:${context || 'general'}`;
     this.conversationHistory.delete(key);
   }
 
@@ -476,8 +494,8 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
   /**
    * Add message to history
    */
-  _addToHistory(userId, context, message) {
-    const key = `${userId}:${context || 'general'}`;
+  _addToHistory(userId, storeId, context, message) {
+    const key = `${userId}:${storeId}:${context || 'general'}`;
 
     if (!this.conversationHistory.has(key)) {
       this.conversationHistory.set(key, []);

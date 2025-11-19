@@ -1,7 +1,13 @@
 // backend/src/routes/ai-plugin-assistant.js
 const express = require('express');
 const router = express.Router();
-const { sequelize } = require('../database/connection');
+const { authMiddleware } = require('../middleware/auth');
+const { storeResolver } = require('../middleware/storeResolver');
+const ConnectionManager = require('../services/database/ConnectionManager');
+
+// All routes require authentication and automatic store resolution
+router.use(authMiddleware);
+router.use(storeResolver);
 
 /**
  * AI Plugin Assistant

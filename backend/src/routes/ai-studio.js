@@ -1,13 +1,18 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
+const { storeResolver } = require('../middleware/storeResolver');
 const aiStudioService = require('../services/ai-studio-service');
 
 const router = express.Router();
 
+// All routes require authentication and automatic store resolution
+router.use(authMiddleware);
+router.use(storeResolver);
+
 // @route   POST /api/ai/studio/chat
 // @desc    Process AI chat messages with context awareness
 // @access  Private
-router.post('/chat', authMiddleware, async (req, res) => {
+router.post('/chat', async (req, res) => {
   try {
     const { message, context, history = [], capabilities = [] } = req.body;
 
@@ -23,7 +28,8 @@ router.post('/chat', authMiddleware, async (req, res) => {
       context,
       history,
       capabilities,
-      userId: req.user.id
+      userId: req.user.id,
+      storeId: req.storeId
     });
 
     res.json({
@@ -42,7 +48,7 @@ router.post('/chat', authMiddleware, async (req, res) => {
 // @route   POST /api/ai/studio/execute
 // @desc    Execute AI-generated actions (translations, design changes, etc.)
 // @access  Private
-router.post('/execute', authMiddleware, async (req, res) => {
+router.post('/execute', async (req, res) => {
   try {
     const { action, params } = req.body;
 
@@ -53,7 +59,7 @@ router.post('/execute', authMiddleware, async (req, res) => {
       });
     }
 
-    const result = await aiStudioService.executeAction(action, params, req.user.id);
+    const result = await aiStudioService.executeAction(action, params, req.user.id, req.storeId);
 
     res.json({
       success: true,
@@ -71,11 +77,11 @@ router.post('/execute', authMiddleware, async (req, res) => {
 // @route   GET /api/ai/studio/history
 // @desc    Get AI conversation history
 // @access  Private
-router.get('/history', authMiddleware, async (req, res) => {
+router.get('/history', async (req, res) => {
   try {
     const { context, limit = 50 } = req.query;
 
-    const history = await aiStudioService.getHistory(req.user.id, context, limit);
+    const history = await aiStudioService.getHistory(req.user.id, req.storeId, context, limit);
 
     res.json({
       success: true,
@@ -93,11 +99,11 @@ router.get('/history', authMiddleware, async (req, res) => {
 // @route   DELETE /api/ai/studio/history
 // @desc    Clear AI conversation history
 // @access  Private
-router.delete('/history', authMiddleware, async (req, res) => {
+router.delete('/history', async (req, res) => {
   try {
     const { context } = req.query;
 
-    await aiStudioService.clearHistory(req.user.id, context);
+    await aiStudioService.clearHistory(req.user.id, req.storeId, context);
 
     res.json({
       success: true,
@@ -115,7 +121,7 @@ router.delete('/history', authMiddleware, async (req, res) => {
 // @route   GET /api/ai/studio/suggestions
 // @desc    Get context-aware prompt suggestions
 // @access  Private
-router.get('/suggestions', authMiddleware, async (req, res) => {
+router.get('/suggestions', async (req, res) => {
   try {
     const { context } = req.query;
 
