@@ -1,14 +1,14 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { ConsentLog, Store } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { Op } = require('sequelize');
 const router = express.Router();
 
 // Helper function to get client IP
 const getClientIP = (req) => {
-  return req.headers['x-forwarded-for'] || 
-         req.headers['x-real-ip'] || 
-         req.connection.remoteAddress || 
+  return req.headers['x-forwarded-for'] ||
+         req.headers['x-real-ip'] ||
+         req.connection.remoteAddress ||
          req.socket.remoteAddress ||
          (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
          '127.0.0.1';
@@ -17,7 +17,7 @@ const getClientIP = (req) => {
 // Helper function to check store access (ownership or team membership)
 const checkStoreAccess = async (storeId, userId, userRole) => {
   if (userRole === 'admin') return true;
-  
+
   const { checkUserStoreAccess } = require('../utils/storeAccess');
   const access = await checkUserStoreAccess(userId, storeId);
   return access !== null;
@@ -52,6 +52,10 @@ router.post('/', [
       consent_method,
       page_url
     } = req.body;
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { Store, ConsentLog } = connection.models;
 
     // Verify store exists
     const store = await Store.findByPk(store_id);
@@ -97,7 +101,7 @@ router.get('/', async (req, res) => {
   try {
     const { store_id, limit = 50, offset = 0 } = req.query;
     const where = {};
-    
+
     // Ensure user is authenticated
     if (!req.user) {
       return res.status(401).json({
@@ -105,32 +109,100 @@ router.get('/', async (req, res) => {
         message: 'Authentication required'
       });
     }
-    
-    // Filter by store access (ownership + team membership)
-    if (req.user.role !== 'admin') {
-      const { getUserStoresForDropdown } = require('../utils/storeAccess');
-      const accessibleStores = await getUserStoresForDropdown(req.user.id);
-      const storeIds = accessibleStores.map(store => store.id);
-      where.store_id = { [Op.in]: storeIds };
+
+    // If specific store_id is provided, use that tenant connection
+    // Otherwise, we need to query across all accessible stores
+    if (store_id) {
+      // Single store query
+      const connection = await ConnectionManager.getConnection(store_id);
+      const { ConsentLog, Store } = connection.models;
+
+      // Filter by store access (ownership + team membership)
+      if (req.user.role !== 'admin') {
+        const { getUserStoresForDropdown } = require('../utils/storeAccess');
+        const accessibleStores = await getUserStoresForDropdown(req.user.id);
+        const storeIds = accessibleStores.map(store => store.id);
+
+        // Check if user has access to requested store
+        if (!storeIds.includes(store_id)) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied to this store'
+          });
+        }
+      }
+
+      where.store_id = store_id;
+
+      const logs = await ConsentLog.findAll({
+        where,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['created_date', 'DESC']],
+        include: [{
+          model: Store,
+          attributes: ['id', 'name']
+        }]
+      });
+
+      return res.json({
+        success: true,
+        data: logs
+      });
+    } else {
+      // Multi-store query - need to aggregate across accessible stores
+      if (req.user.role !== 'admin') {
+        const { getUserStoresForDropdown } = require('../utils/storeAccess');
+        const accessibleStores = await getUserStoresForDropdown(req.user.id);
+        const storeIds = accessibleStores.map(store => store.id);
+
+        if (storeIds.length === 0) {
+          return res.json({
+            success: true,
+            data: []
+          });
+        }
+
+        // Query each store's tenant database and aggregate results
+        const allLogs = [];
+        for (const storeId of storeIds) {
+          try {
+            const connection = await ConnectionManager.getConnection(storeId);
+            const { ConsentLog, Store } = connection.models;
+
+            const logs = await ConsentLog.findAll({
+              where: { store_id: storeId },
+              order: [['created_date', 'DESC']],
+              include: [{
+                model: Store,
+                attributes: ['id', 'name']
+              }]
+            });
+
+            allLogs.push(...logs);
+          } catch (error) {
+            console.error(`Error fetching logs from store ${storeId}:`, error);
+            // Continue with other stores
+          }
+        }
+
+        // Sort all logs by date and apply pagination
+        allLogs.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+        const paginatedLogs = allLogs.slice(parseInt(offset), parseInt(offset) + parseInt(limit));
+
+        return res.json({
+          success: true,
+          data: paginatedLogs
+        });
+      } else {
+        // Admin without store_id - this would require querying all stores
+        // For now, return error requiring store_id
+        return res.status(400).json({
+          success: false,
+          message: 'store_id is required'
+        });
+      }
     }
-
-    if (store_id) where.store_id = store_id;
-
-    const logs = await ConsentLog.findAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['created_date', 'DESC']],
-      include: [{
-        model: Store,
-        attributes: ['id', 'name']
-      }]
-    });
-
-    res.json({
-      success: true,
-      data: logs
-    });
   } catch (error) {
     console.error('Get consent logs error:', error);
     console.error('Error details:', error.message);

@@ -5,11 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { CustomerActivity } = require('../models');
-const HeatmapInteraction = require('../models/HeatmapInteraction');
-const HeatmapSession = require('../models/HeatmapSession');
-const ABTestAssignment = require('../models/ABTestAssignment');
-const ConsentLog = require('../models/ConsentLog');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { Op } = require('sequelize');
 
 /**
@@ -26,6 +22,17 @@ router.post('/delete-data', async (req, res) => {
         error: 'Must provide session_id, user_id, or email'
       });
     }
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { CustomerActivity, HeatmapInteraction, HeatmapSession, ABTestAssignment, ConsentLog } = connection.models;
 
     const deletionResults = {
       customer_activities: 0,
@@ -103,6 +110,17 @@ router.get('/export-data', async (req, res) => {
         error: 'Must provide session_id or user_id'
       });
     }
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { CustomerActivity, HeatmapInteraction, HeatmapSession, ABTestAssignment, ConsentLog } = connection.models;
 
     const whereClause = {};
     if (session_id) whereClause.session_id = session_id;
@@ -182,6 +200,17 @@ router.post('/anonymize-data', async (req, res) => {
       });
     }
 
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { CustomerActivity, HeatmapInteraction, HeatmapSession, ABTestAssignment } = connection.models;
+
     const whereClause = {};
     if (session_id) whereClause.session_id = session_id;
     if (user_id) whereClause.user_id = user_id;
@@ -258,6 +287,17 @@ router.get('/consent-history', async (req, res) => {
         error: 'Must provide session_id or user_id'
       });
     }
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { ConsentLog } = connection.models;
 
     const whereClause = {};
     if (session_id) whereClause.session_id = session_id;
