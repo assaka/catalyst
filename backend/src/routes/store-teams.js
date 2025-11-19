@@ -1,15 +1,18 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { StoreTeam, StoreInvitation, Store, User } = require('../models');
+const { User, StoreInvitation, Store } = require('../models');
 const { Op } = require('sequelize');
 const { authorize } = require('../middleware/auth');
 const { checkStoreOwnership, checkTeamMembership } = require('../middleware/storeAuth');
 const crypto = require('crypto');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const router = express.Router();
 
-// NOTE: This route file uses MASTER database models only (StoreTeam, StoreInvitation, Store, User)
-// These models manage cross-store user access and team membership
-// They are NOT tenant-specific and should remain in the master database
+// NOTE: HYBRID ARCHITECTURE
+// - StoreTeam: TENANT database (per-store team members)
+// - StoreInvitation: MASTER database (for cross-tenant invitation discovery)
+// - Store: MASTER database (for store lookup and metadata)
+// - User: MASTER database (for cross-tenant user authentication)
 
 // @route   GET /api/store-teams/:store_id
 // @desc    Get team members for a store
@@ -31,6 +34,10 @@ router.get('/:store_id', authorize(['admin', 'store_owner']), checkStoreOwnershi
         message: 'Insufficient permissions to view team members'
       });
     }
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getStoreConnection(store_id);
+    const { StoreTeam } = connection.models;
 
     const where = { store_id };
     if (status !== 'all') {
@@ -113,7 +120,11 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
       });
     }
 
-    // Check if email is already invited or is a team member
+    // Get tenant connection for StoreTeam (tenant DB)
+    const connection = await ConnectionManager.getStoreConnection(store_id);
+    const { StoreTeam } = connection.models;
+
+    // Check if email is already invited or is a team member (StoreTeam in tenant DB)
     const existingTeamMember = await StoreTeam.findOne({
       where: { store_id, user_id: { [Op.ne]: null } },
       include: [{
@@ -130,6 +141,7 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
       });
     }
 
+    // Check existing invitation in master DB
     const existingInvitation = await StoreInvitation.findOne({
       where: {
         store_id,
@@ -215,6 +227,10 @@ router.put('/:store_id/members/:member_id', authorize(['admin', 'store_owner']),
       });
     }
 
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getStoreConnection(store_id);
+    const { StoreTeam } = connection.models;
+
     const teamMember = await StoreTeam.findOne({
       where: {
         id: member_id,
@@ -283,6 +299,10 @@ router.delete('/:store_id/members/:member_id', authorize(['admin', 'store_owner'
       });
     }
 
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getStoreConnection(store_id);
+    const { StoreTeam } = connection.models;
+
     const teamMember = await StoreTeam.findOne({
       where: {
         id: member_id,
@@ -328,6 +348,7 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
   try {
     const { token } = req.params;
 
+    // Find invitation in master DB
     const invitation = await StoreInvitation.findOne({
       where: {
         invitation_token: token,
@@ -355,7 +376,11 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
       });
     }
 
-    // Check if user is already a team member
+    // Get tenant connection for StoreTeam
+    const connection = await ConnectionManager.getStoreConnection(invitation.store_id);
+    const { StoreTeam } = connection.models;
+
+    // Check if user is already a team member (in tenant DB)
     const existingMember = await StoreTeam.findOne({
       where: {
         store_id: invitation.store_id,
@@ -370,7 +395,7 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
       });
     }
 
-    // Create team membership
+    // Create team membership in tenant DB
     const teamMember = await StoreTeam.create({
       store_id: invitation.store_id,
       user_id: req.user.id,
@@ -382,13 +407,14 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
       status: 'active'
     });
 
-    // Update invitation status
+    // Update invitation status in master DB
     await invitation.update({
       status: 'accepted',
       accepted_by: req.user.id,
       accepted_at: new Date()
     });
 
+    // Reload with User and Store from master DB
     await teamMember.reload({
       include: [
         { model: Store, attributes: ['id', 'name'] },
