@@ -1045,7 +1045,11 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             // Store token based on role
             const tokenKey = role === 'customer' ? 'customer_auth_token' : 'store_owner_auth_token';
             localStorage.setItem(tokenKey, token);
-            console.log('🔍 Stored token in localStorage with key:', tokenKey);
+            console.log('✅ STORED TOKEN in localStorage with key:', tokenKey, 'Token length:', token.length);
+
+            // Verify token was stored
+            const verifyToken = localStorage.getItem(tokenKey);
+            console.log('🔍 VERIFY: Token retrieved from localStorage:', verifyToken ? 'EXISTS (length: ' + verifyToken.length + ')' : 'NOT FOUND!');
 
             apiClient.setToken(token);
             console.log('🔍 Set token in apiClient, isLoggedOut:', apiClient.isLoggedOut);
