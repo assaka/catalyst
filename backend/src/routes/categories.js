@@ -27,7 +27,7 @@ const checkStoreAccess = async (storeId, userId, userRole) => {
 // @route   GET /api/categories
 // @desc    Get categories (authenticated users only)
 // @access  Private
-const { authMiddleware, authorize } = require('../middleware/auth');
+const { authMiddleware, authorize } = require('../middleware/authMiddleware');
 
 router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {

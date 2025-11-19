@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const domainConfiguration = require('../services/domain-configuration');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 /**

@@ -4,7 +4,7 @@ const { body, validationResult, query } = require('express-validator');
 const shopifyIntegration = require('../services/shopify-integration');
 const ShopifyImportService = require('../services/shopify-import-service');
 const IntegrationConfig = require('../models/IntegrationConfig');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const jobManager = require('../core/BackgroundJobManager');
 

@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const { injectABTestContext } = require('../middleware/abTestingMiddleware');
 const abTestingService = require('../services/analytics/ABTestingService');

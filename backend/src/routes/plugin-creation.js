@@ -9,7 +9,7 @@ const router = express.Router();
 const pluginManager = require('../core/PluginManager');
 const Plugin = require('../models/Plugin');
 const PluginConfiguration = require('../models/PluginConfiguration');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 // Configure multer for ZIP file uploads

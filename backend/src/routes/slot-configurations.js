@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 
 // Public endpoint to get active slot configurations for storefront
 router.get('/public', async (req, res) => {

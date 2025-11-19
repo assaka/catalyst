@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const { validateCustomerOrderAccess } = require('../middleware/customerStoreAuth');
 const emailService = require('../services/email-service');
 const { cacheOrder } = require('../middleware/cacheMiddleware');

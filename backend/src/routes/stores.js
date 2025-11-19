@@ -3,7 +3,7 @@ const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { Store, User } = require('../models'); // Master DB models
 const UserModel = require('../models/User'); // Direct import
-const { authorize } = require('../middleware/auth');
+const { authorize } = require('../middleware/authMiddleware');
 const { sequelize, supabase } = require('../database/connection'); // Master DB connection
 const { getUserAccessibleStores, getUserAccessibleStoresCount, getUserStoresForDropdown } = require('../utils/storeAccess');
 const { Op } = require('sequelize');
@@ -381,7 +381,7 @@ router.get('/', async (req, res) => {
   }
   
   // Continue with private store access (original code below)
-  const authorize = require('../middleware/auth').authorize;
+  const authorize = require('../middleware/authMiddleware').authorize;
   
   // Apply authorization for private requests
   return authorize(['admin', 'store_owner'])(req, res, async () => {

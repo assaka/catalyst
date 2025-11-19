@@ -13,8 +13,8 @@ const { checkStoreOwnership: storeAuthMiddleware, checkResourceOwnership } = req
 // @route   GET /api/products
 // @desc    Get products (authenticated users only)
 // @access  Private
-const { authMiddleware } = require('../middleware/auth');
-const { authorize } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/authMiddleware');
 
 router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {

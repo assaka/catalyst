@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { masterSupabaseClient } = require('../database/masterConnection'); // Use Supabase client to avoid Sequelize auth issues
-const { authorize } = require('../middleware/auth');
+const { authorize } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 // @route   GET /api/users

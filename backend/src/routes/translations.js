@@ -1,7 +1,7 @@
 const express = require('express');
 const { Op } = require('sequelize');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
 const ServiceCreditCost = require('../models/ServiceCreditCost'); // Master DB model

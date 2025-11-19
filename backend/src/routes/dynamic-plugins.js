@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const PluginRegistry = require('../core/PluginRegistry');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const { storeResolver } = require('../middleware/storeResolver');
 
 let pluginRegistry = null;

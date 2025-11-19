@@ -1,7 +1,7 @@
 // backend/src/routes/ai-plugin-assistant.js
 const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const { storeResolver } = require('../middleware/storeResolver');
 const ConnectionManager = require('../services/database/ConnectionManager');
 

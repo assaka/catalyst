@@ -13,7 +13,7 @@ const {
 const router = express.Router();
 
 // Import auth middleware
-const { authMiddleware, authorize } = require('../middleware/auth');
+const { authMiddleware, authorize } = require('../middleware/authMiddleware');
 
 // Basic CRUD operations for attributes
 router.get('/', authMiddleware, async (req, res) => {

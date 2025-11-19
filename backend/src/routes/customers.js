@@ -1,7 +1,7 @@
 const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { authMiddleware } = require('../middleware/auth');
-const { storeOwnerOnly } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware'); // Use same as authMasterTenant
+const { storeOwnerOnly } = require('../middleware/authMiddleware');
 const { enforceCustomerStoreBinding } = require('../middleware/customerStoreAuth');
 
 const router = express.Router();

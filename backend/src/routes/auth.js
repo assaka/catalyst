@@ -736,7 +736,7 @@ router.post('/login', [
 // @route   GET /api/auth/me
 // @desc    Get current user
 // @access  Private
-router.get('/me', require('../middleware/auth').authMiddleware, async (req, res) => {
+router.get('/me', require('../middleware/authMiddleware').authMiddleware, async (req, res) => {
   res.json({
     success: true,
     data: req.user
@@ -747,7 +747,7 @@ router.get('/me', require('../middleware/auth').authMiddleware, async (req, res)
 // @desc    Update current user in tenant database
 // @access  Private
 // @note    TENANT ONLY - requires store_id from user context
-router.patch('/me', require('../middleware/auth').authMiddleware, async (req, res) => {
+router.patch('/me', require('../middleware/authMiddleware').authMiddleware, async (req, res) => {
   try {
     const { role, account_type, store_id } = req.body;
     const updateData = {};
@@ -836,7 +836,7 @@ router.get('/google/callback', (req, res) => {
 // @desc    Logout user and log the event in tenant database
 // @access  Private
 // @note    TENANT ONLY - requires store_id
-router.post('/logout', require('../middleware/auth').authMiddleware, async (req, res) => {
+router.post('/logout', require('../middleware/authMiddleware').authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.body;
     const userStoreId = store_id || req.user.store_id;

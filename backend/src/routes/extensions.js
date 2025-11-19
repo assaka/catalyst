@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const extensionService = require('../services/extension-service');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const { storeResolver } = require('../middleware/storeResolver');
 
 // Create a new release

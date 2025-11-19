@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const StoreProvisioningService = require('../services/store-provisioning-service');
 const { MIGRATION_TYPES } = require('../config/migration-types');
 

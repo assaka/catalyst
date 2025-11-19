@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const aiService = require('../services/AIService');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 
 /**
  * POST /api/ai/generate

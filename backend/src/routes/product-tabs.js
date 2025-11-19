@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
 const { getLanguageFromRequest } = require('../utils/languageUtils');

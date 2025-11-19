@@ -1,6 +1,6 @@
 const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Store } = require('../models'); // Master/Tenant hybrid model
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 // Get default database provider for a store

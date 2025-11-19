@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const CloudflareOAuthService = require('../services/cloudflare-oauth-service');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 
 const oauthService = new CloudflareOAuthService();
 

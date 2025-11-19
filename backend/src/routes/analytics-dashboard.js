@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { Op } = require('sequelize');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 /**

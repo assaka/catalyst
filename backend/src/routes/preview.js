@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const previewService = require('../services/preview-service');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const rateLimit = require('express-rate-limit');
 
 // Rate limiting for preview operations
