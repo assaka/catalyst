@@ -244,9 +244,12 @@ router.delete('/delete', async (req, res) => {
     const result = await storageManager.deleteFile(storeId, imagePath, provider);
     console.log('✅ File deleted from storage:', result);
 
-    // Delete from database (MediaAsset table)
-    const { MediaAsset } = require('../models');
+    // Delete from database (MediaAsset table) - use tenant connection
+    const ConnectionManager = require('../services/database/ConnectionManager');
     try {
+      const connection = await ConnectionManager.getConnection(storeId);
+      const { MediaAsset } = connection.models;
+
       const deletedCount = await MediaAsset.destroy({
         where: {
           store_id: storeId,

@@ -3,9 +3,9 @@ const router = express.Router();
 const { authMiddleware } = require('../middleware/auth');
 const { storeResolver } = require('../middleware/storeResolver');
 const { requireActiveSubscription } = require('../middleware/subscriptionEnforcement');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const CustomDomainService = require('../services/CustomDomainService');
 const creditService = require('../services/credit-service');
-const { CustomDomain } = require('../models');
 
 /**
  * Custom Domain Management Routes
@@ -79,6 +79,10 @@ router.post('/add', authMiddleware, storeResolver(), requireActiveSubscription, 
  */
 router.get('/', authMiddleware, storeResolver(), async (req, res) => {
   try {
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(req.storeId);
+    const { CustomDomain } = connection.models;
+
     const domains = await CustomDomain.findAll({
       where: { store_id: req.storeId },
       order: [['is_primary', 'DESC'], ['created_at', 'DESC']],
@@ -108,6 +112,10 @@ router.get('/', authMiddleware, storeResolver(), async (req, res) => {
  */
 router.get('/:id', authMiddleware, storeResolver(), async (req, res) => {
   try {
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(req.storeId);
+    const { CustomDomain } = connection.models;
+
     const domain = await CustomDomain.findOne({
       where: {
         id: req.params.id,
@@ -144,6 +152,10 @@ router.get('/:id', authMiddleware, storeResolver(), async (req, res) => {
  */
 router.post('/:id/verify', authMiddleware, storeResolver(), async (req, res) => {
   try {
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(req.storeId);
+    const { CustomDomain } = connection.models;
+
     const domain = await CustomDomain.findOne({
       where: {
         id: req.params.id,
@@ -158,7 +170,7 @@ router.post('/:id/verify', authMiddleware, storeResolver(), async (req, res) => 
       });
     }
 
-    const result = await CustomDomainService.verifyDomain(req.params.id);
+    const result = await CustomDomainService.verifyDomain(req.params.id, req.storeId);
     res.json(result);
   } catch (error) {
     console.error('Error verifying domain:', error);
@@ -174,6 +186,10 @@ router.post('/:id/verify', authMiddleware, storeResolver(), async (req, res) => 
  */
 router.post('/:id/check-dns', authMiddleware, storeResolver(), async (req, res) => {
   try {
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(req.storeId);
+    const { CustomDomain } = connection.models;
+
     const domain = await CustomDomain.findOne({
       where: {
         id: req.params.id,
@@ -188,7 +204,7 @@ router.post('/:id/check-dns', authMiddleware, storeResolver(), async (req, res) 
       });
     }
 
-    const result = await CustomDomainService.checkDNSConfiguration(req.params.id);
+    const result = await CustomDomainService.checkDNSConfiguration(req.params.id, req.storeId);
     res.json(result);
   } catch (error) {
     console.error('Error checking DNS:', error);
@@ -236,6 +252,10 @@ router.delete('/:id', authMiddleware, storeResolver(), async (req, res) => {
  */
 router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) => {
   try {
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(req.storeId);
+    const { CustomDomain } = connection.models;
+
     const domain = await CustomDomain.findOne({
       where: {
         id: req.params.id,
@@ -292,6 +312,10 @@ router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) 
  */
 router.get('/:id/verification-instructions', authMiddleware, storeResolver(), async (req, res) => {
   try {
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(req.storeId);
+    const { CustomDomain } = connection.models;
+
     const domain = await CustomDomain.findOne({
       where: {
         id: req.params.id,
@@ -326,6 +350,10 @@ router.get('/:id/verification-instructions', authMiddleware, storeResolver(), as
  */
 router.get('/:id/debug-dns', authMiddleware, storeResolver(), async (req, res) => {
   try {
+    // Get tenant connection
+    const connection = await ConnectionManager.getConnection(req.storeId);
+    const { CustomDomain } = connection.models;
+
     const domain = await CustomDomain.findOne({
       where: {
         id: req.params.id,
