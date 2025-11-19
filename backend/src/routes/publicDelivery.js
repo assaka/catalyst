@@ -1,5 +1,5 @@
 const express = require('express');
-const { DeliverySettings, Store } = require('../models');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const router = express.Router();
 
 // @route   GET /api/public/delivery
@@ -8,20 +8,24 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const { store_id } = req.query;
-    
+
     if (!store_id) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'store_id is required' 
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
       });
     }
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(store_id);
+    const { DeliverySettings } = connection.models;
 
     const deliverySettings = await DeliverySettings.findAll({
       where: { store_id: store_id },
       attributes: [
         'id',
         'enable_delivery_date',
-        'enable_comments', 
+        'enable_comments',
         'offset_days',
         'max_advance_days',
         'blocked_dates',
@@ -31,18 +35,18 @@ router.get('/', async (req, res) => {
         'delivery_time_slots'
       ]
     });
-    
-    res.json({ 
-      success: true, 
-      data: deliverySettings 
+
+    res.json({
+      success: true,
+      data: deliverySettings
     });
-    
+
   } catch (error) {
     console.error('❌ Public delivery route error:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: 'Server error',
-      error: error.message 
+      error: error.message
     });
   }
 });

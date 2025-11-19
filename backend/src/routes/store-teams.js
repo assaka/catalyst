@@ -7,6 +7,10 @@ const { checkStoreOwnership, checkTeamMembership } = require('../middleware/stor
 const crypto = require('crypto');
 const router = express.Router();
 
+// NOTE: This route file uses MASTER database models only (StoreTeam, StoreInvitation, Store, User)
+// These models manage cross-store user access and team membership
+// They are NOT tenant-specific and should remain in the master database
+
 // @route   GET /api/store-teams/:store_id
 // @desc    Get team members for a store
 // @access  Private (store owner/admin)
@@ -17,8 +21,8 @@ router.get('/:store_id', authorize(['admin', 'store_owner']), checkStoreOwnershi
     const offset = (page - 1) * limit;
 
     // Check if user has permission to view team
-    const canManageTeam = req.storeAccess.isDirectOwner || 
-                         req.storeAccess.permissions?.canManageTeam || 
+    const canManageTeam = req.storeAccess.isDirectOwner ||
+                         req.storeAccess.permissions?.canManageTeam ||
                          req.storeAccess.permissions?.all;
 
     if (!canManageTeam) {
@@ -98,8 +102,8 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
     const { email, role, message, permissions = {} } = req.body;
 
     // Check if user has permission to manage team
-    const canManageTeam = req.storeAccess.isDirectOwner || 
-                         req.storeAccess.permissions?.canManageTeam || 
+    const canManageTeam = req.storeAccess.isDirectOwner ||
+                         req.storeAccess.permissions?.canManageTeam ||
                          req.storeAccess.permissions?.all;
 
     if (!canManageTeam) {
@@ -200,8 +204,8 @@ router.put('/:store_id/members/:member_id', authorize(['admin', 'store_owner']),
     const { role, permissions, status } = req.body;
 
     // Check if user has permission to manage team
-    const canManageTeam = req.storeAccess.isDirectOwner || 
-                         req.storeAccess.permissions?.canManageTeam || 
+    const canManageTeam = req.storeAccess.isDirectOwner ||
+                         req.storeAccess.permissions?.canManageTeam ||
                          req.storeAccess.permissions?.all;
 
     if (!canManageTeam) {
@@ -268,8 +272,8 @@ router.delete('/:store_id/members/:member_id', authorize(['admin', 'store_owner'
     const { store_id, member_id } = req.params;
 
     // Check if user has permission to manage team
-    const canManageTeam = req.storeAccess.isDirectOwner || 
-                         req.storeAccess.permissions?.canManageTeam || 
+    const canManageTeam = req.storeAccess.isDirectOwner ||
+                         req.storeAccess.permissions?.canManageTeam ||
                          req.storeAccess.permissions?.all;
 
     if (!canManageTeam) {
