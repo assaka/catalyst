@@ -1,5 +1,6 @@
 const SibApiV3Sdk = require('@getbrevo/brevo');
-const { EmailTemplate, EmailTemplateTranslation, EmailSendLog, Store } = require('../models'); // Tenant DB models
+const ConnectionManager = require('./database/ConnectionManager');
+const { masterSupabaseClient } = require('../database/masterConnection');
 const brevoService = require('./brevo-service');
 const {
   renderTemplate,
@@ -48,16 +49,22 @@ class EmailService {
 
       console.log(`✅ [EMAIL SERVICE] Brevo is configured for store ${storeId}`);
 
+      // Get tenant database connection
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
       // Get template
-      const template = await EmailTemplate.findOne({
-        where: { store_id: storeId, identifier: templateIdentifier, is_active: true },
-        include: [{
-          model: EmailTemplateTranslation,
-          as: 'translationsData',
-          where: { language_code: languageCode },
-          required: false
-        }]
-      });
+      const { data: template, error: templateError } = await tenantDb
+        .from('email_templates')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('identifier', templateIdentifier)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (templateError) {
+        console.error(`❌ [EMAIL SERVICE] Database error:`, templateError);
+        throw new Error(`Database error: ${templateError.message}`);
+      }
 
       if (!template) {
         const errorMsg = `Email template '${templateIdentifier}' not found or not active for store ${storeId}. Please create and activate the template in Settings > Email Templates.`;
@@ -68,9 +75,18 @@ class EmailService {
       console.log(`✅ [EMAIL SERVICE] Email template found`);
 
       // Get translation (content is now stored exclusively in translations table)
-      const translation = template.translationsData && template.translationsData.length > 0
-        ? template.translationsData[0]
-        : null;
+      const { data: translations, error: translationError } = await tenantDb
+        .from('email_template_translations')
+        .select('*')
+        .eq('email_template_id', template.id)
+        .eq('language_code', languageCode);
+
+      if (translationError) {
+        console.error(`❌ [EMAIL SERVICE] Translation database error:`, translationError);
+        throw new Error(`Translation database error: ${translationError.message}`);
+      }
+
+      const translation = translations && translations.length > 0 ? translations[0] : null;
 
       if (!translation) {
         const errorMsg = `No ${languageCode} translation found for email template '${templateIdentifier}'. Please add translations in Layout > Translations.`;
@@ -341,20 +357,28 @@ class EmailService {
     let processedContent = content;
 
     try {
+      // Get tenant database connection
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
       // Get header template if needed
       if (content.includes('{{email_header}}')) {
-        const headerTemplate = await EmailTemplate.findOne({
-          where: { store_id: storeId, identifier: 'email_header', is_active: true },
-          include: [{
-            model: EmailTemplateTranslation,
-            as: 'translationsData',
-            where: { language_code: languageCode },
-            required: false
-          }]
-        });
+        const { data: headerTemplate, error: headerError } = await tenantDb
+          .from('email_templates')
+          .select('*')
+          .eq('store_id', storeId)
+          .eq('identifier', 'email_header')
+          .eq('is_active', true)
+          .maybeSingle();
 
-        if (headerTemplate) {
-          const headerTranslation = headerTemplate.translationsData?.[0];
+        if (!headerError && headerTemplate) {
+          // Get header translation
+          const { data: headerTranslations } = await tenantDb
+            .from('email_template_translations')
+            .select('*')
+            .eq('email_template_id', headerTemplate.id)
+            .eq('language_code', languageCode);
+
+          const headerTranslation = headerTranslations?.[0];
           const headerHtml = headerTranslation?.html_content || headerTemplate.html_content || '';
           processedContent = processedContent.replace('{{email_header}}', headerHtml);
         } else {
@@ -365,18 +389,23 @@ class EmailService {
 
       // Get footer template if needed
       if (content.includes('{{email_footer}}')) {
-        const footerTemplate = await EmailTemplate.findOne({
-          where: { store_id: storeId, identifier: 'email_footer', is_active: true },
-          include: [{
-            model: EmailTemplateTranslation,
-            as: 'translationsData',
-            where: { language_code: languageCode },
-            required: false
-          }]
-        });
+        const { data: footerTemplate, error: footerError } = await tenantDb
+          .from('email_templates')
+          .select('*')
+          .eq('store_id', storeId)
+          .eq('identifier', 'email_footer')
+          .eq('is_active', true)
+          .maybeSingle();
 
-        if (footerTemplate) {
-          const footerTranslation = footerTemplate.translationsData?.[0];
+        if (!footerError && footerTemplate) {
+          // Get footer translation
+          const { data: footerTranslations } = await tenantDb
+            .from('email_template_translations')
+            .select('*')
+            .eq('email_template_id', footerTemplate.id)
+            .eq('language_code', languageCode);
+
+          const footerTranslation = footerTranslations?.[0];
           const footerHtml = footerTranslation?.html_content || footerTemplate.html_content || '';
           processedContent = processedContent.replace('{{email_footer}}', footerHtml);
         } else {
@@ -407,17 +436,31 @@ class EmailService {
    */
   async logEmail(storeId, templateId, recipientEmail, subject, status, brevoMessageId, errorMessage, metadata) {
     try {
-      return await EmailSendLog.create({
-        store_id: storeId,
-        email_template_id: templateId,
-        recipient_email: recipientEmail,
-        subject,
-        status,
-        brevo_message_id: brevoMessageId,
-        error_message: errorMessage,
-        metadata,
-        sent_at: status === 'sent' ? new Date() : null
-      });
+      // Get tenant database connection
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      const { data, error } = await tenantDb
+        .from('email_send_logs')
+        .insert({
+          store_id: storeId,
+          email_template_id: templateId,
+          recipient_email: recipientEmail,
+          subject,
+          status,
+          brevo_message_id: brevoMessageId,
+          error_message: errorMessage,
+          metadata,
+          sent_at: status === 'sent' ? new Date().toISOString() : null
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Failed to log email:', error.message);
+        return null;
+      }
+
+      return data;
     } catch (error) {
       console.error('Failed to log email:', error.message);
       // Don't throw error - logging failure shouldn't break email sending
@@ -435,8 +478,17 @@ class EmailService {
   async sendTestEmail(storeId, templateIdentifier, testEmail, languageCode = 'en') {
     const exampleData = getExampleData(templateIdentifier);
 
-    // Add store context
-    const store = await Store.findByPk(storeId);
+    // Add store context - get from master DB
+    const { data: store, error } = await masterSupabaseClient
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Failed to fetch store:', error.message);
+    }
+
     exampleData.store_name = store?.name || 'Test Store';
     exampleData.store_url = store?.domain || process.env.CORS_ORIGIN;
 
@@ -456,19 +508,30 @@ class EmailService {
    * @returns {Promise<Object>} Statistics
    */
   async getEmailStatistics(storeId, days = 30) {
-    const { Op } = require('sequelize');
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const logs = await EmailSendLog.findAll({
-      where: {
-        store_id: storeId,
-        created_at: {
-          [Op.gte]: startDate
-        }
-      },
-      attributes: ['status']
-    });
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: logs, error } = await tenantDb
+      .from('email_send_logs')
+      .select('status')
+      .eq('store_id', storeId)
+      .gte('created_at', startDate.toISOString());
+
+    if (error) {
+      console.error('Failed to fetch email statistics:', error.message);
+      return {
+        total: 0,
+        sent: 0,
+        failed: 0,
+        pending: 0,
+        delivered: 0,
+        opened: 0,
+        clicked: 0
+      };
+    }
 
     const stats = {
       total: logs.length,

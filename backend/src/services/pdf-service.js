@@ -1,6 +1,6 @@
 const axios = require('axios');
 const path = require('path');
-const { PdfTemplate, PdfTemplateTranslation, EmailTemplate, EmailTemplateTranslation } = require('../models'); // Tenant DB models
+const ConnectionManager = require('./database/ConnectionManager');
 
 /**
  * PDF Generation Service
@@ -77,20 +77,40 @@ class PDFService {
     let processedContent = content;
 
     try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
       // Get header template if needed (from email_templates table)
       if (content.includes('{{email_header}}')) {
-        const headerTemplate = await EmailTemplate.findOne({
-          where: { store_id: storeId, identifier: 'email_header', is_active: true },
-          include: [{
-            model: EmailTemplateTranslation,
-            as: 'translationsData',
-            where: { language_code: languageCode },
-            required: false
-          }]
-        });
+        const { data: headerTemplate, error: headerError } = await tenantDb
+          .from('email_templates')
+          .select('id, store_id, identifier, is_active')
+          .eq('store_id', storeId)
+          .eq('identifier', 'email_header')
+          .eq('is_active', true)
+          .maybeSingle();
 
-        if (headerTemplate && headerTemplate.translationsData && headerTemplate.translationsData.length > 0) {
-          processedContent = processedContent.replace('{{email_header}}', headerTemplate.translationsData[0].html_content || '');
+        if (headerError) {
+          console.error('Error fetching header template:', headerError);
+        }
+
+        if (headerTemplate) {
+          // Fetch translations for the header template
+          const { data: headerTranslations, error: headerTransError } = await tenantDb
+            .from('email_template_translations')
+            .select('html_content, language_code')
+            .eq('email_template_id', headerTemplate.id)
+            .eq('language_code', languageCode);
+
+          if (headerTransError) {
+            console.error('Error fetching header translations:', headerTransError);
+          }
+
+          if (headerTranslations && headerTranslations.length > 0) {
+            processedContent = processedContent.replace('{{email_header}}', headerTranslations[0].html_content || '');
+          } else {
+            // If no header template found, just remove the placeholder
+            processedContent = processedContent.replace('{{email_header}}', '');
+          }
         } else {
           // If no header template found, just remove the placeholder
           processedContent = processedContent.replace('{{email_header}}', '');
@@ -99,18 +119,36 @@ class PDFService {
 
       // Get footer template if needed (from email_templates table)
       if (content.includes('{{email_footer}}')) {
-        const footerTemplate = await EmailTemplate.findOne({
-          where: { store_id: storeId, identifier: 'email_footer', is_active: true },
-          include: [{
-            model: EmailTemplateTranslation,
-            as: 'translationsData',
-            where: { language_code: languageCode },
-            required: false
-          }]
-        });
+        const { data: footerTemplate, error: footerError } = await tenantDb
+          .from('email_templates')
+          .select('id, store_id, identifier, is_active')
+          .eq('store_id', storeId)
+          .eq('identifier', 'email_footer')
+          .eq('is_active', true)
+          .maybeSingle();
 
-        if (footerTemplate && footerTemplate.translationsData && footerTemplate.translationsData.length > 0) {
-          processedContent = processedContent.replace('{{email_footer}}', footerTemplate.translationsData[0].html_content || '');
+        if (footerError) {
+          console.error('Error fetching footer template:', footerError);
+        }
+
+        if (footerTemplate) {
+          // Fetch translations for the footer template
+          const { data: footerTranslations, error: footerTransError } = await tenantDb
+            .from('email_template_translations')
+            .select('html_content, language_code')
+            .eq('email_template_id', footerTemplate.id)
+            .eq('language_code', languageCode);
+
+          if (footerTransError) {
+            console.error('Error fetching footer translations:', footerTransError);
+          }
+
+          if (footerTranslations && footerTranslations.length > 0) {
+            processedContent = processedContent.replace('{{email_footer}}', footerTranslations[0].html_content || '');
+          } else {
+            // If no footer template found, just remove the placeholder
+            processedContent = processedContent.replace('{{email_footer}}', '');
+          }
         } else {
           // If no footer template found, just remove the placeholder
           processedContent = processedContent.replace('{{email_footer}}', '');
@@ -289,16 +327,22 @@ class PDFService {
         languageCode
       });
 
-      // Get invoice PDF template from database with translation
-      const pdfTemplate = await PdfTemplate.findOne({
-        where: { store_id: store.id, identifier: 'invoice_pdf', is_active: true },
-        include: [{
-          model: PdfTemplateTranslation,
-          as: 'translationsData',
-          where: { language_code: languageCode },
-          required: false
-        }]
-      });
+      const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+
+      // Get invoice PDF template from database
+      const { data: pdfTemplate, error: templateError } = await tenantDb
+        .from('pdf_templates')
+        .select('id, store_id, identifier, is_active, settings')
+        .eq('store_id', store.id)
+        .eq('identifier', 'invoice_pdf')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (templateError) {
+        console.error('Error fetching PDF template:', templateError);
+        console.warn('⚠️ Database error, using legacy method');
+        return this.generateInvoicePDFLegacy(order, store, orderItems);
+      }
 
       if (!pdfTemplate) {
         console.warn('⚠️ No invoice PDF template found in database, using legacy method');
@@ -306,12 +350,22 @@ class PDFService {
       }
 
       console.log('✅ PDF template found:', pdfTemplate.id);
-      console.log('📋 Translations available:', pdfTemplate.translationsData?.length || 0);
+
+      // Get translations for the template
+      const { data: translations, error: translationError } = await tenantDb
+        .from('pdf_template_translations')
+        .select('html_template, language_code')
+        .eq('pdf_template_id', pdfTemplate.id)
+        .eq('language_code', languageCode);
+
+      if (translationError) {
+        console.error('Error fetching PDF translations:', translationError);
+      }
+
+      console.log('📋 Translations available:', translations?.length || 0);
 
       // Get template HTML from translation
-      const translation = pdfTemplate.translationsData && pdfTemplate.translationsData.length > 0
-        ? pdfTemplate.translationsData[0]
-        : null;
+      const translation = translations && translations.length > 0 ? translations[0] : null;
 
       if (!translation) {
         console.warn(`⚠️ No ${languageCode} translation found for invoice PDF template, using legacy method`);
@@ -517,26 +571,41 @@ class PDFService {
    */
   async generateShipmentPDF(order, store, orderItems, languageCode = 'en') {
     try {
-      // Get shipment PDF template from database with translation
-      const pdfTemplate = await PdfTemplate.findOne({
-        where: { store_id: store.id, identifier: 'shipment_pdf', is_active: true },
-        include: [{
-          model: PdfTemplateTranslation,
-          as: 'translationsData',
-          where: { language_code: languageCode },
-          required: false
-        }]
-      });
+      const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+
+      // Get shipment PDF template from database
+      const { data: pdfTemplate, error: templateError } = await tenantDb
+        .from('pdf_templates')
+        .select('id, store_id, identifier, is_active, settings')
+        .eq('store_id', store.id)
+        .eq('identifier', 'shipment_pdf')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (templateError) {
+        console.error('Error fetching shipment PDF template:', templateError);
+        console.warn('Database error, using legacy method');
+        return this.generateShipmentPDFLegacy(order, store, orderItems);
+      }
 
       if (!pdfTemplate) {
         console.warn('No shipment PDF template found, using legacy method');
         return this.generateShipmentPDFLegacy(order, store, orderItems);
       }
 
+      // Get translations for the template
+      const { data: translations, error: translationError } = await tenantDb
+        .from('pdf_template_translations')
+        .select('html_template, language_code')
+        .eq('pdf_template_id', pdfTemplate.id)
+        .eq('language_code', languageCode);
+
+      if (translationError) {
+        console.error('Error fetching shipment PDF translations:', translationError);
+      }
+
       // Get template HTML from translation
-      const translation = pdfTemplate.translationsData && pdfTemplate.translationsData.length > 0
-        ? pdfTemplate.translationsData[0]
-        : null;
+      const translation = translations && translations.length > 0 ? translations[0] : null;
 
       if (!translation) {
         console.warn(`No ${languageCode} translation found for shipment PDF, using legacy method`);
