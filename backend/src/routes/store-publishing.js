@@ -1,6 +1,5 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { authorize } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const Store = require('../models/Store');
 const creditService = require('../services/credit-service');

@@ -380,10 +380,10 @@ router.get('/', async (req, res) => {
       });
     }
   }
-  
+
   // Continue with private store access (original code below)
-  const authorize = require('../middleware/authMiddleware').authorize;
-  
+  // authorize is imported from auth.js at top of file
+
   // Apply authorization for private requests
   return authorize(['admin', 'store_owner'])(req, res, async () => {
     // Private store access logic will go here

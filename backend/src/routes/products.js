@@ -15,7 +15,6 @@ const { checkStoreOwnership: storeAuthMiddleware, checkResourceOwnership } = req
 // @access  Private
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { authorize, storeOwnerOnly, customerOnly, adminOnly } = require('../middleware/auth');
-const { authorize } = require('../middleware/authMiddleware');
 
 router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {

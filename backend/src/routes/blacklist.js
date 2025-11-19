@@ -1,6 +1,5 @@
 const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { storeOwnerOnly } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
