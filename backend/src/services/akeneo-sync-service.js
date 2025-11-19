@@ -1,6 +1,7 @@
 const AkeneoIntegration = require('./akeneo-integration');
 const AkeneoImageProcessor = require('./akeneo-image-processor');
 const IntegrationConfig = require('../models/IntegrationConfig');
+const ConnectionManager = require('./database/ConnectionManager');
 
 /**
  * Unified Akeneo Sync Service
@@ -244,30 +245,29 @@ class AkeneoSyncService {
 
     try {
       console.log(`🖼️ Processing images for products (limit: ${limit}, offset: ${offset})`);
-      
-      // Get products that need image processing
-      const { Product } = require('../models'); // Tenant DB model
-      
-      const { Op } = require('sequelize');
-      
-      const whereClause = forceReprocess ? 
-        { store_id: this.storeId } : 
-        { 
-          store_id: this.storeId,
-          [Op.or]: [
-            { images: null },
-            { images: [] }
-          ]
-        };
 
-      const products = await Product.findAll({
-        where: whereClause,
-        limit,
-        offset,
-        order: [['created_at', 'DESC']]
-      });
+      // Get products that need image processing from tenant database
+      const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
-      if (products.length === 0) {
+      let query = tenantDb
+        .from('products')
+        .select('*')
+        .eq('store_id', this.storeId)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      // If not forcing reprocess, only get products without images
+      if (!forceReprocess) {
+        query = query.or('images.is.null,images.eq.[]');
+      }
+
+      const { data: products, error } = await query;
+
+      if (error) {
+        throw new Error(`Failed to fetch products: ${error.message}`);
+      }
+
+      if (!products || products.length === 0) {
         return {
           success: true,
           processed: 0,
@@ -298,9 +298,17 @@ class AkeneoSyncService {
             if (processedImages.length > 0) {
               // Convert to Catalyst format
               const catalystImages = this.imageProcessor.convertToCatalystFormat(processedImages);
-              
-              // Update product
-              await product.update({ images: catalystImages });
+
+              // Update product in tenant database
+              const { error: updateError } = await tenantDb
+                .from('products')
+                .update({ images: catalystImages })
+                .eq('id', product.id);
+
+              if (updateError) {
+                throw new Error(`Failed to update product: ${updateError.message}`);
+              }
+
               console.log(`✅ Updated images for product: ${product.sku}`);
               return true;
             }
@@ -380,31 +388,36 @@ class AkeneoSyncService {
    */
   async getImageStats() {
     try {
-      const { Product } = require('../models'); // Tenant DB model
-      const { Op } = require('sequelize');
-      
-      const totalProducts = await Product.count({ 
-        where: { store_id: this.storeId }
-      });
-      
-      const productsWithImages = await Product.count({
-        where: { 
-          store_id: this.storeId,
-          images: { [Op.ne]: null }
-        }
-      });
+      // Get tenant database connection
+      const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
-      // For processed images, we'll use a simpler approach since JSON queries can be complex
-      const processedImages = await Product.count({
-        where: {
-          store_id: this.storeId,
-          images: { [Op.ne]: null }
-        }
-      });
+      // Get total products count
+      const { count: totalProducts, error: totalError } = await tenantDb
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', this.storeId);
+
+      if (totalError) {
+        throw new Error(`Failed to get total products: ${totalError.message}`);
+      }
+
+      // Get products with images count
+      const { count: productsWithImages, error: imagesError } = await tenantDb
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', this.storeId)
+        .not('images', 'is', null);
+
+      if (imagesError) {
+        throw new Error(`Failed to get products with images: ${imagesError.message}`);
+      }
+
+      // For processed images, use same count as products with images
+      const processedImages = productsWithImages || 0;
 
       return {
-        total_products: totalProducts,
-        products_with_images: productsWithImages,
+        total_products: totalProducts || 0,
+        products_with_images: productsWithImages || 0,
         processed_images: processedImages,
         processing_rate: totalProducts > 0 ? (processedImages / totalProducts * 100).toFixed(1) : 0
       };
