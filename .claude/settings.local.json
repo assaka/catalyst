@@ -2,9 +2,11 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(node check-plugin-schema.js)",
-      "Bash(git log --oneline --grep=\"plugin\\|refactor\\|normaliz\" -i -20)",
-      "Bash(git push:*)"
+      "Bash(find:*)",
+      "Bash(git push)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nConvert supabase-integration service from Sequelize to ConnectionManager\n\n- Replace IntegrationConfig model with direct knex queries to integration_configs table\n- All queries now use ConnectionManager.getConnection(storeId)\n- Maintain support for connection status tracking, config updates, and disconnection flows\n- Service manages Supabase OAuth integrations with storeId-based tenant isolation\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": [],

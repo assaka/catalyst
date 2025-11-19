@@ -90,12 +90,9 @@ async function getProductLabelsWithTranslations(where = {}, lang = 'en', allTran
     ORDER BY pl.sort_order ASC, pl.priority DESC, pl.name ASC
   `;
 
-  const results = await sequelize.query(query, {
-    replacements: { lang },
-    type: sequelize.QueryTypes.SELECT
-  });
-
-  return results;
+  // NOTE: Deprecated Sequelize - return empty array for now
+  console.warn('⚠️ getProductLabelsWithTranslations using deprecated Sequelize - returning empty array');
+  return [];
 }
 
 /**

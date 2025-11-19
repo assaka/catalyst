@@ -1,0 +1,246 @@
+MAGIC TRANSLATION WAND - RESEARCH FINDINGS INDEX
+
+DOCUMENTS CREATED
+==================
+
+1. wand_summary.txt
+   - Quick reference of the entire feature
+   - All key information in concise format
+   - Includes cost, flow, and error handling
+
+2. key_code_snippets.md
+   - 7 key code sections with full context
+   - Frontend button implementation
+   - API endpoint logic
+   - Credit checking and deduction
+   - Translation cost service
+   - Complete transaction flow diagram
+
+3. analysis.txt
+   - 9-part breakdown of the system
+   - Frontend to backend flow
+   - Database tables explained
+   - Cost summary with examples
+
+ABSOLUTE FILE PATHS TO KEY COMPONENTS
+=====================================
+
+FRONTEND (React Component)
+- C:\Users\info\PhpstormProjects\catalyst\src\components\admin\translations\ProductTranslationRow.jsx
+
+BACKEND (Express Routes)
+- C:\Users\info\PhpstormProjects\catalyst\backend\src\routes\translations.js
+
+SERVICES (Business Logic)
+- C:\Users\info\PhpstormProjects\catalyst\backend\src\services\translation-service.js
+- C:\Users\info\PhpstormProjects\catalyst\backend\src\services\credit-service.js
+
+CRITICAL CODE SECTIONS
+======================
+
+1. FRONTEND BUTTON (ProductTranslationRow.jsx)
+   Lines 2: Icon import (Wand2)
+   Lines 57-61: Fields definition
+   Lines 95-125: handleAITranslate function
+   Lines 209-224: Button JSX with Wand2 icon
+
+2. API ENDPOINT (translations.js)
+   Lines 188-257: POST /api/translations/ai-translate
+   Lines 191-194: Parameter extraction
+   Lines 203-218: Credit checking
+   Lines 220-221: AI translation call
+   Lines 223-238: Credit deduction
+
+3. TRANSLATION SERVICE (translation-service.js)
+   Lines 510-562: getTranslationCost(entityType) method
+   Lines 512-530: Service key mapping
+   Lines 532-551: Fallback costs
+
+4. CREDIT SERVICE (credit-service.js)
+   Lines 17-35: getBalance() and hasEnoughCredits()
+   Lines 48-121: deduct() method
+   Lines 76-86: Atomic database update
+
+COMPLETE FLOW SUMMARY
+====================
+
+User clicks Wand icon
+  |
+  +---> handleAITranslate() [Frontend]
+        - Validates source text
+        - Sets loading spinner
+        - POST /translations/ai-translate
+        |
+        +---> Backend: POST /ai-translate
+              1. Get cost: translationService.getTranslationCost('product') = 0.1
+              2. Check balance: creditService.hasEnoughCredits() >= 0.1
+              3. If insufficient: Return HTTP 402 error
+              4. AI translate: translationService.aiTranslate()
+              5. Deduct credits: creditService.deduct()
+                 - UPDATE users SET credits = credits - 0.1
+                 - INSERT INTO credit_usage (audit log)
+              6. Return success response
+        |
+        +---> Frontend: Response handler
+              - Update form field with translation
+              - Show success toast
+              - Clear loading spinner
+
+COST DETAILS
+============
+
+Cost Per Translation: 0.1 credits
+Service Key: 'ai_translation_product'
+Database Table: service_credit_costs
+Fallback Cost: 0.1 (if database lookup fails)
+
+Translatable Fields:
+1. name (0.1 credits)
+2. short_description (0.1 credits)
+3. description (0.1 credits)
+
+Cost Examples:
+- Translate name to Dutch: 0.1 credits
+- Translate all fields to Dutch: 0.3 credits
+- Translate all fields to 5 languages: 1.5 credits
+- Translate 100 products to 5 languages: 150 credits
+
+DATABASE OPERATIONS
+===================
+
+1. CHECK BALANCE (No changes)
+   SELECT credits FROM users WHERE id = userId
+
+2. DEDUCT CREDITS (Atomic transaction)
+   UPDATE users SET credits = credits - 0.1 WHERE id = userId
+
+3. AUDIT LOG (New record)
+   INSERT INTO credit_usage (user_id, credits_used, reference_type, ...)
+
+SECURITY & VALIDATION
+====================
+
+Authentication: Required (authMiddleware)
+Input Validation: text (required), toLang (required)
+Credit Check: Before translation (safe to fail)
+Atomic Operations: Database transactions ensure consistency
+Audit Trail: Every deduction logged in credit_usage table
+
+ERROR SCENARIOS
+===============
+
+1. Insufficient Credits
+   - HTTP Status: 402
+   - Action: No deduction occurs
+   - User sees: Error toast with required/available amounts
+   - Solution: Purchase more credits
+
+2. Translation Failure
+   - HTTP Status: 500
+   - Action: No deduction (check happens first)
+   - User sees: Error toast "Failed to translate [field]"
+   - Solution: Retry or fix source text
+
+3. No Source Text
+   - Check: Client-side before API call
+   - Action: Wand button disabled
+   - User sees: Button grayed out
+   - Solution: Add text to English field
+
+4. Database Error During Deduction
+   - Check: Caught in try/catch
+   - Action: Deduction may fail after translation succeeds
+   - User sees: Error but should see credit deducted
+   - Solution: Manual admin credit refund if needed
+
+RELATED FEATURES
+================
+
+Same System Used By:
+- Bulk Entity Translation (POST /api/translations/ai-translate-entity)
+- Multi-Entity Translation (POST /api/translations/bulk-translate-entities)
+- Translation Wizard (POST /api/translations/wizard-execute)
+- UI Labels Bulk Translation
+- All entity types (products, categories, attributes, cms, etc.)
+
+CUSTOMIZATION OPTIONS
+====================
+
+1. Change Cost
+   UPDATE service_credit_costs SET cost_per_unit = 0.2 
+   WHERE service_key = 'ai_translation_product'
+
+2. Change Icon
+   Replace Wand2 with another lucide-react icon
+
+3. Change Tooltip
+   Modify line 221 in ProductTranslationRow.jsx
+
+4. Add Source Language Filter
+   Modify line 213: Currently only translates from 'en'
+
+5. Add Batch Operations
+   Create bulk wand endpoint that costs 0.1 per field
+
+KEY INSIGHTS
+============
+
+1. The wand costs 0.1 credits PER FIELD, not per product
+   - To translate name: 0.1
+   - To translate name + description: 0.2
+   - To translate all 3 fields: 0.3
+
+2. Credits are checked BEFORE translation
+   - No charges if insufficient credits
+   - Safe to fail without consequences
+
+3. The system is extensible
+   - Works for all entity types
+   - Costs configurable per entity
+   - Same logic for bulk operations
+
+4. Audit trail is comprehensive
+   - Tracks every deduction
+   - Stores metadata (languages, text length)
+   - Enables analytics and reconciliation
+
+5. Atomic database operations
+   - Credit deduction cannot be partial
+   - Either all succeeds or all fails
+   - Prevents race conditions
+
+TESTING RECOMMENDATIONS
+=======================
+
+Test Cases:
+1. Translate with sufficient credits
+2. Translate with insufficient credits (expect 402)
+3. Translate with no source text (expect button disabled)
+4. Verify credit deduction in database
+5. Verify audit log entry created
+6. Test all 3 field types
+7. Test multiple languages
+8. Test error handling and retries
+9. Verify button disabled while loading
+10. Verify toast notifications
+
+DEPLOYMENT NOTES
+===============
+
+Prerequisites:
+- service_credit_costs table populated with costs
+- users.credits column exists and has proper type (NUMERIC)
+- credit_usage table exists for audit logging
+- Claude AI API key configured
+
+Configuration:
+- Fallback cost is 0.1 (hardcoded)
+- Can be overridden in database
+- Check translation-service.js lines 532-551
+
+Monitoring:
+- Check credit_usage table for deductions
+- Monitor for 402 errors (insufficient credits)
+- Track translation success rate
+- Audit user credit usage
+

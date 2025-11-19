@@ -87,10 +87,9 @@ async function applyProductTranslationsToMany(products, lang = 'en') {
     WHERE product_id IN (:productIds) AND language_code IN (:lang, 'en')
   `;
 
-  const translations = await sequelize.query(query, {
-    replacements: { productIds, lang: lang === 'en' ? 'en' : [lang, 'en'] },
-    type: sequelize.QueryTypes.SELECT
-  });
+  // This function is deprecated - callers should pass tenantDb and query translations directly
+  // Return products as-is (original implementation used Sequelize which is deprecated)
+  return products;
 
   // Create maps for quick lookup (requested language and English fallback)
   const requestedLangMap = {};

@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
     if (isPublicRequest) {
       // Public access - only return active tax rules for specific store
       query = tenantDb
-        .from('tax_rules')
+        .from('taxes')
         .select('*')
         .eq('store_id', store_id)
         .eq('is_active', true)
@@ -63,7 +63,7 @@ router.get('/', async (req, res) => {
       }
 
       query = tenantDb
-        .from('tax_rules')
+        .from('taxes')
         .select('*')
         .eq('store_id', store_id)
         .order('name', { ascending: true })
@@ -84,12 +84,12 @@ router.get('/', async (req, res) => {
     // Get total count
     const countQuery = isPublicRequest
       ? tenantDb
-          .from('tax_rules')
+          .from('taxes')
           .select('*', { count: 'exact', head: true })
           .eq('store_id', store_id)
           .eq('is_active', true)
       : tenantDb
-          .from('tax_rules')
+          .from('taxes')
           .select('*', { count: 'exact', head: true })
           .eq('store_id', store_id);
 
@@ -137,7 +137,7 @@ router.get('/:id', async (req, res) => {
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     const { data: tax, error } = await tenantDb
-      .from('tax_rules')
+      .from('taxes')
       .select('*')
       .eq('id', req.params.id)
       .single();
@@ -203,7 +203,7 @@ router.post('/', async (req, res) => {
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     const { data: tax, error } = await tenantDb
-      .from('tax_rules')
+      .from('taxes')
       .insert({
         ...taxData,
         store_id,
@@ -252,7 +252,7 @@ router.put('/:id', async (req, res) => {
 
     // Check if tax rule exists
     const { data: tax, error: checkError } = await tenantDb
-      .from('tax_rules')
+      .from('taxes')
       .select('*')
       .eq('id', req.params.id)
       .single();
@@ -278,7 +278,7 @@ router.put('/:id', async (req, res) => {
     }
 
     const { data: updatedTax, error: updateError } = await tenantDb
-      .from('tax_rules')
+      .from('taxes')
       .update({
         ...req.body,
         updated_at: new Date().toISOString()
@@ -326,7 +326,7 @@ router.delete('/:id', async (req, res) => {
 
     // Check if tax rule exists
     const { data: tax, error: checkError } = await tenantDb
-      .from('tax_rules')
+      .from('taxes')
       .select('*')
       .eq('id', req.params.id)
       .single();
@@ -352,7 +352,7 @@ router.delete('/:id', async (req, res) => {
     }
 
     const { error } = await tenantDb
-      .from('tax_rules')
+      .from('taxes')
       .delete()
       .eq('id', req.params.id);
 
