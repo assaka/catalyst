@@ -1,5 +1,6 @@
 const StorageInterface = require('./storage-interface');
 const supabaseStorage = require('./supabase-storage');
+const ConnectionManager = require('./database/ConnectionManager');
 
 /**
  * Supabase Storage Provider implementing StorageInterface
@@ -34,25 +35,26 @@ class SupabaseStorageProvider extends StorageInterface {
     console.log('🔍 SupabaseStorageProvider.listFiles called with:', { storeId, folder, options });
 
     try {
-      // First try to get files from media_assets table
-      const { MediaAsset } = require('../models'); // Tenant DB model
+      // Get tenant database connection
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      const where = { store_id: storeId };
+      // Build query for media_assets table
+      let query = tenantDb
+        .from('media_assets')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false })
+        .range(options.offset || 0, (options.offset || 0) + (options.limit || 100) - 1);
 
       // Filter by folder if specified
       if (folder) {
-        where.folder = folder;
+        query = query.eq('folder', folder);
       }
 
-      console.log('🗃️ Querying MediaAsset table with where:', where);
+      console.log('🗃️ Querying media_assets table with:', { storeId, folder });
 
       // Add timeout for database query to prevent hanging
-      const dbQueryPromise = MediaAsset.findAll({
-        where,
-        order: [['created_at', 'DESC']],
-        limit: options.limit || 100,
-        offset: options.offset || 0
-      });
+      const dbQueryPromise = query;
 
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Database query timeout')), 3000);
@@ -63,14 +65,20 @@ class SupabaseStorageProvider extends StorageInterface {
 
       try {
         const startTime = Date.now();
-        mediaAssets = await Promise.race([dbQueryPromise, timeoutPromise]);
+        const { data, error } = await Promise.race([dbQueryPromise, timeoutPromise]);
         queryDuration = Date.now() - startTime;
 
-        console.log(`📊 MediaAsset query completed in ${queryDuration}ms:`, {
-          found: mediaAssets.length,
-          storeId,
-          folder
-        });
+        if (error) {
+          console.log(`⚠️ MediaAsset query failed in ${queryDuration}ms:`, error.message);
+          mediaAssets = [];
+        } else {
+          mediaAssets = data || [];
+          console.log(`📊 MediaAsset query completed in ${queryDuration}ms:`, {
+            found: mediaAssets.length,
+            storeId,
+            folder
+          });
+        }
       } catch (error) {
         const startTime = Date.now();
         queryDuration = Date.now() - startTime;
@@ -78,7 +86,7 @@ class SupabaseStorageProvider extends StorageInterface {
         // Continue to fallback - don't throw here
         mediaAssets = [];
       }
-      
+
       // If we have results from database, use those
       if (mediaAssets && mediaAssets.length > 0) {
         const files = mediaAssets.map(asset => ({
@@ -97,7 +105,7 @@ class SupabaseStorageProvider extends StorageInterface {
           updated_at: asset.updated_at,
           folder: asset.folder
         }));
-        
+
         return {
           success: true,
           files,
@@ -143,41 +151,55 @@ class SupabaseStorageProvider extends StorageInterface {
    * Sync files from Supabase to media_assets table
    */
   async syncFilesToDatabase(storeId, files, folder = 'library') {
-    const { MediaAsset } = require('../models'); // Tenant DB model
-    
-    for (const file of files) {
-      try {
-        // Check if file already exists in database
-        const existing = await MediaAsset.findOne({
-          where: {
-            store_id: storeId,
-            file_path: file.fullPath || file.name
-          }
-        });
-        
-        if (!existing) {
-          // Create new media asset record
-          await MediaAsset.create({
-            store_id: storeId,
-            file_name: file.name,
-            original_name: file.name,
-            file_path: file.fullPath || file.name,
-            file_url: file.url || file.publicUrl,
-            mime_type: file.mimetype || file.metadata?.mimetype,
-            file_size: file.size || file.metadata?.size || 0,
-            folder: folder,
-            metadata: {
-              bucket: file.bucket || 'suprshop-assets',
-              provider: 'supabase',
-              synced_from_storage: true,
-              synced_at: new Date()
+    try {
+      // Get tenant database connection
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      for (const file of files) {
+        try {
+          // Check if file already exists in database
+          const { data: existing } = await tenantDb
+            .from('media_assets')
+            .select('id')
+            .eq('store_id', storeId)
+            .eq('file_path', file.fullPath || file.name)
+            .maybeSingle();
+
+          if (!existing) {
+            // Create new media asset record
+            const { error } = await tenantDb
+              .from('media_assets')
+              .insert({
+                store_id: storeId,
+                file_name: file.name,
+                original_name: file.name,
+                file_path: file.fullPath || file.name,
+                file_url: file.url || file.publicUrl,
+                mime_type: file.mimetype || file.metadata?.mimetype,
+                file_size: file.size || file.metadata?.size || 0,
+                folder: folder,
+                metadata: {
+                  bucket: file.bucket || 'suprshop-assets',
+                  provider: 'supabase',
+                  synced_from_storage: true,
+                  synced_at: new Date()
+                },
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              });
+
+            if (error) {
+              console.error(`Failed to sync file ${file.name}:`, error.message);
+            } else {
+              console.log(`Synced file to database: ${file.name}`);
             }
-          });
-          console.log(`Synced file to database: ${file.name}`);
+          }
+        } catch (err) {
+          console.error(`Failed to sync file ${file.name}:`, err.message);
         }
-      } catch (err) {
-        console.error(`Failed to sync file ${file.name}:`, err.message);
       }
+    } catch (err) {
+      console.error('Failed to get tenant connection for sync:', err.message);
     }
   }
 
