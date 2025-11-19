@@ -5,16 +5,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const { authorize, storeOwnerOnly, customerOnly, adminOnly } = require('../middleware/auth');
 const ServiceCreditCost = require('../models/ServiceCreditCost');
 
-// Admin middleware - check if user is admin
-const adminOnly = (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      message: 'Admin access required'
-    });
-  }
-  next();
-};
+// adminOnly middleware is imported from auth.js above
 
 /**
  * Get all service credit costs
