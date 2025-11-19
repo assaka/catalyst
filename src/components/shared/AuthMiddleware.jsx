@@ -1086,6 +1086,15 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             console.log('✅ Store owner login successful, checking store status...');
             setTimeout(async () => {
               try {
+                // Debug: Check auth state before dropdown call
+                console.log('🔍 PRE-DROPDOWN CHECK:', {
+                  hasToken: !!apiClient.getToken(),
+                  tokenLength: apiClient.getToken()?.length || 0,
+                  isLoggedOut: apiClient.isLoggedOut,
+                  localStorageFlag: localStorage.getItem('user_logged_out'),
+                  localStorageToken: localStorage.getItem('store_owner_auth_token')?.substring(0, 20) + '...'
+                });
+
                 // Check if user has any stores
                 const storesResponse = await apiClient.get('/stores/dropdown');
 
