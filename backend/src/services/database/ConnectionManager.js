@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 const { createClient } = require('@supabase/supabase-js');
-const { Op } = require('sequelize');
+const SupabaseAdapter = require('./adapters/SupabaseAdapter');
 
 /**
  * ConnectionManager - Manages database connections for stores
@@ -138,7 +138,7 @@ class ConnectionManager {
       throw new Error('Supabase serviceRoleKey is required');
     }
 
-    return createClient(config.projectUrl, config.serviceRoleKey, {
+    const supabaseClient = createClient(config.projectUrl, config.serviceRoleKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false
@@ -147,6 +147,9 @@ class ConnectionManager {
         schema: config.schema || 'public'
       }
     });
+
+    // Wrap Supabase client in adapter for generic interface
+    return new SupabaseAdapter(supabaseClient, config);
   }
 
   /**
