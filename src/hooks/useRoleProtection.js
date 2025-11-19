@@ -17,11 +17,18 @@ export const useRoleProtection = (shouldApply = true) => {
       try {
         // Determine current context first
         const currentPath = location.pathname.toLowerCase();
+
+        // Public pages that should bypass role protection
+        const publicPages = ['/admin/auth', '/admin/store-onboarding', '/landing'];
+        if (publicPages.some(page => currentPath.startsWith(page))) {
+          return; // Skip role protection for public pages
+        }
+
         const storefrontPages = [
-          '/landing', '/', '/storefront', '/productdetail', '/cart', 
+          '/landing', '/', '/storefront', '/productdetail', '/cart',
           '/checkout', '/order-success', '/ordersuccess'
         ];
-        
+
         // Check if current path matches store slug pattern (/:storeSlug/page)
         const storeSlugPattern = /^\/[^\/]+\/(storefront|productdetail|cart|checkout|order-success|ordersuccess)/.test(currentPath);
         const isStorefrontContext = storefrontPages.some(page => currentPath.startsWith(page)) || storeSlugPattern;
