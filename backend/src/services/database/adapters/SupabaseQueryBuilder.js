@@ -89,6 +89,30 @@ class SupabaseQueryBuilder {
     return this;
   }
 
+  // INSERT
+  insert(data, options = {}) {
+    this.query = this.query.insert(data, options);
+    return this;
+  }
+
+  // UPDATE
+  update(data, options = {}) {
+    this.query = this.query.update(data, options);
+    return this;
+  }
+
+  // UPSERT
+  upsert(data, options = {}) {
+    this.query = this.query.upsert(data, options);
+    return this;
+  }
+
+  // DELETE
+  delete(options = {}) {
+    this.query = this.query.delete(options);
+    return this;
+  }
+
   // EXECUTION
   async single() {
     const { data, error, count } = await this.query.single();
