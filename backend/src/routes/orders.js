@@ -131,24 +131,32 @@ router.post('/finalize-order', async (req, res) => {
 
     console.log('🎯 Finalizing order for session:', session_id);
 
-    // Find the order by payment reference
-    const order = await Order.findOne({
-      where: {
-        [Op.or]: [
-          { payment_reference: session_id },
-          { stripe_session_id: session_id },
-          { stripe_payment_intent_id: session_id }
-        ]
-      }
-    });
+    const store_id = req.headers['x-store-id'] || req.body.store_id;
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
 
-    if (!order) {
-      console.error('❌ Order not found for session:', session_id);
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Find the order by payment reference using Supabase
+    const { data: orders, error: orderError } = await tenantDb
+      .from('sales_orders')
+      .select('*')
+      .or(`payment_reference.eq.${session_id},stripe_session_id.eq.${session_id},stripe_payment_intent_id.eq.${session_id}`)
+      .maybeSingle();
+
+    if (orderError || !orders) {
+      console.error('❌ Order not found for session:', session_id, orderError);
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
+
+    const order = orders;
 
     console.log('✅ Found order:', order.id, 'Current status:', order.status, 'Payment status:', order.payment_status);
 
@@ -235,7 +243,7 @@ router.post('/finalize-order', async (req, res) => {
       // Try to get customer details
       let customer = null;
       if (order.customer_id) {
-        customer = await Customer.findByPk(order.customer_id);
+        customer = await tenantDb.from("customers").select("*").eq("id", order.customer_id).maybeSingle().then(r => r.data);
       }
 
       // Extract customer name from shipping/billing address if customer not found
@@ -1106,7 +1114,7 @@ router.post('/:id/resend-confirmation', authMiddleware, async (req, res) => {
     }
 
     // Get customer details
-    const customer = order.customer_id ? await Customer.findByPk(order.customer_id) : null;
+    const customer = order.customer_id ? await tenantDb.from("customers").select("*").eq("id", order.customer_id).maybeSingle().then(r => r.data) : null;
 
     // Parse customer name from billing address
     let firstName = 'Customer';
@@ -1168,7 +1176,7 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
     }
 
     // Get customer details
-    const customer = order.customer_id ? await Customer.findByPk(order.customer_id) : null;
+    const customer = order.customer_id ? await tenantDb.from("customers").select("*").eq("id", order.customer_id).maybeSingle().then(r => r.data) : null;
 
     // Parse customer name from billing address
     let firstName = 'Customer';
@@ -1286,7 +1294,7 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
     }
 
     // Get customer details
-    const customer = order.customer_id ? await Customer.findByPk(order.customer_id) : null;
+    const customer = order.customer_id ? await tenantDb.from("customers").select("*").eq("id", order.customer_id).maybeSingle().then(r => r.data) : null;
 
     // Parse customer name from billing address
     let firstName = 'Customer';
