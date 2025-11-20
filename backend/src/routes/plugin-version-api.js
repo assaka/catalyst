@@ -1,9 +1,19 @@
 // backend/src/routes/plugin-version-api.js
 const express = require('express');
 const router = express.Router();
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { QueryTypes } = require('sequelize');
 const jsonpatch = require('fast-json-patch');
+
+/**
+ * Get tenant-specific sequelize instance
+ */
+async function getTenantSequelize(req) {
+  const storeId = req.headers['x-store-id'] || req.query.store_id;
+  if (!storeId) throw new Error('Store ID is required for plugin operations');
+  const connection = await ConnectionManager.getConnection(storeId);
+  return connection.sequelize;
+}
 
 /**
  * =====================================================
@@ -20,6 +30,7 @@ const jsonpatch = require('fast-json-patch');
  */
 router.get('/:pluginId/versions', async (req, res) => {
   try {
+    const sequelize = await getTenantSequelize(req);
     const { pluginId } = req.params;
     const { page = 1, limit = 20, filter = 'all' } = req.query;
     const offset = (page - 1) * limit;
@@ -110,6 +121,7 @@ router.get('/:pluginId/versions', async (req, res) => {
  */
 router.get('/:pluginId/versions/compare', async (req, res) => {
   try {
+    const sequelize = await getTenantSequelize(req);
     const { pluginId } = req.params;
     const { from, to } = req.query;
 
@@ -143,8 +155,8 @@ router.get('/:pluginId/versions/compare', async (req, res) => {
     }
 
     // Reconstruct both states
-    const fromState = await reconstructPluginState(from);
-    const toState = await reconstructPluginState(to);
+    const fromState = await reconstructPluginState(sequelize, from);
+    const toState = await reconstructPluginState(sequelize, to);
 
     console.log(`  ✓ States reconstructed:`, {
       fromState_keys: fromState ? Object.keys(fromState) : null,
@@ -219,6 +231,7 @@ router.get('/:pluginId/versions/compare', async (req, res) => {
  */
 router.get('/:pluginId/versions/current', async (req, res) => {
   try {
+    const sequelize = await getTenantSequelize(req);
     const { pluginId } = req.params;
 
     const [version] = await sequelize.query(`
@@ -256,6 +269,7 @@ router.get('/:pluginId/versions/current', async (req, res) => {
  */
 router.get('/:pluginId/versions/:versionId', async (req, res) => {
   try {
+    const sequelize = await getTenantSequelize(req);
     const { pluginId, versionId } = req.params;
 
     console.log(`📖 Loading version: ${versionId}`);
@@ -304,7 +318,7 @@ router.get('/:pluginId/versions/:versionId', async (req, res) => {
     }
 
     // Reconstruct full plugin state at this version
-    const reconstructedState = await reconstructPluginState(versionId);
+    const reconstructedState = await reconstructPluginState(sequelize, versionId);
 
     console.log(`  ✓ Version details loaded:`, {
       version_type: version.version_type,
@@ -338,6 +352,7 @@ router.get('/:pluginId/versions/:versionId', async (req, res) => {
  */
 router.post('/:pluginId/versions', async (req, res) => {
   try {
+    const sequelize = await getTenantSequelize(req);
     const { pluginId } = req.params;
     const {
       commit_message,
@@ -360,7 +375,7 @@ router.post('/:pluginId/versions', async (req, res) => {
     });
 
     // Get current plugin state from database
-    const pluginState = await getPluginCurrentState(pluginId);
+    const pluginState = await getPluginCurrentState(sequelize, pluginId);
 
     if (!pluginState) {
       console.error(`  ❌ Plugin ${pluginId} not found in database`);
@@ -395,7 +410,7 @@ router.post('/:pluginId/versions', async (req, res) => {
 
     if (!shouldSnapshot && currentVersion) {
       // Get previous plugin state
-      const previousState = await reconstructPluginState(currentVersion.id);
+      const previousState = await reconstructPluginState(sequelize, currentVersion.id);
 
       if (!previousState) {
         console.warn(`  ⚠ Could not reconstruct previous state for version ${currentVersion.id}, forcing snapshot`);
@@ -444,9 +459,9 @@ router.post('/:pluginId/versions', async (req, res) => {
 
     // Store snapshot or patches
     if (shouldSnapshot) {
-      await createSnapshot(newVersion[0].id, pluginId, pluginState);
+      await createSnapshot(sequelize, newVersion[0].id, pluginId, pluginState);
     } else {
-      await storePatches(newVersion[0].id, pluginId, patches);
+      await storePatches(sequelize, newVersion[0].id, pluginId, patches);
     }
 
     // Create tag if provided
@@ -487,6 +502,7 @@ router.post('/:pluginId/versions', async (req, res) => {
  */
 router.post('/:pluginId/versions/:versionId/restore', async (req, res) => {
   try {
+    const sequelize = await getTenantSequelize(req);
     const { pluginId, versionId } = req.params;
     const { create_backup = true, created_by, created_by_name } = req.body;
 
@@ -507,7 +523,7 @@ router.post('/:pluginId/versions/:versionId/restore', async (req, res) => {
     }
 
     // Reconstruct plugin state at target version
-    const targetState = await reconstructPluginState(versionId);
+    const targetState = await reconstructPluginState(sequelize, versionId);
 
     if (!targetState) {
       return res.status(404).json({
@@ -517,7 +533,7 @@ router.post('/:pluginId/versions/:versionId/restore', async (req, res) => {
     }
 
     // Apply restored state to database
-    await applyPluginState(pluginId, targetState);
+    await applyPluginState(sequelize, pluginId, targetState);
 
     // Mark version as current
     await sequelize.query(`
@@ -551,6 +567,7 @@ router.post('/:pluginId/versions/:versionId/restore', async (req, res) => {
  */
 router.post('/:pluginId/versions/:versionId/tag', async (req, res) => {
   try {
+    const sequelize = await getTenantSequelize(req);
     const { pluginId, versionId } = req.params;
     const { tag_name, tag_type = 'custom', description, created_by, created_by_name } = req.body;
 
@@ -593,6 +610,7 @@ router.post('/:pluginId/versions/:versionId/tag', async (req, res) => {
  */
 router.delete('/:pluginId/versions/:versionId/tag/:tagName', async (req, res) => {
   try {
+    const sequelize = await getTenantSequelize(req);
     const { pluginId, versionId, tagName } = req.params;
 
     await sequelize.query(`
@@ -623,7 +641,7 @@ router.delete('/:pluginId/versions/:versionId/tag/:tagName', async (req, res) =>
 /**
  * Get current plugin state from all tables
  */
-async function getPluginCurrentState(pluginId) {
+async function getPluginCurrentState(sequelize, pluginId) {
   const [registry] = await sequelize.query(
     'SELECT * FROM plugin_registry WHERE id = $1',
     { bind: [pluginId], type: QueryTypes.SELECT }
@@ -676,7 +694,7 @@ async function getPluginCurrentState(pluginId) {
  * Reconstruct plugin state at a specific version
  * Uses snapshots and patches
  */
-async function reconstructPluginState(versionId) {
+async function reconstructPluginState(sequelize, versionId) {
   try {
     // Get version info
     const [version] = await sequelize.query(
@@ -825,7 +843,7 @@ function calculatePatches(oldState, newState) {
 /**
  * Store patches in database
  */
-async function storePatches(versionId, pluginId, patches) {
+async function storePatches(sequelize, versionId, pluginId, patches) {
   for (const patch of patches) {
     await sequelize.query(`
       INSERT INTO plugin_version_patches (
@@ -847,7 +865,7 @@ async function storePatches(versionId, pluginId, patches) {
 /**
  * Create snapshot in database
  */
-async function createSnapshot(versionId, pluginId, state) {
+async function createSnapshot(sequelize, versionId, pluginId, state) {
   try {
     // Safely extract manifest and registry data
     const registryData = state?.registry || null;
@@ -949,7 +967,7 @@ function calculateDetailedDiff(fromState, toState) {
 /**
  * Apply plugin state to database
  */
-async function applyPluginState(pluginId, state) {
+async function applyPluginState(sequelize, pluginId, state) {
   // TODO: Implement applying state to all plugin tables
   // This is a complex operation that needs transaction support
   console.warn('applyPluginState not fully implemented yet');
