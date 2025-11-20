@@ -268,6 +268,22 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   };
 
   const handleInputChange = (path, value) => {
+    // Validate price fields to allow only 2 decimal places
+    const priceFields = ['price', 'compare_price', 'cost_price'];
+    if (priceFields.includes(path) && value !== '') {
+      // Allow empty string for optional fields
+      if (value === '') {
+        // Let it pass through
+      } else {
+        // Validate decimal places
+        const decimalRegex = /^\d*\.?\d{0,2}$/;
+        if (!decimalRegex.test(value)) {
+          // Invalid format, don't update
+          return;
+        }
+      }
+    }
+
     setFormData(prev => {
       const newFormData = { ...prev };
       const parts = path.split('.');
@@ -1035,7 +1051,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                       value={formData.price}
                       onChange={(e) => handleInputChange("price", e.target.value)}
                       required
+                      placeholder="0.00"
                     />
+                    <p className="text-xs text-gray-500 mt-1">Max 2 decimal places</p>
                   </div>
                   <div>
                     <Label htmlFor="compare_price">Sale Price</Label>
@@ -1046,11 +1064,12 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                       value={formData.compare_price}
                       onChange={(e) => handleInputChange("compare_price", e.target.value)}
                       className={formData.compare_price && parseFloat(formData.compare_price) >= parseFloat(formData.price) ? "border-red-500" : ""}
+                      placeholder="0.00"
                     />
                     {formData.compare_price && parseFloat(formData.compare_price) >= parseFloat(formData.price) ? (
                       <p className="text-xs text-red-600 mt-1">⚠️ Sale price should be lower than regular price (${formData.price})</p>
                     ) : (
-                      <p className="text-xs text-gray-500 mt-1">Leave empty if no sale price</p>
+                      <p className="text-xs text-gray-500 mt-1">Leave empty if no sale price (Max 2 decimals)</p>
                     )}
                   </div>
                 </div>
@@ -1064,7 +1083,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     step="0.01"
                     value={formData.cost_price}
                     onChange={(e) => handleInputChange("cost_price", e.target.value)}
+                    placeholder="0.00"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Max 2 decimal places</p>
                 </div>
                 <div>
                   <Label htmlFor="weight">Weight (kg)</Label>
