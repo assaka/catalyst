@@ -424,7 +424,7 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
 // ========== ATTRIBUTE VALUES ROUTES ==========
 
 // Get all values for an attribute
-router.get('/:attributeId/values', authMiddleware, async (req, res) => {
+router.get('/:attributeId/values', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -476,7 +476,7 @@ router.get('/:attributeId/values', authMiddleware, async (req, res) => {
 });
 
 // Create attribute value
-router.post('/:attributeId/values', authMiddleware, async (req, res) => {
+router.post('/:attributeId/values', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -537,7 +537,7 @@ router.post('/:attributeId/values', authMiddleware, async (req, res) => {
 });
 
 // Update attribute value
-router.put('/:attributeId/values/:valueId', authMiddleware, async (req, res) => {
+router.put('/:attributeId/values/:valueId', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
 
@@ -611,7 +611,7 @@ router.put('/:attributeId/values/:valueId', authMiddleware, async (req, res) => 
 });
 
 // Delete attribute value
-router.delete('/:attributeId/values/:valueId', authMiddleware, async (req, res) => {
+router.delete('/:attributeId/values/:valueId', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 

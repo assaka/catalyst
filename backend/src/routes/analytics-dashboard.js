@@ -14,7 +14,7 @@ const { checkStoreOwnership } = require('../middleware/storeAuth');
  * Get real-time users online (last 5 minutes)
  * GET /api/analytics-dashboard/:storeId/realtime
  */
-router.get('/:storeId/realtime', async (req, res) => {
+router.get('/:storeId/realtime', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId } = req.params;
     const connection = await ConnectionManager.getConnection(storeId);
@@ -69,7 +69,7 @@ router.get('/:storeId/realtime', async (req, res) => {
  * Get session analytics with demographics
  * GET /api/analytics-dashboard/:storeId/sessions
  */
-router.get('/:storeId/sessions', async (req, res) => {
+router.get('/:storeId/sessions', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId } = req.params;
     const connection = await ConnectionManager.getConnection(storeId);
@@ -230,7 +230,7 @@ router.get('/:storeId/sessions', async (req, res) => {
  * Get time-series data for charts
  * GET /api/analytics-dashboard/:storeId/timeseries
  */
-router.get('/:storeId/timeseries', async (req, res) => {
+router.get('/:storeId/timeseries', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId } = req.params;
     const connection = await ConnectionManager.getConnection(storeId);
@@ -318,7 +318,7 @@ router.get('/:storeId/timeseries', async (req, res) => {
  * Get top performing products
  * GET /api/analytics-dashboard/:storeId/top-products
  */
-router.get('/:storeId/top-products', async (req, res) => {
+router.get('/:storeId/top-products', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId } = req.params;
     const connection = await ConnectionManager.getConnection(storeId);

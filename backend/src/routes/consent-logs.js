@@ -1,6 +1,8 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 const router = express.Router();
 
 // Helper function to get client IP
@@ -96,18 +98,10 @@ router.post('/', [
 // @route   GET /api/consent-logs
 // @desc    Get consent logs for a store
 // @access  Private
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id, limit = 50, offset = 0 } = req.query;
     const where = {};
-
-    // Ensure user is authenticated
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required'
-      });
-    }
 
     // If specific store_id is provided, use that tenant connection
     // Otherwise, we need to query across all accessible stores

@@ -1,5 +1,6 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { v4: uuidv4 } = require('uuid');
 
@@ -37,7 +38,7 @@ function convertToStripeAmount(amount, currency) {
 // @route   GET /api/payments/connect-status
 // @desc    Get Stripe Connect status
 // @access  Private
-router.get('/connect-status', authMiddleware, async (req, res) => {
+router.get('/connect-status', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id } = req.query;
 
@@ -160,7 +161,7 @@ router.get('/connect-status', authMiddleware, async (req, res) => {
 // @route   POST /api/payments/connect-account
 // @desc    Create Stripe Connect account
 // @access  Private
-router.post('/connect-account', authMiddleware, async (req, res) => {
+router.post('/connect-account', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id, country = 'US', business_type = 'company' } = req.body;
 
@@ -246,7 +247,7 @@ router.post('/connect-account', authMiddleware, async (req, res) => {
 // @route   POST /api/payments/connect-link
 // @desc    Create Stripe Connect account link for onboarding
 // @access  Private
-router.post('/connect-link', authMiddleware, async (req, res) => {
+router.post('/connect-link', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { return_url, refresh_url, store_id } = req.body;
 

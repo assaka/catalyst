@@ -3,12 +3,14 @@ const express = require('express');
 const router = express.Router();
 const AdminNavigationService = require('../services/AdminNavigationService');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 
 /**
  * GET /api/admin/navigation
  * Get complete navigation tree for the current tenant DB
  */
-router.get('/navigation', async (req, res) => {
+router.get('/navigation', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     // Get store_id from header (frontend sends X-Store-Id)
     const store_id = req.headers['x-store-id'] || req.query.store_id;
@@ -42,7 +44,7 @@ router.get('/navigation', async (req, res) => {
  * POST /api/admin/navigation/seed
  * Seed core navigation items (run once) in tenant DB
  */
-router.post('/navigation/seed', async (req, res) => {
+router.post('/navigation/seed', authMiddleware, authorize(['admin']), async (req, res) => {
   try {
     const { store_id } = req.body;
 
@@ -72,7 +74,7 @@ router.post('/navigation/seed', async (req, res) => {
  * PUT /api/admin/plugins/:pluginId/navigation
  * Update plugin navigation settings in manifest AND admin_navigation_registry
  */
-router.put('/plugins/:pluginId/navigation', async (req, res) => {
+router.put('/plugins/:pluginId/navigation', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { pluginId } = req.params;
     const { adminNavigation } = req.body;
@@ -190,7 +192,7 @@ router.put('/plugins/:pluginId/navigation', async (req, res) => {
  * POST /api/admin/navigation/reorder
  * Update navigation order and visibility
  */
-router.post('/navigation/reorder', async (req, res) => {
+router.post('/navigation/reorder', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { items } = req.body;
     const store_id = req.headers['x-store-id'] || req.query.store_id;

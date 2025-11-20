@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 const creditService = require('../services/credit-service');
 
 /**
@@ -116,15 +117,8 @@ router.get('/transactions', authMiddleware, async (req, res) => {
  * Manually trigger daily credit deduction (admin only)
  * POST /api/credits/trigger-daily-deduction
  */
-router.post('/trigger-daily-deduction', authMiddleware, async (req, res) => {
+router.post('/trigger-daily-deduction', authMiddleware, authorize(['admin']), async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only administrators can trigger daily deductions'
-      });
-    }
 
     console.log('📊 Manual daily credit deduction triggered by:', req.user.email);
 

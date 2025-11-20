@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 const { validateCustomerOrderAccess } = require('../middleware/customerStoreAuth');
 const emailService = require('../services/email-service');
 const { cacheOrder } = require('../middleware/cacheMiddleware');
@@ -755,7 +756,7 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
 // @route   GET /api/orders
 // @desc    Get orders
 // @access  Private
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -841,7 +842,7 @@ router.get('/', async (req, res) => {
 // @route   GET /api/orders/:id
 // @desc    Get order by ID
 // @access  Private
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -904,7 +905,7 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/orders
 // @desc    Create new order
 // @access  Private
-router.post('/', [
+router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
   body('customer_email').isEmail().withMessage('Customer email must be valid'),
   body('billing_address').notEmpty().withMessage('Billing address is required'),
@@ -1033,7 +1034,7 @@ router.post('/', [
 // @route   PUT /api/orders/:id
 // @desc    Update order
 // @access  Private
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id, {
       include: [{

@@ -3,6 +3,7 @@ const router = express.Router();
 const { Op } = require('sequelize');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const { heatmapLimiter, publicReadLimiter } = require('../middleware/rateLimiters');
 const { validateRequest, heatmapInteractionSchema, heatmapBatchSchema } = require('../validation/analyticsSchemas');
@@ -973,15 +974,8 @@ router.post('/screenshot/:storeId', authMiddleware, checkStoreOwnership, async (
 });
 
 // Get screenshot cache stats (admin only)
-router.get('/screenshot-cache-stats', authMiddleware, async (req, res) => {
+router.get('/screenshot-cache-stats', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin' && req.user.role !== 'store_owner') {
-      return res.status(403).json({
-        success: false,
-        error: 'Insufficient permissions'
-      });
-    }
 
     const stats = screenshotService.getCacheStats();
 
@@ -999,15 +993,8 @@ router.get('/screenshot-cache-stats', authMiddleware, async (req, res) => {
 });
 
 // Clear screenshot cache (admin only)
-router.post('/screenshot-cache-clear', authMiddleware, async (req, res) => {
+router.post('/screenshot-cache-clear', authMiddleware, authorize(['admin']), async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Admin access required'
-      });
-    }
 
     screenshotService.clearCache();
 
@@ -1025,18 +1012,10 @@ router.post('/screenshot-cache-clear', authMiddleware, async (req, res) => {
 });
 
 // Clean up old data (admin only)
-router.delete('/cleanup/:storeId', authMiddleware, checkStoreOwnership, async (req, res) => {
+router.delete('/cleanup/:storeId', authMiddleware, authorize(['admin', 'store_owner']), checkStoreOwnership, async (req, res) => {
   try {
     const { storeId } = req.params;
     const { retention_days = 90 } = req.query;
-
-    // Additional check - only allow store owners to cleanup their own data
-    if (req.user.role !== 'admin' && req.user.role !== 'store_owner') {
-      return res.status(403).json({
-        success: false,
-        error: 'Insufficient permissions for data cleanup'
-      });
-    }
 
     // Get tenant connection
     const connection = await ConnectionManager.getConnection(storeId);
