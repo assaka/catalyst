@@ -789,7 +789,7 @@ export default function ThemeLayout() {
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
             const result = await retryApiCall(async () => {
                 const { Store } = await import('@/api/entities');
-                const apiResult = await Store.update(store.id, { settings: store.settings });
+                const apiResult = await Store.updateSettings(store.id, { settings: store.settings });
                 return apiResult;
             });
 
