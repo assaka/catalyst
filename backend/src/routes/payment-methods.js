@@ -220,23 +220,27 @@ router.post('/', [
     }
 
     // Insert translations if provided
-    if (translations && Array.isArray(translations) && translations.length > 0) {
-      const translationRecords = translations.map(trans => ({
-        payment_method_id: method.id,
-        language_code: trans.language_code,
-        name: trans.name,
-        description: trans.description,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }));
+    if (translations && typeof translations === 'object') {
+      const translationInserts = Object.entries(translations)
+        .filter(([_, data]) => data && (data.name || data.description))
+        .map(([langCode, data]) => ({
+          payment_method_id: method.id,
+          language_code: langCode,
+          name: data.name || '',
+          description: data.description || ''
+        }));
 
-      const { error: transError } = await tenantDb
-        .from('payment_method_translations')
-        .insert(translationRecords);
+      if (translationInserts.length > 0) {
+        const { error: transError } = await tenantDb
+          .from('payment_method_translations')
+          .upsert(translationInserts, {
+            onConflict: 'payment_method_id,language_code'
+          });
 
-      if (transError) {
-        console.error('Error creating payment method translations:', transError);
-        // Note: We don't fail the whole request if translations fail
+        if (transError) {
+          console.error('Error creating payment method translations:', transError);
+          // Note: We don't fail the whole request if translations fail
+        }
       }
     }
 
@@ -333,39 +337,25 @@ router.put('/:id', [
     }
 
     // Update translations if provided
-    if (translations && Array.isArray(translations) && translations.length > 0) {
-      for (const trans of translations) {
-        // Check if translation exists
-        const { data: existingTrans } = await tenantDb
-          .from('payment_method_translations')
-          .select('*')
-          .eq('payment_method_id', req.params.id)
-          .eq('language_code', trans.language_code)
-          .maybeSingle();
+    if (translations && typeof translations === 'object') {
+      const translationUpserts = Object.entries(translations)
+        .filter(([_, data]) => data && (data.name !== undefined || data.description !== undefined))
+        .map(([langCode, data]) => ({
+          payment_method_id: req.params.id,
+          language_code: langCode,
+          name: data.name || '',
+          description: data.description || ''
+        }));
 
-        if (existingTrans) {
-          // Update existing translation
-          await tenantDb
-            .from('payment_method_translations')
-            .update({
-              name: trans.name,
-              description: trans.description,
-              updated_at: new Date().toISOString()
-            })
-            .eq('payment_method_id', req.params.id)
-            .eq('language_code', trans.language_code);
-        } else {
-          // Insert new translation
-          await tenantDb
-            .from('payment_method_translations')
-            .insert({
-              payment_method_id: req.params.id,
-              language_code: trans.language_code,
-              name: trans.name,
-              description: trans.description,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            });
+      if (translationUpserts.length > 0) {
+        const { error: transError } = await tenantDb
+          .from('payment_method_translations')
+          .upsert(translationUpserts, {
+            onConflict: 'payment_method_id,language_code'
+          });
+
+        if (transError) {
+          console.error('Error updating payment method translations:', transError);
         }
       }
     }
