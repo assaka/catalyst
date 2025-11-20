@@ -100,25 +100,19 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
+    const { store_id } = req.query;
     const lang = getLanguageFromRequest(req);
-    // First need to get the settings to find the store_id
-    // We'll use a direct query for this initial fetch
-    const connection = await ConnectionManager.getDefaultConnection();
-    const { CookieConsentSettings } = connection.models;
 
-    const basicSettings = await CookieConsentSettings.findByPk(req.params.id, {
-      attributes: ['store_id']
-    });
-
-    if (!basicSettings) {
-      return res.status(404).json({
+    // Store ID is required to query the tenant database
+    if (!store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'Cookie consent settings not found'
+        message: 'store_id query parameter is required'
       });
     }
 
     // Now get the full settings with translations using the correct store_id
-    const settings = await getCookieConsentSettingsById(basicSettings.store_id, req.params.id, lang);
+    const settings = await getCookieConsentSettingsById(store_id, req.params.id, lang);
 
     if (!settings) {
       return res.status(404).json({
@@ -237,23 +231,18 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
 // @access  Private
 router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    // First get the store_id from the default connection
-    const defaultConnection = await ConnectionManager.getDefaultConnection();
-    const { CookieConsentSettings: DefaultCookieConsentSettings } = defaultConnection.models;
+    // Get store_id from request
+    const { store_id } = req.body;
 
-    const basicSettings = await DefaultCookieConsentSettings.findByPk(req.params.id, {
-      attributes: ['store_id']
-    });
-
-    if (!basicSettings) {
-      return res.status(404).json({
+    if (!store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'Cookie consent settings not found'
+        message: 'store_id is required'
       });
     }
 
     // Get full settings with translations
-    const existingSettingsData = await getCookieConsentSettingsById(basicSettings.store_id, req.params.id);
+    const existingSettingsData = await getCookieConsentSettingsById(store_id, req.params.id);
     if (!existingSettingsData) {
       return res.status(404).json({
         success: false,
@@ -317,23 +306,18 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
 // @access  Private
 router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    // First get the store_id from the default connection
-    const defaultConnection = await ConnectionManager.getDefaultConnection();
-    const { CookieConsentSettings: DefaultCookieConsentSettings } = defaultConnection.models;
+    // Get store_id from query params for DELETE requests
+    const { store_id } = req.query;
 
-    const basicSettings = await DefaultCookieConsentSettings.findByPk(req.params.id, {
-      attributes: ['store_id']
-    });
-
-    if (!basicSettings) {
-      return res.status(404).json({
+    if (!store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'Cookie consent settings not found'
+        message: 'store_id query parameter is required'
       });
     }
 
     // Get full settings with translations
-    const existingSettingsData = await getCookieConsentSettingsById(basicSettings.store_id, req.params.id);
+    const existingSettingsData = await getCookieConsentSettingsById(store_id, req.params.id);
     if (!existingSettingsData) {
       return res.status(404).json({
         success: false,
@@ -399,23 +383,18 @@ router.post('/:id/translate', authMiddleware, [
 
     const { fromLang, toLang } = req.body;
 
-    // First get the store_id from the default connection
-    const defaultConnection = await ConnectionManager.getDefaultConnection();
-    const { CookieConsentSettings: DefaultCookieConsentSettings } = defaultConnection.models;
+    // Get store_id from request
+    const { store_id } = req.body;
 
-    const basicSettings = await DefaultCookieConsentSettings.findByPk(req.params.id, {
-      attributes: ['store_id']
-    });
-
-    if (!basicSettings) {
-      return res.status(404).json({
+    if (!store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'Cookie consent settings not found'
+        message: 'store_id is required'
       });
     }
 
     // Get full settings with translations
-    const existingSettingsData = await getCookieConsentSettingsById(basicSettings.store_id, req.params.id);
+    const existingSettingsData = await getCookieConsentSettingsById(store_id, req.params.id);
     if (!existingSettingsData) {
       return res.status(404).json({
         success: false,
