@@ -275,6 +275,35 @@ router.post('/register', [
       });
     }
 
+    // If agency user (store_owner/admin), also create in master DB
+    if (account_type === 'agency' && role !== 'customer') {
+      const { masterDbClient } = require('../database/masterConnection');
+
+      const { error: masterError } = await masterDbClient
+        .from('users')
+        .insert({
+          id: user.id, // Use same UUID
+          email,
+          password: hashedPassword,
+          first_name,
+          last_name,
+          phone,
+          role,
+          account_type,
+          is_active: true,
+          email_verified: false,
+          credits: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (masterError) {
+        console.error('Master DB user creation error:', masterError);
+        // Don't fail the registration, just log the error
+        // The user was created in tenant DB successfully
+      }
+    }
+
     // Create addresses if provided
     if (address_data && role === 'customer') {
       await createCustomerAddresses(tenantDb, user.id, first_name, last_name, phone, email, address_data, role);
