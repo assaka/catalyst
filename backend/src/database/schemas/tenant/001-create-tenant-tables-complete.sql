@@ -1813,7 +1813,8 @@ CREATE TABLE IF NOT EXISTS payment_methods (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   conditions JSONB DEFAULT '{}'::jsonb,
-  payment_flow VARCHAR(20) DEFAULT 'offline'::character varying
+  payment_flow VARCHAR(20) DEFAULT 'offline'::character varying,
+  icon_url TEXT
 );
 
 CREATE TABLE IF NOT EXISTS pdf_template_translations (
