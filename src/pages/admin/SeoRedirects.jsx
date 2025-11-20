@@ -10,9 +10,11 @@ import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import adminApiClient from "@/api/admin-client";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useAlertTypes } from "@/hooks/useAlert";
 
 export default function SeoRedirects() {
   const { getSelectedStoreId } = useStoreSelection();
+  const { showConfirm, AlertComponent } = useAlertTypes();
   const [redirects, setRedirects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fromUrl, setFromUrl] = useState('');
@@ -103,7 +105,12 @@ export default function SeoRedirects() {
   };
 
   const handleDeleteRedirect = async (id) => {
-    if (!confirm('Are you sure you want to delete this redirect?')) {
+    const confirmed = await showConfirm(
+      'Are you sure you want to delete this redirect? This action cannot be undone.',
+      'Delete Redirect'
+    );
+
+    if (!confirmed) {
       return;
     }
 
@@ -414,6 +421,7 @@ export default function SeoRedirects() {
           </CollapsibleContent>
         </Card>
       </Collapsible>
+      <AlertComponent />
     </div>
   );
 }
