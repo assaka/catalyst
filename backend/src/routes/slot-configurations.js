@@ -118,6 +118,76 @@ router.get('/slot-configurations/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// Create or update draft slot configuration with static defaults
+router.post('/draft/:storeId/:pageType', authMiddleware, async (req, res) => {
+  try {
+    const { storeId, pageType } = req.params;
+    const { staticConfiguration } = req.body;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, error: 'storeId is required' });
+    }
+
+    // Get tenant connection and models
+    const connection = await ConnectionManager.getConnection(storeId);
+    const { SlotConfiguration } = connection.models;
+
+    // Check if a draft configuration already exists for this user/store and pageType
+    const existing = await SlotConfiguration.findOne({
+      where: {
+        user_id: req.user.id,
+        store_id: storeId,
+        is_active: false
+      }
+    });
+
+    // If draft exists for the same page type, return it
+    if (existing) {
+      const existingPageType = existing.configuration?.metadata?.pageType;
+      if (existingPageType === pageType) {
+        console.log('✅ Returning existing draft slot configuration for user/store/page:', req.user.id, storeId, pageType);
+        return res.json({ success: true, data: existing });
+      }
+
+      // Different page type - update with new configuration if staticConfiguration provided
+      if (staticConfiguration) {
+        console.log('🔄 Updating draft with new page configuration:', pageType);
+        existing.configuration = staticConfiguration;
+        existing.changed('configuration', true);
+        await existing.save();
+
+        return res.json({ success: true, data: existing });
+      }
+
+      // Return existing draft even if page type doesn't match
+      return res.json({ success: true, data: existing });
+    }
+
+    // Create new draft configuration with static defaults or empty slots
+    const newConfig = staticConfiguration || {
+      slots: {},
+      metadata: {
+        pageType: pageType,
+        created: new Date().toISOString(),
+        lastModified: new Date().toISOString()
+      }
+    };
+
+    console.log('➕ Creating new draft slot configuration for user/store/page:', req.user.id, storeId, pageType);
+    const newConfiguration = await SlotConfiguration.create({
+      user_id: req.user.id,
+      store_id: storeId,
+      configuration: newConfig,
+      is_active: false
+    });
+
+    res.json({ success: true, data: newConfiguration });
+  } catch (error) {
+    console.error('Error creating draft slot configuration:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Create slot configuration
 router.post('/slot-configurations', authMiddleware, async (req, res) => {
   try {
