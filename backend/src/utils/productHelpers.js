@@ -133,10 +133,11 @@ async function applyProductTranslationsToMany(products, lang = 'en') {
 /**
  * Get products with ALL translations for admin translation management
  *
- * @param {Array} products - Array of product objects from Sequelize
+ * @param {Array} products - Array of product objects
+ * @param {Object} tenantDb - Tenant database connection (Supabase/Knex client)
  * @returns {Promise<Array>} Products with all translations nested by language code
  */
-async function applyAllProductTranslations(products) {
+async function applyAllProductTranslations(products, tenantDb) {
   if (!products || products.length === 0) return [];
 
   // Convert products to plain objects
@@ -145,22 +146,21 @@ async function applyAllProductTranslations(products) {
 
   if (productIds.length === 0) return productData;
 
-  // Fetch all translations for these products
-  const query = `
-    SELECT
-      product_id,
-      language_code,
-      name,
-      description,
-      short_description
-    FROM product_translations
-    WHERE product_id IN (:productIds)
-  `;
+  if (!tenantDb) {
+    console.error('❌ applyAllProductTranslations: tenantDb connection required');
+    return productData;
+  }
 
-  const translations = await sequelize.query(query, {
-    replacements: { productIds },
-    type: sequelize.QueryTypes.SELECT
-  });
+  // Fetch all translations for these products using Supabase query builder
+  const { data: translations, error } = await tenantDb
+    .from('product_translations')
+    .select('product_id, language_code, name, description, short_description')
+    .in('product_id', productIds);
+
+  if (error) {
+    console.error('Error fetching product translations:', error);
+    return productData;
+  }
 
   // Group translations by product_id and language_code
   const translationsByProduct = {};

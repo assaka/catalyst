@@ -64,7 +64,8 @@ router.get('/', authAdmin, async (req, res) => {
     let products = rows;
     if (include_all_translations === 'true') {
       console.log('🌍 Products: Including all translations');
-      products = await applyAllProductTranslations(rows);
+      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+      products = await applyAllProductTranslations(rows, tenantDb);
     }
 
     res.json({
@@ -535,7 +536,8 @@ router.post('/bulk-translate', authAdmin, [
     const productsRaw = await getAllProducts(store_id);
 
     // Load all translations from product_translations table
-    const products = await applyAllProductTranslations(productsRaw);
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    const products = await applyAllProductTranslations(productsRaw, tenantDb);
 
     console.log(`📦 Loaded ${products.length} products from database with ALL translations`);
     if (products.length > 0) {
