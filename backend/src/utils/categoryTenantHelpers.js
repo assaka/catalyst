@@ -138,6 +138,15 @@ async function createCategoryWithTranslations(storeId, categoryData, translation
 
   if (error) throw error;
 
+  // If name/description provided directly, add them as default 'en' translation
+  if (name || description) {
+    if (!translations.en) {
+      translations.en = {};
+    }
+    if (name) translations.en.name = name;
+    if (description) translations.en.description = description;
+  }
+
   // Save translations
   await saveCategoryTranslations(storeId, category.id, translations);
 
@@ -172,6 +181,15 @@ async function updateCategoryWithTranslations(storeId, categoryId, categoryData 
       .eq('id', categoryId);
 
     if (error) throw error;
+  }
+
+  // If name/description provided directly, add them as default 'en' translation
+  if (name || description) {
+    if (!translations.en) {
+      translations.en = {};
+    }
+    if (name) translations.en.name = name;
+    if (description) translations.en.description = description;
   }
 
   // Save translations
