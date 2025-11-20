@@ -1,6 +1,5 @@
 const ConnectionManager = require('./ConnectionManager');
 const { IntegrationConfig, Store } = require('../../models');
-const { sequelize } = require('../../database/connection');
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -270,8 +269,8 @@ class DatabaseProvisioningService {
    * @private
    */
   static async _modelToCreateTableSQL(model) {
-    const { QueryInterface } = sequelize;
-    const queryGenerator = sequelize.getQueryInterface().queryGenerator;
+    const masterConnection = ConnectionManager.getMasterConnection();
+    const queryGenerator = masterConnection.getQueryInterface().queryGenerator;
 
     // Get table definition from model
     const tableName = model.tableName;
@@ -325,11 +324,12 @@ class DatabaseProvisioningService {
   static async reprovisionStore(storeId) {
     console.log(`🔄 Re-provisioning store ${storeId}...`);
 
+    const { Op } = require('sequelize');
     const config = await IntegrationConfig.findOne({
       where: {
         store_id: storeId,
         integration_type: {
-          [sequelize.Sequelize.Op.in]: ['supabase-database', 'postgresql', 'mysql']
+          [Op.in]: ['supabase-database', 'postgresql', 'mysql']
         },
         is_active: true
       }

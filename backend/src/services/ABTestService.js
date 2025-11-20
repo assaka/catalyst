@@ -4,6 +4,7 @@
  */
 
 const crypto = require('crypto');
+const ConnectionManager = require('./database/ConnectionManager');
 const ABTest = require('../models/ABTest');
 const ABTestAssignment = require('../models/ABTestAssignment');
 
@@ -157,14 +158,14 @@ class ABTestService {
   /**
    * Get test results and statistical analysis
    */
-  async getTestResults(testId) {
+  async getTestResults(testId, storeId) {
     const test = await ABTest.findByPk(testId);
     if (!test) {
       throw new Error(`Test ${testId} not found`);
     }
 
     const { Op } = require('sequelize');
-    const { sequelize } = require('../database/connection');
+    const connection = await ConnectionManager.getStoreConnection(storeId);
 
     // Get aggregated statistics for each variant
     const stats = await ABTestAssignment.findAll({
@@ -172,10 +173,10 @@ class ABTestService {
       attributes: [
         'variant_id',
         'variant_name',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'total_assignments'],
-        [sequelize.fn('SUM', sequelize.cast(sequelize.col('converted'), 'integer')), 'total_conversions'],
-        [sequelize.fn('AVG', sequelize.col('conversion_value')), 'avg_conversion_value'],
-        [sequelize.fn('SUM', sequelize.col('conversion_value')), 'total_conversion_value']
+        [connection.sequelize.fn('COUNT', connection.sequelize.col('id')), 'total_assignments'],
+        [connection.sequelize.fn('SUM', connection.sequelize.cast(connection.sequelize.col('converted'), 'integer')), 'total_conversions'],
+        [connection.sequelize.fn('AVG', connection.sequelize.col('conversion_value')), 'avg_conversion_value'],
+        [connection.sequelize.fn('SUM', connection.sequelize.col('conversion_value')), 'total_conversion_value']
       ],
       group: ['variant_id', 'variant_name']
     });

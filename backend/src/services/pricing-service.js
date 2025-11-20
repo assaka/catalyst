@@ -1,4 +1,5 @@
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('./database/ConnectionManager');
+const { QueryTypes } = require('sequelize');
 
 /**
  * Credit Pricing Service
@@ -6,7 +7,7 @@ const { sequelize } = require('../database/connection');
  */
 class PricingService {
   constructor() {
-    // Pricing is now managed entirely in the database (credit_pricing table)
+    // Pricing is now managed entirely in the master database (credit_pricing table)
   }
 
   /**
@@ -41,7 +42,8 @@ class PricingService {
    * @returns {Array} - Array of pricing options from database
    */
   async getPricingFromDatabase(currency) {
-    const result = await sequelize.query(`
+    const masterConnection = ConnectionManager.getMasterConnection();
+    const result = await masterConnection.query(`
       SELECT
         id,
         credits,
@@ -56,7 +58,7 @@ class PricingService {
       ORDER BY display_order ASC, amount ASC
     `, {
       bind: [currency.toLowerCase()],
-      type: sequelize.QueryTypes.SELECT
+      type: QueryTypes.SELECT
     });
 
     return result;
@@ -68,13 +70,14 @@ class PricingService {
    */
   async getAvailableCurrencies() {
     try {
-      const result = await sequelize.query(`
+      const masterConnection = ConnectionManager.getMasterConnection();
+      const result = await masterConnection.query(`
         SELECT DISTINCT currency
         FROM credit_pricing
         WHERE active = true
         ORDER BY currency ASC
       `, {
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
       });
 
       if (!result || result.length === 0) {
@@ -95,7 +98,8 @@ class PricingService {
    */
   async getPriceByStripeId(stripePriceId) {
     try {
-      const [result] = await sequelize.query(`
+      const masterConnection = ConnectionManager.getMasterConnection();
+      const [result] = await masterConnection.query(`
         SELECT
           id,
           credits,
@@ -107,7 +111,7 @@ class PricingService {
         WHERE stripe_price_id = $1 AND active = true
       `, {
         bind: [stripePriceId],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
       });
 
       return result;

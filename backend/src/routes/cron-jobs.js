@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
-const { sequelize } = require('../database/connection');
+const { Op } = require('sequelize');
 const CronJob = require('../models/CronJob');
 const CronJobType = require('../models/CronJobType');
 const CronJobExecution = require('../models/CronJobExecution');
@@ -88,9 +88,9 @@ router.get('/', async (req, res) => {
     }
 
     if (search) {
-      where[sequelize.Sequelize.Op.or] = [
-        { name: { [sequelize.Sequelize.Op.iLike]: `%${search}%` } },
-        { description: { [sequelize.Sequelize.Op.iLike]: `%${search}%` } }
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { description: { [Op.iLike]: `%${search}%` } }
       ];
     }
 

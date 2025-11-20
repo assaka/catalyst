@@ -11,7 +11,6 @@ const StorageManager = require('./storage/StorageManager');
 const axios = require('axios');
 const path = require('path');
 const { Op } = require('sequelize');
-const { sequelize } = require('../database/connection');
 
 class ShopifyImportService {
   constructor(storeId) {

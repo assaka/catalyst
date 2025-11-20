@@ -1,5 +1,6 @@
 // backend/src/services/PluginPurchaseService.js
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('./database/ConnectionManager');
+const { QueryTypes } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
 // const stripeService = require('./StripeService'); // TODO: Implement Stripe service
 // const pluginManager = require('../core/PluginManager'); // Will be created next
@@ -135,8 +136,9 @@ class PluginPurchaseService {
    */
   async createLicense(marketplacePluginId, tenantId, plugin, pricingDetails, paymentResult, userId) {
     const licenseKey = this.generateLicenseKey();
+    const masterConnection = ConnectionManager.getMasterConnection();
 
-    const [result] = await sequelize.query(`
+    const [result] = await masterConnection.query(`
       INSERT INTO plugin_licenses (
         id,
         marketplace_plugin_id,
@@ -167,7 +169,7 @@ class PluginPurchaseService {
         paymentResult?.subscriptionId || null,
         paymentResult?.nextBillingDate || null
       ],
-      type: sequelize.QueryTypes.INSERT
+      type: QueryTypes.INSERT
     });
 
     return result[0];
@@ -190,7 +192,8 @@ class PluginPurchaseService {
    * Update marketplace metrics
    */
   async updateMarketplaceMetrics(pluginId, revenue) {
-    await sequelize.query(`
+    const masterConnection = ConnectionManager.getMasterConnection();
+    await masterConnection.query(`
       UPDATE plugin_marketplace
       SET
         active_installations = active_installations + 1,
@@ -198,7 +201,7 @@ class PluginPurchaseService {
       WHERE id = $1
     `, {
       bind: [pluginId],
-      type: sequelize.QueryTypes.UPDATE
+      type: QueryTypes.UPDATE
     });
   }
 
@@ -225,11 +228,12 @@ class PluginPurchaseService {
    * Get marketplace plugin
    */
   async getMarketplacePlugin(pluginId) {
-    const result = await sequelize.query(`
+    const masterConnection = ConnectionManager.getMasterConnection();
+    const result = await masterConnection.query(`
       SELECT * FROM plugin_marketplace WHERE id = $1 AND status = 'approved'
     `, {
       bind: [pluginId],
-      type: sequelize.QueryTypes.SELECT
+      type: QueryTypes.SELECT
     });
 
     if (!result[0]) {
@@ -243,12 +247,13 @@ class PluginPurchaseService {
    * Check existing license
    */
   async checkExistingLicense(pluginId, tenantId) {
-    const result = await sequelize.query(`
+    const masterConnection = ConnectionManager.getMasterConnection();
+    const result = await masterConnection.query(`
       SELECT * FROM plugin_licenses
       WHERE marketplace_plugin_id = $1 AND tenant_id = $2 AND status = 'active'
     `, {
       bind: [pluginId, tenantId],
-      type: sequelize.QueryTypes.SELECT
+      type: QueryTypes.SELECT
     });
 
     return result[0] || null;

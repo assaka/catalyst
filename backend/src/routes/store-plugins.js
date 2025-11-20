@@ -3,7 +3,7 @@ const router = express.Router({ mergeParams: true }); // Enable access to parent
 const PluginConfiguration = require('../models/PluginConfiguration');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
-const ConnectionManager = require('../database/ConnectionManager');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 // All routes require authentication and store access
 // Add defensive checks for production environment issues

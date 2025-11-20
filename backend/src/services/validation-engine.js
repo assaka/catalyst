@@ -6,11 +6,11 @@
 const { parse } = require('@babel/parser');
 const generate = require('@babel/generator').default;
 const traverse = require('@babel/traverse').default;
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('./database/ConnectionManager');
+const { QueryTypes } = require('sequelize');
 
 class ValidationEngine {
   constructor() {
-    this.sequelize = sequelize;
     this.ruleHandlers = new Map();
     this.initializeBuiltInRules();
   }
@@ -464,15 +464,16 @@ class ValidationEngine {
    */
   async getStoreValidationRules(storeId, filePath) {
     try {
-      const rules = await this.sequelize.query(`
+      const connection = await ConnectionManager.getStoreConnection(storeId);
+      const rules = await connection.query(`
         SELECT rule_name, rule_type, rule_config, file_patterns
-        FROM hybrid_patch_validations 
-        WHERE store_id = :storeId 
+        FROM hybrid_patch_validations
+        WHERE store_id = :storeId
         AND is_active = true
         ORDER BY rule_name
       `, {
         replacements: { storeId },
-        type: this.sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
       });
 
       const applicableRules = {};
@@ -512,9 +513,10 @@ class ValidationEngine {
         description
       } = ruleData;
 
-      await this.sequelize.query(`
+      const connection = await ConnectionManager.getStoreConnection(storeId);
+      await connection.query(`
         INSERT INTO hybrid_patch_validations (
-          store_id, rule_name, rule_type, rule_config, 
+          store_id, rule_name, rule_type, rule_config,
           file_patterns, description, created_by
         ) VALUES (
           :storeId, :ruleName, :ruleType, :ruleConfig,
@@ -530,7 +532,7 @@ class ValidationEngine {
           description,
           createdBy
         },
-        type: this.sequelize.QueryTypes.INSERT
+        type: QueryTypes.INSERT
       });
 
       return { success: true };

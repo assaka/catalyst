@@ -5,12 +5,12 @@
  */
 
 const crypto = require('crypto');
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('./database/ConnectionManager');
+const { QueryTypes } = require('sequelize');
 
 class ExtensionService {
   constructor() {
     this.cache = new Map();
-    this.sequelize = sequelize;
   }
 
   /**
@@ -33,14 +33,16 @@ class ExtensionService {
         throw new Error('Missing required fields: name, storeId, createdBy');
       }
 
+      const connection = await ConnectionManager.getStoreConnection(storeId);
+
       // Check if version already exists
       if (version) {
-        const existingRelease = await sequelize.query(`
-          SELECT id FROM extension_releases 
+        const existingRelease = await connection.query(`
+          SELECT id FROM extension_releases
           WHERE store_id = :storeId AND version = :version
         `, {
           replacements: { storeId, version },
-          type: sequelize.QueryTypes.SELECT
+          type: QueryTypes.SELECT
         });
 
         if (existingRelease.length > 0) {
@@ -52,7 +54,7 @@ class ExtensionService {
       const finalVersion = version || await this.generateNextVersion(storeId, type);
 
       // Create release record
-      const [result] = await sequelize.query(`
+      const [result] = await connection.query(`
         INSERT INTO extension_releases (
           name, version, description, type, changes, store_id, created_by, status
         ) VALUES (
@@ -68,7 +70,7 @@ class ExtensionService {
           storeId,
           createdBy
         },
-        type: sequelize.QueryTypes.INSERT
+        type: QueryTypes.INSERT
       });
 
       console.log(`✅ Created release: ${name} (${finalVersion})`);
@@ -90,17 +92,18 @@ class ExtensionService {
   /**
    * Publish a release
    */
-  async publishRelease(releaseId, publishData = {}) {
+  async publishRelease(releaseId, storeId, publishData = {}) {
     try {
       const { publishedBy, publishNotes = '' } = publishData;
+      const connection = await ConnectionManager.getStoreConnection(storeId);
 
       // Check if release exists and is in draft status
-      const [release] = await sequelize.query(`
-        SELECT * FROM extension_releases 
+      const [release] = await connection.query(`
+        SELECT * FROM extension_releases
         WHERE id = :releaseId AND status = 'draft'
       `, {
         replacements: { releaseId },
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
       });
 
       if (!release) {
@@ -108,19 +111,19 @@ class ExtensionService {
       }
 
       // Get current published version for rollback reference
-      const [currentVersion] = await sequelize.query(`
-        SELECT version FROM extension_releases 
-        WHERE store_id = :storeId AND status = 'published' 
+      const [currentVersion] = await connection.query(`
+        SELECT version FROM extension_releases
+        WHERE store_id = :storeId AND status = 'published'
         ORDER BY published_at DESC LIMIT 1
       `, {
         replacements: { storeId: release[0].store_id },
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
       });
 
       // Update release status
-      await sequelize.query(`
-        UPDATE extension_releases 
-        SET 
+      await connection.query(`
+        UPDATE extension_releases
+        SET
           status = 'published',
           published_at = CURRENT_TIMESTAMP,
           published_by = :publishedBy,
@@ -134,7 +137,7 @@ class ExtensionService {
           publishNotes,
           rollbackVersion: currentVersion?.[0]?.version || null
         },
-        type: sequelize.QueryTypes.UPDATE
+        type: QueryTypes.UPDATE
       });
 
       // Create version history entry

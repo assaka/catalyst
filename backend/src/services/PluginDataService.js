@@ -1,14 +1,16 @@
 // backend/src/services/PluginDataService.js
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('./database/ConnectionManager');
+const { QueryTypes } = require('sequelize');
 
 class PluginDataService {
 
   /**
    * Store plugin data (tenant-isolated)
    */
-  async setData(pluginId, key, value, dataType = 'user_data') {
+  async setData(storeId, pluginId, key, value, dataType = 'user_data') {
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     try {
-      const [result] = await sequelize.query(`
+      const result = await connection.query(`
         INSERT INTO plugin_data (plugin_id, data_key, data_value, data_type)
         VALUES ($1, $2, $3, $4)
         ON CONFLICT (plugin_id, data_key) DO UPDATE SET
@@ -17,7 +19,7 @@ class PluginDataService {
         RETURNING *
       `, {
         bind: [pluginId, key, JSON.stringify(value), dataType],
-        type: sequelize.QueryTypes.INSERT
+        type: QueryTypes.INSERT
       });
 
       return result[0];
@@ -30,14 +32,15 @@ class PluginDataService {
   /**
    * Get plugin data
    */
-  async getData(pluginId, key) {
+  async getData(storeId, pluginId, key) {
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     try {
-      const result = await sequelize.query(`
+      const result = await connection.query(`
         SELECT data_value FROM plugin_data
         WHERE plugin_id = $1 AND data_key = $2
       `, {
         bind: [pluginId, key],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
       });
 
       if (!result[0]) {
@@ -54,7 +57,8 @@ class PluginDataService {
   /**
    * Get all data for a plugin
    */
-  async getAllData(pluginId, dataType = null) {
+  async getAllData(storeId, pluginId, dataType = null) {
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     try {
       const query = dataType
         ? `SELECT * FROM plugin_data WHERE plugin_id = $1 AND data_type = $2`
@@ -62,9 +66,9 @@ class PluginDataService {
 
       const params = dataType ? [pluginId, dataType] : [pluginId];
 
-      const result = await sequelize.query(query, {
+      const result = await connection.query(query, {
         bind: params,
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
       });
 
       const data = {};
@@ -82,14 +86,15 @@ class PluginDataService {
   /**
    * Delete plugin data
    */
-  async deleteData(pluginId, key) {
+  async deleteData(storeId, pluginId, key) {
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     try {
-      await sequelize.query(`
+      await connection.query(`
         DELETE FROM plugin_data
         WHERE plugin_id = $1 AND data_key = $2
       `, {
         bind: [pluginId, key],
-        type: sequelize.QueryTypes.DELETE
+        type: QueryTypes.DELETE
       });
 
       return true;
@@ -102,13 +107,14 @@ class PluginDataService {
   /**
    * Delete all data for a plugin
    */
-  async deleteAllData(pluginId) {
+  async deleteAllData(storeId, pluginId) {
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     try {
-      await sequelize.query(`
+      await connection.query(`
         DELETE FROM plugin_data WHERE plugin_id = $1
       `, {
         bind: [pluginId],
-        type: sequelize.QueryTypes.DELETE
+        type: QueryTypes.DELETE
       });
 
       return true;
@@ -121,15 +127,16 @@ class PluginDataService {
   /**
    * Update plugin configuration
    */
-  async updateConfig(pluginId, config) {
+  async updateConfig(storeId, pluginId, config) {
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     try {
-      await sequelize.query(`
+      await connection.query(`
         UPDATE plugins
         SET configuration = $1, updated_at = NOW()
         WHERE id = $2
       `, {
         bind: [JSON.stringify(config), pluginId],
-        type: sequelize.QueryTypes.UPDATE
+        type: QueryTypes.UPDATE
       });
 
       return config;
@@ -142,13 +149,14 @@ class PluginDataService {
   /**
    * Get plugin configuration
    */
-  async getConfig(pluginId) {
+  async getConfig(storeId, pluginId) {
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     try {
-      const result = await sequelize.query(`
+      const result = await connection.query(`
         SELECT configuration FROM plugins WHERE id = $1
       `, {
         bind: [pluginId],
-        type: sequelize.QueryTypes.SELECT
+        type: QueryTypes.SELECT
       });
 
       if (!result[0]) {

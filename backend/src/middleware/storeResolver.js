@@ -1,17 +1,18 @@
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('../services/database/ConnectionManager');
+const { QueryTypes } = require('sequelize');
 
 /**
  * Store Resolution Middleware
  * Automatically resolves the user's store ID from the database and attaches it to req.storeId
  * This eliminates the need for frontend to send x-store-id headers
- * 
+ *
  * @param {Object} options - Configuration options
  * @param {boolean} options.required - Whether store is required (default: true)
  * @param {string} options.fallbackStoreId - Fallback store ID if none found
  */
 const storeResolver = (options = {}) => {
   const { required = true, fallbackStoreId = null } = options;
-  
+
   return async (req, res, next) => {
   try {
     if (!req.user || !req.user.id) {
@@ -26,14 +27,15 @@ const storeResolver = (options = {}) => {
       });
     }
 
-    const stores = await sequelize.query(`
+    const masterConnection = ConnectionManager.getMasterConnection();
+    const stores = await masterConnection.query(`
       SELECT id, name, slug, is_active, user_id, created_at
       FROM stores
       WHERE user_id = :userId AND is_active = true
       ORDER BY created_at DESC
     `, {
       replacements: { userId: req.user.id },
-      type: sequelize.QueryTypes.SELECT
+      type: QueryTypes.SELECT
     });
 
     if (!stores || stores.length === 0) {
