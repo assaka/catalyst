@@ -16,11 +16,11 @@ const { checkStoreOwnership } = require('../middleware/storeAuth');
 router.get('/:storeId/realtime', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
     // Get unique sessions in last 5 minutes (limit to 5000 recent activities)
-    const { data: recentActivities, error } = await supabaseClient
+    const { data: recentActivities, error } = await tenantDb
       .from('customer_activities')
       .select('session_id, user_id, page_url, created_at')
       .eq('store_id', storeId)
@@ -68,7 +68,7 @@ router.get('/:storeId/realtime', authMiddleware, checkStoreOwnership, async (req
 router.get('/:storeId/sessions', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
     const { start_date, end_date, limit = 10000 } = req.query;
 
     let startDate, endDate;
@@ -82,7 +82,7 @@ router.get('/:storeId/sessions', authMiddleware, checkStoreOwnership, async (req
     }
 
     // Build query
-    let query = supabaseClient
+    let query = tenantDb
       .from('customer_activities')
       .select('session_id, user_agent, created_at, metadata, country_name, city, language')
       .eq('store_id', storeId)
@@ -229,7 +229,7 @@ router.get('/:storeId/sessions', authMiddleware, checkStoreOwnership, async (req
 router.get('/:storeId/timeseries', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
     const { start_date, end_date, interval = 'hour' } = req.query;
 
     let startDate, endDate;
@@ -243,7 +243,7 @@ router.get('/:storeId/timeseries', authMiddleware, checkStoreOwnership, async (r
     }
 
     // Build query
-    let query = supabaseClient
+    let query = tenantDb
       .from('customer_activities')
       .select('created_at, session_id, activity_type')
       .eq('store_id', storeId)
@@ -324,7 +324,7 @@ router.get('/:storeId/timeseries', authMiddleware, checkStoreOwnership, async (r
 router.get('/:storeId/top-products', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
     const { start_date, end_date, metric = 'views', limit = 10 } = req.query;
 
     let startDate, endDate;
@@ -337,7 +337,7 @@ router.get('/:storeId/top-products', authMiddleware, checkStoreOwnership, async 
     const activityType = metric === 'cart' ? 'add_to_cart' : 'product_view';
 
     // Build query
-    let query = supabaseClient
+    let query = tenantDb
       .from('customer_activities')
       .select('product_id, metadata')
       .eq('store_id', storeId)
