@@ -47,6 +47,16 @@ async function initializeDatabasePlugins() {
       return;
     }
 
+    // Only load plugins on storefront pages, not admin pages
+    // Admin plugin management is handled separately in the Plugins page
+    const isAdminPage = window.location.pathname.includes('/admin/');
+    const isPluginsPage = window.location.pathname.includes('/plugins');
+
+    if (isAdminPage && !isPluginsPage) {
+      console.log('⏭️ Skipping plugin initialization - admin page (plugins load only on storefront)');
+      return;
+    }
+
     // Fetch active plugins from database (uses normalized tables structure)
     // Add timestamp to bust cache
     // Try new endpoint first, fallback to legacy if not deployed yet
@@ -61,12 +71,16 @@ async function initializeDatabasePlugins() {
 
     const activePlugins = result.data || [];
 
+    // Only load hooks, events, and scripts on storefront (not on plugins management page)
+    const isStorefrontContext = !window.location.pathname.includes('/plugins');
+
     // Process plugins - hooks and events are ALREADY in the response!
     // No need to fetch each plugin individually
     const loadPromise = Promise.all(
       activePlugins.map(async (plugin) => {
         // Use hooks and events from the response (no additional API call!)
-        if (plugin.hooks && Array.isArray(plugin.hooks)) {
+        // Only register hooks on storefront pages
+        if (plugin.hooks && Array.isArray(plugin.hooks) && isStorefrontContext) {
           plugin.hooks.forEach(hook => {
             try {
               if (hook.handler_code && hook.enabled !== false) {
@@ -80,7 +94,8 @@ async function initializeDatabasePlugins() {
         }
 
         // Register events from response (no additional API call!)
-        if (plugin.events && Array.isArray(plugin.events)) {
+        // Only register events on storefront pages
+        if (plugin.events && Array.isArray(plugin.events) && isStorefrontContext) {
           plugin.events.forEach(event => {
             try {
               if (event.listener_code && event.enabled !== false) {
@@ -94,7 +109,8 @@ async function initializeDatabasePlugins() {
         }
 
         // Load frontend scripts from response (no additional API call!)
-        if (plugin.frontendScripts && Array.isArray(plugin.frontendScripts)) {
+        // Only load scripts on storefront pages (not on plugins management page)
+        if (plugin.frontendScripts && Array.isArray(plugin.frontendScripts) && isStorefrontContext) {
           plugin.frontendScripts.forEach(script => {
             try {
               if (!script.content || script.content.trim().startsWith('<')) {
