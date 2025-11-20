@@ -205,6 +205,25 @@ END $$;`;
           console.log('✅ Seed data complete - 6,598 rows inserted');
           result.dataSeeded.push('Seeded 6,598 rows via OAuth API');
 
+          // Update translations store_id from placeholder to actual store_id
+          console.log('🔄 Updating translations store_id to actual store...');
+          const updateTranslationsSQL = `UPDATE translations SET store_id = '${storeId}' WHERE store_id = '00000000-0000-0000-0000-000000000000';`;
+
+          await axios.post(
+            `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
+            { query: updateTranslationsSQL },
+            {
+              headers: {
+                'Authorization': `Bearer ${options.oauthAccessToken}`,
+                'Content-Type': 'application/json'
+              },
+              timeout: 30000
+            }
+          );
+
+          console.log('✅ Translations store_id updated successfully');
+          result.dataSeeded.push('Updated translations store_id');
+
           return true;
 
         } catch (apiError) {
@@ -253,6 +272,13 @@ END $$;`;
       console.log('Running tenant seed data (6,598 rows)...');
       await pgClient.query(seedSQL);
       result.dataSeeded.push('Seeded 6,598 rows from 15 tables');
+
+      // Update translations store_id from placeholder to actual store_id
+      console.log('🔄 Updating translations store_id to actual store...');
+      const updateTranslationsSQL = `UPDATE translations SET store_id = '${storeId}' WHERE store_id = '00000000-0000-0000-0000-000000000000';`;
+      await pgClient.query(updateTranslationsSQL);
+      console.log('✅ Translations store_id updated successfully');
+      result.dataSeeded.push('Updated translations store_id');
 
       await pgClient.end();
       console.log('✅ Migration and seed complete!');
