@@ -199,8 +199,9 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req
       // Update existing settings
       seoSettings = await updateSeoSettings(tenantDb, seoSettings.id, req.body);
     } else {
-      // Create new settings
-      seoSettings = await createSeoSettings(tenantDb, { ...req.body, store_id });
+      // Create new settings - remove id from req.body to let DB generate it
+      const { id, ...settingsDataWithoutId } = req.body;
+      seoSettings = await createSeoSettings(tenantDb, { ...settingsDataWithoutId, store_id });
     }
 
     // Return array format that the frontend expects
