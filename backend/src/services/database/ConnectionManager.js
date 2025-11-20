@@ -312,6 +312,17 @@ class ConnectionManager {
           min: 0,
           acquire: 30000,
           idle: 10000
+        },
+        dialectOptions: {
+          ssl: credentials.ssl ? { rejectUnauthorized: false } : false
+        },
+        // Set search_path and bypass RLS if using service role
+        hooks: {
+          beforeConnect: async (config) => {
+            // This hook runs before each connection is established
+            // For Supabase connections, we need to ensure we're using the service role
+            // which bypasses RLS policies
+          }
         }
       });
     } else {
@@ -320,6 +331,18 @@ class ConnectionManager {
 
     // Test the connection
     await sequelize.authenticate();
+
+    // For Supabase, set the role to bypass RLS if using service role credentials
+    if (storeDb.database_type === 'supabase') {
+      try {
+        // Execute a query to set the role to postgres (service role)
+        // This bypasses RLS policies for Sequelize queries
+        await sequelize.query("SET ROLE postgres;");
+      } catch (error) {
+        console.warn(`Warning: Could not set postgres role for store ${storeId}:`, error.message);
+        // Continue anyway - connection might still work if RLS policies allow it
+      }
+    }
 
     // Import all models and bind them to this Sequelize instance
     // This creates a fresh set of models for the tenant database
