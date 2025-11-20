@@ -1,10 +1,6 @@
 const AkeneoClient = require('./akeneo-client');
 const AkeneoMapping = require('./akeneo-mapping');
-const Category = require('../models/Category');
-const Product = require('../models/Product');
-const Attribute = require('../models/Attribute');
-const AttributeSet = require('../models/AttributeSet');
-const { Op } = require('sequelize');
+const ConnectionManager = require('./database/ConnectionManager');
 
 class AkeneoIntegration {
   constructor(config) {
@@ -151,15 +147,16 @@ class AkeneoIntegration {
             }
             
             // Check if category already exists by akeneo_code or slug
-            const existingCategory = await Category.findOne({
-              where: { 
-                store_id: storeId,
-                [Op.or]: [
-                  { slug: category.slug },
-                  { name: category.name }
-                ]
-              }
-            });
+            const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+            const { data: existingCategories } = await tenantDb
+              .from('categories')
+              .select('*')
+              .eq('store_id', storeId)
+              .or(`slug.eq.${category.slug},name.eq.${category.name}`)
+              .limit(1);
+
+            const existingCategory = existingCategories && existingCategories.length > 0 ? existingCategories[0] : null;
 
             if (existingCategory) {
               // Prepare update data
@@ -189,7 +186,10 @@ class AkeneoIntegration {
               }
 
               // Update existing category
-              await existingCategory.update(updateData);
+              await tenantDb
+                .from('categories')
+                .update(updateData)
+                .eq('id', existingCategory.id);
               
               createdCategories[category._temp_akeneo_code] = existingCategory.id;
               
@@ -218,7 +218,16 @@ class AkeneoIntegration {
               categoryData.parent_id = category.isRoot ? null : parentId;
               
               // Create new category
-              const newCategory = await Category.create(categoryData);
+              const { data: newCategory, error: createError } = await tenantDb
+                .from('categories')
+                .insert(categoryData)
+                .select()
+                .single();
+
+              if (createError) {
+                throw new Error(`Failed to create category: ${createError.message}`);
+              }
+
               createdCategories[category._temp_akeneo_code] = newCategory.id;
               
               // Create Akeneo mapping for new category
@@ -483,12 +492,16 @@ class AkeneoIntegration {
 
             if (!dryRun) {
               // Check if product already exists
-              const existingProduct = await Product.findOne({
-                where: { 
-                  store_id: storeId,
-                  sku: catalystProduct.sku
-                }
-              });
+              const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+              const { data: existingProducts } = await tenantDb
+                .from('products')
+                .select('*')
+                .eq('store_id', storeId)
+                .eq('sku', catalystProduct.sku)
+                .limit(1);
+
+              const existingProduct = existingProducts && existingProducts.length > 0 ? existingProducts[0] : null;
 
               if (existingProduct) {
                 // Log image data for debugging
@@ -593,7 +606,10 @@ class AkeneoIntegration {
                 });
 
                 // Update existing product
-                await existingProduct.update(updateData);
+                await tenantDb
+                  .from('products')
+                  .update(updateData)
+                  .eq('id', existingProduct.id);
                 
                 if (processed <= 5 || processed % 25 === 0) {
                   console.log(`✅ Updated product: ${catalystProduct.name} (${catalystProduct.sku})`);
@@ -667,7 +683,9 @@ class AkeneoIntegration {
                 });
                 
                 // Create new product
-                await Product.create(productData);
+                await tenantDb
+                  .from('products')
+                  .insert(productData);
                 if (processed <= 5 || processed % 25 === 0) {
                   console.log(`✅ Created product: ${catalystProduct.name} (${catalystProduct.sku})`);
                 }
@@ -880,16 +898,22 @@ class AkeneoIntegration {
 
           if (!dryRun) {
             // Check if attribute already exists
-            const existingAttribute = await Attribute.findOne({
-              where: { 
-                store_id: storeId,
-                code: attribute.code
-              }
-            });
+            const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+            const { data: existingAttributes } = await tenantDb
+              .from('attributes')
+              .select('*')
+              .eq('store_id', storeId)
+              .eq('code', attribute.code)
+              .limit(1);
+
+            const existingAttribute = existingAttributes && existingAttributes.length > 0 ? existingAttributes[0] : null;
 
             if (existingAttribute) {
               // Update existing attribute - preserve filterable setting for existing attributes
-              await existingAttribute.update({
+              await tenantDb
+                .from('attributes')
+                .update({
                 name: attribute.name,
                 type: attribute.type,
                 is_required: attribute.is_required,
@@ -899,8 +923,10 @@ class AkeneoIntegration {
                 filter_type: attribute.filter_type,
                 options: attribute.options,
                 file_settings: attribute.file_settings,
-                sort_order: attribute.sort_order
-              });
+                sort_order: attribute.sort_order,
+                updated_at: new Date().toISOString()
+              })
+                .eq('id', existingAttribute.id);
               
               console.log(`✅ Updated attribute: ${attribute.name} (${attribute.code}) - Preserved filterable setting`);
             } else {
@@ -933,7 +959,15 @@ class AkeneoIntegration {
               }
               
               // Create new attribute
-              const newAttribute = await Attribute.create(attributeData);
+              const { data: newAttribute, error: createError } = await tenantDb
+                .from('attributes')
+                .insert(attributeData)
+                .select()
+                .single();
+
+              if (createError) {
+                throw new Error(`Failed to create attribute: ${createError.message}`);
+              }
               if (processed <= 10 || processed % 100 === 0) {
                 console.log(`✅ Created attribute: ${newAttribute.name} (${newAttribute.code}) - Type: ${newAttribute.type} - Filterable: ${newAttribute.is_filterable}`);
               }
@@ -1063,20 +1097,28 @@ class AkeneoIntegration {
               .filter(id => id); // Remove undefined mappings
 
             // Check if family already exists
-            const existingFamily = await AttributeSet.findOne({
-              where: { 
-                store_id: storeId,
-                name: family.name
-              }
-            });
+            const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+            const { data: existingFamilies } = await tenantDb
+              .from('attribute_sets')
+              .select('*')
+              .eq('store_id', storeId)
+              .eq('name', family.name)
+              .limit(1);
+
+            const existingFamily = existingFamilies && existingFamilies.length > 0 ? existingFamilies[0] : null;
 
             if (existingFamily) {
               // Update existing family
-              await existingFamily.update({
+              await tenantDb
+                .from('attribute_sets')
+                .update({
                 name: family.name,
                 description: family.description,
-                attribute_ids: attributeIds
-              });
+                attribute_ids: attributeIds,
+                updated_at: new Date().toISOString()
+              })
+                .eq('id', existingFamily.id);
               
               console.log(`✅ Updated family: ${family.name} with ${attributeIds.length} attributes`);
             } else {
@@ -1087,7 +1129,16 @@ class AkeneoIntegration {
               familyData.attribute_ids = attributeIds;
               
               // Create new family
-              const newFamily = await AttributeSet.create(familyData);
+              const { data: newFamily, error: createError } = await tenantDb
+                .from('attribute_sets')
+                .insert(familyData)
+                .select()
+                .single();
+
+              if (createError) {
+                throw new Error(`Failed to create family: ${createError.message}`);
+              }
+
               console.log(`✅ Created family: ${newFamily.name} with ${attributeIds.length} attributes`);
             }
           } else {
@@ -1243,13 +1294,20 @@ class AkeneoIntegration {
    * Build mapping from Akeneo family codes to Catalyst AttributeSet IDs
    */
   async buildFamilyMapping(storeId) {
-    const attributeSets = await AttributeSet.findAll({
-      where: { store_id: storeId },
-      attributes: ['id', 'name']
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: attributeSets, error } = await tenantDb
+      .from('attribute_sets')
+      .select('id, name')
+      .eq('store_id', storeId);
+
+    if (error) {
+      console.error('Error fetching attribute sets:', error);
+      return {};
+    }
 
     const mapping = {};
-    attributeSets.forEach(attributeSet => {
+    (attributeSets || []).forEach(attributeSet => {
       // Map by name since families are stored by name in AttributeSet
       mapping[attributeSet.name] = attributeSet.id;
     });
@@ -1261,13 +1319,20 @@ class AkeneoIntegration {
    * Build mapping from Akeneo attribute codes to Catalyst attribute IDs
    */
   async buildAttributeMapping(storeId) {
-    const attributes = await Attribute.findAll({
-      where: { store_id: storeId },
-      attributes: ['id', 'code']
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: attributes, error } = await tenantDb
+      .from('attributes')
+      .select('id, code')
+      .eq('store_id', storeId);
+
+    if (error) {
+      console.error('Error fetching attributes:', error);
+      return {};
+    }
 
     const mapping = {};
-    attributes.forEach(attribute => {
+    (attributes || []).forEach(attribute => {
       mapping[attribute.code] = attribute.id;
     });
 
@@ -1279,13 +1344,17 @@ class AkeneoIntegration {
    */
   async importSingleProduct(transformedProduct, storeId) {
     try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
       // Check if product already exists
-      const existingProduct = await Product.findOne({
-        where: {
-          store_id: storeId,
-          sku: transformedProduct.sku
-        }
-      });
+      const { data: existingProducts } = await tenantDb
+        .from('products')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('sku', transformedProduct.sku)
+        .limit(1);
+
+      const existingProduct = existingProducts && existingProducts.length > 0 ? existingProducts[0] : null;
 
       if (existingProduct) {
         // Prepare update data
@@ -1300,8 +1369,13 @@ class AkeneoIntegration {
         delete updateData.akeneo_groups;
         delete updateData.akeneo_code;
         delete updateData.akeneo_family_variant;
+        updateData.updated_at = new Date().toISOString();
 
-        await existingProduct.update(updateData);
+        await tenantDb
+          .from('products')
+          .update(updateData)
+          .eq('id', existingProduct.id);
+
         return { success: true, action: 'updated', productId: existingProduct.id };
       } else {
         // Create new product
@@ -1314,7 +1388,16 @@ class AkeneoIntegration {
         delete productData.akeneo_code;
         delete productData.akeneo_family_variant;
 
-        const newProduct = await Product.create(productData);
+        const { data: newProduct, error: createError } = await tenantDb
+          .from('products')
+          .insert(productData)
+          .select()
+          .single();
+
+        if (createError) {
+          throw new Error(`Failed to create product: ${createError.message}`);
+        }
+
         return { success: true, action: 'created', productId: newProduct.id };
       }
     } catch (error) {
@@ -1648,10 +1731,15 @@ class AkeneoIntegration {
 
             if (parentId && variantId) {
               // Update variant to set parent_id
-              await Product.update(
-                { parent_id: parentId },
-                { where: { id: variantId } }
-              );
+              const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+              await tenantDb
+                .from('products')
+                .update({
+                  parent_id: parentId,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', variantId);
+
               console.log(`✅ Linked variant ${variantIdentifier} to parent ${parentCode}`);
             } else {
               console.warn(`⚠️ Could not link variant ${variantIdentifier} to parent ${parentCode} - parent or variant not found`);

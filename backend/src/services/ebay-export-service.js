@@ -1,6 +1,5 @@
 const MarketplaceAIOptimizer = require('./marketplace-ai-optimizer');
-const IntegrationConfig = require('../models/IntegrationConfig');
-const Product = require('../models/Product');
+const ConnectionManager = require('./database/ConnectionManager');
 
 /**
  * eBay Export Service
@@ -14,13 +13,21 @@ class EbayExportService {
   }
 
   async initialize() {
-    this.integration = await IntegrationConfig.findByStoreAndType(this.storeId, 'ebay');
+    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
-    if (!this.integration) {
+    const { data: integration, error } = await tenantDb
+      .from('integration_configs')
+      .select('*')
+      .eq('store_id', this.storeId)
+      .eq('integration_type', 'ebay')
+      .maybeSingle();
+
+    if (error || !integration) {
       throw new Error('eBay integration not configured for this store');
     }
 
-    const config = this.integration.config_data;
+    this.integration = integration;
+    const config = integration.config_data;
 
     // Validate required credentials
     const requiredFields = ['appId', 'certId', 'devId', 'authToken'];
@@ -42,12 +49,17 @@ class EbayExportService {
       progressCallback = null
     } = options;
 
-    const products = await Product.findAll({
-      where: {
-        id: productIds,
-        store_id: this.storeId
-      }
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+
+    const { data: products, error: productsError } = await tenantDb
+      .from('products')
+      .select('*')
+      .in('id', productIds)
+      .eq('store_id', this.storeId);
+
+    if (productsError || !products) {
+      throw new Error('Failed to fetch products for eBay export');
+    }
 
     const results = {
       total: products.length,
@@ -98,8 +110,9 @@ class EbayExportService {
     }
 
     // Update statistics
+    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
     const stats = this.integration.config_data.statistics || {};
-    this.integration.config_data = {
+    const updatedConfigData = {
       ...this.integration.config_data,
       statistics: {
         ...stats,
@@ -109,7 +122,16 @@ class EbayExportService {
         total_products_synced: (stats.total_products_synced || 0) + results.successful
       }
     };
-    await this.integration.updateSyncStatus('success');
+
+    await tenantDb
+      .from('integration_configs')
+      .update({
+        config_data: updatedConfigData,
+        last_sync_at: new Date().toISOString(),
+        sync_status: 'success',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', this.integration.id);
 
     return results;
   }

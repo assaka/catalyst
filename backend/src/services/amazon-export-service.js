@@ -1,7 +1,6 @@
 const AmazonFeedGenerator = require('./amazon-feed-generator');
 const MarketplaceAIOptimizer = require('./marketplace-ai-optimizer');
-const IntegrationConfig = require('../models/IntegrationConfig');
-const Product = require('../models/Product');
+const ConnectionManager = require('./database/ConnectionManager');
 const translationService = require('./translation-service');
 
 /**
@@ -22,13 +21,21 @@ class AmazonExportService {
    * Initialize service with credentials
    */
   async initialize() {
-    this.integration = await IntegrationConfig.findByStoreAndType(this.storeId, 'amazon');
+    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
-    if (!this.integration) {
+    const { data: integration, error } = await tenantDb
+      .from('integration_configs')
+      .select('*')
+      .eq('store_id', this.storeId)
+      .eq('integration_type', 'amazon')
+      .maybeSingle();
+
+    if (error || !integration) {
       throw new Error('Amazon integration not configured for this store');
     }
 
-    const config = this.integration.config_data;
+    this.integration = integration;
+    const config = integration.config_data;
 
     // Validate required credentials
     const requiredFields = ['sellerId', 'mwsAuthToken', 'awsAccessKeyId', 'awsSecretAccessKey'];
@@ -78,14 +85,15 @@ class AmazonExportService {
     }
 
     // Fetch products from database
-    const products = await Product.findAll({
-      where: {
-        id: productIds,
-        store_id: this.storeId
-      }
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
-    if (products.length === 0) {
+    const { data: products, error: productsError } = await tenantDb
+      .from('products')
+      .select('*')
+      .in('id', productIds)
+      .eq('store_id', this.storeId);
+
+    if (productsError || !products || products.length === 0) {
       throw new Error('No products found to export');
     }
 
@@ -248,8 +256,9 @@ class AmazonExportService {
 
     // Update statistics
     if (!dryRun) {
+      const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
       const stats = this.integration.config_data.statistics || {};
-      this.integration.config_data = {
+      const updatedConfigData = {
         ...this.integration.config_data,
         statistics: {
           ...stats,
@@ -259,7 +268,16 @@ class AmazonExportService {
           total_products_synced: (stats.total_products_synced || 0) + results.successful
         }
       };
-      await this.integration.updateSyncStatus('success');
+
+      await tenantDb
+        .from('integration_configs')
+        .update({
+          config_data: updatedConfigData,
+          last_sync_at: new Date().toISOString(),
+          sync_status: 'success',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', this.integration.id);
     }
 
     return results;
@@ -381,12 +399,17 @@ class AmazonExportService {
    * Sync inventory to Amazon
    */
   async syncInventory(productIds) {
-    const products = await Product.findAll({
-      where: {
-        id: productIds,
-        store_id: this.storeId
-      }
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+
+    const { data: products, error } = await tenantDb
+      .from('products')
+      .select('*')
+      .in('id', productIds)
+      .eq('store_id', this.storeId);
+
+    if (error || !products) {
+      throw new Error('Failed to fetch products for inventory sync');
+    }
 
     const inventoryItems = products.map(p => ({
       sku: p.sku || `AUTO-${p.id}`,
