@@ -6,6 +6,7 @@
  * GET /api/stores - Get all user's stores
  * GET /api/stores/:id - Get store details
  * PATCH /api/stores/:id - Update store settings
+ * PUT /api/stores/:id - Update store settings (alias for PATCH)
  * DELETE /api/stores/:id - Delete store
  */
 
@@ -939,6 +940,58 @@ router.get('/:id', authMiddleware, async (req, res) => {
  * Update store settings (in tenant DB)
  */
 router.patch('/:id', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.params.id;
+    const updates = req.body;
+
+    // Get store from master DB using Supabase client
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .maybeSingle();
+
+    // Check if store is operational (status='active' and is_active=true)
+    if (storeError || !store || store.status !== 'active' || !store.is_active) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store is not operational'
+      });
+    }
+
+    // Update in tenant DB
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data, error } = await tenantDb
+      .from('stores')
+      .update(updates)
+      .eq('id', storeId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.json({
+      success: true,
+      message: 'Store updated successfully',
+      data: { store: data }
+    });
+  } catch (error) {
+    console.error('Update store error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update store'
+    });
+  }
+});
+
+/**
+ * PUT /api/stores/:id
+ * Update store settings (in tenant DB) - alias for PATCH
+ */
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const storeId = req.params.id;
     const updates = req.body;
