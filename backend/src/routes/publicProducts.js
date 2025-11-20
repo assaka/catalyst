@@ -530,14 +530,14 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
 
     // 2. Load product tabs
     const { getProductTabsWithTranslations } = require('../utils/productTabHelpers');
-    const productTabs = await getProductTabsWithTranslations({
+    const productTabs = await getProductTabsWithTranslations(store_id, {
       store_id,
       is_active: true
     }, lang, false); // false = only current language
 
     // 3. Load and evaluate product labels
     const { getProductLabelsWithTranslations } = require('../utils/productLabelHelpers');
-    const allLabels = await getProductLabelsWithTranslations({
+    const allLabels = await getProductLabelsWithTranslations(tenantDb, {
       store_id,
       is_active: true
     }, lang, false);

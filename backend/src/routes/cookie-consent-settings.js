@@ -66,14 +66,8 @@ router.get('/', async (req, res) => {
 
     const lang = getLanguageFromRequest(req);
 
-    // If store_id is specified, use tenant connection
-    let sequelizeConnection = null;
-    if (store_id) {
-      const connection = await ConnectionManager.getConnection(store_id);
-      sequelizeConnection = connection.sequelize;
-    }
-
-    const settings = await getCookieConsentSettingsWithTranslations(where, lang, sequelizeConnection);
+    // If store_id is specified, use it for the helper function
+    const settings = await getCookieConsentSettingsWithTranslations(store_id, where, lang);
 
     if (isPublicRequest) {
       // Return just the array for public requests (for compatibility)
@@ -451,7 +445,7 @@ router.post('/bulk-translate', authMiddleware, [
 
     // Get cookie consent settings for this store with ALL translations
     const lang = getLanguageFromRequest(req);
-    const settingsRecords = await getCookieConsentSettingsWithTranslations({ store_id }, lang, connection.sequelize);
+    const settingsRecords = await getCookieConsentSettingsWithTranslations(store_id, { store_id }, lang);
 
     if (settingsRecords.length === 0) {
       return res.json({

@@ -1,4 +1,5 @@
 const express = require('express');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const {
   getProductTabsWithTranslations,
@@ -29,7 +30,7 @@ router.get('/', async (req, res) => {
     });
 
     // Public requests only get current language translations
-    const productTabs = await getProductTabsWithTranslations({
+    const productTabs = await getProductTabsWithTranslations(store_id, {
       store_id,
       is_active: true
     }, lang, false); // false = only current language
@@ -62,8 +63,17 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
     const lang = getLanguageFromRequest(req);
-    const productTab = await getProductTabWithAllTranslations(req.params.id);
+    const productTab = await getProductTabWithAllTranslations(store_id, req.params.id);
 
     if (!productTab) {
       return res.status(404).json({

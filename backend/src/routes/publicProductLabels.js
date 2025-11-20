@@ -1,4 +1,5 @@
 const express = require('express');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { getProductLabelsWithTranslations } = require('../utils/productLabelHelpers');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
