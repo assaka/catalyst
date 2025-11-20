@@ -3,7 +3,7 @@ const router = express.Router({ mergeParams: true }); // Enable access to parent
 const PluginConfiguration = require('../models/PluginConfiguration');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('../database/ConnectionManager');
 
 // All routes require authentication and store access
 // Add defensive checks for production environment issues
@@ -41,6 +41,10 @@ router.get('/', async (req, res) => {
     const storeId = req.params.store_id;
 
     console.log(`🔍 Getting plugins for store: ${storeId}`);
+
+    // Get connection for this store
+    const connection = await ConnectionManager.getConnection(storeId);
+    const sequelize = connection.sequelize;
 
     // Get plugins from plugin_registry
     const registryPlugins = await sequelize.query(
@@ -117,6 +121,10 @@ router.post('/:pluginSlug/enable', async (req, res) => {
     const { configuration = {} } = req.body;
 
     console.log(`🚀 Enabling plugin ${pluginSlug} for store ${storeId}`);
+
+    // Get connection for this store
+    const connection = await ConnectionManager.getConnection(storeId);
+    const sequelize = connection.sequelize;
 
     // Check plugin_registry
     const [registryPlugin] = await sequelize.query(
@@ -212,6 +220,10 @@ router.post('/:pluginSlug/disable', async (req, res) => {
     const { pluginSlug } = req.params;
 
     console.log(`🛑 Disabling plugin ${pluginSlug} for store ${storeId}`);
+
+    // Get connection for this store
+    const connection = await ConnectionManager.getConnection(storeId);
+    const sequelize = connection.sequelize;
 
     // Check plugin_registry
     const [registryPlugin] = await sequelize.query(
