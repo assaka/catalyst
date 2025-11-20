@@ -48,7 +48,10 @@ export default function SalesSettings() {
 
       const fullStoreResponse = await retryApiCall(() => Store.findById(storeId));
       const fullStoreResponse_normalized = Array.isArray(fullStoreResponse) ? fullStoreResponse[0] : fullStoreResponse;
-      const fullStore = fullStoreResponse_normalized?.data || fullStoreResponse_normalized;
+      const responseData = fullStoreResponse_normalized?.data || fullStoreResponse_normalized;
+
+      // Extract tenant data if present (API returns settings under tenantData)
+      const fullStore = responseData?.tenantData || responseData;
 
       // Ensure settings.sales_settings exists with defaults
       const settings = fullStore?.settings || {};

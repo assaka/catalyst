@@ -3,7 +3,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { authorize, storeOwnerOnly, customerOnly, adminOnly } = require('../middleware/auth');
-const { masterSupabaseClient } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 
 // adminOnly middleware is imported from auth.js above
 
@@ -15,7 +15,7 @@ router.get('/', authMiddleware, async (req, res) => {
   try {
     const { category, active_only, visible_only } = req.query;
 
-    let query = masterSupabaseClient
+    let query = masterDbClient
       .from('service_credit_costs')
       .select('*')
       .order('service_category', { ascending: true })
@@ -77,7 +77,7 @@ router.get('/', authMiddleware, async (req, res) => {
  */
 router.get('/by-category', authMiddleware, async (req, res) => {
   try {
-    const { data: services, error } = await masterSupabaseClient
+    const { data: services, error } = await masterDbClient
       .from('service_credit_costs')
       .select('*')
       .eq('is_active', true)
@@ -129,7 +129,7 @@ router.get('/key/:serviceKey', authMiddleware, async (req, res) => {
   try {
     const { serviceKey } = req.params;
 
-    const { data: services, error } = await masterSupabaseClient
+    const { data: services, error } = await masterDbClient
       .from('service_credit_costs')
       .select('*')
       .eq('service_key', serviceKey)
@@ -196,7 +196,7 @@ router.post('/calculate',
 
       const { service_key, units = 1 } = req.body;
 
-      const { data: services, error } = await masterSupabaseClient
+      const { data: services, error } = await masterDbClient
         .from('service_credit_costs')
         .select('*')
         .eq('service_key', service_key)
@@ -296,7 +296,7 @@ router.post('/',
         serviceData.description = req.body.description;
       }
 
-      const { data: service, error } = await masterSupabaseClient
+      const { data: service, error } = await masterDbClient
         .from('service_credit_costs')
         .insert(serviceData)
         .select()
@@ -355,7 +355,7 @@ router.put('/:id',
       const { id } = req.params;
 
       // Check if service exists
-      const { data: existingServices, error: fetchError } = await masterSupabaseClient
+      const { data: existingServices, error: fetchError } = await masterDbClient
         .from('service_credit_costs')
         .select('*')
         .eq('id', id)
@@ -375,7 +375,7 @@ router.put('/:id',
       const updateData = { ...req.body };
       updateData.updated_by = req.user.id;
 
-      const { data: service, error: updateError } = await masterSupabaseClient
+      const { data: service, error: updateError } = await masterDbClient
         .from('service_credit_costs')
         .update(updateData)
         .eq('id', id)
@@ -424,7 +424,7 @@ router.patch('/:serviceKey/toggle',
       const { serviceKey } = req.params;
 
       // Get current service
-      const { data: services, error: fetchError } = await masterSupabaseClient
+      const { data: services, error: fetchError } = await masterDbClient
         .from('service_credit_costs')
         .select('*')
         .eq('service_key', serviceKey)
@@ -441,7 +441,7 @@ router.patch('/:serviceKey/toggle',
       const currentService = services[0];
 
       // Toggle active status
-      const { data: service, error: updateError } = await masterSupabaseClient
+      const { data: service, error: updateError } = await masterDbClient
         .from('service_credit_costs')
         .update({
           is_active: !currentService.is_active,
@@ -486,7 +486,7 @@ router.delete('/:id',
       const { id } = req.params;
 
       // Get service first to return its key
-      const { data: services, error: fetchError } = await masterSupabaseClient
+      const { data: services, error: fetchError } = await masterDbClient
         .from('service_credit_costs')
         .select('*')
         .eq('id', id)
@@ -506,7 +506,7 @@ router.delete('/:id',
       const serviceKey = services[0].service_key;
 
       // Delete the service
-      const { error: deleteError } = await masterSupabaseClient
+      const { error: deleteError } = await masterDbClient
         .from('service_credit_costs')
         .delete()
         .eq('id', id);
