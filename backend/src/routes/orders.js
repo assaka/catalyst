@@ -613,7 +613,7 @@ router.put('/customer-orders/:orderId/status', authMiddleware, validateCustomerO
   try {
     const { orderId } = req.params;
     const { status, notes } = req.body;
-    
+
     // Only allow customer role to access this endpoint
     if (req.user?.role !== 'customer') {
       return res.status(403).json({
@@ -623,8 +623,20 @@ router.put('/customer-orders/:orderId/status', authMiddleware, validateCustomerO
     }
 
     const customerId = req.user.id;
+    const customerStoreId = req.user.store_id;
     console.log('🔍 Customer updating order status:', { orderId, status, customerId });
-    
+
+    // Get store_id
+    const store_id = customerStoreId || req.headers['x-store-id'] || req.body.store_id;
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // Validate status
     const allowedStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded', 'return_requested'];
     if (!allowedStatuses.includes(status)) {
@@ -633,26 +645,26 @@ router.put('/customer-orders/:orderId/status', authMiddleware, validateCustomerO
         message: `Invalid status. Allowed statuses: ${allowedStatuses.join(', ')}`
       });
     }
-    
+
     // Find the order and verify it belongs to the customer
-    const order = await Order.findOne({
-      where: { 
-        id: orderId,
-        customer_id: customerId 
-      }
-    });
-    
-    if (!order) {
+    const { data: order, error: orderError } = await tenantDb
+      .from('sales_orders')
+      .select('*')
+      .eq('id', orderId)
+      .eq('customer_id', customerId)
+      .maybeSingle();
+
+    if (orderError || !order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found or access denied'
       });
     }
-    
+
     // Allow customers to perform limited actions based on current status
     if (req.user.role === 'customer') {
       const currentStatus = order.status?.toLowerCase();
-      
+
       // Define allowed transitions for customers (more restrictive)
       const allowedTransitions = {
         'pending': ['cancelled'],
@@ -660,16 +672,16 @@ router.put('/customer-orders/:orderId/status', authMiddleware, validateCustomerO
         'shipped': ['return_requested'],
         'delivered': ['return_requested']
       };
-      
+
       const allowedStatusesForCurrent = allowedTransitions[currentStatus] || [];
-      
+
       if (!allowedStatusesForCurrent.includes(status)) {
         return res.status(403).json({
           success: false,
           message: `Cannot change order from ${currentStatus} to ${status}. Customer allowed changes: ${allowedStatusesForCurrent.join(', ') || 'none'}`
         });
       }
-      
+
       // Additional validation for final statuses
       if (['cancelled', 'refunded', 'return_requested'].includes(currentStatus)) {
         return res.status(400).json({
@@ -678,24 +690,38 @@ router.put('/customer-orders/:orderId/status', authMiddleware, validateCustomerO
         });
       }
     }
-    
+
     // Update the order
-    await order.update({
-      status,
-      status_notes: notes || null,
-      updated_at: new Date()
-    });
+    const { error: updateError } = await tenantDb
+      .from('sales_orders')
+      .update({
+        status,
+        status_notes: notes || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', orderId);
+
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+
+    // Fetch updated order
+    const { data: updatedOrder } = await tenantDb
+      .from('sales_orders')
+      .select('*')
+      .eq('id', orderId)
+      .single();
     
     console.log('🔍 Order status updated successfully:', { orderId, oldStatus: order.status, newStatus: status });
-    
+
     res.json({
       success: true,
       message: 'Order status updated successfully',
       data: {
-        id: order.id,
-        status: order.status,
-        status_notes: order.status_notes,
-        updated_at: order.updated_at
+        id: updatedOrder.id,
+        status: updatedOrder.status,
+        status_notes: updatedOrder.status_notes,
+        updated_at: updatedOrder.updated_at
       }
     });
   } catch (error) {
@@ -725,10 +751,11 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
     }
 
     const customerId = req.user.id;
+    const customerStoreId = req.user.store_id;
     console.log('🔍 Loading orders for customer ID:', customerId);
     console.log('🔍 Customer ID type:', typeof customerId);
     console.log('🔍 Customer ID length:', customerId?.length);
-    
+
     // Validate that customerId is a valid UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!customerId || !uuidRegex.test(customerId)) {
@@ -739,19 +766,36 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
       });
     }
 
+    // Get store_id
+    const store_id = customerStoreId || req.headers['x-store-id'] || req.query.store_id;
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // Simple query without complex associations to avoid 500 errors
-    console.log('🔍 About to execute Sequelize query with customer_id:', customerId);
-    
-    const whereClause = { customer_id: customerId };
-    console.log('🔍 Where clause:', JSON.stringify(whereClause, null, 2));
-    
-    const orders = await Order.findAll({
-      where: whereClause,
-      order: [['created_at', 'DESC']]
-    });
-    
+    console.log('🔍 About to execute Supabase query with customer_id:', customerId);
+
+    const { data: orders, error: ordersError } = await tenantDb
+      .from('sales_orders')
+      .select('*')
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false });
+
+    if (ordersError) {
+      console.error('Error fetching orders:', ordersError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch orders'
+      });
+    }
+
     console.log('🔍 Query executed successfully');
-    console.log('🔍 Found orders for customer:', orders.length);
+    console.log('🔍 Found orders for customer:', orders?.length || 0);
 
     res.json({
       success: true,
@@ -943,9 +987,17 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
 
     const { store_id, items, ...orderData } = req.body;
 
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    const masterDb = await ConnectionManager.getMasterConnection();
+
     // Check store ownership
-    const store = await Store.findByPk(store_id);
-    if (!store) {
+    const { data: store, error: storeError } = await masterDb
+      .from('stores')
+      .select('*')
+      .eq('id', store_id)
+      .maybeSingle();
+
+    if (storeError || !store) {
       return res.status(404).json({
         success: false,
         message: 'Store not found'
@@ -955,7 +1007,7 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, store.id);
-      
+
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -964,29 +1016,49 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
       }
     }
 
-    const order = await Order.create({ ...orderData, store_id });
+    // Create order
+    const { data: order, error: orderError } = await tenantDb
+      .from('sales_orders')
+      .insert({ ...orderData, store_id })
+      .select()
+      .single();
+
+    if (orderError) {
+      throw new Error(orderError.message);
+    }
 
     // Create order items
-    const orderItems = items.map(item => ({
+    const orderItemsData = items.map(item => ({
       ...item,
       order_id: order.id
     }));
 
-    await OrderItem.bulkCreate(orderItems);
+    const { error: itemsError } = await tenantDb
+      .from('sales_order_items')
+      .insert(orderItemsData);
 
-    // Fetch the complete order
-    const completeOrder = await Order.findByPk(order.id, {
-      include: [
-        {
-          model: Store,
-          attributes: ['id', 'name']
-        },
-        {
-          model: OrderItem,
-          include: [{ model: Product, attributes: ['id', 'sku'] }]
-        }
-      ]
-    });
+    if (itemsError) {
+      throw new Error(itemsError.message);
+    }
+
+    // Fetch the complete order with items
+    const { data: completeOrder, error: fetchError } = await tenantDb
+      .from('sales_orders')
+      .select('*')
+      .eq('id', order.id)
+      .single();
+
+    if (fetchError) {
+      throw new Error(fetchError.message);
+    }
+
+    // Load order items
+    const { data: orderItems } = await tenantDb
+      .from('sales_order_items')
+      .select('*')
+      .eq('order_id', order.id);
+
+    completeOrder.OrderItems = orderItems || [];
 
     // Send order success email asynchronously
     try {
@@ -997,7 +1069,12 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
       // Get customer information
       let customer = null;
       if (completeOrder.customer_id) {
-        customer = await Customer.findByPk(completeOrder.customer_id);
+        const { data: customerData } = await tenantDb
+          .from('customers')
+          .select('*')
+          .eq('id', completeOrder.customer_id)
+          .maybeSingle();
+        customer = customerData;
         console.log('📧 Customer found:', customer ? `${customer.first_name} ${customer.last_name}` : 'Not found');
       }
 
@@ -1015,8 +1092,8 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
       emailService.sendTransactionalEmail(store_id, 'order_success_email', {
         recipientEmail: completeOrder.customer_email,
         customer,
-        order: completeOrder.toJSON(),
-        store: store.toJSON(),
+        order: completeOrder,
+        store: store,
         languageCode: 'en' // TODO: Get from customer preferences or order metadata
       }).then((result) => {
         if (result.success) {
