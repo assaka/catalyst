@@ -852,6 +852,7 @@ CREATE TABLE IF NOT EXISTS attribute_sets (
   name VARCHAR(255) NOT NULL,
   description TEXT,
   is_default BOOLEAN DEFAULT false,
+  sort_order INTEGER DEFAULT 0,
   store_id UUID NOT NULL,
   attribute_ids JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMP DEFAULT NOW(),
