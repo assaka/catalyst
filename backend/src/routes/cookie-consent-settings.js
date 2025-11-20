@@ -217,6 +217,10 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
       isNew
     });
   } catch (error) {
+    console.error('Create/Update cookie consent settings error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Store ID:', req.body.store_id);
     res.status(500).json({
       success: false,
       message: 'Server error',
