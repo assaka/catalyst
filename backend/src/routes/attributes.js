@@ -294,11 +294,11 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req
 
     // Save translations if provided
     if (translations && typeof translations === 'object') {
-      await saveAttributeTranslations(attribute.id, translations);
+      await saveAttributeTranslations(tenantDb, attribute.id, translations);
     }
 
     // Fetch complete attribute with translations
-    const completeAttribute = await getAttributeWithValues(attribute.id);
+    const completeAttribute = await getAttributeWithValues(tenantDb, attribute.id);
 
     res.status(201).json({
       success: true,
@@ -359,11 +359,11 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
 
     // Save translations to normalized table if provided
     if (translations && typeof translations === 'object') {
-      await saveAttributeTranslations(req.params.id, translations);
+      await saveAttributeTranslations(tenantDb, req.params.id, translations);
     }
 
     // Fetch updated attribute with translations
-    const updatedAttribute = await getAttributeWithValues(req.params.id);
+    const updatedAttribute = await getAttributeWithValues(tenantDb, req.params.id);
 
     res.json({ success: true, message: 'Attribute updated successfully', data: updatedAttribute });
   } catch (error) {
@@ -793,7 +793,8 @@ router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner'
     }
 
     // Get all attributes for this store with all translations
-    const attributes = await getAttributesWithTranslations({ store_id });
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    const attributes = await getAttributesWithTranslations(tenantDb, { store_id });
 
     if (attributes.length === 0) {
       return res.json({
