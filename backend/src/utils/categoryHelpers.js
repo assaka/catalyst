@@ -1,28 +1,25 @@
 /**
  * Category Settings Helpers for Normalized Translations
  *
- * ⚠️ DEPRECATED: This file uses deprecated Sequelize raw queries with transactions.
- *
- * MIGRATION PATH:
- * - Routes should use ConnectionManager.getStoreConnection(storeId) to get tenantDb
- * - Implement queries directly using tenantDb.from('categories') query builder
- * - See attributeHelpers.js and productLabelHelpers.js for conversion examples
- *
  * These helpers construct the same format that the frontend expects
  * from normalized translation tables.
  */
 
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
  * Get categories with translations from normalized tables
  *
+ * @param {string} storeId - Store ID
  * @param {Object} where - WHERE clause conditions
  * @param {string} lang - Language code (default: 'en')
  * @param {Object} options - Query options { limit, offset, search }
  * @returns {Promise<Object>} { rows, count } - Categories with translated fields and total count
  */
-async function getCategoriesWithTranslations(where = {}, lang = 'en', options = {}) {
+async function getCategoriesWithTranslations(storeId, where = {}, lang = 'en', options = {}) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   const { limit, offset, search } = options;
 
   const whereConditions = Object.entries(where)
@@ -120,11 +117,15 @@ async function getCategoriesWithTranslations(where = {}, lang = 'en', options = 
 /**
  * Get single category with translations
  *
+ * @param {string} storeId - Store ID
  * @param {string} id - Category ID
  * @param {string} lang - Language code (default: 'en')
  * @returns {Promise<Object|null>} Category with translated fields
  */
-async function getCategoryById(id, lang = 'en') {
+async function getCategoryById(storeId, id, lang = 'en') {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   const query = `
     SELECT
       c.id,
@@ -162,11 +163,14 @@ async function getCategoryById(id, lang = 'en') {
 /**
  * Create category with translations
  *
+ * @param {string} storeId - Store ID
  * @param {Object} categoryData - Category data (without translations)
  * @param {Object} translations - Translations object { en: {...}, nl: {...} }
  * @returns {Promise<Object>} Created category with translations
  */
-async function createCategoryWithTranslations(categoryData, translations = {}) {
+async function createCategoryWithTranslations(storeId, categoryData, translations = {}) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
 
   try {
@@ -232,7 +236,7 @@ async function createCategoryWithTranslations(categoryData, translations = {}) {
     await transaction.commit();
 
     // Return the created category with translations
-    return await getCategoryById(category.id);
+    return await getCategoryById(storeId, category.id);
   } catch (error) {
     await transaction.rollback();
     throw error;
@@ -242,12 +246,15 @@ async function createCategoryWithTranslations(categoryData, translations = {}) {
 /**
  * Update category with translations
  *
+ * @param {string} storeId - Store ID
  * @param {string} id - Category ID
  * @param {Object} categoryData - Category data (without translations)
  * @param {Object} translations - Translations object { en: {...}, nl: {...} }
  * @returns {Promise<Object>} Updated category with translations
  */
-async function updateCategoryWithTranslations(id, categoryData, translations = {}) {
+async function updateCategoryWithTranslations(storeId, id, categoryData, translations = {}) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
 
   try {
@@ -336,7 +343,7 @@ async function updateCategoryWithTranslations(id, categoryData, translations = {
     await transaction.commit();
 
     // Return the updated category with translations
-    return await getCategoryById(id);
+    return await getCategoryById(storeId, id);
   } catch (error) {
     await transaction.rollback();
     throw error;
@@ -346,10 +353,14 @@ async function updateCategoryWithTranslations(id, categoryData, translations = {
 /**
  * Get categories with ALL translations for admin translation management
  *
+ * @param {string} storeId - Store ID
  * @param {Object} where - WHERE clause conditions
  * @returns {Promise<Array>} Categories with all translations nested by language code
  */
-async function getCategoriesWithAllTranslations(where = {}) {
+async function getCategoriesWithAllTranslations(storeId, where = {}) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
       if (value === true || value === false) {
@@ -440,10 +451,14 @@ async function getCategoriesWithAllTranslations(where = {}) {
 /**
  * Delete category (translations are CASCADE deleted)
  *
+ * @param {string} storeId - Store ID
  * @param {string} id - Category ID
  * @returns {Promise<boolean>} Success status
  */
-async function deleteCategory(id) {
+async function deleteCategory(storeId, id) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   await sequelize.query(`
     DELETE FROM categories WHERE id = :id
   `, {

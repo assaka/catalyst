@@ -1,27 +1,24 @@
 /**
  * Shipping Method Helpers for Normalized Translations
  *
- * ⚠️ DEPRECATED: This file uses deprecated Sequelize raw queries with transactions.
- *
- * MIGRATION PATH:
- * - Routes should use ConnectionManager.getStoreConnection(storeId) to get tenantDb
- * - Implement queries directly using tenantDb.from('shipping_methods') query builder
- * - See attributeHelpers.js and productLabelHelpers.js for conversion examples
- *
  * These helpers construct the same JSON format that the frontend expects
  * from normalized translation tables.
  */
 
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
  * Get shipping methods with translations from normalized tables
  *
+ * @param {string} storeId - Store ID
  * @param {Object} where - WHERE clause conditions
  * @param {Object} options - Query options (limit, offset, lang)
  * @returns {Promise<Array>} Shipping methods with translated fields
  */
-async function getShippingMethodsWithTranslations(where = {}, options = {}) {
+async function getShippingMethodsWithTranslations(storeId, where = {}, options = {}) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   const lang = options.lang || 'en';
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
@@ -80,10 +77,13 @@ async function getShippingMethodsWithTranslations(where = {}, options = {}) {
 /**
  * Get count of shipping methods
  *
+ * @param {string} storeId - Store ID
  * @param {Object} where - WHERE clause conditions
  * @returns {Promise<number>} Count of shipping methods
  */
-async function getShippingMethodsCount(where = {}) {
+async function getShippingMethodsCount(storeId, where = {}) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
       if (value === true || value === false) {
@@ -115,11 +115,14 @@ async function getShippingMethodsCount(where = {}) {
 /**
  * Get single shipping method with translations
  *
+ * @param {string} storeId - Store ID
  * @param {string} id - Shipping method ID
  * @param {string} lang - Language code (default: 'en')
  * @returns {Promise<Object|null>} Shipping method with translated fields
  */
-async function getShippingMethodById(id, lang = 'en') {
+async function getShippingMethodById(storeId, id, lang = 'en') {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
   const query = `
     SELECT
       sm.id,
@@ -156,11 +159,14 @@ async function getShippingMethodById(id, lang = 'en') {
 /**
  * Create shipping method with translations
  *
+ * @param {string} storeId - Store ID
  * @param {Object} methodData - Shipping method data (without translations)
  * @param {Object} translations - Translations object { en: {name, description}, nl: {name, description} }
  * @returns {Promise<Object>} Created shipping method with translations
  */
-async function createShippingMethodWithTranslations(methodData, translations = {}) {
+async function createShippingMethodWithTranslations(storeId, methodData, translations = {}) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
 
   try {
@@ -240,7 +246,7 @@ async function createShippingMethodWithTranslations(methodData, translations = {
     await transaction.commit();
 
     // Return the created method with translations
-    return await getShippingMethodById(method.id);
+    return await getShippingMethodById(storeId, method.id);
   } catch (error) {
     await transaction.rollback();
     throw error;
@@ -250,12 +256,15 @@ async function createShippingMethodWithTranslations(methodData, translations = {
 /**
  * Update shipping method with translations
  *
+ * @param {string} storeId - Store ID
  * @param {string} id - Shipping method ID
  * @param {Object} methodData - Shipping method data (without translations)
  * @param {Object} translations - Translations object { en: {name, description}, nl: {name, description} }
  * @returns {Promise<Object>} Updated shipping method with translations
  */
-async function updateShippingMethodWithTranslations(id, methodData, translations = {}) {
+async function updateShippingMethodWithTranslations(storeId, id, methodData, translations = {}) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
 
   try {
@@ -362,7 +371,7 @@ async function updateShippingMethodWithTranslations(id, methodData, translations
     await transaction.commit();
 
     // Return the updated method with translations
-    return await getShippingMethodById(id);
+    return await getShippingMethodById(storeId, id);
   } catch (error) {
     await transaction.rollback();
     throw error;
@@ -372,10 +381,14 @@ async function updateShippingMethodWithTranslations(id, methodData, translations
 /**
  * Delete shipping method (translations are CASCADE deleted)
  *
+ * @param {string} storeId - Store ID
  * @param {string} id - Shipping method ID
  * @returns {Promise<boolean>} Success status
  */
-async function deleteShippingMethod(id) {
+async function deleteShippingMethod(storeId, id) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   await sequelize.query(`
     DELETE FROM shipping_methods WHERE id = :id
   `, {

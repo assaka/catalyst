@@ -1,8 +1,6 @@
 /**
  * Translation Helpers for Normalized Tables
  *
- * ⚠️ DEPRECATED: This file uses deprecated Sequelize raw queries.
- *
  * This module provides utility functions to construct the same JSON response
  * format from normalized translation tables that the frontend expects.
  *
@@ -11,33 +9,14 @@
  * - We normalized translations from JSON columns to relational tables
  * - These helpers construct the same JSON format via SQL JOINs
  * - Frontend code requires zero changes
- *
- * MIGRATION PATH:
- * - Routes should use ConnectionManager.getStoreConnection(storeId) to get tenantDb
- * - Implement queries directly using tenantDb query builder
- * - See attributeHelpers.js and productLabelHelpers.js for conversion examples
- * - For specific entities, use their dedicated helper files:
- *   - attributeHelpers.js (✅ converted)
- *   - productLabelHelpers.js (✅ converted)
- *   - paymentMethodHelpers.js (✅ converted)
- *   - cmsHelpers.js (partially converted)
- *
- * DEPRECATED USAGE:
- * ```javascript
- * // OLD (deprecated):
- * const products = await getProductsWithTranslations(storeId);
- *
- * // NEW (use specific helpers or implement directly):
- * const tenantDb = await ConnectionManager.getStoreConnection(storeId);
- * // Implement query using tenantDb.from('products').select(...)
- * ```
  */
 
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
  * Build translations JSON from normalized table
  *
+ * @param {string} storeId - Store ID
  * @param {string} entityTable - Main entity table (e.g., 'products')
  * @param {string} translationTable - Translation table (e.g., 'product_translations')
  * @param {string} entityIdField - Foreign key field (e.g., 'product_id')
@@ -47,6 +26,7 @@ const { sequelize } = require('../database/connection');
  *
  * @example
  * const products = await buildEntityWithTranslations(
+ *   storeId,
  *   'products',
  *   'product_translations',
  *   'product_id',
@@ -55,12 +35,15 @@ const { sequelize } = require('../database/connection');
  * );
  */
 async function buildEntityWithTranslations(
+  storeId,
   entityTable,
   translationTable,
   entityIdField,
   fields,
   where = {}
 ) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
   // Build WHERE clause
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
@@ -105,13 +88,16 @@ async function buildEntityWithTranslations(
 /**
  * Build SEO JSON from normalized SEO table
  *
+ * @param {string} storeId - Store ID
  * @param {string} entityTable - Main entity table
  * @param {string} seoTable - SEO table (e.g., 'product_seo')
  * @param {string} entityIdField - Foreign key field
  * @param {object} where - WHERE clause conditions
  * @returns {Promise<Array>} Entities with SEO JSON
  */
-async function buildEntityWithSEO(entityTable, seoTable, entityIdField, where = {}) {
+async function buildEntityWithSEO(storeId, entityTable, seoTable, entityIdField, where = {}) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
   const whereConditions = Object.entries(where)
     .map(([key, value]) => `e.${key} = '${value}'`)
     .join(' AND ');
@@ -154,6 +140,7 @@ async function buildEntityWithSEO(entityTable, seoTable, entityIdField, where = 
 /**
  * Build complete entity with both translations AND SEO
  *
+ * @param {string} storeId - Store ID
  * @param {string} entityTable - Main entity table
  * @param {string} translationTable - Translation table
  * @param {string} seoTable - SEO table
@@ -163,6 +150,7 @@ async function buildEntityWithSEO(entityTable, seoTable, entityIdField, where = 
  * @returns {Promise<Array>} Entities with translations and SEO JSON
  */
 async function buildEntityComplete(
+  storeId,
   entityTable,
   translationTable,
   seoTable,
@@ -170,6 +158,8 @@ async function buildEntityComplete(
   translationFields,
   where = {}
 ) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
       if (value === null) return `e.${key} IS NULL`;
@@ -231,8 +221,9 @@ async function buildEntityComplete(
  * Convenience functions for common entities
  */
 
-async function getProductsWithTranslations(where = {}) {
+async function getProductsWithTranslations(storeId, where = {}) {
   return buildEntityComplete(
+    storeId,
     'products',
     'product_translations',
     'product_seo',
@@ -242,8 +233,9 @@ async function getProductsWithTranslations(where = {}) {
   );
 }
 
-async function getCategoriesWithTranslations(where = {}) {
+async function getCategoriesWithTranslations(storeId, where = {}) {
   return buildEntityComplete(
+    storeId,
     'categories',
     'category_translations',
     'category_seo',
@@ -253,8 +245,9 @@ async function getCategoriesWithTranslations(where = {}) {
   );
 }
 
-async function getCmsPagesWithTranslations(where = {}) {
+async function getCmsPagesWithTranslations(storeId, where = {}) {
   return buildEntityComplete(
+    storeId,
     'cms_pages',
     'cms_page_translations',
     'cms_page_seo',
@@ -264,8 +257,9 @@ async function getCmsPagesWithTranslations(where = {}) {
   );
 }
 
-async function getAttributesWithTranslations(where = {}) {
+async function getAttributesWithTranslations(storeId, where = {}) {
   return buildEntityWithTranslations(
+    storeId,
     'attributes',
     'attribute_translations',
     'attribute_id',
@@ -274,8 +268,9 @@ async function getAttributesWithTranslations(where = {}) {
   );
 }
 
-async function getAttributeValuesWithTranslations(where = {}) {
+async function getAttributeValuesWithTranslations(storeId, where = {}) {
   return buildEntityWithTranslations(
+    storeId,
     'attribute_values',
     'attribute_value_translations',
     'attribute_value_id',

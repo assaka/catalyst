@@ -1,38 +1,25 @@
 /**
  * Product Helpers for Normalized Translations
  *
- * ⚠️ PARTIALLY DEPRECATED: Some functions use deprecated Sequelize raw queries.
- *
- * CONVERTED FUNCTIONS (use tenantDb):
- * - applyAllProductTranslations ✅
- *
- * DEPRECATED FUNCTIONS (use raw Sequelize):
- * - getProductTranslation
- * - applyProductTranslations
- * - applyProductTranslationsToMany (marked as deprecated with comment)
- * - updateProductTranslations
- * - getProductsOptimized
- *
- * MIGRATION PATH:
- * - Routes should use ConnectionManager.getStoreConnection(storeId) to get tenantDb
- * - Use applyAllProductTranslations for fetching products with all translations
- * - For other functions, implement directly using tenantDb query builder
- *
  * These helpers fetch translations from the normalized product_translations table
  * and merge them with Sequelize product data.
  */
 
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { Op } = require('sequelize');
 
 /**
  * Get product translation from normalized table with English fallback
  *
+ * @param {string} storeId - Store ID
  * @param {string} productId - Product ID
  * @param {string} lang - Language code
  * @returns {Promise<Object|null>} Translation data
  */
-async function getProductTranslation(productId, lang = 'en') {
+async function getProductTranslation(storeId, productId, lang = 'en') {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   const query = `
     SELECT name, description, short_description, language_code
     FROM product_translations
@@ -53,17 +40,18 @@ async function getProductTranslation(productId, lang = 'en') {
  * Apply translations to product data
  * Fetches from normalized table and merges with product JSON
  *
+ * @param {string} storeId - Store ID
  * @param {Object} product - Product object (from Sequelize)
  * @param {string} lang - Language code
  * @returns {Promise<Object>} Product with applied translations
  */
-async function applyProductTranslations(product, lang = 'en') {
+async function applyProductTranslations(storeId, product, lang = 'en') {
   if (!product) return null;
 
   const productData = product.toJSON ? product.toJSON() : product;
 
   // Fetch translation from normalized table (with English fallback)
-  const translation = await getProductTranslation(productData.id, lang);
+  const translation = await getProductTranslation(storeId, productData.id, lang);
 
   if (translation) {
     // Use normalized translation (requested lang or English fallback)
@@ -204,11 +192,14 @@ async function applyAllProductTranslations(products, tenantDb) {
 /**
  * Update product translations in normalized table
  *
+ * @param {string} storeId - Store ID
  * @param {string} productId - Product ID
  * @param {Object} translations - Translations object { en: {...}, nl: {...} }
  * @returns {Promise<void>}
  */
-async function updateProductTranslations(productId, translations = {}) {
+async function updateProductTranslations(storeId, productId, translations = {}) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
 
   try {
@@ -266,12 +257,16 @@ async function updateProductTranslations(productId, translations = {}) {
  * Get products with all data (translations, attributes) in optimized SQL queries
  * Reduces N+1 queries by using JOINs
  *
+ * @param {string} storeId - Store ID
  * @param {Object} where - Sequelize WHERE conditions
  * @param {string} lang - Language code
  * @param {Object} options - { limit, offset, order }
  * @returns {Promise<Object>} { rows, count }
  */
-async function getProductsOptimized(where = {}, lang = 'en', options = {}) {
+async function getProductsOptimized(storeId, where = {}, lang = 'en', options = {}) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   const { limit, offset, order = [['created_at', 'DESC']] } = options;
 
   // Build WHERE clause for raw SQL

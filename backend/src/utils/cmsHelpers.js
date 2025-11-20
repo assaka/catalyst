@@ -1,33 +1,11 @@
 /**
  * CMS Helpers for Normalized Translations
  *
- * ⚠️ PARTIALLY DEPRECATED: Some functions use deprecated Sequelize raw queries.
- *
- * CONVERTED FUNCTIONS (use tenantDb):
- * - getCMSPagesWithTranslations ✅
- * - getCMSBlocksWithTranslations ✅
- *
- * DEPRECATED FUNCTIONS (use raw Sequelize):
- * - getCMSPageById
- * - getCMSBlockById
- * - getCMSPageWithAllTranslations
- * - getCMSPagesWithAllTranslations
- * - getCMSBlockWithAllTranslations
- * - getCMSBlocksWithAllTranslations
- * - saveCMSPageTranslations
- * - saveCMSBlockTranslations
- *
- * MIGRATION PATH:
- * - Routes should use ConnectionManager.getStoreConnection(storeId) to get tenantDb
- * - Use getCMSPagesWithTranslations or getCMSBlocksWithTranslations (already converted)
- * - For other functions, implement directly using tenantDb query builder
- *
  * These helpers fetch translations from normalized cms_page_translations
  * and cms_block_translations tables.
  */
 
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { sequelize } = require('../database/connection');
 
 /**
  * Get CMS pages with translations
@@ -99,11 +77,15 @@ async function getCMSPagesWithTranslations(storeId, where = {}, lang = 'en') {
 /**
  * Get single CMS page with translations
  *
+ * @param {string} storeId - Store ID
  * @param {string} id - Page ID
  * @param {string} lang - Language code (default: 'en')
  * @returns {Promise<Object|null>} CMS page with translated fields
  */
-async function getCMSPageById(id, lang = 'en') {
+async function getCMSPageById(storeId, id, lang = 'en') {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   const query = `
     SELECT
       p.id,
@@ -204,11 +186,15 @@ async function getCMSBlocksWithTranslations(storeId, where = {}, lang = 'en') {
 /**
  * Get single CMS block with translations
  *
+ * @param {string} storeId - Store ID
  * @param {string} id - Block ID
  * @param {string} lang - Language code (default: 'en')
  * @returns {Promise<Object|null>} CMS block with translated fields
  */
-async function getCMSBlockById(id, lang = 'en') {
+async function getCMSBlockById(storeId, id, lang = 'en') {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   const query = `
     SELECT
       b.id,
@@ -240,10 +226,14 @@ async function getCMSBlockById(id, lang = 'en') {
 /**
  * Get CMS page with ALL translations (for admin editing)
  *
+ * @param {string} storeId - Store ID
  * @param {string} id - Page ID
  * @returns {Promise<Object|null>} CMS page with all translations
  */
-async function getCMSPageWithAllTranslations(id) {
+async function getCMSPageWithAllTranslations(storeId, id) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   const query = `
     SELECT
       p.id,
@@ -289,10 +279,14 @@ async function getCMSPageWithAllTranslations(id) {
 /**
  * Get CMS pages with ALL translations (for admin listing)
  *
+ * @param {string} storeId - Store ID
  * @param {Object} where - WHERE clause conditions
  * @returns {Promise<Array>} CMS pages with all translations
  */
-async function getCMSPagesWithAllTranslations(where = {}) {
+async function getCMSPagesWithAllTranslations(storeId, where = {}) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
       if (value === true || value === false) {
@@ -349,10 +343,14 @@ async function getCMSPagesWithAllTranslations(where = {}) {
 /**
  * Get CMS block with ALL translations (for admin editing)
  *
+ * @param {string} storeId - Store ID
  * @param {string} id - Block ID
  * @returns {Promise<Object|null>} CMS block with all translations
  */
-async function getCMSBlockWithAllTranslations(id) {
+async function getCMSBlockWithAllTranslations(storeId, id) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   const query = `
     SELECT
       b.id,
@@ -394,10 +392,14 @@ async function getCMSBlockWithAllTranslations(id) {
 /**
  * Get CMS blocks with ALL translations (for admin listing)
  *
+ * @param {string} storeId - Store ID
  * @param {Object} where - WHERE clause conditions
  * @returns {Promise<Array>} CMS blocks with all translations
  */
-async function getCMSBlocksWithAllTranslations(where = {}) {
+async function getCMSBlocksWithAllTranslations(storeId, where = {}) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
       if (value === true || value === false) {
@@ -450,11 +452,15 @@ async function getCMSBlocksWithAllTranslations(where = {}) {
 /**
  * Save CMS page translations
  *
+ * @param {string} storeId - Store ID
  * @param {string} pageId - Page ID
  * @param {Object} translations - Translations object {en: {title, content}, nl: {title, content}}
  * @returns {Promise<void>}
  */
-async function saveCMSPageTranslations(pageId, translations) {
+async function saveCMSPageTranslations(storeId, pageId, translations) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   if (!translations || typeof translations !== 'object') {
     return;
   }
@@ -492,11 +498,15 @@ async function saveCMSPageTranslations(pageId, translations) {
 /**
  * Save CMS block translations
  *
+ * @param {string} storeId - Store ID
  * @param {string} blockId - Block ID
  * @param {Object} translations - Translations object {en: {title, content}, nl: {title, content}}
  * @returns {Promise<void>}
  */
-async function saveCMSBlockTranslations(blockId, translations) {
+async function saveCMSBlockTranslations(storeId, blockId, translations) {
+  const connection = await ConnectionManager.getConnection(storeId);
+  const sequelize = connection.sequelize;
+
   if (!translations || typeof translations !== 'object') {
     return;
   }
