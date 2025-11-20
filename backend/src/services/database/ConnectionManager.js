@@ -1,6 +1,8 @@
 const { Pool } = require('pg');
 const { createClient } = require('@supabase/supabase-js');
 const SupabaseAdapter = require('./adapters/SupabaseAdapter');
+const PostgreSQLAdapter = require('./adapters/PostgreSQLAdapter');
+const MySQLAdapter = require('./adapters/MySQLAdapter');
 
 /**
  * ConnectionManager - Manages database connections for stores
@@ -161,7 +163,7 @@ class ConnectionManager {
       throw new Error('PostgreSQL host and database are required');
     }
 
-    return new Pool({
+    const pool = new Pool({
       host: config.host,
       port: config.port || 5432,
       database: config.database,
@@ -172,6 +174,9 @@ class ConnectionManager {
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000
     });
+
+    // Wrap PostgreSQL pool in adapter for generic interface
+    return new PostgreSQLAdapter(pool, config);
   }
 
   /**
@@ -185,7 +190,7 @@ class ConnectionManager {
 
     const mysql = require('mysql2/promise');
 
-    return mysql.createPool({
+    const pool = mysql.createPool({
       host: config.host,
       port: config.port || 3306,
       database: config.database,
@@ -196,6 +201,9 @@ class ConnectionManager {
       connectionLimit: config.maxConnections || 10,
       queueLimit: 0
     });
+
+    // Wrap MySQL pool in adapter for generic interface
+    return new MySQLAdapter(pool, config);
   }
 
   /**
@@ -203,22 +211,11 @@ class ConnectionManager {
    * @private
    */
   static async _testConnection(connection, type) {
-    switch (type) {
-      case 'supabase':
-        // Test with a simple query (stores table should exist in tenant DB)
-        const { data, error } = await connection
-          .from('stores')
-          .select('id')
-          .limit(1);
-        // PGRST116 = table not found (ok for new/empty DB)
-        if (error && error.code !== 'PGRST116') throw error;
-        break;
+    // All adapters now implement testConnection() method
+    const isConnected = await connection.testConnection();
 
-      case 'postgresql':
-      case 'mysql':
-        // Test with a ping query
-        await connection.query('SELECT 1');
-        break;
+    if (!isConnected) {
+      throw new Error(`Failed to connect to ${type} database`);
     }
   }
 
