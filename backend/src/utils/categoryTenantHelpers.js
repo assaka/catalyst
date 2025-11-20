@@ -264,7 +264,24 @@ async function getCategoriesWithTranslations(storeId, where = {}, lang = 'en', o
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
   const { limit = 100, offset = 0, search } = options;
 
-  // Build query
+  // Build count query
+  let countQuery = tenantDb.from('categories').select('*', { count: 'exact', head: true });
+
+  // Apply filters to count query
+  Object.entries(where).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      countQuery = countQuery.in(key, value);
+    } else {
+      countQuery = countQuery.eq(key, value);
+    }
+  });
+
+  // Get total count
+  const { count, error: countError } = await countQuery;
+
+  if (countError) throw countError;
+
+  // Build data query
   let query = tenantDb.from('categories').select('*');
 
   // Apply filters
@@ -275,11 +292,6 @@ async function getCategoriesWithTranslations(storeId, where = {}, lang = 'en', o
       query = query.eq(key, value);
     }
   });
-
-  // Get total count
-  const { count, error: countError } = await query.count();
-
-  if (countError) throw countError;
 
   // Get paginated data
   query = query
