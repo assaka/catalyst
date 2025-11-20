@@ -55,12 +55,16 @@ router.post('/', [
     } = req.body;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { Store, ConsentLog } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Verify store exists
-    const store = await Store.findByPk(store_id);
-    if (!store) {
+    const { data: store, error: storeError } = await tenantDb
+      .from('stores')
+      .select('id')
+      .eq('id', store_id)
+      .single();
+
+    if (storeError || !store) {
       return res.status(404).json({
         success: false,
         message: 'Store not found'
@@ -68,18 +72,26 @@ router.post('/', [
     }
 
     // Create consent log
-    const consentLog = await ConsentLog.create({
-      store_id,
-      session_id,
-      user_id: user_id || null,
-      ip_address: getClientIP(req),
-      user_agent: req.headers['user-agent'] || null,
-      consent_given,
-      categories_accepted,
-      country_code: country_code || null,
-      consent_method,
-      page_url: page_url || req.headers.referer || null
-    });
+    const { data: consentLog, error } = await tenantDb
+      .from('consent_logs')
+      .insert({
+        store_id,
+        session_id,
+        user_id: user_id || null,
+        ip_address: getClientIP(req),
+        user_agent: req.headers['user-agent'] || null,
+        consent_given,
+        categories_accepted,
+        country_code: country_code || null,
+        consent_method,
+        page_url: page_url || req.headers.referer || null
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
 
     res.status(201).json({
       success: true,
@@ -101,14 +113,12 @@ router.post('/', [
 router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id, limit = 50, offset = 0 } = req.query;
-    const where = {};
 
     // If specific store_id is provided, use that tenant connection
     // Otherwise, we need to query across all accessible stores
     if (store_id) {
       // Single store query
-      const connection = await ConnectionManager.getConnection(store_id);
-      const { ConsentLog, Store } = connection.models;
+      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
       // Filter by store access (ownership + team membership)
       if (req.user.role !== 'admin') {
@@ -125,22 +135,26 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
         }
       }
 
-      where.store_id = store_id;
+      const { data: logs, error } = await tenantDb
+        .from('consent_logs')
+        .select(`
+          *,
+          stores!inner (
+            id,
+            name
+          )
+        `)
+        .eq('store_id', store_id)
+        .order('created_date', { ascending: false })
+        .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 
-      const logs = await ConsentLog.findAll({
-        where,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        order: [['created_date', 'DESC']],
-        include: [{
-          model: Store,
-          attributes: ['id', 'name']
-        }]
-      });
+      if (error) {
+        throw error;
+      }
 
       return res.json({
         success: true,
-        data: logs
+        data: logs || []
       });
     } else {
       // Multi-store query - need to aggregate across accessible stores
@@ -160,19 +174,23 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
         const allLogs = [];
         for (const storeId of storeIds) {
           try {
-            const connection = await ConnectionManager.getConnection(storeId);
-            const { ConsentLog, Store } = connection.models;
+            const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-            const logs = await ConsentLog.findAll({
-              where: { store_id: storeId },
-              order: [['created_date', 'DESC']],
-              include: [{
-                model: Store,
-                attributes: ['id', 'name']
-              }]
-            });
+            const { data: logs, error } = await tenantDb
+              .from('consent_logs')
+              .select(`
+                *,
+                stores!inner (
+                  id,
+                  name
+                )
+              `)
+              .eq('store_id', storeId)
+              .order('created_date', { ascending: false });
 
-            allLogs.push(...logs);
+            if (!error && logs) {
+              allLogs.push(...logs);
+            }
           } catch (error) {
             console.error(`Error fetching logs from store ${storeId}:`, error);
             // Continue with other stores

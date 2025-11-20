@@ -18,24 +18,30 @@ router.get('/:storeId', async (req, res) => {
     const { storeId } = req.params;
     const { enabled_only } = req.query;
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(storeId);
-    const { CustomAnalyticsEvent } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const where = { store_id: storeId };
+    let query = tenantDb
+      .from('custom_analytics_events')
+      .select('*')
+      .eq('store_id', storeId)
+      .order('priority', { ascending: false })
+      .order('event_category', { ascending: true })
+      .order('created_at', { ascending: true });
 
     if (enabled_only === 'true') {
-      where.enabled = true;
+      query = query.eq('enabled', true);
     }
 
-    const events = await CustomAnalyticsEvent.findAll({
-      where,
-      order: [['priority', 'DESC'], ['event_category', 'ASC'], ['created_at', 'ASC']]
-    });
+    const { data: events, error } = await query;
+
+    if (error) {
+      throw error;
+    }
 
     res.json({
       success: true,
-      data: events
+      data: events || []
     });
   } catch (error) {
     console.error('[CUSTOM EVENTS] Error getting events:', error);
@@ -54,15 +60,24 @@ router.get('/:storeId/by-trigger/:triggerType', async (req, res) => {
   try {
     const { storeId, triggerType } = req.params;
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(storeId);
-    const { CustomAnalyticsEvent } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const events = await CustomAnalyticsEvent.getEventsByTrigger(storeId, triggerType);
+    const { data: events, error } = await tenantDb
+      .from('custom_analytics_events')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('trigger_type', triggerType)
+      .eq('enabled', true)
+      .order('priority', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
 
     res.json({
       success: true,
-      data: events
+      data: events || []
     });
   } catch (error) {
     console.error('[CUSTOM EVENTS] Error getting events by trigger:', error);
@@ -96,10 +111,6 @@ router.post('/:storeId', authMiddleware, checkStoreOwnership, async (req, res) =
       metadata
     } = req.body;
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(storeId);
-    const { CustomAnalyticsEvent } = connection.models;
-
     // Validate required fields
     if (!event_name || !display_name || !trigger_type) {
       return res.status(400).json({
@@ -108,23 +119,34 @@ router.post('/:storeId', authMiddleware, checkStoreOwnership, async (req, res) =
       });
     }
 
-    const event = await CustomAnalyticsEvent.create({
-      store_id: storeId,
-      event_name,
-      display_name,
-      description,
-      event_category: event_category || 'custom',
-      trigger_type,
-      trigger_selector,
-      trigger_condition,
-      event_parameters: event_parameters || {},
-      enabled: enabled !== undefined ? enabled : true,
-      priority: priority || 10,
-      is_system: false,
-      fire_once_per_session: fire_once_per_session || false,
-      send_to_backend: send_to_backend !== undefined ? send_to_backend : true,
-      metadata: metadata || {}
-    });
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: event, error } = await tenantDb
+      .from('custom_analytics_events')
+      .insert({
+        store_id: storeId,
+        event_name,
+        display_name,
+        description,
+        event_category: event_category || 'custom',
+        trigger_type,
+        trigger_selector,
+        trigger_condition,
+        event_parameters: event_parameters || {},
+        enabled: enabled !== undefined ? enabled : true,
+        priority: priority || 10,
+        is_system: false,
+        fire_once_per_session: fire_once_per_session || false,
+        send_to_backend: send_to_backend !== undefined ? send_to_backend : true,
+        metadata: metadata || {}
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
 
     res.status(201).json({
       success: true,
@@ -147,18 +169,17 @@ router.put('/:storeId/:eventId', authMiddleware, checkStoreOwnership, async (req
   try {
     const { storeId, eventId } = req.params;
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(storeId);
-    const { CustomAnalyticsEvent } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const event = await CustomAnalyticsEvent.findOne({
-      where: {
-        id: eventId,
-        store_id: storeId
-      }
-    });
+    const { data: event, error: checkError } = await tenantDb
+      .from('custom_analytics_events')
+      .select('*')
+      .eq('id', eventId)
+      .eq('store_id', storeId)
+      .single();
 
-    if (!event) {
+    if (checkError || !event) {
       return res.status(404).json({
         success: false,
         error: 'Event not found'
@@ -181,17 +202,28 @@ router.put('/:storeId/:eventId', authMiddleware, checkStoreOwnership, async (req
       'fire_once_per_session', 'send_to_backend', 'metadata'
     ];
 
+    const updateData = {};
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        event[field] = req.body[field];
+        updateData[field] = req.body[field];
       }
     });
 
-    await event.save();
+    const { data: updatedEvent, error } = await tenantDb
+      .from('custom_analytics_events')
+      .update(updateData)
+      .eq('id', eventId)
+      .eq('store_id', storeId)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
 
     res.json({
       success: true,
-      data: event
+      data: updatedEvent
     });
   } catch (error) {
     console.error('[CUSTOM EVENTS] Error updating event:', error);
@@ -210,18 +242,17 @@ router.delete('/:storeId/:eventId', authMiddleware, checkStoreOwnership, async (
   try {
     const { storeId, eventId } = req.params;
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(storeId);
-    const { CustomAnalyticsEvent } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const event = await CustomAnalyticsEvent.findOne({
-      where: {
-        id: eventId,
-        store_id: storeId
-      }
-    });
+    const { data: event, error: checkError } = await tenantDb
+      .from('custom_analytics_events')
+      .select('*')
+      .eq('id', eventId)
+      .eq('store_id', storeId)
+      .single();
 
-    if (!event) {
+    if (checkError || !event) {
       return res.status(404).json({
         success: false,
         error: 'Event not found'
@@ -236,7 +267,15 @@ router.delete('/:storeId/:eventId', authMiddleware, checkStoreOwnership, async (
       });
     }
 
-    await event.destroy();
+    const { error } = await tenantDb
+      .from('custom_analytics_events')
+      .delete()
+      .eq('id', eventId)
+      .eq('store_id', storeId);
+
+    if (error) {
+      throw error;
+    }
 
     res.json({
       success: true,
@@ -253,7 +292,7 @@ router.delete('/:storeId/:eventId', authMiddleware, checkStoreOwnership, async (
 
 /**
  * Get event templates
- * GET /api/custom-analytics-events/templates
+ * GET /api/custom-analytics-events/templates/list
  */
 router.get('/templates/list', async (req, res) => {
   try {

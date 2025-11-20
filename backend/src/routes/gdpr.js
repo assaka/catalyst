@@ -30,8 +30,7 @@ router.post('/delete-data', async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { CustomerActivity, HeatmapInteraction, HeatmapSession, ABTestAssignment, ConsentLog } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     const deletionResults = {
       customer_activities: 0,
@@ -41,41 +40,56 @@ router.post('/delete-data', async (req, res) => {
       consent_logs: 0
     };
 
-    // Build where clause based on provided identifiers
-    const whereClause = {};
-    if (session_id) whereClause.session_id = session_id;
-    if (user_id) whereClause.user_id = user_id;
-    if (store_id) whereClause.store_id = store_id;
+    // Build where filters
+    const filters = [];
+    if (session_id) filters.push({ session_id });
+    if (user_id) filters.push({ user_id });
+    if (store_id) filters.push({ store_id });
 
     // Delete customer activities
-    const customerActivitiesDeleted = await CustomerActivity.destroy({
-      where: whereClause
-    });
-    deletionResults.customer_activities = customerActivitiesDeleted;
+    let deleteQuery = tenantDb.from('customer_activities').delete();
+    if (session_id) deleteQuery = deleteQuery.eq('session_id', session_id);
+    if (user_id) deleteQuery = deleteQuery.eq('user_id', user_id);
+    if (store_id) deleteQuery = deleteQuery.eq('store_id', store_id);
+
+    const { count: customerActivitiesDeleted } = await deleteQuery;
+    deletionResults.customer_activities = customerActivitiesDeleted || 0;
 
     // Delete heatmap interactions
-    const heatmapInteractionsDeleted = await HeatmapInteraction.destroy({
-      where: whereClause
-    });
-    deletionResults.heatmap_interactions = heatmapInteractionsDeleted;
+    deleteQuery = tenantDb.from('heatmap_interactions').delete();
+    if (session_id) deleteQuery = deleteQuery.eq('session_id', session_id);
+    if (user_id) deleteQuery = deleteQuery.eq('user_id', user_id);
+    if (store_id) deleteQuery = deleteQuery.eq('store_id', store_id);
+
+    const { count: heatmapInteractionsDeleted } = await deleteQuery;
+    deletionResults.heatmap_interactions = heatmapInteractionsDeleted || 0;
 
     // Delete heatmap sessions
-    const heatmapSessionsDeleted = await HeatmapSession.destroy({
-      where: whereClause
-    });
-    deletionResults.heatmap_sessions = heatmapSessionsDeleted;
+    deleteQuery = tenantDb.from('heatmap_sessions').delete();
+    if (session_id) deleteQuery = deleteQuery.eq('session_id', session_id);
+    if (user_id) deleteQuery = deleteQuery.eq('user_id', user_id);
+    if (store_id) deleteQuery = deleteQuery.eq('store_id', store_id);
+
+    const { count: heatmapSessionsDeleted } = await deleteQuery;
+    deletionResults.heatmap_sessions = heatmapSessionsDeleted || 0;
 
     // Delete A/B test assignments
-    const abTestAssignmentsDeleted = await ABTestAssignment.destroy({
-      where: whereClause
-    });
-    deletionResults.ab_test_assignments = abTestAssignmentsDeleted;
+    deleteQuery = tenantDb.from('ab_test_assignments').delete();
+    if (session_id) deleteQuery = deleteQuery.eq('session_id', session_id);
+    if (user_id) deleteQuery = deleteQuery.eq('user_id', user_id);
+    if (store_id) deleteQuery = deleteQuery.eq('store_id', store_id);
+
+    const { count: abTestAssignmentsDeleted } = await deleteQuery;
+    deletionResults.ab_test_assignments = abTestAssignmentsDeleted || 0;
 
     // Delete consent logs
-    const consentLogsDeleted = await ConsentLog.destroy({
-      where: whereClause
-    });
-    deletionResults.consent_logs = consentLogsDeleted;
+    deleteQuery = tenantDb.from('consent_logs').delete();
+    if (session_id) deleteQuery = deleteQuery.eq('session_id', session_id);
+    if (user_id) deleteQuery = deleteQuery.eq('user_id', user_id);
+    if (store_id) deleteQuery = deleteQuery.eq('store_id', store_id);
+
+    const { count: consentLogsDeleted } = await deleteQuery;
+    deletionResults.consent_logs = consentLogsDeleted || 0;
 
     console.log('[GDPR] Data deletion completed:', deletionResults);
 
@@ -118,55 +132,79 @@ router.get('/export-data', async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { CustomerActivity, HeatmapInteraction, HeatmapSession, ABTestAssignment, ConsentLog } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const whereClause = {};
-    if (session_id) whereClause.session_id = session_id;
-    if (user_id) whereClause.user_id = user_id;
-    if (store_id) whereClause.store_id = store_id;
+    // Build query for customer activities
+    let query = tenantDb
+      .from('customer_activities')
+      .select('*');
 
-    // Collect all data
-    const customerActivities = await CustomerActivity.findAll({
-      where: whereClause,
-      attributes: { exclude: ['ip_address', 'user_agent'] } // Exclude sensitive data
-    });
+    if (session_id) query = query.eq('session_id', session_id);
+    if (user_id) query = query.eq('user_id', user_id);
+    if (store_id) query = query.eq('store_id', store_id);
 
-    const heatmapInteractions = await HeatmapInteraction.findAll({
-      where: whereClause,
-      attributes: { exclude: ['ip_address', 'user_agent'] }
-    });
+    const { data: customerActivities } = await query;
 
-    const heatmapSessions = await HeatmapSession.findAll({
-      where: whereClause,
-      attributes: { exclude: ['ip_address', 'user_agent'] }
-    });
+    // Build query for heatmap interactions
+    query = tenantDb
+      .from('heatmap_interactions')
+      .select('*');
 
-    const abTestAssignments = await ABTestAssignment.findAll({
-      where: whereClause,
-      attributes: { exclude: ['ip_address', 'user_agent'] }
-    });
+    if (session_id) query = query.eq('session_id', session_id);
+    if (user_id) query = query.eq('user_id', user_id);
+    if (store_id) query = query.eq('store_id', store_id);
 
-    const consentLogs = await ConsentLog.findAll({
-      where: whereClause
-    });
+    const { data: heatmapInteractions } = await query;
+
+    // Build query for heatmap sessions
+    query = tenantDb
+      .from('heatmap_sessions')
+      .select('*');
+
+    if (session_id) query = query.eq('session_id', session_id);
+    if (user_id) query = query.eq('user_id', user_id);
+    if (store_id) query = query.eq('store_id', store_id);
+
+    const { data: heatmapSessions } = await query;
+
+    // Build query for ab test assignments
+    query = tenantDb
+      .from('ab_test_assignments')
+      .select('*');
+
+    if (session_id) query = query.eq('session_id', session_id);
+    if (user_id) query = query.eq('user_id', user_id);
+    if (store_id) query = query.eq('store_id', store_id);
+
+    const { data: abTestAssignments } = await query;
+
+    // Build query for consent logs
+    query = tenantDb
+      .from('consent_logs')
+      .select('*');
+
+    if (session_id) query = query.eq('session_id', session_id);
+    if (user_id) query = query.eq('user_id', user_id);
+    if (store_id) query = query.eq('store_id', store_id);
+
+    const { data: consentLogs } = await query;
 
     const exportData = {
       export_date: new Date().toISOString(),
       identifiers: { session_id, user_id, store_id },
       data: {
-        customer_activities: customerActivities,
-        heatmap_interactions: heatmapInteractions,
-        heatmap_sessions: heatmapSessions,
-        ab_test_assignments: abTestAssignments,
-        consent_logs: consentLogs
+        customer_activities: customerActivities || [],
+        heatmap_interactions: heatmapInteractions || [],
+        heatmap_sessions: heatmapSessions || [],
+        ab_test_assignments: abTestAssignments || [],
+        consent_logs: consentLogs || []
       },
       summary: {
-        total_customer_activities: customerActivities.length,
-        total_heatmap_interactions: heatmapInteractions.length,
-        total_heatmap_sessions: heatmapSessions.length,
-        total_ab_test_assignments: abTestAssignments.length,
-        total_consent_logs: consentLogs.length
+        total_customer_activities: (customerActivities || []).length,
+        total_heatmap_interactions: (heatmapInteractions || []).length,
+        total_heatmap_sessions: (heatmapSessions || []).length,
+        total_ab_test_assignments: (abTestAssignments || []).length,
+        total_consent_logs: (consentLogs || []).length
       }
     };
 
@@ -207,13 +245,7 @@ router.post('/anonymize-data', async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { CustomerActivity, HeatmapInteraction, HeatmapSession, ABTestAssignment } = connection.models;
-
-    const whereClause = {};
-    if (session_id) whereClause.session_id = session_id;
-    if (user_id) whereClause.user_id = user_id;
-    if (store_id) whereClause.store_id = store_id;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     const anonymizationResults = {
       customer_activities: 0,
@@ -227,32 +259,56 @@ router.post('/anonymize-data', async (req, res) => {
       user_id: null,
       ip_address: null,
       user_agent: 'anonymized',
-      metadata: {} // Clear metadata
+      metadata: {}
     };
 
     // Anonymize customer activities
-    const [customerActivitiesUpdated] = await CustomerActivity.update(anonymizedData, {
-      where: whereClause
-    });
-    anonymizationResults.customer_activities = customerActivitiesUpdated;
+    let updateQuery = tenantDb
+      .from('customer_activities')
+      .update(anonymizedData);
+
+    if (session_id) updateQuery = updateQuery.eq('session_id', session_id);
+    if (user_id) updateQuery = updateQuery.eq('user_id', user_id);
+    if (store_id) updateQuery = updateQuery.eq('store_id', store_id);
+
+    const { count: customerActivitiesUpdated } = await updateQuery;
+    anonymizationResults.customer_activities = customerActivitiesUpdated || 0;
 
     // Anonymize heatmap interactions
-    const [heatmapInteractionsUpdated] = await HeatmapInteraction.update(anonymizedData, {
-      where: whereClause
-    });
-    anonymizationResults.heatmap_interactions = heatmapInteractionsUpdated;
+    updateQuery = tenantDb
+      .from('heatmap_interactions')
+      .update(anonymizedData);
+
+    if (session_id) updateQuery = updateQuery.eq('session_id', session_id);
+    if (user_id) updateQuery = updateQuery.eq('user_id', user_id);
+    if (store_id) updateQuery = updateQuery.eq('store_id', store_id);
+
+    const { count: heatmapInteractionsUpdated } = await updateQuery;
+    anonymizationResults.heatmap_interactions = heatmapInteractionsUpdated || 0;
 
     // Anonymize heatmap sessions
-    const [heatmapSessionsUpdated] = await HeatmapSession.update(anonymizedData, {
-      where: whereClause
-    });
-    anonymizationResults.heatmap_sessions = heatmapSessionsUpdated;
+    updateQuery = tenantDb
+      .from('heatmap_sessions')
+      .update(anonymizedData);
+
+    if (session_id) updateQuery = updateQuery.eq('session_id', session_id);
+    if (user_id) updateQuery = updateQuery.eq('user_id', user_id);
+    if (store_id) updateQuery = updateQuery.eq('store_id', store_id);
+
+    const { count: heatmapSessionsUpdated } = await updateQuery;
+    anonymizationResults.heatmap_sessions = heatmapSessionsUpdated || 0;
 
     // Anonymize A/B test assignments
-    const [abTestAssignmentsUpdated] = await ABTestAssignment.update(anonymizedData, {
-      where: whereClause
-    });
-    anonymizationResults.ab_test_assignments = abTestAssignmentsUpdated;
+    updateQuery = tenantDb
+      .from('ab_test_assignments')
+      .update(anonymizedData);
+
+    if (session_id) updateQuery = updateQuery.eq('session_id', session_id);
+    if (user_id) updateQuery = updateQuery.eq('user_id', user_id);
+    if (store_id) updateQuery = updateQuery.eq('store_id', store_id);
+
+    const { count: abTestAssignmentsUpdated } = await updateQuery;
+    anonymizationResults.ab_test_assignments = abTestAssignmentsUpdated || 0;
 
     console.log('[GDPR] Data anonymization completed:', anonymizationResults);
 
@@ -295,22 +351,26 @@ router.get('/consent-history', async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { ConsentLog } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const whereClause = {};
-    if (session_id) whereClause.session_id = session_id;
-    if (user_id) whereClause.user_id = user_id;
-    if (store_id) whereClause.store_id = store_id;
+    let query = tenantDb
+      .from('consent_logs')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    const consentHistory = await ConsentLog.findAll({
-      where: whereClause,
-      order: [['created_at', 'DESC']]
-    });
+    if (session_id) query = query.eq('session_id', session_id);
+    if (user_id) query = query.eq('user_id', user_id);
+    if (store_id) query = query.eq('store_id', store_id);
+
+    const { data: consentHistory, error } = await query;
+
+    if (error) {
+      throw error;
+    }
 
     res.json({
       success: true,
-      data: consentHistory
+      data: consentHistory || []
     });
   } catch (error) {
     console.error('[GDPR] Consent history error:', error);

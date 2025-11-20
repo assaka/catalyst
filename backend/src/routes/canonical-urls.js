@@ -19,16 +19,19 @@ router.get('/check', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { CanonicalUrl } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const canonicalUrl = await CanonicalUrl.findOne({
-      where: {
-        store_id,
-        page_url: path,
-        is_active: true
-      }
-    });
+    const { data: canonicalUrl, error } = await tenantDb
+      .from('canonical_urls')
+      .select('*')
+      .eq('store_id', store_id)
+      .eq('page_url', path)
+      .eq('is_active', true)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      throw error;
+    }
 
     if (canonicalUrl) {
       res.json({
@@ -85,16 +88,20 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
       }
     }
 
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { CanonicalUrl } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const canonicalUrls = await CanonicalUrl.findAll({
-      where: { store_id },
-      order: [['page_url', 'ASC']]
-    });
+    const { data: canonicalUrls, error } = await tenantDb
+      .from('canonical_urls')
+      .select('*')
+      .eq('store_id', store_id)
+      .order('page_url', { ascending: true });
+
+    if (error) {
+      throw error;
+    }
 
     // Return array format that the frontend expects
-    res.json(canonicalUrls);
+    res.json(canonicalUrls || []);
   } catch (error) {
     console.error('Get canonical URLs error:', error);
     res.status(500).json({
@@ -120,12 +127,15 @@ router.get('/:id', authMiddleware, async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { CanonicalUrl } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const canonicalUrl = await CanonicalUrl.findByPk(req.params.id);
+    const { data: canonicalUrl, error } = await tenantDb
+      .from('canonical_urls')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
 
-    if (!canonicalUrl) {
+    if (error || !canonicalUrl) {
       return res.status(404).json({
         success: false,
         message: 'Canonical URL not found'
@@ -156,13 +166,21 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req
       });
     }
 
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { CanonicalUrl } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const canonicalUrl = await CanonicalUrl.create({
-      ...req.body,
-      created_by: req.user?.id
-    });
+    const { data: canonicalUrl, error } = await tenantDb
+      .from('canonical_urls')
+      .insert({
+        ...req.body,
+        created_by: req.user?.id
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
     res.status(201).json(canonicalUrl);
   } catch (error) {
     console.error('Create canonical URL error:', error);
@@ -187,19 +205,33 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
       });
     }
 
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { CanonicalUrl } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const canonicalUrl = await CanonicalUrl.findByPk(req.params.id);
+    // Check if canonical URL exists
+    const { data: existing, error: checkError } = await tenantDb
+      .from('canonical_urls')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
 
-    if (!canonicalUrl) {
+    if (checkError || !existing) {
       return res.status(404).json({
         success: false,
         message: 'Canonical URL not found'
       });
     }
 
-    await canonicalUrl.update(req.body);
+    const { data: canonicalUrl, error } = await tenantDb
+      .from('canonical_urls')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
     res.json(canonicalUrl);
   } catch (error) {
     console.error('Update canonical URL error:', error);
@@ -224,19 +256,31 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
       });
     }
 
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { CanonicalUrl } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const canonicalUrl = await CanonicalUrl.findByPk(req.params.id);
+    // Check if canonical URL exists
+    const { data: canonicalUrl, error: checkError } = await tenantDb
+      .from('canonical_urls')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
 
-    if (!canonicalUrl) {
+    if (checkError || !canonicalUrl) {
       return res.status(404).json({
         success: false,
         message: 'Canonical URL not found'
       });
     }
 
-    await canonicalUrl.destroy();
+    const { error } = await tenantDb
+      .from('canonical_urls')
+      .delete()
+      .eq('id', req.params.id);
+
+    if (error) {
+      throw error;
+    }
+
     res.json({
       success: true,
       message: 'Canonical URL deleted successfully'

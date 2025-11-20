@@ -116,7 +116,7 @@ const DatabaseIntegrations = () => {
       </div>
 
       <Tabs defaultValue="supabase" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="supabase" className="flex items-center space-x-2 relative">
             <Database className="w-4 h-4" />
             <span>Supabase</span>
@@ -124,16 +124,24 @@ const DatabaseIntegrations = () => {
               <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="aiven" className="flex items-center space-x-2 relative">
-            <Server className="w-4 h-4" />
-            <span>Aiven</span>
-            {defaultProvider === 'aiven' && (
+          <TabsTrigger value="neon" className="flex items-center space-x-2 relative">
+            <Database className="w-4 h-4" />
+            <span>Neon</span>
+            {defaultProvider === 'neon' && (
               <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="cloud" className="flex items-center space-x-2">
+          <TabsTrigger value="planetscale" className="flex items-center space-x-2 relative">
+            <Database className="w-4 h-4" />
+            <span>PlanetScale</span>
+            {defaultProvider === 'planetscale' && (
+              <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="enterprise" className="flex items-center space-x-2">
             <Cloud className="w-4 h-4" />
-            <span>Cloud Databases</span>
+            <span>Enterprise</span>
+            <Badge variant="outline" className="ml-2 text-xs">Soon</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -155,22 +163,23 @@ const DatabaseIntegrations = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="aiven" className="space-y-6">
+        <TabsContent value="neon" className="space-y-6">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Server className="w-5 h-5" />
-                  <CardTitle>Aiven Database Services</CardTitle>
+                  <Database className="w-5 h-5" />
+                  <CardTitle>Neon PostgreSQL</CardTitle>
+                  <Badge variant="outline" className="ml-2">OAuth Ready</Badge>
                 </div>
                 <Button
-                  onClick={() => handleSetAsDefault('aiven')}
-                  disabled={settingDefault || defaultProvider === 'aiven'}
-                  variant={defaultProvider === 'aiven' ? "secondary" : "default"}
+                  onClick={() => handleSetAsDefault('neon')}
+                  disabled={settingDefault || defaultProvider === 'neon'}
+                  variant={defaultProvider === 'neon' ? "secondary" : "default"}
                   size="sm"
                   className="flex items-center gap-2"
                 >
-                  {defaultProvider === 'aiven' ? (
+                  {defaultProvider === 'neon' ? (
                     <>
                       <Check className="h-4 w-4" />
                       <span>Default Database</span>
@@ -184,22 +193,108 @@ const DatabaseIntegrations = () => {
                 </Button>
               </div>
               <CardDescription>
-                Connect to Aiven's managed database services including PostgreSQL, MySQL, and more.
+                Serverless PostgreSQL with autoscaling, branching, and generous free tier (0.5 GB).
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-8">
                 <p className="text-gray-500 text-sm mb-4">Coming Soon</p>
                 <p className="text-gray-400 text-xs">
-                  Aiven integration will support PostgreSQL, MySQL, Redis, and OpenSearch.
+                  Connect via OAuth to Neon's serverless PostgreSQL. Free tier available.
                 </p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="cloud" className="space-y-6">
+        <TabsContent value="planetscale" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Database className="w-5 h-5" />
+                  <CardTitle>PlanetScale MySQL</CardTitle>
+                  <Badge variant="outline" className="ml-2">OAuth Ready</Badge>
+                </div>
+                <Button
+                  onClick={() => handleSetAsDefault('planetscale')}
+                  disabled={settingDefault || defaultProvider === 'planetscale'}
+                  variant={defaultProvider === 'planetscale' ? "secondary" : "default"}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  {defaultProvider === 'planetscale' ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      <span>Default Database</span>
+                    </>
+                  ) : (
+                    <>
+                      <Star className="h-4 w-4" />
+                      <span>Set as Default</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+              <CardDescription>
+                Serverless MySQL with database branching and huge free tier (5 GB).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <p className="text-gray-500 text-sm mb-4">Coming Soon</p>
+                <p className="text-gray-400 text-xs">
+                  Connect via OAuth to PlanetScale's serverless MySQL. Free tier available.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="enterprise" className="space-y-6">
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Enterprise Database Options</h2>
+            <p className="text-gray-600 text-sm">
+              Connect to enterprise-grade cloud databases for advanced compliance, security, and scalability needs.
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between mb-2">
+                  <CardTitle>Aiven</CardTitle>
+                  <Button
+                    onClick={() => handleSetAsDefault('aiven')}
+                    disabled={settingDefault || defaultProvider === 'aiven'}
+                    variant={defaultProvider === 'aiven' ? "secondary" : "outline"}
+                    size="sm"
+                    className="flex items-center gap-1"
+                  >
+                    {defaultProvider === 'aiven' ? (
+                      <>
+                        <Check className="h-3 w-3" />
+                        <span className="text-xs">Default</span>
+                      </>
+                    ) : (
+                      <>
+                        <Star className="h-3 w-3" />
+                        <span className="text-xs">Set Default</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <CardDescription>
+                  Multi-cloud managed databases (PostgreSQL, MySQL, Redis). EU-based, GDPR-compliant.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-6">
+                  <p className="text-gray-500 text-sm mb-2">Coming Soon</p>
+                  <p className="text-gray-400 text-xs">Starting at $25/month</p>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between mb-2">
@@ -300,42 +395,8 @@ const DatabaseIntegrations = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-center py-6">
-                  <p className="text-gray-500 text-sm">Coming Soon</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between mb-2">
-                  <CardTitle>PlanetScale</CardTitle>
-                  <Button
-                    onClick={() => handleSetAsDefault('planetscale')}
-                    disabled={settingDefault || defaultProvider === 'planetscale'}
-                    variant={defaultProvider === 'planetscale' ? "secondary" : "outline"}
-                    size="sm"
-                    className="flex items-center gap-1"
-                  >
-                    {defaultProvider === 'planetscale' ? (
-                      <>
-                        <Check className="h-3 w-3" />
-                        <span className="text-xs">Default</span>
-                      </>
-                    ) : (
-                      <>
-                        <Star className="h-3 w-3" />
-                        <span className="text-xs">Set Default</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-                <CardDescription>
-                  Serverless MySQL database platform with branching and scaling.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-6">
-                  <p className="text-gray-500 text-sm">Coming Soon</p>
+                  <p className="text-gray-500 text-sm mb-2">Coming Soon</p>
+                  <p className="text-gray-400 text-xs">Starting at $15/month</p>
                 </div>
               </CardContent>
             </Card>

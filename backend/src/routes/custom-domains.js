@@ -80,23 +80,28 @@ router.post('/add', authMiddleware, storeResolver(), requireActiveSubscription, 
 router.get('/', authMiddleware, storeResolver(), async (req, res) => {
   try {
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(req.storeId);
-    const { CustomDomain } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(req.storeId);
 
-    const domains = await CustomDomain.findAll({
-      where: { store_id: req.storeId },
-      order: [['is_primary', 'DESC'], ['created_at', 'DESC']],
-      attributes: {
-        exclude: ['verification_token', 'ssl_certificate_id']
-      }
-    });
+    const { data: domains, error } = await tenantDb
+      .from('custom_domains')
+      .select('*')
+      .eq('store_id', req.storeId)
+      .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    // Add required_dns_records to each domain
+    const domainsWithDNS = (domains || []).map(d => ({
+      ...d,
+      required_dns_records: getRequiredDNSRecords(d)
+    }));
 
     res.json({
       success: true,
-      domains: domains.map(d => ({
-        ...d.toJSON(),
-        required_dns_records: d.getRequiredDNSRecords()
-      }))
+      domains: domainsWithDNS
     });
   } catch (error) {
     console.error('Error listing domains:', error);
@@ -113,17 +118,16 @@ router.get('/', authMiddleware, storeResolver(), async (req, res) => {
 router.get('/:id', authMiddleware, storeResolver(), async (req, res) => {
   try {
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(req.storeId);
-    const { CustomDomain } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(req.storeId);
 
-    const domain = await CustomDomain.findOne({
-      where: {
-        id: req.params.id,
-        store_id: req.storeId
-      }
-    });
+    const { data: domain, error } = await tenantDb
+      .from('custom_domains')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('store_id', req.storeId)
+      .single();
 
-    if (!domain) {
+    if (error || !domain) {
       return res.status(404).json({
         success: false,
         message: 'Domain not found'
@@ -133,8 +137,8 @@ router.get('/:id', authMiddleware, storeResolver(), async (req, res) => {
     res.json({
       success: true,
       domain: {
-        ...domain.toJSON(),
-        required_dns_records: domain.getRequiredDNSRecords(),
+        ...domain,
+        required_dns_records: getRequiredDNSRecords(domain),
         verification_instructions: CustomDomainService._getVerificationInstructions(domain)
       }
     });
@@ -153,17 +157,16 @@ router.get('/:id', authMiddleware, storeResolver(), async (req, res) => {
 router.post('/:id/verify', authMiddleware, storeResolver(), async (req, res) => {
   try {
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(req.storeId);
-    const { CustomDomain } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(req.storeId);
 
-    const domain = await CustomDomain.findOne({
-      where: {
-        id: req.params.id,
-        store_id: req.storeId
-      }
-    });
+    const { data: domain, error } = await tenantDb
+      .from('custom_domains')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('store_id', req.storeId)
+      .single();
 
-    if (!domain) {
+    if (error || !domain) {
       return res.status(404).json({
         success: false,
         message: 'Domain not found'
@@ -187,17 +190,16 @@ router.post('/:id/verify', authMiddleware, storeResolver(), async (req, res) => 
 router.post('/:id/check-dns', authMiddleware, storeResolver(), async (req, res) => {
   try {
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(req.storeId);
-    const { CustomDomain } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(req.storeId);
 
-    const domain = await CustomDomain.findOne({
-      where: {
-        id: req.params.id,
-        store_id: req.storeId
-      }
-    });
+    const { data: domain, error } = await tenantDb
+      .from('custom_domains')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('store_id', req.storeId)
+      .single();
 
-    if (!domain) {
+    if (error || !domain) {
       return res.status(404).json({
         success: false,
         message: 'Domain not found'
@@ -253,17 +255,16 @@ router.delete('/:id', authMiddleware, storeResolver(), async (req, res) => {
 router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) => {
   try {
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(req.storeId);
-    const { CustomDomain } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(req.storeId);
 
-    const domain = await CustomDomain.findOne({
-      where: {
-        id: req.params.id,
-        store_id: req.storeId
-      }
-    });
+    const { data: domain, error } = await tenantDb
+      .from('custom_domains')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('store_id', req.storeId)
+      .single();
 
-    if (!domain) {
+    if (error || !domain) {
       return res.status(404).json({
         success: false,
         message: 'Domain not found'
@@ -284,16 +285,25 @@ router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) 
 
     if (sslStatus.success) {
       // Update domain SSL status
-      await domain.update({
-        ssl_status: sslStatus.ssl_status,
-        ssl_issued_at: sslStatus.ssl_status === 'active' ? new Date() : null
-      });
+      const { data: updatedDomain, error: updateError } = await tenantDb
+        .from('custom_domains')
+        .update({
+          ssl_status: sslStatus.ssl_status,
+          ssl_issued_at: sslStatus.ssl_status === 'active' ? new Date().toISOString() : null
+        })
+        .eq('id', req.params.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw updateError;
+      }
 
       return res.json({
         success: true,
         ssl_status: sslStatus.ssl_status,
         message: sslStatus.message,
-        domain: domain.toJSON()
+        domain: updatedDomain
       });
     } else {
       return res.json(sslStatus);
@@ -313,17 +323,16 @@ router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) 
 router.get('/:id/verification-instructions', authMiddleware, storeResolver(), async (req, res) => {
   try {
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(req.storeId);
-    const { CustomDomain } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(req.storeId);
 
-    const domain = await CustomDomain.findOne({
-      where: {
-        id: req.params.id,
-        store_id: req.storeId
-      }
-    });
+    const { data: domain, error } = await tenantDb
+      .from('custom_domains')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('store_id', req.storeId)
+      .single();
 
-    if (!domain) {
+    if (error || !domain) {
       return res.status(404).json({
         success: false,
         message: 'Domain not found'
@@ -333,7 +342,7 @@ router.get('/:id/verification-instructions', authMiddleware, storeResolver(), as
     res.json({
       success: true,
       instructions: CustomDomainService._getVerificationInstructions(domain),
-      required_records: domain.getRequiredDNSRecords()
+      required_records: getRequiredDNSRecords(domain)
     });
   } catch (error) {
     console.error('Error getting instructions:', error);
@@ -351,17 +360,16 @@ router.get('/:id/verification-instructions', authMiddleware, storeResolver(), as
 router.get('/:id/debug-dns', authMiddleware, storeResolver(), async (req, res) => {
   try {
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(req.storeId);
-    const { CustomDomain } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(req.storeId);
 
-    const domain = await CustomDomain.findOne({
-      where: {
-        id: req.params.id,
-        store_id: req.storeId
-      }
-    });
+    const { data: domain, error } = await tenantDb
+      .from('custom_domains')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('store_id', req.storeId)
+      .single();
 
-    if (!domain) {
+    if (error || !domain) {
       return res.status(404).json({
         success: false,
         message: 'Domain not found'
@@ -371,7 +379,7 @@ router.get('/:id/debug-dns', authMiddleware, storeResolver(), async (req, res) =
     const dns = require('dns').promises;
     const debugInfo = {
       domain: domain.domain,
-      expected_records: domain.getRequiredDNSRecords(),
+      expected_records: getRequiredDNSRecords(domain),
       actual_records: {},
       verification_token: domain.verification_token
     };
@@ -473,6 +481,36 @@ router.get('/:id/debug-dns', authMiddleware, storeResolver(), async (req, res) =
   }
 });
 
+// Helper function to get required DNS records
+function getRequiredDNSRecords(domain) {
+  const records = [];
+
+  // A records pointing to Vercel
+  records.push({
+    type: 'A',
+    name: '@',
+    value: '76.76.21.21',
+    ttl: 3600
+  });
+  records.push({
+    type: 'A',
+    name: '@',
+    value: '76.76.21.22',
+    ttl: 3600
+  });
+
+  // TXT record for verification
+  records.push({
+    type: 'TXT',
+    name: '_catalyst-verification',
+    value: domain.verification_token,
+    ttl: 3600
+  });
+
+  return records;
+}
+
+// Helper function to get recommendations
 function getRecommendations(debugInfo) {
   const recommendations = [];
 
