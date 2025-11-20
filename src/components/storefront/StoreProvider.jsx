@@ -121,12 +121,15 @@ export const StoreProvider = ({ children }) => {
         }
 
         // LAYER 3: Fetch additional data NOT in bootstrap
+        const isAdminPage = location.pathname.includes('/admin/');
+
+        // Only fetch cookie consent on storefront pages, not admin
         const [additionalData, cookieConsent] = await Promise.all([
           fetchAdditionalStoreData(store.id, language),
-          fetchCookieConsentSettings(store.id)
+          !isAdminPage ? fetchCookieConsentSettings(store.id) : Promise.resolve(null)
         ]);
 
-        // Merge cookie consent into settings
+        // Merge cookie consent into settings (only for storefront)
         if (cookieConsent) {
           mergedSettings.cookie_consent = cookieConsent;
         }

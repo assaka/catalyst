@@ -14,9 +14,11 @@ import { SeoSetting } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import FlashMessage from "@/components/storefront/FlashMessage";
+import { useAlertTypes } from "@/hooks/useAlert";
 
 export default function SeoRobots() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { showInfo, showWarning, showError, AlertComponent } = useAlertTypes();
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -265,7 +267,7 @@ Sitemap: https://example.com/sitemap.xml`);
       setRobotsTxt(newContent.join('\n'));
     } catch (error) {
       console.error("Error importing custom rules:", error);
-      alert('Failed to import custom rules. Please try again.');
+      showError('Failed to import custom rules. Please try again.', 'Import Failed');
     } finally {
       setGenerating(false);
     }
@@ -292,7 +294,7 @@ Sitemap: https://example.com/sitemap.xml`);
     // Check if robots.txt is empty
     if (!robotsTxt.trim()) {
       errors.push('Robots.txt is empty. Add at least "User-agent: *" and "Allow: /"');
-      alert('Validation Errors:\n\n' + errors.join('\n'));
+      showError(errors.join('\n'), 'Validation Errors');
       return;
     }
 
@@ -353,24 +355,28 @@ Sitemap: https://example.com/sitemap.xml`);
 
     // Show results
     if (errors.length === 0 && warnings.length === 0) {
-      alert('✓ Validation Passed!\n\nNo errors or warnings found. Your robots.txt looks good!');
+      showInfo('No errors or warnings found. Your robots.txt looks good!', '✓ Validation Passed');
     } else {
       let message = '';
 
       if (errors.length > 0) {
-        message += '❌ ERRORS:\n\n' + errors.join('\n\n');
+        message += 'ERRORS:\n\n' + errors.join('\n\n');
       }
 
       if (warnings.length > 0) {
         if (message) message += '\n\n';
-        message += '⚠️ WARNINGS:\n\n' + warnings.join('\n\n');
+        message += 'WARNINGS:\n\n' + warnings.join('\n\n');
       }
 
       if (errors.length === 0) {
-        message += '\n\n✓ No critical errors found, but please review the warnings above.';
+        message += '\n\nNo critical errors found, but please review the warnings above.';
       }
 
-      alert(message);
+      if (errors.length > 0) {
+        showError(message, 'Validation Results');
+      } else {
+        showWarning(message, 'Validation Results');
+      }
     }
   };
 
@@ -739,6 +745,7 @@ Sitemap: https://example.com/sitemap.xml`);
           </CollapsibleContent>
         </Card>
       </Collapsible>
+      <AlertComponent />
     </div>
   );
 }
