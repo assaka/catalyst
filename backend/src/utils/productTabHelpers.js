@@ -240,10 +240,15 @@ async function getProductTabWithAllTranslations(storeId, id) {
 async function createProductTabWithTranslations(tabData, translations = {}) {
   const tenantDb = await ConnectionManager.getStoreConnection(tabData.store_id);
 
+  // Generate UUID for the new tab
+  const { randomUUID } = require('crypto');
+  const newId = randomUUID();
+
   // Insert product tab
   const { data: tab, error: tabError } = await tenantDb
     .from('product_tabs')
     .insert({
+      id: newId,
       store_id: tabData.store_id,
       name: tabData.name || '',
       slug: tabData.slug,
