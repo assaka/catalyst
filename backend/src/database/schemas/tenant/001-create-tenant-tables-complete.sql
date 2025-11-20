@@ -1082,12 +1082,13 @@ CREATE TABLE IF NOT EXISTS chat_typing_indicators (
 );
 
 CREATE TABLE IF NOT EXISTS cms_block_translations (
-  cms_block_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  language_code VARCHAR(10),
+  cms_block_id UUID NOT NULL,
+  language_code VARCHAR(10) NOT NULL,
   title VARCHAR(255),
   content TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  PRIMARY KEY (cms_block_id, language_code)
 );
 
 CREATE TABLE IF NOT EXISTS cms_blocks (
@@ -1123,13 +1124,14 @@ CREATE TABLE IF NOT EXISTS cms_page_seo (
 );
 
 CREATE TABLE IF NOT EXISTS cms_page_translations (
-  cms_page_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  language_code VARCHAR(10),
+  cms_page_id UUID NOT NULL,
+  language_code VARCHAR(10) NOT NULL,
   title VARCHAR(255) NOT NULL,
   content TEXT,
   excerpt TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  PRIMARY KEY (cms_page_id, language_code)
 );
 
 CREATE TABLE IF NOT EXISTS cms_pages (
@@ -5269,10 +5271,24 @@ CREATE INDEX IF NOT EXISTS idx_category_translations_name ON category_translatio
 
 
 --
+-- Name: idx_cms_block_translations_block_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX IF NOT EXISTS idx_cms_block_translations_block_id ON cms_block_translations USING btree (cms_block_id);
+
+
+--
 -- Name: idx_cms_blocks_store_active; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX IF NOT EXISTS idx_cms_blocks_store_active ON cms_blocks USING btree (store_id, is_active);
+
+
+--
+-- Name: idx_cms_page_translations_page_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX IF NOT EXISTS idx_cms_page_translations_page_id ON cms_page_translations USING btree (cms_page_id);
 
 
 --
