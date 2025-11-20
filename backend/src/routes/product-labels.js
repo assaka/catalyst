@@ -103,7 +103,8 @@ async function getProductLabelWithAllTranslations(tenantDb, id) {
  * Create product label with translations
  */
 async function createProductLabelWithTranslations(tenantDb, labelData, translations = {}) {
-  // Insert product label with explicitly generated UUID
+  // Insert product label with explicitly generated UUID and timestamps
+  const now = new Date().toISOString();
   const { data: label, error: insertError } = await tenantDb
     .from('product_labels')
     .insert({
@@ -118,7 +119,9 @@ async function createProductLabelWithTranslations(tenantDb, labelData, translati
       priority: labelData.priority || 0,
       sort_order: labelData.sort_order || 0,
       is_active: labelData.is_active !== false,
-      conditions: labelData.conditions || {}
+      conditions: labelData.conditions || {},
+      created_at: now,
+      updated_at: now
     })
     .select()
     .single();
