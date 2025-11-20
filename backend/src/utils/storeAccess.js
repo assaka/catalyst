@@ -97,7 +97,7 @@ async function checkUserStoreAccess(userId, storeId) {
     // First, check if user owns the store
     const { data: store, error: storeError } = await masterDbClient
       .from('stores')
-      .select('id, name, user_id, is_active, slug')
+      .select('id, user_id, is_active, slug, status')
       .eq('id', storeId)
       .eq('is_active', true)
       .single();
@@ -123,7 +123,7 @@ async function checkUserStoreAccess(userId, storeId) {
       console.log('✅ User is direct owner of store');
       return {
         id: store.id,
-        name: store.name,
+        slug: store.slug,
         owner_id: store.user_id,
         access_role: 'owner',
         is_direct_owner: true,
@@ -151,7 +151,7 @@ async function checkUserStoreAccess(userId, storeId) {
     console.log('✅ User is team member with role:', teamMember.role);
     return {
       id: store.id,
-      name: store.name,
+      slug: store.slug,
       owner_id: store.user_id,
       access_role: teamMember.role,
       is_direct_owner: false,
