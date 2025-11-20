@@ -12,11 +12,11 @@ const { checkStoreOwnership: storeAuthMiddleware, checkResourceOwnership } = req
 
 // @route   GET /api/products
 // @desc    Get products (authenticated users only)
-// @access  Private
-const { authMiddleware } = require('../middleware/authMiddleware');
-const { authorize, storeOwnerOnly, customerOnly, adminOnly } = require('../middleware/auth');
+// @access  Private (Admin/Store Owner)
+const { authAdmin } = require('../middleware/authMiddleware');
+const { storeOwnerOnly, customerOnly, adminOnly } = require('../middleware/auth');
 
-router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+router.get('/', authAdmin, async (req, res) => {
   try {
     const { page = 1, limit = 100, category_id, status, search, slug, sku, id, include_all_translations } = req.query;
     const store_id = req.headers['x-store-id'] || req.query.store_id;
@@ -91,7 +91,7 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
 // @route   GET /api/products/:id
 // @desc    Get product by ID
 // @access  Private
-router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+router.get('/:id', authAdmin, async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -140,9 +140,8 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
 // @route   POST /api/products
 // @desc    Create new product
 // @access  Private
-router.post('/', 
-  authMiddleware, 
-  authorize(['admin', 'store_owner']), 
+router.post('/',
+  authAdmin,
   storeAuthMiddleware, // Check store ownership
   [
     body('name').notEmpty().withMessage('Product name is required'),
@@ -279,9 +278,8 @@ router.post('/',
 // @route   PUT /api/products/:id
 // @desc    Update product
 // @access  Private
-router.put('/:id', 
-  authMiddleware, 
-  authorize(['admin', 'store_owner']),
+router.put('/:id',
+  authAdmin,
   checkResourceOwnership('Product'), // Check if user owns the product's store
   [
     body('name').optional().notEmpty().withMessage('Product name cannot be empty'),
@@ -359,7 +357,7 @@ router.put('/:id',
 // @route   DELETE /api/products/:id
 // @desc    Delete product
 // @access  Private
-router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+router.delete('/:id', authAdmin, async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -412,7 +410,7 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
 // @route   POST /api/products/:id/translate
 // @desc    AI translate a single product to target language
 // @access  Private
-router.post('/:id/translate', authMiddleware, authorize(['admin', 'store_owner']), [
+router.post('/:id/translate', authAdmin, [
   body('fromLang').notEmpty().withMessage('Source language is required'),
   body('toLang').notEmpty().withMessage('Target language is required')
 ], async (req, res) => {
@@ -501,7 +499,7 @@ router.post('/:id/translate', authMiddleware, authorize(['admin', 'store_owner']
 // @route   POST /api/products/bulk-translate
 // @desc    AI translate all products in a store to target language
 // @access  Private
-router.post('/bulk-translate', authMiddleware, authorize(['admin', 'store_owner']), [
+router.post('/bulk-translate', authAdmin, [
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
   body('fromLang').notEmpty().withMessage('Source language is required'),
   body('toLang').notEmpty().withMessage('Target language is required')
