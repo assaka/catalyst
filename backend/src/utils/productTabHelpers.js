@@ -245,6 +245,7 @@ async function createProductTabWithTranslations(tabData, translations = {}) {
   const newId = randomUUID();
 
   // Insert product tab
+  const now = new Date().toISOString();
   const { data: tab, error: tabError } = await tenantDb
     .from('product_tabs')
     .insert({
@@ -257,7 +258,9 @@ async function createProductTabWithTranslations(tabData, translations = {}) {
       attribute_ids: tabData.attribute_ids || [],
       attribute_set_ids: tabData.attribute_set_ids || [],
       sort_order: tabData.sort_order || 0,
-      is_active: tabData.is_active !== false
+      is_active: tabData.is_active !== false,
+      created_at: now,
+      updated_at: now
     })
     .select()
     .single();
