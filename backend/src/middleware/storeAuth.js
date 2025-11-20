@@ -92,10 +92,11 @@ const checkStoreOwnership = async (req, res, next) => {
       });
     }
 
-    // Extract store_id from various sources
-    const storeId = req.params.store_id || 
+    // Extract store_id from various sources (support both camelCase and snake_case)
+    const storeId = req.params.storeId || // camelCase (used by many routes)
+                   req.params.store_id || // snake_case
                    req.params.id || // For store update/delete routes
-                   req.body?.store_id || 
+                   req.body?.store_id ||
                    req.query?.store_id ||
                    req.headers['x-store-id'];
 

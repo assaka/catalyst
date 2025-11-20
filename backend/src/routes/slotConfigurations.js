@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
-const ABTest = require('../models/ABTest');
-const ABTestAssignment = require('../models/ABTestAssignment');
-const ABTestService = require('../services/ABTestService');
 const { masterDbClient } = require('../database/masterConnection');
+const ConnectionManager = require('../services/database/ConnectionManager');
+const abTestingService = require('../services/analytics/ABTestingServiceSupabase');
 const path = require('path');
 
 // Helper functions to load configuration files from the frontend config directory
@@ -699,8 +698,8 @@ router.get('/published/:storeId/:pageType?', async (req, res) => {
 
     console.log('[Slot Config API] Found published config, checking for A/B tests...');
 
-    // Check for active A/B tests for this page
-    const activeTests = await ABTest.findActiveForPage(storeId, pageType);
+    // Check for active A/B tests for this page (using Supabase)
+    const activeTests = await abTestingService.findActiveForPage(storeId, pageType);
 
     console.log('[Slot Config API] Active A/B tests:', activeTests.length);
 
@@ -726,19 +725,23 @@ router.get('/published/:storeId/:pageType?', async (req, res) => {
 
       try {
         // Get variant assignment for this session
-        const assignment = await ABTestService.getVariantAssignment(test.id, sessionId, {
+        const assignment = await abTestingService.getVariant(test.id, sessionId, {
           storeId,
-          deviceType: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'desktop'
+          deviceType: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'desktop',
+          context: {
+            device_type: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'desktop',
+            user_agent: req.headers['user-agent']
+          }
         });
 
         console.log(`[Slot Config API] Variant assigned:`, {
           test: test.name,
           variant: assignment.variant_name,
-          excluded: assignment.excluded
+          is_control: assignment.is_control
         });
 
-        if (assignment.excluded) {
-          console.log(`[Slot Config API] User excluded from test "${test.name}"`);
+        if (assignment.is_control) {
+          console.log(`[Slot Config API] Control variant assigned, no changes for test "${test.name}"`);
           continue;
         }
 

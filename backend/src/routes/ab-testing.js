@@ -8,7 +8,7 @@ const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const { injectABTestContext } = require('../middleware/abTestingMiddleware');
-const abTestingService = require('../services/analytics/ABTestingService');
+const abTestingService = require('../services/analytics/ABTestingServiceSupabase');
 const slotConfigABTesting = require('../services/analytics/SlotConfigABTesting');
 const ConnectionManager = require('../services/database/ConnectionManager');
 
@@ -19,16 +19,25 @@ router.use(injectABTestContext);
 
 /**
  * Get variant assignment for a test
- * GET /api/ab-testing/variant/:testId
+ * GET /api/ab-testing/variant/:testId?storeId=xxx
  */
 router.get('/variant/:testId', async (req, res) => {
   try {
     const { testId } = req.params;
+    const { storeId } = req.query;
+
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'storeId query parameter is required'
+      });
+    }
 
     const variant = await abTestingService.getVariant(
       testId,
       req.sessionId,
       {
+        storeId,
         userId: req.abTestContext.userId,
         context: req.abTestContext
       }
@@ -79,6 +88,7 @@ router.get('/active/:storeId', async (req, res) => {
           test.id,
           req.sessionId,
           {
+            storeId,
             userId: req.abTestContext.userId,
             context: req.abTestContext
           }
@@ -111,15 +121,24 @@ router.get('/active/:storeId', async (req, res) => {
 /**
  * Track conversion for a test
  * POST /api/ab-testing/conversion/:testId
+ * Body: { storeId, value, metrics }
  */
 router.post('/conversion/:testId', async (req, res) => {
   try {
     const { testId } = req.params;
-    const { value, metrics } = req.body;
+    const { storeId, value, metrics } = req.body;
+
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'storeId is required in request body'
+      });
+    }
 
     const result = await abTestingService.trackConversion(
       testId,
       req.sessionId,
+      storeId,
       value,
       metrics
     );
@@ -140,15 +159,24 @@ router.post('/conversion/:testId', async (req, res) => {
 /**
  * Track custom metric for a test
  * POST /api/ab-testing/metric/:testId
+ * Body: { storeId, metricName, metricValue }
  */
 router.post('/metric/:testId', async (req, res) => {
   try {
     const { testId } = req.params;
-    const { metricName, metricValue } = req.body;
+    const { storeId, metricName, metricValue } = req.body;
+
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'storeId is required in request body'
+      });
+    }
 
     const result = await abTestingService.trackMetric(
       testId,
       req.sessionId,
+      storeId,
       metricName,
       metricValue
     );
@@ -247,8 +275,18 @@ router.get('/:storeId', authMiddleware, checkStoreOwnership, async (req, res) =>
     const { storeId } = req.params;
     const { status } = req.query;
 
+    console.log('[AB TESTING API] Getting tests for store:', storeId, 'with status filter:', status);
+
+    // Get store connection
     const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
 
+    if (!supabaseClient) {
+      throw new Error('Failed to get database connection for store');
+    }
+
+    console.log('[AB TESTING API] Successfully got store connection');
+
+    // Build query
     let query = supabaseClient
       .from('ab_tests')
       .select('*')
@@ -259,9 +297,15 @@ router.get('/:storeId', authMiddleware, checkStoreOwnership, async (req, res) =>
       query = query.eq('status', status);
     }
 
+    console.log('[AB TESTING API] Executing query...');
     const { data: tests, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      console.error('[AB TESTING API] Database query error:', error);
+      throw error;
+    }
+
+    console.log('[AB TESTING API] Successfully fetched', (tests || []).length, 'tests');
 
     res.json({
       success: true,
@@ -269,9 +313,11 @@ router.get('/:storeId', authMiddleware, checkStoreOwnership, async (req, res) =>
     });
   } catch (error) {
     console.error('[AB TESTING API] Error getting tests:', error);
+    console.error('[AB TESTING API] Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -535,9 +581,9 @@ router.post('/:storeId/test/:testId/complete', authMiddleware, checkStoreOwnersh
  */
 router.get('/:storeId/test/:testId/results', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
-    const { testId } = req.params;
+    const { storeId, testId } = req.params;
 
-    const results = await abTestingService.getTestResults(testId);
+    const results = await abTestingService.getTestResults(testId, storeId);
 
     res.json({
       success: true,
