@@ -2717,8 +2717,17 @@ CREATE TABLE IF NOT EXISTS taxes (
   country_rates JSONB DEFAULT '[]'::jsonb,
   store_id UUID NOT NULL,
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  translations JSONB DEFAULT '{}'::jsonb
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS tax_translations (
+  tax_id UUID NOT NULL,
+  language_code VARCHAR(10) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  PRIMARY KEY (tax_id, language_code)
 );
 
 CREATE TABLE IF NOT EXISTS translations (

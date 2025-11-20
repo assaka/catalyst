@@ -921,7 +921,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
         credits: creditBalance ? {
           balance: parseFloat(creditBalance.balance),
           reserved: parseFloat(creditBalance.reserved_balance),
-          available: creditBalance.getAvailableBalance()
+          available: parseFloat(creditBalance.balance) - parseFloat(creditBalance.reserved_balance)
         } : null,
         tenantData: tenantStoreData
       }

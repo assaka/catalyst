@@ -180,7 +180,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const { store_id, ...taxData } = req.body;
+    const { store_id, translations, ...taxData } = req.body;
 
     if (!store_id) {
       return res.status(400).json({
@@ -224,6 +224,30 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req
       });
     }
 
+    // Insert translations
+    if (translations && typeof translations === 'object') {
+      const translationInserts = Object.entries(translations)
+        .filter(([_, data]) => data && (data.name || data.description))
+        .map(([langCode, data]) => ({
+          tax_id: tax.id,
+          language_code: langCode,
+          name: data.name || '',
+          description: data.description || ''
+        }));
+
+      if (translationInserts.length > 0) {
+        const { error: transError } = await tenantDb
+          .from('tax_translations')
+          .upsert(translationInserts, {
+            onConflict: 'tax_id,language_code'
+          });
+
+        if (transError) {
+          console.error('Error inserting translations:', transError);
+        }
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: 'Tax rule created successfully',
@@ -241,16 +265,17 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req
 
 router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const store_id = req.body.store_id || req.query.store_id || req.headers['x-store-id'];
+    const { store_id, translations, ...taxData } = req.body;
+    const storeId = store_id || req.query.store_id || req.headers['x-store-id'];
 
-    if (!store_id) {
+    if (!storeId) {
       return res.status(400).json({
         success: false,
         message: 'store_id is required'
       });
     }
 
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Check if tax rule exists
     const { data: tax, error: checkError } = await tenantDb
@@ -282,7 +307,7 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     const { data: updatedTax, error: updateError } = await tenantDb
       .from('taxes')
       .update({
-        ...req.body,
+        ...taxData,
         updated_at: new Date().toISOString()
       })
       .eq('id', req.params.id)
@@ -296,6 +321,30 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
         message: 'Error updating tax rule',
         error: updateError.message
       });
+    }
+
+    // Update translations
+    if (translations && typeof translations === 'object') {
+      const translationUpserts = Object.entries(translations)
+        .filter(([_, data]) => data && (data.name || data.description))
+        .map(([langCode, data]) => ({
+          tax_id: req.params.id,
+          language_code: langCode,
+          name: data.name || '',
+          description: data.description || ''
+        }));
+
+      if (translationUpserts.length > 0) {
+        const { error: transError } = await tenantDb
+          .from('tax_translations')
+          .upsert(translationUpserts, {
+            onConflict: 'tax_id,language_code'
+          });
+
+        if (transError) {
+          console.error('Error updating translations:', transError);
+        }
+      }
     }
 
     res.json({

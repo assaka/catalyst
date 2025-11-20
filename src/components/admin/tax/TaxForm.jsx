@@ -66,7 +66,7 @@ export default function TaxForm({ tax, onSubmit, onCancel }) {
   const updateCountryRate = (index, field, value) => {
     setFormData(prev => ({
       ...prev,
-      country_rates: prev.country_rates.map((rate, i) => 
+      country_rates: prev.country_rates.map((rate, i) =>
         i === index ? { ...rate, [field]: field === 'rate' ? parseFloat(value) || 0 : value } : rate
       )
     }));
@@ -176,7 +176,7 @@ export default function TaxForm({ tax, onSubmit, onCancel }) {
             Add Country
           </Button>
         </div>
-        
+
         <div className="space-y-3">
           {formData.country_rates.map((rate, index) => (
             <div key={index} className="flex items-center space-x-3 p-3 border rounded-lg">
