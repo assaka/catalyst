@@ -1,6 +1,7 @@
 const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -81,7 +82,7 @@ router.get('/check', async (req, res) => {
 // @route   GET /api/redirects
 // @desc    Get redirects for a store
 // @access  Private (admin only)
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id } = req.query;
 
@@ -134,7 +135,7 @@ router.get('/', authMiddleware, async (req, res) => {
 // @route   GET /api/redirects/:id
 // @desc    Get single redirect
 // @access  Private
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id } = req.query;
 
@@ -171,7 +172,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // @route   POST /api/redirects
 // @desc    Create a new redirect
 // @access  Private
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id } = req.body;
 
@@ -207,7 +208,7 @@ router.post('/', authMiddleware, async (req, res) => {
 // @route   PUT /api/redirects/:id
 // @desc    Update redirect
 // @access  Private
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id } = req.body;
 
@@ -254,7 +255,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // @route   DELETE /api/redirects/:id
 // @desc    Delete redirect
 // @access  Private
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id } = req.query;
 

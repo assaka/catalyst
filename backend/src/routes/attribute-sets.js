@@ -1,6 +1,7 @@
 const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -160,7 +161,7 @@ router.get('/:id', conditionalAuth, async (req, res) => {
 // @route   POST /api/attribute-sets
 // @desc    Create a new attribute set
 // @access  Private
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id, ...attributeSetData } = req.body;
 
@@ -210,7 +211,7 @@ router.post('/', authMiddleware, async (req, res) => {
 // @route   PUT /api/attribute-sets/:id
 // @desc    Update attribute set
 // @access  Private
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.body.store_id || req.query.store_id || req.headers['x-store-id'];
 
@@ -273,7 +274,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // @route   DELETE /api/attribute-sets/:id
 // @desc    Delete attribute set
 // @access  Private
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.query.store_id || req.headers['x-store-id'];
 

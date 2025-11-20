@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { authorize } = require('../middleware/auth');
 const router = express.Router();
 
 // Helper function to check store access (ownership or team membership)
@@ -15,7 +16,7 @@ const checkStoreAccess = async (storeId, userId, userRole) => {
 // @route   GET /api/payment-methods
 // @desc    Get payment methods
 // @access  Private
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { page = 1, limit = 10, store_id, search } = req.query;
     const offset = (page - 1) * limit;
@@ -113,7 +114,7 @@ router.get('/', async (req, res) => {
 // @route   GET /api/payment-methods/:id
 // @desc    Get payment method by ID
 // @access  Private
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.query.store_id || req.headers['x-store-id'];
 

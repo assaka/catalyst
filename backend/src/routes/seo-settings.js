@@ -1,5 +1,6 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 const ConnectionManager = require('../services/database/ConnectionManager');
 
 const router = express.Router();
@@ -161,7 +162,7 @@ router.get('/', async (req, res) => {
 // @route   POST /api/seo-settings
 // @desc    Create or update SEO settings
 // @access  Private
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.body.store_id;
 
@@ -211,7 +212,7 @@ router.post('/', authMiddleware, async (req, res) => {
 // @route   PUT /api/seo-settings/:id
 // @desc    Update SEO settings
 // @access  Private
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.body.store_id;
 
@@ -260,7 +261,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // @route   DELETE /api/seo-settings/:id
 // @desc    Delete SEO settings
 // @access  Private
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'];
 

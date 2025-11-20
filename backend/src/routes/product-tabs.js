@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { authorize } = require('../middleware/auth');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
@@ -20,7 +21,7 @@ console.log('✅ product-tabs.js routes loaded - bulk-translate endpoint availab
 // @route   GET /api/product-tabs
 // @desc    Get product tabs for a store (authenticated)
 // @access  Private
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id, is_active } = req.query;
 
@@ -73,7 +74,7 @@ router.get('/', authMiddleware, async (req, res) => {
 // @route   GET /api/product-tabs/:id
 // @desc    Get product tab by ID with all translations
 // @access  Private
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -117,7 +118,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // @route   POST /api/product-tabs
 // @desc    Create new product tab
 // @access  Private
-router.post('/', authMiddleware, [
+router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('tab_type').optional().isIn(['text', 'description', 'attributes', 'attribute_sets']).withMessage('Invalid tab type'),
@@ -198,7 +199,7 @@ router.post('/', authMiddleware, [
 // @route   PUT /api/product-tabs/:id
 // @desc    Update product tab
 // @access  Private
-router.put('/:id', authMiddleware, [
+router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
   body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
   body('tab_type').optional().isIn(['text', 'description', 'attributes', 'attribute_sets']).withMessage('Invalid tab type'),
   body('content').optional().isString(),
@@ -283,7 +284,7 @@ router.put('/:id', authMiddleware, [
 // @route   DELETE /api/product-tabs/:id
 // @desc    Delete product tab
 // @access  Private
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 

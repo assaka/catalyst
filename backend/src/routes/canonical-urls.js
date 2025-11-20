@@ -1,6 +1,7 @@
 const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -53,7 +54,7 @@ router.get('/check', async (req, res) => {
 // @route   GET /api/canonical-urls
 // @desc    Get canonical URLs for a store
 // @access  Private (admin only)
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id } = req.query;
 
@@ -144,7 +145,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // @route   POST /api/canonical-urls
 // @desc    Create a new canonical URL
 // @access  Private
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id } = req.body;
 
@@ -175,7 +176,7 @@ router.post('/', authMiddleware, async (req, res) => {
 // @route   PUT /api/canonical-urls/:id
 // @desc    Update canonical URL
 // @access  Private
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id } = req.body;
 
@@ -212,7 +213,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // @route   DELETE /api/canonical-urls/:id
 // @desc    Delete canonical URL
 // @access  Private
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id } = req.query;
 

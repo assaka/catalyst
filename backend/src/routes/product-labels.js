@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/auth');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
@@ -259,7 +260,7 @@ async function deleteProductLabel(tenantDb, id) {
 // @route   GET /api/product-labels
 // @desc    Get all product labels for a store (authenticated)
 // @access  Private
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { store_id, is_active } = req.query;
 
@@ -307,7 +308,7 @@ router.get('/', authMiddleware, async (req, res) => {
 // @route   GET /api/product-labels/:id
 // @desc    Get single product label with all translations
 // @access  Private
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
@@ -353,7 +354,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // @route   POST /api/product-labels/test
 // @desc    Create a test product label for debugging
 // @access  Private
-router.post('/test', authMiddleware, async (req, res) => {
+router.post('/test', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     console.log('🧪 Creating test product label...');
 
@@ -403,7 +404,7 @@ router.post('/test', authMiddleware, async (req, res) => {
 // @route   POST /api/product-labels
 // @desc    Create a new product label
 // @access  Private
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     console.log('🔍 Creating product label with data:', req.body);
     console.log('🔍 Priority field debug (backend):', {
@@ -467,7 +468,7 @@ router.post('/', authMiddleware, async (req, res) => {
 // @route   PUT /api/product-labels/:id
 // @desc    Update product label
 // @access  Private
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     console.log('🔍 Updating product label with data:', req.body);
     console.log('🔍 Priority field debug (backend update):', {
@@ -533,7 +534,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // @route   DELETE /api/product-labels/:id
 // @desc    Delete product label
 // @access  Private
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store_id = req.headers['x-store-id'] || req.query.store_id;
 
