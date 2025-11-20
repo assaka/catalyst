@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { authMiddleware } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/auth');
 const router = express.Router();
 
