@@ -5,10 +5,10 @@ import { Product } from "@/api/entities";
 import { Store } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
-import { 
-  FileText, 
-  Plus, 
-  Search, 
+import {
+  FileText,
+  Plus,
+  Search,
   Edit,
   Trash2
 } from "lucide-react";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { 
   Dialog, 
   DialogContent, 
@@ -161,6 +162,20 @@ export default function CmsPages() {
     }
   };
 
+  const handleToggleActive = async (page) => {
+    try {
+      await CmsPage.update(page.id, { ...page, is_active: !page.is_active });
+      setFlashMessage({ type: 'success', message: `CMS Page ${page.is_active ? 'deactivated' : 'activated'} successfully!` });
+      await loadPages();
+      // Clear storefront cache for instant updates
+      const storeId = getSelectedStoreId();
+      if (storeId) clearCmsPagesCache(storeId);
+    } catch (error) {
+      console.error("Failed to toggle page status", error);
+      setFlashMessage({ type: 'error', message: 'Failed to toggle page status.' });
+    }
+  };
+
   const handleDeletePage = async (pageId, isSystem) => {
     // Prevent deletion of system pages
     if (isSystem) {
@@ -259,36 +274,45 @@ export default function CmsPages() {
                 </CardTitle>
                 <p className="text-sm text-gray-500">/{page.slug}</p>
               </CardHeader>
-              <CardContent>
-                <div className="flex justify-end space-x-2">
-                   {(fullStore?.slug || selectedStore?.slug) ? (
-                     <Link to={createCmsPageUrl(fullStore?.slug || selectedStore?.slug, page.slug)} target="_blank">
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Active</span>
+                  <Switch
+                    checked={page.is_active}
+                    onCheckedChange={() => handleToggleActive(page)}
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div className="flex space-x-2">
+                    {(fullStore?.slug || selectedStore?.slug) ? (
+                      <Link to={createCmsPageUrl(fullStore?.slug || selectedStore?.slug, page.slug)} target="_blank">
                         <Button variant="outline" size="sm">View</Button>
-                     </Link>
-                   ) : (
-                     <Button variant="outline" size="sm" disabled title="Store slug not available">View</Button>
-                   )}
-                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditingPage(page); // Updated state setter
-                      setShowForm(true); // Updated state setter
-                    }}
-                  >
-                    <Edit className="w-4 h-4 mr-1" />
-                    Edit
-                  </Button>
-                  {!page.is_system && (
+                      </Link>
+                    ) : (
+                      <Button variant="outline" size="sm" disabled title="Store slug not available">View</Button>
+                    )}
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       size="sm"
-                      onClick={() => handleDeletePage(page.id, page.is_system)}
+                      onClick={() => {
+                        setEditingPage(page);
+                        setShowForm(true);
+                      }}
                     >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Delete
+                      <Edit className="w-4 h-4" />
                     </Button>
-                  )}
+                    {!page.is_system && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeletePage(page.id, page.is_system)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
