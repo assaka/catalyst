@@ -1029,12 +1029,13 @@ CREATE TABLE IF NOT EXISTS category_seo (
 );
 
 CREATE TABLE IF NOT EXISTS category_translations (
-  category_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  language_code VARCHAR(10),
+  category_id UUID NOT NULL,
+  language_code VARCHAR(10) NOT NULL,
   name VARCHAR(255) NOT NULL,
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  PRIMARY KEY (category_id, language_code)
 );
 
 CREATE TABLE IF NOT EXISTS chat_agents (
