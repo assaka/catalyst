@@ -312,8 +312,10 @@ export default function ThemeLayout() {
             // Store.findById returns an array, so we need to get the first item
             const fullStoreResponse_normalized = Array.isArray(fullStoreResponse) ? fullStoreResponse[0] : fullStoreResponse;
 
-            // Handle nested data structure - settings are in data.settings, not settings
-            const fullStore = fullStoreResponse_normalized?.data || fullStoreResponse_normalized;
+            // Handle nested data structure - settings are in data.tenantData.settings
+            // Backend GET /api/stores/:id returns: { success: true, data: { store: {...}, tenantData: {...} } }
+            const responseData = fullStoreResponse_normalized?.data || fullStoreResponse_normalized;
+            const fullStore = responseData?.tenantData || responseData;
 
             // Initialize step translations with defaults from store settings if not already loaded
             setTimeout(() => {
@@ -842,6 +844,9 @@ export default function ThemeLayout() {
             }
 
             setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
+
+            // Reload store data to reflect saved changes
+            await loadStore();
 
         } catch (error) {
             setFlashMessage({ type: 'error', message: `Failed to save settings: ${error.response?.data?.message || error.message}` });
