@@ -14,131 +14,83 @@ const router = express.Router();
  * Get product labels with translations from tenant DB
  */
 async function getProductLabelsWithTranslations(tenantDb, where = {}, lang = 'en', allTranslations = false) {
-  const whereConditions = [];
-  const replacements = [];
-  let paramIndex = 1;
+  // Build query for product labels
+  let query = tenantDb
+    .select('*')
+    .from('product_labels')
+    .orderBy([
+      { column: 'sort_order', order: 'asc' },
+      { column: 'priority', order: 'desc' },
+      { column: 'name', order: 'asc' }
+    ]);
 
+  // Apply where conditions
   Object.entries(where).forEach(([key, value]) => {
-    whereConditions.push(`pl.${key} = $${paramIndex}`);
-    replacements.push(value);
-    paramIndex++;
+    query = query.where(key, value);
   });
 
-  const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+  const labels = await query;
 
   if (allTranslations) {
-    // Return ALL translations for each label
-    const query = `
-      SELECT
-        pl.id,
-        pl.store_id,
-        pl.name,
-        pl.slug,
-        pl.text,
-        pl.background_color,
-        pl.color,
-        pl.position,
-        pl.priority,
-        pl.sort_order,
-        pl.is_active,
-        pl.conditions,
-        pl.created_at,
-        pl.updated_at,
-        COALESCE(
-          json_object_agg(
-            t.language_code,
-            json_build_object('name', t.name, 'text', t.text)
-          ) FILTER (WHERE t.language_code IS NOT NULL),
-          '{}'::json
-        ) as translations
-      FROM product_labels pl
-      LEFT JOIN product_label_translations t ON pl.id = t.product_label_id
-      ${whereClause}
-      GROUP BY pl.id
-      ORDER BY pl.sort_order ASC, pl.priority DESC, pl.name ASC
-    `;
+    // Fetch ALL translations for each label
+    for (const label of labels) {
+      const translations = await tenantDb
+        .select('language_code', 'name', 'text')
+        .from('product_label_translations')
+        .where('product_label_id', label.id);
 
-    const { data, error } = await tenantDb.rpc('exec_sql', {
-      sql_query: query,
-      params: replacements
-    });
+      // Build translations object { en: { name: '...', text: '...' }, nl: { ... } }
+      label.translations = translations.reduce((acc, t) => {
+        acc[t.language_code] = { name: t.name, text: t.text };
+        return acc;
+      }, {});
+    }
+  } else {
+    // Fetch only the requested language translation for each label
+    for (const label of labels) {
+      const translation = await tenantDb
+        .select('name', 'text')
+        .from('product_label_translations')
+        .where('product_label_id', label.id)
+        .where('language_code', lang)
+        .first();
 
-    if (error) throw new Error(error.message);
-    return data || [];
+      // Use translation if available, otherwise use base fields
+      if (translation) {
+        label.name = translation.name || label.name;
+        label.text = translation.text || label.text;
+      }
+    }
   }
 
-  // Single language query
-  const query = `
-    SELECT
-      pl.id,
-      pl.store_id,
-      pl.slug,
-      pl.background_color,
-      pl.color,
-      pl.position,
-      pl.priority,
-      pl.sort_order,
-      pl.is_active,
-      pl.conditions,
-      pl.created_at,
-      pl.updated_at,
-      COALESCE(plt.name, pl.name) as name,
-      COALESCE(plt.text, pl.text) as text
-    FROM product_labels pl
-    LEFT JOIN product_label_translations plt ON pl.id = plt.product_label_id AND plt.language_code = $${paramIndex}
-    ${whereClause}
-    ORDER BY pl.sort_order ASC, pl.priority DESC, pl.name ASC
-  `;
-
-  const { data, error } = await tenantDb.rpc('exec_sql', {
-    sql_query: query,
-    params: [...replacements, lang]
-  });
-
-  if (error) throw new Error(error.message);
-  return data || [];
+  return labels;
 }
 
 /**
  * Get single product label with ALL translations
  */
 async function getProductLabelWithAllTranslations(tenantDb, id) {
-  const query = `
-    SELECT
-      pl.id,
-      pl.store_id,
-      pl.name,
-      pl.slug,
-      pl.text,
-      pl.background_color,
-      pl.color,
-      pl.position,
-      pl.priority,
-      pl.sort_order,
-      pl.is_active,
-      pl.conditions,
-      pl.created_at,
-      pl.updated_at,
-      COALESCE(
-        json_object_agg(
-          t.language_code,
-          json_build_object('name', t.name, 'text', t.text)
-        ) FILTER (WHERE t.language_code IS NOT NULL),
-        '{}'::json
-      ) as translations
-    FROM product_labels pl
-    LEFT JOIN product_label_translations t ON pl.id = t.product_label_id
-    WHERE pl.id = $1
-    GROUP BY pl.id
-  `;
+  const label = await tenantDb
+    .select('*')
+    .from('product_labels')
+    .where('id', id)
+    .first();
 
-  const { data, error } = await tenantDb.rpc('exec_sql', {
-    sql_query: query,
-    params: [id]
-  });
+  if (!label) return null;
 
-  if (error) throw new Error(error.message);
-  return data?.[0] || null;
+  // Fetch all translations for this label
+  const translations = await tenantDb
+    .select('language_code', 'name', 'text')
+    .from('product_label_translations')
+    .where('product_label_id', label.id);
+
+  // Build translations object { en: { name: '...', text: '...' }, nl: { ... } }
+  label.translations = translations.reduce((acc, t) => {
+    acc[t.language_code] = { name: t.name, text: t.text };
+    return acc;
+  }, {});
+
+  return label;
 }
 
 /**
