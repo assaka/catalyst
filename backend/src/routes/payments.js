@@ -2,6 +2,7 @@ const express = require('express');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/auth');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { getMasterStore, getMasterStoreSafe, updateMasterStore } = require('../utils/dbHelpers');
 const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
@@ -60,10 +61,8 @@ router.get('/connect-status', authMiddleware, authorize(['admin', 'store_owner']
       });
     }
 
-    // Get store and check for stripe_account_id
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { Store } = connection.models;
-    const store = await Store.findByPk(store_id);
+    // Get store and check for stripe_account_id (from master DB)
+    const store = await getMasterStoreSafe(store_id);
     if (!store || !store.stripe_account_id) {
       return res.json({
         success: true,
@@ -116,7 +115,7 @@ router.get('/connect-status', authMiddleware, authorize(['admin', 'store_owner']
       try {
         const currentSettings = store.settings || {};
         if (!currentSettings.stripe_onboarding_complete) {
-          await store.update({
+          await updateMasterStore(store_id, {
             settings: {
               ...currentSettings,
               stripe_onboarding_complete: true,

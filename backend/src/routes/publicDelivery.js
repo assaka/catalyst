@@ -16,25 +16,32 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { DeliverySettings } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const deliverySettings = await DeliverySettings.findAll({
-      where: { store_id: store_id },
-      attributes: [
-        'id',
-        'enable_delivery_date',
-        'enable_comments',
-        'offset_days',
-        'max_advance_days',
-        'blocked_dates',
-        'blocked_weekdays',
-        'out_of_office_start',
-        'out_of_office_end',
-        'delivery_time_slots'
-      ]
-    });
+    const { data: deliverySettings, error } = await tenantDb
+      .from('delivery_settings')
+      .select(`
+        id,
+        enable_delivery_date,
+        enable_comments,
+        offset_days,
+        max_advance_days,
+        blocked_dates,
+        blocked_weekdays,
+        out_of_office_start,
+        out_of_office_end,
+        delivery_time_slots
+      `)
+      .eq('store_id', store_id);
+
+    if (error) {
+      console.error('Error fetching delivery settings:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch delivery settings',
+        error: error.message
+      });
+    }
 
     res.json({
       success: true,

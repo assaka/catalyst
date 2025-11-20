@@ -6,7 +6,9 @@
       "Bash(git push)",
       "Bash(git add:*)",
       "Bash(git push:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nConvert supabase-integration service from Sequelize to ConnectionManager\n\n- Replace IntegrationConfig model with direct knex queries to integration_configs table\n- All queries now use ConnectionManager.getConnection(storeId)\n- Maintain support for connection status tracking, config updates, and disconnection flows\n- Service manages Supabase OAuth integrations with storeId-based tenant isolation\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nConvert supabase-integration service from Sequelize to ConnectionManager\n\n- Replace IntegrationConfig model with direct knex queries to integration_configs table\n- All queries now use ConnectionManager.getConnection(storeId)\n- Maintain support for connection status tracking, config updates, and disconnection flows\n- Service manages Supabase OAuth integrations with storeId-based tenant isolation\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git reset:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": [],

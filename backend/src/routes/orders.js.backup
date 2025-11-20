@@ -131,32 +131,24 @@ router.post('/finalize-order', async (req, res) => {
 
     console.log('🎯 Finalizing order for session:', session_id);
 
-    const store_id = req.headers['x-store-id'] || req.body.store_id;
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
+    // Find the order by payment reference
+    const order = await Order.findOne({
+      where: {
+        [Op.or]: [
+          { payment_reference: session_id },
+          { stripe_session_id: session_id },
+          { stripe_payment_intent_id: session_id }
+        ]
+      }
+    });
 
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-
-    // Find the order by payment reference using Supabase
-    const { data: orders, error: orderError } = await tenantDb
-      .from('sales_orders')
-      .select('*')
-      .or(`payment_reference.eq.${session_id},stripe_session_id.eq.${session_id},stripe_payment_intent_id.eq.${session_id}`)
-      .maybeSingle();
-
-    if (orderError || !orders) {
-      console.error('❌ Order not found for session:', session_id, orderError);
+    if (!order) {
+      console.error('❌ Order not found for session:', session_id);
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
-
-    const order = orders;
 
     console.log('✅ Found order:', order.id, 'Current status:', order.status, 'Payment status:', order.payment_status);
 
@@ -171,14 +163,8 @@ router.post('/finalize-order', async (req, res) => {
     }
 
     // Get the store for the connected account
-    const masterDb = await ConnectionManager.getMasterConnection();
-    const { data: store, error: storeError } = await masterDb
-      .from('stores')
-      .select('*')
-      .eq('id', order.store_id)
-      .maybeSingle();
-
-    if (storeError || !store) {
+    const store = await Store.findByPk(order.store_id);
+    if (!store) {
       return res.status(404).json({
         success: false,
         message: 'Store not found'
@@ -215,23 +201,137 @@ router.post('/finalize-order', async (req, res) => {
 
     // Update order status
     console.log('🔄 Updating order status to processing/paid...');
-    const { error: updateError } = await tenantDb
-      .from('sales_orders')
-      .update({
-        status: 'processing',
-        payment_status: 'paid',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', order.id);
-
-    if (updateError) {
-      throw new Error(updateError.message);
-    }
+    await order.update({
+      status: 'processing',
+      payment_status: 'paid',
+      updatedAt: new Date()
+    });
 
     console.log('✅ Order status updated successfully');
 
     // NOTE: Email sending is handled by the Stripe webhook (webhook-connect)
     // This is the authoritative source since it's Stripe's official confirmation
+    // Commenting out duplicate email logic here to prevent double emails
+    /*
+    // Send confirmation email
+    try {
+      console.log('📧 Sending order confirmation email to:', order.customer_email);
+
+      const orderWithDetails = await Order.findByPk(order.id, {
+        include: [{
+          model: OrderItem,
+          as: 'OrderItems',
+          include: [{
+            model: Product,
+            attributes: ['id', 'sku']
+          }]
+        }, {
+          model: Store,
+          as: 'Store',
+          attributes: ['id', 'name', 'slug', 'currency', 'settings'] // Explicitly include settings
+        }]
+      });
+
+      // Try to get customer details
+      let customer = null;
+      if (order.customer_id) {
+        customer = await Customer.findByPk(order.customer_id);
+      }
+
+      // Extract customer name from shipping/billing address if customer not found
+      const customerName = customer
+        ? `${customer.first_name} ${customer.last_name}`
+        : (order.shipping_address?.full_name || order.shipping_address?.name || order.billing_address?.full_name || order.billing_address?.name || 'Customer');
+
+      const [firstName, ...lastNameParts] = customerName.split(' ');
+      const lastName = lastNameParts.join(' ') || '';
+
+      // Send order success email
+      await emailService.sendTransactionalEmail(order.store_id, 'order_success_email', {
+        recipientEmail: order.customer_email,
+        customer: customer || {
+          first_name: firstName,
+          last_name: lastName,
+          email: order.customer_email
+        },
+        order: orderWithDetails.toJSON(),
+        store: orderWithDetails.Store
+      });
+
+      console.log('✅ Order confirmation email sent successfully');
+
+      // Check if auto-invoice is enabled in sales settings
+      const salesSettings = store.settings?.sales_settings || {};
+      if (salesSettings.auto_invoice_enabled) {
+        console.log('📧 Auto-invoice enabled, sending invoice email...');
+
+        try {
+          // Check if PDF attachment should be included
+          let attachments = [];
+          if (salesSettings.auto_invoice_pdf_enabled) {
+            console.log('📄 Generating PDF invoice...');
+            const pdfService = require('../services/pdf-service');
+
+            // Generate invoice PDF
+            const invoicePdf = await pdfService.generateInvoicePDF(
+              orderWithDetails,
+              orderWithDetails.Store,
+              orderWithDetails.OrderItems
+            );
+
+            attachments = [{
+              filename: pdfService.getInvoiceFilename(orderWithDetails),
+              content: invoicePdf.toString('base64'),
+              contentType: 'application/pdf'
+            }];
+
+            console.log('✅ PDF invoice generated successfully');
+          }
+
+          // Send invoice email
+          await emailService.sendTransactionalEmail(order.store_id, 'invoice_email', {
+            recipientEmail: order.customer_email,
+            customer: customer || {
+              first_name: firstName,
+              last_name: lastName,
+              email: order.customer_email
+            },
+            order: orderWithDetails.toJSON(),
+            store: orderWithDetails.Store,
+            attachments: attachments
+          });
+
+          console.log('✅ Invoice email sent successfully');
+
+          // Create invoice record to track that invoice was sent
+          try {
+            // Generate invoice number (in case hook doesn't fire)
+            const invoiceNumber = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
+            await Invoice.create({
+              invoice_number: invoiceNumber,
+              order_id: order.id,
+              store_id: order.store_id,
+              customer_email: order.customer_email,
+              pdf_generated: salesSettings.auto_invoice_pdf_enabled || false,
+              email_status: 'sent'
+            });
+            console.log('✅ Invoice record created');
+          } catch (invoiceCreateError) {
+            console.error('❌ Failed to create invoice record:', invoiceCreateError);
+            // Don't fail if invoice record creation fails
+          }
+        } catch (invoiceError) {
+          console.error('❌ Failed to send invoice email:', invoiceError);
+          // Don't fail the request if invoice email fails
+        }
+      }
+    } catch (emailError) {
+      console.error('❌ Failed to send confirmation email:', emailError);
+      // Don't fail the request if email fails
+    }
+    */
+
     console.log('📧 Email sending disabled in finalize-order - Stripe webhook will handle all emails');
     console.log('📧 This prevents duplicate emails since finalize-order runs before webhook');
 
@@ -263,46 +363,48 @@ router.post('/finalize-order', async (req, res) => {
 router.get('/db-diagnostic/:sessionId', async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const store_id = req.headers['x-store-id'] || req.query.store_id;
-
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-
-    // Query using Supabase client
-    const { data: orderResult, error: orderError } = await tenantDb
-      .from('sales_orders')
-      .select('id, order_number, customer_email, total_amount, store_id, created_at')
-      .or(`payment_reference.eq.${sessionId},stripe_payment_intent_id.eq.${sessionId},stripe_session_id.eq.${sessionId}`)
-      .maybeSingle();
-
+    const { QueryTypes } = require('sequelize');
+    const { sequelize } = require('../database/connection');
+    
+    // Direct SQL queries to check database state
+    const orderResult = await sequelize.query(
+      `SELECT id, order_number, customer_email, total_amount, store_id, created_at
+       FROM sales_orders
+       WHERE payment_reference = :sessionId
+          OR stripe_payment_intent_id = :sessionId
+          OR stripe_session_id = :sessionId`,
+      {
+        replacements: { sessionId },
+        type: QueryTypes.SELECT
+      }
+    );
+    
     let orderItemsResult = [];
-    if (orderResult) {
-      const { data: items } = await tenantDb
-        .from('sales_order_items')
-        .select('id, order_id, product_id, product_name, quantity, unit_price, total_price, created_at')
-        .eq('order_id', orderResult.id);
-
-      orderItemsResult = items || [];
+    if (orderResult.length > 0) {
+      const orderId = orderResult[0].id;
+      orderItemsResult = await sequelize.query(
+        `SELECT id, order_id, product_id, product_name, quantity, unit_price, total_price, created_at
+         FROM sales_order_items
+         WHERE order_id = :orderId`,
+        {
+          replacements: { orderId },
+          type: QueryTypes.SELECT
+        }
+      );
     }
-
+    
     res.json({
       diagnostic: true,
       timestamp: new Date().toISOString(),
       session_id: sessionId,
-      order_found: !!orderResult,
-      order_data: orderResult || null,
+      order_found: orderResult.length > 0,
+      order_data: orderResult[0] || null,
       order_items_count: orderItemsResult.length,
       order_items: orderItemsResult
     });
-
+    
   } catch (error) {
-    res.status(500).json({
+    res.status(500).json({ 
       diagnostic: true,
       error: error.message,
       stack: error.stack
@@ -320,41 +422,38 @@ router.get('/deployment-check', (req, res) => {
   });
 });
 
-// Test endpoint - direct query
+// Test endpoint - direct SQL bypass
 router.get('/test-direct/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
-    const store_id = req.headers['x-store-id'] || req.query.store_id;
-
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-
-    // Query using Supabase client
-    const { data: order, error: orderError } = await tenantDb
-      .from('sales_orders')
-      .select('*')
-      .eq('id', orderId)
-      .maybeSingle();
-
-    const { data: items, error: itemsError } = await tenantDb
-      .from('sales_order_items')
-      .select('*')
-      .eq('order_id', orderId);
-
+    const { QueryTypes } = require('sequelize');
+    const { sequelize } = require('../database/connection');
+    
+    // Direct SQL queries
+    const orderResult = await sequelize.query(
+      'SELECT * FROM sales_orders WHERE id = :orderId',
+      {
+        replacements: { orderId },
+        type: QueryTypes.SELECT
+      }
+    );
+    
+    const itemsResult = await sequelize.query(
+      'SELECT * FROM sales_order_items WHERE order_id = :orderId',
+      {
+        replacements: { orderId },
+        type: QueryTypes.SELECT
+      }
+    );
+    
     res.json({
-      order_found: !!order,
-      order: order || null,
-      items_count: (items || []).length,
-      items: items || [],
+      order_found: orderResult.length > 0,
+      order: orderResult[0] || null,
+      items_count: itemsResult.length,
+      items: itemsResult,
       timestamp: new Date().toISOString()
     });
-
+    
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -406,43 +505,32 @@ router.get('/customer-orders', authMiddleware, async (req, res) => {
 
     console.log('🔍 Where clause:', JSON.stringify(whereClause, null, 2));
 
-    const store_id = customerStoreId || req.headers['x-store-id'] || req.query.store_id;
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-
-    // Query orders using Supabase (no includes, query separately)
-    let ordersQuery = tenantDb
-      .from('sales_orders')
-      .select('*')
-      .eq('customer_id', customerId)
-      .order('created_at', { ascending: false });
-
-    if (customerStoreId) {
-      ordersQuery = ordersQuery.eq('store_id', customerStoreId);
-    }
-
-    const { data: orders, error: ordersError } = await ordersQuery;
-
-    if (ordersError) {
-      console.error('Error fetching orders:', ordersError);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to fetch orders'
-      });
-    }
-
+    const orders = await Order.findAll({
+      where: whereClause,
+      order: [['created_at', 'DESC']],
+      include: [
+        {
+          model: Store,
+          attributes: ['id', 'name', 'logo_url', 'user_id']
+        },
+        {
+          model: OrderItem,
+          include: [
+            {
+              model: Product,
+              attributes: ['id', 'sku', 'images', 'price']
+            }
+          ]
+        }
+      ]
+    });
+    
     console.log('🔍 Enhanced query executed successfully');
-    console.log('🔍 Found orders for customer:', orders?.length || 0);
+    console.log('🔍 Found orders for customer:', orders.length);
     
     // Add payment method details if available
-    const ordersWithDetails = (orders || []).map(order => {
-      const orderData = order; // Already plain object from Supabase
+    const ordersWithDetails = orders.map(order => {
+      const orderData = order.toJSON();
       
       // Parse payment method details if stored as JSON
       if (orderData.payment_method_details) {
@@ -506,7 +594,7 @@ router.put('/customer-orders/:orderId/status', authMiddleware, validateCustomerO
   try {
     const { orderId } = req.params;
     const { status, notes } = req.body;
-
+    
     // Only allow customer role to access this endpoint
     if (req.user?.role !== 'customer') {
       return res.status(403).json({
@@ -516,20 +604,8 @@ router.put('/customer-orders/:orderId/status', authMiddleware, validateCustomerO
     }
 
     const customerId = req.user.id;
-    const customerStoreId = req.user.store_id;
     console.log('🔍 Customer updating order status:', { orderId, status, customerId });
-
-    // Get store_id
-    const store_id = customerStoreId || req.headers['x-store-id'] || req.body.store_id;
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-
+    
     // Validate status
     const allowedStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded', 'return_requested'];
     if (!allowedStatuses.includes(status)) {
@@ -538,26 +614,26 @@ router.put('/customer-orders/:orderId/status', authMiddleware, validateCustomerO
         message: `Invalid status. Allowed statuses: ${allowedStatuses.join(', ')}`
       });
     }
-
+    
     // Find the order and verify it belongs to the customer
-    const { data: order, error: orderError } = await tenantDb
-      .from('sales_orders')
-      .select('*')
-      .eq('id', orderId)
-      .eq('customer_id', customerId)
-      .maybeSingle();
-
-    if (orderError || !order) {
+    const order = await Order.findOne({
+      where: { 
+        id: orderId,
+        customer_id: customerId 
+      }
+    });
+    
+    if (!order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found or access denied'
       });
     }
-
+    
     // Allow customers to perform limited actions based on current status
     if (req.user.role === 'customer') {
       const currentStatus = order.status?.toLowerCase();
-
+      
       // Define allowed transitions for customers (more restrictive)
       const allowedTransitions = {
         'pending': ['cancelled'],
@@ -565,16 +641,16 @@ router.put('/customer-orders/:orderId/status', authMiddleware, validateCustomerO
         'shipped': ['return_requested'],
         'delivered': ['return_requested']
       };
-
+      
       const allowedStatusesForCurrent = allowedTransitions[currentStatus] || [];
-
+      
       if (!allowedStatusesForCurrent.includes(status)) {
         return res.status(403).json({
           success: false,
           message: `Cannot change order from ${currentStatus} to ${status}. Customer allowed changes: ${allowedStatusesForCurrent.join(', ') || 'none'}`
         });
       }
-
+      
       // Additional validation for final statuses
       if (['cancelled', 'refunded', 'return_requested'].includes(currentStatus)) {
         return res.status(400).json({
@@ -583,38 +659,24 @@ router.put('/customer-orders/:orderId/status', authMiddleware, validateCustomerO
         });
       }
     }
-
+    
     // Update the order
-    const { error: updateError } = await tenantDb
-      .from('sales_orders')
-      .update({
-        status,
-        status_notes: notes || null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', orderId);
-
-    if (updateError) {
-      throw new Error(updateError.message);
-    }
-
-    // Fetch updated order
-    const { data: updatedOrder } = await tenantDb
-      .from('sales_orders')
-      .select('*')
-      .eq('id', orderId)
-      .single();
+    await order.update({
+      status,
+      status_notes: notes || null,
+      updated_at: new Date()
+    });
     
     console.log('🔍 Order status updated successfully:', { orderId, oldStatus: order.status, newStatus: status });
-
+    
     res.json({
       success: true,
       message: 'Order status updated successfully',
       data: {
-        id: updatedOrder.id,
-        status: updatedOrder.status,
-        status_notes: updatedOrder.status_notes,
-        updated_at: updatedOrder.updated_at
+        id: order.id,
+        status: order.status,
+        status_notes: order.status_notes,
+        updated_at: order.updated_at
       }
     });
   } catch (error) {
@@ -644,11 +706,10 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
     }
 
     const customerId = req.user.id;
-    const customerStoreId = req.user.store_id;
     console.log('🔍 Loading orders for customer ID:', customerId);
     console.log('🔍 Customer ID type:', typeof customerId);
     console.log('🔍 Customer ID length:', customerId?.length);
-
+    
     // Validate that customerId is a valid UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!customerId || !uuidRegex.test(customerId)) {
@@ -659,36 +720,19 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
       });
     }
 
-    // Get store_id
-    const store_id = customerStoreId || req.headers['x-store-id'] || req.query.store_id;
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-
     // Simple query without complex associations to avoid 500 errors
-    console.log('🔍 About to execute Supabase query with customer_id:', customerId);
-
-    const { data: orders, error: ordersError } = await tenantDb
-      .from('sales_orders')
-      .select('*')
-      .eq('customer_id', customerId)
-      .order('created_at', { ascending: false });
-
-    if (ordersError) {
-      console.error('Error fetching orders:', ordersError);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to fetch orders'
-      });
-    }
-
+    console.log('🔍 About to execute Sequelize query with customer_id:', customerId);
+    
+    const whereClause = { customer_id: customerId };
+    console.log('🔍 Where clause:', JSON.stringify(whereClause, null, 2));
+    
+    const orders = await Order.findAll({
+      where: whereClause,
+      order: [['created_at', 'DESC']]
+    });
+    
     console.log('🔍 Query executed successfully');
-    console.log('🔍 Found orders for customer:', orders?.length || 0);
+    console.log('🔍 Found orders for customer:', orders.length);
 
     res.json({
       success: true,
@@ -880,17 +924,9 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
 
     const { store_id, items, ...orderData } = req.body;
 
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    const masterDb = await ConnectionManager.getMasterConnection();
-
     // Check store ownership
-    const { data: store, error: storeError } = await masterDb
-      .from('stores')
-      .select('*')
-      .eq('id', store_id)
-      .maybeSingle();
-
-    if (storeError || !store) {
+    const store = await Store.findByPk(store_id);
+    if (!store) {
       return res.status(404).json({
         success: false,
         message: 'Store not found'
@@ -900,7 +936,7 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
       const access = await checkUserStoreAccess(req.user.id, store.id);
-
+      
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -909,49 +945,29 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
       }
     }
 
-    // Create order
-    const { data: order, error: orderError } = await tenantDb
-      .from('sales_orders')
-      .insert({ ...orderData, store_id })
-      .select()
-      .single();
-
-    if (orderError) {
-      throw new Error(orderError.message);
-    }
+    const order = await Order.create({ ...orderData, store_id });
 
     // Create order items
-    const orderItemsData = items.map(item => ({
+    const orderItems = items.map(item => ({
       ...item,
       order_id: order.id
     }));
 
-    const { error: itemsError } = await tenantDb
-      .from('sales_order_items')
-      .insert(orderItemsData);
+    await OrderItem.bulkCreate(orderItems);
 
-    if (itemsError) {
-      throw new Error(itemsError.message);
-    }
-
-    // Fetch the complete order with items
-    const { data: completeOrder, error: fetchError } = await tenantDb
-      .from('sales_orders')
-      .select('*')
-      .eq('id', order.id)
-      .single();
-
-    if (fetchError) {
-      throw new Error(fetchError.message);
-    }
-
-    // Load order items
-    const { data: orderItems } = await tenantDb
-      .from('sales_order_items')
-      .select('*')
-      .eq('order_id', order.id);
-
-    completeOrder.OrderItems = orderItems || [];
+    // Fetch the complete order
+    const completeOrder = await Order.findByPk(order.id, {
+      include: [
+        {
+          model: Store,
+          attributes: ['id', 'name']
+        },
+        {
+          model: OrderItem,
+          include: [{ model: Product, attributes: ['id', 'sku'] }]
+        }
+      ]
+    });
 
     // Send order success email asynchronously
     try {
@@ -962,12 +978,7 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
       // Get customer information
       let customer = null;
       if (completeOrder.customer_id) {
-        const { data: customerData } = await tenantDb
-          .from('customers')
-          .select('*')
-          .eq('id', completeOrder.customer_id)
-          .maybeSingle();
-        customer = customerData;
+        customer = await Customer.findByPk(completeOrder.customer_id);
         console.log('📧 Customer found:', customer ? `${customer.first_name} ${customer.last_name}` : 'Not found');
       }
 
@@ -985,8 +996,8 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
       emailService.sendTransactionalEmail(store_id, 'order_success_email', {
         recipientEmail: completeOrder.customer_email,
         customer,
-        order: completeOrder,
-        store: store,
+        order: completeOrder.toJSON(),
+        store: store.toJSON(),
         languageCode: 'en' // TODO: Get from customer preferences or order metadata
       }).then((result) => {
         if (result.success) {
@@ -1025,49 +1036,25 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
 // @access  Private
 router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const store_id = req.headers['x-store-id'] || req.body.store_id;
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    const masterDb = await ConnectionManager.getMasterConnection();
-
-    const { data: order, error: orderError } = await tenantDb
-      .from('sales_orders')
-      .select('*')
-      .eq('id', req.params.id)
-      .maybeSingle();
-
-    if (orderError || !order) {
+    const order = await Order.findByPk(req.params.id, {
+      include: [{
+        model: Store,
+        attributes: ['id', 'name', 'user_id']
+      }]
+    });
+    
+    if (!order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
 
-    // Load store
-    const { data: store } = await masterDb
-      .from('stores')
-      .select('id, name, user_id')
-      .eq('id', order.store_id)
-      .maybeSingle();
-
-    if (!store) {
-      return res.status(404).json({
-        success: false,
-        message: 'Store not found'
-      });
-    }
-
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, store.id);
-
+      const access = await checkUserStoreAccess(req.user.id, order.Store.id);
+      
       if (!access) {
         return res.status(403).json({
           success: false,
@@ -1076,24 +1063,12 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
       }
     }
 
-    const { data: updatedOrder, error: updateError } = await tenantDb
-      .from('sales_orders')
-      .update({
-        ...req.body,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', req.params.id)
-      .select()
-      .single();
-
-    if (updateError) {
-      throw new Error(updateError.message);
-    }
+    await order.update(req.body);
 
     res.json({
       success: true,
       message: 'Order updated successfully',
-      data: updatedOrder
+      data: order
     });
   } catch (error) {
     console.error('Update order error:', error);
@@ -1111,55 +1086,27 @@ router.post('/:id/resend-confirmation', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const store_id = req.headers['x-store-id'] || req.body.store_id;
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    const masterDb = await ConnectionManager.getMasterConnection();
-
     // Load order with all details
-    const { data: order, error: orderError } = await tenantDb
-      .from('sales_orders')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
+    const order = await Order.findByPk(id, {
+      include: [
+        {
+          model: OrderItem,
+          as: 'OrderItems',
+          include: [{ model: Product, as: 'Product' }]
+        },
+        { model: Store, as: 'Store' }
+      ]
+    });
 
-    if (orderError || !order) {
+    if (!order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
 
-    // Load order items
-    const { data: orderItems } = await tenantDb
-      .from('sales_order_items')
-      .select('*')
-      .eq('order_id', order.id);
-
-    order.OrderItems = orderItems || [];
-
-    // Load store
-    const { data: store } = await masterDb
-      .from('stores')
-      .select('*')
-      .eq('id', order.store_id)
-      .maybeSingle();
-
-    if (!store) {
-      return res.status(404).json({
-        success: false,
-        message: 'Store not found'
-      });
-    }
-
     // Get customer details
-    const customer = order.customer_id ? await tenantDb.from("customers").select("*").eq("id", order.customer_id).maybeSingle().then(r => r.data) : null;
+    const customer = order.customer_id ? await Customer.findByPk(order.customer_id) : null;
 
     // Parse customer name from billing address
     let firstName = 'Customer';
@@ -1175,8 +1122,8 @@ router.post('/:id/resend-confirmation', authMiddleware, async (req, res) => {
     await emailService.sendTransactionalEmail(order.store_id, 'order_success_email', {
       recipientEmail: order.customer_email,
       customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
-      order: order,
-      store: store
+      order: order.toJSON(),
+      store: order.Store
     });
 
     res.json({
@@ -1201,57 +1148,27 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
     const { id } = req.params;
     const { withPdf = true } = req.body;
 
-    const store_id = req.headers['x-store-id'] || req.body.store_id;
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    const masterDb = await ConnectionManager.getMasterConnection();
-
     // Load order with all details
-    const { data: order, error: orderError } = await tenantDb
-      .from('sales_orders')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
+    const order = await Order.findByPk(id, {
+      include: [
+        {
+          model: OrderItem,
+          as: 'OrderItems',
+          include: [{ model: Product, as: 'Product' }]
+        },
+        { model: Store, as: 'Store' }
+      ]
+    });
 
-    if (orderError || !order) {
+    if (!order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
 
-    // Load order items
-    const { data: orderItems } = await tenantDb
-      .from('sales_order_items')
-      .select('*')
-      .eq('order_id', order.id);
-
-    order.OrderItems = orderItems || [];
-
-    // Load store
-    const { data: store } = await masterDb
-      .from('stores')
-      .select('*')
-      .eq('id', order.store_id)
-      .maybeSingle();
-
-    if (!store) {
-      return res.status(404).json({
-        success: false,
-        message: 'Store not found'
-      });
-    }
-
-    order.Store = store;
-
     // Get customer details
-    const customer = order.customer_id ? await tenantDb.from("customers").select("*").eq("id", order.customer_id).maybeSingle().then(r => r.data) : null;
+    const customer = order.customer_id ? await Customer.findByPk(order.customer_id) : null;
 
     // Parse customer name from billing address
     let firstName = 'Customer';
@@ -1264,11 +1181,7 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
     }
 
     // Check if invoice already exists
-    const { data: invoice } = await tenantDb
-      .from('invoices')
-      .select('*')
-      .eq('order_id', id)
-      .maybeSingle();
+    let invoice = await Invoice.findOne({ where: { order_id: id } });
 
     // Generate invoice number once (reuse if invoice exists)
     const invoiceNumber = invoice ? invoice.invoice_number : ('INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase());
@@ -1297,7 +1210,7 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
     await emailService.sendTransactionalEmail(order.store_id, 'invoice_email', {
       recipientEmail: order.customer_email,
       customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
-      order: order,
+      order: order.toJSON(),
       store: order.Store,
       invoice_number: invoiceNumber,
       invoice_date: new Date().toLocaleDateString(),
@@ -1305,63 +1218,35 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
     });
 
     // Create or update invoice record
-    let updatedInvoice;
     if (invoice) {
-      const { data: updated, error: updateError } = await tenantDb
-        .from('invoices')
-        .update({
-          sent_at: new Date().toISOString(),
-          pdf_generated: pdfGeneratedSuccessfully,
-          email_status: 'sent'
-        })
-        .eq('id', invoice.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        throw new Error(updateError.message);
-      }
-      updatedInvoice = updated;
+      await invoice.update({
+        sent_at: new Date(),
+        pdf_generated: pdfGeneratedSuccessfully,
+        email_status: 'sent'
+      });
     } else {
-      const { data: created, error: createError } = await tenantDb
-        .from('invoices')
-        .insert({
-          invoice_number: invoiceNumber,
-          order_id: id,
-          store_id: order.store_id,
-          customer_email: order.customer_email,
-          pdf_generated: pdfGeneratedSuccessfully,
-          email_status: 'sent'
-        })
-        .select()
-        .single();
-
-      if (createError) {
-        throw new Error(createError.message);
-      }
-      updatedInvoice = created;
+      invoice = await Invoice.create({
+        invoice_number: invoiceNumber,
+        order_id: id,
+        store_id: order.store_id,
+        customer_email: order.customer_email,
+        pdf_generated: pdfGeneratedSuccessfully,
+        email_status: 'sent'
+      });
     }
 
     // Update order status to 'processing' when invoice is sent
     if (order.status === 'pending') {
-      const { error: orderUpdateError } = await tenantDb
-        .from('sales_orders')
-        .update({
-          status: 'processing',
-          payment_status: 'paid',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (orderUpdateError) {
-        throw new Error(orderUpdateError.message);
-      }
+      await order.update({
+        status: 'processing',
+        payment_status: 'paid'
+      });
     }
 
     res.json({
       success: true,
       message: 'Invoice email sent successfully',
-      data: { invoice_id: updatedInvoice.id }
+      data: { invoice_id: invoice.id }
     });
   } catch (error) {
     console.error('Send invoice error:', error);
@@ -1381,57 +1266,27 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
     const { id } = req.params;
     const { trackingNumber, trackingUrl, carrier, estimatedDeliveryDate } = req.body;
 
-    const store_id = req.headers['x-store-id'] || req.body.store_id;
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    const masterDb = await ConnectionManager.getMasterConnection();
-
     // Load order with all details
-    const { data: order, error: orderError } = await tenantDb
-      .from('sales_orders')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
+    const order = await Order.findByPk(id, {
+      include: [
+        {
+          model: OrderItem,
+          as: 'OrderItems',
+          include: [{ model: Product, as: 'Product' }]
+        },
+        { model: Store, as: 'Store' }
+      ]
+    });
 
-    if (orderError || !order) {
+    if (!order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
 
-    // Load order items
-    const { data: orderItems } = await tenantDb
-      .from('sales_order_items')
-      .select('*')
-      .eq('order_id', order.id);
-
-    order.OrderItems = orderItems || [];
-
-    // Load store
-    const { data: store } = await masterDb
-      .from('stores')
-      .select('*')
-      .eq('id', order.store_id)
-      .maybeSingle();
-
-    if (!store) {
-      return res.status(404).json({
-        success: false,
-        message: 'Store not found'
-      });
-    }
-
-    order.Store = store;
-
     // Get customer details
-    const customer = order.customer_id ? await tenantDb.from("customers").select("*").eq("id", order.customer_id).maybeSingle().then(r => r.data) : null;
+    const customer = order.customer_id ? await Customer.findByPk(order.customer_id) : null;
 
     // Parse customer name from billing address
     let firstName = 'Customer';
@@ -1445,25 +1300,11 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
 
     // Update order tracking info if provided
     if (trackingNumber) {
-      const { error: updateError } = await tenantDb
-        .from('sales_orders')
-        .update({
-          tracking_number: trackingNumber,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (updateError) {
-        throw new Error(updateError.message);
-      }
+      await order.update({ tracking_number: trackingNumber });
     }
 
     // Check if shipment already exists
-    const { data: shipment } = await tenantDb
-      .from('shipments')
-      .select('*')
-      .eq('order_id', id)
-      .maybeSingle();
+    let shipment = await Shipment.findOne({ where: { order_id: id } });
 
     // Check if PDF should be generated for shipment
     const salesSettings = order.Store.settings?.sales_settings || {};
@@ -1497,7 +1338,7 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
     await emailService.sendTransactionalEmail(order.store_id, 'shipment_email', {
       recipientEmail: order.customer_email,
       customer: customer || { first_name: firstName, last_name: lastName, email: order.customer_email },
-      order: order,
+      order: order.toJSON(),
       store: order.Store,
       tracking_number: trackingNumber || order.tracking_number || 'Not provided',
       tracking_url: trackingUrl || '',
@@ -1508,74 +1349,46 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
     });
 
     // Create or update shipment record
-    let updatedShipment;
     if (shipment) {
-      const { data: updated, error: updateError } = await tenantDb
-        .from('shipments')
-        .update({
-          sent_at: new Date().toISOString(),
-          tracking_number: trackingNumber || shipment.tracking_number,
-          tracking_url: trackingUrl || shipment.tracking_url,
-          carrier: carrier || shipment.carrier,
-          estimated_delivery_date: estimatedDeliveryDate || shipment.estimated_delivery_date,
-          email_status: 'sent'
-        })
-        .eq('id', shipment.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        throw new Error(updateError.message);
-      }
-      updatedShipment = updated;
+      await shipment.update({
+        sent_at: new Date(),
+        tracking_number: trackingNumber || shipment.tracking_number,
+        tracking_url: trackingUrl || shipment.tracking_url,
+        carrier: carrier || shipment.carrier,
+        estimated_delivery_date: estimatedDeliveryDate || shipment.estimated_delivery_date,
+        email_status: 'sent'
+      });
     } else {
       // Generate shipment number (in case hook doesn't fire)
       const shipmentNumber = 'SHIP-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
 
-      const { data: created, error: createError } = await tenantDb
-        .from('shipments')
-        .insert({
-          shipment_number: shipmentNumber,
-          order_id: id,
-          store_id: order.store_id,
-          customer_email: order.customer_email,
-          tracking_number: trackingNumber || order.tracking_number,
-          tracking_url: trackingUrl,
-          carrier: carrier,
-          shipping_method: order.shipping_method,
-          estimated_delivery_date: estimatedDeliveryDate,
-          email_status: 'sent'
-        })
-        .select()
-        .single();
-
-      if (createError) {
-        throw new Error(createError.message);
-      }
-      updatedShipment = created;
+      shipment = await Shipment.create({
+        shipment_number: shipmentNumber,
+        order_id: id,
+        store_id: order.store_id,
+        customer_email: order.customer_email,
+        tracking_number: trackingNumber || order.tracking_number,
+        tracking_url: trackingUrl,
+        carrier: carrier,
+        shipping_method: order.shipping_method,
+        estimated_delivery_date: estimatedDeliveryDate,
+        email_status: 'sent'
+      });
     }
 
     // Update order status to shipped if not already
     if (order.status !== 'shipped' && order.status !== 'delivered') {
-      const { error: orderUpdateError } = await tenantDb
-        .from('sales_orders')
-        .update({
-          status: 'shipped',
-          fulfillment_status: 'shipped',
-          shipped_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (orderUpdateError) {
-        throw new Error(orderUpdateError.message);
-      }
+      await order.update({
+        status: 'shipped',
+        fulfillment_status: 'shipped',
+        shipped_at: new Date()
+      });
     }
 
     res.json({
       success: true,
       message: 'Shipment notification sent successfully',
-      data: { shipment_id: updatedShipment.id }
+      data: { shipment_id: shipment.id }
     });
   } catch (error) {
     console.error('Send shipment error:', error);
@@ -1596,16 +1409,12 @@ router.get('/test-invoice-settings/:storeId', async (req, res) => {
 
     console.log('🔍 Testing invoice settings for store:', storeId);
 
-    const masterDb = await ConnectionManager.getMasterConnection();
-
     // Load store with settings
-    const { data: store, error: storeError } = await masterDb
-      .from('stores')
-      .select('id, name, slug, currency, settings')
-      .eq('id', storeId)
-      .maybeSingle();
+    const store = await Store.findByPk(storeId, {
+      attributes: ['id', 'name', 'slug', 'currency', 'settings']
+    });
 
-    if (storeError || !store) {
+    if (!store) {
       return res.status(404).json({
         success: false,
         message: 'Store not found'
