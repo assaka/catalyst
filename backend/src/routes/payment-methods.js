@@ -186,7 +186,7 @@ router.post('/', [
       });
     }
 
-    const { store_id, ...methodData } = req.body;
+    const { store_id, translations, ...methodData } = req.body;
 
     // Check store access
     const hasAccess = await checkStoreAccess(store_id, req.user.id, req.user.role);
@@ -217,6 +217,27 @@ router.post('/', [
         message: 'Error creating payment method',
         error: error.message
       });
+    }
+
+    // Insert translations if provided
+    if (translations && Array.isArray(translations) && translations.length > 0) {
+      const translationRecords = translations.map(trans => ({
+        payment_method_id: method.id,
+        language_code: trans.language_code,
+        name: trans.name,
+        description: trans.description,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }));
+
+      const { error: transError } = await tenantDb
+        .from('payment_method_translations')
+        .insert(translationRecords);
+
+      if (transError) {
+        console.error('Error creating payment method translations:', transError);
+        // Note: We don't fail the whole request if translations fail
+      }
     }
 
     res.status(201).json({
@@ -289,10 +310,13 @@ router.put('/:id', [
       }
     }
 
+    // Separate translations from other data
+    const { translations, ...updateData } = req.body;
+
     const { data: method, error } = await tenantDb
       .from('payment_methods')
       .update({
-        ...req.body,
+        ...updateData,
         updated_at: new Date().toISOString()
       })
       .eq('id', req.params.id)
@@ -306,6 +330,44 @@ router.put('/:id', [
         message: 'Error updating payment method',
         error: error.message
       });
+    }
+
+    // Update translations if provided
+    if (translations && Array.isArray(translations) && translations.length > 0) {
+      for (const trans of translations) {
+        // Check if translation exists
+        const { data: existingTrans } = await tenantDb
+          .from('payment_method_translations')
+          .select('*')
+          .eq('payment_method_id', req.params.id)
+          .eq('language_code', trans.language_code)
+          .maybeSingle();
+
+        if (existingTrans) {
+          // Update existing translation
+          await tenantDb
+            .from('payment_method_translations')
+            .update({
+              name: trans.name,
+              description: trans.description,
+              updated_at: new Date().toISOString()
+            })
+            .eq('payment_method_id', req.params.id)
+            .eq('language_code', trans.language_code);
+        } else {
+          // Insert new translation
+          await tenantDb
+            .from('payment_method_translations')
+            .insert({
+              payment_method_id: req.params.id,
+              language_code: trans.language_code,
+              name: trans.name,
+              description: trans.description,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+        }
+      }
     }
 
     res.json({
