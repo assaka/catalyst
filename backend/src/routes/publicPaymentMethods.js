@@ -19,7 +19,6 @@ router.get('/', async (req, res) => {
     }
 
     const where = {
-      store_id: store_id,
       is_active: true  // Only show active payment methods
     };
 
@@ -27,7 +26,7 @@ router.get('/', async (req, res) => {
     console.log('🌍 Public Payment Methods: Requesting language:', lang);
 
     // Get payment methods with translations from normalized table
-    const paymentMethods = await getPaymentMethodsWithTranslations(where, lang);
+    const paymentMethods = await getPaymentMethodsWithTranslations(store_id, where, lang);
 
     console.log(`📦 Found ${paymentMethods.length} payment methods`);
     if (paymentMethods.length > 0) {
