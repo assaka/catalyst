@@ -4,6 +4,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 
 // @route   GET /api/public/cms-blocks
@@ -310,10 +311,14 @@ router.post('/', [
       blockData.placement = ['content']; // Default fallback
     }
 
+    // Generate UUID for the block
+    const blockId = uuidv4();
+
     // Create block in tenant database
     const { data: block, error } = await tenantDb
       .from('cms_blocks')
       .insert({
+        id: blockId,
         identifier: blockData.identifier,
         is_active: blockData.is_active !== undefined ? blockData.is_active : true,
         placement: blockData.placement,
