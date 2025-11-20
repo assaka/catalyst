@@ -1447,8 +1447,8 @@ router.post('/webhook', async (req, res) => {
                 last_name: lastName,
                 email: finalOrder.customer_email
               },
-              order: orderWithDetails.toJSON(),
-              store: orderWithDetails.Store.toJSON(),
+              order: orderWithDetails,
+              store: orderWithDetails.Store,
               languageCode: 'en'
             }).then(async () => {
               console.log('🎉 ========================================');
@@ -1599,7 +1599,7 @@ router.post('/webhook', async (req, res) => {
                           last_name: lastName,
                           email: finalOrder.customer_email
                         },
-                        order: orderWithDetails.toJSON(),
+                        order: orderWithDetails,
                         store: orderWithDetails.Store,
                         tracking_number: finalOrder.tracking_number || 'Will be provided soon',
                         tracking_url: finalOrder.tracking_url || '',
@@ -1739,14 +1739,16 @@ router.post('/webhook', async (req, res) => {
           let finalUserBalance = null;
           try {
             const masterConnection = require('../database/masterConnection');
-            const { masterSequelize } = masterConnection;
-            const [user] = await masterSequelize.query(`
-              SELECT id, email, credits FROM users WHERE id = $1
-            `, {
-              bind: [paymentIntent.metadata.user_id],
-              type: masterSequelize.QueryTypes.SELECT
-            });
+            const { masterDb } = masterConnection;
+            const { data: users, error } = await masterDb
+              .from('users')
+              .select('id, email, credits')
+              .eq('id', paymentIntent.metadata.user_id)
+              .limit(1);
 
+            if (error) throw error;
+
+            const user = users?.[0];
             finalUserBalance = user?.credits;
 
             console.log(`✅ [${piRequestId}] User balance after purchase:`, {
@@ -2438,8 +2440,8 @@ async function createPreliminaryOrder(session, orderData) {
             last_name: lastName,
             email: order.customer_email
           },
-          order: orderWithDetails.toJSON(),
-          store: orderWithDetails.Store.toJSON(),
+          order: orderWithDetails,
+          store: orderWithDetails.Store,
           languageCode: 'en'
         }).then(() => {
           console.log(`✅ Order success email sent successfully to: ${order.customer_email} (offline payment)`);

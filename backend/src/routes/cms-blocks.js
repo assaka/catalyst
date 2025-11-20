@@ -1,7 +1,5 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { Op, QueryTypes } = require('sequelize');
-const { sequelize } = require('../database/connection');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
@@ -42,23 +40,18 @@ router.get('/public', async (req, res) => {
         });
       }
       
-      const blocks = await sequelize.query(`
-        SELECT 
-          id::text as id,
-          title,
-          identifier,
-          content,
-          placement,
-          sort_order,
-          is_active
-        FROM cms_blocks 
-        WHERE store_id::text = $1
-        AND is_active = true
-        ORDER BY sort_order ASC, identifier ASC
-      `, {
-        bind: [store_id],
-        type: QueryTypes.SELECT
-      });
+      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+      const { data: blocks, error } = await tenantDb
+        .from('cms_blocks')
+        .select('id, identifier, placement, sort_order, is_active')
+        .eq('store_id', store_id)
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+        .order('identifier', { ascending: true });
+
+      if (error) {
+        throw error;
+      }
       
       res.json({
         success: true,
@@ -608,12 +601,18 @@ router.post('/:id/translate', [
     }
 
     const { fromLang, toLang } = req.body;
-    const block = await CmsBlock.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    // Get block with all translations from tenant database
+    const { getCMSBlockWithAllTranslations } = require('../utils/cmsTenantHelpers');
+    const block = await getCMSBlockWithAllTranslations(store_id, req.params.id);
 
     if (!block) {
       return res.status(404).json({
@@ -624,7 +623,7 @@ router.post('/:id/translate', [
 
     // Check store access
     if (req.user.role !== 'admin') {
-      const hasAccess = await checkStoreAccess(block.Store.id, req.user.id, req.user.role);
+      const hasAccess = await checkStoreAccess(store_id, req.user.id, req.user.role);
       if (!hasAccess) {
         return res.status(403).json({
           success: false,
