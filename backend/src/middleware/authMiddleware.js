@@ -321,6 +321,15 @@ function authWithRole(allowedRoles) {
     }
 
     if (!allowedRoles.includes(req.user.role)) {
+      console.error('[authWithRole] Authorization failed:', {
+        userId: req.user.id,
+        userEmail: req.user.email,
+        currentRole: req.user.role,
+        requiredRoles: allowedRoles,
+        path: req.path,
+        method: req.method
+      });
+
       return res.status(403).json({
         success: false,
         error: 'Insufficient permissions',
