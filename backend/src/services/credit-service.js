@@ -1,4 +1,4 @@
-const { masterDbClient } = require('../database/masterConnection');
+const { masterDbClient, masterSequelize } = require('../database/masterConnection');
 
 class CreditService {
   constructor() {
@@ -150,8 +150,8 @@ class CreditService {
     // Get recent usage
     const recentUsage = await CreditUsage.getUsageHistory(userId, storeId, 20);
 
-    // Calculate totals from transaction/usage history
-    const [totals] = await sequelize.query(`
+    // Calculate totals from transaction/usage history (master DB)
+    const [totals] = await masterSequelize.query(`
       SELECT
         COALESCE(SUM(ct.credits_purchased), 0) as total_purchased,
         COALESCE(SUM(cu.credits_used), 0) as total_used
@@ -162,7 +162,7 @@ class CreditService {
       GROUP BY u.id
     `, {
       bind: [userId],
-      type: sequelize.QueryTypes.SELECT
+      type: masterSequelize.QueryTypes.SELECT
     });
 
     // Get usage stats for current month
@@ -396,9 +396,9 @@ class CreditService {
     const balanceBeforeNum = parseFloat(balanceBefore);
     const balanceAfterNum = parseFloat(deductResult.remaining_balance);
 
-    // Log to store_uptime table
+    // Log to store_uptime table (master DB)
     try {
-      await sequelize.query(`
+      await masterSequelize.query(`
         INSERT INTO store_uptime (
           id,
           store_id,
@@ -439,7 +439,7 @@ class CreditService {
             deduction_time: new Date().toISOString()
           })
         ],
-        type: sequelize.QueryTypes.INSERT
+        type: masterSequelize.QueryTypes.INSERT
       });
     } catch (uptimeError) {
       // Silent fail - uptime logging is not critical
@@ -484,12 +484,12 @@ class CreditService {
       current_status: transaction.status
     });
 
-    // Get user's current balance before update
-    const [userBefore] = await sequelize.query(`
+    // Get user's current balance before update (master DB)
+    const [userBefore] = await masterSequelize.query(`
       SELECT id, email, credits FROM users WHERE id = $1
     `, {
       bind: [transaction.user_id],
-      type: sequelize.QueryTypes.SELECT
+      type: masterSequelize.QueryTypes.SELECT
     });
 
     // Parse credits_purchased as decimal (users.credits is NUMERIC type)
@@ -505,9 +505,9 @@ class CreditService {
       parsedCreditsType: typeof creditsToAdd
     });
 
-    // Add credits to users.credits (single source of truth)
+    // Add credits to users.credits (single source of truth, master DB)
     console.log(`🔄 [CreditService] Updating user credits with ${creditsToAdd} credits...`);
-    const updateResult = await sequelize.query(`
+    const updateResult = await masterSequelize.query(`
       UPDATE users
       SET credits = COALESCE(credits, 0) + $1,
           updated_at = NOW()
@@ -515,7 +515,7 @@ class CreditService {
       RETURNING id, email, credits
     `, {
       bind: [creditsToAdd, transaction.user_id],
-      type: sequelize.QueryTypes.UPDATE
+      type: masterSequelize.QueryTypes.UPDATE
     });
 
     console.log(`✅ [CreditService] Credits updated in database:`, {
@@ -523,12 +523,12 @@ class CreditService {
       affectedRows: updateResult?.[1] || 'unknown'
     });
 
-    // Verify the update
-    const [userAfter] = await sequelize.query(`
+    // Verify the update (master DB)
+    const [userAfter] = await masterSequelize.query(`
       SELECT id, email, credits FROM users WHERE id = $1
     `, {
       bind: [transaction.user_id],
-      type: sequelize.QueryTypes.SELECT
+      type: masterSequelize.QueryTypes.SELECT
     });
 
     const creditDifference = (parseFloat(userAfter?.credits || 0) - parseFloat(userBefore?.credits || 0));
@@ -567,15 +567,15 @@ class CreditService {
    * Award bonus credits to a user
    */
   async awardBonusCredits(userId, storeId, creditsAmount, description = null) {
-    // Add credits to users.credits (single source of truth)
-    await sequelize.query(`
+    // Add credits to users.credits (single source of truth, master DB)
+    await masterSequelize.query(`
       UPDATE users
       SET credits = COALESCE(credits, 0) + $1,
           updated_at = NOW()
       WHERE id = $2
     `, {
       bind: [creditsAmount, userId],
-      type: sequelize.QueryTypes.UPDATE
+      type: masterSequelize.QueryTypes.UPDATE
     });
 
     // Create bonus transaction record
@@ -671,8 +671,8 @@ class CreditService {
       bindings.push(storeId);
     }
 
-    // Get uptime records
-    const uptimeRecords = await sequelize.query(`
+    // Get uptime records (master DB)
+    const uptimeRecords = await masterSequelize.query(`
       SELECT
         su.id,
         su.store_id,
@@ -690,11 +690,11 @@ class CreditService {
       LIMIT $${bindings.length + 1}
     `, {
       bind: [...bindings, parseInt(days) * 10], // Fetch more records than days for safety
-      type: sequelize.QueryTypes.SELECT
+      type: masterSequelize.QueryTypes.SELECT
     });
 
-    // Get summary statistics
-    const [summary] = await sequelize.query(`
+    // Get summary statistics (master DB)
+    const [summary] = await masterSequelize.query(`
       SELECT
         COUNT(DISTINCT su.store_id) as total_stores,
         COUNT(*) as total_days,
@@ -705,11 +705,11 @@ class CreditService {
       ${whereCondition}
     `, {
       bind: bindings,
-      type: sequelize.QueryTypes.SELECT
+      type: masterSequelize.QueryTypes.SELECT
     });
 
-    // Get per-store summary
-    const storeBreakdown = await sequelize.query(`
+    // Get per-store summary (master DB)
+    const storeBreakdown = await masterSequelize.query(`
       SELECT
         su.store_id,
         su.store_name,
@@ -725,7 +725,7 @@ class CreditService {
       ORDER BY total_credits DESC
     `, {
       bind: bindings,
-      type: sequelize.QueryTypes.SELECT
+      type: masterSequelize.QueryTypes.SELECT
     });
 
     return {

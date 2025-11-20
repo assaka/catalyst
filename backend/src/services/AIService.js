@@ -1,5 +1,6 @@
 // backend/src/services/AIService.js
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('./database/ConnectionManager');
+const { masterDbClient } = require('../database/masterConnection');
 const aiContextService = require('./aiContextService'); // RAG system
 const aiProvider = require('./ai-provider-service'); // Unified AI provider
 const ServiceCreditCost = require('../models/ServiceCreditCost');
@@ -66,25 +67,25 @@ class AIService {
   async checkCredits(userId, operationType) {
     const cost = await this.getOperationCost(operationType);
 
-    const [result] = await sequelize.query(`
-      SELECT credits FROM users WHERE id = $1
-    `, {
-      bind: [userId],
-      type: sequelize.QueryTypes.SELECT
-    });
+    // Query master DB for user credits
+    const { data: user, error } = await masterDbClient
+      .from('users')
+      .select('credits')
+      .eq('id', userId)
+      .maybeSingle();
 
-    if (!result || result.credits < cost) {
+    if (error || !user || user.credits < cost) {
       return {
         hasCredits: false,
         required: cost,
-        available: result?.credits || 0
+        available: user?.credits || 0
       };
     }
 
     return {
       hasCredits: true,
       required: cost,
-      available: result.credits
+      available: user.credits
     };
   }
 
@@ -97,11 +98,11 @@ class AIService {
     // Get store_id - use first store if not provided (credit_usage requires non-null store_id)
     let storeId = metadata.storeId;
     if (!storeId) {
-      const [store] = await sequelize.query(`
-        SELECT id FROM stores LIMIT 1
-      `, {
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: store } = await masterDbClient
+        .from('stores')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
       storeId = store?.id || '00000000-0000-0000-0000-000000000000'; // Fallback UUID
     }
 
@@ -117,70 +118,80 @@ class AIService {
 
     const usageType = usageTypeMap[operationType] || 'other';
 
-    // Deduct credits
-    await sequelize.query(`
-      UPDATE users
-      SET credits = credits - $1,
-          updated_at = NOW()
-      WHERE id = $2
-    `, {
-      bind: [cost, userId],
-      type: sequelize.QueryTypes.UPDATE
-    });
+    // Deduct credits from master DB
+    const { error: updateError } = await masterDbClient
+      .from('users')
+      .update({
+        credits: masterDbClient.raw(`credits - ${cost}`),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
 
-    // Log credit usage in existing credit_usage table
-    await sequelize.query(`
-      INSERT INTO credit_usage (
-        id,
-        user_id,
-        store_id,
-        credits_used,
-        usage_type,
-        description,
-        metadata,
-        created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-    `, {
-      bind: [
-        require('uuid').v4(),
-        userId,
-        storeId,
-        cost,
-        usageType,
-        `AI Studio: ${operationType}`,
-        JSON.stringify(metadata)
-      ],
-      type: sequelize.QueryTypes.INSERT
-    });
+    if (updateError) {
+      throw new Error(`Failed to deduct credits: ${updateError.message}`);
+    }
+
+    // Log credit usage in master DB
+    const { error: insertError } = await masterDbClient
+      .from('credit_usage')
+      .insert({
+        id: require('uuid').v4(),
+        user_id: userId,
+        store_id: storeId,
+        credits_used: cost,
+        usage_type: usageType,
+        description: `AI Studio: ${operationType}`,
+        metadata: metadata,
+        created_at: new Date().toISOString()
+      });
+
+    if (insertError) {
+      console.error('Failed to log credit usage:', insertError);
+      // Don't throw - logging failure shouldn't break the operation
+    }
 
     return cost;
   }
 
   /**
-   * Log AI usage for analytics
+   * Log AI usage for analytics (tenant data)
    */
   async logUsage(userId, operationType, metadata = {}) {
-    await sequelize.query(`
-      INSERT INTO ai_usage_logs (
-        user_id,
-        operation_type,
-        model_used,
-        tokens_input,
-        tokens_output,
-        metadata,
-        created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
-    `, {
-      bind: [
-        userId,
-        operationType,
-        metadata.model || this.defaultModel,
-        metadata.tokensInput || 0,
-        metadata.tokensOutput || 0,
-        JSON.stringify(metadata)
-      ],
-      type: sequelize.QueryTypes.INSERT
-    });
+    // Get storeId from metadata or use first store
+    let storeId = metadata.storeId;
+    if (!storeId) {
+      const { data: store } = await masterDbClient
+        .from('stores')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+      storeId = store?.id;
+    }
+
+    if (!storeId) {
+      console.warn('No store found for AI usage logging, skipping');
+      return;
+    }
+
+    // Get tenant connection for AI usage logs
+    const connection = await ConnectionManager.getStoreConnection(storeId);
+
+    const { error } = await connection.client
+      .from('ai_usage_logs')
+      .insert({
+        user_id: userId,
+        operation_type: operationType,
+        model_used: metadata.model || this.defaultModel,
+        tokens_input: metadata.tokensInput || 0,
+        tokens_output: metadata.tokensOutput || 0,
+        metadata: metadata,
+        created_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('Failed to log AI usage:', error);
+      // Don't throw - logging failure shouldn't break the operation
+    }
   }
 
   /**
@@ -363,39 +374,56 @@ class AIService {
    * Get user's remaining credits
    */
   async getRemainingCredits(userId) {
-    const [result] = await sequelize.query(`
-      SELECT credits FROM users WHERE id = $1
-    `, {
-      bind: [userId],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: user, error } = await masterDbClient
+      .from('users')
+      .select('credits')
+      .eq('id', userId)
+      .maybeSingle();
 
-    return result?.credits || 0;
+    if (error) {
+      console.error('Failed to fetch user credits:', error);
+      return 0;
+    }
+
+    return user?.credits || 0;
   }
 
 
   /**
-   * Get user's AI usage history
+   * Get user's AI usage history (tenant data)
    */
-  async getUserUsageHistory(userId, limit = 50) {
-    const results = await sequelize.query(`
-      SELECT
-        operation_type,
-        model_used,
-        tokens_input,
-        tokens_output,
-        metadata,
-        created_at
-      FROM ai_usage_logs
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-      LIMIT $2
-    `, {
-      bind: [userId, limit],
-      type: sequelize.QueryTypes.SELECT
-    });
+  async getUserUsageHistory(userId, limit = 50, storeId = null) {
+    // Get storeId if not provided
+    if (!storeId) {
+      const { data: store } = await masterDbClient
+        .from('stores')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+      storeId = store?.id;
+    }
 
-    return results;
+    if (!storeId) {
+      console.warn('No store found for AI usage history');
+      return [];
+    }
+
+    // Get tenant connection for AI usage logs
+    const connection = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data, error } = await connection.client
+      .from('ai_usage_logs')
+      .select('operation_type, model_used, tokens_input, tokens_output, metadata, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Failed to fetch AI usage history:', error);
+      return [];
+    }
+
+    return data || [];
   }
 
   /**
@@ -744,6 +772,21 @@ Example generatedFiles:
         throw new Error('Invalid userId format');
       }
 
+      // Get storeId from metadata or use first store
+      let storeId = metadata.storeId;
+      if (!storeId) {
+        const { data: store } = await masterDbClient
+          .from('stores')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+        storeId = store?.id;
+      }
+
+      if (!storeId) {
+        throw new Error('No store found for plugin creation');
+      }
+
       // Build clean manifest matching starter template structure EXACTLY
       const cleanManifest = {
         name: pluginData.name,
@@ -770,35 +813,34 @@ Example generatedFiles:
         } : null
       };
 
-      // Insert into plugin_registry
-      await sequelize.query(`
-        INSERT INTO plugin_registry (
-          id, name, slug, version, description, author, category, status, type, framework,
-          manifest, creator_id, is_installed, is_enabled,
-          created_at, updated_at
-        )
-        VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW()
-        )
-      `, {
-        bind: [
-          pluginId,
-          pluginData.name,
-          slug,
-          pluginData.version || '1.0.0',
-          pluginData.description || '',
-          pluginData.author || 'AI Generated',
-          pluginData.category || 'utility',
-          'active',
-          'ai-generated',
-          'react',
-          JSON.stringify(cleanManifest),
-          userId || null,  // Ensure NULL if userId is undefined
-          true,  // is_installed
-          true   // is_enabled
-        ],
-        type: sequelize.QueryTypes.INSERT
-      });
+      // Get tenant connection for plugin data
+      const connection = await ConnectionManager.getStoreConnection(storeId);
+
+      // Insert into plugin_registry (tenant DB)
+      const { error: insertError } = await connection.client
+        .from('plugin_registry')
+        .insert({
+          id: pluginId,
+          name: pluginData.name,
+          slug: slug,
+          version: pluginData.version || '1.0.0',
+          description: pluginData.description || '',
+          author: pluginData.author || 'AI Generated',
+          category: pluginData.category || 'utility',
+          status: 'active',
+          type: 'ai-generated',
+          framework: 'react',
+          manifest: cleanManifest,
+          creator_id: userId || null,
+          is_installed: true,
+          is_enabled: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (insertError) {
+        throw new Error(`Failed to insert plugin: ${insertError.message}`);
+      }
 
       console.log(`✅ Plugin saved to registry: ${pluginData.name} (${pluginId})`);
       console.log(`  📋 Manifest stored in plugin_registry.manifest column`);
@@ -846,26 +888,25 @@ For issues or questions, please contact the platform administrator.
 `;
 
       // Save README.md to plugin_docs (for file tree display)
-      await sequelize.query(`
-        INSERT INTO plugin_docs (
-          plugin_id, doc_type, file_name, content, format, is_visible, display_order, title, description
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      `, {
-        bind: [
-          pluginId,
-          'readme',
-          'README.md',
-          readmeContent,
-          'markdown',
-          true,
-          1,
-          pluginData.name,
-          pluginData.description || ''
-        ],
-        type: sequelize.QueryTypes.INSERT
-      });
-      console.log(`  📄 Saved README.md to plugin_docs`);
+      const { error: docsError } = await connection.client
+        .from('plugin_docs')
+        .insert({
+          plugin_id: pluginId,
+          doc_type: 'readme',
+          file_name: 'README.md',
+          content: readmeContent,
+          format: 'markdown',
+          is_visible: true,
+          display_order: 1,
+          title: pluginData.name,
+          description: pluginData.description || ''
+        });
+
+      if (docsError) {
+        console.warn('Failed to save README.md:', docsError);
+      } else {
+        console.log(`  📄 Saved README.md to plugin_docs`);
+      }
 
       // Save generated files to plugin_scripts table with proper directory structure
       if (pluginData.generatedFiles && pluginData.generatedFiles.length > 0) {
@@ -897,25 +938,23 @@ For issues or questions, please contact the platform administrator.
           }
 
           if (fileContent) {
-            await sequelize.query(`
-              INSERT INTO plugin_scripts (
-                plugin_id, file_name, file_content, script_type, scope, load_priority, is_enabled
-              )
-              VALUES ($1, $2, $3, $4, $5, $6, $7)
-            `, {
-              bind: [
-                pluginId,
-                fileName,
-                fileContent,
-                'js',
-                'frontend',
-                0,
-                true
-              ],
-              type: sequelize.QueryTypes.INSERT
-            });
+            const { error: scriptError } = await connection.client
+              .from('plugin_scripts')
+              .insert({
+                plugin_id: pluginId,
+                file_name: fileName,
+                file_content: fileContent,
+                script_type: 'js',
+                scope: 'frontend',
+                load_priority: 0,
+                is_enabled: true
+              });
 
-            console.log(`  📄 Saved script: ${fileName}`);
+            if (scriptError) {
+              console.warn(`Failed to save script ${fileName}:`, scriptError);
+            } else {
+              console.log(`  📄 Saved script: ${fileName}`);
+            }
           }
         }
       }
@@ -928,23 +967,21 @@ For issues or questions, please contact the platform administrator.
           const hookCode = hook.code || `function(value, context) { return value; }`;
           const priority = hook.priority || 10;
 
-          await sequelize.query(`
-            INSERT INTO plugin_hooks (
-              plugin_id, hook_name, handler_function, priority, is_enabled
-            )
-            VALUES ($1, $2, $3, $4, $5)
-          `, {
-            bind: [
-              pluginId,
-              hookName,
-              hookCode,  // Store the actual inline function code
-              priority,
-              true
-            ],
-            type: sequelize.QueryTypes.INSERT
-          });
+          const { error: hookError } = await connection.client
+            .from('plugin_hooks')
+            .insert({
+              plugin_id: pluginId,
+              hook_name: hookName,
+              handler_function: hookCode,
+              priority: priority,
+              is_enabled: true
+            });
 
-          console.log(`  🪝 Registered hook: ${hookName}`);
+          if (hookError) {
+            console.warn(`Failed to register hook ${hookName}:`, hookError);
+          } else {
+            console.log(`  🪝 Registered hook: ${hookName}`);
+          }
         }
       }
 
@@ -956,28 +993,26 @@ For issues or questions, please contact the platform administrator.
           const eventCode = event.code || `function(eventData, context) { console.log('Event triggered'); }`;
           const priority = event.priority || 10;
 
-          await sequelize.query(`
-            INSERT INTO plugin_events (
-              plugin_id, event_name, listener_function, priority, is_enabled
-            )
-            VALUES ($1, $2, $3, $4, $5)
-          `, {
-            bind: [
-              pluginId,
-              eventName,
-              eventCode,  // Store the actual inline function code
-              priority,
-              true
-            ],
-            type: sequelize.QueryTypes.INSERT
-          });
+          const { error: eventError } = await connection.client
+            .from('plugin_events')
+            .insert({
+              plugin_id: pluginId,
+              event_name: eventName,
+              listener_function: eventCode,
+              priority: priority,
+              is_enabled: true
+            });
 
-          console.log(`  📡 Registered event: ${eventName}`);
+          if (eventError) {
+            console.warn(`Failed to register event ${eventName}:`, eventError);
+          } else {
+            console.log(`  📡 Registered event: ${eventName}`);
+          }
         }
       }
 
       // Return plugin ID and slug
-      return { pluginId, slug };
+      return { pluginId, slug, storeId };
     } catch (error) {
       console.error('❌ Error saving plugin to database:', error);
       console.error('Error details:', {

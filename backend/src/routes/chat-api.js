@@ -25,21 +25,23 @@ router.post('/conversations', async (req, res) => {
     console.log('💬 Creating new conversation for:', customer_name || 'Guest');
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
-    const sequelize = connection.sequelize;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const result = await sequelize.query(`
-      INSERT INTO chat_conversations (
-        id, store_id, customer_id, customer_name, customer_email, status, started_at, created_at
-      ) VALUES (
-        gen_random_uuid(), $1, $2, $3, $4, 'open', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-      ) RETURNING *
-    `, {
-      bind: [storeId, customer_id || null, customer_name || 'Guest', customer_email || ''],
-      type: sequelize.QueryTypes.INSERT
-    });
+    const { data: conversations, error } = await tenantDb
+      .from('chat_conversations')
+      .insert({
+        store_id: storeId,
+        customer_id: customer_id || null,
+        customer_name: customer_name || 'Guest',
+        customer_email: customer_email || '',
+        status: 'open',
+        started_at: new Date().toISOString(),
+        created_at: new Date().toISOString()
+      })
+      .select();
 
-    const conversation = result[0][0];
+    if (error) throw error;
+    const conversation = conversations[0];
 
     console.log('✅ Conversation created:', conversation.id);
 
@@ -66,18 +68,15 @@ router.get('/conversations/:id/messages', async (req, res) => {
     const { id } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
-    const sequelize = connection.sequelize;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const messages = await sequelize.query(`
-      SELECT m.* FROM chat_messages m
-      JOIN chat_conversations c ON m.conversation_id = c.id
-      WHERE m.conversation_id = $1 AND c.store_id = $2
-      ORDER BY m.created_at ASC
-    `, {
-      bind: [id, storeId],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: messages, error } = await tenantDb
+      .from('chat_messages')
+      .select('chat_messages.*')
+      .eq('conversation_id', id)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -105,18 +104,17 @@ router.post('/conversations/:id/messages', async (req, res) => {
     console.log(`💬 New message in conversation ${id}:`, message_text.substring(0, 50));
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
-    const sequelize = connection.sequelize;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Verify conversation belongs to this store
-    const conversationCheck = await sequelize.query(`
-      SELECT id FROM chat_conversations WHERE id = $1 AND store_id = $2
-    `, {
-      bind: [id, storeId],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: conversationCheck, error: checkError } = await tenantDb
+      .from('chat_conversations')
+      .select('id')
+      .eq('id', id)
+      .eq('store_id', storeId)
+      .single();
 
-    if (!conversationCheck || conversationCheck.length === 0) {
+    if (checkError || !conversationCheck) {
       return res.status(404).json({
         success: false,
         error: 'Conversation not found or access denied'
@@ -124,35 +122,32 @@ router.post('/conversations/:id/messages', async (req, res) => {
     }
 
     // Insert message
-    const result = await sequelize.query(`
-      INSERT INTO chat_messages (
-        id, conversation_id, message_text, sender_type, sender_id, sender_name, created_at
-      ) VALUES (
-        gen_random_uuid(), $1, $2, $3, $4, $5, CURRENT_TIMESTAMP
-      ) RETURNING *
-    `, {
-      bind: [
-        id,
-        message_text,
-        sender_type || 'customer',
-        sender_id || null,
-        sender_name || null
-      ],
-      type: sequelize.QueryTypes.INSERT
-    });
+    const { data: messages, error: insertError } = await tenantDb
+      .from('chat_messages')
+      .insert({
+        conversation_id: id,
+        message_text: message_text,
+        sender_type: sender_type || 'customer',
+        sender_id: sender_id || null,
+        sender_name: sender_name || null,
+        created_at: new Date().toISOString()
+      })
+      .select();
 
-    const message = result[0][0];
+    if (insertError) throw insertError;
+    const message = messages[0];
 
     // Update conversation last_message_at
-    await sequelize.query(`
-      UPDATE chat_conversations
-      SET last_message_at = CURRENT_TIMESTAMP,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1 AND store_id = $2
-    `, {
-      bind: [id, storeId],
-      type: sequelize.QueryTypes.UPDATE
-    });
+    const { error: updateError } = await tenantDb
+      .from('chat_conversations')
+      .update({
+        last_message_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .eq('store_id', storeId);
+
+    if (updateError) throw updateError;
 
     console.log('✅ Message sent');
 
@@ -179,24 +174,24 @@ router.get('/conversations', async (req, res) => {
     const { status, limit = 50 } = req.query;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
-    const sequelize = connection.sequelize;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    let query = 'SELECT * FROM chat_conversations WHERE store_id = $1';
-    const params = [storeId];
+    let query = tenantDb
+      .from('chat_conversations')
+      .select('*')
+      .eq('store_id', storeId);
 
     if (status) {
-      params.push(status);
-      query += ` AND status = $${params.length}`;
+      query = query.eq('status', status);
     }
 
-    query += ` ORDER BY last_message_at DESC NULLS LAST, created_at DESC LIMIT $${params.length + 1}`;
-    params.push(limit);
+    query = query
+      .order('last_message_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit));
 
-    const conversations = await sequelize.query(query, {
-      bind: params,
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: conversations, error } = await query;
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -222,19 +217,19 @@ router.patch('/conversations/:id/assign', async (req, res) => {
     const { agent_id } = req.body;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
-    const sequelize = connection.sequelize;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    await sequelize.query(`
-      UPDATE chat_conversations
-      SET assigned_agent_id = $1,
-          status = 'assigned',
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = $2 AND store_id = $3
-    `, {
-      bind: [agent_id, id, storeId],
-      type: sequelize.QueryTypes.UPDATE
-    });
+    const { error } = await tenantDb
+      .from('chat_conversations')
+      .update({
+        assigned_agent_id: agent_id,
+        status: 'assigned',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .eq('store_id', storeId);
+
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -259,19 +254,19 @@ router.patch('/conversations/:id/close', async (req, res) => {
     const { id } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
-    const sequelize = connection.sequelize;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    await sequelize.query(`
-      UPDATE chat_conversations
-      SET status = 'closed',
-          closed_at = CURRENT_TIMESTAMP,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1 AND store_id = $2
-    `, {
-      bind: [id, storeId],
-      type: sequelize.QueryTypes.UPDATE
-    });
+    const { error } = await tenantDb
+      .from('chat_conversations')
+      .update({
+        status: 'closed',
+        closed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .eq('store_id', storeId);
+
+    if (error) throw error;
 
     res.json({
       success: true,

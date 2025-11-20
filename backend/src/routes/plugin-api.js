@@ -6,11 +6,26 @@ const PluginPurchaseService = require('../services/PluginPurchaseService');
 const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
+ * Helper function to get tenant database connection from request
+ * Extracts store_id from headers or query params
+ */
+async function getTenantConnection(req) {
+  const store_id = req.headers['x-store-id'] || req.query.store_id;
+  if (!store_id) {
+    throw new Error('store_id is required');
+  }
+  return await ConnectionManager.getConnection(store_id);
+}
+
+/**
  * GET /api/plugins
  * Get ALL plugins (installed + available) from plugin_registry table
  */
 router.get('/', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
+
     const plugins = await sequelize.query(`
       SELECT * FROM plugin_registry
       ORDER BY created_at DESC
@@ -37,6 +52,8 @@ router.get('/', async (req, res) => {
  */
 router.get('/widgets', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
 
     // Query plugin_widgets table (exclude starter templates)
     const widgets = await sequelize.query(`
@@ -79,6 +96,8 @@ router.get('/widgets', async (req, res) => {
  */
 router.get('/widgets/:widgetId', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const { widgetId } = req.params;
 
     // Query plugin_widgets table directly
@@ -128,6 +147,8 @@ router.get('/widgets/:widgetId', async (req, res) => {
  */
 router.get('/starters', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
 
     const starters = await sequelize.query(`
       SELECT
@@ -167,6 +188,9 @@ router.get('/starters', async (req, res) => {
  */
 router.get('/marketplace', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
+
     const plugins = await sequelize.query(`
       SELECT
         id, name, slug, version, description, author_id, category,
@@ -230,6 +254,8 @@ router.post('/purchase', async (req, res) => {
  */
 router.get('/installed', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     // TODO: Get tenantId from authenticated session
     const tenantId = req.user?.tenantId || 'default-tenant';
 
@@ -388,6 +414,9 @@ router.get('/active', async (req, res) => {
  */
 router.get('/registry', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
+
     // Prevent caching - always get fresh plugin data
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.set('Pragma', 'no-cache');
@@ -490,6 +519,9 @@ router.get('/registry', async (req, res) => {
  */
 router.get('/active/:pluginId', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
+
     // Prevent caching - always get fresh plugin data
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.set('Pragma', 'no-cache');
@@ -592,6 +624,9 @@ router.get('/active/:pluginId', async (req, res) => {
  */
 router.get('/registry/:pluginId', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
+
     // Prevent caching - always get fresh plugin data
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.set('Pragma', 'no-cache');
@@ -934,6 +969,8 @@ ${m.down_sql || '-- No down SQL'}`,
  */
 router.get('/:id/export', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const { id } = req.params;
 
     // Get plugin metadata
@@ -1211,9 +1248,13 @@ router.get('/:id/export', async (req, res) => {
  * Import a plugin from package file
  */
 router.post('/import', async (req, res) => {
-  const transaction = await sequelize.transaction();
+  let transaction;
 
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
+    transaction = await sequelize.transaction();
+
     const packageData = req.body;
 
     // Generate new UUID
@@ -1619,6 +1660,8 @@ router.post('/import', async (req, res) => {
  */
 router.put('/registry/:id/files', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const { id } = req.params;
     const { path, content } = req.body;
 
@@ -2035,6 +2078,8 @@ router.put('/registry/:id/files', async (req, res) => {
  */
 router.patch('/registry/:id/status', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const { id } = req.params;
     const { status } = req.body;
 
@@ -2066,6 +2111,8 @@ router.patch('/registry/:id/status', async (req, res) => {
  */
 router.delete('/registry/:id', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const { id } = req.params;
 
     await sequelize.query(`
@@ -2094,6 +2141,8 @@ router.delete('/registry/:id', async (req, res) => {
  */
 router.post('/registry', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const pluginData = req.body;
 
     // Generate proper UUID for plugin_registry
@@ -2234,6 +2283,8 @@ router.post('/registry', async (req, res) => {
  */
 router.get('/:pluginId/scripts', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const { pluginId } = req.params;
     const { scope } = req.query; // 'frontend', 'backend', 'admin'
 
@@ -2287,6 +2338,8 @@ router.get('/:pluginId/scripts', async (req, res) => {
  */
 router.post('/:pluginId/event-listeners', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const { pluginId } = req.params;
     const { file_name, old_file_name, file_path, event_name, old_event_name, listener_function, priority = 10, description } = req.body;
 
@@ -2373,6 +2426,8 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
  */
 router.post('/:pluginId/controllers', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const { pluginId } = req.params;
     const { controller_name, method, path, handler_code, description, requires_auth = false } = req.body;
 
@@ -2412,6 +2467,8 @@ router.post('/:pluginId/controllers', async (req, res) => {
  */
 router.put('/:pluginId/controllers/:controllerName', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const { pluginId, controllerName } = req.params;
     const { controller_name, old_controller_name, method, path, handler_code, description, requires_auth } = req.body;
 
@@ -2457,6 +2514,8 @@ router.put('/:pluginId/controllers/:controllerName', async (req, res) => {
  */
 router.all('/:pluginId/exec/*', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const { pluginId } = req.params;
     const controllerPath = '/' + (req.params[0] || '');
     const method = req.method;
@@ -2592,7 +2651,8 @@ router.all('/:pluginId/exec/*', async (req, res) => {
  */
 router.delete('/registry/:id/files', async (req, res) => {
   try {
-
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const { id } = req.params;
     const { path } = req.body;
 
@@ -2817,6 +2877,8 @@ router.delete('/registry/:id/files', async (req, res) => {
  */
 router.post('/:id/run-migration', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const { id } = req.params;
     const { migration_version, migration_name } = req.body;
 
@@ -2900,6 +2962,8 @@ router.post('/:id/run-migration', async (req, res) => {
  */
 router.post('/:id/generate-entity-migration', async (req, res) => {
   try {
+    const connection = await getTenantConnection(req);
+    const sequelize = connection.sequelize;
     const { id } = req.params;
     const { entity_name, table_name, schema_definition, is_update } = req.body;
 

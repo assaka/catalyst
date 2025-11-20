@@ -8,6 +8,7 @@ const router = express.Router();
 const extensionService = require('../services/extension-service');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { storeResolver } = require('../middleware/storeResolver');
+const { masterDbClient } = require('../database/masterConnection');
 
 // Create a new release
 router.post('/releases', authMiddleware, storeResolver(), async (req, res) => {
@@ -308,29 +309,25 @@ router.post('/hooks', authMiddleware, storeResolver(), async (req, res) => {
     }
 
     // Store hook registration in database
-    const [result] = await extensionService.sequelize.query(`
-      INSERT INTO hook_registrations (
-        store_id, hook_name, handler_function, priority, description, is_async
-      ) VALUES (
-        :storeId, :hookName, :handlerFunction, :priority, :description, :isAsync
-      ) RETURNING id
-    `, {
-      replacements: {
-        storeId: req.storeId,
-        hookName,
-        handlerFunction,
-        priority,
-        description,
-        isAsync
-      },
-      type: extensionService.sequelize.QueryTypes.INSERT
-    });
+    const { data: result, error } = await masterDbClient
+      .from('hook_registrations')
+      .insert({
+        store_id: req.storeId,
+        hook_name: hookName,
+        handler_function: handlerFunction,
+        priority: priority,
+        description: description,
+        is_async: isAsync
+      })
+      .select('id');
+
+    if (error) throw error;
 
     res.json({
       success: true,
       message: 'Hook registered successfully',
       data: {
-        hookId: result[0].id,
+        hookId: result[0]?.id,
         hookName,
         priority
       }
@@ -350,16 +347,15 @@ router.get('/hooks', storeResolver({ required: false }), async (req, res) => {
   try {
     const storeId = req.storeId || req.query.store_id;
 
-    const hooks = await extensionService.sequelize.query(`
-      SELECT 
-        id, hook_name, priority, description, is_async, is_active, created_at
-      FROM hook_registrations 
-      WHERE store_id = :storeId AND is_active = true
-      ORDER BY hook_name, priority
-    `, {
-      replacements: { storeId },
-      type: extensionService.sequelize.QueryTypes.SELECT
-    });
+    const { data: hooks, error } = await masterDbClient
+      .from('hook_registrations')
+      .select('id, hook_name, priority, description, is_async, is_active, created_at')
+      .eq('store_id', storeId)
+      .eq('is_active', true)
+      .order('hook_name')
+      .order('priority');
+
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -396,29 +392,25 @@ router.post('/events', authMiddleware, storeResolver(), async (req, res) => {
       });
     }
 
-    const [result] = await extensionService.sequelize.query(`
-      INSERT INTO event_listeners (
-        store_id, event_name, handler_function, priority, description, is_once
-      ) VALUES (
-        :storeId, :eventName, :handlerFunction, :priority, :description, :isOnce
-      ) RETURNING id
-    `, {
-      replacements: {
-        storeId: req.storeId,
-        eventName,
-        handlerFunction,
-        priority,
-        description,
-        isOnce
-      },
-      type: extensionService.sequelize.QueryTypes.INSERT
-    });
+    const { data: result, error } = await masterDbClient
+      .from('event_listeners')
+      .insert({
+        store_id: req.storeId,
+        event_name: eventName,
+        handler_function: handlerFunction,
+        priority: priority,
+        description: description,
+        is_once: isOnce
+      })
+      .select('id');
+
+    if (error) throw error;
 
     res.json({
       success: true,
       message: 'Event listener registered successfully',
       data: {
-        listenerId: result[0].id,
+        listenerId: result[0]?.id,
         eventName,
         priority
       }
@@ -437,19 +429,12 @@ router.post('/events', authMiddleware, storeResolver(), async (req, res) => {
 router.get('/baselines', async (req, res) => {
   try {
     // Query file baselines from database
-    const files = await extensionService.sequelize.query(`
-      SELECT 
-        file_path,
-        file_type,
-        file_size,
-        last_modified,
-        code_hash,
-        version
-      FROM file_baselines 
-      ORDER BY file_path ASC
-    `, {
-      type: extensionService.sequelize.QueryTypes.SELECT
-    });
+    const { data: files, error } = await masterDbClient
+      .from('file_baselines')
+      .select('file_path, file_type, file_size, last_modified, code_hash, version')
+      .order('file_path', { ascending: true });
+
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -494,62 +479,49 @@ router.get('/baseline/:filePath', async (req, res) => {
     let file;
     try {
       // Try the most complete query first
-      [file] = await extensionService.sequelize.query(`
-        SELECT 
-          file_path,
-          baseline_code,
-          file_size,
-          last_modified,
-          code_hash
-        FROM file_baselines 
-        WHERE file_path = :filePath
-        LIMIT 1
-      `, {
-        replacements: { filePath },
-        type: extensionService.sequelize.QueryTypes.SELECT
-      });
+      const { data: fileData, error: fileError } = await masterDbClient
+        .from('file_baselines')
+        .select('file_path, baseline_code, file_size, last_modified, code_hash')
+        .eq('file_path', filePath)
+        .single();
+
+      if (fileError) throw fileError;
+      file = fileData;
     } catch (error) {
       try {
         // If that fails, try without baseline_code
         console.log('⚠️ Trying query without baseline_code column');
-        [file] = await extensionService.sequelize.query(`
-          SELECT 
-            file_path,
-            file_size,
-            last_modified,
-            code_hash
-          FROM file_baselines 
-          WHERE file_path = :filePath
-          LIMIT 1
-        `, {
-          replacements: { filePath },
-          type: extensionService.sequelize.QueryTypes.SELECT
-        });
+        const { data: fileData, error: fileError } = await masterDbClient
+          .from('file_baselines')
+          .select('file_path, file_size, last_modified, code_hash')
+          .eq('file_path', filePath)
+          .single();
+
+        if (fileError) throw fileError;
+        file = fileData;
       } catch (secondError) {
         try {
           // If that also fails, try with just basic columns
           console.log('⚠️ Trying basic query with minimal columns');
-          [file] = await extensionService.sequelize.query(`
-            SELECT 
-              file_path,
-              file_size,
-              last_modified
-            FROM file_baselines 
-            WHERE file_path = :filePath
-            LIMIT 1
-          `, {
-            replacements: { filePath },
-            type: extensionService.sequelize.QueryTypes.SELECT
-          });
+          const { data: fileData, error: fileError } = await masterDbClient
+            .from('file_baselines')
+            .select('file_path, file_size, last_modified')
+            .eq('file_path', filePath)
+            .single();
+
+          if (fileError) throw fileError;
+          file = fileData;
         } catch (thirdError) {
           // If even the basic query fails, try the most minimal query
           console.log('⚠️ Trying most minimal query');
-          [file] = await extensionService.sequelize.query(`
-            SELECT file_path FROM file_baselines WHERE file_path = :filePath LIMIT 1
-          `, {
-            replacements: { filePath },
-            type: extensionService.sequelize.QueryTypes.SELECT
-          });
+          const { data: fileData, error: fileError } = await masterDbClient
+            .from('file_baselines')
+            .select('file_path')
+            .eq('file_path', filePath)
+            .single();
+
+          if (fileError) throw fileError;
+          file = fileData;
         }
       }
     }

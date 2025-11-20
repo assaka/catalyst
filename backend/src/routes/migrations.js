@@ -1,15 +1,28 @@
 // Migration endpoint - run database migrations on production
 const express = require('express');
 const router = express.Router();
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 /**
  * POST /api/migrations/make-creator-id-nullable
  * Make creator_id nullable in plugin_registry table
+ * NOTE: This runs on tenant DB since plugin_registry is tenant-specific
  */
 router.post('/make-creator-id-nullable', async (req, res) => {
   try {
     console.log('🔄 Running migration: make creator_id nullable...');
+
+    // Get store_id from request
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'store_id is required for tenant-specific migration'
+      });
+    }
+
+    const connection = await ConnectionManager.getConnection(store_id);
+    const sequelize = connection.sequelize;
 
     // Check if already nullable
     const [columns] = await sequelize.query(`

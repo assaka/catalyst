@@ -21,6 +21,9 @@ router.get('/', async (req, res) => {
 
     const lang = getLanguageFromRequest(req);
 
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // Public access - only return active labels with current language translations
     const whereClause = {
       store_id,
@@ -28,7 +31,7 @@ router.get('/', async (req, res) => {
     };
 
     // Public requests only get current language translations
-    const labels = await getProductLabelsWithTranslations(whereClause, lang, false); // false = only current language
+    const labels = await getProductLabelsWithTranslations(tenantDb, whereClause, lang, false); // false = only current language
 
     // Apply cache headers based on store settings
     await applyCacheHeaders(res, store_id);

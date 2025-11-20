@@ -20,8 +20,7 @@
  * See: backend/src/services/RAG_SYSTEM.md for full documentation
  */
 
-const { Sequelize } = require('sequelize');
-const { sequelize } = require('../database/connection');
+const ConnectionManager = require('./database/ConnectionManager');
 
 class AIContextService {
   constructor() {
@@ -80,9 +79,9 @@ class AIContextService {
    */
   async getContextForQuery({ mode, category, query, storeId = null, limit = 10 }) {
     const context = {
-      documents: await this.getRelevantDocuments({ mode, category, limit: 5 }),
-      examples: await this.getRelevantExamples({ category, query, limit: 3 }),
-      patterns: await this.getRelevantPatterns({ query, limit: 5 })
+      documents: await this.getRelevantDocuments({ mode, category, storeId, limit: 5 }),
+      examples: await this.getRelevantExamples({ category, query, storeId, limit: 3 }),
+      patterns: await this.getRelevantPatterns({ query, storeId, limit: 5 })
     };
 
     return this.formatContextForAI(context);
@@ -119,22 +118,48 @@ class AIContextService {
    *   limit: 10
    * });
    */
-  async getRelevantDocuments({ mode, category, limit = 5 }) {
+  async getRelevantDocuments({ mode, category, storeId = null, limit = 5 }) {
     try {
-      const results = await sequelize.query(`
-        SELECT id, type, title, content, category, tags, priority
-        FROM ai_context_documents
-        WHERE is_active = true
-          AND (mode = :mode OR mode = 'all')
-          ${category ? 'AND (category = :category OR category = \'core\')' : ''}
-        ORDER BY priority DESC, created_at DESC
-        LIMIT :limit
-      `, {
-        replacements: { mode, category, limit },
-        type: Sequelize.QueryTypes.SELECT
-      });
+      // Get storeId if not provided
+      if (!storeId) {
+        const { masterDbClient } = require('../database/masterConnection');
+        const { data: store } = await masterDbClient
+          .from('stores')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+        storeId = store?.id;
+      }
 
-      return results;
+      if (!storeId) {
+        console.warn('No store found for AI context documents');
+        return [];
+      }
+
+      // Get tenant connection for AI context data
+      const connection = await ConnectionManager.getStoreConnection(storeId);
+
+      let query = connection.client
+        .from('ai_context_documents')
+        .select('id, type, title, content, category, tags, priority')
+        .eq('is_active', true)
+        .or(`mode.eq.${mode},mode.eq.all`)
+        .order('priority', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (category) {
+        query = query.or(`category.eq.${category},category.eq.core`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching context documents:', error);
+        return [];
+      }
+
+      return data || [];
     } catch (error) {
       console.error('Error fetching context documents:', error);
       return [];
@@ -175,27 +200,47 @@ class AIContextService {
    *   limit: 3
    * });
    */
-  async getRelevantExamples({ category, query, limit = 3 }) {
+  async getRelevantExamples({ category, query, storeId = null, limit = 3 }) {
     try {
-      // For now, simple category-based matching
-      // TODO: Implement vector similarity search when embeddings are added
-      const results = await sequelize.query(`
-        SELECT id, name, slug, description, category, complexity, code, files, features, use_cases, tags
-        FROM ai_plugin_examples
-        WHERE is_active = true
-          ${category ? 'AND category = :category' : ''}
-        ORDER BY
-          CASE WHEN is_template = true THEN 1 ELSE 2 END,
-          usage_count DESC,
-          rating DESC NULLS LAST
-        LIMIT :limit
-      `, {
-        replacements: { category, limit },
-        type: Sequelize.QueryTypes.SELECT
-      });
+      // Get storeId if not provided
+      if (!storeId) {
+        const { masterDbClient } = require('../database/masterConnection');
+        const { data: store } = await masterDbClient
+          .from('stores')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+        storeId = store?.id;
+      }
 
-      // Parse JSON fields from PostgreSQL JSONB
-      return results.map(r => ({
+      if (!storeId) {
+        console.warn('No store found for AI plugin examples');
+        return [];
+      }
+
+      // Get tenant connection for AI examples
+      const connection = await ConnectionManager.getStoreConnection(storeId);
+
+      let query_builder = connection.client
+        .from('ai_plugin_examples')
+        .select('id, name, slug, description, category, complexity, code, files, features, use_cases, tags')
+        .eq('is_active', true)
+        .order('usage_count', { ascending: false })
+        .limit(limit);
+
+      if (category) {
+        query_builder = query_builder.eq('category', category);
+      }
+
+      const { data, error } = await query_builder;
+
+      if (error) {
+        console.error('Error fetching plugin examples:', error);
+        return [];
+      }
+
+      // Parse JSON fields (Supabase returns them as objects already)
+      return (data || []).map(r => ({
         ...r,
         files: typeof r.files === 'string' ? JSON.parse(r.files) : r.files,
         features: typeof r.features === 'string' ? JSON.parse(r.features) : r.features,
@@ -246,23 +291,41 @@ class AIContextService {
    *   limit: 5
    * });
    */
-  async getRelevantPatterns({ query, limit = 5 }) {
+  async getRelevantPatterns({ query, storeId = null, limit = 5 }) {
     try {
-      // Simple keyword matching for now
-      // TODO: Implement vector similarity when embeddings ready
-      const results = await sequelize.query(`
-        SELECT id, name, pattern_type, description, code, language, framework, parameters, example_usage, tags
-        FROM ai_code_patterns
-        WHERE is_active = true
-        ORDER BY usage_count DESC
-        LIMIT :limit
-      `, {
-        replacements: { limit },
-        type: Sequelize.QueryTypes.SELECT
-      });
+      // Get storeId if not provided
+      if (!storeId) {
+        const { masterDbClient } = require('../database/masterConnection');
+        const { data: store } = await masterDbClient
+          .from('stores')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+        storeId = store?.id;
+      }
 
-      // Parse JSON fields from PostgreSQL JSONB
-      return results.map(r => ({
+      if (!storeId) {
+        console.warn('No store found for AI code patterns');
+        return [];
+      }
+
+      // Get tenant connection for AI patterns
+      const connection = await ConnectionManager.getStoreConnection(storeId);
+
+      const { data, error } = await connection.client
+        .from('ai_code_patterns')
+        .select('id, name, pattern_type, description, code, language, framework, parameters, example_usage, tags')
+        .eq('is_active', true)
+        .order('usage_count', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Error fetching code patterns:', error);
+        return [];
+      }
+
+      // Parse JSON fields (Supabase returns them as objects already)
+      return (data || []).map(r => ({
         ...r,
         parameters: typeof r.parameters === 'string' ? JSON.parse(r.parameters) : r.parameters,
         tags: typeof r.tags === 'string' ? JSON.parse(r.tags) : r.tags
@@ -406,33 +469,58 @@ class AIContextService {
    *   wasHelpful: true
    * });
    */
-  async trackContextUsage({ documentId, exampleId, patternId, userId, sessionId, query, wasHelpful }) {
+  async trackContextUsage({ documentId, exampleId, patternId, userId, sessionId, query, wasHelpful, storeId = null }) {
     try {
+      // Get storeId if not provided
+      if (!storeId) {
+        const { masterDbClient } = require('../database/masterConnection');
+        const { data: store } = await masterDbClient
+          .from('stores')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+        storeId = store?.id;
+      }
+
+      if (!storeId) {
+        console.warn('No store found for tracking context usage');
+        return;
+      }
+
+      // Get tenant connection for AI context tracking
+      const connection = await ConnectionManager.getStoreConnection(storeId);
+
       // Log to usage table for analytics
-      await sequelize.query(`
-        INSERT INTO ai_context_usage (document_id, example_id, pattern_id, user_id, session_id, query, was_helpful, created_at)
-        VALUES (:documentId, :exampleId, :patternId, :userId, :sessionId, :query, :wasHelpful, NOW())
-      `, {
-        replacements: {
-          documentId: documentId || null,
-          exampleId: exampleId || null,
-          patternId: patternId || null,
-          userId: userId || null,
-          sessionId: sessionId || null,
+      await connection.client
+        .from('ai_context_usage')
+        .insert({
+          document_id: documentId || null,
+          example_id: exampleId || null,
+          pattern_id: patternId || null,
+          user_id: userId || null,
+          session_id: sessionId || null,
           query: query || null,
-          wasHelpful: wasHelpful || null
-        }
-      });
+          was_helpful: wasHelpful || null,
+          created_at: new Date().toISOString()
+        });
 
       // Increment usage counts for sorting (higher usage = shown first)
       if (exampleId) {
-        await sequelize.query('UPDATE ai_plugin_examples SET usage_count = usage_count + 1 WHERE id = :id', {
-          replacements: { id: exampleId }
+        await connection.client.rpc('increment_usage_count', {
+          table_name: 'ai_plugin_examples',
+          record_id: exampleId
+        }).catch(() => {
+          // Fallback if RPC doesn't exist - just skip incrementing
+          console.warn('Could not increment usage count for example');
         });
       }
       if (patternId) {
-        await sequelize.query('UPDATE ai_code_patterns SET usage_count = usage_count + 1 WHERE id = :id', {
-          replacements: { id: patternId }
+        await connection.client.rpc('increment_usage_count', {
+          table_name: 'ai_code_patterns',
+          record_id: patternId
+        }).catch(() => {
+          // Fallback if RPC doesn't exist - just skip incrementing
+          console.warn('Could not increment usage count for pattern');
         });
       }
     } catch (error) {
@@ -446,26 +534,54 @@ class AIContextService {
    */
   async getUserPreferences({ userId, sessionId, storeId }) {
     try {
-      const [results] = await sequelize.query(`
-        SELECT * FROM ai_user_preferences
-        WHERE (user_id = :userId OR session_id = :sessionId)
-          ${storeId ? 'AND (store_id = :storeId OR store_id IS NULL)' : ''}
-        ORDER BY updated_at DESC
-        LIMIT 1
-      `, {
-        replacements: { userId: userId || null, sessionId, storeId: storeId || null },
-        type: Sequelize.QueryTypes.SELECT
-      });
+      // Get storeId if not provided
+      if (!storeId) {
+        const { masterDbClient } = require('../database/masterConnection');
+        const { data: store } = await masterDbClient
+          .from('stores')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+        storeId = store?.id;
+      }
 
-      if (results.length > 0) {
-        const prefs = results[0];
+      if (!storeId) {
+        console.warn('No store found for user preferences');
+        return null;
+      }
+
+      // Get tenant connection for user preferences
+      const connection = await ConnectionManager.getStoreConnection(storeId);
+
+      let query = connection.client
+        .from('ai_user_preferences')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (userId && sessionId) {
+        query = query.or(`user_id.eq.${userId},session_id.eq.${sessionId}`);
+      } else if (userId) {
+        query = query.eq('user_id', userId);
+      } else if (sessionId) {
+        query = query.eq('session_id', sessionId);
+      }
+
+      const { data, error } = await query.maybeSingle();
+
+      if (error) {
+        console.error('Error fetching user preferences:', error);
+        return null;
+      }
+
+      if (data) {
         return {
-          ...prefs,
-          coding_style: typeof prefs.coding_style === 'string' ? JSON.parse(prefs.coding_style) : prefs.coding_style,
-          favorite_patterns: typeof prefs.favorite_patterns === 'string' ? JSON.parse(prefs.favorite_patterns) : prefs.favorite_patterns,
-          recent_plugins: typeof prefs.recent_plugins === 'string' ? JSON.parse(prefs.recent_plugins) : prefs.recent_plugins,
-          categories_interest: typeof prefs.categories_interest === 'string' ? JSON.parse(prefs.categories_interest) : prefs.categories_interest,
-          context_preferences: typeof prefs.context_preferences === 'string' ? JSON.parse(prefs.context_preferences) : prefs.context_preferences
+          ...data,
+          coding_style: typeof data.coding_style === 'string' ? JSON.parse(data.coding_style) : data.coding_style,
+          favorite_patterns: typeof data.favorite_patterns === 'string' ? JSON.parse(data.favorite_patterns) : data.favorite_patterns,
+          recent_plugins: typeof data.recent_plugins === 'string' ? JSON.parse(data.recent_plugins) : data.recent_plugins,
+          categories_interest: typeof data.categories_interest === 'string' ? JSON.parse(data.categories_interest) : data.categories_interest,
+          context_preferences: typeof data.context_preferences === 'string' ? JSON.parse(data.context_preferences) : data.context_preferences
         };
       }
 
@@ -481,54 +597,62 @@ class AIContextService {
    */
   async saveUserPreferences(preferences) {
     try {
-      const { userId, sessionId, storeId, ...prefs } = preferences;
+      const { userId, sessionId, storeId: providedStoreId, ...prefs } = preferences;
+
+      // Get storeId if not provided
+      let storeId = providedStoreId;
+      if (!storeId) {
+        const { masterDbClient } = require('../database/masterConnection');
+        const { data: store } = await masterDbClient
+          .from('stores')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+        storeId = store?.id;
+      }
+
+      if (!storeId) {
+        console.warn('No store found for saving user preferences');
+        return;
+      }
+
+      // Get tenant connection for user preferences
+      const connection = await ConnectionManager.getStoreConnection(storeId);
 
       // Check if preferences exist
       const existing = await this.getUserPreferences({ userId, sessionId, storeId });
 
       if (existing) {
         // Update
-        await sequelize.query(`
-          UPDATE ai_user_preferences
-          SET
-            preferred_mode = :preferredMode,
-            coding_style = :codingStyle,
-            favorite_patterns = :favoritePatterns,
-            recent_plugins = :recentPlugins,
-            categories_interest = :categoriesInterest,
-            context_preferences = :contextPreferences,
-            updated_at = NOW()
-          WHERE id = :id
-        `, {
-          replacements: {
-            id: existing.id,
-            preferredMode: prefs.preferredMode || existing.preferred_mode,
-            codingStyle: JSON.stringify(prefs.codingStyle || existing.coding_style),
-            favoritePatterns: JSON.stringify(prefs.favoritePatterns || existing.favorite_patterns),
-            recentPlugins: JSON.stringify(prefs.recentPlugins || existing.recent_plugins),
-            categoriesInterest: JSON.stringify(prefs.categoriesInterest || existing.categories_interest),
-            contextPreferences: JSON.stringify(prefs.contextPreferences || existing.context_preferences)
-          }
-        });
+        await connection.client
+          .from('ai_user_preferences')
+          .update({
+            preferred_mode: prefs.preferredMode || existing.preferred_mode,
+            coding_style: prefs.codingStyle || existing.coding_style,
+            favorite_patterns: prefs.favoritePatterns || existing.favorite_patterns,
+            recent_plugins: prefs.recentPlugins || existing.recent_plugins,
+            categories_interest: prefs.categoriesInterest || existing.categories_interest,
+            context_preferences: prefs.contextPreferences || existing.context_preferences,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
       } else {
         // Insert
-        await sequelize.query(`
-          INSERT INTO ai_user_preferences
-          (user_id, session_id, store_id, preferred_mode, coding_style, favorite_patterns, recent_plugins, categories_interest, context_preferences, created_at, updated_at)
-          VALUES (:userId, :sessionId, :storeId, :preferredMode, :codingStyle, :favoritePatterns, :recentPlugins, :categoriesInterest, :contextPreferences, NOW(), NOW())
-        `, {
-          replacements: {
-            userId: userId || null,
-            sessionId,
-            storeId: storeId || null,
-            preferredMode: prefs.preferredMode || null,
-            codingStyle: JSON.stringify(prefs.codingStyle || {}),
-            favoritePatterns: JSON.stringify(prefs.favoritePatterns || []),
-            recentPlugins: JSON.stringify(prefs.recentPlugins || []),
-            categoriesInterest: JSON.stringify(prefs.categoriesInterest || []),
-            contextPreferences: JSON.stringify(prefs.contextPreferences || {})
-          }
-        });
+        await connection.client
+          .from('ai_user_preferences')
+          .insert({
+            user_id: userId || null,
+            session_id: sessionId,
+            store_id: storeId,
+            preferred_mode: prefs.preferredMode || null,
+            coding_style: prefs.codingStyle || {},
+            favorite_patterns: prefs.favoritePatterns || [],
+            recent_plugins: prefs.recentPlugins || [],
+            categories_interest: prefs.categoriesInterest || [],
+            context_preferences: prefs.contextPreferences || {},
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
       }
     } catch (error) {
       console.error('Error saving user preferences:', error);
@@ -583,25 +707,48 @@ class AIContextService {
    */
   async addContextDocument(document) {
     try {
-      const [result] = await sequelize.query(`
-        INSERT INTO ai_context_documents (type, title, content, category, tags, priority, mode, is_active, store_id, created_at, updated_at)
-        VALUES (:type, :title, :content, :category, :tags, :priority, :mode, :isActive, :storeId, NOW(), NOW())
-        RETURNING id
-      `, {
-        replacements: {
+      // Get storeId if not provided
+      let storeId = document.storeId;
+      if (!storeId) {
+        const { masterDbClient } = require('../database/masterConnection');
+        const { data: store } = await masterDbClient
+          .from('stores')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+        storeId = store?.id;
+      }
+
+      if (!storeId) {
+        throw new Error('No store found for adding context document');
+      }
+
+      // Get tenant connection for AI context documents
+      const connection = await ConnectionManager.getStoreConnection(storeId);
+
+      const { data, error } = await connection.client
+        .from('ai_context_documents')
+        .insert({
           type: document.type,
           title: document.title,
           content: document.content,
           category: document.category || null,
-          tags: JSON.stringify(document.tags || []),
+          tags: document.tags || [],
           priority: document.priority || 0,
           mode: document.mode || 'all',
-          isActive: document.isActive !== false,
-          storeId: document.storeId || null
-        }
-      });
+          is_active: document.isActive !== false,
+          store_id: storeId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
 
-      return result[0];
+      if (error) {
+        throw new Error(`Failed to add context document: ${error.message}`);
+      }
+
+      return data;
     } catch (error) {
       console.error('Error adding context document:', error);
       throw error;
