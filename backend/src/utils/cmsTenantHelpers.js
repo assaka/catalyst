@@ -16,82 +16,39 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 async function getCMSBlocksWithAllTranslations(storeId, where = {}) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === true || value === false) {
-        return `b.${key} = ${value}`;
-      }
-      if (Array.isArray(value)) {
-        return `b.${key} IN (${value.map(v => `'${v}'`).join(', ')})`;
-      }
-      return `b.${key} = '${value}'`;
-    })
-    .join(' AND ');
+  // Build query for cms_blocks
+  let query = tenantDb.select('*').from('cms_blocks');
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
-
-  const query = `
-    SELECT
-      b.id,
-      b.identifier,
-      b.is_active,
-      b.placement,
-      b.sort_order,
-      b.store_id,
-      b.created_at,
-      b.updated_at,
-      json_object_agg(
-        COALESCE(bt.language_code, 'en'),
-        json_build_object(
-          'title', bt.title,
-          'content', bt.content
-        )
-      ) FILTER (WHERE bt.language_code IS NOT NULL) as translations
-    FROM cms_blocks b
-    LEFT JOIN cms_block_translations bt ON b.id = bt.cms_block_id
-    ${whereClause}
-    GROUP BY b.id
-    ORDER BY b.sort_order ASC, b.created_at DESC
-  `;
-
-  const { data, error } = await tenantDb.rpc('exec_sql', { sql_query: query });
-
-  if (error) {
-    // Fallback to direct query if RPC is not available
-    const results = await tenantDb
-      .from('cms_blocks')
-      .select('*')
-      .order('sort_order', { ascending: true });
-
-    if (results.error) throw results.error;
-
-    // Load translations separately
-    const blocks = results.data || [];
-    for (const block of blocks) {
-      const { data: translations } = await tenantDb
-        .from('cms_block_translations')
-        .select('*')
-        .eq('cms_block_id', block.id);
-
-      block.translations = {};
-      if (translations) {
-        translations.forEach(t => {
-          block.translations[t.language_code] = {
-            title: t.title,
-            content: t.content
-          };
-        });
-      }
+  // Apply where conditions
+  Object.entries(where).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      query = query.whereIn(key, value);
+    } else {
+      query = query.where(key, value);
     }
+  });
 
-    return blocks;
+  query = query.orderBy('sort_order', 'asc').orderBy('created_at', 'desc');
+
+  const blocks = await query;
+
+  // Load translations for each block
+  for (const block of blocks) {
+    const translations = await tenantDb
+      .select('language_code', 'title', 'content')
+      .from('cms_block_translations')
+      .where('cms_block_id', block.id);
+
+    block.translations = {};
+    translations.forEach(t => {
+      block.translations[t.language_code] = {
+        title: t.title,
+        content: t.content
+      };
+    });
   }
 
-  // Ensure translations object exists even if empty
-  return (data || []).map(block => ({
-    ...block,
-    translations: block.translations || {}
-  }));
+  return blocks;
 }
 
 /**
@@ -105,29 +62,27 @@ async function getCMSBlockWithAllTranslations(storeId, id) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   // Get the block
-  const { data: block, error: blockError } = await tenantDb
-    .from('cms_blocks')
+  const block = await tenantDb
     .select('*')
-    .eq('id', id)
-    .single();
+    .from('cms_blocks')
+    .where('id', id)
+    .first();
 
-  if (blockError || !block) return null;
+  if (!block) return null;
 
   // Get all translations
-  const { data: translations } = await tenantDb
-    .from('cms_block_translations')
+  const translations = await tenantDb
     .select('*')
-    .eq('cms_block_id', id);
+    .from('cms_block_translations')
+    .where('cms_block_id', id);
 
   block.translations = {};
-  if (translations) {
-    translations.forEach(t => {
-      block.translations[t.language_code] = {
-        title: t.title,
-        content: t.content
-      };
-    });
-  }
+  translations.forEach(t => {
+    block.translations[t.language_code] = {
+      title: t.title,
+      content: t.content
+    };
+  });
 
   return block;
 }
@@ -155,23 +110,22 @@ async function saveCMSBlockTranslations(storeId, blockId, translations) {
     // Skip if all fields are empty
     if (!title && !content) continue;
 
-    // Upsert translation record
-    const { error } = await tenantDb
-      .from('cms_block_translations')
-      .upsert({
+    // Upsert translation record using knex
+    await tenantDb
+      .insert({
         cms_block_id: blockId,
         language_code: langCode,
         title: title || null,
         content: content || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'cms_block_id,language_code'
+      })
+      .into('cms_block_translations')
+      .onConflict(['cms_block_id', 'language_code'])
+      .merge()
+      .catch(error => {
+        console.error(`Error saving translation for ${langCode}:`, error);
       });
-
-    if (error) {
-      console.error(`Error saving translation for ${langCode}:`, error);
-    }
   }
 }
 
@@ -186,40 +140,36 @@ async function getCMSPagesWithAllTranslations(storeId, where = {}) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   // Get pages with filters
-  let query = tenantDb.from('cms_pages').select('*');
+  let query = tenantDb.select('*').from('cms_pages');
 
   Object.entries(where).forEach(([key, value]) => {
     if (Array.isArray(value)) {
-      query = query.in(key, value);
+      query = query.whereIn(key, value);
     } else {
-      query = query.eq(key, value);
+      query = query.where(key, value);
     }
   });
 
-  const { data: pages, error } = await query.order('sort_order', { ascending: true });
-
-  if (error) throw error;
+  const pages = await query.orderBy('sort_order', 'asc');
 
   // Load translations for each page
-  for (const page of pages || []) {
-    const { data: translations } = await tenantDb
-      .from('cms_page_translations')
+  for (const page of pages) {
+    const translations = await tenantDb
       .select('*')
-      .eq('cms_page_id', page.id);
+      .from('cms_page_translations')
+      .where('cms_page_id', page.id);
 
     page.translations = {};
-    if (translations) {
-      translations.forEach(t => {
-        page.translations[t.language_code] = {
-          title: t.title,
-          content: t.content,
-          excerpt: t.excerpt
-        };
-      });
-    }
+    translations.forEach(t => {
+      page.translations[t.language_code] = {
+        title: t.title,
+        content: t.content,
+        excerpt: t.excerpt
+      };
+    });
   }
 
-  return pages || [];
+  return pages;
 }
 
 /**
@@ -233,30 +183,28 @@ async function getCMSPageWithAllTranslations(storeId, id) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   // Get the page
-  const { data: page, error: pageError } = await tenantDb
-    .from('cms_pages')
+  const page = await tenantDb
     .select('*')
-    .eq('id', id)
-    .single();
+    .from('cms_pages')
+    .where('id', id)
+    .first();
 
-  if (pageError || !page) return null;
+  if (!page) return null;
 
   // Get all translations
-  const { data: translations } = await tenantDb
-    .from('cms_page_translations')
+  const translations = await tenantDb
     .select('*')
-    .eq('cms_page_id', id);
+    .from('cms_page_translations')
+    .where('cms_page_id', id);
 
   page.translations = {};
-  if (translations) {
-    translations.forEach(t => {
-      page.translations[t.language_code] = {
-        title: t.title,
-        content: t.content,
-        excerpt: t.excerpt
-      };
-    });
-  }
+  translations.forEach(t => {
+    page.translations[t.language_code] = {
+      title: t.title,
+      content: t.content,
+      excerpt: t.excerpt
+    };
+  });
 
   return page;
 }
@@ -284,10 +232,9 @@ async function saveCMSPageTranslations(storeId, pageId, translations) {
     // Skip if all fields are empty
     if (!title && !content && !excerpt) continue;
 
-    // Upsert translation record
-    const { error } = await tenantDb
-      .from('cms_page_translations')
-      .upsert({
+    // Upsert translation record using knex
+    await tenantDb
+      .insert({
         cms_page_id: pageId,
         language_code: langCode,
         title: title || null,
@@ -295,13 +242,13 @@ async function saveCMSPageTranslations(storeId, pageId, translations) {
         excerpt: excerpt || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'cms_page_id,language_code'
+      })
+      .into('cms_page_translations')
+      .onConflict(['cms_page_id', 'language_code'])
+      .merge()
+      .catch(error => {
+        console.error(`Error saving page translation for ${langCode}:`, error);
       });
-
-    if (error) {
-      console.error(`Error saving page translation for ${langCode}:`, error);
-    }
   }
 }
 

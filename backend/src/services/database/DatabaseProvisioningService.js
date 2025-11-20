@@ -123,19 +123,8 @@ class DatabaseProvisioningService {
     try {
       const testConnection = await ConnectionManager._createConnection(config.type, config);
 
-      // Test query based on type
-      switch (config.type) {
-        case 'supabase-database':
-          // Supabase test - try to query a system table
-          const { error } = await testConnection.from('information_schema.tables').select('table_name').limit(1);
-          if (error) throw error;
-          break;
-
-        case 'postgresql':
-        case 'mysql':
-          await testConnection.query('SELECT 1');
-          break;
-      }
+      // Test query - works for all database types with knex
+      await testConnection.raw('SELECT 1');
 
       console.log('✅ Database connection test successful');
       return true;
@@ -168,23 +157,8 @@ class DatabaseProvisioningService {
       try {
         console.log(`  Creating table: ${tableSQL.name}...`);
 
-        switch (config.type) {
-          case 'supabase-database':
-            // For Supabase, use the SQL query method
-            const { error } = await connection.rpc('exec_sql', { sql_query: tableSQL.sql });
-            if (error) {
-              // Table might already exist
-              if (!error.message.includes('already exists')) {
-                console.warn(`  Warning creating ${tableSQL.name}:`, error.message);
-              }
-            }
-            break;
-
-          case 'postgresql':
-          case 'mysql':
-            await connection.query(tableSQL.sql);
-            break;
-        }
+        // Execute raw SQL using knex
+        await connection.raw(tableSQL.sql);
 
         createdTables.push(tableSQL.name);
         console.log(`  ✅ Created table: ${tableSQL.name}`);

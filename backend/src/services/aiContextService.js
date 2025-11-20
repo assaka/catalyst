@@ -139,26 +139,24 @@ class AIContextService {
       // Get tenant connection for AI context data
       const connection = await ConnectionManager.getStoreConnection(storeId);
 
-      let query = connection.client
+      let query = connection
+        .select('id', 'type', 'title', 'content', 'category', 'tags', 'priority')
         .from('ai_context_documents')
-        .select('id, type, title, content, category, tags, priority')
-        .eq('is_active', true)
-        .or(`mode.eq.${mode},mode.eq.all`)
-        .order('priority', { ascending: false })
-        .order('created_at', { ascending: false })
+        .where('is_active', true)
+        .where(function() {
+          this.where('mode', mode).orWhere('mode', 'all');
+        })
+        .orderBy('priority', 'desc')
+        .orderBy('created_at', 'desc')
         .limit(limit);
 
       if (category) {
-        query = query.or(`category.eq.${category},category.eq.core`);
+        query = query.where(function() {
+          this.where('category', category).orWhere('category', 'core');
+        });
       }
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching context documents:', error);
-        return [];
-      }
-
+      const data = await query;
       return data || [];
     } catch (error) {
       console.error('Error fetching context documents:', error);
@@ -221,25 +219,20 @@ class AIContextService {
       // Get tenant connection for AI examples
       const connection = await ConnectionManager.getStoreConnection(storeId);
 
-      let query_builder = connection.client
+      let query_builder = connection
+        .select('id', 'name', 'slug', 'description', 'category', 'complexity', 'code', 'files', 'features', 'use_cases', 'tags')
         .from('ai_plugin_examples')
-        .select('id, name, slug, description, category, complexity, code, files, features, use_cases, tags')
-        .eq('is_active', true)
-        .order('usage_count', { ascending: false })
+        .where('is_active', true)
+        .orderBy('usage_count', 'desc')
         .limit(limit);
 
       if (category) {
-        query_builder = query_builder.eq('category', category);
+        query_builder = query_builder.where('category', category);
       }
 
-      const { data, error } = await query_builder;
+      const data = await query_builder;
 
-      if (error) {
-        console.error('Error fetching plugin examples:', error);
-        return [];
-      }
-
-      // Parse JSON fields (Supabase returns them as objects already)
+      // Parse JSON fields if they come as strings
       return (data || []).map(r => ({
         ...r,
         files: typeof r.files === 'string' ? JSON.parse(r.files) : r.files,
@@ -312,19 +305,14 @@ class AIContextService {
       // Get tenant connection for AI patterns
       const connection = await ConnectionManager.getStoreConnection(storeId);
 
-      const { data, error } = await connection.client
+      const data = await connection
+        .select('id', 'name', 'pattern_type', 'description', 'code', 'language', 'framework', 'parameters', 'example_usage', 'tags')
         .from('ai_code_patterns')
-        .select('id, name, pattern_type, description, code, language, framework, parameters, example_usage, tags')
-        .eq('is_active', true)
-        .order('usage_count', { ascending: false })
+        .where('is_active', true)
+        .orderBy('usage_count', 'desc')
         .limit(limit);
 
-      if (error) {
-        console.error('Error fetching code patterns:', error);
-        return [];
-      }
-
-      // Parse JSON fields (Supabase returns them as objects already)
+      // Parse JSON fields if they come as strings
       return (data || []).map(r => ({
         ...r,
         parameters: typeof r.parameters === 'string' ? JSON.parse(r.parameters) : r.parameters,
@@ -491,8 +479,7 @@ class AIContextService {
       const connection = await ConnectionManager.getStoreConnection(storeId);
 
       // Log to usage table for analytics
-      await connection.client
-        .from('ai_context_usage')
+      await connection
         .insert({
           document_id: documentId || null,
           example_id: exampleId || null,
@@ -502,26 +489,27 @@ class AIContextService {
           query: query || null,
           was_helpful: wasHelpful || null,
           created_at: new Date().toISOString()
-        });
+        })
+        .into('ai_context_usage');
 
       // Increment usage counts for sorting (higher usage = shown first)
       if (exampleId) {
-        await connection.client.rpc('increment_usage_count', {
-          table_name: 'ai_plugin_examples',
-          record_id: exampleId
-        }).catch(() => {
-          // Fallback if RPC doesn't exist - just skip incrementing
-          console.warn('Could not increment usage count for example');
-        });
+        await connection
+          .from('ai_plugin_examples')
+          .where('id', exampleId)
+          .increment('usage_count', 1)
+          .catch(() => {
+            console.warn('Could not increment usage count for example');
+          });
       }
       if (patternId) {
-        await connection.client.rpc('increment_usage_count', {
-          table_name: 'ai_code_patterns',
-          record_id: patternId
-        }).catch(() => {
-          // Fallback if RPC doesn't exist - just skip incrementing
-          console.warn('Could not increment usage count for pattern');
-        });
+        await connection
+          .from('ai_code_patterns')
+          .where('id', patternId)
+          .increment('usage_count', 1)
+          .catch(() => {
+            console.warn('Could not increment usage count for pattern');
+          });
       }
     } catch (error) {
       console.error('Error tracking context usage:', error);
@@ -553,26 +541,23 @@ class AIContextService {
       // Get tenant connection for user preferences
       const connection = await ConnectionManager.getStoreConnection(storeId);
 
-      let query = connection.client
-        .from('ai_user_preferences')
+      let query = connection
         .select('*')
-        .order('updated_at', { ascending: false })
+        .from('ai_user_preferences')
+        .orderBy('updated_at', 'desc')
         .limit(1);
 
       if (userId && sessionId) {
-        query = query.or(`user_id.eq.${userId},session_id.eq.${sessionId}`);
+        query = query.where(function() {
+          this.where('user_id', userId).orWhere('session_id', sessionId);
+        });
       } else if (userId) {
-        query = query.eq('user_id', userId);
+        query = query.where('user_id', userId);
       } else if (sessionId) {
-        query = query.eq('session_id', sessionId);
+        query = query.where('session_id', sessionId);
       }
 
-      const { data, error } = await query.maybeSingle();
-
-      if (error) {
-        console.error('Error fetching user preferences:', error);
-        return null;
-      }
+      const data = await query.first();
 
       if (data) {
         return {
@@ -624,8 +609,7 @@ class AIContextService {
 
       if (existing) {
         // Update
-        await connection.client
-          .from('ai_user_preferences')
+        await connection
           .update({
             preferred_mode: prefs.preferredMode || existing.preferred_mode,
             coding_style: prefs.codingStyle || existing.coding_style,
@@ -635,11 +619,11 @@ class AIContextService {
             context_preferences: prefs.contextPreferences || existing.context_preferences,
             updated_at: new Date().toISOString()
           })
-          .eq('id', existing.id);
+          .from('ai_user_preferences')
+          .where('id', existing.id);
       } else {
         // Insert
-        await connection.client
-          .from('ai_user_preferences')
+        await connection
           .insert({
             user_id: userId || null,
             session_id: sessionId,
@@ -652,7 +636,8 @@ class AIContextService {
             context_preferences: prefs.contextPreferences || {},
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          });
+          })
+          .into('ai_user_preferences');
       }
     } catch (error) {
       console.error('Error saving user preferences:', error);
@@ -726,8 +711,7 @@ class AIContextService {
       // Get tenant connection for AI context documents
       const connection = await ConnectionManager.getStoreConnection(storeId);
 
-      const { data, error } = await connection.client
-        .from('ai_context_documents')
+      const [data] = await connection
         .insert({
           type: document.type,
           title: document.title,
@@ -741,12 +725,8 @@ class AIContextService {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
-        .select('id')
-        .single();
-
-      if (error) {
-        throw new Error(`Failed to add context document: ${error.message}`);
-      }
+        .into('ai_context_documents')
+        .returning('id');
 
       return data;
     } catch (error) {
