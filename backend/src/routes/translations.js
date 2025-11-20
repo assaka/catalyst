@@ -1846,25 +1846,23 @@ router.post('/preview', authMiddleware, async (req, res) => {
       });
     }
 
-    // Get tenant connection if store_id is provided
-    let connection, Product, Category, Attribute, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, EmailTemplate, PdfTemplate, AttributeValue, Store, tenantSequelize;
+    // Get tenant database connection if store_id is provided
+    let tenantDb;
     if (store_id) {
-      connection = await ConnectionManager.getConnection(store_id);
-      ({ Product, Category, Attribute, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, EmailTemplate, PdfTemplate, AttributeValue, Store } = connection.models);
-      tenantSequelize = connection.sequelize;
+      tenantDb = await ConnectionManager.getStoreConnection(store_id);
     }
 
     const entityTypeMap = {
-      product: { model: Product, name: 'Products', icon: '📦' },
-      category: { model: Category, name: 'Categories', icon: '📁' },
-      attribute: { model: Attribute, name: 'Attributes', icon: '🏷' },
-      cms_page: { model: CmsPage, name: 'CMS Pages', icon: '📄' },
-      cms_block: { model: CmsBlock, name: 'CMS Blocks', icon: '📝' },
-      product_tab: { model: ProductTab, name: 'Product Tabs', icon: '📑' },
-      product_label: { model: ProductLabel, name: 'Product Labels', icon: '🏷️' },
-      cookie_consent: { model: CookieConsentSettings, name: 'Cookie Consent', icon: '🍪' },
-      'email-template': { model: EmailTemplate, name: 'Email Templates', icon: '📧' },
-      'pdf-template': { model: PdfTemplate, name: 'PDF Templates', icon: '📑' },
+      product: { table: 'products', name: 'Products', icon: '📦' },
+      category: { table: 'categories', name: 'Categories', icon: '📁' },
+      attribute: { table: 'attributes', name: 'Attributes', icon: '🏷' },
+      cms_page: { table: 'cms_pages', name: 'CMS Pages', icon: '📄' },
+      cms_block: { table: 'cms_blocks', name: 'CMS Blocks', icon: '📝' },
+      product_tab: { table: 'product_tabs', name: 'Product Tabs', icon: '📑' },
+      product_label: { table: 'product_labels', name: 'Product Labels', icon: '🏷️' },
+      cookie_consent: { table: 'cookie_consent_settings', name: 'Cookie Consent', icon: '🍪' },
+      'email-template': { table: 'email_templates', name: 'Email Templates', icon: '📧' },
+      'pdf-template': { table: 'pdf_templates', name: 'PDF Templates', icon: '📑' },
       'custom-option': { name: 'Custom Options', icon: '⚙️', special: true },
       'stock-label': { name: 'Stock Labels', icon: '🏷️', special: true }
     };
@@ -1934,41 +1932,55 @@ router.post('/preview', authMiddleware, async (req, res) => {
 
       try {
         const config = entityTypeMap[entityType];
-        const whereClause = store_id ? { store_id } : {};
 
         let entityCount;
 
         // Handle special entity types
         if (entityType === 'attribute_value') {
           if (!store_id) continue;
-          const attributes = await Attribute.findAll({
-            where: { store_id },
-            attributes: ['id']
-          });
-          const attributeIds = attributes.map(attr => attr.id);
-          entityCount = await AttributeValue.count({
-            where: { attribute_id: { [Op.in]: attributeIds } }
-          });
+          const { data: attributes, error: attrError } = await tenantDb
+            .from('attributes')
+            .select('id')
+            .eq('store_id', store_id);
+
+          if (attrError) throw attrError;
+
+          const attributeIds = attributes?.map(attr => attr.id) || [];
+
+          if (attributeIds.length === 0) {
+            entityCount = 0;
+          } else {
+            const countQuery = `
+              SELECT COUNT(*) as count
+              FROM attribute_values
+              WHERE attribute_id = ANY($1)
+            `;
+            const countResult = await tenantDb.raw(countQuery, [attributeIds]);
+            entityCount = parseInt(countResult?.rows?.[0]?.count || 0);
+          }
         } else if (entityType === 'custom-option') {
           if (!store_id) continue;
-          const [customOptions] = await tenantSequelize.query(`
-            SELECT COUNT(*) as count
-            FROM custom_option_rules
-            WHERE store_id = :storeId
-          `, {
-            replacements: { storeId: store_id }
-          });
-          entityCount = parseInt(customOptions[0].count);
+          const { count: customOptionCount, error: customOptError } = await tenantDb
+            .from('custom_option_rules')
+            .select('*', { count: 'exact', head: true })
+            .eq('store_id', store_id);
+
+          if (customOptError) throw customOptError;
+          entityCount = customOptionCount || 0;
         } else if (entityType === 'stock-label') {
           // Stock labels is always 1 item (the settings themselves)
           entityCount = 1;
         } else if (config.special) {
-          // Skip other special types that don't have a model
+          // Skip other special types that don't have a table
           continue;
         } else {
-          entityCount = await config.model.count({
-            where: whereClause
-          });
+          const { count, error: countError } = await tenantDb
+            .from(config.table)
+            .select('*', { count: 'exact', head: true })
+            .eq('store_id', store_id);
+
+          if (countError) throw countError;
+          entityCount = count || 0;
         }
 
         // Simplified estimation: assume all items need translation to all languages
