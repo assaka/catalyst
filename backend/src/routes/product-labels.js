@@ -14,30 +14,31 @@ const router = express.Router();
  * Get product labels with translations from tenant DB
  */
 async function getProductLabelsWithTranslations(tenantDb, where = {}, lang = 'en', allTranslations = false) {
-  // Build query for product labels
+  // Build query for product labels using Supabase syntax
   let query = tenantDb
-    .select('*')
     .from('product_labels')
-    .orderBy([
-      { column: 'sort_order', order: 'asc' },
-      { column: 'priority', order: 'desc' },
-      { column: 'name', order: 'asc' }
-    ]);
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('priority', { ascending: false })
+    .order('name', { ascending: true });
 
   // Apply where conditions
   Object.entries(where).forEach(([key, value]) => {
-    query = query.where(key, value);
+    query = query.eq(key, value);
   });
 
-  const labels = await query;
+  const { data: labels, error } = await query;
+  if (error) throw new Error(error.message);
 
   if (allTranslations) {
     // Fetch ALL translations for each label
     for (const label of labels) {
-      const translations = await tenantDb
-        .select('language_code', 'name', 'text')
+      const { data: translations, error: transError } = await tenantDb
         .from('product_label_translations')
-        .where('product_label_id', label.id);
+        .select('language_code, name, text')
+        .eq('product_label_id', label.id);
+
+      if (transError) throw new Error(transError.message);
 
       // Build translations object { en: { name: '...', text: '...' }, nl: { ... } }
       label.translations = translations.reduce((acc, t) => {
@@ -48,17 +49,19 @@ async function getProductLabelsWithTranslations(tenantDb, where = {}, lang = 'en
   } else {
     // Fetch only the requested language translation for each label
     for (const label of labels) {
-      const translation = await tenantDb
-        .select('name', 'text')
+      const { data: translations, error: transError } = await tenantDb
         .from('product_label_translations')
-        .where('product_label_id', label.id)
-        .where('language_code', lang)
-        .first();
+        .select('name, text')
+        .eq('product_label_id', label.id)
+        .eq('language_code', lang)
+        .maybeSingle();
+
+      if (transError) throw new Error(transError.message);
 
       // Use translation if available, otherwise use base fields
-      if (translation) {
-        label.name = translation.name || label.name;
-        label.text = translation.text || label.text;
+      if (translations) {
+        label.name = translations.name || label.name;
+        label.text = translations.text || label.text;
       }
     }
   }
@@ -70,19 +73,22 @@ async function getProductLabelsWithTranslations(tenantDb, where = {}, lang = 'en
  * Get single product label with ALL translations
  */
 async function getProductLabelWithAllTranslations(tenantDb, id) {
-  const label = await tenantDb
-    .select('*')
+  const { data: label, error } = await tenantDb
     .from('product_labels')
-    .where('id', id)
-    .first();
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
 
+  if (error) throw new Error(error.message);
   if (!label) return null;
 
   // Fetch all translations for this label
-  const translations = await tenantDb
-    .select('language_code', 'name', 'text')
+  const { data: translations, error: transError } = await tenantDb
     .from('product_label_translations')
-    .where('product_label_id', label.id);
+    .select('language_code, name, text')
+    .eq('product_label_id', label.id);
+
+  if (transError) throw new Error(transError.message);
 
   // Build translations object { en: { name: '...', text: '...' }, nl: { ... } }
   label.translations = translations.reduce((acc, t) => {
