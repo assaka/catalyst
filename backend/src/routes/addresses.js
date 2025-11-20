@@ -63,20 +63,19 @@ router.get('/', optionalAuth, async (req, res) => {
       });
     }
 
-    let whereClause = {};
+    // Determine user ID and field to filter by
+    let userIdToQuery;
+    let userField;
 
-    // If authenticated, get addresses for the authenticated user
     if (req.user) {
       const isCustomer = req.user.role === 'customer';
-      if (isCustomer) {
-        whereClause.customer_id = req.user.id;
-      } else {
-        whereClause.user_id = req.user.id;
-      }
+      userIdToQuery = req.user.id;
+      userField = isCustomer ? 'customer_id' : 'user_id';
       console.log('🔍 Getting addresses for authenticated user:', req.user.id, 'role:', req.user.role);
     } else if (user_id) {
       // Fallback to user_id parameter (legacy support)
-      whereClause.user_id = user_id;
+      userIdToQuery = user_id;
+      userField = 'user_id';
       console.log('🔍 Getting addresses for user_id parameter:', user_id);
     } else {
       return res.status(400).json({
@@ -85,20 +84,23 @@ router.get('/', optionalAuth, async (req, res) => {
       });
     }
 
-    // Get tenant connection and Address model
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { Address } = connection.models;
+    // Get tenant connection
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(store_id);
 
-    const addresses = await Address.findAll({
-      where: whereClause,
-      order: [['is_default', 'DESC'], ['createdAt', 'DESC']]
-    });
+    const { data: addresses, error } = await supabaseClient
+      .from('addresses')
+      .select('*')
+      .eq(userField, userIdToQuery)
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: false });
 
-    console.log('✅ Found addresses:', addresses.length);
+    if (error) throw error;
+
+    console.log('✅ Found addresses:', addresses?.length || 0);
 
     res.json({
       success: true,
-      data: addresses
+      data: addresses || []
     });
   } catch (error) {
     console.error('Get addresses error:', error);
@@ -124,17 +126,23 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    // Get tenant connection and Address model
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { Address } = connection.models;
+    // Get tenant connection
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(store_id);
 
-    const address = await Address.findByPk(req.params.id);
+    const { data: address, error } = await supabaseClient
+      .from('addresses')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
 
-    if (!address) {
-      return res.status(404).json({
-        success: false,
-        message: 'Address not found'
-      });
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          message: 'Address not found'
+        });
+      }
+      throw error;
     }
 
     res.json({
@@ -194,19 +202,22 @@ router.post('/', optionalAuth, async (req, res) => {
       });
     }
 
-    // Verify user exists before creating address using ConnectionManager
-    // Get tenant connection for user verification
-    const connection = await ConnectionManager.getConnection(store_id);
+    // Get tenant connection
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(store_id);
 
-    // Check the correct table based on user role
+    // Verify user exists before creating address
     const isCustomer = req.user.role === 'customer';
-    const ModelClass = isCustomer ? connection.models.Customer : connection.models.User;
     const tableName = isCustomer ? 'customers' : 'users';
 
     console.log(`🔍 Checking ${tableName} table for user:`, req.user.id);
-    const userExists = await ModelClass.findByPk(req.user.id);
 
-    if (!userExists) {
+    const { data: userExists, error: userError } = await supabaseClient
+      .from(tableName)
+      .select('id')
+      .eq('id', req.user.id)
+      .single();
+
+    if (userError || !userExists) {
       console.log(`❌ User not found in ${tableName} table:`, req.user.id);
       return res.status(400).json({
         success: false,
@@ -234,11 +245,15 @@ router.post('/', optionalAuth, async (req, res) => {
       console.log('💾 Setting user_id for address:', req.user.id);
     }
 
-    // Use the tenant connection we already have for Address model
-    const { Address } = connection.models;
-
     console.log('💾 Creating address for verified user:', req.user.id);
-    const address = await Address.create(addressData);
+
+    const { data: address, error } = await supabaseClient
+      .from('addresses')
+      .insert(addressData)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     res.status(201).json({
       success: true,
@@ -271,28 +286,35 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     // Build where clause based on user role
     const isCustomer = req.user.role === 'customer';
-    const whereClause = { id: req.params.id };
+    const userField = isCustomer ? 'customer_id' : 'user_id';
 
-    if (isCustomer) {
-      whereClause.customer_id = req.user.id;
-    } else {
-      whereClause.user_id = req.user.id;
-    }
+    // Get tenant connection
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(store_id);
 
-    // Get tenant connection and Address model
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { Address } = connection.models;
+    // Check if address exists and belongs to user
+    const { data: existingAddress, error: fetchError } = await supabaseClient
+      .from('addresses')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq(userField, req.user.id)
+      .single();
 
-    const address = await Address.findOne({ where: whereClause });
-
-    if (!address) {
+    if (fetchError || !existingAddress) {
       return res.status(404).json({
         success: false,
         message: 'Address not found'
       });
     }
 
-    await address.update(req.body);
+    const { data: address, error } = await supabaseClient
+      .from('addresses')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .eq(userField, req.user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -324,28 +346,33 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 
     // Build where clause based on user role
     const isCustomer = req.user.role === 'customer';
-    const whereClause = { id: req.params.id };
+    const userField = isCustomer ? 'customer_id' : 'user_id';
 
-    if (isCustomer) {
-      whereClause.customer_id = req.user.id;
-    } else {
-      whereClause.user_id = req.user.id;
-    }
+    // Get tenant connection
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(store_id);
 
-    // Get tenant connection and Address model
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { Address } = connection.models;
+    // Check if address exists and belongs to user
+    const { data: existingAddress, error: fetchError } = await supabaseClient
+      .from('addresses')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq(userField, req.user.id)
+      .single();
 
-    const address = await Address.findOne({ where: whereClause });
-
-    if (!address) {
+    if (fetchError || !existingAddress) {
       return res.status(404).json({
         success: false,
         message: 'Address not found'
       });
     }
 
-    await address.destroy();
+    const { error: deleteError } = await supabaseClient
+      .from('addresses')
+      .delete()
+      .eq('id', req.params.id)
+      .eq(userField, req.user.id);
+
+    if (deleteError) throw deleteError;
 
     res.json({
       success: true,

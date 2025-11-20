@@ -10,8 +10,7 @@ const { checkStoreOwnership } = require('../middleware/storeAuth');
 const { injectABTestContext } = require('../middleware/abTestingMiddleware');
 const abTestingService = require('../services/analytics/ABTestingService');
 const slotConfigABTesting = require('../services/analytics/SlotConfigABTesting');
-const ABTest = require('../models/ABTest');
-const ABTestAssignment = require('../models/ABTestAssignment');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 // Apply A/B test context to all routes
 router.use(injectABTestContext);
@@ -57,15 +56,21 @@ router.get('/active/:storeId', async (req, res) => {
     const { storeId } = req.params;
     const { pageType } = req.query;
 
-    const tests = pageType
-      ? await slotConfigABTesting.getActiveTestsForPage(pageType, storeId)
-      : await ABTest.findAll({
-          where: {
-            store_id: storeId,
-            status: 'running'
-          },
-          attributes: ['id', 'name', 'description', 'primary_metric', 'metadata']
-        });
+    let tests;
+    if (pageType) {
+      tests = await slotConfigABTesting.getActiveTestsForPage(pageType, storeId);
+    } else {
+      const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+
+      const { data, error } = await supabaseClient
+        .from('ab_tests')
+        .select('id, name, description, primary_metric, metadata')
+        .eq('store_id', storeId)
+        .eq('status', 'running');
+
+      if (error) throw error;
+      tests = data || [];
+    }
 
     // Get variant assignments for each test
     const testsWithVariants = await Promise.all(
@@ -194,23 +199,31 @@ router.post('/:storeId', authMiddleware, checkStoreOwnership, async (req, res) =
       });
     }
 
-    const test = await ABTest.create({
-      store_id: storeId,
-      name,
-      description,
-      hypothesis,
-      status: 'draft',
-      variants,
-      traffic_allocation: traffic_allocation || 1.0,
-      targeting_rules,
-      primary_metric,
-      secondary_metrics: secondary_metrics || [],
-      start_date,
-      end_date,
-      min_sample_size: min_sample_size || 100,
-      confidence_level: confidence_level || 0.95,
-      metadata: metadata || {}
-    });
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: test, error } = await supabaseClient
+      .from('ab_tests')
+      .insert({
+        store_id: storeId,
+        name,
+        description,
+        hypothesis,
+        status: 'draft',
+        variants,
+        traffic_allocation: traffic_allocation || 1.0,
+        targeting_rules,
+        primary_metric,
+        secondary_metrics: secondary_metrics || [],
+        start_date,
+        end_date,
+        min_sample_size: min_sample_size || 100,
+        confidence_level: confidence_level || 0.95,
+        metadata: metadata || {}
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     res.status(201).json({
       success: true,
@@ -234,19 +247,25 @@ router.get('/:storeId', authMiddleware, checkStoreOwnership, async (req, res) =>
     const { storeId } = req.params;
     const { status } = req.query;
 
-    const where = { store_id: storeId };
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+
+    let query = supabaseClient
+      .from('ab_tests')
+      .select('*')
+      .eq('store_id', storeId)
+      .order('created_at', { ascending: false });
+
     if (status) {
-      where.status = status;
+      query = query.eq('status', status);
     }
 
-    const tests = await ABTest.findAll({
-      where,
-      order: [['created_at', 'DESC']]
-    });
+    const { data: tests, error } = await query;
+
+    if (error) throw error;
 
     res.json({
       success: true,
-      data: tests
+      data: tests || []
     });
   } catch (error) {
     console.error('[AB TESTING API] Error getting tests:', error);
@@ -263,15 +282,25 @@ router.get('/:storeId', authMiddleware, checkStoreOwnership, async (req, res) =>
  */
 router.get('/:storeId/test/:testId', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
-    const { testId } = req.params;
+    const { storeId, testId } = req.params;
 
-    const test = await ABTest.findByPk(testId);
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
 
-    if (!test) {
-      return res.status(404).json({
-        success: false,
-        error: 'Test not found'
-      });
+    const { data: test, error } = await supabaseClient
+      .from('ab_tests')
+      .select('*')
+      .eq('id', testId)
+      .eq('store_id', storeId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          error: 'Test not found'
+        });
+      }
+      throw error;
     }
 
     res.json({
@@ -293,11 +322,19 @@ router.get('/:storeId/test/:testId', authMiddleware, checkStoreOwnership, async 
  */
 router.put('/:storeId/test/:testId', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
-    const { testId } = req.params;
+    const { storeId, testId } = req.params;
 
-    const test = await ABTest.findByPk(testId);
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
 
-    if (!test) {
+    // Check if test exists
+    const { data: existingTest, error: fetchError } = await supabaseClient
+      .from('ab_tests')
+      .select('id')
+      .eq('id', testId)
+      .eq('store_id', storeId)
+      .single();
+
+    if (fetchError || !existingTest) {
       return res.status(404).json({
         success: false,
         error: 'Test not found'
@@ -312,13 +349,22 @@ router.put('/:storeId/test/:testId', authMiddleware, checkStoreOwnership, async 
       'metadata'
     ];
 
+    const updates = {};
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        test[field] = req.body[field];
+        updates[field] = req.body[field];
       }
     });
 
-    await test.save();
+    const { data: test, error } = await supabaseClient
+      .from('ab_tests')
+      .update(updates)
+      .eq('id', testId)
+      .eq('store_id', storeId)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -339,27 +385,44 @@ router.put('/:storeId/test/:testId', authMiddleware, checkStoreOwnership, async 
  */
 router.post('/:storeId/test/:testId/start', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
-    const { testId } = req.params;
+    const { storeId, testId } = req.params;
 
-    const test = await ABTest.findByPk(testId);
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
 
-    if (!test) {
+    // Check current status
+    const { data: existingTest, error: fetchError } = await supabaseClient
+      .from('ab_tests')
+      .select('status')
+      .eq('id', testId)
+      .eq('store_id', storeId)
+      .single();
+
+    if (fetchError || !existingTest) {
       return res.status(404).json({
         success: false,
         error: 'Test not found'
       });
     }
 
-    if (test.status === 'running') {
+    if (existingTest.status === 'running') {
       return res.status(400).json({
         success: false,
         error: 'Test is already running'
       });
     }
 
-    test.status = 'running';
-    test.start_date = new Date();
-    await test.save();
+    const { data: test, error } = await supabaseClient
+      .from('ab_tests')
+      .update({
+        status: 'running',
+        start_date: new Date().toISOString()
+      })
+      .eq('id', testId)
+      .eq('store_id', storeId)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -380,19 +443,27 @@ router.post('/:storeId/test/:testId/start', authMiddleware, checkStoreOwnership,
  */
 router.post('/:storeId/test/:testId/pause', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
-    const { testId } = req.params;
+    const { storeId, testId } = req.params;
 
-    const test = await ABTest.findByPk(testId);
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
 
-    if (!test) {
-      return res.status(404).json({
-        success: false,
-        error: 'Test not found'
-      });
+    const { data: test, error } = await supabaseClient
+      .from('ab_tests')
+      .update({ status: 'paused' })
+      .eq('id', testId)
+      .eq('store_id', storeId)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          error: 'Test not found'
+        });
+      }
+      throw error;
     }
-
-    test.status = 'paused';
-    await test.save();
 
     res.json({
       success: true,
@@ -413,24 +484,37 @@ router.post('/:storeId/test/:testId/pause', authMiddleware, checkStoreOwnership,
  */
 router.post('/:storeId/test/:testId/complete', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
-    const { testId } = req.params;
+    const { storeId, testId } = req.params;
     const { winner_variant_id } = req.body;
 
-    const test = await ABTest.findByPk(testId);
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
 
-    if (!test) {
-      return res.status(404).json({
-        success: false,
-        error: 'Test not found'
-      });
-    }
+    const updates = {
+      status: 'completed',
+      end_date: new Date().toISOString()
+    };
 
-    test.status = 'completed';
-    test.end_date = new Date();
     if (winner_variant_id) {
-      test.winner_variant_id = winner_variant_id;
+      updates.winner_variant_id = winner_variant_id;
     }
-    await test.save();
+
+    const { data: test, error } = await supabaseClient
+      .from('ab_tests')
+      .update(updates)
+      .eq('id', testId)
+      .eq('store_id', storeId)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          success: false,
+          error: 'Test not found'
+        });
+      }
+      throw error;
+    }
 
     res.json({
       success: true,
@@ -474,32 +558,48 @@ router.get('/:storeId/test/:testId/results', authMiddleware, checkStoreOwnership
  */
 router.delete('/:storeId/test/:testId', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
-    const { testId } = req.params;
+    const { storeId, testId } = req.params;
 
-    const test = await ABTest.findByPk(testId);
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
 
-    if (!test) {
-      return res.status(404).json({
-        success: false,
-        error: 'Test not found'
+    // Check if test has assignments
+    const { count, error: countError } = await supabaseClient
+      .from('ab_test_assignments')
+      .select('*', { count: 'exact', head: true })
+      .eq('test_id', testId);
+
+    if (countError) throw countError;
+
+    if (count > 0) {
+      // Archive instead of delete if test has data
+      const { data: test, error } = await supabaseClient
+        .from('ab_tests')
+        .update({ status: 'archived' })
+        .eq('id', testId)
+        .eq('store_id', storeId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return res.json({
+        success: true,
+        message: 'Test archived'
       });
     }
 
-    // Archive instead of delete if test has data
-    const assignmentCount = await ABTestAssignment.count({
-      where: { test_id: testId }
-    });
+    // Delete test
+    const { error: deleteError } = await supabaseClient
+      .from('ab_tests')
+      .delete()
+      .eq('id', testId)
+      .eq('store_id', storeId);
 
-    if (assignmentCount > 0) {
-      test.status = 'archived';
-      await test.save();
-    } else {
-      await test.destroy();
-    }
+    if (deleteError) throw deleteError;
 
     res.json({
       success: true,
-      message: assignmentCount > 0 ? 'Test archived' : 'Test deleted'
+      message: 'Test deleted'
     });
   } catch (error) {
     console.error('[AB TESTING API] Error deleting test:', error);

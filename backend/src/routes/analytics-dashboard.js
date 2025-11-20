@@ -6,7 +6,6 @@
 const express = require('express');
 const router = express.Router();
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { Op } = require('sequelize');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
@@ -17,30 +16,27 @@ const { checkStoreOwnership } = require('../middleware/storeAuth');
 router.get('/:storeId/realtime', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const connection = await ConnectionManager.getConnection(storeId);
-    const { CustomerActivity } = connection.models;
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
     // Get unique sessions in last 5 minutes (limit to 5000 recent activities)
-    const recentActivities = await CustomerActivity.findAll({
-      where: {
-        store_id: storeId,
-        created_at: {
-          [Op.gte]: fiveMinutesAgo
-        }
-      },
-      attributes: ['session_id', 'user_id', 'page_url', 'created_at'],
-      order: [['created_at', 'DESC']],
-      limit: 5000
-    });
+    const { data: recentActivities, error } = await supabaseClient
+      .from('customer_activities')
+      .select('session_id, user_id, page_url, created_at')
+      .eq('store_id', storeId)
+      .gte('created_at', fiveMinutesAgo)
+      .order('created_at', { ascending: false })
+      .limit(5000);
+
+    if (error) throw error;
 
     // Get unique sessions
-    const uniqueSessions = new Set(recentActivities.map(a => a.session_id));
-    const uniqueUsers = new Set(recentActivities.filter(a => a.user_id).map(a => a.user_id));
+    const uniqueSessions = new Set((recentActivities || []).map(a => a.session_id));
+    const uniqueUsers = new Set((recentActivities || []).filter(a => a.user_id).map(a => a.user_id));
 
     // Get current pages (latest activity per session)
     const sessionPages = {};
-    recentActivities.forEach(activity => {
+    (recentActivities || []).forEach(activity => {
       if (!sessionPages[activity.session_id]) {
         sessionPages[activity.session_id] = activity.page_url;
       }
@@ -72,36 +68,42 @@ router.get('/:storeId/realtime', authMiddleware, checkStoreOwnership, async (req
 router.get('/:storeId/sessions', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const connection = await ConnectionManager.getConnection(storeId);
-    const { CustomerActivity } = connection.models;
-    const { start_date, end_date, limit = 10000 } = req.query; // Default limit: 10,000 activities
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const { start_date, end_date, limit = 10000 } = req.query;
 
-    const whereClause = { store_id: storeId };
-
+    let startDate, endDate;
     if (start_date && end_date) {
-      whereClause.created_at = {
-        [Op.between]: [new Date(start_date), new Date(end_date)]
-      };
+      startDate = new Date(start_date).toISOString();
+      endDate = new Date(end_date).toISOString();
     } else {
       // Default to last 7 days
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      whereClause.created_at = {
-        [Op.gte]: sevenDaysAgo
-      };
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      startDate = sevenDaysAgo;
     }
 
-    // Add pagination to prevent memory issues with large datasets
-    const activities = await CustomerActivity.findAll({
-      where: whereClause,
-      attributes: ['session_id', 'user_agent', 'created_at', 'metadata'],
-      order: [['created_at', 'ASC']],
-      limit: parseInt(limit)
-    });
+    // Build query
+    let query = supabaseClient
+      .from('customer_activities')
+      .select('session_id, user_agent, created_at, metadata, country_name, city, language')
+      .eq('store_id', storeId)
+      .order('created_at', { ascending: true })
+      .limit(parseInt(limit));
+
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+
+    const { data: activities, error } = await query;
+
+    if (error) throw error;
 
     // Calculate session metrics
     const sessions = {};
 
-    activities.forEach(activity => {
+    (activities || []).forEach(activity => {
       const sid = activity.session_id;
 
       if (!sessions[sid]) {
@@ -160,17 +162,11 @@ router.get('/:storeId/sessions', authMiddleware, checkStoreOwnership, async (req
     });
 
     // Get geographic and language data
-    const geoActivities = await CustomerActivity.findAll({
-      where: whereClause,
-      attributes: ['country_name', 'city', 'language'],
-      raw: true
-    });
-
     const countryBreakdown = {};
     const cityBreakdown = {};
     const languageBreakdown = {};
 
-    geoActivities.forEach(activity => {
+    (activities || []).forEach(activity => {
       if (activity.country_name) {
         countryBreakdown[activity.country_name] = (countryBreakdown[activity.country_name] || 0) + 1;
       }
@@ -233,35 +229,42 @@ router.get('/:storeId/sessions', authMiddleware, checkStoreOwnership, async (req
 router.get('/:storeId/timeseries', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const connection = await ConnectionManager.getConnection(storeId);
-    const { CustomerActivity } = connection.models;
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
     const { start_date, end_date, interval = 'hour' } = req.query;
 
-    const whereClause = { store_id: storeId };
-
+    let startDate, endDate;
     if (start_date && end_date) {
-      whereClause.created_at = {
-        [Op.between]: [new Date(start_date), new Date(end_date)]
-      };
+      startDate = new Date(start_date).toISOString();
+      endDate = new Date(end_date).toISOString();
     } else {
       // Default to last 24 hours
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      whereClause.created_at = {
-        [Op.gte]: twentyFourHoursAgo
-      };
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      startDate = twentyFourHoursAgo;
     }
 
-    const activities = await CustomerActivity.findAll({
-      where: whereClause,
-      attributes: ['created_at', 'session_id', 'activity_type'],
-      order: [['created_at', 'ASC']]
-    });
+    // Build query
+    let query = supabaseClient
+      .from('customer_activities')
+      .select('created_at, session_id, activity_type')
+      .eq('store_id', storeId)
+      .order('created_at', { ascending: true });
+
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+
+    const { data: activities, error } = await query;
+
+    if (error) throw error;
 
     // Group by time interval
     const timeSeriesData = {};
     const sessionsByTime = {};
 
-    activities.forEach(activity => {
+    (activities || []).forEach(activity => {
       const date = new Date(activity.created_at);
       let timeKey;
 
@@ -321,35 +324,41 @@ router.get('/:storeId/timeseries', authMiddleware, checkStoreOwnership, async (r
 router.get('/:storeId/top-products', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const { storeId } = req.params;
-    const connection = await ConnectionManager.getConnection(storeId);
-    const { CustomerActivity } = connection.models;
+    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
     const { start_date, end_date, metric = 'views', limit = 10 } = req.query;
 
-    const whereClause = { store_id: storeId };
-
+    let startDate, endDate;
     if (start_date && end_date) {
-      whereClause.created_at = {
-        [Op.between]: [new Date(start_date), new Date(end_date)]
-      };
+      startDate = new Date(start_date).toISOString();
+      endDate = new Date(end_date).toISOString();
     }
 
     // Get product views or add_to_cart events
     const activityType = metric === 'cart' ? 'add_to_cart' : 'product_view';
 
-    const activities = await CustomerActivity.findAll({
-      where: {
-        ...whereClause,
-        activity_type: activityType,
-        product_id: { [Op.ne]: null }
-      },
-      attributes: ['product_id', 'metadata'],
-      raw: true
-    });
+    // Build query
+    let query = supabaseClient
+      .from('customer_activities')
+      .select('product_id, metadata')
+      .eq('store_id', storeId)
+      .eq('activity_type', activityType)
+      .not('product_id', 'is', null);
+
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+
+    const { data: activities, error } = await query;
+
+    if (error) throw error;
 
     // Aggregate by product
     const productStats = {};
 
-    activities.forEach(activity => {
+    (activities || []).forEach(activity => {
       const pid = activity.product_id;
       if (!productStats[pid]) {
         productStats[pid] = {
