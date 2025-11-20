@@ -91,13 +91,24 @@ async function checkUserStoreAccess(userId, storeId) {
     // First, check if user owns the store
     const { data: store, error: storeError } = await masterDbClient
       .from('stores')
-      .select('id, name, user_id, is_active')
+      .select('id, name, user_id, is_active, slug')
       .eq('id', storeId)
       .eq('is_active', true)
       .single();
 
     if (storeError || !store) {
       console.log('❌ Store not found or not active:', storeId);
+      console.log('❌ Error details:', storeError);
+      console.log('❌ Store data:', store);
+
+      // Also try without is_active filter to see if store exists at all
+      const { data: anyStore, error: anyError } = await masterDbClient
+        .from('stores')
+        .select('id, user_id, is_active, status')
+        .eq('id', storeId)
+        .single();
+
+      console.log('🔍 Store check without is_active filter:', { anyStore, anyError });
       return null;
     }
 

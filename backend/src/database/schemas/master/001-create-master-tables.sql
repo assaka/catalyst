@@ -36,12 +36,13 @@ CREATE INDEX IF NOT EXISTS idx_users_account_type ON users(account_type);
 
 -- ============================================
 -- 2. STORES TABLE (Minimal registry)
--- Only contains: id, user_id, status, is_active, created_at
--- Full store data (name, slug, settings, etc.) in tenant DB
+-- Only contains: id, user_id, slug, status, is_active, created_at
+-- Full store data (name, settings, etc.) in tenant DB
 -- ============================================
 CREATE TABLE IF NOT EXISTS stores (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  slug VARCHAR(255) UNIQUE NOT NULL,
   status VARCHAR(50) DEFAULT 'pending_database' CHECK (status IN (
     'pending_database',  -- Waiting for DB connection
     'provisioning',      -- Creating tenant DB
@@ -55,6 +56,7 @@ CREATE TABLE IF NOT EXISTS stores (
 );
 
 CREATE INDEX IF NOT EXISTS idx_stores_user_id ON stores(user_id);
+CREATE INDEX IF NOT EXISTS idx_stores_slug ON stores(slug);
 CREATE INDEX IF NOT EXISTS idx_stores_status ON stores(status);
 CREATE INDEX IF NOT EXISTS idx_stores_active ON stores(is_active) WHERE is_active = true;
 
@@ -456,7 +458,7 @@ CREATE TRIGGER update_credit_balances_updated_at BEFORE UPDATE ON credit_balance
 -- COMMENTS FOR DOCUMENTATION
 -- ============================================
 COMMENT ON TABLE users IS 'Platform users (agency/store owners only). Full user structure synced from tenant DBs where account_type = agency';
-COMMENT ON TABLE stores IS 'Minimal store registry. Full store data (name, slug, settings, etc.) stored in tenant databases';
+COMMENT ON TABLE stores IS 'Minimal store registry with slug for routing. Full store data (name, settings, etc.) stored in tenant databases';
 COMMENT ON TABLE store_databases IS 'Encrypted tenant database connection credentials. Allows backend to connect to each store tenant DB';
 COMMENT ON TABLE store_hostnames IS 'Maps hostnames/domains to stores for fast tenant resolution';
 COMMENT ON TABLE subscriptions IS 'Store subscription plans and billing information';
