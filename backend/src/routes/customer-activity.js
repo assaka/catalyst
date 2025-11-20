@@ -1,6 +1,5 @@
 const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { Op } = require('sequelize');
 const { analyticsLimiter, publicReadLimiter } = require('../middleware/rateLimiters');
 const { validateRequest, customerActivitySchema } = require('../validation/analyticsSchemas');
 const { attachConsentInfo, sanitizeEventData } = require('../middleware/consentMiddleware');
@@ -39,39 +38,65 @@ router.get('/', publicReadLimiter, async (req, res) => {
       });
     }
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { CustomerActivity } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const whereClause = {};
-    if (session_id) whereClause.session_id = session_id;
-    if (store_id) whereClause.store_id = store_id;
-    if (user_id) whereClause.user_id = user_id;
-    if (activity_type) whereClause.activity_type = activity_type;
+    // Build query with filters
+    let query = tenantDb
+      .from('customer_activities')
+      .select('*')
+      .eq('store_id', store_id)
+      .order('created_at', { ascending: false });
 
+    // Apply filters
+    if (session_id) {
+      query = query.eq('session_id', session_id);
+    }
+    if (user_id) {
+      query = query.eq('user_id', user_id);
+    }
+    if (activity_type) {
+      query = query.eq('activity_type', activity_type);
+    }
     if (start_date && end_date) {
-      whereClause.created_at = {
-        [Op.between]: [new Date(start_date), new Date(end_date)]
-      };
+      query = query.gte('created_at', new Date(start_date).toISOString())
+                   .lte('created_at', new Date(end_date).toISOString());
     }
 
-    const offset = (page - 1) * limit;
+    // Get total count for pagination (separate query without limit/offset)
+    let countQuery = tenantDb
+      .from('customer_activities')
+      .select('*', { count: 'exact', head: true })
+      .eq('store_id', store_id);
 
-    const activities = await CustomerActivity.findAndCountAll({
-      where: whereClause,
-      order: [['created_at', 'DESC']],
-      limit: parseInt(limit),
-      offset: parseInt(offset)
-    });
+    if (session_id) countQuery = countQuery.eq('session_id', session_id);
+    if (user_id) countQuery = countQuery.eq('user_id', user_id);
+    if (activity_type) countQuery = countQuery.eq('activity_type', activity_type);
+    if (start_date && end_date) {
+      countQuery = countQuery.gte('created_at', new Date(start_date).toISOString())
+                             .lte('created_at', new Date(end_date).toISOString());
+    }
+
+    // Execute count query
+    const { count, error: countError } = await countQuery;
+    if (countError) throw countError;
+
+    // Apply pagination to main query
+    const offset = (page - 1) * limit;
+    query = query.range(offset, offset + parseInt(limit) - 1);
+
+    // Execute main query
+    const { data: activities, error } = await query;
+    if (error) throw error;
 
     res.json({
       success: true,
       data: {
-        activities: activities.rows,
+        activities: activities || [],
         pagination: {
           current_page: parseInt(page),
-          total_pages: Math.ceil(activities.count / limit),
-          total_items: activities.count,
+          total_pages: Math.ceil((count || 0) / limit),
+          total_items: count || 0,
           items_per_page: parseInt(limit)
         }
       }
