@@ -197,11 +197,32 @@ const DatabaseIntegrations = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <p className="text-gray-500 text-sm mb-4">Coming Soon</p>
-                <p className="text-gray-400 text-xs">
-                  Connect via OAuth to Neon's serverless PostgreSQL. Free tier available.
-                </p>
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-sm text-blue-900 mb-2">Features</h3>
+                  <ul className="text-xs text-blue-800 space-y-1">
+                    <li>• Serverless PostgreSQL with autoscaling</li>
+                    <li>• Database branching for dev/staging/prod</li>
+                    <li>• Free tier: 0.5 GB storage, 191 hours compute/month</li>
+                    <li>• Pro plan: $19/month for 3 GB storage</li>
+                  </ul>
+                </div>
+
+                <Button
+                  className="w-full"
+                  onClick={async () => {
+                    try {
+                      const response = await apiClient.get(`/database-oauth/neon/authorize?store_id=${storeId}`);
+                      if (response.authUrl) {
+                        window.location.href = response.authUrl;
+                      }
+                    } catch (error) {
+                      toast.error('Failed to initiate Neon connection');
+                    }
+                  }}
+                >
+                  Connect with Neon
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -241,11 +262,32 @@ const DatabaseIntegrations = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <p className="text-gray-500 text-sm mb-4">Coming Soon</p>
-                <p className="text-gray-400 text-xs">
-                  Connect via OAuth to PlanetScale's serverless MySQL. Free tier available.
-                </p>
+              <div className="space-y-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-sm text-green-900 mb-2">Features</h3>
+                  <ul className="text-xs text-green-800 space-y-1">
+                    <li>• Serverless MySQL with automatic scaling</li>
+                    <li>• Database branching and schema management</li>
+                    <li>• Free tier: 5 GB storage, 1 billion row reads/month</li>
+                    <li>• Scaler plan: $29/month for 10 GB storage</li>
+                  </ul>
+                </div>
+
+                <Button
+                  className="w-full"
+                  onClick={async () => {
+                    try {
+                      const response = await apiClient.get(`/database-oauth/planetscale/authorize?store_id=${storeId}`);
+                      if (response.authUrl) {
+                        window.location.href = response.authUrl;
+                      }
+                    } catch (error) {
+                      toast.error('Failed to initiate PlanetScale connection');
+                    }
+                  }}
+                >
+                  Connect with PlanetScale
+                </Button>
               </div>
             </CardContent>
           </Card>

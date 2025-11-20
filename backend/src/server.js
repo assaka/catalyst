@@ -118,6 +118,7 @@ const pluginVersionApiRoutes = require('./routes/plugin-version-api');
 const pluginAIRoutes = require('./routes/pluginAIRoutes');
 const chatApiRoutes = require('./routes/chat-api');
 const databaseProvisioningRoutes = require('./routes/database-provisioning');
+const databaseOAuthRoutes = require('./routes/database-oauth');
 const customDomainsRoutes = require('./routes/custom-domains');
 const creditRoutes = require('./routes/credits');
 const serviceCreditCostsRoutes = require('./routes/service-credit-costs');
@@ -1027,6 +1028,7 @@ app.use('/api/shopify', shopifyRoutes);
 app.use('/api/amazon', amazonRoutes);
 app.use('/api/ebay', ebayRoutes);
 app.use('/api/database-provisioning', authMiddleware, databaseProvisioningRoutes); // Master DB: provisioning, subscriptions, billing
+app.use('/api/database-oauth', databaseOAuthRoutes); // Database OAuth: Neon, PlanetScale
 app.use('/api/custom-domains', customDomainsRoutes); // Custom domain management: DNS verification, SSL provisioning
 app.use('/api/images', authMiddleware, imageRoutes);
 app.use('/api/cloudflare/oauth', cloudflareOAuthRoutes);
