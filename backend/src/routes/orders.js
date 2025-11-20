@@ -513,32 +513,43 @@ router.get('/customer-orders', authMiddleware, async (req, res) => {
 
     console.log('🔍 Where clause:', JSON.stringify(whereClause, null, 2));
 
-    const orders = await Order.findAll({
-      where: whereClause,
-      order: [['created_at', 'DESC']],
-      include: [
-        {
-          model: Store,
-          attributes: ['id', 'name', 'logo_url', 'user_id']
-        },
-        {
-          model: OrderItem,
-          include: [
-            {
-              model: Product,
-              attributes: ['id', 'sku', 'images', 'price']
-            }
-          ]
-        }
-      ]
-    });
-    
+    const store_id = customerStoreId || req.headers['x-store-id'] || req.query.store_id;
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Query orders using Supabase (no includes, query separately)
+    let ordersQuery = tenantDb
+      .from('sales_orders')
+      .select('*')
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false });
+
+    if (customerStoreId) {
+      ordersQuery = ordersQuery.eq('store_id', customerStoreId);
+    }
+
+    const { data: orders, error: ordersError } = await ordersQuery;
+
+    if (ordersError) {
+      console.error('Error fetching orders:', ordersError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch orders'
+      });
+    }
+
     console.log('🔍 Enhanced query executed successfully');
-    console.log('🔍 Found orders for customer:', orders.length);
+    console.log('🔍 Found orders for customer:', orders?.length || 0);
     
     // Add payment method details if available
-    const ordersWithDetails = orders.map(order => {
-      const orderData = order.toJSON();
+    const ordersWithDetails = (orders || []).map(order => {
+      const orderData = order; // Already plain object from Supabase
       
       // Parse payment method details if stored as JSON
       if (orderData.payment_method_details) {
