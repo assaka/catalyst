@@ -87,6 +87,12 @@ async function getUserStoresForDropdown(userId) {
 async function checkUserStoreAccess(userId, storeId) {
   try {
     console.log('🔍 checkUserStoreAccess called:', { userId, storeId });
+    console.log('🔍 masterDbClient is:', masterDbClient ? 'CONNECTED' : 'NULL/UNDEFINED');
+
+    if (!masterDbClient) {
+      console.error('❌ masterDbClient is not initialized!');
+      return null;
+    }
 
     // First, check if user owns the store
     const { data: store, error: storeError } = await masterDbClient
