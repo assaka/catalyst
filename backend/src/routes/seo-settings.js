@@ -23,9 +23,15 @@ async function getSeoSettings(tenantDb, store_id) {
  * Create SEO settings in tenant DB
  */
 async function createSeoSettings(tenantDb, settingsData) {
+  // Ensure we're not passing null or undefined id
+  const insertData = { ...settingsData };
+  if (insertData.id === null || insertData.id === undefined) {
+    delete insertData.id;
+  }
+
   const { data, error } = await tenantDb
     .from('seo_settings')
-    .insert(settingsData)
+    .insert(insertData)
     .select()
     .single();
 
