@@ -160,7 +160,8 @@ export default function Emails() {
     const confirmed = await showConfirm("Are you sure you want to delete this email template?", "Delete Email Template");
     if (confirmed) {
       try {
-        await EmailTemplate.delete(templateId);
+        const storeId = getSelectedStoreId();
+        await EmailTemplate.delete(templateId, { store_id: storeId });
         setFlashMessage({ type: 'success', message: 'Email template deleted successfully!' });
         loadTemplates();
       } catch (error) {
@@ -186,7 +187,8 @@ export default function Emails() {
   // PDF Template Handlers
   const handlePdfFormSubmit = async (formData) => {
     try {
-      await api.put(`/pdf-templates/${editingPdfTemplate.id}`, formData);
+      const storeId = getSelectedStoreId();
+      await api.put(`/pdf-templates/${editingPdfTemplate.id}?store_id=${storeId}`, formData);
       setFlashMessage({ type: 'success', message: 'PDF template updated successfully!' });
       setShowPdfForm(false);
       setEditingPdfTemplate(null);
@@ -209,7 +211,8 @@ export default function Emails() {
 
   const handleTogglePdfActive = async (template) => {
     try {
-      await api.put(`/pdf-templates/${template.id}`, { is_active: !template.is_active });
+      const storeId = getSelectedStoreId();
+      await api.put(`/pdf-templates/${template.id}?store_id=${storeId}`, { is_active: !template.is_active });
       setFlashMessage({ type: 'success', message: `PDF template ${template.is_active ? 'deactivated' : 'activated'} successfully!` });
       loadPdfTemplates();
     } catch (error) {

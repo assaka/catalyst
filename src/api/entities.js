@@ -61,8 +61,16 @@ class BaseEntity {
   }
 
   // Get single record by ID
-  async findById(id) {
-    return await apiClient.get(`${this.endpoint}/${id}`);;
+  async findById(id, params = {}) {
+    let url = `${this.endpoint}/${id}`;
+
+    // Add query parameters if provided (e.g., store_id)
+    const queryString = new URLSearchParams(params).toString();
+    if (queryString) {
+      url += `?${queryString}`;
+    }
+
+    return await apiClient.get(url);;
   }
 
   // Create new record
@@ -72,13 +80,27 @@ class BaseEntity {
 
   // Update record by ID
   async update(id, data) {
-    const url = `${this.endpoint}/${id}`;
+    let url = `${this.endpoint}/${id}`;
+
+    // If data contains store_id, add it as query parameter for routes that require it
+    if (data && data.store_id) {
+      url += `?store_id=${data.store_id}`;
+    }
+
     return await apiClient.put(url, data);;
   }
 
   // Delete record by ID
-  async delete(id) {
-    return await apiClient.delete(`${this.endpoint}/${id}`);
+  async delete(id, params = {}) {
+    let url = `${this.endpoint}/${id}`;
+
+    // Add query parameters if provided (e.g., store_id)
+    const queryString = new URLSearchParams(params).toString();
+    if (queryString) {
+      url += `?${queryString}`;
+    }
+
+    return await apiClient.delete(url);
   }
 
   // List records with optional ordering (alias for findAll)
