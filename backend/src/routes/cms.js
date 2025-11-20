@@ -11,6 +11,7 @@ const {
   getCMSPagesWithAllTranslations,
   saveCMSPageTranslations
 } = require('../utils/cmsTenantHelpers');
+const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 
 // Basic CRUD operations for CMS pages
@@ -139,10 +140,14 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
+    // Generate UUID for the page
+    const pageId = uuidv4();
+
     // Create the page without translations
     const { data: page, error: pageError } = await tenantDb
       .from('cms_pages')
       .insert({
+        id: pageId,
         ...pageData,
         store_id,
         created_at: new Date().toISOString(),
