@@ -121,11 +121,14 @@ async function getCategoryById(storeId, categoryId, lang = 'en') {
 async function createCategoryWithTranslations(storeId, categoryData, translations = {}) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+  // Remove name and description from categoryData as they belong in category_translations
+  const { name, description, ...validCategoryData } = categoryData;
+
   // Create category
   const { data: category, error } = await tenantDb
     .from('categories')
     .insert({
-      ...categoryData,
+      ...validCategoryData,
       store_id: storeId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -153,10 +156,13 @@ async function createCategoryWithTranslations(storeId, categoryData, translation
 async function updateCategoryWithTranslations(storeId, categoryId, categoryData = {}, translations = {}) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+  // Remove name and description from categoryData as they belong in category_translations
+  const { name, description, ...validCategoryData } = categoryData;
+
   // Update category if there's data to update
-  if (Object.keys(categoryData).length > 0) {
+  if (Object.keys(validCategoryData).length > 0) {
     const updateFields = {
-      ...categoryData,
+      ...validCategoryData,
       updated_at: new Date().toISOString()
     };
 
