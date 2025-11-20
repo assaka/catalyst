@@ -6,6 +6,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
+const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
 
@@ -144,10 +145,11 @@ async function getProductLabelWithAllTranslations(tenantDb, id) {
  * Create product label with translations
  */
 async function createProductLabelWithTranslations(tenantDb, labelData, translations = {}) {
-  // Insert product label
+  // Insert product label with explicitly generated UUID
   const { data: label, error: insertError } = await tenantDb
     .from('product_labels')
     .insert({
+      id: uuidv4(),
       store_id: labelData.store_id,
       name: labelData.name || '',
       slug: labelData.slug,
