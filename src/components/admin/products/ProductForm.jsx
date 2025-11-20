@@ -268,14 +268,15 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   };
 
   const handleInputChange = (path, value) => {
-    // Validate price fields to allow only 2 decimal places
+    // Validate price fields to allow only numbers with max 2 decimal places
     const priceFields = ['price', 'compare_price', 'cost_price'];
-    if (priceFields.includes(path) && value !== '') {
+    if (priceFields.includes(path)) {
       // Allow empty string for optional fields
       if (value === '') {
         // Let it pass through
       } else {
-        // Validate decimal places
+        // Only allow numbers, one decimal point, and max 2 decimal places
+        // This regex allows: 123, 123., 123.4, 123.45
         const decimalRegex = /^\d*\.?\d{0,2}$/;
         if (!decimalRegex.test(value)) {
           // Invalid format, don't update
@@ -1046,8 +1047,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     <Label htmlFor="price">Price *</Label>
                     <Input
                       id="price"
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={formData.price}
                       onChange={(e) => handleInputChange("price", e.target.value)}
                       required
@@ -1059,8 +1060,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     <Label htmlFor="compare_price">Sale Price</Label>
                     <Input
                       id="compare_price"
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={formData.compare_price}
                       onChange={(e) => handleInputChange("compare_price", e.target.value)}
                       className={formData.compare_price && parseFloat(formData.compare_price) >= parseFloat(formData.price) ? "border-red-500" : ""}
@@ -1079,8 +1080,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   <Label htmlFor="cost_price">Cost Price</Label>
                   <Input
                     id="cost_price"
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={formData.cost_price}
                     onChange={(e) => handleInputChange("cost_price", e.target.value)}
                     placeholder="0.00"
