@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { User, Customer } = require('../models'); // Tenant DB models (Sequelize fallback)
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { supabase } = require('../database/connection');
 
 // Import the NEW authMiddleware for validateRoleSession to use
@@ -46,9 +46,8 @@ const authMiddleware = async (req, res, next) => {
     } else {
       // For customers and non-agency users, query TENANT DB
       const tableName = isCustomer ? 'customers' : 'users';
-      const ModelClass = isCustomer ? Customer : User;
 
-      // Try Supabase first
+      // Try Supabase first (default tenant DB)
       try {
         // Build select statement based on table (customers have store_id, users don't)
         const baseFields = 'id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, account_type, created_at, updated_at';
@@ -68,8 +67,24 @@ const authMiddleware = async (req, res, next) => {
 
         user = supabaseUser;
       } catch (supabaseError) {
-        // Fallback to Sequelize with appropriate model
-        user = await ModelClass.findByPk(decoded.id);
+        // If using tenant DB with ConnectionManager, try that
+        // Note: This requires a store_id in the JWT which we may not have for all users
+        if (decoded.storeId) {
+          try {
+            const tenantDb = await ConnectionManager.getStoreConnection(decoded.storeId);
+            const { data: tenantUser, error: tenantError } = await tenantDb
+              .from(tableName)
+              .select('*')
+              .eq('id', decoded.id)
+              .maybeSingle();
+
+            if (!tenantError && tenantUser) {
+              user = tenantUser;
+            }
+          } catch (tenantDbError) {
+            console.error('Failed to query tenant DB:', tenantDbError);
+          }
+        }
       }
     }
 

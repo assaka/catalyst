@@ -1,6 +1,5 @@
-const { Subscription, UsageMetric, Store } = require('../models'); // Subscription: Master, UsageMetric: Tenant, Store: Hybrid
-const { sequelize } = require('../database/connection');
-const { Op } = require('sequelize');
+const ConnectionManager = require('../services/database/ConnectionManager');
+const { masterDbClient } = require('../database/masterConnection');
 
 /**
  * Store Access Control Middleware
@@ -31,9 +30,14 @@ const ACCESS_LEVELS = {
  */
 async function getStoreAccessLevel(storeId) {
   try {
-    const store = await Store.findByPk(storeId);
+    // Get store from master DB
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .maybeSingle();
 
-    if (!store) {
+    if (storeError || !store) {
       return { level: ACCESS_LEVELS.TERMINATED, reason: 'Store not found' };
     }
 
@@ -46,25 +50,29 @@ async function getStoreAccessLevel(storeId) {
       return { level: ACCESS_LEVELS.TERMINATED, reason: 'Store terminated' };
     }
 
-    // Get active subscription
-    const subscription = await Subscription.findOne({
-      where: {
-        store_id: storeId,
-        status: { [Op.in]: ['active', 'trial'] }
-      },
-      order: [['created_at', 'DESC']]
-    });
+    // Get active subscription from master DB
+    const { data: subscriptions, error: subError } = await masterDbClient
+      .from('subscriptions')
+      .select('*')
+      .eq('store_id', storeId)
+      .in('status', ['active', 'trial'])
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const subscription = subscriptions?.[0];
 
     // No subscription found - allow full access (no subscription requirement)
     if (!subscription) {
       // Check for past_due or cancelled subscriptions
-      const pastDueSubscription = await Subscription.findOne({
-        where: {
-          store_id: storeId,
-          status: 'past_due'
-        },
-        order: [['created_at', 'DESC']]
-      });
+      const { data: pastDueSubscriptions } = await masterDbClient
+        .from('subscriptions')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('status', 'past_due')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const pastDueSubscription = pastDueSubscriptions?.[0];
 
       if (pastDueSubscription) {
         // Give 7 days grace period for payment
@@ -97,26 +105,29 @@ async function getStoreAccessLevel(storeId) {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth() + 1;
+    const monthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0];
+    const monthEnd = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
 
-    const usage = await UsageMetric.findOne({
-      where: {
-        store_id: storeId,
-        metric_date: {
-          [Op.gte]: new Date(currentYear, currentMonth - 1, 1),
-          [Op.lt]: new Date(currentYear, currentMonth, 1)
-        }
-      },
-      attributes: [
-        [sequelize.fn('SUM', sequelize.col('api_calls')), 'total_api_calls'],
-        [sequelize.fn('SUM', sequelize.col('products_created')), 'total_products'],
-        [sequelize.fn('SUM', sequelize.col('orders_created')), 'total_orders'],
-        [sequelize.fn('MAX', sequelize.col('storage_total_bytes')), 'total_storage']
-      ]
-    });
+    // Get usage metrics from tenant DB
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    const { data: usageMetrics, error: metricsError } = await tenantDb
+      .from('usage_metrics')
+      .select('api_calls, products_created, orders_created, storage_total_bytes')
+      .eq('store_id', storeId)
+      .gte('metric_date', monthStart)
+      .lt('metric_date', monthEnd);
+
+    // Calculate totals
+    const usage = (usageMetrics || []).reduce((acc, metric) => ({
+      total_api_calls: acc.total_api_calls + (metric.api_calls || 0),
+      total_products: acc.total_products + (metric.products_created || 0),
+      total_orders: acc.total_orders + (metric.orders_created || 0),
+      total_storage: Math.max(acc.total_storage, metric.storage_total_bytes || 0)
+    }), { total_api_calls: 0, total_products: 0, total_orders: 0, total_storage: 0 });
 
     // Check API call limit
     if (subscription.max_api_calls_per_month && subscription.max_api_calls_per_month > 0) {
-      const apiCalls = parseInt(usage?.dataValues?.total_api_calls || 0);
+      const apiCalls = parseInt(usage.total_api_calls || 0);
       if (apiCalls >= subscription.max_api_calls_per_month) {
         return {
           level: ACCESS_LEVELS.READ_ONLY,
@@ -268,13 +279,16 @@ const checkResourceLimit = (resourceType) => {
         return next();
       }
 
-      const subscription = await Subscription.findOne({
-        where: {
-          store_id: req.storeId,
-          status: { [Op.in]: ['active', 'trial'] }
-        },
-        order: [['created_at', 'DESC']]
-      });
+      // Get subscription from master DB
+      const { data: subscriptions } = await masterDbClient
+        .from('subscriptions')
+        .select('*')
+        .eq('store_id', req.storeId)
+        .in('status', ['active', 'trial'])
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const subscription = subscriptions?.[0];
 
       if (!subscription) {
         return res.status(403).json({
@@ -288,8 +302,13 @@ const checkResourceLimit = (resourceType) => {
       switch (resourceType) {
         case 'product':
           if (subscription.max_products && subscription.max_products > 0) {
-            const store = await Store.findByPk(req.storeId);
-            if (store.product_count >= subscription.max_products) {
+            const { data: store } = await masterDbClient
+              .from('stores')
+              .select('product_count')
+              .eq('id', req.storeId)
+              .single();
+
+            if (store && store.product_count >= subscription.max_products) {
               return res.status(403).json({
                 success: false,
                 limit_exceeded: true,
@@ -306,14 +325,16 @@ const checkResourceLimit = (resourceType) => {
         case 'order':
           // Check monthly order limit
           const currentMonth = new Date();
-          const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+          const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).toISOString().split('T')[0];
 
-          const monthlyOrders = await UsageMetric.sum('orders_created', {
-            where: {
-              store_id: req.storeId,
-              metric_date: { [Op.gte]: monthStart }
-            }
-          });
+          const tenantDb = await ConnectionManager.getStoreConnection(req.storeId);
+          const { data: orderMetrics } = await tenantDb
+            .from('usage_metrics')
+            .select('orders_created')
+            .eq('store_id', req.storeId)
+            .gte('metric_date', monthStart);
+
+          const monthlyOrders = (orderMetrics || []).reduce((sum, metric) => sum + (metric.orders_created || 0), 0);
 
           if (subscription.max_orders_per_month && subscription.max_orders_per_month > 0) {
             if (monthlyOrders >= subscription.max_orders_per_month) {
@@ -332,8 +353,13 @@ const checkResourceLimit = (resourceType) => {
 
         case 'storage':
           if (subscription.max_storage_gb && subscription.max_storage_gb > 0) {
-            const store = await Store.findByPk(req.storeId);
-            const storageGB = (store.storage_used_bytes || 0) / (1024 * 1024 * 1024);
+            const { data: store } = await masterDbClient
+              .from('stores')
+              .select('storage_used_bytes')
+              .eq('id', req.storeId)
+              .single();
+
+            const storageGB = (store?.storage_used_bytes || 0) / (1024 * 1024 * 1024);
 
             if (storageGB >= subscription.max_storage_gb) {
               return res.status(403).json({
@@ -367,18 +393,25 @@ const warnApproachingLimits = async (req, res, next) => {
       return next();
     }
 
-    const subscription = await Subscription.findOne({
-      where: {
-        store_id: req.storeId,
-        status: { [Op.in]: ['active', 'trial'] }
-      }
-    });
+    const { data: subscriptions } = await masterDbClient
+      .from('subscriptions')
+      .select('*')
+      .eq('store_id', req.storeId)
+      .in('status', ['active', 'trial'])
+      .limit(1);
+
+    const subscription = subscriptions?.[0];
 
     if (!subscription) {
       return next();
     }
 
-    const store = await Store.findByPk(req.storeId);
+    const { data: store } = await masterDbClient
+      .from('stores')
+      .select('product_count, storage_used_bytes')
+      .eq('id', req.storeId)
+      .single();
+
     const warnings = [];
 
     // Check if approaching product limit (>80%)

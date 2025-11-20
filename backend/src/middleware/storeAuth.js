@@ -1,22 +1,21 @@
 // Import from master models for store ownership checks (master-tenant architecture)
 const { masterDbClient } = require('../database/masterConnection');
-const { StoreTeam } = require('../models'); // Master DB model
 
 /**
  * Helper function to check if user is a team member with specific permissions
  */
 const checkTeamMembership = async (userId, storeId, requiredPermissions = []) => {
   try {
-    const teamMember = await StoreTeam.findOne({
-      where: {
-        user_id: userId,
-        store_id: storeId,
-        status: 'active',
-        is_active: true
-      }
-    });
+    const { data: teamMember, error } = await masterDbClient
+      .from('store_teams')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('store_id', storeId)
+      .eq('status', 'active')
+      .eq('is_active', true)
+      .maybeSingle();
 
-    if (!teamMember) {
+    if (error || !teamMember) {
       return { hasAccess: false, role: null, permissions: {} };
     }
 
@@ -179,22 +178,37 @@ const checkStoreOwnership = async (req, res, next) => {
 const checkResourceOwnership = (modelName) => {
   return async (req, res, next) => {
     try {
-      const Model = require('../models')[modelName]; // Dynamic model access (tenant DB)
+      const ConnectionManager = require('../services/database/ConnectionManager');
       const resourceId = req.params.id;
 
       if (!resourceId) {
         return next();
       }
 
-      const resource = await Model.findByPk(resourceId, {
-        include: [{
-          model: MasterStore,
-          as: 'Store',
-          attributes: ['id', 'user_id']
-        }]
-      });
+      // First, we need to determine which store this resource belongs to
+      // This is complex because we need to query tenant DB, but we don't know which tenant yet
+      // For now, we'll require storeId to be passed in the request
+      const storeId = req.storeId || req.headers['x-store-id'] || req.query.store_id;
 
-      if (!resource) {
+      if (!storeId) {
+        console.log(`⚠️ No storeId provided for resource ownership check of ${modelName}`);
+        return res.status(400).json({
+          success: false,
+          message: 'Store ID required for resource access'
+        });
+      }
+
+      // Get resource from tenant DB
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+      const tableName = modelName.toLowerCase() + 's'; // Simple pluralization
+
+      const { data: resource, error: resourceError } = await tenantDb
+        .from(tableName)
+        .select('*')
+        .eq('id', resourceId)
+        .maybeSingle();
+
+      if (resourceError || !resource) {
         return res.status(404).json({
           success: false,
           message: `${modelName} not found`
@@ -202,18 +216,23 @@ const checkResourceOwnership = (modelName) => {
       }
 
       // Check if user owns the store that owns this resource or is a team member
-      const store = resource.Store;
+      const { data: store, error: storeError } = await masterDbClient
+        .from('stores')
+        .select('id, user_id')
+        .eq('id', storeId)
+        .maybeSingle();
+
       if (store) {
         const isDirectOwner = store.user_id && store.user_id === req.user.id;
-        
+
         // Check team membership if not direct owner
         let teamAccess = { hasAccess: false };
         if (!isDirectOwner) {
           teamAccess = await checkTeamMembership(req.user.id, store.id);
         }
-        
+
         const hasAccess = isDirectOwner || teamAccess.hasAccess;
-        
+
         if (!hasAccess) {
           console.log(`❌ User does not have access to the store for this ${modelName}`);
           return res.status(403).json({
@@ -221,7 +240,7 @@ const checkResourceOwnership = (modelName) => {
             message: 'Access denied'
           });
         }
-        
+
         // Attach access info to request
         req.storeAccess = {
           isDirectOwner,

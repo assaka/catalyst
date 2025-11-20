@@ -1,4 +1,4 @@
-const { CustomDomain, Store } = require('../models'); // Master DB models
+const { masterDbClient } = require('../database/masterConnection');
 
 /**
  * Domain Resolution Middleware
@@ -76,24 +76,19 @@ async function domainResolver(req, res, next) {
     }
 
     // Query database for domain mapping
-    const domainRecord = await CustomDomain.findOne({
-      where: {
-        domain: hostname,
-        is_active: true,
-        verification_status: 'verified'
-      },
-      include: [{
-        model: Store,
-        as: 'store',
-        attributes: ['id', 'slug', 'name', 'is_active']
-      }]
-    });
+    const { data: domainRecord, error: domainError } = await masterDbClient
+      .from('custom_domains')
+      .select('*, stores!inner(id, slug, name, is_active)')
+      .eq('domain', hostname)
+      .eq('is_active', true)
+      .eq('verification_status', 'verified')
+      .maybeSingle();
 
-    if (domainRecord && domainRecord.store && domainRecord.store.is_active) {
+    if (domainRecord && domainRecord.stores && domainRecord.stores.is_active) {
       const mapping = {
         storeId: domainRecord.store_id,
-        storeSlug: domainRecord.store.slug,
-        storeName: domainRecord.store.name,
+        storeSlug: domainRecord.stores.slug,
+        storeName: domainRecord.stores.name,
         isPrimary: domainRecord.is_primary,
         timestamp: Date.now()
       };
@@ -109,8 +104,14 @@ async function domainResolver(req, res, next) {
       // Track domain access (non-blocking)
       setImmediate(async () => {
         try {
-          await domainRecord.increment('access_count');
-          await domainRecord.update({ last_accessed_at: new Date() });
+          // Increment access count
+          await masterDbClient
+            .from('custom_domains')
+            .update({
+              access_count: (domainRecord.access_count || 0) + 1,
+              last_accessed_at: new Date().toISOString()
+            })
+            .eq('id', domainRecord.id);
         } catch (error) {
           // Silent fail - access tracking is not critical
         }
