@@ -37,36 +37,48 @@ router.get('/', async (req, res) => {
       });
     });
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { EmailTemplate, EmailTemplateTranslation } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const templates = await EmailTemplate.findAll({
-      where: { store_id },
-      include: [{
-        model: EmailTemplateTranslation,
-        as: 'translationsData'
-      }],
-      order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
-    });
+    // Get all templates for the store
+    const { data: templates, error: templatesError } = await tenantDb
+      .from('email_templates')
+      .select('*')
+      .eq('store_id', store_id)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false });
+
+    if (templatesError) throw templatesError;
+
+    // Get all translations for these templates
+    const templateIds = templates.map(t => t.id);
+    let translationsData = [];
+
+    if (templateIds.length > 0) {
+      const { data: translations, error: translationsError } = await tenantDb
+        .from('email_template_translations')
+        .select('*')
+        .in('email_template_id', templateIds);
+
+      if (translationsError) throw translationsError;
+      translationsData = translations || [];
+    }
 
     // Format translations as object for easier frontend consumption
     const formattedTemplates = templates.map(template => {
-      const templateData = template.toJSON();
+      const templateData = { ...template };
       const translations = {};
 
       // Add all language translations from translations table
-      if (templateData.translationsData) {
-        templateData.translationsData.forEach(trans => {
-          translations[trans.language_code] = {
-            subject: trans.subject,
-            template_content: trans.template_content,
-            html_content: trans.html_content
-          };
-        });
-      }
+      const templateTranslations = translationsData.filter(t => t.email_template_id === template.id);
+      templateTranslations.forEach(trans => {
+        translations[trans.language_code] = {
+          subject: trans.subject,
+          template_content: trans.template_content,
+          html_content: trans.html_content
+        };
+      });
 
-      delete templateData.translationsData;
       templateData.translations = translations;
 
       return templateData;
@@ -111,31 +123,38 @@ router.get('/:id', async (req, res) => {
       });
     });
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { EmailTemplate, EmailTemplateTranslation } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const template = await EmailTemplate.findByPk(id, {
-      include: [{
-        model: EmailTemplateTranslation,
-        as: 'translationsData'
-      }]
-    });
+    // Get the template
+    const { data: template, error: templateError } = await tenantDb
+      .from('email_templates')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!template) {
+    if (templateError || !template) {
       return res.status(404).json({
         success: false,
         message: 'Email template not found'
       });
     }
 
+    // Get translations for this template
+    const { data: translationsData, error: translationsError } = await tenantDb
+      .from('email_template_translations')
+      .select('*')
+      .eq('email_template_id', id);
+
+    if (translationsError) throw translationsError;
+
     // Format translations
-    const templateData = template.toJSON();
+    const templateData = { ...template };
     const translations = {};
 
     // Add all language translations from translations table
-    if (templateData.translationsData) {
-      templateData.translationsData.forEach(trans => {
+    if (translationsData) {
+      translationsData.forEach(trans => {
         translations[trans.language_code] = {
           subject: trans.subject,
           template_content: trans.template_content,
@@ -144,7 +163,6 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    delete templateData.translationsData;
     templateData.translations = translations;
 
     // Add available variables
@@ -203,32 +221,39 @@ router.post('/', [
       });
     });
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { EmailTemplate, EmailTemplateTranslation } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Get available variables for this template type
     const variables = getVariablesForTemplate(identifier);
 
     // Create template (content is stored in translations table)
-    const template = await EmailTemplate.create({
-      store_id,
-      identifier,
-      content_type,
-      variables,
-      is_active: is_active !== undefined ? is_active : true,
-      is_system: false,
-      sort_order: sort_order || 0,
-      attachment_enabled: attachment_enabled || false,
-      attachment_config: attachment_config || {}
-    });
+    const { data: template, error: templateError } = await tenantDb
+      .from('email_templates')
+      .insert({
+        store_id,
+        identifier,
+        content_type,
+        variables,
+        is_active: is_active !== undefined ? is_active : true,
+        is_system: false,
+        sort_order: sort_order || 0,
+        attachment_enabled: attachment_enabled || false,
+        attachment_config: attachment_config || {}
+      })
+      .select()
+      .single();
+
+    if (templateError) throw templateError;
 
     // Create translations if provided
     if (translations && typeof translations === 'object') {
+      const translationsToInsert = [];
+
       for (const [lang_code, trans_data] of Object.entries(translations)) {
         // Only save translations that have at least a subject
         if (trans_data && trans_data.subject && trans_data.subject.trim()) {
-          await EmailTemplateTranslation.create({
+          translationsToInsert.push({
             email_template_id: template.id,
             language_code: lang_code,
             subject: trans_data.subject,
@@ -236,6 +261,14 @@ router.post('/', [
             html_content: trans_data.html_content || null
           });
         }
+      }
+
+      if (translationsToInsert.length > 0) {
+        const { error: translationsError } = await tenantDb
+          .from('email_template_translations')
+          .insert(translationsToInsert);
+
+        if (translationsError) throw translationsError;
       }
     }
 
@@ -280,13 +313,17 @@ router.put('/:id', async (req, res) => {
       });
     });
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { EmailTemplate, EmailTemplateTranslation } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const template = await EmailTemplate.findByPk(id);
+    // Get the template
+    const { data: template, error: templateError } = await tenantDb
+      .from('email_templates')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!template) {
+    if (templateError || !template) {
       return res.status(404).json({
         success: false,
         message: 'Email template not found'
@@ -302,42 +339,56 @@ router.put('/:id', async (req, res) => {
     }
 
     // Build update object (content is now stored only in translations table)
-    const updateData = {
-      content_type,
-      is_active,
-      sort_order,
-      attachment_enabled,
-      attachment_config
-    };
+    const updateData = {};
+    if (content_type !== undefined) updateData.content_type = content_type;
+    if (is_active !== undefined) updateData.is_active = is_active;
+    if (sort_order !== undefined) updateData.sort_order = sort_order;
+    if (attachment_enabled !== undefined) updateData.attachment_enabled = attachment_enabled;
+    if (attachment_config !== undefined) updateData.attachment_config = attachment_config;
 
     // Only allow identifier change for non-system templates
     if (!template.is_system && identifier) {
       updateData.identifier = identifier;
     }
 
-    // Update template
-    await template.update(updateData);
+    // Update template if there are changes
+    if (Object.keys(updateData).length > 0) {
+      const { error: updateError } = await tenantDb
+        .from('email_templates')
+        .update(updateData)
+        .eq('id', id);
+
+      if (updateError) throw updateError;
+    }
 
     // Update translations if provided
     if (translations && typeof translations === 'object') {
       for (const [lang_code, trans_data] of Object.entries(translations)) {
         // Only save translations that have at least a subject
         if (trans_data && trans_data.subject && trans_data.subject.trim()) {
-          await EmailTemplateTranslation.upsert({
-            email_template_id: template.id,
-            language_code: lang_code,
-            subject: trans_data.subject,
-            template_content: trans_data.template_content || null,
-            html_content: trans_data.html_content || null
-          });
+          // Upsert translation (Supabase upsert syntax)
+          const { error: upsertError } = await tenantDb
+            .from('email_template_translations')
+            .upsert({
+              email_template_id: template.id,
+              language_code: lang_code,
+              subject: trans_data.subject,
+              template_content: trans_data.template_content || null,
+              html_content: trans_data.html_content || null
+            }, {
+              onConflict: 'email_template_id,language_code'
+            });
+
+          if (upsertError) throw upsertError;
         } else {
           // If translation is empty, delete it if it exists
-          await EmailTemplateTranslation.destroy({
-            where: {
-              email_template_id: template.id,
-              language_code: lang_code
-            }
-          });
+          const { error: deleteError } = await tenantDb
+            .from('email_template_translations')
+            .delete()
+            .eq('email_template_id', template.id)
+            .eq('language_code', lang_code);
+
+          if (deleteError) throw deleteError;
         }
       }
     }
@@ -382,13 +433,17 @@ router.delete('/:id', async (req, res) => {
       });
     });
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { EmailTemplate } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const template = await EmailTemplate.findByPk(id);
+    // Get the template
+    const { data: template, error: templateError } = await tenantDb
+      .from('email_templates')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!template) {
+    if (templateError || !template) {
       return res.status(404).json({
         success: false,
         message: 'Email template not found'
@@ -403,7 +458,13 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    await template.destroy();
+    // Delete the template (cascade will delete translations)
+    const { error: deleteError } = await tenantDb
+      .from('email_templates')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) throw deleteError;
 
     res.json({
       success: true,
@@ -456,13 +517,17 @@ router.post('/:id/test', [
       });
     });
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { EmailTemplate } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const template = await EmailTemplate.findByPk(id);
+    // Get the template
+    const { data: template, error: templateError } = await tenantDb
+      .from('email_templates')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!template) {
+    if (templateError || !template) {
       return res.status(404).json({
         success: false,
         message: 'Email template not found'
@@ -521,42 +586,56 @@ router.post('/bulk-translate', [
       });
     });
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { EmailTemplate, EmailTemplateTranslation } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Get all templates for the store with source language translations
-    const templates = await EmailTemplate.findAll({
-      where: { store_id, is_active: true },
-      include: [{
-        model: EmailTemplateTranslation,
-        as: 'translationsData',
-        where: { language_code: fromLang },
-        required: true // Only include templates that have source language
-      }]
-    });
+    // Get all active templates for the store
+    const { data: templates, error: templatesError } = await tenantDb
+      .from('email_templates')
+      .select('*')
+      .eq('store_id', store_id)
+      .eq('is_active', true);
 
-    console.log(`📧 Bulk translating ${templates.length} email templates from ${fromLang} to ${toLang}`);
+    if (templatesError) throw templatesError;
+
+    // Get all translations for these templates in the source language
+    const templateIds = templates.map(t => t.id);
+    const { data: sourceTranslations, error: sourceError } = await tenantDb
+      .from('email_template_translations')
+      .select('*')
+      .in('email_template_id', templateIds)
+      .eq('language_code', fromLang);
+
+    if (sourceError) throw sourceError;
+
+    // Filter templates to only those that have source language translations
+    const templatesWithSource = templates.filter(t =>
+      sourceTranslations.some(st => st.email_template_id === t.id)
+    );
+
+    console.log(`📧 Bulk translating ${templatesWithSource.length} email templates from ${fromLang} to ${toLang}`);
 
     let translated = 0;
     let skipped = 0;
     let failed = 0;
     const errors_list = [];
 
-    for (const template of templates) {
+    for (const template of templatesWithSource) {
       try {
         console.log(`🔄 Processing template: ${template.identifier} (${template.id})`);
 
         // Get source translation
-        const sourceTranslation = template.translationsData[0]; // We know it exists due to required: true
+        const sourceTranslation = sourceTranslations.find(st => st.email_template_id === template.id);
 
         // Check if target translation already exists
-        const existingTranslation = await EmailTemplateTranslation.findOne({
-          where: {
-            email_template_id: template.id,
-            language_code: toLang
-          }
-        });
+        const { data: existingTranslation, error: existingError } = await tenantDb
+          .from('email_template_translations')
+          .select('*')
+          .eq('email_template_id', template.id)
+          .eq('language_code', toLang)
+          .maybeSingle();
+
+        if (existingError) throw existingError;
 
         if (existingTranslation) {
           console.log(`⏭️  Skipping ${template.identifier} - translation already exists`);
@@ -595,13 +674,19 @@ router.post('/bulk-translate', [
 
         // Create translation
         console.log(`💾 Saving translation for ${template.identifier} to database...`);
-        const savedTranslation = await EmailTemplateTranslation.create({
-          email_template_id: template.id,
-          language_code: toLang,
-          subject: translatedSubject,
-          template_content: translatedTemplateContent,
-          html_content: translatedHtmlContent
-        });
+        const { data: savedTranslation, error: saveError } = await tenantDb
+          .from('email_template_translations')
+          .insert({
+            email_template_id: template.id,
+            language_code: toLang,
+            subject: translatedSubject,
+            template_content: translatedTemplateContent,
+            html_content: translatedHtmlContent
+          })
+          .select()
+          .single();
+
+        if (saveError) throw saveError;
         console.log(`✅ Translation saved with ID: ${savedTranslation.id}`);
 
         translated++;
@@ -698,13 +783,17 @@ router.post('/:id/restore-default', async (req, res) => {
       });
     });
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { EmailTemplate, EmailTemplateTranslation } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const template = await EmailTemplate.findByPk(id);
+    // Get the template
+    const { data: template, error: templateError } = await tenantDb
+      .from('email_templates')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!template) {
+    if (templateError || !template) {
       return res.status(404).json({
         success: false,
         message: 'Email template not found'
@@ -720,18 +809,25 @@ router.post('/:id/restore-default', async (req, res) => {
     }
 
     // Delete all existing translations
-    await EmailTemplateTranslation.destroy({
-      where: { email_template_id: template.id }
-    });
+    const { error: deleteError } = await tenantDb
+      .from('email_template_translations')
+      .delete()
+      .eq('email_template_id', template.id);
+
+    if (deleteError) throw deleteError;
 
     // Restore English translation with default content
-    await EmailTemplateTranslation.create({
-      email_template_id: template.id,
-      language_code: 'en',
-      subject: template.default_subject,
-      template_content: template.default_template_content,
-      html_content: template.default_html_content
-    });
+    const { error: createError } = await tenantDb
+      .from('email_template_translations')
+      .insert({
+        email_template_id: template.id,
+        language_code: 'en',
+        subject: template.default_subject,
+        template_content: template.default_template_content,
+        html_content: template.default_html_content
+      });
+
+    if (createError) throw createError;
 
     res.json({
       success: true,
