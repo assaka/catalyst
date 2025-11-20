@@ -35,34 +35,46 @@ router.get('/', async (req, res) => {
       });
     });
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { PdfTemplate, PdfTemplateTranslation } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const templates = await PdfTemplate.findAll({
-      where: { store_id },
-      include: [{
-        model: PdfTemplateTranslation,
-        as: 'translationsData'
-      }],
-      order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
-    });
+    // Get all templates for the store
+    const { data: templates, error: templatesError } = await tenantDb
+      .from('pdf_templates')
+      .select('*')
+      .eq('store_id', store_id)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false });
+
+    if (templatesError) throw templatesError;
+
+    // Get all translations for these templates
+    const templateIds = templates.map(t => t.id);
+    let translationsData = [];
+
+    if (templateIds.length > 0) {
+      const { data: translations, error: translationsError } = await tenantDb
+        .from('pdf_template_translations')
+        .select('*')
+        .in('pdf_template_id', templateIds);
+
+      if (translationsError) throw translationsError;
+      translationsData = translations || [];
+    }
 
     // Format translations as object for easier frontend consumption
     const formattedTemplates = templates.map(template => {
-      const templateData = template.toJSON();
+      const templateData = { ...template };
       const translations = {};
 
       // Add all language translations from translations table
-      if (templateData.translationsData) {
-        templateData.translationsData.forEach(trans => {
-          translations[trans.language_code] = {
-            html_template: trans.html_template
-          };
-        });
-      }
+      const templateTranslations = translationsData.filter(t => t.pdf_template_id === template.id);
+      templateTranslations.forEach(trans => {
+        translations[trans.language_code] = {
+          html_template: trans.html_template
+        };
+      });
 
-      delete templateData.translationsData;
       templateData.translations = translations;
 
       return templateData;
@@ -107,38 +119,44 @@ router.get('/:id', async (req, res) => {
       });
     });
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { PdfTemplate, PdfTemplateTranslation } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const template = await PdfTemplate.findByPk(id, {
-      include: [{
-        model: PdfTemplateTranslation,
-        as: 'translationsData'
-      }]
-    });
+    // Get the template
+    const { data: template, error: templateError } = await tenantDb
+      .from('pdf_templates')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!template) {
+    if (templateError || !template) {
       return res.status(404).json({
         success: false,
         message: 'PDF template not found'
       });
     }
 
+    // Get translations for this template
+    const { data: translationsData, error: translationsError } = await tenantDb
+      .from('pdf_template_translations')
+      .select('*')
+      .eq('pdf_template_id', id);
+
+    if (translationsError) throw translationsError;
+
     // Format translations
-    const templateData = template.toJSON();
+    const templateData = { ...template };
     const translations = {};
 
     // Add all language translations from translations table
-    if (templateData.translationsData) {
-      templateData.translationsData.forEach(trans => {
+    if (translationsData) {
+      translationsData.forEach(trans => {
         translations[trans.language_code] = {
           html_template: trans.html_template
         };
       });
     }
 
-    delete templateData.translationsData;
     templateData.translations = translations;
 
     res.json({
@@ -181,13 +199,17 @@ router.put('/:id', async (req, res) => {
       });
     });
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { PdfTemplate, PdfTemplateTranslation } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const template = await PdfTemplate.findByPk(id);
+    // Get the template
+    const { data: template, error: templateError } = await tenantDb
+      .from('pdf_templates')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!template) {
+    if (templateError || !template) {
       return res.status(404).json({
         success: false,
         message: 'PDF template not found'
@@ -199,27 +221,42 @@ router.put('/:id', async (req, res) => {
     if (settings !== undefined) updateData.settings = settings;
     if (is_active !== undefined) updateData.is_active = is_active;
 
-    // Update template
-    await template.update(updateData);
+    // Update template if there are changes
+    if (Object.keys(updateData).length > 0) {
+      const { error: updateError } = await tenantDb
+        .from('pdf_templates')
+        .update(updateData)
+        .eq('id', id);
+
+      if (updateError) throw updateError;
+    }
 
     // Update translations if provided
     if (translations && typeof translations === 'object') {
       for (const [lang_code, trans_data] of Object.entries(translations)) {
         // Only save translations that have html_template content
         if (trans_data && trans_data.html_template && trans_data.html_template.trim()) {
-          await PdfTemplateTranslation.upsert({
-            pdf_template_id: template.id,
-            language_code: lang_code,
-            html_template: trans_data.html_template
-          });
-        } else {
-          // Delete translation if html_template is empty
-          await PdfTemplateTranslation.destroy({
-            where: {
+          // Upsert translation (Supabase upsert syntax)
+          const { error: upsertError } = await tenantDb
+            .from('pdf_template_translations')
+            .upsert({
               pdf_template_id: template.id,
-              language_code: lang_code
-            }
-          });
+              language_code: lang_code,
+              html_template: trans_data.html_template
+            }, {
+              onConflict: 'pdf_template_id,language_code'
+            });
+
+          if (upsertError) throw upsertError;
+        } else {
+          // If translation is empty, delete it if it exists
+          const { error: deleteError } = await tenantDb
+            .from('pdf_template_translations')
+            .delete()
+            .eq('pdf_template_id', template.id)
+            .eq('language_code', lang_code);
+
+          if (deleteError) throw deleteError;
         }
       }
     }
@@ -246,10 +283,35 @@ router.put('/:id', async (req, res) => {
 router.post('/:id/restore-default', async (req, res) => {
   try {
     const { id } = req.params;
+    const { store_id } = req.query;
 
-    const template = await PdfTemplate.findByPk(id);
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
 
-    if (!template) {
+    // Check store access first
+    req.params.store_id = store_id;
+    await new Promise((resolve, reject) => {
+      checkStoreOwnership(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Get the template
+    const { data: template, error: templateError } = await tenantDb
+      .from('pdf_templates')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (templateError || !template) {
       return res.status(404).json({
         success: false,
         message: 'PDF template not found'
@@ -264,26 +326,24 @@ router.post('/:id/restore-default', async (req, res) => {
       });
     }
 
-    // Check store access
-    req.params.store_id = template.store_id;
-    await new Promise((resolve, reject) => {
-      checkStoreOwnership(req, res, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
     // Delete all existing translations
-    await PdfTemplateTranslation.destroy({
-      where: { pdf_template_id: template.id }
-    });
+    const { error: deleteError } = await tenantDb
+      .from('pdf_template_translations')
+      .delete()
+      .eq('pdf_template_id', template.id);
+
+    if (deleteError) throw deleteError;
 
     // Restore English translation with default content
-    await PdfTemplateTranslation.create({
-      pdf_template_id: template.id,
-      language_code: 'en',
-      html_template: template.default_html_template
-    });
+    const { error: createError } = await tenantDb
+      .from('pdf_template_translations')
+      .insert({
+        pdf_template_id: template.id,
+        language_code: 'en',
+        html_template: template.default_html_template
+      });
+
+    if (createError) throw createError;
 
     res.json({
       success: true,
@@ -329,38 +389,56 @@ router.post('/bulk-translate', [
       });
     });
 
-    // Get all templates for the store with source language translations
-    const templates = await PdfTemplate.findAll({
-      where: { store_id, is_active: true },
-      include: [{
-        model: PdfTemplateTranslation,
-        as: 'translationsData',
-        where: { language_code: fromLang },
-        required: true // Only include templates that have source language
-      }]
-    });
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    console.log(`📄 Bulk translating ${templates.length} PDF templates from ${fromLang} to ${toLang}`);
+    // Get all active templates for the store
+    const { data: templates, error: templatesError } = await tenantDb
+      .from('pdf_templates')
+      .select('*')
+      .eq('store_id', store_id)
+      .eq('is_active', true);
+
+    if (templatesError) throw templatesError;
+
+    // Get all translations for these templates in the source language
+    const templateIds = templates.map(t => t.id);
+    const { data: sourceTranslations, error: sourceError } = await tenantDb
+      .from('pdf_template_translations')
+      .select('*')
+      .in('pdf_template_id', templateIds)
+      .eq('language_code', fromLang);
+
+    if (sourceError) throw sourceError;
+
+    // Filter templates to only those that have source language translations
+    const templatesWithSource = templates.filter(t =>
+      sourceTranslations.some(st => st.pdf_template_id === t.id)
+    );
+
+    console.log(`📄 Bulk translating ${templatesWithSource.length} PDF templates from ${fromLang} to ${toLang}`);
 
     let translated = 0;
     let skipped = 0;
     let failed = 0;
     const errors_list = [];
 
-    for (const template of templates) {
+    for (const template of templatesWithSource) {
       try {
         console.log(`🔄 Processing template: ${template.identifier} (${template.id})`);
 
         // Get source translation
-        const sourceTranslation = template.translationsData[0]; // We know it exists due to required: true
+        const sourceTranslation = sourceTranslations.find(st => st.pdf_template_id === template.id);
 
         // Check if target translation already exists
-        const existingTranslation = await PdfTemplateTranslation.findOne({
-          where: {
-            pdf_template_id: template.id,
-            language_code: toLang
-          }
-        });
+        const { data: existingTranslation, error: existingError } = await tenantDb
+          .from('pdf_template_translations')
+          .select('*')
+          .eq('pdf_template_id', template.id)
+          .eq('language_code', toLang)
+          .maybeSingle();
+
+        if (existingError) throw existingError;
 
         if (existingTranslation) {
           console.log(`⏭️  Skipping ${template.identifier} - translation already exists`);
@@ -379,11 +457,17 @@ router.post('/bulk-translate', [
 
         // Create translation
         console.log(`💾 Saving translation for ${template.identifier} to database...`);
-        const savedTranslation = await PdfTemplateTranslation.create({
-          pdf_template_id: template.id,
-          language_code: toLang,
-          html_template: translatedHtmlTemplate
-        });
+        const { data: savedTranslation, error: saveError } = await tenantDb
+          .from('pdf_template_translations')
+          .insert({
+            pdf_template_id: template.id,
+            language_code: toLang,
+            html_template: translatedHtmlTemplate
+          })
+          .select()
+          .single();
+
+        if (saveError) throw saveError;
         console.log(`✅ Translation saved with ID: ${savedTranslation.id}`);
 
         translated++;
