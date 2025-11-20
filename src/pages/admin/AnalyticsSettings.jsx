@@ -77,8 +77,13 @@ export default function AnalyticsSettings() {
                 if (Array.isArray(fullStoreData)) {
                     storeData = fullStoreData[0];
                 } else if (fullStoreData?.data) {
-                    // Handle { success: true, data: {...} } format
-                    storeData = fullStoreData.data;
+                    // Handle { success: true, data: { store: {...}, tenantData: {...} } } format
+                    // The settings are in tenantData
+                    if (fullStoreData.data.tenantData) {
+                        storeData = fullStoreData.data.tenantData;
+                    } else {
+                        storeData = fullStoreData.data;
+                    }
                 } else {
                     storeData = fullStoreData;
                 }
