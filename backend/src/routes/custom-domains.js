@@ -90,6 +90,14 @@ router.get('/', authMiddleware, storeResolver(), async (req, res) => {
       .order('created_at', { ascending: false });
 
     if (error) {
+      // Check if error is table not found
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return res.status(200).json({
+          success: true,
+          domains: [],
+          message: 'Custom domains table not yet created. Please contact support or run database migrations.'
+        });
+      }
       throw error;
     }
 
@@ -105,9 +113,15 @@ router.get('/', authMiddleware, storeResolver(), async (req, res) => {
     });
   } catch (error) {
     console.error('Error listing domains:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      storeId: req.storeId
+    });
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve domains'
+      message: 'Failed to retrieve domains',
+      error: error.message
     });
   }
 });

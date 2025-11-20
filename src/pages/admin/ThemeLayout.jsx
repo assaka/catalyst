@@ -772,6 +772,7 @@ export default function ThemeLayout() {
                         const fullKey = `checkout.${key}`;
                         try {
                             await api.post('/translations/ui-labels', {
+                                store_id: store.id,
                                 key: fullKey,
                                 language_code: lang,
                                 value: value,
