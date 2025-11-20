@@ -1065,46 +1065,49 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
       });
     }
 
-    // Get tenant connection for store-specific entities
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue, Store, EmailTemplate, PdfTemplate, Language } = connection.models;
-    const tenantSequelize = connection.sequelize;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Get all active languages from tenant DB
-    const languages = await Language.findAll({
-      where: { is_active: true },
-      attributes: ['code', 'name', 'native_name']
-    });
+    const { data: languages, error: langError } = await tenantDb
+      .from('languages')
+      .select('code, name, native_name')
+      .eq('is_active', true);
 
-    console.log('📊 Active languages found:', languages.length, languages.map(l => l.code));
+    if (langError) throw langError;
+
+    console.log('📊 Active languages found:', languages?.length || 0, languages?.map(l => l.code) || []);
 
     // If no active languages found, use 'en' as default
-    const languageCodes = languages.length > 0
+    const languageCodes = languages && languages.length > 0
       ? languages.map(l => l.code)
       : ['en'];
 
     // If no active languages, add default EN to languages array for response
-    if (languages.length === 0) {
-      languages.push({
+    const languagesList = languages && languages.length > 0 ? languages : [
+      {
         code: 'en',
         name: 'English',
         native_name: 'English'
-      });
+      }
+    ];
+
+    if (!languages || languages.length === 0) {
       console.log('⚠️ No active languages found, using EN as default');
     }
 
     // Define entity types to check
     const entityTypes = [
-      { type: 'category', model: Category, icon: '📁', name: 'Categories' },
-      { type: 'product', model: Product, icon: '📦', name: 'Products' },
-      { type: 'attribute', model: Attribute, icon: '🏷', name: 'Attributes' },
-      { type: 'cms_page', model: CmsPage, icon: '📄', name: 'CMS Pages' },
-      { type: 'cms_block', model: CmsBlock, icon: '📝', name: 'CMS Blocks' },
-      { type: 'product_tab', model: ProductTab, icon: '📑', name: 'Product Tabs' },
-      { type: 'product_label', model: ProductLabel, icon: '🏷️', name: 'Product Labels' },
-      { type: 'cookie_consent', model: CookieConsentSettings, icon: '🍪', name: 'Cookie Consent' },
-      { type: 'email-template', model: EmailTemplate, icon: '📧', name: 'Email Templates' },
-      { type: 'pdf-template', model: PdfTemplate, icon: '📑', name: 'PDF Templates' }
+      { type: 'category', table: 'categories', icon: '📁', name: 'Categories' },
+      { type: 'product', table: 'products', icon: '📦', name: 'Products' },
+      { type: 'attribute', table: 'attributes', icon: '🏷', name: 'Attributes' },
+      { type: 'cms_page', table: 'cms_pages', icon: '📄', name: 'CMS Pages' },
+      { type: 'cms_block', table: 'cms_blocks', icon: '📝', name: 'CMS Blocks' },
+      { type: 'product_tab', table: 'product_tabs', icon: '📑', name: 'Product Tabs' },
+      { type: 'product_label', table: 'product_labels', icon: '🏷️', name: 'Product Labels' },
+      { type: 'cookie_consent', table: 'cookie_consent_settings', icon: '🍪', name: 'Cookie Consent' },
+      { type: 'email-template', table: 'email_templates', icon: '📧', name: 'Email Templates' },
+      { type: 'pdf-template', table: 'pdf_templates', icon: '📑', name: 'PDF Templates' }
     ];
 
     const stats = [];
@@ -1112,9 +1115,12 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
     for (const entityType of entityTypes) {
       try {
         // Get total count of entities for this store
-        const totalItems = await entityType.model.count({
-          where: { store_id }
-        });
+        const { count: totalItems, error: countError } = await tenantDb
+          .from(entityType.table)
+          .select('*', { count: 'exact', head: true })
+          .eq('store_id', store_id);
+
+        if (countError) throw countError;
 
         if (totalItems === 0) {
           stats.push({
@@ -1184,28 +1190,21 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
         const query = `
           SELECT e.id
-          FROM ${entityType.model.tableName} e
-          WHERE e.store_id = :storeId
+          FROM ${entityType.table} e
+          WHERE e.store_id = $1
           AND (
             SELECT COUNT(DISTINCT t.language_code)
             FROM ${translationTable} t
             WHERE t.${entityIdColumn} = e.id
-            AND t.language_code IN (:languageCodes)
+            AND t.language_code = ANY($2)
             ${contentCheck}
-          ) = :languageCount
+          ) = $3
         `;
 
         let translatedCount = 0;
         try {
-          const [translatedEntities] = await tenantSequelize.query(query, {
-            replacements: {
-              storeId: store_id,
-              languageCodes: languageCodes,
-              languageCount: languageCodes.length
-            }
-          });
-
-          translatedCount = translatedEntities.length;
+          const translatedEntities = await tenantDb.raw(query, [store_id, languageCodes, languageCodes.length]);
+          translatedCount = translatedEntities?.rows?.length || 0;
         } catch (queryError) {
           console.error(`   ❌ Error querying translated entities for ${entityType.type}:`, queryError.message);
           console.error(`   📋 Query was:`, query);
@@ -1215,26 +1214,27 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
         // Find which languages are missing across all entities (with actual content)
         const missingLanguages = [];
         for (const langCode of languageCodes) {
-          const [result] = await tenantSequelize.query(`
+          const missingQuery = `
             SELECT COUNT(*) as missing_count
-            FROM ${entityType.model.tableName} e
-            WHERE e.store_id = :storeId
+            FROM ${entityType.table} e
+            WHERE e.store_id = $1
             AND NOT EXISTS (
               SELECT 1
               FROM ${translationTable} t
               WHERE t.${entityIdColumn} = e.id
-              AND t.language_code = :langCode
+              AND t.language_code = $2
               ${contentCheck}
             )
-          `, {
-            replacements: {
-              storeId: store_id,
-              langCode: langCode
-            }
-          });
+          `;
 
-          if (parseInt(result[0].missing_count) > 0) {
-            missingLanguages.push(langCode);
+          try {
+            const result = await tenantDb.raw(missingQuery, [store_id, langCode]);
+
+            if (result?.rows?.[0] && parseInt(result.rows[0].missing_count) > 0) {
+              missingLanguages.push(langCode);
+            }
+          } catch (err) {
+            console.error(`Error checking missing translations for ${langCode}:`, err);
           }
         }
 
@@ -1250,7 +1250,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           translatedItems: translatedCount,
           completionPercentage,
           missingLanguages: missingLanguages.map(code => {
-            const lang = languages.find(l => l.code === code);
+            const lang = languagesList.find(l => l.code === code);
             return {
               code,
               name: lang?.name || code,
@@ -1276,12 +1276,14 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
     // Handle AttributeValue separately (doesn't have direct store_id)
     try {
       // Get all attributes for this store
-      const attributes = await Attribute.findAll({
-        where: { store_id },
-        attributes: ['id']
-      });
+      const { data: attributes, error: attrError } = await tenantDb
+        .from('attributes')
+        .select('id')
+        .eq('store_id', store_id);
 
-      const attributeIds = attributes.map(attr => attr.id);
+      if (attrError) throw attrError;
+
+      const attributeIds = attributes?.map(attr => attr.id) || [];
 
       if (attributeIds.length === 0) {
         stats.push({
@@ -1295,59 +1297,54 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
         });
       } else {
         // Get total count of attribute values
-        const [countResult] = await tenantSequelize.query(`
+        const countQuery = `
           SELECT COUNT(*) as count
           FROM attribute_values
-          WHERE attribute_id IN (:attributeIds)
-        `, {
-          replacements: { attributeIds }
-        });
+          WHERE attribute_id = ANY($1)
+        `;
 
-        const totalItems = parseInt(countResult[0].count);
+        const countResult = await tenantDb.raw(countQuery, [attributeIds]);
+        const totalItems = parseInt(countResult?.rows?.[0]?.count || 0);
 
         // Get count of attribute values with all translations
-        const [translatedResult] = await tenantSequelize.query(`
+        const translatedQuery = `
           SELECT COUNT(DISTINCT av.id) as count
           FROM attribute_values av
-          WHERE av.attribute_id IN (:attributeIds)
+          WHERE av.attribute_id = ANY($1)
           AND (
             SELECT COUNT(DISTINCT t.language_code)
             FROM attribute_value_translations t
             WHERE t.attribute_value_id = av.id
-            AND t.language_code IN (:languageCodes)
-          ) = :languageCount
-        `, {
-          replacements: {
-            attributeIds,
-            languageCodes: languageCodes,
-            languageCount: languageCodes.length
-          }
-        });
+            AND t.language_code = ANY($2)
+          ) = $3
+        `;
 
-        const translatedCount = parseInt(translatedResult[0].count);
+        const translatedResult = await tenantDb.raw(translatedQuery, [attributeIds, languageCodes, languageCodes.length]);
+        const translatedCount = parseInt(translatedResult?.rows?.[0]?.count || 0);
 
         // Find missing languages for attribute values
         const missingLanguages = [];
         for (const langCode of languageCodes) {
-          const [result] = await tenantSequelize.query(`
+          const missingQuery = `
             SELECT COUNT(*) as missing_count
             FROM attribute_values av
-            WHERE av.attribute_id IN (:attributeIds)
+            WHERE av.attribute_id = ANY($1)
             AND NOT EXISTS (
               SELECT 1
               FROM attribute_value_translations t
               WHERE t.attribute_value_id = av.id
-              AND t.language_code = :langCode
+              AND t.language_code = $2
             )
-          `, {
-            replacements: {
-              attributeIds,
-              langCode: langCode
-            }
-          });
+          `;
 
-          if (parseInt(result[0].missing_count) > 0) {
-            missingLanguages.push(langCode);
+          try {
+            const result = await tenantDb.raw(missingQuery, [attributeIds, langCode]);
+
+            if (result?.rows?.[0] && parseInt(result.rows[0].missing_count) > 0) {
+              missingLanguages.push(langCode);
+            }
+          } catch (err) {
+            console.error(`Error checking missing attribute value translations for ${langCode}:`, err);
           }
         }
 
@@ -1363,7 +1360,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
           translatedItems: translatedCount,
           completionPercentage,
           missingLanguages: missingLanguages.map(code => {
-            const lang = languages.find(l => l.code === code);
+            const lang = languagesList.find(l => l.code === code);
             return {
               code,
               name: lang?.name || code,
@@ -1388,20 +1385,19 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
     // Handle Custom Options separately (uses JSON translations, not normalized tables)
     try {
-      const [customOptions] = await tenantSequelize.query(`
-        SELECT id, translations
-        FROM custom_option_rules
-        WHERE store_id = :storeId
-      `, {
-        replacements: { storeId: store_id }
-      });
+      const { data: customOptions, error: customOptError } = await tenantDb
+        .from('custom_option_rules')
+        .select('id, translations')
+        .eq('store_id', store_id);
 
-      const totalItems = customOptions.length;
+      if (customOptError) throw customOptError;
+
+      const totalItems = customOptions?.length || 0;
       let translatedCount = 0;
       const missingLanguages = new Set();
 
       // Check translation completeness for JSON-based translations
-      customOptions.forEach(option => {
+      customOptions?.forEach(option => {
         const translations = option.translations || {};
         let hasAllTranslations = true;
 
@@ -1429,7 +1425,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
         translatedItems: translatedCount,
         completionPercentage,
         missingLanguages: Array.from(missingLanguages).map(code => {
-          const lang = languages.find(l => l.code === code);
+          const lang = languagesList.find(l => l.code === code);
           return {
             code,
             name: lang?.name || code,
@@ -1453,9 +1449,13 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
     // Handle Stock Labels separately (stored in store.settings.stock_settings.translations)
     try {
-      const store = await Store.findByPk(store_id, {
-        attributes: ['id', 'settings']
-      });
+      const { data: store, error: storeError } = await tenantDb
+        .from('stores')
+        .select('id, settings')
+        .eq('id', store_id)
+        .single();
+
+      if (storeError) throw storeError;
 
       const stockSettings = store?.settings?.stock_settings || {};
       const translations = stockSettings.translations || {};
@@ -1496,7 +1496,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
         translatedItems: translatedCount,
         completionPercentage,
         missingLanguages: missingLanguages.map(code => {
-          const lang = languages.find(l => l.code === code);
+          const lang = languagesList.find(l => l.code === code);
           return {
             code,
             name: lang?.name || code,
@@ -1522,7 +1522,7 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
       success: true,
       data: {
         stats,
-        languages: languages.map(l => ({
+        languages: languagesList.map(l => ({
           code: l.code,
           name: l.name,
           native_name: l.native_name
