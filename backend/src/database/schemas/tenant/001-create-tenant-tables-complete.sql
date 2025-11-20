@@ -8139,16 +8139,16 @@ GROUP BY vh.id;
 -- -- Name: consent_logs consent_logs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 -- --
 --
--- ALTER TABLE ONLY consent_logs
---     ADD CONSTRAINT consent_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE ONLY consent_logs
+    ADD CONSTRAINT consent_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 --
 --
 -- --
 -- -- Name: consent_logs consent_logs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 -- --
 --
--- ALTER TABLE ONLY consent_logs
---     ADD CONSTRAINT consent_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE ONLY consent_logs
+    ADD CONSTRAINT consent_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 --
 --
 -- --
