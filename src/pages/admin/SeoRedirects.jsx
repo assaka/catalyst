@@ -107,9 +107,15 @@ export default function SeoRedirects() {
       return;
     }
 
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      toast.error('No store selected');
+      return;
+    }
+
     try {
       setLoading(true);
-      await adminApiClient.delete(`/redirects/${id}`);
+      await adminApiClient.delete(`/redirects/${id}?store_id=${storeId}`);
       toast.success('Redirect deleted successfully');
       await loadRedirects();
     } catch (error) {
