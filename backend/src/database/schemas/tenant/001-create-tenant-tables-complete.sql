@@ -597,7 +597,7 @@ CREATE TABLE IF NOT EXISTS _migrations (
 );
 
 CREATE TABLE IF NOT EXISTS ab_test_assignments (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   test_id UUID NOT NULL,
   store_id UUID NOT NULL,
   session_id VARCHAR(255) NOT NULL,
@@ -613,8 +613,8 @@ CREATE TABLE IF NOT EXISTS ab_test_assignments (
   user_agent TEXT,
   ip_address VARCHAR(255),
   metadata JSON DEFAULT '{}'::json,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS ab_test_variants (
@@ -634,7 +634,7 @@ CREATE TABLE IF NOT EXISTS ab_test_variants (
 );
 
 CREATE TABLE IF NOT EXISTS ab_tests (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
   name VARCHAR(255) NOT NULL,
   description TEXT,
@@ -651,8 +651,8 @@ CREATE TABLE IF NOT EXISTS ab_tests (
   confidence_level DOUBLE PRECISION DEFAULT '0.95'::double precision,
   winner_variant_id VARCHAR(255),
   metadata JSON DEFAULT '{}'::json,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS admin_navigation_config (
@@ -858,7 +858,7 @@ CREATE TABLE IF NOT EXISTS attribute_sets (
 );
 
 CREATE TABLE IF NOT EXISTS attribute_translations (
-  attribute_id UUID PRIMARY KEY,
+  attribute_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   label VARCHAR(255) NOT NULL,
   description TEXT,
@@ -867,7 +867,7 @@ CREATE TABLE IF NOT EXISTS attribute_translations (
 );
 
 CREATE TABLE IF NOT EXISTS attribute_value_translations (
-  attribute_value_id UUID PRIMARY KEY,
+  attribute_value_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   value VARCHAR(255) NOT NULL,
   description TEXT,
@@ -876,13 +876,13 @@ CREATE TABLE IF NOT EXISTS attribute_value_translations (
 );
 
 CREATE TABLE IF NOT EXISTS attribute_values (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   attribute_id UUID NOT NULL,
   code VARCHAR(255) NOT NULL,
   sort_order INTEGER DEFAULT 0,
   metadata JSON DEFAULT '{}'::json,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS attributes (
@@ -945,7 +945,7 @@ CREATE TABLE IF NOT EXISTS blacklist_settings (
 );
 
 CREATE TABLE IF NOT EXISTS brevo_configurations (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
   access_token TEXT NOT NULL,
   refresh_token TEXT,
@@ -953,24 +953,24 @@ CREATE TABLE IF NOT EXISTS brevo_configurations (
   sender_name VARCHAR(255) NOT NULL,
   sender_email VARCHAR(255) NOT NULL,
   is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS canonical_urls (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
   page_url VARCHAR(255) NOT NULL,
   canonical_url VARCHAR(255) NOT NULL,
   is_active BOOLEAN DEFAULT true,
   created_by UUID,
   notes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS carts (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id VARCHAR(255),
   store_id UUID NOT NULL,
   user_id UUID,
@@ -982,8 +982,8 @@ CREATE TABLE IF NOT EXISTS carts (
   total NUMERIC DEFAULT 0,
   coupon_code VARCHAR(255),
   expires_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS categories (
@@ -1009,7 +1009,7 @@ CREATE TABLE IF NOT EXISTS categories (
 );
 
 CREATE TABLE IF NOT EXISTS category_seo (
-  category_id UUID PRIMARY KEY,
+  category_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   meta_title VARCHAR(255),
   meta_description TEXT,
@@ -1027,7 +1027,7 @@ CREATE TABLE IF NOT EXISTS category_seo (
 );
 
 CREATE TABLE IF NOT EXISTS category_translations (
-  category_id UUID PRIMARY KEY,
+  category_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   name VARCHAR(255) NOT NULL,
   description TEXT,
@@ -1079,7 +1079,7 @@ CREATE TABLE IF NOT EXISTS chat_typing_indicators (
 );
 
 CREATE TABLE IF NOT EXISTS cms_block_translations (
-  cms_block_id UUID PRIMARY KEY,
+  cms_block_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   title VARCHAR(255),
   content TEXT,
@@ -1088,7 +1088,7 @@ CREATE TABLE IF NOT EXISTS cms_block_translations (
 );
 
 CREATE TABLE IF NOT EXISTS cms_blocks (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   identifier VARCHAR(255) NOT NULL,
   is_active BOOLEAN DEFAULT true,
   sort_order INTEGER DEFAULT 0,
@@ -1096,13 +1096,13 @@ CREATE TABLE IF NOT EXISTS cms_blocks (
   meta_description TEXT,
   meta_keywords VARCHAR(255),
   store_id UUID NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   placement JSONB DEFAULT '["content"]'::jsonb
 );
 
 CREATE TABLE IF NOT EXISTS cms_page_seo (
-  cms_page_id UUID PRIMARY KEY,
+  cms_page_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   meta_title VARCHAR(255),
   meta_description TEXT,
@@ -1120,7 +1120,7 @@ CREATE TABLE IF NOT EXISTS cms_page_seo (
 );
 
 CREATE TABLE IF NOT EXISTS cms_page_translations (
-  cms_page_id UUID PRIMARY KEY,
+  cms_page_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   title VARCHAR(255) NOT NULL,
   content TEXT,
@@ -1148,7 +1148,7 @@ CREATE TABLE IF NOT EXISTS cms_pages (
 );
 
 CREATE TABLE IF NOT EXISTS consent_logs (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id VARCHAR(255) NOT NULL,
   user_id UUID,
   store_id UUID NOT NULL,
@@ -1163,7 +1163,7 @@ CREATE TABLE IF NOT EXISTS consent_logs (
 );
 
 CREATE TABLE IF NOT EXISTS cookie_consent_settings (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   is_enabled BOOLEAN DEFAULT true,
   banner_position enum_cookie_consent_settings_banner_position DEFAULT 'bottom'::enum_cookie_consent_settings_banner_position,
   banner_text TEXT,
@@ -1191,8 +1191,8 @@ CREATE TABLE IF NOT EXISTS cookie_consent_settings (
   google_tag_manager_id VARCHAR(255),
   custom_css TEXT,
   store_id UUID NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   translations JSONB DEFAULT '{}'::jsonb,
   accept_button_bg_color VARCHAR(255) DEFAULT '#2563eb'::character varying,
   accept_button_text_color VARCHAR(255) DEFAULT '#ffffff'::character varying,
@@ -1225,7 +1225,7 @@ CREATE TABLE IF NOT EXISTS cookie_consent_settings_translations (
 );
 
 CREATE TABLE IF NOT EXISTS coupon_translations (
-  coupon_id UUID PRIMARY KEY,
+  coupon_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   name VARCHAR(255),
   description TEXT,
@@ -1373,7 +1373,7 @@ CREATE TABLE IF NOT EXISTS custom_analytics_events (
 );
 
 CREATE TABLE IF NOT EXISTS custom_domains (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
   domain VARCHAR(255) NOT NULL,
   subdomain VARCHAR(255),
@@ -1406,8 +1406,8 @@ CREATE TABLE IF NOT EXISTS custom_domains (
   access_count INTEGER DEFAULT 0,
   notes TEXT,
   metadata JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS custom_option_rules (
@@ -1464,7 +1464,7 @@ CREATE TABLE IF NOT EXISTS custom_pricing_rules (
 );
 
 CREATE TABLE IF NOT EXISTS customer_activities (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id VARCHAR(255) NOT NULL,
   store_id UUID NOT NULL,
   user_id UUID,
@@ -1476,8 +1476,8 @@ CREATE TABLE IF NOT EXISTS customer_activities (
   user_agent TEXT,
   ip_address VARCHAR(255),
   metadata JSON DEFAULT '{}'::json,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   country VARCHAR(2),
   country_name VARCHAR(100),
   city VARCHAR(100),
@@ -1493,7 +1493,7 @@ CREATE TABLE IF NOT EXISTS customer_activities (
 );
 
 CREATE TABLE IF NOT EXISTS customer_addresses (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   type enum_customer_addresses_type DEFAULT 'both'::enum_customer_addresses_type NOT NULL,
   full_name VARCHAR(255) NOT NULL,
   company VARCHAR(255),
@@ -1508,8 +1508,8 @@ CREATE TABLE IF NOT EXISTS customer_addresses (
   is_default BOOLEAN DEFAULT false NOT NULL,
   user_id UUID,
   customer_id UUID,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS customers (
@@ -1563,7 +1563,7 @@ CREATE TABLE IF NOT EXISTS delivery_settings (
 );
 
 CREATE TABLE IF NOT EXISTS email_send_logs (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
   email_template_id UUID,
   recipient_email VARCHAR(255) NOT NULL,
@@ -1573,23 +1573,23 @@ CREATE TABLE IF NOT EXISTS email_send_logs (
   error_message TEXT,
   metadata JSON DEFAULT '{}'::json,
   sent_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS email_template_translations (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email_template_id UUID NOT NULL,
   language_code VARCHAR(10) NOT NULL,
   subject VARCHAR(255) NOT NULL,
   template_content TEXT,
   html_content TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS email_templates (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
   identifier VARCHAR(100) NOT NULL,
   content_type VARCHAR(20) DEFAULT 'template'::character varying NOT NULL,
@@ -1598,8 +1598,8 @@ CREATE TABLE IF NOT EXISTS email_templates (
   sort_order INTEGER DEFAULT 0,
   attachment_enabled BOOLEAN DEFAULT false,
   attachment_config JSON DEFAULT '{}'::json,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   is_system BOOLEAN DEFAULT false NOT NULL,
   default_subject VARCHAR(255),
   default_template_content TEXT,
@@ -1684,7 +1684,7 @@ CREATE TABLE IF NOT EXISTS heatmap_sessions (
 );
 
 CREATE TABLE IF NOT EXISTS integration_configs (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID,
   integration_type VARCHAR(50),
   config_data JSONB,
@@ -1739,7 +1739,7 @@ CREATE TABLE IF NOT EXISTS jobs (
 );
 
 CREATE TABLE IF NOT EXISTS languages (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(10) NOT NULL,
   name VARCHAR(255) NOT NULL,
   native_name VARCHAR(255),
@@ -1748,8 +1748,8 @@ CREATE TABLE IF NOT EXISTS languages (
   is_active BOOLEAN DEFAULT false,
   is_default BOOLEAN DEFAULT false,
   translations JSON DEFAULT '{}'::json,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS login_attempts (
@@ -1783,7 +1783,7 @@ CREATE TABLE IF NOT EXISTS media_assets (
 );
 
 CREATE TABLE IF NOT EXISTS payment_method_translations (
-  payment_method_id UUID PRIMARY KEY,
+  payment_method_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   name VARCHAR(255) NOT NULL,
   description TEXT,
@@ -1792,7 +1792,7 @@ CREATE TABLE IF NOT EXISTS payment_method_translations (
 );
 
 CREATE TABLE IF NOT EXISTS payment_methods (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
   code VARCHAR(255) NOT NULL,
   type enum_payment_methods_type DEFAULT 'credit_card'::enum_payment_methods_type NOT NULL,
@@ -1807,8 +1807,8 @@ CREATE TABLE IF NOT EXISTS payment_methods (
   availability enum_payment_methods_availability DEFAULT 'all'::enum_payment_methods_availability,
   countries JSONB DEFAULT '[]'::jsonb,
   store_id UUID NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   conditions JSONB DEFAULT '{}'::jsonb,
   payment_flow VARCHAR(20) DEFAULT 'offline'::character varying
 );
@@ -1839,7 +1839,7 @@ CREATE TABLE IF NOT EXISTS pdf_templates (
 );
 
 -- CREATE TABLE IF NOT EXISTS platform_admins (
---   id UUID PRIMARY KEY,
+--   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 --   user_id UUID NOT NULL,
 --   role VARCHAR(50) DEFAULT 'support'::character varying NOT NULL,
 --   permissions JSONB DEFAULT '{}'::jsonb,
@@ -1850,7 +1850,7 @@ CREATE TABLE IF NOT EXISTS pdf_templates (
 --   mfa_secret VARCHAR(255),
 --   notes TEXT,
 --   metadata JSONB DEFAULT '{}'::jsonb,
---   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+--   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 --   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 -- );
 
@@ -1883,7 +1883,7 @@ CREATE TABLE IF NOT EXISTS plugin_admin_scripts (
 );
 
 CREATE TABLE IF NOT EXISTS plugin_configurations (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plugin_id VARCHAR(255),
   store_id UUID,
   is_enabled BOOLEAN DEFAULT false,
@@ -1895,8 +1895,8 @@ CREATE TABLE IF NOT EXISTS plugin_configurations (
   last_health_check TIMESTAMP WITH TIME ZONE,
   health_status VARCHAR(50),
   error_log TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS plugin_controllers (
@@ -2065,7 +2065,7 @@ CREATE TABLE IF NOT EXISTS plugin_registry (
   last_activated TIMESTAMP,
   updated_at TIMESTAMP DEFAULT NOW(),
   created_at TIMESTAMP DEFAULT NOW(),
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   creator_id UUID,
   is_installed BOOLEAN DEFAULT false,
   is_enabled BOOLEAN DEFAULT false,
@@ -2195,7 +2195,7 @@ CREATE TABLE IF NOT EXISTS plugin_widgets (
 );
 
 CREATE TABLE IF NOT EXISTS plugins (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(255) NOT NULL,
   version VARCHAR(50) NOT NULL,
@@ -2220,12 +2220,12 @@ CREATE TABLE IF NOT EXISTS plugins (
   installed_at TIMESTAMP WITH TIME ZONE,
   enabled_at TIMESTAMP WITH TIME ZONE,
   disabled_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS product_attribute_values (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id UUID NOT NULL,
   attribute_id UUID NOT NULL,
   value_id UUID,
@@ -2233,12 +2233,12 @@ CREATE TABLE IF NOT EXISTS product_attribute_values (
   number_value NUMERIC,
   date_value TIMESTAMP WITH TIME ZONE,
   boolean_value BOOLEAN,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS product_label_translations (
-  product_label_id UUID PRIMARY KEY,
+  product_label_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   name VARCHAR(255),
   text VARCHAR(255) NOT NULL,
@@ -2247,7 +2247,7 @@ CREATE TABLE IF NOT EXISTS product_label_translations (
 );
 
 CREATE TABLE IF NOT EXISTS product_labels (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(255) NOT NULL,
@@ -2258,13 +2258,13 @@ CREATE TABLE IF NOT EXISTS product_labels (
   is_active BOOLEAN DEFAULT true,
   conditions JSON DEFAULT '{}'::json,
   priority INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   sort_order INTEGER DEFAULT 0 NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS product_seo (
-  product_id UUID PRIMARY KEY,
+  product_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   meta_title VARCHAR(255),
   meta_description TEXT,
@@ -2282,7 +2282,7 @@ CREATE TABLE IF NOT EXISTS product_seo (
 );
 
 CREATE TABLE IF NOT EXISTS product_tab_translations (
-  product_tab_id UUID PRIMARY KEY,
+  product_tab_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   name VARCHAR(255) NOT NULL,
   content TEXT,
@@ -2291,22 +2291,22 @@ CREATE TABLE IF NOT EXISTS product_tab_translations (
 );
 
 CREATE TABLE IF NOT EXISTS product_tabs (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(255) NOT NULL,
   content TEXT,
   sort_order INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   tab_type VARCHAR(20) DEFAULT 'text'::character varying NOT NULL,
   attribute_ids JSONB DEFAULT '[]'::jsonb,
   attribute_set_ids JSONB DEFAULT '[]'::jsonb
 );
 
 CREATE TABLE IF NOT EXISTS product_translations (
-  product_id UUID PRIMARY KEY,
+  product_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   name VARCHAR(255) NOT NULL,
   description TEXT,
@@ -2385,7 +2385,7 @@ CREATE TABLE IF NOT EXISTS redirects (
 );
 
 CREATE TABLE IF NOT EXISTS sales_invoices (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   invoice_number VARCHAR(255) NOT NULL,
   order_id UUID NOT NULL,
   store_id UUID NOT NULL,
@@ -2396,12 +2396,12 @@ CREATE TABLE IF NOT EXISTS sales_invoices (
   email_status enum_sales_invoices_email_status DEFAULT 'sent'::enum_sales_invoices_email_status,
   error_message TEXT,
   metadata JSON DEFAULT '{}'::json,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS sales_order_items (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   quantity INTEGER DEFAULT 1 NOT NULL,
   unit_price NUMERIC NOT NULL,
   total_price NUMERIC NOT NULL,
@@ -2413,12 +2413,12 @@ CREATE TABLE IF NOT EXISTS sales_order_items (
   original_price NUMERIC,
   order_id UUID NOT NULL,
   product_id UUID NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS sales_orders (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_number VARCHAR(255) NOT NULL,
   status enum_sales_orders_status DEFAULT 'pending'::enum_sales_orders_status,
   payment_status enum_sales_orders_payment_status DEFAULT 'pending'::enum_sales_orders_payment_status,
@@ -2450,12 +2450,12 @@ CREATE TABLE IF NOT EXISTS sales_orders (
   shipped_at TIMESTAMP WITH TIME ZONE,
   delivered_at TIMESTAMP WITH TIME ZONE,
   cancelled_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS sales_shipments (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   shipment_number VARCHAR(255) NOT NULL,
   order_id UUID NOT NULL,
   store_id UUID NOT NULL,
@@ -2470,12 +2470,12 @@ CREATE TABLE IF NOT EXISTS sales_shipments (
   email_status enum_sales_shipments_email_status DEFAULT 'sent'::enum_sales_shipments_email_status,
   error_message TEXT,
   metadata JSON DEFAULT '{}'::json,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS seo_settings (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
   robots_txt_content TEXT,
   hreflang_settings JSONB DEFAULT '[]'::jsonb,
@@ -2489,7 +2489,7 @@ CREATE TABLE IF NOT EXISTS seo_settings (
 );
 
 CREATE TABLE IF NOT EXISTS seo_templates (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
   name VARCHAR(255) NOT NULL,
   type enum_seo_templates_type NOT NULL,
@@ -2501,13 +2501,13 @@ CREATE TABLE IF NOT EXISTS seo_templates (
   sort_order INTEGER DEFAULT 0,
   conditions JSON DEFAULT '{"categories":[],"attribute_sets":[]}'::json,
   is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   template JSON DEFAULT '{}'::json
 );
 
 CREATE TABLE IF NOT EXISTS shipping_method_translations (
-  shipping_method_id UUID PRIMARY KEY,
+  shipping_method_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   language_code VARCHAR(10),
   name VARCHAR(255) NOT NULL,
   description TEXT,
@@ -2645,8 +2645,8 @@ CREATE TABLE IF NOT EXISTS stores (
   postal_code VARCHAR(255),
   country VARCHAR(255),
   website_url VARCHAR(255),
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   stripe_account_id VARCHAR(255),
   user_id UUID NOT NULL,
   deployment_status enum_deployment_status DEFAULT 'draft'::enum_deployment_status,
@@ -2655,7 +2655,7 @@ CREATE TABLE IF NOT EXISTS stores (
 );
 
 -- CREATE TABLE IF NOT EXISTS subscriptions (
---   id UUID PRIMARY KEY,
+--   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 --   store_id UUID NOT NULL,
 --   plan_name VARCHAR(50) NOT NULL,
 --   status VARCHAR(50) DEFAULT 'trial'::character varying NOT NULL,
@@ -2675,7 +2675,7 @@ CREATE TABLE IF NOT EXISTS stores (
 --   cancelled_at TIMESTAMP WITH TIME ZONE,
 --   cancellation_reason TEXT,
 --   metadata JSONB DEFAULT '{}'::jsonb,
---   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+--   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 --   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 -- );
 
@@ -2718,31 +2718,31 @@ CREATE TABLE IF NOT EXISTS taxes (
 );
 
 CREATE TABLE IF NOT EXISTS translations (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   key VARCHAR(255) NOT NULL,
   language_code VARCHAR(10) NOT NULL,
   value TEXT NOT NULL,
   category VARCHAR(50) DEFAULT 'common'::character varying,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   type VARCHAR(20) DEFAULT 'system'::character varying NOT NULL,
   store_id UUID NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS translations_duplicate (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   key VARCHAR(255) NOT NULL,
   language_code VARCHAR(10) NOT NULL,
   value TEXT NOT NULL,
   category VARCHAR(50) DEFAULT 'common'::character varying,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   type VARCHAR(20) DEFAULT 'system'::character varying NOT NULL,
   store_id UUID NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS usage_metrics (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
   metric_date DATE NOT NULL,
   metric_hour INTEGER,
@@ -2769,8 +2769,8 @@ CREATE TABLE IF NOT EXISTS usage_metrics (
   page_views INTEGER DEFAULT 0,
   unique_visitors INTEGER DEFAULT 0,
   metadata JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -2796,14 +2796,14 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS wishlists (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id VARCHAR(255),
   store_id UUID NOT NULL,
   user_id UUID,
   product_id UUID NOT NULL,
   added_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- ALTER TABLE ONLY _migrations
