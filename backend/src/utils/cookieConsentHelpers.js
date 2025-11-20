@@ -1,6 +1,13 @@
 /**
  * Cookie Consent Settings Helpers for Normalized Translations
  *
+ * ⚠️ DEPRECATED: This file uses deprecated Sequelize raw queries with transactions.
+ *
+ * MIGRATION PATH:
+ * - Routes should use ConnectionManager.getStoreConnection(storeId) to get tenantDb
+ * - Implement queries directly using tenantDb.from('cookie_consent_settings') query builder
+ * - See attributeHelpers.js and productLabelHelpers.js for conversion examples
+ *
  * These helpers construct the same format that the frontend expects
  * from normalized translation tables.
  *

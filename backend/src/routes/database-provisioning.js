@@ -4,8 +4,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const DatabaseProvisioningService = require('../services/database/DatabaseProvisioningService');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { Store, Subscription, UsageMetric } = require('../models'); // Store: Hybrid, Subscription: Master, UsageMetric: Tenant
-const { Op } = require('sequelize');
+const { masterDbClient } = require('../database/masterConnection');
 
 /**
  * Provision database for a new store
@@ -22,10 +21,10 @@ router.post('/provision', authMiddleware, checkStoreOwnership, async (req, res) 
     }
 
     // Update store status to provisioning
-    await Store.update(
-      { database_status: 'provisioning' },
-      { where: { id: req.storeId } }
-    );
+    await masterDbClient
+      .from('stores')
+      .update({ database_status: 'provisioning' })
+      .eq('id', req.storeId);
 
     // Start provisioning (can be done async for large databases)
     const result = await DatabaseProvisioningService.provisionStore(req.storeId, {
@@ -48,9 +47,13 @@ router.post('/provision', authMiddleware, checkStoreOwnership, async (req, res) 
  */
 router.get('/status', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
-    const store = await Store.findByPk(req.storeId);
+    const { data: store, error } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('id', req.storeId)
+      .single();
 
-    if (!store) {
+    if (error || !store) {
       return res.status(404).json({
         success: false,
         message: 'Store not found'
@@ -145,13 +148,19 @@ router.post('/reprovision', authMiddleware, checkStoreOwnership, async (req, res
  */
 router.get('/subscription', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
-    const subscription = await Subscription.findOne({
-      where: {
-        store_id: req.storeId,
-        status: { [Op.in]: ['active', 'trial'] }
-      },
-      order: [['created_at', 'DESC']]
-    });
+    const { data: subscriptions, error } = await masterDbClient
+      .from('subscriptions')
+      .select('*')
+      .eq('store_id', req.storeId)
+      .in('status', ['active', 'trial'])
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const subscription = subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
 
     if (!subscription) {
       return res.json({
@@ -196,10 +205,24 @@ router.get('/usage', authMiddleware, checkStoreOwnership, async (req, res) => {
     const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const end = endDate || new Date().toISOString().split('T')[0];
 
-    const metrics = await UsageMetric.getDailySummary(req.storeId, start, end);
+    // Get tenant connection for usage metrics
+    const tenantDb = await ConnectionManager.getStoreConnection(req.storeId);
+
+    // Fetch usage metrics from tenant DB
+    const { data: metrics, error } = await tenantDb
+      .from('usage_metrics')
+      .select('*')
+      .eq('store_id', req.storeId)
+      .gte('date', start)
+      .lte('date', end)
+      .order('date', { ascending: true });
+
+    if (error) {
+      throw new Error(error.message);
+    }
 
     // Calculate totals
-    const totals = metrics.reduce((acc, metric) => ({
+    const totals = (metrics || []).reduce((acc, metric) => ({
       products_created: acc.products_created + (metric.products_created || 0),
       orders_created: acc.orders_created + (metric.orders_created || 0),
       api_calls: acc.api_calls + (metric.api_calls || 0),
@@ -210,7 +233,7 @@ router.get('/usage', authMiddleware, checkStoreOwnership, async (req, res) => {
       success: true,
       period: { start, end },
       totals,
-      daily_metrics: metrics
+      daily_metrics: metrics || []
     });
   } catch (error) {
     res.status(500).json({

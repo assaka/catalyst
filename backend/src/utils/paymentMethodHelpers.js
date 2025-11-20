@@ -91,46 +91,14 @@ async function getPaymentMethodsWithTranslations(storeId, where = {}, lang = 'en
 /**
  * Get single payment method with translations
  *
+ * @param {string} storeId - Store ID
  * @param {string} id - Payment method ID
  * @param {string} lang - Language code (default: 'en')
  * @returns {Promise<Object|null>} Payment method with translated fields
  */
-async function getPaymentMethodById(id, lang = 'en') {
-  const query = `
-    SELECT
-      pm.id,
-      pm.code,
-      pm.type,
-      pm.payment_flow,
-      pm.is_active,
-      pm.sort_order,
-      pm.settings,
-      pm.fee_type,
-      pm.fee_amount,
-      pm.min_amount,
-      pm.max_amount,
-      pm.availability,
-      pm.countries,
-      pm.conditions,
-      pm.store_id,
-      pm.created_at,
-      pm.updated_at,
-      COALESCE(pmt.name, pmt_en.name, pm.name) as name,
-      COALESCE(pmt.description, pmt_en.description, pm.description) as description
-    FROM payment_methods pm
-    LEFT JOIN payment_method_translations pmt
-      ON pm.id = pmt.payment_method_id AND pmt.language_code = :lang
-    LEFT JOIN payment_method_translations pmt_en
-      ON pm.id = pmt_en.payment_method_id AND pmt_en.language_code = 'en'
-    WHERE pm.id = :id
-  `;
-
-  const results = await sequelize.query(query, {
-    replacements: { id, lang },
-    type: sequelize.QueryTypes.SELECT
-  });
-
-  return results[0] || null;
+async function getPaymentMethodById(storeId, id, lang = 'en') {
+  const methods = await getPaymentMethodsWithTranslations(storeId, { id }, lang);
+  return methods[0] || null;
 }
 
 module.exports = {

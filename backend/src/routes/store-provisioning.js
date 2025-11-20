@@ -155,12 +155,15 @@ router.get('/status/:storeId', async (req, res) => {
     const userId = req.user.id;
 
     // Verify user owns this store
-    const { Store } = require('../models'); // Master/Tenant hybrid model
-    const store = await Store.findOne({
-      where: { id: storeId, user_id: userId }
-    });
+    const { masterDbClient } = require('../database/masterConnection');
+    const { data: store, error } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .eq('user_id', userId)
+      .single();
 
-    if (!store) {
+    if (error || !store) {
       return res.status(404).json({
         success: false,
         error: 'Store not found or access denied'
@@ -192,12 +195,15 @@ router.post('/:storeId/setup-migration', async (req, res) => {
     const { migrationTypes = ['catalog', 'content'] } = req.body;
 
     // Verify user owns this store
-    const { Store } = require('../models'); // Master/Tenant hybrid model
-    const store = await Store.findOne({
-      where: { id: storeId, user_id: userId }
-    });
+    const { masterDbClient } = require('../database/masterConnection');
+    const { data: store, error } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .eq('user_id', userId)
+      .single();
 
-    if (!store) {
+    if (error || !store) {
       return res.status(404).json({
         success: false,
         error: 'Store not found or access denied'

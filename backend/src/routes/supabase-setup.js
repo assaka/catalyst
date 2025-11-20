@@ -46,10 +46,14 @@ router.post('/connect', authMiddleware, async (req, res) => {
     }
 
     // Manual store ownership check with better error handling
-    const { Store } = require('../models'); // Master/Tenant hybrid model
-    const store = await Store.findByPk(store_id);
-    
-    if (!store) {
+    const { masterDbClient } = require('../database/masterConnection');
+    const { data: store, error } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('id', store_id)
+      .single();
+
+    if (error || !store) {
       return res.status(404).json({
         success: false,
         message: 'Store not found'
@@ -141,10 +145,14 @@ router.post('/migrate', authMiddleware, async (req, res) => {
     }
 
     // Manual store ownership check with better error handling
-    const { Store } = require('../models'); // Master/Tenant hybrid model
-    const store = await Store.findByPk(store_id);
-    
-    if (!store) {
+    const { masterDbClient } = require('../database/masterConnection');
+    const { data: store, error } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('id', store_id)
+      .single();
+
+    if (error || !store) {
       return res.status(404).json({
         success: false,
         message: 'Store not found'
@@ -247,10 +255,14 @@ router.post('/disconnect', authMiddleware, async (req, res) => {
     }
 
     // Manual store ownership check with better error handling
-    const { Store } = require('../models'); // Master/Tenant hybrid model
-    const store = await Store.findByPk(store_id);
-    
-    if (!store) {
+    const { masterDbClient } = require('../database/masterConnection');
+    const { data: store, error } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('id', store_id)
+      .single();
+
+    if (error || !store) {
       return res.status(404).json({
         success: false,
         message: 'Store not found'
@@ -270,10 +282,10 @@ router.post('/disconnect', authMiddleware, async (req, res) => {
     }
 
     // Remove stored credentials
-    const SupabaseOAuthToken = require('../models/SupabaseOAuthToken');
-    await SupabaseOAuthToken.destroy({
-      where: { store_id }
-    });
+    await masterDbClient
+      .from('supabase_oauth_tokens')
+      .delete()
+      .eq('store_id', store_id);
 
     res.json({
       success: true,

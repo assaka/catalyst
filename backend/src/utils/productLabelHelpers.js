@@ -3,396 +3,138 @@
  *
  * These helpers construct the same JSON format that the frontend expects
  * from normalized translation tables.
+ *
+ * IMPORTANT: These functions require tenantDb connection parameter.
+ * Routes should call ConnectionManager.getStoreConnection(storeId) and pass the tenantDb.
  */
-
-const { sequelize } = require('../database/connection');
 
 /**
  * Get product labels with translations from normalized tables
  *
+ * @param {Object} tenantDb - Tenant database connection (Supabase client)
  * @param {Object} where - WHERE clause conditions
  * @param {string} lang - Language code (default: 'en') - ignored if allTranslations is true
  * @param {boolean} allTranslations - If true, returns all translations for all languages
  * @returns {Promise<Array>} Product labels with translated fields
  */
-async function getProductLabelsWithTranslations(where = {}, lang = 'en', allTranslations = false) {
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === true || value === false) {
-        return `pl.${key} = ${value}`;
-      }
-      return `pl.${key} = '${value}'`;
-    })
-    .join(' AND ');
-
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
-
-  // If allTranslations is true, return ALL translations for each label
-  if (allTranslations) {
-    const query = `
-      SELECT
-        pl.id,
-        pl.store_id,
-        pl.name,
-        pl.slug,
-        pl.text,
-        pl.background_color,
-        pl.color,
-        pl.position,
-        pl.priority,
-        pl.sort_order,
-        pl.is_active,
-        pl.conditions,
-        pl.created_at,
-        pl.updated_at,
-        COALESCE(
-          json_object_agg(
-            t.language_code,
-            json_build_object('name', t.name, 'text', t.text)
-          ) FILTER (WHERE t.language_code IS NOT NULL),
-          '{}'::json
-        ) as translations
-      FROM product_labels pl
-      LEFT JOIN product_label_translations t ON pl.id = t.product_label_id
-      ${whereClause}
-      GROUP BY pl.id
-      ORDER BY pl.sort_order ASC, pl.priority DESC, pl.name ASC
-    `;
-
-    const results = await sequelize.query(query, {
-      replacements: {},
-      type: sequelize.QueryTypes.SELECT
-    });
-
-    return results;
+async function getProductLabelsWithTranslations(tenantDb, where = {}, lang = 'en', allTranslations = false) {
+  if (!tenantDb) {
+    throw new Error('tenantDb connection required');
   }
 
-  // Original single-language query
-  const query = `
-    SELECT
-      pl.id,
-      pl.store_id,
-      pl.slug,
-      pl.background_color,
-      pl.color,
-      pl.position,
-      pl.priority,
-      pl.sort_order,
-      pl.is_active,
-      pl.conditions,
-      pl.created_at,
-      pl.updated_at,
-      COALESCE(plt.name, pl.name) as name,
-      COALESCE(plt.text, pl.text) as text
-    FROM product_labels pl
-    LEFT JOIN product_label_translations plt ON pl.id = plt.product_label_id AND plt.language_code = :lang
-    ${whereClause}
-    ORDER BY pl.sort_order ASC, pl.priority DESC, pl.name ASC
-  `;
+  // Fetch product labels
+  let labelsQuery = tenantDb.from('product_labels').select('*');
 
-  // NOTE: Deprecated Sequelize - return empty array for now
-  console.warn('⚠️ getProductLabelsWithTranslations using deprecated Sequelize - returning empty array');
-  return [];
+  // Apply where conditions
+  Object.entries(where).forEach(([key, value]) => {
+    if (value === true || value === false) {
+      labelsQuery = labelsQuery.eq(key, value);
+    } else {
+      labelsQuery = labelsQuery.eq(key, value);
+    }
+  });
+
+  labelsQuery = labelsQuery.order('sort_order', { ascending: true }).order('priority', { ascending: false });
+
+  const { data: labels, error: labelsError } = await labelsQuery;
+
+  if (labelsError) throw labelsError;
+  if (!labels || labels.length === 0) return [];
+
+  // Fetch translations
+  const labelIds = labels.map(l => l.id);
+  const { data: translations, error: transError } = await tenantDb
+    .from('product_label_translations')
+    .select('*')
+    .in('product_label_id', labelIds);
+
+  if (transError) {
+    console.error('Error fetching product label translations:', transError);
+    return labels.map(l => allTranslations ? { ...l, translations: {} } : l);
+  }
+
+  // Group translations
+  const translationsByLabel = {};
+  (translations || []).forEach(t => {
+    if (!translationsByLabel[t.product_label_id]) {
+      translationsByLabel[t.product_label_id] = {};
+    }
+    translationsByLabel[t.product_label_id][t.language_code] = {
+      name: t.name,
+      text: t.text
+    };
+  });
+
+  // Return with all translations or single language
+  if (allTranslations) {
+    return labels.map(label => ({
+      ...label,
+      translations: translationsByLabel[label.id] || {}
+    }));
+  }
+
+  // Single language mode - merge translations into label
+  return labels.map(label => {
+    const trans = translationsByLabel[label.id];
+    const reqLang = trans?.[lang];
+    const enLang = trans?.['en'];
+
+    return {
+      ...label,
+      name: reqLang?.name || enLang?.name || label.name,
+      text: reqLang?.text || enLang?.text || label.text
+    };
+  });
 }
 
 /**
  * Get single product label with translations
  *
+ * @param {Object} tenantDb - Tenant database connection
  * @param {string} id - Product label ID
  * @param {string} lang - Language code (default: 'en')
  * @returns {Promise<Object|null>} Product label with translated fields
  */
-async function getProductLabelById(id, lang = 'en') {
-  const query = `
-    SELECT
-      pl.id,
-      pl.store_id,
-      pl.slug,
-      pl.background_color,
-      pl.color,
-      pl.position,
-      pl.priority,
-      pl.sort_order,
-      pl.is_active,
-      pl.conditions,
-      pl.created_at,
-      pl.updated_at,
-      COALESCE(plt.name, pl.name) as name,
-      COALESCE(plt.text, pl.text) as text
-    FROM product_labels pl
-    LEFT JOIN product_label_translations plt ON pl.id = plt.product_label_id AND plt.language_code = :lang
-    WHERE pl.id = :id
-  `;
-
-  const results = await sequelize.query(query, {
-    replacements: { id, lang },
-    type: sequelize.QueryTypes.SELECT
-  });
-
-  return results[0] || null;
+async function getProductLabelById(tenantDb, id, lang = 'en') {
+  const labels = await getProductLabelsWithTranslations(tenantDb, { id }, lang, false);
+  return labels[0] || null;
 }
 
 /**
  * Get single product label with ALL translations
  * Returns format: { id, name, text, ..., translations: {en: {name, text}, nl: {...}} }
  *
+ * @param {Object} tenantDb - Tenant database connection
  * @param {string} id - Product label ID
  * @returns {Promise<Object|null>} Product label with all translations
  */
-async function getProductLabelWithAllTranslations(id) {
-  const query = `
-    SELECT
-      pl.id,
-      pl.store_id,
-      pl.name,
-      pl.slug,
-      pl.text,
-      pl.background_color,
-      pl.color,
-      pl.position,
-      pl.priority,
-      pl.sort_order,
-      pl.is_active,
-      pl.conditions,
-      pl.created_at,
-      pl.updated_at,
-      COALESCE(
-        json_object_agg(
-          t.language_code,
-          json_build_object('name', t.name, 'text', t.text)
-        ) FILTER (WHERE t.language_code IS NOT NULL),
-        '{}'::json
-      ) as translations
-    FROM product_labels pl
-    LEFT JOIN product_label_translations t ON pl.id = t.product_label_id
-    WHERE pl.id = :id
-    GROUP BY pl.id
-  `;
-
-  const results = await sequelize.query(query, {
-    replacements: { id },
-    type: sequelize.QueryTypes.SELECT
-  });
-
-  return results[0] || null;
+async function getProductLabelWithAllTranslations(tenantDb, id) {
+  const labels = await getProductLabelsWithTranslations(tenantDb, { id }, 'en', true);
+  return labels[0] || null;
 }
 
 /**
- * Create product label with translations
- *
- * @param {Object} labelData - Product label data (without translations)
- * @param {Object} translations - Translations object { en: {name, text}, nl: {name, text} }
- * @returns {Promise<Object>} Created product label with translations
+ * @deprecated Routes should implement their own create logic using tenantDb directly
+ * This function exists for backward compatibility but should not be used.
  */
-async function createProductLabelWithTranslations(labelData, translations = {}) {
-  const transaction = await sequelize.transaction();
-
-  try {
-    // Insert product label
-    const [label] = await sequelize.query(`
-      INSERT INTO product_labels (
-        id, store_id, name, slug, text, background_color, color,
-        position, priority, sort_order, is_active, conditions,
-        created_at, updated_at
-      ) VALUES (
-        gen_random_uuid(),
-        :store_id,
-        :name,
-        :slug,
-        :text,
-        :background_color,
-        :color,
-        :position,
-        :priority,
-        :sort_order,
-        :is_active,
-        :conditions,
-        NOW(),
-        NOW()
-      )
-      RETURNING *
-    `, {
-      replacements: {
-        store_id: labelData.store_id,
-        name: labelData.name || '',
-        slug: labelData.slug,
-        text: labelData.text || '',
-        background_color: labelData.background_color,
-        color: labelData.color,
-        position: labelData.position || 'top-right',
-        priority: labelData.priority || 0,
-        sort_order: labelData.sort_order || 0,
-        is_active: labelData.is_active !== false,
-        conditions: JSON.stringify(labelData.conditions || {})
-      },
-      type: sequelize.QueryTypes.SELECT,
-      transaction
-    });
-
-    // Insert translations
-    for (const [langCode, data] of Object.entries(translations)) {
-      if (data && (data.name || data.text)) {
-        const replacements = {
-          label_id: label.id,
-          lang_code: langCode,
-          name: data.name ?? null,
-          text: data.text ?? null
-        };
-
-        await sequelize.query(`
-          INSERT INTO product_label_translations (
-            product_label_id, language_code, name, text, created_at, updated_at
-          ) VALUES (
-            :label_id, :lang_code, :name, :text, NOW(), NOW()
-          )
-          ON CONFLICT (product_label_id, language_code) DO UPDATE
-          SET name = EXCLUDED.name, text = EXCLUDED.text, updated_at = NOW()
-        `, {
-          replacements,
-          transaction
-        });
-      }
-    }
-
-    await transaction.commit();
-
-    // Return the created label with all translations
-    return await getProductLabelWithAllTranslations(label.id);
-  } catch (error) {
-    await transaction.rollback();
-    throw error;
-  }
+async function createProductLabelWithTranslations() {
+  throw new Error('createProductLabelWithTranslations is deprecated. Routes should implement create logic using tenantDb directly.');
 }
 
 /**
- * Update product label with translations
- *
- * @param {string} id - Product label ID
- * @param {Object} labelData - Product label data (without translations)
- * @param {Object} translations - Translations object { en: {name, text}, nl: {name, text} }
- * @returns {Promise<Object>} Updated product label with translations
+ * @deprecated Routes should implement their own update logic using tenantDb directly
+ * This function exists for backward compatibility but should not be used.
  */
-async function updateProductLabelWithTranslations(id, labelData, translations = {}) {
-  const transaction = await sequelize.transaction();
-
-  try {
-    // Build update fields
-    const updateFields = [];
-    const replacements = { id };
-
-    if (labelData.name !== undefined) {
-      updateFields.push('name = :name');
-      replacements.name = labelData.name;
-    }
-    if (labelData.slug !== undefined) {
-      updateFields.push('slug = :slug');
-      replacements.slug = labelData.slug;
-    }
-    if (labelData.text !== undefined) {
-      updateFields.push('text = :text');
-      replacements.text = labelData.text;
-    }
-    if (labelData.background_color !== undefined) {
-      updateFields.push('background_color = :background_color');
-      replacements.background_color = labelData.background_color;
-    }
-    if (labelData.color !== undefined) {
-      updateFields.push('color = :color');
-      replacements.color = labelData.color;
-    }
-    if (labelData.position !== undefined) {
-      updateFields.push('position = :position');
-      replacements.position = labelData.position;
-    }
-    if (labelData.priority !== undefined) {
-      updateFields.push('priority = :priority');
-      replacements.priority = labelData.priority;
-    }
-    if (labelData.sort_order !== undefined) {
-      updateFields.push('sort_order = :sort_order');
-      replacements.sort_order = labelData.sort_order;
-    }
-    if (labelData.is_active !== undefined) {
-      updateFields.push('is_active = :is_active');
-      replacements.is_active = labelData.is_active;
-    }
-    if (labelData.conditions !== undefined) {
-      updateFields.push('conditions = :conditions');
-      replacements.conditions = JSON.stringify(labelData.conditions);
-    }
-
-    if (updateFields.length > 0) {
-      updateFields.push('updated_at = NOW()');
-
-      await sequelize.query(`
-        UPDATE product_labels
-        SET ${updateFields.join(', ')}
-        WHERE id = :id
-      `, {
-        replacements,
-        transaction
-      });
-    }
-
-    // Update translations
-    for (const [langCode, data] of Object.entries(translations)) {
-      if (data && (data.name !== undefined || data.text !== undefined)) {
-        const replacements = {
-          label_id: id,
-          lang_code: langCode,
-          name: data.name ?? null,
-          text: data.text ?? null
-        };
-
-        console.log('🔍 Updating product label translation:', {
-          langCode,
-          data,
-          replacements
-        });
-
-        await sequelize.query(`
-          INSERT INTO product_label_translations (
-            product_label_id, language_code, name, text, created_at, updated_at
-          ) VALUES (
-            :label_id, :lang_code, :name, :text, NOW(), NOW()
-          )
-          ON CONFLICT (product_label_id, language_code) DO UPDATE
-          SET
-            name = COALESCE(EXCLUDED.name, product_label_translations.name),
-            text = COALESCE(EXCLUDED.text, product_label_translations.text),
-            updated_at = NOW()
-        `, {
-          replacements,
-          transaction
-        });
-      }
-    }
-
-    await transaction.commit();
-
-    // Return the updated label with all translations
-    return await getProductLabelWithAllTranslations(id);
-  } catch (error) {
-    await transaction.rollback();
-    throw error;
-  }
+async function updateProductLabelWithTranslations() {
+  throw new Error('updateProductLabelWithTranslations is deprecated. Routes should implement update logic using tenantDb directly.');
 }
 
 /**
- * Delete product label (translations are CASCADE deleted)
- *
- * @param {string} id - Product label ID
- * @returns {Promise<boolean>} Success status
+ * @deprecated Routes should implement their own delete logic using tenantDb directly
+ * This function exists for backward compatibility but should not be used.
  */
-async function deleteProductLabel(id) {
-  await sequelize.query(`
-    DELETE FROM product_labels WHERE id = :id
-  `, {
-    replacements: { id },
-    type: sequelize.QueryTypes.DELETE
-  });
-
-  return true;
+async function deleteProductLabel() {
+  throw new Error('deleteProductLabel is deprecated. Routes should implement delete logic using tenantDb directly.');
 }
 
 module.exports = {

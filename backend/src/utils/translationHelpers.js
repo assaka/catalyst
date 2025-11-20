@@ -1,6 +1,8 @@
 /**
  * Translation Helpers for Normalized Tables
  *
+ * ⚠️ DEPRECATED: This file uses deprecated Sequelize raw queries.
+ *
  * This module provides utility functions to construct the same JSON response
  * format from normalized translation tables that the frontend expects.
  *
@@ -10,11 +12,24 @@
  * - These helpers construct the same JSON format via SQL JOINs
  * - Frontend code requires zero changes
  *
- * USAGE:
+ * MIGRATION PATH:
+ * - Routes should use ConnectionManager.getStoreConnection(storeId) to get tenantDb
+ * - Implement queries directly using tenantDb query builder
+ * - See attributeHelpers.js and productLabelHelpers.js for conversion examples
+ * - For specific entities, use their dedicated helper files:
+ *   - attributeHelpers.js (✅ converted)
+ *   - productLabelHelpers.js (✅ converted)
+ *   - paymentMethodHelpers.js (✅ converted)
+ *   - cmsHelpers.js (partially converted)
+ *
+ * DEPRECATED USAGE:
  * ```javascript
- * // In backend route
+ * // OLD (deprecated):
  * const products = await getProductsWithTranslations(storeId);
- * // Returns: [{ id, sku, translations: {en: {...}, nl: {...}}, seo: {...} }]
+ *
+ * // NEW (use specific helpers or implement directly):
+ * const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+ * // Implement query using tenantDb.from('products').select(...)
  * ```
  */
 

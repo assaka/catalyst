@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Store } = require('../models'); // Master/Tenant hybrid model
+const { masterDbClient } = require('../database/masterConnection');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
@@ -10,12 +10,17 @@ router.get('/stores/:storeId/default-database-provider',
   async (req, res) => {
     try {
       const { storeId } = req.params;
-      
-      const store = await Store.findByPk(storeId);
-      if (!store) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Store not found' 
+
+      const { data: store, error } = await masterDbClient
+        .from('stores')
+        .select('*')
+        .eq('id', storeId)
+        .single();
+
+      if (error || !store) {
+        return res.status(404).json({
+          success: false,
+          message: 'Store not found'
         });
       }
 
@@ -55,17 +60,22 @@ router.post('/stores/:storeId/default-database-provider',
       const allValidProviders = [...new Set([...validDatabaseProviders, ...validStorageProviders])];
       
       if (!allValidProviders.includes(provider)) {
-        return res.status(400).json({ 
-          success: false, 
-          message: `Invalid database/storage provider: ${provider}` 
+        return res.status(400).json({
+          success: false,
+          message: `Invalid database/storage provider: ${provider}`
         });
       }
-      
-      const store = await Store.findByPk(storeId);
-      if (!store) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Store not found' 
+
+      const { data: store, error: fetchError } = await masterDbClient
+        .from('stores')
+        .select('*')
+        .eq('id', storeId)
+        .single();
+
+      if (fetchError || !store) {
+        return res.status(404).json({
+          success: false,
+          message: 'Store not found'
         });
       }
 
@@ -77,36 +87,38 @@ router.post('/stores/:storeId/default-database-provider',
         default_database_provider: provider,
         default_database_provider_updated_at: new Date().toISOString()
       };
-      
+
       // If the provider supports storage (like Supabase), also set it as media storage provider
       const storageCapableProviders = ['supabase', 'aws-s3', 'google-storage', 'azure-blob', 'cloudflare'];
       if (storageCapableProviders.includes(provider)) {
         updatedSettings.default_mediastorage_provider = provider;
         updatedSettings.default_mediastorage_provider_updated_at = new Date().toISOString();
       }
-      
+
       console.log('Current settings before update:', currentSettings);
       console.log('Updating store settings with:', updatedSettings);
-      
-      // Use raw query to ensure the JSON field is properly updated
-      const { sequelize } = require('../database/connection');
-      await sequelize.query(
-        `UPDATE stores 
-         SET settings = :settings,
-             updated_at = NOW()
-         WHERE id = :storeId`,
-        {
-          replacements: {
-            settings: JSON.stringify(updatedSettings),
-            storeId: storeId
-          },
-          type: sequelize.QueryTypes.UPDATE
-        }
-      );
-      
-      // Reload the store to get the updated data
-      await store.reload();
-      console.log('Settings after save:', store.settings);
+
+      // Update the store in master DB
+      const { error: updateError } = await masterDbClient
+        .from('stores')
+        .update({
+          settings: updatedSettings,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
+
+      if (updateError) {
+        throw new Error(`Failed to update store: ${updateError.message}`);
+      }
+
+      // Fetch updated store
+      const { data: updatedStore } = await masterDbClient
+        .from('stores')
+        .select('*')
+        .eq('id', storeId)
+        .single();
+
+      console.log('Settings after save:', updatedStore.settings);
       
       res.json({
         success: true,
@@ -130,12 +142,17 @@ router.delete('/stores/:storeId/default-database-provider',
   async (req, res) => {
     try {
       const { storeId } = req.params;
-      
-      const store = await Store.findByPk(storeId);
-      if (!store) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Store not found' 
+
+      const { data: store, error: fetchError } = await masterDbClient
+        .from('stores')
+        .select('*')
+        .eq('id', storeId)
+        .single();
+
+      if (fetchError || !store) {
+        return res.status(404).json({
+          success: false,
+          message: 'Store not found'
         });
       }
 
@@ -144,22 +161,19 @@ router.delete('/stores/:storeId/default-database-provider',
       const updatedSettings = { ...currentSettings };
       delete updatedSettings.default_database_provider;
       delete updatedSettings.default_database_provider_updated_at;
-      
-      // Use raw query to ensure the JSON field is properly updated
-      const { sequelize } = require('../database/connection');
-      await sequelize.query(
-        `UPDATE stores 
-         SET settings = :settings,
-             updated_at = NOW()
-         WHERE id = :storeId`,
-        {
-          replacements: {
-            settings: JSON.stringify(updatedSettings),
-            storeId: storeId
-          },
-          type: sequelize.QueryTypes.UPDATE
-        }
-      );
+
+      // Update the store in master DB
+      const { error: updateError } = await masterDbClient
+        .from('stores')
+        .update({
+          settings: updatedSettings,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
+
+      if (updateError) {
+        throw new Error(`Failed to update store: ${updateError.message}`);
+      }
       
       res.json({
         success: true,

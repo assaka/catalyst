@@ -2,7 +2,7 @@ const express = require('express');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/auth');
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { getMasterStore, getMasterStoreSafe, updateMasterStore } = require('../utils/dbHelpers');
+const { getMasterStore, getMasterStoreSafe, updateMasterStore, getMasterUser, checkUserStoreAccess } = require('../utils/dbHelpers');
 const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
@@ -180,9 +180,7 @@ router.post('/connect-account', authMiddleware, authorize(['admin', 'store_owner
     }
 
     // Get store
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { Store } = connection.models;
-    const store = await Store.findByPk(store_id);
+    const store = await getMasterStore(store_id);
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -214,7 +212,7 @@ router.post('/connect-account', authMiddleware, authorize(['admin', 'store_owner
     });
 
     // Save account ID to store
-    await store.update({
+    await updateMasterStore(store_id, {
       stripe_account_id: account.id
     });
 
@@ -266,9 +264,7 @@ router.post('/connect-link', authMiddleware, authorize(['admin', 'store_owner'])
     }
 
     // Get store
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { Store } = connection.models;
-    const store = await Store.findByPk(store_id);
+    const store = await getMasterStore(store_id);
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -416,11 +412,9 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
 
     // Verify the store exists and belongs to the user
     console.log(`🔍 [${requestId}] Looking up store:`, storeId);
-    const connection = await ConnectionManager.getConnection(storeId);
-    const { Store: StoreModel } = connection.models;
-    const userStore = await StoreModel.findOne({ where: { id: storeId, user_id: userId } });
+    const hasAccess = await checkUserStoreAccess(userId, storeId);
 
-    if (!userStore) {
+    if (!hasAccess) {
       console.error(`❌ [${requestId}] Store not found or doesn't belong to user:`, { storeId, userId });
       return res.status(403).json({
         success: false,
@@ -428,6 +422,8 @@ router.post('/create-intent', authMiddleware, async (req, res) => {
       });
     }
 
+    // Get store details for logging
+    const userStore = await getMasterStore(storeId);
     console.log(`🏪 [${requestId}] User store verified:`, {
       storeId: userStore.id,
       storeName: userStore.name,
@@ -699,9 +695,7 @@ router.post('/create-checkout', async (req, res) => {
     }
 
     // Get store to check for Stripe account
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { Store, BlacklistSettings, BlacklistIP, BlacklistEmail, BlacklistCountry, Customer, Product } = connection.models;
-    const store = await Store.findByPk(store_id);
+    const store = await getMasterStore(store_id);
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -709,8 +703,15 @@ router.post('/create-checkout', async (req, res) => {
       });
     }
 
+    // Get tenant DB connection for blacklist checks
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
     // Get blacklist settings
-    const blacklistSettings = await BlacklistSettings.findOne({ where: { store_id } });
+    const { data: blacklistSettings } = await tenantDb
+      .from('blacklist_settings')
+      .select('*')
+      .eq('store_id', store_id)
+      .maybeSingle();
     const settings = blacklistSettings || { block_by_ip: false, block_by_email: true, block_by_country: false };
 
     // Get IP address from request
@@ -721,9 +722,12 @@ router.post('/create-checkout', async (req, res) => {
 
     // Check IP blacklist
     if (settings.block_by_ip && ipAddress) {
-      const blacklistedIP = await BlacklistIP.findOne({
-        where: { store_id, ip_address: ipAddress }
-      });
+      const { data: blacklistedIP } = await tenantDb
+        .from('blacklist_ips')
+        .select('*')
+        .eq('store_id', store_id)
+        .eq('ip_address', ipAddress)
+        .maybeSingle();
 
       if (blacklistedIP) {
         const { getTranslation } = require('../utils/translationHelper');
@@ -739,9 +743,12 @@ router.post('/create-checkout', async (req, res) => {
     // Check email blacklist
     if (settings.block_by_email && customer_email) {
       // Check standalone email blacklist
-      const blacklistedEmail = await BlacklistEmail.findOne({
-        where: { store_id, email: customer_email.toLowerCase() }
-      });
+      const { data: blacklistedEmail } = await tenantDb
+        .from('blacklist_emails')
+        .select('*')
+        .eq('store_id', store_id)
+        .eq('email', customer_email.toLowerCase())
+        .maybeSingle();
 
       if (blacklistedEmail) {
         const { getTranslation } = require('../utils/translationHelper');
@@ -754,13 +761,13 @@ router.post('/create-checkout', async (req, res) => {
       }
 
       // Check if customer email is blacklisted (from customers table)
-      const blacklistedCustomer = await Customer.findOne({
-        where: {
-          email: customer_email,
-          store_id: store_id,
-          is_blacklisted: true
-        }
-      });
+      const { data: blacklistedCustomer } = await tenantDb
+        .from('customers')
+        .select('*')
+        .eq('email', customer_email)
+        .eq('store_id', store_id)
+        .eq('is_blacklisted', true)
+        .maybeSingle();
 
       if (blacklistedCustomer) {
         const { getTranslation } = require('../utils/translationHelper');
@@ -775,9 +782,12 @@ router.post('/create-checkout', async (req, res) => {
 
     // Check country blacklist
     if (settings.block_by_country && countryCode) {
-      const blacklistedCountry = await BlacklistCountry.findOne({
-        where: { store_id, country_code: countryCode.toUpperCase() }
-      });
+      const { data: blacklistedCountry } = await tenantDb
+        .from('blacklist_countries')
+        .select('*')
+        .eq('store_id', store_id)
+        .eq('country_code', countryCode.toUpperCase())
+        .maybeSingle();
 
       if (blacklistedCountry) {
         const { getTranslation } = require('../utils/translationHelper');
@@ -855,13 +865,17 @@ router.post('/create-checkout', async (req, res) => {
     
     if (productIds.length > 0) {
       try {
-        const products = await Product.findAll({
-          where: { id: productIds }
-        });
-        products.forEach(product => {
-          productMap.set(product.id, product);
-        });
-        console.log('Pre-fetched product data for', products.length, 'products');
+        const { data: products, error } = await tenantDb
+          .from('products')
+          .select('*')
+          .in('id', productIds);
+
+        if (!error && products) {
+          products.forEach(product => {
+            productMap.set(product.id, product);
+          });
+          console.log('Pre-fetched product data for', products.length, 'products');
+        }
       } catch (error) {
         console.warn('Could not pre-fetch product data:', error.message);
       }
@@ -1339,6 +1353,9 @@ router.post('/webhook', async (req, res) => {
           return res.status(400).json({ error: 'Missing store_id in session metadata' });
         }
 
+        // Get tenant DB connection for customer lookups
+        const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
         const connection = await ConnectionManager.getConnection(store_id);
         const { Order, OrderItem, Product, Store: StoreModel, Customer } = connection.models;
 
@@ -1427,7 +1444,13 @@ router.post('/webhook', async (req, res) => {
             // Try to get customer details
             let customer = null;
             if (finalOrder.customer_id) {
-              customer = await Customer.findByPk(finalOrder.customer_id);
+              const { data } = await tenantDb
+                .from('customers')
+                .select('*')
+                .eq('id', finalOrder.customer_id)
+                .eq('store_id', store_id)
+                .maybeSingle();
+              customer = data;
             }
 
             // Extract customer name from shipping/billing address if customer not found
@@ -1764,14 +1787,9 @@ router.post('/webhook', async (req, res) => {
             console.log(`📧 [${piRequestId}] Sending credit purchase confirmation email...`);
 
             const emailService = require('../services/email-service');
-            const masterConnection = require('../database/masterConnection');
-            const { User: UserModel } = masterConnection.models;
 
-            const user = await UserModel.findByPk(result.user_id);
-
-            const connection = await ConnectionManager.getConnection(result.store_id);
-            const { Store: StoreModel } = connection.models;
-            const store = await StoreModel.findByPk(result.store_id);
+            const user = await getMasterUser(result.user_id);
+            const store = await getMasterStore(result.store_id);
 
             if (user && store) {
               console.log(`📧 [${piRequestId}] Email recipients:`, {
@@ -1907,6 +1925,9 @@ router.post('/webhook-connect', async (req, res) => {
           return res.status(400).json({ error: 'Missing store_id in session metadata' });
         }
 
+        // Get tenant DB connection for customer lookups
+        const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
         const connection = await ConnectionManager.getConnection(store_id);
         const { Order, OrderItem, Product, Store: StoreModel, Customer } = connection.models;
 
@@ -1975,7 +1996,13 @@ router.post('/webhook-connect', async (req, res) => {
 
           let customer = null;
           if (finalOrder.customer_id) {
-            customer = await Customer.findByPk(finalOrder.customer_id);
+            const { data } = await tenantDb
+              .from('customers')
+              .select('*')
+              .eq('id', finalOrder.customer_id)
+              .eq('store_id', store_id)
+              .maybeSingle();
+            customer = data;
           }
 
           const customerName = customer
@@ -2254,11 +2281,16 @@ async function createPreliminaryOrder(session, orderData) {
   let validatedCustomerId = null;
   if (customer_id) {
     try {
-      const connection = await ConnectionManager.getConnection(store_id);
-      const { Customer } = connection.models;
+      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
       console.log('🔍 Looking up customer_id in database:', customer_id);
       console.log('🔍 Order email:', customer_email);
-      const customerExists = await Customer.findByPk(customer_id);
+      const { data: customerExists } = await tenantDb
+        .from('customers')
+        .select('*')
+        .eq('id', customer_id)
+        .eq('store_id', store_id)
+        .maybeSingle();
+
       console.log('🔍 Customer lookup result:', customerExists ? 'Found' : 'Not found');
       console.log('🔍 Customer details:', customerExists ? { id: customerExists.id, email: customerExists.email } : 'None');
 
@@ -2286,6 +2318,9 @@ async function createPreliminaryOrder(session, orderData) {
   }
 
   console.log('🔍 Final validatedCustomerId to be used:', validatedCustomerId);
+
+  // Get tenant DB connection for customer lookups
+  const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
   const connection = await ConnectionManager.getConnection(store_id);
   const { Order, OrderItem, Product, Store: StoreModel, Customer } = connection.models;
@@ -2420,7 +2455,13 @@ async function createPreliminaryOrder(session, orderData) {
         // Try to get customer details
         let customer = null;
         if (order.customer_id) {
-          customer = await Customer.findByPk(order.customer_id);
+          const { data } = await tenantDb
+            .from('customers')
+            .select('*')
+            .eq('id', order.customer_id)
+            .eq('store_id', store_id)
+            .maybeSingle();
+          customer = data;
         }
 
         // Extract customer name from shipping/billing address if customer not found
@@ -2472,8 +2513,13 @@ async function createOrderFromCheckoutSession(session) {
     throw new Error('store_id not found in session metadata');
   }
 
+  // Get tenant DB connection for orders
+  const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+  // Note: This function still uses Sequelize for Order/OrderItem operations with transactions
+  // TODO: Convert to Supabase transactions when ready
   const connection = await ConnectionManager.getConnection(store_id);
-  const { Store, Product, Order, OrderItem } = connection.models;
+  const { Product, Order, OrderItem, Customer } = connection.models;
   const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
 
@@ -2483,7 +2529,7 @@ async function createOrderFromCheckoutSession(session) {
     console.log('Creating order for store_id:', store_id);
 
     // Get store to determine if we need Connect account context
-    const store = await Store.findByPk(store_id);
+    const store = await getMasterStore(store_id);
     if (!store) {
       throw new Error(`Store not found: ${store_id}`);
     }
@@ -2588,7 +2634,13 @@ async function createOrderFromCheckoutSession(session) {
 
     if (metadataCustomerId) {
       try {
-        const customerExists = await Customer.findByPk(metadataCustomerId);
+        const { data: customerExists } = await tenantDb
+          .from('customers')
+          .select('*')
+          .eq('id', metadataCustomerId)
+          .eq('store_id', store_id)
+          .maybeSingle();
+
         console.log('🔍 Customer lookup result from metadata:', customerExists ? 'Found' : 'Not found');
         console.log('🔍 Session email:', sessionEmail);
         console.log('🔍 Customer email:', customerExists?.email);
@@ -2741,7 +2793,13 @@ async function createOrderFromCheckoutSession(session) {
       let productImage = null;
       if (!actualProductName || actualProductName === 'Product') {
         try {
-          const product = await Product.findByPk(productId);
+          const { data: product } = await tenantDb
+            .from('products')
+            .select('*')
+            .eq('id', productId)
+            .eq('store_id', store_id)
+            .maybeSingle();
+
           if (product) {
             actualProductName = product.name;
             // Extract first image URL from images array

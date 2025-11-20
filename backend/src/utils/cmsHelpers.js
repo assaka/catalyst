@@ -1,11 +1,33 @@
 /**
  * CMS Helpers for Normalized Translations
  *
+ * ⚠️ PARTIALLY DEPRECATED: Some functions use deprecated Sequelize raw queries.
+ *
+ * CONVERTED FUNCTIONS (use tenantDb):
+ * - getCMSPagesWithTranslations ✅
+ * - getCMSBlocksWithTranslations ✅
+ *
+ * DEPRECATED FUNCTIONS (use raw Sequelize):
+ * - getCMSPageById
+ * - getCMSBlockById
+ * - getCMSPageWithAllTranslations
+ * - getCMSPagesWithAllTranslations
+ * - getCMSBlockWithAllTranslations
+ * - getCMSBlocksWithAllTranslations
+ * - saveCMSPageTranslations
+ * - saveCMSBlockTranslations
+ *
+ * MIGRATION PATH:
+ * - Routes should use ConnectionManager.getStoreConnection(storeId) to get tenantDb
+ * - Use getCMSPagesWithTranslations or getCMSBlocksWithTranslations (already converted)
+ * - For other functions, implement directly using tenantDb query builder
+ *
  * These helpers fetch translations from normalized cms_page_translations
  * and cms_block_translations tables.
  */
 
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { sequelize } = require('../database/connection');
 
 /**
  * Get CMS pages with translations

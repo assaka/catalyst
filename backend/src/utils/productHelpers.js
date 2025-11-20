@@ -1,6 +1,23 @@
 /**
  * Product Helpers for Normalized Translations
  *
+ * ⚠️ PARTIALLY DEPRECATED: Some functions use deprecated Sequelize raw queries.
+ *
+ * CONVERTED FUNCTIONS (use tenantDb):
+ * - applyAllProductTranslations ✅
+ *
+ * DEPRECATED FUNCTIONS (use raw Sequelize):
+ * - getProductTranslation
+ * - applyProductTranslations
+ * - applyProductTranslationsToMany (marked as deprecated with comment)
+ * - updateProductTranslations
+ * - getProductsOptimized
+ *
+ * MIGRATION PATH:
+ * - Routes should use ConnectionManager.getStoreConnection(storeId) to get tenantDb
+ * - Use applyAllProductTranslations for fetching products with all translations
+ * - For other functions, implement directly using tenantDb query builder
+ *
  * These helpers fetch translations from the normalized product_translations table
  * and merge them with Sequelize product data.
  */
