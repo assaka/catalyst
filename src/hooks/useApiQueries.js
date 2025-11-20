@@ -159,11 +159,16 @@ export const useRemoveFromWishlist = () => {
 /**
  * Hook to fetch UI translations
  */
-export const useTranslations = (language, options = {}) => {
+export const useTranslations = (storeId, language, options = {}) => {
   return useQuery({
-    queryKey: queryKeys.translation.uiLabels(language),
+    queryKey: queryKeys.translation.uiLabels(language, storeId),
     queryFn: async () => {
-      const response = await api.get(`/translations/ui-labels?lang=${language}`);
+      if (!storeId) {
+        console.warn('No store_id provided to useTranslations hook');
+        return {};
+      }
+
+      const response = await api.get(`/translations/ui-labels?store_id=${storeId}&lang=${language}`);
 
       if (response && response.success && response.data && response.data.labels) {
         return response.data.labels;
@@ -171,7 +176,7 @@ export const useTranslations = (language, options = {}) => {
 
       return {};
     },
-    enabled: !!language,
+    enabled: !!(language && storeId),
     staleTime: 600000, // 10 minutes - translations rarely change
     gcTime: 1800000, // 30 minutes cache
     retry: 2,

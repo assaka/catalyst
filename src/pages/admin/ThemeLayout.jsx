@@ -157,6 +157,12 @@ export default function ThemeLayout() {
 
     const loadStepTranslations = async () => {
         try {
+            const storeId = getSelectedStoreId();
+            if (!storeId) {
+                console.warn('No store selected for loading step translations');
+                return;
+            }
+
             const checkoutKeys = ['checkout.step_2step_1', 'checkout.step_2step_2',
                                  'checkout.step_3step_1', 'checkout.step_3step_2', 'checkout.step_3step_3'];
 
@@ -167,7 +173,7 @@ export default function ThemeLayout() {
 
             for (const lang of languages) {
                 try {
-                    const langResponse = await api.get(`/translations/ui-labels?lang=${lang}`);
+                    const langResponse = await api.get(`/translations/ui-labels?store_id=${storeId}&lang=${lang}`);
 
                     if (langResponse && langResponse.data && langResponse.data.labels) {
                         const labels = langResponse.data.labels;

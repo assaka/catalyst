@@ -87,7 +87,7 @@ export const queryKeys = {
   // Translations
   translation: {
     all: ['translation'],
-    uiLabels: (lang) => [...queryKeys.translation.all, 'ui-labels', lang],
+    uiLabels: (lang, storeId) => [...queryKeys.translation.all, 'ui-labels', lang, storeId],
   },
 
   // Categories
