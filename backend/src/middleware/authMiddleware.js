@@ -285,11 +285,83 @@ async function apiKeyAuth(req, res, next) {
   }
 }
 
+/**
+ * Combined authentication + role authorization middleware
+ * More convenient than chaining authMiddleware + requireRole
+ *
+ * @param {Array<string>} allowedRoles - Array of allowed roles
+ * @returns {Function} Express middleware
+ *
+ * Usage:
+ *   router.post('/', authWithRole(['admin', 'store_owner']), handler)
+ */
+function authWithRole(allowedRoles) {
+  return async (req, res, next) => {
+    // First run authentication
+    await new Promise((resolve, reject) => {
+      authMiddleware(req, res, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    }).catch((err) => {
+      // Authentication failed, error already sent by authMiddleware
+      return;
+    });
+
+    // If auth failed, response already sent
+    if (res.headersSent) return;
+
+    // Check role authorization
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required',
+        code: 'NOT_AUTHENTICATED'
+      });
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Insufficient permissions',
+        code: 'FORBIDDEN',
+        required: allowedRoles,
+        current: req.user.role
+      });
+    }
+
+    next();
+  };
+}
+
+/**
+ * Convenience middleware for admin/store_owner routes (most common case)
+ * Equivalent to: authWithRole(['admin', 'store_owner'])
+ */
+const authAdmin = authWithRole(['admin', 'store_owner']);
+
+/**
+ * Convenience middleware for admin-only routes
+ * Equivalent to: authWithRole(['admin'])
+ */
+const authAdminOnly = authWithRole(['admin']);
+
+/**
+ * Convenience middleware for customer routes
+ * Equivalent to: authWithRole(['customer'])
+ */
+const authCustomer = authWithRole(['customer']);
+
 module.exports = {
   authMiddleware,
   optionalAuthMiddleware,
   requireRole,
   requireAgency,
   requireStoreOwnership,
-  apiKeyAuth
+  apiKeyAuth,
+  // New combined middleware
+  authWithRole,
+  authAdmin,
+  authAdminOnly,
+  authCustomer
 };
