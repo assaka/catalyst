@@ -18,8 +18,8 @@ async function getProducts(storeId, filters = {}, pagination = {}) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
   const { limit = 100, offset = 0 } = pagination;
 
-  // Build query
-  let query = tenantDb.from('products').select('*');
+  // Build query with count option
+  let query = tenantDb.from('products').select('*', { count: 'exact' });
 
   // Apply filters
   if (filters.category_id) {
@@ -43,17 +43,12 @@ async function getProducts(storeId, filters = {}, pagination = {}) {
     query = query.ilike('sku', `%${filters.search}%`);
   }
 
-  // Get total count
-  const { count, error: countError } = await query.count();
-
-  if (countError) throw countError;
-
-  // Get paginated data
+  // Get paginated data with count
   query = query
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  const { data: products, error } = await query;
+  const { data: products, error, count } = await query;
 
   if (error) throw error;
 
