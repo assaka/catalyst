@@ -1,10 +1,565 @@
 const express = require('express');
 const router = express.Router();
-const SlotConfiguration = require('../models/SlotConfiguration');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const ABTest = require('../models/ABTest');
 const ABTestAssignment = require('../models/ABTestAssignment');
 const ABTestService = require('../services/ABTestService');
+const { masterDbClient } = require('../database/masterConnection');
+const path = require('path');
+
+// Helper functions to load configuration files from the frontend config directory
+async function loadPageConfig(pageType) {
+  try {
+    const configsDir = path.resolve(__dirname, '../../../src/components/editor/slot/configs');
+    let configPath, configExport;
+
+    switch (pageType) {
+      case 'cart':
+        configPath = path.join(configsDir, 'cart-config.js');
+        configExport = 'cartConfig';
+        break;
+      case 'category':
+        configPath = path.join(configsDir, 'category-config.js');
+        configExport = 'categoryConfig';
+        break;
+      case 'product':
+        configPath = path.join(configsDir, 'product-config.js');
+        configExport = 'productConfig';
+        break;
+      case 'checkout':
+        configPath = path.join(configsDir, 'checkout-config.js');
+        configExport = 'checkoutConfig';
+        break;
+      case 'success':
+        configPath = path.join(configsDir, 'success-config.js');
+        configExport = 'successConfig';
+        break;
+      case null:
+      case undefined:
+        throw new Error('pageType is required but was not provided');
+      default:
+        throw new Error(`Unknown page type '${pageType}'. Supported types: cart, category, product, checkout, success`);
+    }
+
+    const configModule = await import(configPath);
+    const config = configModule[configExport];
+
+    if (!config) {
+      throw new Error(`Config export '${configExport}' not found in ${configPath}`);
+    }
+
+    return config;
+  } catch (error) {
+    console.error(`Failed to load ${pageType}-config.js:`, error);
+    // Fallback to minimal config if import fails
+    return {
+      page_name: pageType.charAt(0).toUpperCase() + pageType.slice(1),
+      slot_type: `${pageType}_layout`,
+      slots: {},
+      metadata: {}
+    };
+  }
+}
+
+// Helper: Find latest published configuration
+async function findLatestPublished(storeId, pageType) {
+  const { data, error } = await masterDbClient
+    .from('slot_configurations')
+    .select('*')
+    .eq('store_id', storeId)
+    .eq('page_type', pageType)
+    .eq('status', 'published')
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+// Helper: Find latest acceptance configuration
+async function findLatestAcceptance(storeId, pageType) {
+  const { data, error } = await masterDbClient
+    .from('slot_configurations')
+    .select('*')
+    .eq('store_id', storeId)
+    .eq('page_type', pageType)
+    .eq('status', 'acceptance')
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+// Helper: Find latest draft (includes both init and draft status)
+async function findLatestDraft(userId, storeId, pageType) {
+  const { data, error } = await masterDbClient
+    .from('slot_configurations')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('store_id', storeId)
+    .eq('page_type', pageType)
+    .in('status', ['init', 'draft'])
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+// Helper: Find configuration by ID
+async function findById(configId) {
+  const { data, error } = await masterDbClient
+    .from('slot_configurations')
+    .select('*')
+    .eq('id', configId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+// Helper: Upsert draft configuration
+async function upsertDraft(userId, storeId, pageType, configuration = null, isNewChanges = true, isReset = false) {
+  // Try to find existing draft or init record
+  const existingRecord = await findLatestDraft(userId, storeId, pageType);
+
+  if (existingRecord) {
+    // Handle init->draft transition
+    if (existingRecord.status === 'init' && configuration) {
+      const { data, error } = await masterDbClient
+        .from('slot_configurations')
+        .update({
+          configuration: configuration,
+          status: 'draft',
+          updated_at: new Date().toISOString(),
+          has_unpublished_changes: isReset ? false : isNewChanges
+        })
+        .eq('id', existingRecord.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+
+    // Update existing draft
+    if (configuration) {
+      const { data, error } = await masterDbClient
+        .from('slot_configurations')
+        .update({
+          configuration: configuration,
+          updated_at: new Date().toISOString(),
+          has_unpublished_changes: isReset ? false : isNewChanges
+        })
+        .eq('id', existingRecord.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+    return existingRecord;
+  }
+
+  // Determine version number
+  const { data: maxVersionData } = await masterDbClient
+    .from('slot_configurations')
+    .select('version_number')
+    .eq('store_id', storeId)
+    .eq('page_type', pageType)
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const maxVersion = maxVersionData ? maxVersionData.version_number : 0;
+
+  // If configuration is provided, create a draft; otherwise create an init record
+  if (configuration) {
+    const { data, error } = await masterDbClient
+      .from('slot_configurations')
+      .insert({
+        user_id: userId,
+        store_id: storeId,
+        configuration: configuration,
+        version: '1.0',
+        is_active: true,
+        status: 'draft',
+        version_number: (maxVersion || 0) + 1,
+        page_type: pageType,
+        parent_version_id: null,
+        has_unpublished_changes: isReset ? false : isNewChanges
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } else {
+    // Try to copy from latest published configuration instead of creating empty
+    const latestPublished = await findLatestPublished(storeId, pageType);
+
+    let configurationToUse;
+    let statusToUse = 'init';
+    if (latestPublished && latestPublished.configuration) {
+      configurationToUse = latestPublished.configuration;
+      statusToUse = 'draft'; // Set to draft since it's already populated from published
+    } else {
+      // Load configuration from the appropriate config file
+      const pageConfig = await loadPageConfig(pageType);
+      configurationToUse = {
+        page_name: pageConfig.page_name || pageType.charAt(0).toUpperCase() + pageType.slice(1),
+        slot_type: pageConfig.slot_type || `${pageType}_layout`,
+        slots: pageConfig.slots || {},
+        rootSlots: pageConfig.rootSlots || [],
+        slotDefinitions: pageConfig.slotDefinitions || {},
+        metadata: {
+          created: new Date().toISOString(),
+          lastModified: new Date().toISOString(),
+          source: `${pageType}-config.js`,
+          status: 'init'
+        }
+      };
+      statusToUse = 'draft'; // Set to draft since it's already populated from config.js
+    }
+
+    // Create init/draft record
+    const { data, error } = await masterDbClient
+      .from('slot_configurations')
+      .insert({
+        user_id: userId,
+        store_id: storeId,
+        configuration: configurationToUse,
+        version: '1.0',
+        is_active: true,
+        status: statusToUse,
+        version_number: (maxVersion || 0) + 1,
+        page_type: pageType,
+        parent_version_id: null,
+        has_unpublished_changes: false
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+}
+
+// Helper: Publish a draft to acceptance (preview environment)
+async function publishToAcceptance(draftId, publishedByUserId) {
+  const draft = await findById(draftId);
+  if (!draft || draft.status !== 'draft') {
+    throw new Error('Draft not found or not in draft status');
+  }
+
+  const { data, error } = await masterDbClient
+    .from('slot_configurations')
+    .update({
+      status: 'acceptance',
+      acceptance_published_at: new Date().toISOString(),
+      acceptance_published_by: publishedByUserId
+    })
+    .eq('id', draftId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// Helper: Publish acceptance to production
+async function publishToProduction(acceptanceId, publishedByUserId) {
+  const acceptance = await findById(acceptanceId);
+  if (!acceptance || acceptance.status !== 'acceptance') {
+    throw new Error('Configuration not found or not in acceptance status');
+  }
+
+  const { data, error } = await masterDbClient
+    .from('slot_configurations')
+    .update({
+      status: 'published',
+      published_at: new Date().toISOString(),
+      published_by: publishedByUserId
+    })
+    .eq('id', acceptanceId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// Helper: Publish a draft directly to production (legacy method)
+async function publishDraft(draftId, publishedByUserId) {
+  const draft = await findById(draftId);
+  if (!draft || draft.status !== 'draft') {
+    throw new Error('Draft not found or already published');
+  }
+
+  const { data, error } = await masterDbClient
+    .from('slot_configurations')
+    .update({
+      status: 'published',
+      published_at: new Date().toISOString(),
+      published_by: publishedByUserId,
+      has_unpublished_changes: false
+    })
+    .eq('id', draftId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// Helper: Get version history
+async function getVersionHistory(storeId, pageType, limit = 20) {
+  const { data, error } = await masterDbClient
+    .from('slot_configurations')
+    .select('*')
+    .eq('store_id', storeId)
+    .eq('page_type', pageType)
+    .eq('status', 'published')
+    .order('version_number', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data || [];
+}
+
+// Helper: Create a draft from a specific version (for revert functionality)
+async function createRevertDraft(versionId, userId, storeId) {
+  const targetVersion = await findById(versionId);
+  if (!targetVersion || !['published', 'acceptance'].includes(targetVersion.status)) {
+    throw new Error('Version not found or not in a revertible status');
+  }
+
+  // Check if there's an existing draft for this user/store/page
+  const existingDraft = await findLatestDraft(userId, storeId, targetVersion.page_type);
+
+  let revertMetadata = null;
+
+  if (existingDraft) {
+    // Store metadata about what we're replacing (for potential undo)
+    revertMetadata = {
+      replacedDraftId: existingDraft.id,
+      originalConfiguration: existingDraft.configuration,
+      originalParentVersionId: existingDraft.parent_version_id,
+      originalCurrentEditId: existingDraft.current_edit_id,
+      originalHasUnpublishedChanges: existingDraft.has_unpublished_changes
+    };
+
+    // Update existing draft with the reverted configuration
+    const { data, error } = await masterDbClient
+      .from('slot_configurations')
+      .update({
+        configuration: targetVersion.configuration,
+        updated_at: new Date().toISOString(),
+        has_unpublished_changes: true,
+        parent_version_id: targetVersion.id,
+        current_edit_id: targetVersion.id,
+        metadata: {
+          ...((existingDraft.metadata && typeof existingDraft.metadata === 'object') ? existingDraft.metadata : {}),
+          revertMetadata
+        }
+      })
+      .eq('id', existingDraft.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } else {
+    // Create new draft with the reverted configuration
+    const { data: maxVersionData } = await masterDbClient
+      .from('slot_configurations')
+      .select('version_number')
+      .eq('store_id', storeId)
+      .eq('page_type', targetVersion.page_type)
+      .order('version_number', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const maxVersion = maxVersionData ? maxVersionData.version_number : 0;
+
+    const { data, error } = await masterDbClient
+      .from('slot_configurations')
+      .insert({
+        user_id: userId,
+        store_id: storeId,
+        configuration: targetVersion.configuration,
+        version: targetVersion.version,
+        is_active: true,
+        status: 'draft',
+        version_number: (maxVersion || 0) + 1,
+        page_type: targetVersion.page_type,
+        parent_version_id: targetVersion.id,
+        current_edit_id: targetVersion.id,
+        has_unpublished_changes: true,
+        metadata: {
+          revertMetadata: {
+            noPreviousDraft: true
+          }
+        }
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+}
+
+// Helper: Revert to a specific version (DEPRECATED - use createRevertDraft instead)
+async function revertToVersion(versionId, userId, storeId) {
+  const targetVersion = await findById(versionId);
+  if (!targetVersion || !['published', 'acceptance'].includes(targetVersion.status)) {
+    throw new Error('Version not found or not in a revertible status');
+  }
+
+  // Mark all versions after this one as reverted
+  const { error: updateError } = await masterDbClient
+    .from('slot_configurations')
+    .update({
+      status: 'reverted',
+      current_edit_id: null
+    })
+    .eq('store_id', storeId)
+    .eq('page_type', targetVersion.page_type)
+    .in('status', ['published', 'acceptance'])
+    .gt('version_number', targetVersion.version_number);
+
+  if (updateError) throw updateError;
+
+  // Get the next version number
+  const { data: maxVersionData } = await masterDbClient
+    .from('slot_configurations')
+    .select('version_number')
+    .eq('store_id', storeId)
+    .eq('page_type', targetVersion.page_type)
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const maxVersion = maxVersionData ? maxVersionData.version_number : 0;
+
+  // Create a new published version based on the target version
+  const { data: newVersion, error } = await masterDbClient
+    .from('slot_configurations')
+    .insert({
+      user_id: userId,
+      store_id: storeId,
+      configuration: targetVersion.configuration,
+      version: targetVersion.version,
+      is_active: true,
+      status: 'published',
+      version_number: (maxVersion || 0) + 1,
+      page_type: targetVersion.page_type,
+      parent_version_id: targetVersion.id,
+      current_edit_id: targetVersion.id,
+      published_at: new Date().toISOString(),
+      published_by: userId
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return newVersion;
+}
+
+// Helper: Undo revert by either deleting draft or restoring previous draft state
+async function undoRevert(draftId, userId, storeId) {
+  const revertDraft = await findById(draftId);
+  if (!revertDraft || revertDraft.status !== 'draft' || !revertDraft.current_edit_id) {
+    throw new Error('No revert draft found or draft is not a revert');
+  }
+
+  const revertMetadata = revertDraft.metadata?.revertMetadata;
+
+  if (revertMetadata?.noPreviousDraft) {
+    // No draft existed before revert - just delete the revert draft
+    const { error } = await masterDbClient
+      .from('slot_configurations')
+      .delete()
+      .eq('id', draftId);
+
+    if (error) throw error;
+    return { restored: false, message: 'Revert draft deleted - no previous draft to restore' };
+  } else if (revertMetadata) {
+    // Restore the original draft state
+    const updatedMetadata = { ...(revertDraft.metadata || {}) };
+    delete updatedMetadata.revertMetadata;
+
+    const { data, error } = await masterDbClient
+      .from('slot_configurations')
+      .update({
+        configuration: revertMetadata.originalConfiguration,
+        parent_version_id: revertMetadata.originalParentVersionId,
+        current_edit_id: revertMetadata.originalCurrentEditId,
+        has_unpublished_changes: revertMetadata.originalHasUnpublishedChanges,
+        updated_at: new Date().toISOString(),
+        metadata: Object.keys(updatedMetadata).length > 0 ? updatedMetadata : null
+      })
+      .eq('id', draftId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { restored: true, draft: data, message: 'Previous draft state restored' };
+  } else {
+    // No metadata available - just delete the revert draft (fallback)
+    const { error } = await masterDbClient
+      .from('slot_configurations')
+      .delete()
+      .eq('id', draftId);
+
+    if (error) throw error;
+    return { restored: false, message: 'Revert draft deleted - no restoration metadata available' };
+  }
+}
+
+// Helper: Set current editing configuration
+async function setCurrentEdit(configId, userId, storeId, pageType) {
+  // Clear any existing current_edit_id for this user/store/page
+  await masterDbClient
+    .from('slot_configurations')
+    .update({ current_edit_id: null })
+    .eq('user_id', userId)
+    .eq('store_id', storeId)
+    .eq('page_type', pageType);
+
+  // Set the new current_edit_id
+  const { data: config, error } = await masterDbClient
+    .from('slot_configurations')
+    .update({ current_edit_id: configId })
+    .eq('id', configId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return config;
+}
+
+// Helper: Get current editing configuration
+async function getCurrentEdit(userId, storeId, pageType) {
+  const { data, error } = await masterDbClient
+    .from('slot_configurations')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('store_id', storeId)
+    .eq('page_type', pageType)
+    .not('current_edit_id', 'is', null)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
 
 // Get or create draft configuration for editing
 router.get('/draft/:storeId/:pageType?', authMiddleware, async (req, res) => {
@@ -13,7 +568,7 @@ router.get('/draft/:storeId/:pageType?', authMiddleware, async (req, res) => {
     const userId = req.user.id;
 
     // Use upsert to get or create draft
-    const draft = await SlotConfiguration.upsertDraft(userId, storeId, pageType);
+    const draft = await upsertDraft(userId, storeId, pageType);
 
     res.json({
       success: true,
@@ -36,7 +591,7 @@ router.post('/draft/:storeId/:pageType?', authMiddleware, async (req, res) => {
     const userId = req.user.id;
 
     // Use upsert to get or create draft with static configuration
-    const draft = await SlotConfiguration.upsertDraft(userId, storeId, pageType, staticConfiguration);
+    const draft = await upsertDraft(userId, storeId, pageType, staticConfiguration);
 
     res.json({
       success: true,
@@ -55,53 +610,60 @@ router.post('/draft/:storeId/:pageType?', authMiddleware, async (req, res) => {
 router.get('/public/slot-configurations', async (req, res) => {
   try {
     const { store_id, page_type = 'cart' } = req.query;
-    
+
     if (!store_id) {
       return res.status(400).json({ success: false, error: 'store_id is required' });
     }
-    
+
     // First try to find published version
-    let configuration = await SlotConfiguration.findLatestPublished(store_id, page_type);
-    
+    let configuration = await findLatestPublished(store_id, page_type);
+
     // If no published version, try to find draft
     if (!configuration) {
-      configuration = await SlotConfiguration.findOne({
-        where: {
-          store_id,
-          status: 'draft',
-          page_type
-        },
-        order: [['version_number', 'DESC']]
-      });
+      const { data, error } = await masterDbClient
+        .from('slot_configurations')
+        .select('*')
+        .eq('store_id', store_id)
+        .eq('status', 'draft')
+        .eq('page_type', page_type)
+        .order('version_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      configuration = data;
     }
-    
+
     if (!configuration) {
       // Create a new draft configuration with default content
       console.log('No configuration found, creating default draft for store:', store_id);
-      
+
       try {
         // Get the first user to assign the configuration to
-        const firstUser = await SlotConfiguration.sequelize.query(
-          'SELECT id FROM users LIMIT 1',
-          { type: SlotConfiguration.sequelize.QueryTypes.SELECT }
-        );
-        
-        if (firstUser.length === 0) {
+        const { data: firstUser, error: userError } = await masterDbClient
+          .from('users')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+
+        if (userError) throw userError;
+
+        if (!firstUser) {
           return res.status(500).json({ success: false, error: 'No users found in database' });
         }
-        
-        const userId = firstUser[0].id;
-        
+
+        const userId = firstUser.id;
+
         // Create draft using the upsert method
-        configuration = await SlotConfiguration.upsertDraft(userId, store_id, page_type);
+        configuration = await upsertDraft(userId, store_id, page_type);
         console.log('Created default draft configuration:', configuration.id);
-        
+
       } catch (error) {
         console.error('Error creating default draft configuration:', error);
         return res.status(500).json({ success: false, error: error.message });
       }
     }
-    
+
     res.json({ success: true, data: [configuration] });
   } catch (error) {
     console.error('Error fetching public slot configurations:', error);
@@ -116,7 +678,7 @@ router.get('/published/:storeId/:pageType?', async (req, res) => {
 
     console.log('[Slot Config API] Fetching published config:', { storeId, pageType });
 
-    const published = await SlotConfiguration.findLatestPublished(storeId, pageType);
+    const published = await findLatestPublished(storeId, pageType);
 
     if (!published) {
       console.log('[Slot Config API] No published config found, returning empty');
@@ -156,7 +718,7 @@ router.get('/published/:storeId/:pageType?', async (req, res) => {
     console.log('[Slot Config API] Session ID:', sessionId);
 
     // Clone the configuration to avoid mutations
-    const configWithTests = JSON.parse(JSON.stringify(published.toJSON()));
+    const configWithTests = JSON.parse(JSON.stringify(published));
 
     // Apply A/B test overrides
     for (const test of activeTests) {
@@ -233,13 +795,13 @@ router.get('/published/:storeId/:pageType?', async (req, res) => {
 router.get('/acceptance/:storeId/:pageType?', async (req, res) => {
   try {
     const { storeId, pageType = 'cart' } = req.params;
-    
-    const acceptance = await SlotConfiguration.findLatestAcceptance(storeId, pageType);
-    
+
+    const acceptance = await findLatestAcceptance(storeId, pageType);
+
     if (!acceptance) {
       // Fall back to published configuration if no acceptance version exists
-      const published = await SlotConfiguration.findLatestPublished(storeId, pageType);
-      
+      const published = await findLatestPublished(storeId, pageType);
+
       if (!published) {
         // Return default configuration if neither acceptance nor published exists
         return res.json({
@@ -255,13 +817,13 @@ router.get('/acceptance/:storeId/:pageType?', async (req, res) => {
           }
         });
       }
-      
+
       return res.json({
         success: true,
         data: published
       });
     }
-    
+
     res.json({
       success: true,
       data: acceptance
@@ -281,7 +843,7 @@ router.put('/draft/:configId', authMiddleware, async (req, res) => {
     const { configId } = req.params;
     const { configuration, isReset = false } = req.body;
 
-    const draft = await SlotConfiguration.findByPk(configId);
+    const draft = await findById(configId);
 
     if (!draft) {
       return res.status(404).json({
@@ -305,21 +867,31 @@ router.put('/draft/:configId', authMiddleware, async (req, res) => {
     }
 
     // Handle init->draft transition
+    let newStatus = draft.status;
     if (draft.status === 'init') {
       console.log('🔄 ROUTE - Transitioning init->draft for config:', configId);
-      draft.status = 'draft';
+      newStatus = 'draft';
     }
 
-    draft.configuration = configuration;
-    draft.updated_at = new Date();
     // For reset operations, set has_unpublished_changes = false
     // For normal edits, set has_unpublished_changes = true
-    draft.has_unpublished_changes = isReset ? false : true;
-    await draft.save();
+    const { data: updatedDraft, error } = await masterDbClient
+      .from('slot_configurations')
+      .update({
+        configuration: configuration,
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+        has_unpublished_changes: isReset ? false : true
+      })
+      .eq('id', configId)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     res.json({
       success: true,
-      data: draft
+      data: updatedDraft
     });
   } catch (error) {
     console.error('Error updating draft:', error);
@@ -335,9 +907,9 @@ router.post('/publish-to-acceptance/:configId', authMiddleware, async (req, res)
   try {
     const { configId } = req.params;
     const userId = req.user.id;
-    
-    const acceptance = await SlotConfiguration.publishToAcceptance(configId, userId);
-    
+
+    const acceptance = await publishToAcceptance(configId, userId);
+
     res.json({
       success: true,
       data: acceptance,
@@ -357,9 +929,9 @@ router.post('/publish-to-production/:configId', authMiddleware, async (req, res)
   try {
     const { configId } = req.params;
     const userId = req.user.id;
-    
-    const published = await SlotConfiguration.publishToProduction(configId, userId);
-    
+
+    const published = await publishToProduction(configId, userId);
+
     res.json({
       success: true,
       data: published,
@@ -379,9 +951,9 @@ router.post('/publish/:configId', authMiddleware, async (req, res) => {
   try {
     const { configId } = req.params;
     const userId = req.user.id;
-    
-    const published = await SlotConfiguration.publishDraft(configId, userId);
-    
+
+    const published = await publishDraft(configId, userId);
+
     res.json({
       success: true,
       data: published,
@@ -401,13 +973,13 @@ router.get('/history/:storeId/:pageType?', authMiddleware, async (req, res) => {
   try {
     const { storeId, pageType = 'cart' } = req.params;
     const { limit = 20 } = req.query;
-    
-    const history = await SlotConfiguration.getVersionHistory(
-      storeId, 
-      pageType, 
+
+    const history = await getVersionHistory(
+      storeId,
+      pageType,
       parseInt(limit)
     );
-    
+
     res.json({
       success: true,
       data: history
@@ -428,7 +1000,7 @@ router.post('/revert-draft/:versionId', authMiddleware, async (req, res) => {
     const userId = req.user.id;
 
     // Get the version to revert to
-    const targetVersion = await SlotConfiguration.findByPk(versionId);
+    const targetVersion = await findById(versionId);
 
     if (!targetVersion) {
       return res.status(404).json({
@@ -437,7 +1009,7 @@ router.post('/revert-draft/:versionId', authMiddleware, async (req, res) => {
       });
     }
 
-    const revertDraft = await SlotConfiguration.createRevertDraft(
+    const revertDraft = await createRevertDraft(
       versionId,
       userId,
       targetVersion.store_id
@@ -468,7 +1040,7 @@ router.post('/revert/:versionId', authMiddleware, async (req, res) => {
     const userId = req.user.id;
 
     // Get the version to revert to
-    const targetVersion = await SlotConfiguration.findByPk(versionId);
+    const targetVersion = await findById(versionId);
 
     if (!targetVersion) {
       return res.status(404).json({
@@ -477,7 +1049,7 @@ router.post('/revert/:versionId', authMiddleware, async (req, res) => {
       });
     }
 
-    const newVersion = await SlotConfiguration.revertToVersion(
+    const newVersion = await revertToVersion(
       versionId,
       userId,
       targetVersion.store_id
@@ -503,9 +1075,9 @@ router.post('/set-current-edit/:configId', authMiddleware, async (req, res) => {
     const { configId } = req.params;
     const { storeId, pageType = 'cart' } = req.body;
     const userId = req.user.id;
-    
-    const config = await SlotConfiguration.setCurrentEdit(configId, userId, storeId, pageType);
-    
+
+    const config = await setCurrentEdit(configId, userId, storeId, pageType);
+
     res.json({
       success: true,
       data: config,
@@ -525,9 +1097,9 @@ router.get('/current-edit/:storeId/:pageType?', authMiddleware, async (req, res)
   try {
     const { storeId, pageType = 'cart' } = req.params;
     const userId = req.user.id;
-    
-    const config = await SlotConfiguration.getCurrentEdit(userId, storeId, pageType);
-    
+
+    const config = await getCurrentEdit(userId, storeId, pageType);
+
     res.json({
       success: true,
       data: config
@@ -548,7 +1120,7 @@ router.post('/undo-revert/:draftId', authMiddleware, async (req, res) => {
     const userId = req.user.id;
 
     // Get the draft to check ownership
-    const draft = await SlotConfiguration.findByPk(draftId);
+    const draft = await findById(draftId);
 
     if (!draft) {
       return res.status(404).json({
@@ -564,7 +1136,7 @@ router.post('/undo-revert/:draftId', authMiddleware, async (req, res) => {
       });
     }
 
-    const result = await SlotConfiguration.undoRevert(draftId, userId, draft.store_id);
+    const result = await undoRevert(draftId, userId, draft.store_id);
 
     res.json({
       success: true,
@@ -588,7 +1160,7 @@ router.post('/create-draft-from-published', authMiddleware, async (req, res) => 
     const userId = req.user.id;
 
     // Use upsert with isNewChanges = false since this is a copy of published content
-    const draft = await SlotConfiguration.upsertDraft(userId, storeId, pageType, configuration, false);
+    const draft = await upsertDraft(userId, storeId, pageType, configuration, false);
 
     res.json({
       success: true,
@@ -608,7 +1180,7 @@ router.delete('/draft/:configId', authMiddleware, async (req, res) => {
   try {
     const { configId } = req.params;
 
-    const draft = await SlotConfiguration.findByPk(configId);
+    const draft = await findById(configId);
 
     if (!draft) {
       return res.status(404).json({
@@ -631,7 +1203,12 @@ router.delete('/draft/:configId', authMiddleware, async (req, res) => {
       });
     }
 
-    await draft.destroy();
+    const { error } = await masterDbClient
+      .from('slot_configurations')
+      .delete()
+      .eq('id', configId);
+
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -654,18 +1231,29 @@ router.post('/destroy/:storeId/:pageType?', authMiddleware, async (req, res) => 
 
     console.log(`🗑️ Destroying layout for store ${storeId}, page ${pageType}`);
 
+    // Get count of configurations before deleting
+    const { data: configsToDelete, error: countError } = await masterDbClient
+      .from('slot_configurations')
+      .select('id')
+      .eq('store_id', storeId)
+      .eq('page_type', pageType);
+
+    if (countError) throw countError;
+    const deletedCount = configsToDelete ? configsToDelete.length : 0;
+
     // Delete all configurations (drafts and published versions) for this store/page
-    const deletedCount = await SlotConfiguration.destroy({
-      where: {
-        store_id: storeId,
-        page_type: pageType
-      }
-    });
+    const { error: deleteError } = await masterDbClient
+      .from('slot_configurations')
+      .delete()
+      .eq('store_id', storeId)
+      .eq('page_type', pageType);
+
+    if (deleteError) throw deleteError;
 
     console.log(`🗑️ Deleted ${deletedCount} configurations`);
 
     // Create a fresh draft with default configuration
-    const newDraft = await SlotConfiguration.upsertDraft(userId, storeId, pageType);
+    const newDraft = await upsertDraft(userId, storeId, pageType);
 
     console.log(`✅ Created fresh draft: ${newDraft.id}`);
 
