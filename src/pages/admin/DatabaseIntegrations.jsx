@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import SupabasePage from './SupabasePage';
+import NeonPage from './NeonPage';
+import PlanetScalePage from './PlanetScalePage';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -164,133 +166,31 @@ const DatabaseIntegrations = () => {
         </TabsContent>
 
         <TabsContent value="neon" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Database className="w-5 h-5" />
-                  <CardTitle>Neon PostgreSQL</CardTitle>
-                  <Badge variant="outline" className="ml-2">OAuth Ready</Badge>
-                </div>
-                <Button
-                  onClick={() => handleSetAsDefault('neon')}
-                  disabled={settingDefault || defaultProvider === 'neon'}
-                  variant={defaultProvider === 'neon' ? "secondary" : "default"}
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  {defaultProvider === 'neon' ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      <span>Default Database</span>
-                    </>
-                  ) : (
-                    <>
-                      <Star className="h-4 w-4" />
-                      <span>Set as Default</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-              <CardDescription>
-                Serverless PostgreSQL with autoscaling, branching, and generous free tier (0.5 GB).
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-sm text-blue-900 mb-2">Features</h3>
-                  <ul className="text-xs text-blue-800 space-y-1">
-                    <li>• Serverless PostgreSQL with autoscaling</li>
-                    <li>• Database branching for dev/staging/prod</li>
-                    <li>• Free tier: 0.5 GB storage, 191 hours compute/month</li>
-                    <li>• Pro plan: $19/month for 3 GB storage</li>
-                  </ul>
-                </div>
-
-                <Button
-                  className="w-full"
-                  onClick={async () => {
-                    try {
-                      const response = await apiClient.get(`/database-oauth/neon/authorize?store_id=${storeId}`);
-                      if (response.authUrl) {
-                        window.location.href = response.authUrl;
-                      }
-                    } catch (error) {
-                      toast.error('Failed to initiate Neon connection');
-                    }
-                  }}
-                >
-                  Connect with Neon
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {storeId ? (
+            <NeonPage />
+          ) : (
+            <Card>
+              <CardContent className="py-8">
+                <p className="text-center text-gray-600">
+                  Please select a store from the dropdown above to manage Neon integration.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="planetscale" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Database className="w-5 h-5" />
-                  <CardTitle>PlanetScale MySQL</CardTitle>
-                  <Badge variant="outline" className="ml-2">OAuth Ready</Badge>
-                </div>
-                <Button
-                  onClick={() => handleSetAsDefault('planetscale')}
-                  disabled={settingDefault || defaultProvider === 'planetscale'}
-                  variant={defaultProvider === 'planetscale' ? "secondary" : "default"}
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  {defaultProvider === 'planetscale' ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      <span>Default Database</span>
-                    </>
-                  ) : (
-                    <>
-                      <Star className="h-4 w-4" />
-                      <span>Set as Default</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-              <CardDescription>
-                Serverless MySQL with database branching and huge free tier (5 GB).
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-sm text-green-900 mb-2">Features</h3>
-                  <ul className="text-xs text-green-800 space-y-1">
-                    <li>• Serverless MySQL with automatic scaling</li>
-                    <li>• Database branching and schema management</li>
-                    <li>• Free tier: 5 GB storage, 1 billion row reads/month</li>
-                    <li>• Scaler plan: $29/month for 10 GB storage</li>
-                  </ul>
-                </div>
-
-                <Button
-                  className="w-full"
-                  onClick={async () => {
-                    try {
-                      const response = await apiClient.get(`/database-oauth/planetscale/authorize?store_id=${storeId}`);
-                      if (response.authUrl) {
-                        window.location.href = response.authUrl;
-                      }
-                    } catch (error) {
-                      toast.error('Failed to initiate PlanetScale connection');
-                    }
-                  }}
-                >
-                  Connect with PlanetScale
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {storeId ? (
+            <PlanetScalePage />
+          ) : (
+            <Card>
+              <CardContent className="py-8">
+                <p className="text-center text-gray-600">
+                  Please select a store from the dropdown above to manage PlanetScale integration.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="enterprise" className="space-y-6">

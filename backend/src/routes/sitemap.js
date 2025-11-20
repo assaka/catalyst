@@ -7,14 +7,15 @@ const ConnectionManager = require('../services/database/ConnectionManager');
  */
 async function generateSitemapXml(storeId, baseUrl) {
   try {
-    // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
-    const { Product, Category, CmsPage, SeoSettings } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getConnection(storeId);
 
     // Get SEO settings for the store
-    const seoSettings = await SeoSettings.findOne({
-      where: { store_id: storeId }
-    });
+    const { data: seoSettings } = await tenantDb
+      .from('seo_settings')
+      .select('sitemap_include_categories, sitemap_include_products, sitemap_include_pages')
+      .eq('store_id', storeId)
+      .single();
 
     const urls = [];
 
@@ -28,64 +29,64 @@ async function generateSitemapXml(storeId, baseUrl) {
 
     // Add categories if enabled
     if (!seoSettings || seoSettings.sitemap_include_categories !== false) {
-      const categories = await Category.findAll({
-        where: {
-          is_active: true,
-          store_id: storeId
-        },
-        attributes: ['slug', 'updatedAt'],
-        order: [['sort_order', 'ASC']]
-      });
+      const { data: categories } = await tenantDb
+        .from('categories')
+        .select('slug, updated_at')
+        .eq('is_active', true)
+        .eq('store_id', storeId)
+        .order('sort_order', { ascending: true });
 
-      categories.forEach(category => {
-        urls.push({
-          loc: `${baseUrl}/category/${category.slug}`,
-          changefreq: 'weekly',
-          priority: '0.8',
-          lastmod: category.updatedAt ? new Date(category.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+      if (categories) {
+        categories.forEach(category => {
+          urls.push({
+            loc: `${baseUrl}/category/${category.slug}`,
+            changefreq: 'weekly',
+            priority: '0.8',
+            lastmod: category.updated_at ? new Date(category.updated_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+          });
         });
-      });
+      }
     }
 
     // Add products if enabled
     if (!seoSettings || seoSettings.sitemap_include_products !== false) {
-      const products = await Product.findAll({
-        where: {
-          status: 'active',
-          store_id: storeId
-        },
-        attributes: ['slug', 'updatedAt'],
-        order: [['createdAt', 'DESC']]
-      });
+      const { data: products } = await tenantDb
+        .from('products')
+        .select('slug, updated_at')
+        .eq('status', 'active')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false });
 
-      products.forEach(product => {
-        urls.push({
-          loc: `${baseUrl}/product/${product.slug}`,
-          changefreq: 'daily',
-          priority: '0.7',
-          lastmod: product.updatedAt ? new Date(product.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+      if (products) {
+        products.forEach(product => {
+          urls.push({
+            loc: `${baseUrl}/product/${product.slug}`,
+            changefreq: 'daily',
+            priority: '0.7',
+            lastmod: product.updated_at ? new Date(product.updated_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+          });
         });
-      });
+      }
     }
 
     // Add CMS pages if enabled
     if (!seoSettings || seoSettings.sitemap_include_pages !== false) {
-      const pages = await CmsPage.findAll({
-        where: {
-          is_active: true,
-          store_id: storeId
-        },
-        attributes: ['slug', 'updatedAt']
-      });
+      const { data: pages } = await tenantDb
+        .from('cms_pages')
+        .select('slug, updated_at')
+        .eq('is_active', true)
+        .eq('store_id', storeId);
 
-      pages.forEach(page => {
-        urls.push({
-          loc: `${baseUrl}/${page.slug}`,
-          changefreq: 'monthly',
-          priority: '0.6',
-          lastmod: page.updatedAt ? new Date(page.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+      if (pages) {
+        pages.forEach(page => {
+          urls.push({
+            loc: `${baseUrl}/${page.slug}`,
+            changefreq: 'monthly',
+            priority: '0.6',
+            lastmod: page.updated_at ? new Date(page.updated_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+          });
         });
-      });
+      }
     }
 
     // Generate XML
@@ -133,14 +134,17 @@ router.get('/:storeId', async (req, res) => {
 
     console.log(`[Sitemap] Serving sitemap.xml for store: ${storeId}`);
 
-    // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
-    const { Store } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getConnection(storeId);
 
     // Find the store
-    const store = await Store.findByPk(storeId);
+    const { data: store, error } = await tenantDb
+      .from('stores')
+      .select('custom_domain, slug')
+      .eq('id', storeId)
+      .single();
 
-    if (!store) {
+    if (error || !store) {
       console.warn(`[Sitemap] Store not found: ${storeId}`);
       return res.status(404).set({
         'Content-Type': 'text/plain; charset=utf-8'

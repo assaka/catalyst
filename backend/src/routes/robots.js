@@ -12,18 +12,19 @@ router.get('/:storeId', async (req, res) => {
 
     console.log(`[Robots] Serving robots.txt for store: ${storeId}`);
 
-    // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
-    const { SeoSettings } = connection.models;
+    // Get tenant database connection
+    const tenantDb = await ConnectionManager.getConnection(storeId);
 
     // Find SEO settings for the store
-    const seoSettings = await SeoSettings.findOne({
-      where: { store_id: storeId }
-    });
-    
+    const { data: seoSettings, error } = await tenantDb
+      .from('seo_settings')
+      .select('robots_txt_content')
+      .eq('store_id', storeId)
+      .single();
+
     let robotsContent = '';
-    
-    if (seoSettings && seoSettings.robots_txt_content) {
+
+    if (!error && seoSettings?.robots_txt_content) {
       robotsContent = seoSettings.robots_txt_content;
     } else {
       // Default robots.txt content
@@ -38,25 +39,25 @@ Disallow: /login
 # Add your sitemap URL here
 # Sitemap: ${req.protocol}://${req.get('host')}/sitemap.xml`;
     }
-    
+
     // Set proper content-type and headers for robots.txt
     res.set({
       'Content-Type': 'text/plain; charset=utf-8',
       'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
       'X-Robots-Tag': 'noindex' // Don't index the robots.txt URL itself
     });
-    
+
     res.send(robotsContent);
-    
+
   } catch (error) {
     console.error('[Robots] Error serving robots.txt:', error);
-    
+
     // Send a basic robots.txt even on error
     res.set({
       'Content-Type': 'text/plain; charset=utf-8',
       'Cache-Control': 'public, max-age=3600'
     });
-    
+
     res.send(`User-agent: *
 Allow: /
 Disallow: /admin/`);

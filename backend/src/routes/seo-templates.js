@@ -27,25 +27,42 @@ router.get('/', async (req, res) => {
       // TODO: Implement proper authentication check here if needed
     }
 
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { SeoTemplate } = connection.models;
+    const tenantDb = await ConnectionManager.getConnection(store_id);
 
-    const whereClause = { store_id };
+    // Build query
+    let query = tenantDb
+      .from('seo_templates')
+      .select('*')
+      .eq('store_id', store_id);
 
     // Only return active templates for public access
     if (isPublicRequest) {
-      whereClause.is_active = true;
+      query = query.eq('is_active', true);
     }
 
-    if (page_type) whereClause.type = page_type;
+    if (page_type) {
+      query = query.eq('type', page_type);
+    }
 
-    const templates = await SeoTemplate.findAll({
-      where: whereClause,
-      order: isPublicRequest ? [['sort_order', 'ASC'], ['type', 'ASC']] : [['type', 'ASC']]
-    });
+    // Order by
+    if (isPublicRequest) {
+      query = query.order('sort_order', { ascending: true }).order('type', { ascending: true });
+    } else {
+      query = query.order('type', { ascending: true });
+    }
+
+    const { data: templates, error } = await query;
+
+    if (error) {
+      console.error('Get SEO templates error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error'
+      });
+    }
 
     // Return array format that the frontend expects
-    res.json(templates);
+    res.json(templates || []);
   } catch (error) {
     console.error('Get SEO templates error:', error);
     res.status(500).json({
@@ -69,12 +86,15 @@ router.get('/:id', authMiddleware, async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { SeoTemplate } = connection.models;
+    const tenantDb = await ConnectionManager.getConnection(store_id);
 
-    const template = await SeoTemplate.findByPk(req.params.id);
+    const { data: template, error } = await tenantDb
+      .from('seo_templates')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
 
-    if (!template) {
+    if (error || !template) {
       return res.status(404).json({
         success: false,
         message: 'SEO template not found'
@@ -106,30 +126,35 @@ router.post('/', authMiddleware, async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { SeoTemplate } = connection.models;
+    const tenantDb = await ConnectionManager.getConnection(store_id);
 
-    const template = await SeoTemplate.create(req.body);
+    const { data: template, error } = await tenantDb
+      .from('seo_templates')
+      .insert(req.body)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Create SEO template error:', error);
+
+      // Check for unique constraint violation
+      if (error.code === '23505') {
+        return res.status(400).json({
+          success: false,
+          message: 'A template with this name already exists for this store'
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: 'Server error: ' + (error.message || 'Unknown error')
+      });
+    }
+
     // Return format that frontend expects
     res.status(201).json(template);
   } catch (error) {
     console.error('Create SEO template error:', error);
-
-    // Provide more specific error messages
-    if (error.name === 'SequelizeValidationError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error: ' + error.errors.map(e => e.message).join(', ')
-      });
-    }
-
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({
-        success: false,
-        message: 'A template with this name already exists for this store'
-      });
-    }
-
     res.status(500).json({
       success: false,
       message: 'Server error: ' + (error.message || 'Unknown error')
@@ -151,19 +176,22 @@ router.put('/:id', authMiddleware, async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { SeoTemplate } = connection.models;
+    const tenantDb = await ConnectionManager.getConnection(store_id);
 
-    const template = await SeoTemplate.findByPk(req.params.id);
+    const { data: template, error } = await tenantDb
+      .from('seo_templates')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select()
+      .single();
 
-    if (!template) {
+    if (error || !template) {
       return res.status(404).json({
         success: false,
         message: 'SEO template not found'
       });
     }
 
-    await template.update(req.body);
     // Return format that frontend expects
     res.json(template);
   } catch (error) {
@@ -189,19 +217,20 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(store_id);
-    const { SeoTemplate } = connection.models;
+    const tenantDb = await ConnectionManager.getConnection(store_id);
 
-    const template = await SeoTemplate.findByPk(req.params.id);
+    const { error } = await tenantDb
+      .from('seo_templates')
+      .delete()
+      .eq('id', req.params.id);
 
-    if (!template) {
+    if (error) {
       return res.status(404).json({
         success: false,
         message: 'SEO template not found'
       });
     }
 
-    await template.destroy();
     res.json({
       success: true,
       message: 'SEO template deleted successfully'
