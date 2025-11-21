@@ -198,58 +198,45 @@ async function applyAllProductTranslations(products, tenantDb) {
  * @returns {Promise<void>}
  */
 async function updateProductTranslations(storeId, productId, translations = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
-  const sequelize = connection.sequelize;
-  const transaction = await sequelize.transaction();
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  try {
-    console.log(`   💾 updateProductTranslations called for product ${productId}`);
-    console.log(`   📋 Translations to save:`, JSON.stringify(translations, null, 2));
+  console.log(`   💾 updateProductTranslations called for product ${productId}`);
+  console.log(`   📋 Translations to save:`, JSON.stringify(translations, null, 2));
 
-    // Update translations
-    for (const [langCode, data] of Object.entries(translations)) {
-      if (data && Object.keys(data).length > 0) {
-        console.log(`      💾 Saving ${langCode} translation:`, {
-          name: data.name ? data.name.substring(0, 30) : null,
-          description: data.description ? data.description.substring(0, 30) + '...' : null,
-          short_description: data.short_description ? data.short_description.substring(0, 30) + '...' : null
+  // Update translations
+  for (const [langCode, data] of Object.entries(translations)) {
+    if (data && Object.keys(data).length > 0) {
+      console.log(`      💾 Saving ${langCode} translation:`, {
+        name: data.name ? data.name.substring(0, 30) : null,
+        description: data.description ? data.description.substring(0, 30) + '...' : null,
+        short_description: data.short_description ? data.short_description.substring(0, 30) + '...' : null
+      });
+
+      const translationData = {
+        product_id: productId,
+        language_code: langCode,
+        name: data.name !== undefined ? data.name : null,
+        description: data.description !== undefined ? data.description : null,
+        short_description: data.short_description !== undefined ? data.short_description : null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await tenantDb
+        .from('product_translations')
+        .upsert(translationData, {
+          onConflict: 'product_id,language_code'
         });
 
-        await sequelize.query(`
-          INSERT INTO product_translations (
-            product_id, language_code, name, description, short_description,
-            created_at, updated_at
-          ) VALUES (
-            :product_id, :lang_code, :name, :description, :short_description,
-            NOW(), NOW()
-          )
-          ON CONFLICT (product_id, language_code) DO UPDATE
-          SET
-            name = EXCLUDED.name,
-            description = EXCLUDED.description,
-            short_description = EXCLUDED.short_description,
-            updated_at = NOW()
-        `, {
-          replacements: {
-            product_id: productId,
-            lang_code: langCode,
-            name: data.name !== undefined ? data.name : null,
-            description: data.description !== undefined ? data.description : null,
-            short_description: data.short_description !== undefined ? data.short_description : null
-          },
-          transaction
-        });
-
-        console.log(`      ✅ Saved ${langCode} translation to product_translations table`);
-      } else {
-        console.log(`      ⏭️  Skipping ${langCode}: No data or empty object`);
+      if (error) {
+        console.error(`      ❌ Error saving ${langCode} translation:`, error);
+        throw error;
       }
-    }
 
-    await transaction.commit();
-  } catch (error) {
-    await transaction.rollback();
-    throw error;
+      console.log(`      ✅ Saved ${langCode} translation to product_translations table`);
+    } else {
+      console.log(`      ⏭️  Skipping ${langCode}: No data or empty object`);
+    }
   }
 }
 
