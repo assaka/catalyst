@@ -324,38 +324,76 @@ const ShopifyIntegration = () => {
     setImportProgress({ type, progress: 0, message: 'Starting import...' });
 
     try {
-      const endpoint = type === 'full'
-        ? '/api/shopify/import/full'
-        : `/api/shopify/import/${type}`;
+      // Use direct import endpoint with SSE for real-time progress
+      const endpoint = `/api/shopify/import/${type}-direct`;
+      const token = localStorage.getItem('store_owner_auth_token');
 
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
           'x-store-id': storeId
         },
         body: JSON.stringify(options)
       });
 
-      const data = await response.json();
+      // Check if SSE endpoint exists
+      if (response.headers.get('content-type')?.includes('text/event-stream')) {
+        // Handle SSE stream
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
 
-      if (data.success) {
-        setMessage({ 
-          type: 'success', 
-          text: `Successfully imported ${type}` 
-        });
-        fetchImportStats();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = JSON.parse(line.substring(6));
+
+              if (data.stage === 'error') {
+                setMessage({ type: 'error', text: data.message });
+                setImportProgress(null);
+              } else if (data.stage === 'complete') {
+                setMessage({
+                  type: 'success',
+                  text: `Successfully imported ${type}! ${data.result?.stats?.imported || 0} items imported.`
+                });
+                setImportProgress(null);
+                fetchImportStats();
+              } else {
+                // Update progress
+                const progressPercent = data.current && data.total
+                  ? Math.round((data.current / data.total) * 100)
+                  : data.progress || 0;
+
+                setImportProgress({
+                  type,
+                  progress: progressPercent,
+                  message: data.message || `${data.stage}...`
+                });
+              }
+            }
+          }
+        }
       } else {
-        setMessage({ 
-          type: 'error', 
-          text: data.message || `Failed to import ${type}` 
-        });
+        // Fallback to regular JSON response
+        const data = await response.json();
+        if (data.success) {
+          setMessage({ type: 'success', text: `Successfully imported ${type}` });
+          fetchImportStats();
+        } else {
+          setMessage({ type: 'error', text: data.message || `Failed to import ${type}` });
+        }
       }
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: `Error importing ${type}: ${error.message}` 
+      setMessage({
+        type: 'error',
+        text: `Error importing ${type}: ${error.message}`
       });
     } finally {
       setLoading(false);
