@@ -270,9 +270,7 @@ const defineAssociations = () => {
   Store.hasMany(StoreInvitation, { foreignKey: 'store_id' });
   User.hasMany(StoreInvitation, { as: 'sentInvitations', foreignKey: 'invited_by' });
 
-  // IntegrationConfig associations
-  IntegrationConfig.belongsTo(Store, { foreignKey: 'store_id' });
-  Store.hasMany(IntegrationConfig, { foreignKey: 'store_id' });
+  // IntegrationConfig associations - REMOVED (IntegrationConfig is now a pure service class, not a Sequelize model)
 
   // ImportStatistic associations
   ImportStatistic.belongsTo(Store, { foreignKey: 'store_id' });
@@ -426,7 +424,7 @@ module.exports = {
   ProductTab,
   StoreTeam,
   StoreInvitation,
-  IntegrationConfig,
+  // IntegrationConfig - REMOVED from exports (import directly from models/IntegrationConfig.js)
   ImportStatistic,
   Plugin,
   PluginConfiguration,
