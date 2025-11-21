@@ -709,12 +709,11 @@ class CustomDomainService {
       }
 
       // 2. Update master stores table with count and primary domain
-      // Get current count of verified active domains
+      // Get current count of ALL active domains (verified or pending)
       const { count, error: countError } = await masterDbClient
         .from('custom_domains_lookup')
         .select('*', { count: 'exact', head: true })
         .eq('store_id', storeId)
-        .eq('is_verified', true)
         .eq('is_active', true);
 
       const domainsCount = countError ? 0 : (count || 0);
@@ -724,10 +723,18 @@ class CustomDomainService {
         updated_at: new Date().toISOString()
       };
 
-      // If this is the PRIMARY domain, also set it
-      if (domain.is_primary && domain.verification_status === 'verified') {
-        storeUpdate.primary_custom_domain = domain.domain.toLowerCase();
-        storeUpdate.domain_verified = true;
+      // Set primary domain if:
+      // 1. This domain is marked as primary AND
+      // 2. Domain is verified (for routing to work)
+      if (domain.is_primary) {
+        if (domain.verification_status === 'verified') {
+          storeUpdate.primary_custom_domain = domain.domain.toLowerCase();
+          storeUpdate.domain_verified = true;
+        } else {
+          // Domain is primary but not verified yet - clear old primary
+          storeUpdate.primary_custom_domain = null;
+          storeUpdate.domain_verified = false;
+        }
       }
 
       const { error: storeError } = await masterDbClient
