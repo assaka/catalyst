@@ -13,7 +13,8 @@ import {
   Edit,
   Trash2,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -491,7 +492,10 @@ export default function ProductTabs() {
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Product Tab</AlertDialogTitle>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                Delete Product Tab
+              </AlertDialogTitle>
               <AlertDialogDescription>
                 Are you sure you want to delete the product tab "{tabToDelete?.name}"? This action cannot be undone.
               </AlertDialogDescription>
