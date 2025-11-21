@@ -614,7 +614,7 @@ class ApiClient {
     // Check if we have cached user data
     const storeOwnerData = localStorage.getItem('store_owner_user_data');
     const customerData = localStorage.getItem('customer_user_data');
-    
+
     if (storeOwnerData) {
       try {
         const data = JSON.parse(storeOwnerData);
@@ -623,7 +623,7 @@ class ApiClient {
         // Invalid data
       }
     }
-    
+
     if (customerData) {
       try {
         const data = JSON.parse(customerData);
@@ -632,8 +632,20 @@ class ApiClient {
         // Invalid data
       }
     }
-    
-    // Default to guest if no user data
+
+    // Fallback: If we have a store_owner token but no user data, assume store_owner role
+    const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
+    if (storeOwnerToken) {
+      return 'store_owner';
+    }
+
+    // If we have a customer token but no user data, assume customer role
+    const customerToken = localStorage.getItem('customer_auth_token');
+    if (customerToken) {
+      return 'customer';
+    }
+
+    // Default to guest if no user data or tokens
     return 'guest';
   }
 
