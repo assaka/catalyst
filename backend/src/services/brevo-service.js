@@ -24,10 +24,10 @@ class BrevoService {
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
       // Validate API key by testing it
-      const isValid = await this.validateApiKey(apiKey);
+      const validation = await this.validateApiKey(apiKey);
 
-      if (!isValid) {
-        throw new Error('Invalid Brevo API key');
+      if (!validation.valid) {
+        throw new Error(validation.error || 'Invalid Brevo API key');
       }
 
       // Check if config exists
@@ -104,7 +104,7 @@ class BrevoService {
       });
 
       console.log('Validation successful, status:', response.status);
-      return response.status === 200;
+      return { valid: true };
     } catch (error) {
       console.error('API key validation error details:', {
         status: error.response?.status,
@@ -112,7 +112,26 @@ class BrevoService {
         data: error.response?.data,
         message: error.message
       });
-      return false;
+
+      // Check for IP whitelist error
+      if (error.response?.status === 401 && error.response?.data?.code === 'unauthorized') {
+        const errorMessage = error.response.data.message;
+        if (errorMessage.includes('unrecognised IP address')) {
+          // Extract IP address from error message
+          const ipMatch = errorMessage.match(/IP address (\d+\.\d+\.\d+\.\d+)/);
+          const ipAddress = ipMatch ? ipMatch[1] : 'your server IP';
+
+          return {
+            valid: false,
+            error: `IP address not whitelisted: ${ipAddress}. Please add this IP to your authorized IPs at https://app.brevo.com/security/authorised_ips`
+          };
+        }
+      }
+
+      return {
+        valid: false,
+        error: error.response?.data?.message || 'Invalid API key or authentication failed'
+      };
     }
   }
 
