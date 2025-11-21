@@ -289,21 +289,32 @@ router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) 
     let sslIssuer = null;
     let checkMethod = 'openssl';
 
+    console.log(`[SSL Check] Starting SSL check for domain: ${domain.domain}`);
+
     // Try Vercel API first (if configured)
     const vercelService = require('../services/vercel-domain-service');
-    if (vercelService.isConfigured()) {
+    const vercelConfigured = vercelService.isConfigured();
+    console.log(`[SSL Check] Vercel API configured: ${vercelConfigured}`);
+
+    if (vercelConfigured) {
       try {
+        console.log('[SSL Check] Attempting Vercel API check...');
         const vercelResult = await vercelService.checkSSLStatus(domain.domain);
+        console.log('[SSL Check] Vercel API result:', vercelResult);
         if (vercelResult.success) {
           sslStatus = vercelResult.ssl_status;
           checkMethod = 'vercel-api';
+          console.log(`[SSL Check] Vercel API succeeded, status: ${sslStatus}`);
+        } else {
+          console.log('[SSL Check] Vercel API returned success=false, will try OpenSSL');
         }
       } catch (err) {
-        console.warn('Vercel API check failed, falling back to OpenSSL:', err.message);
+        console.warn('[SSL Check] Vercel API check failed, falling back to OpenSSL:', err.message);
       }
     }
 
     // Fallback to OpenSSL check (works without any API keys)
+    console.log(`[SSL Check] sslStatus before OpenSSL: ${sslStatus}`);
     if (!sslStatus) {
       try {
         const { exec } = require('child_process');
