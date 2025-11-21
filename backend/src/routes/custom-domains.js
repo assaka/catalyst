@@ -301,21 +301,23 @@ router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) 
         console.log('[SSL Check] Attempting Vercel API check...');
         const vercelResult = await vercelService.checkSSLStatus(domain.domain);
         console.log('[SSL Check] Vercel API result:', vercelResult);
-        if (vercelResult.success) {
+        if (vercelResult.success && vercelResult.ssl_status === 'active') {
+          // Only trust Vercel if it says "active"
           sslStatus = vercelResult.ssl_status;
           checkMethod = 'vercel-api';
           console.log(`[SSL Check] Vercel API succeeded, status: ${sslStatus}`);
         } else {
-          console.log('[SSL Check] Vercel API returned success=false, will try OpenSSL');
+          console.log('[SSL Check] Vercel API says pending/error, will verify with OpenSSL');
         }
       } catch (err) {
         console.warn('[SSL Check] Vercel API check failed, falling back to OpenSSL:', err.message);
       }
     }
 
-    // Fallback to OpenSSL check (works without any API keys)
+    // Use OpenSSL check if Vercel didn't confirm "active" status
+    // This catches cases where Vercel API is slow to update but SSL is actually working
     console.log(`[SSL Check] sslStatus before OpenSSL: ${sslStatus}`);
-    if (!sslStatus) {
+    if (!sslStatus || sslStatus !== 'active') {
       try {
         const { exec } = require('child_process');
         const { promisify } = require('util');
