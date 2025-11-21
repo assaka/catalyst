@@ -205,7 +205,7 @@ END $$;`;
           console.log('✅ Seed data complete - 6,598 rows inserted');
           result.dataSeeded.push('Seeded 6,598 rows via OAuth API');
 
-          // Update store_id for all tables from placeholder to actual store_id
+          // Update store_id for all tables to new store's ID
           console.log('🔄 Updating store_id for multiple tables...');
 
           const tablesToUpdate = [
@@ -219,7 +219,7 @@ END $$;`;
           ];
 
           const updateQueries = tablesToUpdate.map(table =>
-            `UPDATE ${table} SET store_id = '${storeId}' WHERE store_id = '00000000-0000-0000-0000-000000000000' OR store_id IS NULL;`
+            `UPDATE ${table} SET store_id = '${storeId}';`
           ).join('\n');
 
           await axios.post(
@@ -286,7 +286,7 @@ END $$;`;
       await pgClient.query(seedSQL);
       result.dataSeeded.push('Seeded 6,598 rows from 15 tables');
 
-      // Update store_id for all tables from placeholder to actual store_id
+      // Update store_id for all tables to new store's ID
       console.log('🔄 Updating store_id for multiple tables...');
 
       const tablesToUpdate = [
@@ -300,7 +300,7 @@ END $$;`;
       ];
 
       for (const table of tablesToUpdate) {
-        const updateSQL = `UPDATE ${table} SET store_id = '${storeId}' WHERE store_id = '00000000-0000-0000-0000-000000000000' OR store_id IS NULL;`;
+        const updateSQL = `UPDATE ${table} SET store_id = '${storeId}';`;
         await pgClient.query(updateSQL);
       }
 
