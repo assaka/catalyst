@@ -1,5 +1,6 @@
 const dns = require('dns').promises;
 const ConnectionManager = require('./database/ConnectionManager');
+const { masterDbClient } = require('../database/masterConnection');
 
 /**
  * Custom Domain Management Service
@@ -9,6 +10,7 @@ const ConnectionManager = require('./database/ConnectionManager');
  * - SSL certificate provisioning (Let's Encrypt)
  * - DNS configuration validation
  * - Domain routing and resolution
+ * - Syncing domain records to master DB for fast routing
  */
 class CustomDomainService {
   /**
@@ -56,6 +58,9 @@ class CustomDomainService {
         console.error('Error inserting domain:', insertError);
         throw new Error(insertError.message || 'Failed to create domain record');
       }
+
+      // Sync to master DB for fast domain routing
+      await this._syncToMasterDB(storeId, domain);
 
       // Automatically add domain to Vercel via API (for SSL provisioning)
       const vercelService = require('./vercel-domain-service');
@@ -180,6 +185,9 @@ class CustomDomainService {
             updated_at: new Date().toISOString()
           })
           .eq('id', domain.store_id);
+
+        // Sync verified status to master DB
+        await this._syncToMasterDB(storeId, updatedDomain);
 
         // Check SSL status from Vercel
         const vercelService = require('./vercel-domain-service');
@@ -528,6 +536,9 @@ class CustomDomainService {
         })
         .eq('id', storeId);
 
+      // Remove from master DB lookup table
+      await this._removeFromMasterDB(domain.domain);
+
       return { success: true, message: 'Domain removed successfully' };
     } catch (error) {
       throw error;
@@ -589,6 +600,9 @@ class CustomDomainService {
           updated_at: new Date().toISOString()
         })
         .eq('id', storeId);
+
+      // Sync primary status to master DB
+      await this._syncToMasterDB(storeId, updatedDomain);
 
       return {
         success: true,
@@ -660,6 +674,94 @@ class CustomDomainService {
         route53: 'https://console.aws.amazon.com/route53/'
       }
     };
+  }
+
+  /**
+   * Sync domain record to master DB lookup table for fast routing
+   * @private
+   */
+  static async _syncToMasterDB(storeId, domain) {
+    try {
+      const lookupData = {
+        domain: domain.domain.toLowerCase(),
+        store_id: storeId,
+        is_verified: domain.verification_status === 'verified',
+        is_active: domain.is_active || true,
+        is_primary: domain.is_primary || false,
+        ssl_status: domain.ssl_status || 'pending',
+        verified_at: domain.verified_at || null,
+        updated_at: new Date().toISOString()
+      };
+
+      // Upsert into master DB lookup table
+      const { error } = await masterDbClient
+        .from('custom_domains_lookup')
+        .upsert(lookupData, {
+          onConflict: 'domain',
+          ignoreDuplicates: false
+        });
+
+      if (error) {
+        console.error('Error syncing domain to master DB:', error);
+        // Don't throw - this is a non-critical operation
+      } else {
+        console.log(`✓ Synced domain ${domain.domain} to master DB lookup table`);
+      }
+    } catch (error) {
+      console.error('Error syncing domain to master DB:', error);
+      // Don't throw - this is a non-critical operation
+    }
+  }
+
+  /**
+   * Remove domain from master DB lookup table
+   * @private
+   */
+  static async _removeFromMasterDB(domainName) {
+    try {
+      const { error } = await masterDbClient
+        .from('custom_domains_lookup')
+        .delete()
+        .eq('domain', domainName.toLowerCase());
+
+      if (error) {
+        console.error('Error removing domain from master DB:', error);
+        // Don't throw - this is a non-critical operation
+      } else {
+        console.log(`✓ Removed domain ${domainName} from master DB lookup table`);
+      }
+    } catch (error) {
+      console.error('Error removing domain from master DB:', error);
+      // Don't throw - this is a non-critical operation
+    }
+  }
+
+  /**
+   * Get store ID by custom domain (for request routing)
+   * Fast lookup from master DB
+   */
+  static async getStoreByDomain(domainName) {
+    try {
+      const { data, error } = await masterDbClient
+        .from('custom_domains_lookup')
+        .select('store_id, is_verified, is_active, ssl_status')
+        .eq('domain', domainName.toLowerCase())
+        .eq('is_verified', true)
+        .eq('is_active', true)
+        .single();
+
+      if (error || !data) {
+        return null;
+      }
+
+      return {
+        store_id: data.store_id,
+        ssl_status: data.ssl_status
+      };
+    } catch (error) {
+      console.error('Error looking up domain:', error);
+      return null;
+    }
   }
 }
 
