@@ -48,6 +48,7 @@ import {
 import apiClient from '@/api/client';
 import { toast } from 'sonner';
 import { getStoreBaseUrl, getExternalStoreUrl } from '@/utils/urlUtils';
+import { DeleteConfirmationDialog } from '@/components/ui/delete-confirmation-dialog';
 
 const CustomDomains = () => {
   const { selectedStore } = useStoreSelection();
@@ -63,6 +64,9 @@ const CustomDomains = () => {
   const [adding, setAdding] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [checkingSSL, setCheckingSSL] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [domainToDelete, setDomainToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {
@@ -247,21 +251,29 @@ const CustomDomains = () => {
     }
   };
 
-  const handleRemoveDomain = async (domainId, domainName) => {
-    if (!confirm(`Are you sure you want to remove ${domainName}?`)) {
-      return;
-    }
+  const handleRemoveDomain = (domainId, domainName) => {
+    setDomainToDelete({ id: domainId, name: domainName });
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmRemoveDomain = async () => {
+    if (!domainToDelete) return;
 
     try {
-      const response = await apiClient.delete(`/custom-domains/${domainId}`);
+      setDeleting(true);
+      const response = await apiClient.delete(`/custom-domains/${domainToDelete.id}`);
 
       if (response.success) {
         toast.success('Domain removed successfully');
+        setDeleteDialogOpen(false);
+        setDomainToDelete(null);
         loadDomains();
       }
     } catch (error) {
       console.error('Error removing domain:', error);
       toast.error(error.response?.data?.message || 'Failed to remove domain');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -942,6 +954,18 @@ const CustomDomains = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmRemoveDomain}
+        title="Delete Custom Domain?"
+        description={`Are you sure you want to remove ${domainToDelete?.name}? This action cannot be undone and will immediately stop serving your store on this domain.`}
+        confirmText="Delete Domain"
+        cancelText="Cancel"
+        loading={deleting}
+      />
     </div>
   );
 };
