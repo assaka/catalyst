@@ -36,6 +36,17 @@ class BackgroundJobManager extends EventEmitter {
 
     console.log('🔧 Initializing Background Job Manager...');
 
+    // ALWAYS register job types first - this is critical and should never be skipped
+    try {
+      console.log('📝 Registering job types (CRITICAL - running first)...');
+      this.registerJobTypes();
+      console.log(`✅ Registered ${this.workers.size} job types`);
+    } catch (error) {
+      console.error('❌ CRITICAL: Job type registration failed:', error.message);
+      console.error(error.stack);
+      // Still try to continue - at least some jobs might have registered
+    }
+
     try {
       // Try to initialize BullMQ
       this.useBullMQ = await bullMQManager.initialize();
@@ -55,18 +66,7 @@ class BackgroundJobManager extends EventEmitter {
       console.log('✅ Job tables verified');
     } catch (error) {
       console.error('❌ Job tables verification failed:', error.message);
-      throw error;
-    }
-
-    try {
-      // Register default job types - CRITICAL - must not fail
-      console.log('📝 Registering job types...');
-      this.registerJobTypes();
-      console.log(`✅ Registered ${this.workers.size} job types`);
-    } catch (error) {
-      console.error('❌ CRITICAL: Job type registration failed:', error.message);
-      console.error(error.stack);
-      throw error;
+      console.error('⚠️ Continuing anyway - jobs can still be scheduled');
     }
 
     try {
@@ -75,7 +75,7 @@ class BackgroundJobManager extends EventEmitter {
       console.log('✅ Job processor started');
     } catch (error) {
       console.error('❌ Job processor start failed:', error.message);
-      throw error;
+      console.error('⚠️ Continuing anyway - jobs can be scheduled but may not process');
     }
 
     try {
@@ -88,7 +88,7 @@ class BackgroundJobManager extends EventEmitter {
     }
 
     this.initialized = true;
-    console.log('✅ Background Job Manager fully initialized');
+    console.log(`✅ Background Job Manager initialization complete (${this.workers.size} job types registered)`);
   }
 
   /**
@@ -159,14 +159,23 @@ class BackgroundJobManager extends EventEmitter {
    * Register a job type with its handler
    */
   registerJobType(type, handlerClass) {
+    if (!handlerClass) {
+      console.error(`❌ Cannot register job type '${type}': handler class is undefined`);
+      return;
+    }
+
     this.workers.set(type, handlerClass);
 
     // Also register with BullMQ if available
     if (this.useBullMQ) {
-      bullMQManager.registerJobType(type, handlerClass);
+      try {
+        bullMQManager.registerJobType(type, handlerClass);
+      } catch (error) {
+        console.error(`❌ Failed to register '${type}' with BullMQ:`, error.message);
+      }
     }
 
-    console.log(`📝 Registered job type: ${type}`);
+    console.log(`✅ Registered job type: ${type}`);
   }
 
   /**
