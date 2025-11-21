@@ -206,15 +206,15 @@ export default function SeoRedirects() {
             </div>
           </div>
         </CardContent>
-        <div className="flex justify-end p-6">
-          <SaveButton
-              onClick={handleAddRedirect}
-              loading={loading}
-              defaultText="Add Redirect"
-              icon={<Plus className="w-4 h-4 mr-2" />}
-          />
-        </div>
       </Card>
+      <div className="flex justify-end mt-4">
+        <SaveButton
+            onClick={handleAddRedirect}
+            loading={loading}
+            defaultText="Add Redirect"
+            icon={<Plus className="w-4 h-4 mr-2" />}
+        />
+      </div>
 
       <Card>
         <CardHeader>
