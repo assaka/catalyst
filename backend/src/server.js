@@ -8,7 +8,7 @@ const session = require('express-session');
 const passport = require('./config/passport');
 require('dotenv').config();
 
-const { sequelize } = require('./database/connection');
+const { masterSequelize } = require('./database/masterConnection');
 const errorHandler = require('./middleware/errorHandler');
 const { authMiddleware } = require('./middleware/authMiddleware'); // Use same middleware as authMasterTenant
 
@@ -348,7 +348,7 @@ app.get('/health', (req, res) => {
 // Database health check endpoint
 app.get('/health/db', async (req, res) => {
   try {
-    await sequelize.authenticate();
+    await masterSequelize.authenticate();
     res.json({
       status: 'OK',
       database: 'Connected',
@@ -1213,14 +1213,14 @@ const startServer = async () => {
     
     while (retries > 0 && !dbConnected) {
       try {
-        await sequelize.authenticate();
+        await masterSequelize.authenticate();
         dbConnected = true;
 
         // Sync database tables
         if (process.env.NODE_ENV === 'development') {
-          await sequelize.sync({ alter: true });
+          await masterSequelize.sync({ alter: true });
         } else {
-          await sequelize.sync({ alter: false });
+          await masterSequelize.sync({ alter: false });
         }
 
         // Initialize Redis cache
@@ -1243,7 +1243,7 @@ const startServer = async () => {
         // Initialize Database-Driven Plugin Registry
         try {
           const { initializePluginRegistry } = require('./routes/dynamic-plugins');
-          await initializePluginRegistry(sequelize);
+          await initializePluginRegistry(masterSequelize);
         } catch (error) {
           console.warn('Plugin Registry initialization failed:', error.message);
         }
