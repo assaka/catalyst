@@ -35,36 +35,57 @@ router.get('/:store_id', authorize(['admin', 'store_owner']), checkStoreOwnershi
       });
     }
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { StoreTeam } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const where = { store_id };
+    // Build query for store team members
+    let teamQuery = tenantDb.from('store_teams').select('*', { count: 'exact' });
+    teamQuery = teamQuery.eq('store_id', store_id);
+
     if (status !== 'all') {
-      where.status = status;
+      teamQuery = teamQuery.eq('status', status);
     }
 
-    const { count, rows } = await StoreTeam.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      include: [
-        {
-          model: User,
-          attributes: ['id', 'email', 'first_name', 'last_name', 'avatar_url']
-        },
-        {
-          model: User,
-          as: 'inviter',
-          attributes: ['id', 'email', 'first_name', 'last_name']
-        },
-        {
-          model: Store,
-          attributes: ['id', 'name']
-        }
-      ],
-      order: [['created_at', 'DESC']]
-    });
+    teamQuery = teamQuery
+      .order('created_at', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+
+    const { data: teamMembers, error: teamError, count } = await teamQuery;
+
+    if (teamError) {
+      throw teamError;
+    }
+
+    // Fetch related user and store data from master DB
+    const { masterDbClient } = require('../database/masterConnection');
+
+    const userIds = [...new Set([
+      ...teamMembers.map(m => m.user_id),
+      ...teamMembers.map(m => m.invited_by).filter(Boolean)
+    ].filter(Boolean))];
+
+    const { data: users } = await masterDbClient
+      .from('users')
+      .select('id, email, first_name, last_name, avatar_url')
+      .in('id', userIds);
+
+    const { data: stores } = await masterDbClient
+      .from('stores')
+      .select('id, name')
+      .eq('id', store_id)
+      .single();
+
+    // Build lookup maps
+    const userMap = {};
+    (users || []).forEach(u => { userMap[u.id] = u; });
+
+    // Merge data
+    const rows = teamMembers.map(member => ({
+      ...member,
+      User: userMap[member.user_id] || null,
+      inviter: userMap[member.invited_by] || null,
+      Store: stores || null
+    }));
 
     res.json({
       success: true,
@@ -121,24 +142,32 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
     }
 
     // Get tenant connection for StoreTeam (tenant DB)
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { StoreTeam } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    const { masterDbClient } = require('../database/masterConnection');
 
-    // Check if email is already invited or is a team member (StoreTeam in tenant DB)
-    const existingTeamMember = await StoreTeam.findOne({
-      where: { store_id, user_id: { [Op.ne]: null } },
-      include: [{
-        model: User,
-        where: { email },
-        required: true
-      }]
-    });
+    // Check if email is already invited or is a team member
+    // First get user by email from master DB
+    const { data: userByEmail } = await masterDbClient
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
 
-    if (existingTeamMember) {
-      return res.status(400).json({
-        success: false,
-        message: 'User is already a team member'
-      });
+    if (userByEmail) {
+      // Check if this user is already a team member
+      const { data: existingTeamMember } = await tenantDb
+        .from('store_teams')
+        .select('*')
+        .eq('store_id', store_id)
+        .eq('user_id', userByEmail.id)
+        .maybeSingle();
+
+      if (existingTeamMember) {
+        return res.status(400).json({
+          success: false,
+          message: 'User is already a team member'
+        });
+      }
     }
 
     // Check existing invitation in master DB using Supabase
@@ -244,27 +273,32 @@ router.put('/:store_id/members/:member_id', authorize(['admin', 'store_owner']),
       });
     }
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { StoreTeam } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    const { masterDbClient } = require('../database/masterConnection');
 
-    const teamMember = await StoreTeam.findOne({
-      where: {
-        id: member_id,
-        store_id
-      },
-      include: [{
-        model: User,
-        attributes: ['id', 'email', 'first_name', 'last_name']
-      }]
-    });
+    const { data: teamMember, error: memberError } = await tenantDb
+      .from('store_teams')
+      .select('*')
+      .eq('id', member_id)
+      .eq('store_id', store_id)
+      .maybeSingle();
 
-    if (!teamMember) {
+    if (memberError || !teamMember) {
       return res.status(404).json({
         success: false,
         message: 'Team member not found'
       });
     }
+
+    // Fetch user data from master DB
+    const { data: userData } = await masterDbClient
+      .from('users')
+      .select('id, email, first_name, last_name')
+      .eq('id', teamMember.user_id)
+      .single();
+
+    teamMember.User = userData;
 
     // Prevent changing owner role (if role is 'owner')
     if (teamMember.role === 'owner' && role && role !== 'owner') {
@@ -280,14 +314,39 @@ router.put('/:store_id/members/:member_id', authorize(['admin', 'store_owner']),
     if (permissions) updateData.permissions = permissions;
     if (status) updateData.status = status;
 
-    await teamMember.update(updateData);
-    await teamMember.reload({ include: [{ model: User, attributes: ['id', 'email', 'first_name', 'last_name'] }] });
+    if (Object.keys(updateData).length > 0) {
+      updateData.updated_at = new Date().toISOString();
 
-    res.json({
-      success: true,
-      message: 'Team member updated successfully',
-      data: teamMember
-    });
+      const { error: updateError } = await tenantDb
+        .from('store_teams')
+        .update(updateData)
+        .eq('id', member_id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Refresh team member data
+      const { data: updatedMember } = await tenantDb
+        .from('store_teams')
+        .select('*')
+        .eq('id', member_id)
+        .single();
+
+      updatedMember.User = userData;
+
+      res.json({
+        success: true,
+        message: 'Team member updated successfully',
+        data: updatedMember
+      });
+    } else {
+      res.json({
+        success: true,
+        message: 'No changes made',
+        data: teamMember
+      });
+    }
   } catch (error) {
     console.error('❌ Update team member error:', error);
     res.status(500).json({
@@ -316,18 +375,17 @@ router.delete('/:store_id/members/:member_id', authorize(['admin', 'store_owner'
       });
     }
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { StoreTeam } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const teamMember = await StoreTeam.findOne({
-      where: {
-        id: member_id,
-        store_id
-      }
-    });
+    const { data: teamMember, error: memberError } = await tenantDb
+      .from('store_teams')
+      .select('*')
+      .eq('id', member_id)
+      .eq('store_id', store_id)
+      .maybeSingle();
 
-    if (!teamMember) {
+    if (memberError || !teamMember) {
       return res.status(404).json({
         success: false,
         message: 'Team member not found'
@@ -343,7 +401,14 @@ router.delete('/:store_id/members/:member_id', authorize(['admin', 'store_owner'
     }
 
     // Soft delete by setting status to 'removed'
-    await teamMember.update({ status: 'removed', is_active: false });
+    const { error: updateError } = await tenantDb
+      .from('store_teams')
+      .update({
+        status: 'removed',
+        is_active: false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', member_id);
 
     res.json({
       success: true,
@@ -398,16 +463,15 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
     }
 
     // Get tenant connection for StoreTeam
-    const connection = await ConnectionManager.getStoreConnection(invitation.store_id);
-    const { StoreTeam } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(invitation.store_id);
 
     // Check if user is already a team member (in tenant DB)
-    const existingMember = await StoreTeam.findOne({
-      where: {
-        store_id: invitation.store_id,
-        user_id: req.user.id
-      }
-    });
+    const { data: existingMember } = await tenantDb
+      .from('store_teams')
+      .select('*')
+      .eq('store_id', invitation.store_id)
+      .eq('user_id', req.user.id)
+      .maybeSingle();
 
     if (existingMember) {
       return res.status(400).json({
@@ -417,31 +481,48 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
     }
 
     // Create team membership in tenant DB
-    const teamMember = await StoreTeam.create({
-      store_id: invitation.store_id,
-      user_id: req.user.id,
-      role: invitation.role,
-      permissions: invitation.permissions,
-      invited_by: invitation.invited_by,
-      invited_at: invitation.created_at,
-      accepted_at: new Date(),
-      status: 'active'
-    });
+    const { data: teamMember, error: createError } = await tenantDb
+      .from('store_teams')
+      .insert({
+        store_id: invitation.store_id,
+        user_id: req.user.id,
+        role: invitation.role,
+        permissions: invitation.permissions,
+        invited_by: invitation.invited_by,
+        invited_at: invitation.created_at,
+        accepted_at: new Date().toISOString(),
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      throw createError;
+    }
 
     // Update invitation status in master DB
-    await invitation.update({
-      status: 'accepted',
-      accepted_by: req.user.id,
-      accepted_at: new Date()
-    });
+    await masterDbClient
+      .from('store_invitations')
+      .update({
+        status: 'accepted',
+        accepted_by: req.user.id,
+        accepted_at: new Date().toISOString()
+      })
+      .eq('id', invitation.id);
 
-    // Reload with User and Store from master DB
-    await teamMember.reload({
-      include: [
-        { model: Store, attributes: ['id', 'name'] },
-        { model: User, attributes: ['id', 'email', 'first_name', 'last_name'] }
-      ]
-    });
+    // Fetch User and Store data from master DB
+    const [
+      { data: userData },
+      { data: storeData }
+    ] = await Promise.all([
+      masterDbClient.from('users').select('id, email, first_name, last_name').eq('id', req.user.id).single(),
+      masterDbClient.from('stores').select('id, name').eq('id', invitation.store_id).single()
+    ]);
+
+    teamMember.User = userData;
+    teamMember.Store = storeData;
 
     res.json({
       success: true,
