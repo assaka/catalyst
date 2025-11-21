@@ -127,7 +127,8 @@ export default function Settings() {
         timezone: storeData.timezone || 'UTC',
         slug: storeData.slug || '',
         status: storeData.status || 'active', // Default status
-        root_category_id: storeData.root_category_id || null,
+        // NOTE: root_category_id is NOT a column in the stores table
+        // It's stored in settings.rootCategoryId
         contact_details: {
           email: storeData.contact_email || '', // Map from flat structure
           phone: storeData.contact_phone || '',
@@ -202,7 +203,7 @@ export default function Settings() {
           display_low_stock_threshold: settings.hasOwnProperty('display_low_stock_threshold') ? settings.display_low_stock_threshold : 0, // New
           
           // Root category settings - ensure boolean values are properly handled
-          rootCategoryId: settings.rootCategoryId || storeData.root_category_id || null,
+          rootCategoryId: settings.rootCategoryId || null,
           excludeRootFromMenu: settings.excludeRootFromMenu === true,
           expandAllMenuItems: settings.expandAllMenuItems === true,
 
@@ -219,8 +220,6 @@ export default function Settings() {
         rawSettings: settings,
         allSettingsKeys: Object.keys(settings),
         rootCategoryId: settings.rootCategoryId,
-        legacyRootCategoryId: storeData.root_category_id,
-        finalRootCategoryId: settings.rootCategoryId || storeData.root_category_id || null,
         excludeRootFromMenu: settings.excludeRootFromMenu,
         hasExcludeRootProperty: settings.hasOwnProperty('excludeRootFromMenu'),
         finalExcludeRoot: settings.hasOwnProperty('excludeRootFromMenu') ? settings.excludeRootFromMenu : false,
@@ -317,7 +316,7 @@ export default function Settings() {
         display_low_stock_threshold: store.settings.display_low_stock_threshold,
         
         // Root category settings - ensure boolean values are explicitly set
-        rootCategoryId: store.settings.rootCategoryId || store.root_category_id,
+        rootCategoryId: store.settings.rootCategoryId || null,
         excludeRootFromMenu: store.settings.excludeRootFromMenu === true,
         expandAllMenuItems: store.settings.expandAllMenuItems === true,
 
@@ -365,7 +364,8 @@ export default function Settings() {
         country: store.contact_details?.country || store.country,
         timezone: store.timezone,
         currency: store.currency,
-        root_category_id: store.root_category_id,
+        // NOTE: root_category_id is NOT a column in stores table
+        // It's stored in settings.rootCategoryId (already included in settingsPayload)
         settings: settingsPayload
       };
 
@@ -437,7 +437,7 @@ export default function Settings() {
             allow_guest_checkout: settings.hasOwnProperty('allow_guest_checkout') ? settings.allow_guest_checkout : true,
             allowed_countries: settings.allowed_countries || ["US", "CA", "GB", "DE", "FR"],
             // Root category navigation settings
-            rootCategoryId: settings.rootCategoryId || result?.root_category_id,
+            rootCategoryId: settings.rootCategoryId || null,
             excludeRootFromMenu: settings.hasOwnProperty('excludeRootFromMenu') ? settings.excludeRootFromMenu : false,
             expandAllMenuItems: settings.hasOwnProperty('expandAllMenuItems') ? settings.expandAllMenuItems : false,
             // Include all other settings...
