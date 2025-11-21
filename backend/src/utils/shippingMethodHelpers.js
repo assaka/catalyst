@@ -2,7 +2,7 @@
  * Shipping Method Helpers for Normalized Translations
  *
  * These helpers construct the same JSON format that the frontend expects
- * from normalized translation tables.
+ * from normalized translation tables using Supabase.
  */
 
 const ConnectionManager = require('../services/database/ConnectionManager');
@@ -16,62 +16,67 @@ const ConnectionManager = require('../services/database/ConnectionManager');
  * @returns {Promise<Array>} Shipping methods with translated fields
  */
 async function getShippingMethodsWithTranslations(storeId, where = {}, options = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   const lang = options.lang || 'en';
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === true || value === false) {
-        return `sm.${key} = ${value}`;
-      }
-      if (Array.isArray(value)) {
-        // Handle IN clause for arrays
-        const values = value.map(v => `'${v}'`).join(', ');
-        return `sm.${key} IN (${values})`;
-      }
-      return `sm.${key} = '${value}'`;
-    })
-    .join(' AND ');
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
-  const limitClause = options.limit ? `LIMIT ${options.limit}` : '';
-  const offsetClause = options.offset ? `OFFSET ${options.offset}` : '';
+  // Build shipping methods query
+  let methodsQuery = tenantDb.from('shipping_methods').select('*');
 
-  const query = `
-    SELECT
-      sm.id,
-      sm.store_id,
-      sm.is_active,
-      sm.type,
-      sm.flat_rate_cost,
-      sm.free_shipping_min_order,
-      sm.weight_ranges,
-      sm.price_ranges,
-      sm.availability,
-      sm.countries,
-      sm.conditions,
-      sm.min_delivery_days,
-      sm.max_delivery_days,
-      sm.sort_order,
-      sm.created_at,
-      sm.updated_at,
-      COALESCE(smt.name, sm.name) as name,
-      COALESCE(smt.description, sm.description) as description
-    FROM shipping_methods sm
-    LEFT JOIN shipping_method_translations smt ON sm.id = smt.shipping_method_id AND smt.language_code = :lang
-    ${whereClause}
-    ORDER BY sm.sort_order ASC, sm.name ASC
-    ${limitClause}
-    ${offsetClause}
-  `;
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    if (Array.isArray(value)) {
+      methodsQuery = methodsQuery.in(key, value);
+    } else {
+      methodsQuery = methodsQuery.eq(key, value);
+    }
+  }
 
-  const results = await sequelize.query(query, {
-    replacements: { lang },
-    type: sequelize.QueryTypes.SELECT
+  // Apply sorting
+  methodsQuery = methodsQuery.order('sort_order', { ascending: true }).order('name', { ascending: true });
+
+  // Apply pagination
+  if (options.limit) methodsQuery = methodsQuery.limit(options.limit);
+  if (options.offset) methodsQuery = methodsQuery.range(options.offset, options.offset + (options.limit || 50) - 1);
+
+  const { data: methods, error: methodsError } = await methodsQuery;
+
+  if (methodsError) {
+    console.error('Error fetching shipping_methods:', methodsError);
+    throw methodsError;
+  }
+
+  if (!methods || methods.length === 0) {
+    return [];
+  }
+
+  // Fetch translations
+  const methodIds = methods.map(m => m.id);
+  const { data: translations, error: transError } = await tenantDb
+    .from('shipping_method_translations')
+    .select('shipping_method_id, language_code, name, description')
+    .in('shipping_method_id', methodIds)
+    .eq('language_code', lang);
+
+  if (transError) {
+    console.error('Error fetching shipping_method_translations:', transError);
+  }
+
+  // Build translation map
+  const translationMap = {};
+  (translations || []).forEach(t => {
+    translationMap[t.shipping_method_id] = t;
   });
 
-  return results;
+  // Apply translations to methods
+  return methods.map(method => {
+    const translation = translationMap[method.id];
+    return {
+      ...method,
+      name: translation?.name || method.name || '',
+      description: translation?.description || method.description || ''
+    };
+  });
 }
 
 /**
@@ -82,34 +87,28 @@ async function getShippingMethodsWithTranslations(storeId, where = {}, options =
  * @returns {Promise<number>} Count of shipping methods
  */
 async function getShippingMethodsCount(storeId, where = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === true || value === false) {
-        return `${key} = ${value}`;
-      }
-      if (Array.isArray(value)) {
-        const values = value.map(v => `'${v}'`).join(', ');
-        return `${key} IN (${values})`;
-      }
-      return `${key} = '${value}'`;
-    })
-    .join(' AND ');
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+  // Build query
+  let countQuery = tenantDb.from('shipping_methods').select('*', { count: 'exact', head: true });
 
-  const query = `
-    SELECT COUNT(*) as count
-    FROM shipping_methods
-    ${whereClause}
-  `;
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    if (Array.isArray(value)) {
+      countQuery = countQuery.in(key, value);
+    } else {
+      countQuery = countQuery.eq(key, value);
+    }
+  }
 
-  const [result] = await sequelize.query(query, {
-    type: sequelize.QueryTypes.SELECT
-  });
+  const { count, error } = await countQuery;
 
-  return parseInt(result.count);
+  if (error) {
+    console.error('Error counting shipping methods:', error);
+    throw error;
+  }
+
+  return count || 0;
 }
 
 /**
@@ -121,39 +120,36 @@ async function getShippingMethodsCount(storeId, where = {}) {
  * @returns {Promise<Object|null>} Shipping method with translated fields
  */
 async function getShippingMethodById(storeId, id, lang = 'en') {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
-  const query = `
-    SELECT
-      sm.id,
-      sm.store_id,
-      sm.is_active,
-      sm.type,
-      sm.flat_rate_cost,
-      sm.free_shipping_min_order,
-      sm.weight_ranges,
-      sm.price_ranges,
-      sm.availability,
-      sm.countries,
-      sm.conditions,
-      sm.min_delivery_days,
-      sm.max_delivery_days,
-      sm.sort_order,
-      sm.created_at,
-      sm.updated_at,
-      COALESCE(smt.name, sm.name) as name,
-      COALESCE(smt.description, sm.description) as description
-    FROM shipping_methods sm
-    LEFT JOIN shipping_method_translations smt ON sm.id = smt.shipping_method_id AND smt.language_code = :lang
-    WHERE sm.id = :id
-  `;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const results = await sequelize.query(query, {
-    replacements: { id, lang },
-    type: sequelize.QueryTypes.SELECT
-  });
+  // Fetch the shipping method
+  const { data: method, error: methodError } = await tenantDb
+    .from('shipping_methods')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-  return results[0] || null;
+  if (methodError || !method) {
+    return null;
+  }
+
+  // Fetch translation
+  const { data: translations, error: transError } = await tenantDb
+    .from('shipping_method_translations')
+    .select('name, description')
+    .eq('shipping_method_id', id)
+    .eq('language_code', lang)
+    .maybeSingle();
+
+  if (transError) {
+    console.error('Error fetching shipping method translation:', transError);
+  }
+
+  return {
+    ...method,
+    name: translations?.name || method.name || '',
+    description: translations?.description || method.description || ''
+  };
 }
 
 /**
@@ -165,41 +161,13 @@ async function getShippingMethodById(storeId, id, lang = 'en') {
  * @returns {Promise<Object>} Created shipping method with translations
  */
 async function createShippingMethodWithTranslations(storeId, methodData, translations = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
-  const transaction = await sequelize.transaction();
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   try {
     // Insert shipping method
-    const [method] = await sequelize.query(`
-      INSERT INTO shipping_methods (
-        id, store_id, name, description, is_active, type,
-        flat_rate_cost, free_shipping_min_order, weight_ranges, price_ranges,
-        availability, countries, conditions, min_delivery_days, max_delivery_days, sort_order,
-        created_at, updated_at
-      ) VALUES (
-        gen_random_uuid(),
-        :store_id,
-        :name,
-        :description,
-        :is_active,
-        :type,
-        :flat_rate_cost,
-        :free_shipping_min_order,
-        :weight_ranges,
-        :price_ranges,
-        :availability,
-        :countries,
-        :conditions,
-        :min_delivery_days,
-        :max_delivery_days,
-        :sort_order,
-        NOW(),
-        NOW()
-      )
-      RETURNING *
-    `, {
-      replacements: {
+    const { data: method, error: methodError } = await tenantDb
+      .from('shipping_methods')
+      .insert({
         store_id: methodData.store_id,
         name: methodData.name || '',
         description: methodData.description || '',
@@ -207,48 +175,48 @@ async function createShippingMethodWithTranslations(storeId, methodData, transla
         type: methodData.type || 'flat_rate',
         flat_rate_cost: methodData.flat_rate_cost || 0,
         free_shipping_min_order: methodData.free_shipping_min_order || 0,
-        weight_ranges: JSON.stringify(methodData.weight_ranges || []),
-        price_ranges: JSON.stringify(methodData.price_ranges || []),
+        weight_ranges: methodData.weight_ranges || [],
+        price_ranges: methodData.price_ranges || [],
         availability: methodData.availability || 'all',
-        countries: JSON.stringify(methodData.countries || []),
-        conditions: JSON.stringify(methodData.conditions || {}),
+        countries: methodData.countries || [],
+        conditions: methodData.conditions || {},
         min_delivery_days: methodData.min_delivery_days || 1,
         max_delivery_days: methodData.max_delivery_days || 7,
         sort_order: methodData.sort_order || 0
-      },
-      type: sequelize.QueryTypes.SELECT,
-      transaction
-    });
+      })
+      .select()
+      .single();
+
+    if (methodError) {
+      console.error('Error inserting shipping method:', methodError);
+      throw methodError;
+    }
 
     // Insert translations
     for (const [langCode, data] of Object.entries(translations)) {
       if (data && (data.name || data.description)) {
-        await sequelize.query(`
-          INSERT INTO shipping_method_translations (
-            shipping_method_id, language_code, name, description, created_at, updated_at
-          ) VALUES (
-            :method_id, :lang_code, :name, :description, NOW(), NOW()
-          )
-          ON CONFLICT (shipping_method_id, language_code) DO UPDATE
-          SET name = EXCLUDED.name, description = EXCLUDED.description, updated_at = NOW()
-        `, {
-          replacements: {
-            method_id: method.id,
-            lang_code: langCode,
+        const { error: transError } = await tenantDb
+          .from('shipping_method_translations')
+          .upsert({
+            shipping_method_id: method.id,
+            language_code: langCode,
             name: data.name || '',
             description: data.description || ''
-          },
-          transaction
-        });
+          }, {
+            onConflict: 'shipping_method_id,language_code'
+          });
+
+        if (transError) {
+          console.error('Error upserting shipping method translation:', transError);
+          // Continue with other translations
+        }
       }
     }
-
-    await transaction.commit();
 
     // Return the created method with translations
     return await getShippingMethodById(storeId, method.id);
   } catch (error) {
-    await transaction.rollback();
+    console.error('Error creating shipping method:', error);
     throw error;
   }
 }
@@ -263,117 +231,65 @@ async function createShippingMethodWithTranslations(storeId, methodData, transla
  * @returns {Promise<Object>} Updated shipping method with translations
  */
 async function updateShippingMethodWithTranslations(storeId, id, methodData, translations = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
-  const transaction = await sequelize.transaction();
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   try {
-    // Build update fields
-    const updateFields = [];
-    const replacements = { id };
+    // Build update object
+    const updateData = {};
 
-    if (methodData.name !== undefined) {
-      updateFields.push('name = :name');
-      replacements.name = methodData.name;
-    }
-    if (methodData.description !== undefined) {
-      updateFields.push('description = :description');
-      replacements.description = methodData.description;
-    }
-    if (methodData.is_active !== undefined) {
-      updateFields.push('is_active = :is_active');
-      replacements.is_active = methodData.is_active;
-    }
-    if (methodData.type !== undefined) {
-      updateFields.push('type = :type');
-      replacements.type = methodData.type;
-    }
-    if (methodData.flat_rate_cost !== undefined) {
-      updateFields.push('flat_rate_cost = :flat_rate_cost');
-      replacements.flat_rate_cost = methodData.flat_rate_cost;
-    }
-    if (methodData.free_shipping_min_order !== undefined) {
-      updateFields.push('free_shipping_min_order = :free_shipping_min_order');
-      replacements.free_shipping_min_order = methodData.free_shipping_min_order;
-    }
-    if (methodData.weight_ranges !== undefined) {
-      updateFields.push('weight_ranges = :weight_ranges');
-      replacements.weight_ranges = JSON.stringify(methodData.weight_ranges);
-    }
-    if (methodData.price_ranges !== undefined) {
-      updateFields.push('price_ranges = :price_ranges');
-      replacements.price_ranges = JSON.stringify(methodData.price_ranges);
-    }
-    if (methodData.availability !== undefined) {
-      updateFields.push('availability = :availability');
-      replacements.availability = methodData.availability;
-    }
-    if (methodData.countries !== undefined) {
-      updateFields.push('countries = :countries');
-      replacements.countries = JSON.stringify(methodData.countries);
-    }
-    if (methodData.conditions !== undefined) {
-      updateFields.push('conditions = :conditions');
-      replacements.conditions = JSON.stringify(methodData.conditions);
-    }
-    if (methodData.min_delivery_days !== undefined) {
-      updateFields.push('min_delivery_days = :min_delivery_days');
-      replacements.min_delivery_days = methodData.min_delivery_days;
-    }
-    if (methodData.max_delivery_days !== undefined) {
-      updateFields.push('max_delivery_days = :max_delivery_days');
-      replacements.max_delivery_days = methodData.max_delivery_days;
-    }
-    if (methodData.sort_order !== undefined) {
-      updateFields.push('sort_order = :sort_order');
-      replacements.sort_order = methodData.sort_order;
-    }
+    const fields = [
+      'name', 'description', 'is_active', 'type', 'flat_rate_cost',
+      'free_shipping_min_order', 'weight_ranges', 'price_ranges',
+      'availability', 'countries', 'conditions', 'min_delivery_days',
+      'max_delivery_days', 'sort_order'
+    ];
 
-    if (updateFields.length > 0) {
-      updateFields.push('updated_at = NOW()');
+    fields.forEach(field => {
+      if (methodData[field] !== undefined) {
+        updateData[field] = methodData[field];
+      }
+    });
 
-      await sequelize.query(`
-        UPDATE shipping_methods
-        SET ${updateFields.join(', ')}
-        WHERE id = :id
-      `, {
-        replacements,
-        transaction
-      });
+    if (Object.keys(updateData).length > 0) {
+      updateData.updated_at = new Date().toISOString();
+
+      const { error: updateError } = await tenantDb
+        .from('shipping_methods')
+        .update(updateData)
+        .eq('id', id);
+
+      if (updateError) {
+        console.error('Error updating shipping method:', updateError);
+        throw updateError;
+      }
     }
 
     // Update translations
     for (const [langCode, data] of Object.entries(translations)) {
       if (data && (data.name !== undefined || data.description !== undefined)) {
-        await sequelize.query(`
-          INSERT INTO shipping_method_translations (
-            shipping_method_id, language_code, name, description, created_at, updated_at
-          ) VALUES (
-            :method_id, :lang_code, :name, :description, NOW(), NOW()
-          )
-          ON CONFLICT (shipping_method_id, language_code) DO UPDATE
-          SET
-            name = COALESCE(EXCLUDED.name, shipping_method_translations.name),
-            description = COALESCE(EXCLUDED.description, shipping_method_translations.description),
-            updated_at = NOW()
-        `, {
-          replacements: {
-            method_id: id,
-            lang_code: langCode,
+        const { error: transError } = await tenantDb
+          .from('shipping_method_translations')
+          .upsert({
+            shipping_method_id: id,
+            language_code: langCode,
             name: data.name,
-            description: data.description
-          },
-          transaction
-        });
+            description: data.description,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'shipping_method_id,language_code'
+          });
+
+        if (transError) {
+          console.error('Error upserting shipping method translation:', transError);
+          throw transError;
+        }
       }
     }
-
-    await transaction.commit();
 
     // Return the updated method with translations
     return await getShippingMethodById(storeId, id);
   } catch (error) {
-    await transaction.rollback();
+    console.error('Error updating shipping method:', error);
     throw error;
   }
 }
@@ -386,15 +302,17 @@ async function updateShippingMethodWithTranslations(storeId, id, methodData, tra
  * @returns {Promise<boolean>} Success status
  */
 async function deleteShippingMethod(storeId, id) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  await sequelize.query(`
-    DELETE FROM shipping_methods WHERE id = :id
-  `, {
-    replacements: { id },
-    type: sequelize.QueryTypes.DELETE
-  });
+  const { error } = await tenantDb
+    .from('shipping_methods')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting shipping method:', error);
+    throw error;
+  }
 
   return true;
 }

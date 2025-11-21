@@ -2,7 +2,7 @@
  * Category Settings Helpers for Normalized Translations
  *
  * These helpers construct the same format that the frontend expects
- * from normalized translation tables.
+ * from normalized translation tables using Supabase.
  */
 
 const ConnectionManager = require('../services/database/ConnectionManager');
@@ -17,101 +17,88 @@ const ConnectionManager = require('../services/database/ConnectionManager');
  * @returns {Promise<Object>} { rows, count } - Categories with translated fields and total count
  */
 async function getCategoriesWithTranslations(storeId, where = {}, lang = 'en', options = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   const { limit, offset, search } = options;
 
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === true || value === false) {
-        return `c.${key} = ${value}`;
-      }
-      if (Array.isArray(value)) {
-        // Handle Op.in case
-        return `c.${key} IN (${value.map(v => `'${v}'`).join(', ')})`;
-      }
-      return `c.${key} = '${value}'`;
-    })
-    .join(' AND ');
+  // Build categories query
+  let categoriesQuery = tenantDb.from('categories').select('*', { count: 'exact' });
 
-  const whereClauses = [];
-  if (whereConditions) whereClauses.push(whereConditions);
-
-  // Add search to SQL WHERE clause for better performance
-  if (search) {
-    whereClauses.push(`(
-      ct.name ILIKE :search OR
-      ct.description ILIKE :search OR
-      ct_en.name ILIKE :search OR
-      ct_en.description ILIKE :search
-    )`);
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    if (Array.isArray(value)) {
+      categoriesQuery = categoriesQuery.in(key, value);
+    } else {
+      categoriesQuery = categoriesQuery.eq(key, value);
+    }
   }
 
-  const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  // Apply sorting
+  categoriesQuery = categoriesQuery.order('sort_order', { ascending: true }).order('created_at', { ascending: false });
 
-  // First get total count
-  const countQuery = `
-    SELECT COUNT(DISTINCT c.id) as count
-    FROM categories c
-    LEFT JOIN category_translations ct
-      ON c.id = ct.category_id AND ct.language_code = :lang
-    LEFT JOIN category_translations ct_en
-      ON c.id = ct_en.category_id AND ct_en.language_code = 'en'
-    ${whereClause}
-  `;
+  // Apply pagination
+  if (limit && offset) {
+    categoriesQuery = categoriesQuery.range(offset, offset + limit - 1);
+  } else if (limit) {
+    categoriesQuery = categoriesQuery.limit(limit);
+  }
 
-  // Build pagination clause
-  const paginationClause = [];
-  if (limit) paginationClause.push(`LIMIT ${parseInt(limit)}`);
-  if (offset) paginationClause.push(`OFFSET ${parseInt(offset)}`);
+  const { data: categories, error: categoriesError, count } = await categoriesQuery;
 
-  const query = `
-    SELECT
-      c.id,
-      c.slug,
-      c.image_url,
-      c.sort_order,
-      c.is_active,
-      c.hide_in_menu,
-      c.seo,
-      c.store_id,
-      c.parent_id,
-      c.level,
-      c.path,
-      c.product_count,
-      c.created_at,
-      c.updated_at,
-      COALESCE(ct.name, ct_en.name, c.slug) as name,
-      COALESCE(ct.description, ct_en.description) as description
-    FROM categories c
-    LEFT JOIN category_translations ct
-      ON c.id = ct.category_id AND ct.language_code = :lang
-    LEFT JOIN category_translations ct_en
-      ON c.id = ct_en.category_id AND ct_en.language_code = 'en'
-    ${whereClause}
-    ORDER BY c.sort_order ASC, c.created_at DESC
-    ${paginationClause.join(' ')}
-  `;
+  if (categoriesError) {
+    console.error('Error fetching categories:', categoriesError);
+    throw categoriesError;
+  }
 
-  const replacements = { lang };
-  if (search) replacements.search = `%${search}%`;
+  if (!categories || categories.length === 0) {
+    return { rows: [], count: 0 };
+  }
 
-  // Execute count and data queries in parallel
-  const [countResult, results] = await Promise.all([
-    sequelize.query(countQuery, {
-      replacements,
-      type: sequelize.QueryTypes.SELECT
-    }),
-    sequelize.query(query, {
-      replacements,
-      type: sequelize.QueryTypes.SELECT
-    })
-  ]);
+  // Fetch translations for these categories
+  const categoryIds = categories.map(c => c.id);
+  const { data: translations, error: transError } = await tenantDb
+    .from('category_translations')
+    .select('category_id, language_code, name, description')
+    .in('category_id', categoryIds)
+    .in('language_code', [lang, 'en']);
 
-  const count = parseInt(countResult[0]?.count || 0);
+  if (transError) {
+    console.error('Error fetching category translations:', transError);
+  }
 
-  return { rows: results, count };
+  // Build translation maps
+  const requestedLangMap = {};
+  const englishLangMap = {};
+
+  (translations || []).forEach(t => {
+    if (t.language_code === lang) {
+      requestedLangMap[t.category_id] = t;
+    }
+    if (t.language_code === 'en') {
+      englishLangMap[t.category_id] = t;
+    }
+  });
+
+  // Apply translations and search filter
+  let rows = categories.map(category => {
+    const translation = requestedLangMap[category.id] || englishLangMap[category.id];
+    return {
+      ...category,
+      name: translation?.name || category.slug || '',
+      description: translation?.description || ''
+    };
+  });
+
+  // Apply search filter in JavaScript if provided
+  if (search) {
+    const searchLower = search.toLowerCase();
+    rows = rows.filter(category =>
+      category.name.toLowerCase().includes(searchLower) ||
+      (category.description && category.description.toLowerCase().includes(searchLower))
+    );
+  }
+
+  return { rows, count: count || rows.length };
 }
 
 /**
@@ -123,41 +110,40 @@ async function getCategoriesWithTranslations(storeId, where = {}, lang = 'en', o
  * @returns {Promise<Object|null>} Category with translated fields
  */
 async function getCategoryById(storeId, id, lang = 'en') {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const query = `
-    SELECT
-      c.id,
-      c.slug,
-      c.image_url,
-      c.sort_order,
-      c.is_active,
-      c.hide_in_menu,
-      c.seo,
-      c.store_id,
-      c.parent_id,
-      c.level,
-      c.path,
-      c.product_count,
-      c.created_at,
-      c.updated_at,
-      COALESCE(ct.name, ct_en.name, c.slug) as name,
-      COALESCE(ct.description, ct_en.description) as description
-    FROM categories c
-    LEFT JOIN category_translations ct
-      ON c.id = ct.category_id AND ct.language_code = :lang
-    LEFT JOIN category_translations ct_en
-      ON c.id = ct_en.category_id AND ct_en.language_code = 'en'
-    WHERE c.id = :id
-  `;
+  // Fetch the category
+  const { data: category, error: categoryError } = await tenantDb
+    .from('categories')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-  const results = await sequelize.query(query, {
-    replacements: { id, lang },
-    type: sequelize.QueryTypes.SELECT
-  });
+  if (categoryError || !category) {
+    return null;
+  }
 
-  return results[0] || null;
+  // Fetch translations
+  const { data: translations, error: transError } = await tenantDb
+    .from('category_translations')
+    .select('language_code, name, description')
+    .eq('category_id', id)
+    .in('language_code', [lang, 'en']);
+
+  if (transError) {
+    console.error('Error fetching category translations:', transError);
+  }
+
+  // Apply translation with fallback
+  const requestedLang = translations?.find(t => t.language_code === lang);
+  const englishLang = translations?.find(t => t.language_code === 'en');
+  const translation = requestedLang || englishLang;
+
+  return {
+    ...category,
+    name: translation?.name || category.slug || '',
+    description: translation?.description || ''
+  };
 }
 
 /**
@@ -169,76 +155,58 @@ async function getCategoryById(storeId, id, lang = 'en') {
  * @returns {Promise<Object>} Created category with translations
  */
 async function createCategoryWithTranslations(storeId, categoryData, translations = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
-  const transaction = await sequelize.transaction();
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   try {
     // Insert category
-    const [category] = await sequelize.query(`
-      INSERT INTO categories (
-        id, slug, image_url, sort_order, is_active, hide_in_menu, seo,
-        store_id, parent_id, level, path, product_count,
-        created_at, updated_at
-      ) VALUES (
-        gen_random_uuid(),
-        :slug, :image_url, :sort_order, :is_active, :hide_in_menu, :seo,
-        :store_id, :parent_id, :level, :path, :product_count,
-        NOW(), NOW()
-      )
-      RETURNING *
-    `, {
-      replacements: {
+    const { data: category, error: categoryError } = await tenantDb
+      .from('categories')
+      .insert({
         slug: categoryData.slug,
         image_url: categoryData.image_url || null,
         sort_order: categoryData.sort_order || 0,
         is_active: categoryData.is_active !== false,
         hide_in_menu: categoryData.hide_in_menu || false,
-        seo: JSON.stringify(categoryData.seo || {}),
+        seo: categoryData.seo || {},
         store_id: categoryData.store_id,
         parent_id: categoryData.parent_id || null,
         level: categoryData.level || 0,
         path: categoryData.path || null,
         product_count: categoryData.product_count || 0
-      },
-      type: sequelize.QueryTypes.SELECT,
-      transaction
-    });
+      })
+      .select()
+      .single();
+
+    if (categoryError) {
+      console.error('Error inserting category:', categoryError);
+      throw categoryError;
+    }
 
     // Insert translations
     for (const [langCode, data] of Object.entries(translations)) {
       if (data && Object.keys(data).length > 0) {
-        await sequelize.query(`
-          INSERT INTO category_translations (
-            category_id, language_code, name, description,
-            created_at, updated_at
-          ) VALUES (
-            :category_id, :lang_code, :name, :description,
-            NOW(), NOW()
-          )
-          ON CONFLICT (category_id, language_code) DO UPDATE
-          SET
-            name = EXCLUDED.name,
-            description = EXCLUDED.description,
-            updated_at = NOW()
-        `, {
-          replacements: {
+        const { error: transError } = await tenantDb
+          .from('category_translations')
+          .upsert({
             category_id: category.id,
-            lang_code: langCode,
+            language_code: langCode,
             name: data.name || null,
             description: data.description || null
-          },
-          transaction
-        });
+          }, {
+            onConflict: 'category_id,language_code'
+          });
+
+        if (transError) {
+          console.error('Error upserting category translation:', transError);
+          // Continue with other translations
+        }
       }
     }
-
-    await transaction.commit();
 
     // Return the created category with translations
     return await getCategoryById(storeId, category.id);
   } catch (error) {
-    await transaction.rollback();
+    console.error('Error creating category:', error);
     throw error;
   }
 }
@@ -253,53 +221,35 @@ async function createCategoryWithTranslations(storeId, categoryData, translation
  * @returns {Promise<Object>} Updated category with translations
  */
 async function updateCategoryWithTranslations(storeId, id, categoryData, translations = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
-  const transaction = await sequelize.transaction();
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   try {
-    // Build update fields
-    const updateFields = [];
-    const replacements = { id };
+    // Build update object
+    const updateData = {};
 
-    // Add all possible fields
-    const fieldMappings = {
-      slug: 'slug',
-      image_url: 'image_url',
-      sort_order: 'sort_order',
-      is_active: 'is_active',
-      hide_in_menu: 'hide_in_menu',
-      parent_id: 'parent_id',
-      level: 'level',
-      path: 'path',
-      product_count: 'product_count'
-    };
+    const fields = [
+      'slug', 'image_url', 'sort_order', 'is_active', 'hide_in_menu',
+      'parent_id', 'level', 'path', 'product_count', 'seo'
+    ];
 
-    Object.entries(fieldMappings).forEach(([key, field]) => {
-      if (categoryData[key] !== undefined) {
-        updateFields.push(`${field} = :${key}`);
-        replacements[key] = categoryData[key];
+    fields.forEach(field => {
+      if (categoryData[field] !== undefined) {
+        updateData[field] = categoryData[field];
       }
     });
 
-    // Handle JSON fields separately
-    if (categoryData.seo !== undefined) {
-      updateFields.push('seo = :seo');
-      replacements.seo = JSON.stringify(categoryData.seo);
-    }
-    // Translations handled separately via normalized table (below)
+    if (Object.keys(updateData).length > 0) {
+      updateData.updated_at = new Date().toISOString();
 
-    if (updateFields.length > 0) {
-      updateFields.push('updated_at = NOW()');
+      const { error: updateError } = await tenantDb
+        .from('categories')
+        .update(updateData)
+        .eq('id', id);
 
-      await sequelize.query(`
-        UPDATE categories
-        SET ${updateFields.join(', ')}
-        WHERE id = :id
-      `, {
-        replacements,
-        transaction
-      });
+      if (updateError) {
+        console.error('Error updating category:', updateError);
+        throw updateError;
+      }
     }
 
     // Update translations
@@ -313,39 +263,31 @@ async function updateCategoryWithTranslations(storeId, id, categoryData, transla
           description: data.description ? data.description.substring(0, 50) + '...' : null
         });
 
-        await sequelize.query(`
-          INSERT INTO category_translations (
-            category_id, language_code, name, description,
-            created_at, updated_at
-          ) VALUES (
-            :category_id, :lang_code, :name, :description,
-            NOW(), NOW()
-          )
-          ON CONFLICT (category_id, language_code) DO UPDATE
-          SET
-            name = EXCLUDED.name,
-            description = EXCLUDED.description,
-            updated_at = NOW()
-        `, {
-          replacements: {
+        const { error: transError } = await tenantDb
+          .from('category_translations')
+          .upsert({
             category_id: id,
-            lang_code: langCode,
+            language_code: langCode,
             name: data.name !== undefined ? data.name : null,
-            description: data.description !== undefined ? data.description : null
-          },
-          transaction
-        });
+            description: data.description !== undefined ? data.description : null,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'category_id,language_code'
+          });
+
+        if (transError) {
+          console.error(`      ❌ Error saving ${langCode} translation:`, transError);
+          throw transError;
+        }
 
         console.log(`      ✅ Saved ${langCode} translation to category_translations table`);
       }
     }
 
-    await transaction.commit();
-
     // Return the updated category with translations
     return await getCategoryById(storeId, id);
   } catch (error) {
-    await transaction.rollback();
+    console.error('Error updating category:', error);
     throw error;
   }
 }
@@ -358,78 +300,47 @@ async function updateCategoryWithTranslations(storeId, id, categoryData, transla
  * @returns {Promise<Array>} Categories with all translations nested by language code
  */
 async function getCategoriesWithAllTranslations(storeId, where = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === true || value === false) {
-        return `c.${key} = ${value}`;
-      }
-      if (Array.isArray(value)) {
-        // Handle Op.in case
-        return `c.${key} IN (${value.map(v => `'${v}'`).join(', ')})`;
-      }
-      return `c.${key} = '${value}'`;
-    })
-    .join(' AND ');
+  // Fetch categories
+  let categoriesQuery = tenantDb.from('categories').select('*');
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    if (Array.isArray(value)) {
+      categoriesQuery = categoriesQuery.in(key, value);
+    } else {
+      categoriesQuery = categoriesQuery.eq(key, value);
+    }
+  }
 
-  // Get categories
-  const categoriesQuery = `
-    SELECT
-      c.id,
-      c.slug,
-      c.image_url,
-      c.sort_order,
-      c.is_active,
-      c.hide_in_menu,
-      c.seo,
-      c.store_id,
-      c.parent_id,
-      c.level,
-      c.path,
-      c.product_count,
-      c.created_at,
-      c.updated_at,
-      ct_en.name as name
-    FROM categories c
-    LEFT JOIN category_translations ct_en
-      ON c.id = ct_en.category_id AND ct_en.language_code = 'en'
-    ${whereClause}
-    ORDER BY c.sort_order ASC, c.created_at DESC
-  `;
+  categoriesQuery = categoriesQuery.order('sort_order', { ascending: true }).order('created_at', { ascending: false });
 
-  const categories = await sequelize.query(categoriesQuery, {
-    type: sequelize.QueryTypes.SELECT
-  });
+  const { data: categories, error: categoriesError } = await categoriesQuery;
 
-  // Get all translations for these categories
-  const categoryIds = categories.map(c => c.id);
+  if (categoriesError) {
+    console.error('Error fetching categories:', categoriesError);
+    throw categoriesError;
+  }
 
-  if (categoryIds.length === 0) {
+  if (!categories || categories.length === 0) {
     return [];
   }
 
-  const translationsQuery = `
-    SELECT
-      category_id,
-      language_code,
-      name,
-      description
-    FROM category_translations
-    WHERE category_id IN (:categoryIds)
-  `;
+  // Get all translations for these categories
+  const categoryIds = categories.map(c => c.id);
+  const { data: translations, error: transError } = await tenantDb
+    .from('category_translations')
+    .select('category_id, language_code, name, description')
+    .in('category_id', categoryIds);
 
-  const translations = await sequelize.query(translationsQuery, {
-    replacements: { categoryIds },
-    type: sequelize.QueryTypes.SELECT
-  });
+  if (transError) {
+    console.error('Error fetching category translations:', transError);
+  }
 
   // Group translations by category_id and language_code
   const translationsByCategory = {};
-  translations.forEach(t => {
+  (translations || []).forEach(t => {
     if (!translationsByCategory[t.category_id]) {
       translationsByCategory[t.category_id] = {};
     }
@@ -439,11 +350,17 @@ async function getCategoriesWithAllTranslations(storeId, where = {}) {
     };
   });
 
-  // Attach translations to categories
-  const result = categories.map(category => ({
-    ...category,
-    translations: translationsByCategory[category.id] || {}
-  }));
+  // Get English name for display
+  const result = categories.map(category => {
+    const translations = translationsByCategory[category.id] || {};
+    const englishName = translations.en?.name || category.slug || '';
+
+    return {
+      ...category,
+      name: englishName,
+      translations: translations
+    };
+  });
 
   return result;
 }
@@ -456,15 +373,17 @@ async function getCategoriesWithAllTranslations(storeId, where = {}) {
  * @returns {Promise<boolean>} Success status
  */
 async function deleteCategory(storeId, id) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  await sequelize.query(`
-    DELETE FROM categories WHERE id = :id
-  `, {
-    replacements: { id },
-    type: sequelize.QueryTypes.DELETE
-  });
+  const { error } = await tenantDb
+    .from('categories')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting category:', error);
+    throw error;
+  }
 
   return true;
 }
