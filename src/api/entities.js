@@ -14,15 +14,24 @@ class BaseEntity {
     try {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
-      
+
       // Check authentication status and determine which API to use
       const hasToken = apiClient.getToken();
       const userRole = apiClient.getCurrentUserRole();
       const usePublicAPI = shouldUsePublicAPI(this.endpoint, hasToken, userRole);
 
+      console.log('🔍 BaseEntity.findAll:', {
+        endpoint: this.endpoint,
+        hasToken: !!hasToken,
+        userRole: userRole,
+        usePublicAPI: usePublicAPI,
+        params: params
+      });
+
       let response;
       if (usePublicAPI) {
         // Use public endpoint for endpoints that support it
+        console.log('📞 Using public API for:', this.endpoint);
         response = await apiClient.publicRequest('GET', url);
         
         // Public API usually returns just an array
