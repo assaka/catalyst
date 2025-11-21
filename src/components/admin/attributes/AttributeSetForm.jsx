@@ -101,32 +101,40 @@ export default function AttributeSetForm({ attributeSet, attributes, onSubmit, o
       <div>
         <div className="flex items-center justify-between mb-4">
           <Label>Choose which attributes belong to this set</Label>
-          <Button 
-            type="button" 
-            variant="outline" 
-            size="sm"
-            onClick={handleSelectAll}
-          >
-            {allSelected ? 'Deselect All' : 'Select All'}
-          </Button>
+          {attributes.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSelectAll}
+            >
+              {allSelected ? 'Deselect All' : 'Select All'}
+            </Button>
+          )}
         </div>
-        
+
         <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto border rounded-lg p-4">
-          {attributes.map(attribute => (
-            <div key={attribute.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`attr-${attribute.id}`}
-                checked={formData.attribute_ids.includes(attribute.id)}
-                onCheckedChange={(checked) => handleAttributeChange(attribute.id, checked)}
-              />
-              <Label htmlFor={`attr-${attribute.id}`} className="flex-1">
-                {attribute.name}
-                <Badge variant="outline" className="ml-2 text-xs">
-                  {attribute.type}
-                </Badge>
-              </Label>
+          {attributes.length === 0 ? (
+            <div className="col-span-2 text-center text-gray-500 py-8">
+              No Attributes created yet
             </div>
-          ))}
+          ) : (
+            attributes.map(attribute => (
+              <div key={attribute.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`attr-${attribute.id}`}
+                  checked={formData.attribute_ids.includes(attribute.id)}
+                  onCheckedChange={(checked) => handleAttributeChange(attribute.id, checked)}
+                />
+                <Label htmlFor={`attr-${attribute.id}`} className="flex-1">
+                  {attribute.name}
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    {attribute.type}
+                  </Badge>
+                </Label>
+              </div>
+            ))
+          )}
         </div>
         <p className="text-sm text-gray-500 mt-2">
           Selected: {formData.attribute_ids.length} of {attributes.length} attributes
