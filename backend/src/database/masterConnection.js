@@ -165,12 +165,28 @@ async function closeMasterConnection() {
   }
 }
 
-// Test connection on startup (in development)
-if (process.env.NODE_ENV === 'development') {
-  testMasterConnection().catch(err => {
-    console.error('Master DB connection test failed:', err);
+// Test connection on startup (ALWAYS - even in production, for diagnostics)
+console.log('🔧 Testing master database connection on startup...');
+testMasterConnection()
+  .then(() => {
+    console.log('✅ Master DB connection test PASSED');
+  })
+  .catch(err => {
+    console.error('❌ Master DB connection test FAILED:', err.message);
+    console.error('❌ This will cause job scheduling to fail!');
+
+    // Log connection config (sanitized)
+    const config = masterSequelize.config;
+    console.error('❌ Connection config:', {
+      host: config.host,
+      port: config.port,
+      database: config.database,
+      username: config.username,
+      hasPassword: !!config.password,
+      passwordLength: config.password?.length || 0,
+      dialect: config.dialect
+    });
   });
-}
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
