@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, Search, Plus, Trash2, Globe, Mail, MonitorSmartphone } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
 import FlashMessage from '@/components/storefront/FlashMessage';
+import SaveButton from "@/components/ui/save-button.jsx";
 
 export default function Blacklist() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -421,16 +422,15 @@ export default function Blacklist() {
                                 disabled={savingSettings}
                             />
                         </div>
-
-                        <Button
-                            onClick={handleSaveSettings}
-                            disabled={savingSettings}
-                            className="w-full"
-                        >
-                            {savingSettings ? 'Saving...' : 'Save Settings'}
-                        </Button>
                     </div>
                 </CardContent>
+                <SaveButton
+                    onClick={handleSaveSettings}
+                    loading={saving}
+                    success={saveSuccess}
+                    defaultText="Save Settings"
+                    className="w-full sm:w-auto"
+                />
             </Card>
 
             {/* Tabs */}
