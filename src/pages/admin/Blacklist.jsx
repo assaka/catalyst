@@ -424,11 +424,10 @@ export default function Blacklist() {
                         </div>
                     </div>
                 </CardContent>
-                <div className="flex justify-end mt-8">
+                <div className="flex justify-end p-6">
                     <SaveButton
                         onClick={handleSaveSettings}
-                        loading={loading}
-                        success={saveSuccess}
+                        loading={savingSettings}
                         defaultText="Save Settings"
                     />
                 </div>

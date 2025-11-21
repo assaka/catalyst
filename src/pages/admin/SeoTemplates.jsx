@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Plus, Trash2, Loader2, Info, ChevronDown, ChevronUp, Edit, X, ChevronsUpDown, Check } from "lucide-react";
+import { FileText, Plus, Trash2, Loader2, Info, ChevronDown, ChevronUp, Edit, X, ChevronsUpDown, Check, Save } from "lucide-react";
+import SaveButton from "@/components/ui/save-button.jsx";
 import { SeoTemplate, Category, AttributeSet, Attribute } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
@@ -763,28 +764,13 @@ export default function SeoTemplates() {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleAddTemplate} disabled={saving}>
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {editingTemplate ? 'Updating...' : 'Adding...'}
-                  </>
-                ) : (
-                  <>
-                    {editingTemplate ? (
-                      <>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Update Template
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Template
-                      </>
-                    )}
-                  </>
-                )}
-              </Button>
+              <SaveButton
+                onClick={handleAddTemplate}
+                loading={saving}
+                defaultText={editingTemplate ? "Update Template" : "Add Template"}
+                loadingText={editingTemplate ? "Updating..." : "Adding..."}
+                icon={editingTemplate ? <Edit className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+              />
               {editingTemplate && (
                 <Button variant="outline" onClick={handleCancelEdit} disabled={saving}>
                   <X className="h-4 w-4 mr-2" />
