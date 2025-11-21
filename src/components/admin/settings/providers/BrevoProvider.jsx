@@ -28,6 +28,7 @@ export default function BrevoProvider({
   const [senderName, setSenderName] = useState('');
   const [senderEmail, setSenderEmail] = useState('');
   const [showConfig, setShowConfig] = useState(false);
+  const [ipWhitelistError, setIpWhitelistError] = useState(null);
 
   useEffect(() => {
     loadConnectionStatus();
@@ -82,17 +83,31 @@ export default function BrevoProvider({
     }
 
     setSaving(true);
+    setIpWhitelistError(null); // Clear any previous errors
     try {
       const response = await brevoAPI.saveConfiguration(storeId, apiKey, senderName, senderEmail);
       if (response.success) {
         onFlashMessage({ type: 'success', message: 'Brevo configured successfully!' });
         setShowConfig(false);
         setApiKey('');
+        setIpWhitelistError(null);
         loadConnectionStatus();
       }
     } catch (error) {
       console.error('Save config error:', error);
-      onFlashMessage({ type: 'error', message: error.message || 'Failed to save configuration' });
+
+      // Check if this is an IP whitelist error
+      const errorMsg = error.message || 'Failed to save configuration';
+      if (errorMsg.includes('IP address not whitelisted')) {
+        // Extract IP address from error message
+        const ipMatch = errorMsg.match(/IP address not whitelisted: (\d+\.\d+\.\d+\.\d+)/);
+        const serverIp = ipMatch ? ipMatch[1] : null;
+        setIpWhitelistError({ message: errorMsg, serverIp });
+      } else {
+        setIpWhitelistError(null);
+      }
+
+      onFlashMessage({ type: 'error', message: errorMsg });
     } finally {
       setSaving(false);
     }
@@ -357,6 +372,63 @@ export default function BrevoProvider({
               </div>
             </div>
 
+            {/* IP Whitelist Error Warning */}
+            {ipWhitelistError && (
+              <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
+                <div className="flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-700 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-2 flex-1">
+                    <p className="font-medium text-yellow-900">IP Address Not Whitelisted</p>
+                    <p className="text-sm text-yellow-800">
+                      Your server's IP address needs to be added to Brevo's authorized IP list:
+                    </p>
+                    {ipWhitelistError.serverIp && (
+                      <div className="bg-white border border-yellow-200 rounded p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <p className="text-xs text-gray-600 mb-1">Server IP Address:</p>
+                            <p className="text-base font-mono font-semibold text-gray-900">
+                              {ipWhitelistError.serverIp}
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(ipWhitelistError.serverIp);
+                              onFlashMessage({ type: 'success', message: 'IP address copied to clipboard!' });
+                            }}
+                            className="text-xs"
+                          >
+                            Copy IP
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    <div className="space-y-2 text-sm">
+                      <p className="font-medium text-yellow-900">To fix this:</p>
+                      <ol className="list-decimal list-inside space-y-1 ml-2">
+                        <li>
+                          Visit{' '}
+                          <a
+                            href="https://app.brevo.com/security/authorised_ips"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline font-medium"
+                          >
+                            Brevo Security Settings
+                            <ExternalLink className="w-3 h-3 inline ml-1" />
+                          </a>
+                        </li>
+                        <li>Add the IP address above to the authorized list</li>
+                        <li>Click "Save Configuration" again</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-2">
               <Button
                 onClick={handleSaveConfiguration}
@@ -370,6 +442,7 @@ export default function BrevoProvider({
                 onClick={() => {
                   setShowConfig(false);
                   setApiKey('');
+                  setIpWhitelistError(null);
                 }}
               >
                 Cancel
