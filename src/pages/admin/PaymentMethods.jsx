@@ -23,6 +23,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { CountrySelect } from "@/components/ui/country-select";
 import TranslationFields from "@/components/admin/TranslationFields";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function PaymentMethods() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -36,6 +37,9 @@ export default function PaymentMethods() {
   const [showForm, setShowForm] = useState(false);
   const [editingMethod, setEditingMethod] = useState(null);
   const [showTranslations, setShowTranslations] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [methodToDelete, setMethodToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Conditions data
   const [categories, setCategories] = useState([]);
@@ -258,15 +262,26 @@ export default function PaymentMethods() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this payment method?')) {
-      try {
-        await PaymentMethod.delete(id);
-        setFlashMessage({ type: 'success', message: 'Payment method deleted successfully!' });
-        loadPaymentMethods();
-      } catch (error) {
-        setFlashMessage({ type: 'error', message: 'Failed to delete payment method' });
-      }
+  const handleDelete = (method) => {
+    setMethodToDelete(method);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!methodToDelete) return;
+
+    setDeleting(true);
+    try {
+      await PaymentMethod.delete(methodToDelete.id);
+      setFlashMessage({ type: 'success', message: 'Payment method deleted successfully!' });
+      await loadPaymentMethods();
+      setDeleteDialogOpen(false);
+      setMethodToDelete(null);
+    } catch (error) {
+      console.error("Error deleting payment method:", error);
+      setFlashMessage({ type: 'error', message: 'Failed to delete payment method' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -626,7 +641,7 @@ export default function PaymentMethods() {
                     <Button variant="outline" size="sm" onClick={() => handleEdit(method)}>
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDelete(method.id)}>
+                    <Button variant="outline" size="sm" onClick={() => handleDelete(method)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -1157,6 +1172,15 @@ export default function PaymentMethods() {
             </div>
           </div>
         )}
+
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={confirmDelete}
+          title="Delete Payment Method"
+          description={`Are you sure you want to delete "${methodToDelete?.name}"? This action cannot be undone.`}
+          loading={deleting}
+        />
       </div>
     </div>
   );

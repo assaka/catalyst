@@ -462,7 +462,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>Applicable Categories</Label>
+            <Label>Categories</Label>
             <MultiSelect
               options={categoryOptions}
               value={formData.applicable_categories}
@@ -472,7 +472,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
           </div>
 
           <div>
-            <Label>Applicable Attribute Sets</Label>
+            <Label>Attribute Sets</Label>
             <MultiSelect
               options={attributeSetOptions}
               value={formData.applicable_attribute_sets}
@@ -482,7 +482,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
           </div>
 
           <div>
-            <Label>Applicable Attributes</Label>
+            <Label>Attributes</Label>
             <MultiSelect
               options={attributeOptions}
               value={formData.applicable_attributes}
@@ -492,7 +492,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
           </div>
 
           <div>
-            <Label>Applicable Products</Label>
+            <Label>Products</Label>
             <MultiSelect
               options={productOptions}
               value={formData.applicable_products}
@@ -502,7 +502,7 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
           </div>
 
           <div>
-            <Label htmlFor="applicable_skus">Applicable SKUs (comma-separated)</Label>
+            <Label htmlFor="applicable_skus">SKUs (comma-separated)</Label>
             <Input
               id="applicable_skus"
               value={formData.applicable_skus.join(', ')}

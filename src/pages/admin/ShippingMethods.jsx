@@ -7,7 +7,6 @@ import {
   Truck,
   Plus,
   Search,
-  ChevronDown,
   Edit,
   Trash2
 } from "lucide-react";
@@ -15,12 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +23,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 import ShippingMethodForm from "@/components/admin/shipping/ShippingMethodForm";
 
@@ -53,6 +47,9 @@ export default function ShippingMethodsPage() {
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [methodToDelete, setMethodToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   // Local state for store settings to avoid reload on changes
   const [localStoreSettings, setLocalStoreSettings] = useState(selectedStore?.settings || {});
 
@@ -195,11 +192,26 @@ export default function ShippingMethodsPage() {
     setShowForm(true);
   };
 
-  const handleDelete = async (methodId) => {
-    if (window.confirm("Are you sure you want to delete this shipping method?")) {
-      await ShippingMethod.delete(methodId);
+  const handleDelete = (method) => {
+    setMethodToDelete(method);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!methodToDelete) return;
+
+    setDeleting(true);
+    try {
+      await ShippingMethod.delete(methodToDelete.id);
       await loadData();
-      setFlashMessage({ type: 'success', message: 'Shipping method deleted.' });
+      setFlashMessage({ type: 'success', message: 'Shipping method deleted successfully!' });
+      setDeleteDialogOpen(false);
+      setMethodToDelete(null);
+    } catch (error) {
+      console.error("Error deleting shipping method:", error);
+      setFlashMessage({ type: 'error', message: 'Failed to delete shipping method.' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -271,40 +283,32 @@ export default function ShippingMethodsPage() {
             ) : filteredMethods.length > 0 ? (
               <div className="space-y-4">
                 {filteredMethods.map((method) => (
-                  <Card key={method.id} className="p-4 flex justify-between items-center">
-                    <div className="flex items-center space-x-4">
-                      <Truck className="w-8 h-8 text-gray-500" />
-                      <div>
-                        <h3 className="font-semibold text-lg">{method.name}</h3>
-                        <div className="flex items-center space-x-2 text-sm text-gray-600">
-                          <Badge variant={method.is_active ? "default" : "secondary"}>
-                            {method.is_active ? "Active" : "Inactive"}
-                          </Badge>
-                          <span>•</span>
-                          <span>
-                            {getMethodDescription(method)}
-                          </span>
+                  <Card key={method.id} className="p-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-4">
+                        <Truck className="w-8 h-8 text-gray-500" />
+                        <div>
+                          <h3 className="font-semibold text-lg">{method.name}</h3>
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <Badge variant={method.is_active ? "default" : "secondary"}>
+                              {method.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                            <span>•</span>
+                            <span>
+                              {getMethodDescription(method)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <ChevronDown className="w-5 h-5" />
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(method)}>
+                          <Edit className="w-4 h-4" />
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => handleEdit(method)}>
-                          <Edit className="w-4 h-4 mr-2" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(method.id)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        <Button variant="outline" size="sm" onClick={() => handleDelete(method)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </Card>
                 ))}
               </div>
@@ -333,6 +337,15 @@ export default function ShippingMethodsPage() {
             />
           </DialogContent>
         </Dialog>
+
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={confirmDelete}
+          title="Delete Shipping Method"
+          description={`Are you sure you want to delete "${methodToDelete?.name}"? This action cannot be undone.`}
+          loading={deleting}
+        />
       </div>
     </div>
   );

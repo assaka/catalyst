@@ -29,6 +29,7 @@ import { formatPrice } from "@/utils/priceUtils";
 
 import CouponForm from "@/components/admin/coupons/CouponForm";
 import FlashMessage from "@/components/storefront/FlashMessage";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function CouponsPage() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -40,6 +41,9 @@ export default function CouponsPage() {
   const [editingCoupon, setEditingCoupon] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [couponToDelete, setCouponToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (selectedStore) {
@@ -129,16 +133,26 @@ export default function CouponsPage() {
     }
   };
 
-  const handleDeleteCoupon = async (couponId) => {
-    if (window.confirm("Are you sure you want to delete this coupon?")) {
-      try {
-        await Coupon.delete(couponId);
-        await loadData();
-        setFlashMessage({ type: 'success', message: 'Coupon deleted successfully!' });
-      } catch (error) {
-        console.error("Error deleting coupon:", error);
-        setFlashMessage({ type: 'error', message: 'Failed to delete coupon' });
-      }
+  const handleDeleteCoupon = (coupon) => {
+    setCouponToDelete(coupon);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!couponToDelete) return;
+
+    setDeleting(true);
+    try {
+      await Coupon.delete(couponToDelete.id);
+      await loadData();
+      setFlashMessage({ type: 'success', message: 'Coupon deleted successfully!' });
+      setDeleteDialogOpen(false);
+      setCouponToDelete(null);
+    } catch (error) {
+      console.error("Error deleting coupon:", error);
+      setFlashMessage({ type: 'error', message: 'Failed to delete coupon' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -275,7 +289,7 @@ export default function CouponsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDeleteCoupon(coupon.id)}
+                      onClick={() => handleDeleteCoupon(coupon)}
                       className="text-red-600 hover:text-red-800"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -386,6 +400,15 @@ export default function CouponsPage() {
             />
           </DialogContent>
         </Dialog>
+
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={confirmDelete}
+          title="Delete Coupon"
+          description={`Are you sure you want to delete the coupon "${couponToDelete?.code}"? This action cannot be undone.`}
+          loading={deleting}
+        />
       </div>
     </div>
   );
