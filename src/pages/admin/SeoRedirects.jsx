@@ -92,14 +92,31 @@ export default function SeoRedirects() {
         is_active: true
       });
 
-      toast.success('Redirect added successfully');
+      toast.success('Redirect added successfully!', {
+        style: {
+          background: '#10B981',
+          color: 'white',
+          fontWeight: '500'
+        },
+        duration: 3000
+      });
       setFromUrl('');
       setToUrl('');
       setRedirectType('301');
       await loadRedirects();
     } catch (error) {
       console.error('Error adding redirect:', error);
-      toast.error('Failed to add redirect');
+
+      // Check if it's a duplicate URL error (409 Conflict)
+      if (error.response?.status === 409) {
+        toast.error(error.response.data.message || 'This redirect already exists', {
+          duration: 5000
+        });
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to add redirect');
+      }
     } finally {
       setLoading(false);
     }

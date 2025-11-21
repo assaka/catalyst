@@ -199,10 +199,32 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Normalize URLs to ensure relative URLs start with /
+    const normalizedFromUrl = normalizeUrl(req.body.from_url);
+    const normalizedToUrl = normalizeUrl(req.body.to_url);
+
+    // Check if redirect with same from_url already exists
+    const { data: existingRedirect, error: checkError } = await tenantDb
+      .from('redirects')
+      .select('*')
+      .eq('store_id', store_id)
+      .eq('from_url', normalizedFromUrl)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      throw checkError;
+    }
+
+    if (existingRedirect) {
+      return res.status(409).json({
+        success: false,
+        message: `A redirect from "${normalizedFromUrl}" already exists. Please use a different "From URL" or delete the existing redirect first.`
+      });
+    }
+
     const redirectData = {
       ...req.body,
-      from_url: normalizeUrl(req.body.from_url),
-      to_url: normalizeUrl(req.body.to_url)
+      from_url: normalizedFromUrl,
+      to_url: normalizedToUrl
     };
 
     const { data: redirect, error } = await tenantDb
