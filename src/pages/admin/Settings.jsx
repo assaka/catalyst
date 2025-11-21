@@ -85,9 +85,17 @@ export default function Settings() {
       let freshStoreData = null;
       try {
         const storeResponse = await retryApiCall(() => Store.findById(selectedStore.id));
-        // The API returns { success: true, data: store }
+        // The API returns { success: true, data: { store: {...}, tenantData: {...} } }
         if (storeResponse && storeResponse.success && storeResponse.data) {
-          freshStoreData = storeResponse.data;
+          // Use tenantData which contains the full store record from tenant DB
+          if (storeResponse.data.tenantData) {
+            freshStoreData = storeResponse.data.tenantData;
+          } else if (storeResponse.data.store) {
+            // Fallback to master store data if tenantData not available
+            freshStoreData = { ...selectedStore, ...storeResponse.data.store };
+          } else {
+            freshStoreData = storeResponse.data;
+          }
         } else if (storeResponse && storeResponse.id) {
           // Direct store object
           freshStoreData = storeResponse;
@@ -99,6 +107,7 @@ export default function Settings() {
           freshStoreData = selectedStore;
         }
       } catch (error) {
+        console.error('Error fetching store data:', error);
         freshStoreData = selectedStore;
       }
 
