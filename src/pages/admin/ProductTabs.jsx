@@ -25,6 +25,16 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import FlashMessage from "@/components/storefront/FlashMessage";
 import ProductTabForm from "@/components/admin/products/ProductTabForm";
@@ -44,6 +54,8 @@ export default function ProductTabs() {
   const [editingTab, setEditingTab] = useState(null); // Renamed from selectedTab
   const [showForm, setShowForm] = useState(false); // Renamed from showTabForm
   const [flashMessage, setFlashMessage] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [tabToDelete, setTabToDelete] = useState(null);
 
   useEffect(() => {
     if (selectedStore) {
@@ -177,19 +189,27 @@ export default function ProductTabs() {
     setShowForm(true);
   };
 
-  const handleDeleteTab = async (tabId) => {
-    if (window.confirm("Are you sure you want to delete this product tab?")) {
-      try {
-        await ProductTab.delete(tabId);
-        await loadData(); // Reload data after deletion
-        // Clear storefront cache for instant updates
-        const storeId = getSelectedStoreId();
-        if (storeId) clearAllCache(storeId);
-        setFlashMessage({ type: 'success', message: 'Product tab deleted successfully!' });
-      } catch (error) {
-        console.error("Error deleting tab:", error);
-        setFlashMessage({ type: 'error', message: 'Failed to delete product tab' });
-      }
+  const handleDeleteTab = (tab) => {
+    setTabToDelete(tab);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!tabToDelete) return;
+
+    try {
+      await ProductTab.delete(tabToDelete.id);
+      await loadData(); // Reload data after deletion
+      // Clear storefront cache for instant updates
+      const storeId = getSelectedStoreId();
+      if (storeId) clearAllCache(storeId);
+      setFlashMessage({ type: 'success', message: 'Product tab deleted successfully!' });
+    } catch (error) {
+      console.error("Error deleting tab:", error);
+      setFlashMessage({ type: 'error', message: 'Failed to delete product tab' });
+    } finally {
+      setDeleteDialogOpen(false);
+      setTabToDelete(null);
     }
   };
 
@@ -333,7 +353,7 @@ export default function ProductTabs() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDeleteTab(tab.id)}
+                      onClick={() => handleDeleteTab(tab)}
                       className="text-red-600 hover:text-red-800"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -466,6 +486,32 @@ export default function ProductTabs() {
             />
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Product Tab</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete the product tab "{tabToDelete?.name}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setDeleteDialogOpen(false);
+                setTabToDelete(null);
+              }}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
