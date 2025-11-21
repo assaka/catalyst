@@ -200,18 +200,31 @@ class BackgroundJobManager extends EventEmitter {
     const scheduledAt = new Date(Date.now() + delay);
 
     // Create job record in database (source of truth)
-    const job = await Job.create({
-      type,
-      payload,
-      priority,
-      status: 'pending',
-      scheduled_at: scheduledAt,
-      max_retries: maxRetries,
-      retry_count: 0,
-      store_id: storeId,
-      user_id: userId,
-      metadata
-    });
+    let job;
+    try {
+      job = await Job.create({
+        type,
+        payload,
+        priority,
+        status: 'pending',
+        scheduled_at: scheduledAt,
+        max_retries: maxRetries,
+        retry_count: 0,
+        store_id: storeId,
+        user_id: userId,
+        metadata
+      });
+    } catch (error) {
+      console.error('❌ Failed to create job in database:', error.message);
+      console.error('Database error details:', {
+        error: error.name,
+        message: error.message,
+        code: error.code,
+        type: type,
+        storeId: storeId
+      });
+      throw new Error(`Failed to schedule job: ${error.message}`);
+    }
 
     // If BullMQ is available, add to persistent queue
     if (this.useBullMQ) {
