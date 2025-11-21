@@ -264,7 +264,7 @@ router.delete('/:id', authMiddleware, storeResolver(), async (req, res) => {
 });
 
 /**
- * Check and update SSL status from Vercel
+ * Check and update SSL status (uses OpenSSL or Vercel API)
  */
 router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) => {
   try {
@@ -285,43 +285,84 @@ router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) 
       });
     }
 
+    let sslStatus = null;
+    let sslIssuer = null;
+    let checkMethod = 'openssl';
+
+    // Try Vercel API first (if configured)
     const vercelService = require('../services/vercel-domain-service');
-
-    if (!vercelService.isConfigured()) {
-      return res.status(503).json({
-        success: false,
-        message: 'Vercel API not configured. SSL status cannot be checked automatically.'
-      });
-    }
-
-    // Get SSL status from Vercel
-    const sslStatus = await vercelService.checkSSLStatus(domain.domain);
-
-    if (sslStatus.success) {
-      // Update domain SSL status
-      const { data: updatedDomain, error: updateError } = await tenantDb
-        .from('custom_domains')
-        .update({
-          ssl_status: sslStatus.ssl_status,
-          ssl_issued_at: sslStatus.ssl_status === 'active' ? new Date().toISOString() : null
-        })
-        .eq('id', req.params.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        throw updateError;
+    if (vercelService.isConfigured()) {
+      try {
+        const vercelResult = await vercelService.checkSSLStatus(domain.domain);
+        if (vercelResult.success) {
+          sslStatus = vercelResult.ssl_status;
+          checkMethod = 'vercel-api';
+        }
+      } catch (err) {
+        console.warn('Vercel API check failed, falling back to OpenSSL:', err.message);
       }
-
-      return res.json({
-        success: true,
-        ssl_status: sslStatus.ssl_status,
-        message: sslStatus.message,
-        domain: updatedDomain
-      });
-    } else {
-      return res.json(sslStatus);
     }
+
+    // Fallback to OpenSSL check (works without any API keys)
+    if (!sslStatus) {
+      try {
+        const { exec } = require('child_process');
+        const { promisify } = require('util');
+        const execAsync = promisify(exec);
+
+        const { stdout } = await execAsync(
+          `echo | openssl s_client -connect ${domain.domain}:443 -servername ${domain.domain} 2>&1 | grep -E "(subject|issuer|Verify return code)"`,
+          { timeout: 10000 }
+        );
+
+        // Check if certificate is valid
+        if (stdout.includes('Verify return code: 0')) {
+          sslStatus = 'active';
+          // Extract issuer
+          const issuerMatch = stdout.match(/issuer=(.+)/);
+          if (issuerMatch) {
+            sslIssuer = issuerMatch[1].trim();
+          }
+        } else if (stdout.includes('Verify return code:')) {
+          sslStatus = 'error';
+        } else {
+          sslStatus = 'pending';
+        }
+      } catch (err) {
+        console.error('OpenSSL check failed:', err.message);
+        sslStatus = 'pending';
+      }
+    }
+
+    // Update domain SSL status
+    const { data: updatedDomain, error: updateError } = await tenantDb
+      .from('custom_domains')
+      .update({
+        ssl_status: sslStatus,
+        ssl_issued_at: sslStatus === 'active' ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    const message = sslStatus === 'active'
+      ? `SSL certificate is active${sslIssuer ? ` (${sslIssuer})` : ''}`
+      : sslStatus === 'pending'
+      ? 'SSL certificate is being provisioned. This can take 5-30 minutes.'
+      : 'SSL certificate verification failed';
+
+    return res.json({
+      success: true,
+      ssl_status: sslStatus,
+      message: message,
+      check_method: checkMethod,
+      domain: updatedDomain
+    });
   } catch (error) {
     console.error('Error checking SSL status:', error);
     res.status(500).json({
