@@ -42,43 +42,24 @@ router.get('/', cacheMiddleware({
       });
     }
 
-    // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const {
-      Product,
-      Attribute,
-      AttributeSet,
-      ProductLabel,
-      ProductTab,
-      Tax,
-      ShippingMethod,
-      PaymentMethod,
-      DeliverySettings,
-      CmsBlock
-    } = connection.models;
+    // Get tenant connection (Supabase client)
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     let pageData = {};
 
     switch (page_type) {
       case 'product':
         // Product page needs: attributes, attribute sets, labels, tabs
-        const [attributes, attributeSets, productLabels, productTabs] = await Promise.all([
-          Attribute.findAll({
-            where: { store_id },
-            order: [['name', 'ASC']]
-          }),
-          AttributeSet.findAll({
-            where: { store_id },
-            order: [['name', 'ASC']]
-          }),
-          ProductLabel.findAll({
-            where: { store_id, is_active: true },
-            order: [['name', 'ASC']]
-          }),
-          ProductTab.findAll({
-            where: { store_id, is_active: true },
-            order: [['sort_order', 'ASC']]
-          })
+        const [
+          { data: attributes },
+          { data: attributeSets },
+          { data: productLabels },
+          { data: productTabs }
+        ] = await Promise.all([
+          tenantDb.from('attributes').select('*').eq('store_id', store_id).order('name', { ascending: true }),
+          tenantDb.from('attribute_sets').select('*').eq('store_id', store_id).order('name', { ascending: true }),
+          tenantDb.from('product_labels').select('*').eq('store_id', store_id).eq('is_active', true).order('name', { ascending: true }),
+          tenantDb.from('product_tabs').select('*').eq('store_id', store_id).eq('is_active', true).order('sort_order', { ascending: true })
         ]);
 
         pageData = {
@@ -91,15 +72,12 @@ router.get('/', cacheMiddleware({
 
       case 'category':
         // Category page needs: filterable attributes, labels
-        const [filterableAttributes, categoryLabels] = await Promise.all([
-          Attribute.findAll({
-            where: { store_id, is_filterable: true },
-            order: [['name', 'ASC']]
-          }),
-          ProductLabel.findAll({
-            where: { store_id, is_active: true },
-            order: [['name', 'ASC']]
-          })
+        const [
+          { data: filterableAttributes },
+          { data: categoryLabels }
+        ] = await Promise.all([
+          tenantDb.from('attributes').select('*').eq('store_id', store_id).eq('is_filterable', true).order('name', { ascending: true }),
+          tenantDb.from('product_labels').select('*').eq('store_id', store_id).eq('is_active', true).order('name', { ascending: true })
         ]);
 
         pageData = {
@@ -109,24 +87,21 @@ router.get('/', cacheMiddleware({
         break;
 
       case 'cart':
-        // Cart page needs: cart slot config, taxes
+        // Cart page needs: taxes
         try {
-          const [cartSlotConfig, cartTaxes] = await Promise.all([
-            SlotConfiguration.findLatestPublished(store_id, 'cart').catch(() => null),
-            Tax.findAll({
-              where: { store_id, is_active: true },
-              order: [['name', 'ASC']]
-            })
-          ]);
+          const { data: cartTaxes } = await tenantDb
+            .from('taxes')
+            .select('*')
+            .eq('store_id', store_id)
+            .eq('is_active', true)
+            .order('name', { ascending: true });
 
           pageData = {
-            cartSlotConfig: cartSlotConfig,
             taxes: cartTaxes || []
           };
         } catch (cartError) {
           console.error('Cart bootstrap error:', cartError);
           pageData = {
-            cartSlotConfig: null,
             taxes: []
           };
         }
@@ -134,23 +109,16 @@ router.get('/', cacheMiddleware({
 
       case 'checkout':
         // Checkout page needs: taxes, shipping, payment, delivery settings
-        const [taxes, shippingMethods, paymentMethods, deliverySettings] = await Promise.all([
-          Tax.findAll({
-            where: { store_id, is_active: true },
-            order: [['name', 'ASC']]
-          }),
-          ShippingMethod.findAll({
-            where: { store_id, is_active: true },
-            order: [['sort_order', 'ASC']]
-          }),
-          PaymentMethod.findAll({
-            where: { store_id, is_active: true },
-            order: [['sort_order', 'ASC']]
-          }),
-          DeliverySettings.findAll({
-            where: { store_id }
-            // Note: DeliverySettings doesn't have sort_order column
-          })
+        const [
+          { data: taxes },
+          { data: shippingMethods },
+          { data: paymentMethods },
+          { data: deliverySettings }
+        ] = await Promise.all([
+          tenantDb.from('taxes').select('*').eq('store_id', store_id).eq('is_active', true).order('name', { ascending: true }),
+          tenantDb.from('shipping_methods').select('*').eq('store_id', store_id).eq('is_active', true).order('sort_order', { ascending: true }),
+          tenantDb.from('payment_methods').select('*').eq('store_id', store_id).eq('is_active', true).order('sort_order', { ascending: true }),
+          tenantDb.from('delivery_settings').select('*').eq('store_id', store_id)
         ]);
 
         pageData = {
@@ -164,21 +132,17 @@ router.get('/', cacheMiddleware({
       case 'homepage':
         // Homepage needs: featured products, CMS blocks
         try {
-          const [featuredProducts, cmsBlocks] = await Promise.all([
-            Product.findAll({
-              where: { store_id, is_featured: true, is_active: true },
-              limit: 12,
-              order: [['created_at', 'DESC']]
-            }),
-            CmsBlock.findAll({
-              where: { store_id, is_active: true },
-              order: [['sort_order', 'ASC']]
-            })
+          const [
+            { data: featuredProducts },
+            { data: cmsBlocks }
+          ] = await Promise.all([
+            tenantDb.from('products').select('*').eq('store_id', store_id).eq('is_featured', true).eq('is_active', true).order('created_at', { ascending: false }).limit(12),
+            tenantDb.from('cms_blocks').select('*').eq('store_id', store_id).eq('is_active', true).order('sort_order', { ascending: true })
           ]);
 
           // Apply translations if products exist
           const translatedProducts = featuredProducts && featuredProducts.length > 0
-            ? await applyProductTranslationsToMany(featuredProducts, language)
+            ? await applyProductTranslationsToMany(featuredProducts, language, tenantDb)
             : [];
 
           pageData = {
