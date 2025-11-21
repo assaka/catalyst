@@ -300,18 +300,39 @@ router.post('/ai-translate-entity', authMiddleware, async (req, res) => {
       });
     }
 
-    const Model = connection.models[modelName];
-    if (!Model) {
+    // Map model names to table names (only for non-special entities)
+    const tableMap = {
+      'Product': 'products',
+      'Category': 'categories',
+      'CmsPage': 'cms_pages',
+      'CmsBlock': 'cms_blocks',
+      'ProductTab': 'product_tabs',
+      'ProductLabel': 'product_labels',
+      'Attribute': 'attributes',
+      'AttributeValue': 'attribute_values',
+      'EmailTemplate': 'email_templates',
+      'PdfTemplate': 'pdf_templates',
+      'CookieConsentSettings': 'cookie_consent_settings',
+      'Store': 'stores'
+    };
+
+    const tableName = tableMap[modelName];
+    if (!tableName) {
+      // Note: custom_option and stock_labels don't use tables - they're handled specially
       return res.status(500).json({
         success: false,
-        message: `Model ${modelName} not found in tenant database`
+        message: `Table mapping not found for model: ${modelName}. Entity type may require special handling.`
       });
     }
 
     // Get the entity to count translatable fields
-    const entityData = await Model.findByPk(entityId);
+    const { data: entityData, error: entityError } = await connection
+      .from(tableName)
+      .select('*')
+      .eq('id', entityId)
+      .maybeSingle();
 
-    if (!entityData || !entityData.translations || !entityData.translations[fromLang]) {
+    if (entityError || !entityData || !entityData.translations || !entityData.translations[fromLang]) {
       return res.status(404).json({
         success: false,
         message: 'Source translation not found'
@@ -399,13 +420,16 @@ router.post('/auto-translate-ui-label', authMiddleware, async (req, res) => {
 
     // Get tenant connection for language lookup
     const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { Language } = connection.models;
 
     // Get all active languages from tenant DB
-    const languages = await Language.findAll({
-      where: { is_active: true },
-      attributes: ['code', 'name']
-    });
+    const { data: languages, error: langError } = await connection
+      .from('languages')
+      .select('code, name')
+      .eq('is_active', true);
+
+    if (langError) {
+      throw langError;
+    }
 
     const results = [];
     const errors = [];
@@ -926,21 +950,34 @@ router.get('/entity/:type/:id', async (req, res) => {
       });
     }
 
-    const Model = connection.models[modelName];
-    if (!Model) {
+    // Map model names to table names
+    const tableMap = {
+      'Product': 'products',
+      'Category': 'categories',
+      'Attribute': 'attributes',
+      'CmsPage': 'cms_pages',
+      'CmsBlock': 'cms_blocks',
+      'EmailTemplate': 'email_templates',
+      'PdfTemplate': 'pdf_templates'
+    };
+
+    const tableName = tableMap[modelName];
+    if (!tableName) {
       return res.status(500).json({
         success: false,
-        message: `Model ${modelName} not found in tenant database`
+        message: `Table mapping not found for model: ${modelName}`
       });
     }
 
     if (lang) {
       // Get specific language translation
-      const entity = await Model.findByPk(id, {
-        attributes: ['id', 'translations']
-      });
+      const { data: entity, error: entityError } = await connection
+        .from(tableName)
+        .select('id, translations')
+        .eq('id', id)
+        .maybeSingle();
 
-      if (!entity) {
+      if (entityError || !entity) {
         return res.status(404).json({
           success: false,
           message: `${type} not found`
@@ -1582,21 +1619,19 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
 
     // Get tenant connection for store-specific entities
     const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue, Store, EmailTemplate, PdfTemplate } = connection.models;
-    const tenantSequelize = connection.sequelize;
 
     const entityTypeMap = {
-      category: { model: Category, name: 'Categories' },
-      product: { model: Product, name: 'Products' },
-      attribute: { model: Attribute, name: 'Attributes' },
-      cms_page: { model: CmsPage, name: 'CMS Pages' },
-      cms_block: { model: CmsBlock, name: 'CMS Blocks' },
-      product_tab: { model: ProductTab, name: 'Product Tabs' },
-      product_label: { model: ProductLabel, name: 'Product Labels' },
-      cookie_consent: { model: CookieConsentSettings, name: 'Cookie Consent' },
-      attribute_value: { model: AttributeValue, name: 'Attribute Values', special: true },
-      'email-template': { model: EmailTemplate, name: 'Email Templates' },
-      'pdf-template': { model: PdfTemplate, name: 'PDF Templates' },
+      category: { tableName: 'categories', name: 'Categories' },
+      product: { tableName: 'products', name: 'Products' },
+      attribute: { tableName: 'attributes', name: 'Attributes' },
+      cms_page: { tableName: 'cms_pages', name: 'CMS Pages' },
+      cms_block: { tableName: 'cms_blocks', name: 'CMS Blocks' },
+      product_tab: { tableName: 'product_tabs', name: 'Product Tabs' },
+      product_label: { tableName: 'product_labels', name: 'Product Labels' },
+      cookie_consent: { tableName: 'cookie_consent_settings', name: 'Cookie Consent' },
+      attribute_value: { tableName: 'attribute_values', name: 'Attribute Values', special: true },
+      'email-template': { tableName: 'email_templates', name: 'Email Templates' },
+      'pdf-template': { tableName: 'pdf_templates', name: 'PDF Templates' },
       custom_option: { name: 'Custom Options', special: true, useJsonTranslations: true },
       stock_labels: { name: 'Stock Labels', special: true, storeSettings: true }
     };
@@ -1615,12 +1650,20 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
       }
 
       try {
-        const count = await entityConfig.model.count({ where: { store_id } });
-        entityCounts[entityType] = count;
+        const { count, error: countError } = await connection
+          .from(entityConfig.tableName)
+          .select('*', { count: 'exact', head: true })
+          .eq('store_id', store_id);
+
+        if (countError) {
+          throw countError;
+        }
+
+        entityCounts[entityType] = count || 0;
         const costPerItem = await translationService.getTranslationCost(entityType);
-        const typeCost = count * costPerItem;
+        const typeCost = (count || 0) * costPerItem;
         estimatedCost += typeCost;
-        console.log(`📊 ${entityType}: ${count} items × ${costPerItem} credits = ${typeCost.toFixed(2)} credits`);
+        console.log(`📊 ${entityType}: ${count || 0} items × ${costPerItem} credits = ${typeCost.toFixed(2)} credits`);
       } catch (error) {
         console.error(`❌ Error counting ${entityType}:`, error);
       }
@@ -1700,9 +1743,16 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
             translations: stockSettings.translations || {}
           }];
         } else {
-          entities = await entityConfig.model.findAll({
-            where: { store_id }
-          });
+          const { data: fetchedEntities, error: fetchError } = await connection
+            .from(entityConfig.tableName)
+            .select('*')
+            .eq('store_id', store_id);
+
+          if (fetchError) {
+            throw fetchError;
+          }
+
+          entities = fetchedEntities || [];
         }
 
         const results = {
@@ -2169,24 +2219,22 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
     }
 
     // Get tenant connection if store_id is provided
-    let connection, Product, Category, Attribute, CmsPage, CmsBlock, ProductTab, ProductLabel, EmailTemplate, PdfTemplate, Store, tenantSequelize;
+    let connection;
     if (storeId) {
       connection = await ConnectionManager.getStoreConnection(storeId);
-      ({ Product, Category, Attribute, CmsPage, CmsBlock, ProductTab, ProductLabel, EmailTemplate, PdfTemplate, Store } = connection.models);
-      tenantSequelize = connection.sequelize;
     }
 
     // Translate entities
     const entityTypeMap = {
-      product: { model: Product, name: 'Products' },
-      category: { model: Category, name: 'Categories' },
-      cms_page: { model: CmsPage, name: 'CMS Pages' },
-      cms_block: { model: CmsBlock, name: 'CMS Blocks' },
-      product_tab: { model: ProductTab, name: 'Product Tabs' },
-      product_label: { model: ProductLabel, name: 'Product Labels' },
-      attribute: { model: Attribute, name: 'Attributes' },
-      'email-template': { model: EmailTemplate, name: 'Email Templates' },
-      'pdf-template': { model: PdfTemplate, name: 'PDF Templates' },
+      product: { tableName: 'products', name: 'Products' },
+      category: { tableName: 'categories', name: 'Categories' },
+      cms_page: { tableName: 'cms_pages', name: 'CMS Pages' },
+      cms_block: { tableName: 'cms_blocks', name: 'CMS Blocks' },
+      product_tab: { tableName: 'product_tabs', name: 'Product Tabs' },
+      product_label: { tableName: 'product_labels', name: 'Product Labels' },
+      attribute: { tableName: 'attributes', name: 'Attributes' },
+      'email-template': { tableName: 'email_templates', name: 'Email Templates' },
+      'pdf-template': { tableName: 'pdf_templates', name: 'PDF Templates' },
       'custom-option': { name: 'Custom Options', special: true },
       'stock-label': { name: 'Stock Labels', special: true }
     };
