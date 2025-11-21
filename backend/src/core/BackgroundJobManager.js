@@ -229,13 +229,12 @@ class BackgroundJobManager extends EventEmitter {
           payload,
           priority,
           status: 'pending',
-          scheduled_at: scheduledAt.toISOString(),
           max_retries: maxRetries,
           retry_count: 0,
           store_id: storeId,
           user_id: userId,
-          metadata,
-          created_at: new Date().toISOString()
+          metadata
+          // Note: created_at will be set by database default
         };
 
         console.log('📝 Creating job via Supabase client:', { type, storeId });
