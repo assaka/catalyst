@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
       // TODO: Implement proper authentication check here if needed
     }
 
-    const tenantDb = await ConnectionManager.getConnection(store_id);
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Build query
     let query = tenantDb
@@ -86,7 +86,7 @@ router.get('/:id', authAdmin, async (req, res) => {
       });
     }
 
-    const tenantDb = await ConnectionManager.getConnection(store_id);
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     const { data: template, error } = await tenantDb
       .from('seo_templates')
@@ -126,7 +126,7 @@ router.post('/', authAdmin, async (req, res) => {
       });
     }
 
-    const tenantDb = await ConnectionManager.getConnection(store_id);
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     const { data: template, error } = await tenantDb
       .from('seo_templates')
@@ -176,7 +176,7 @@ router.put('/:id', authAdmin, async (req, res) => {
       });
     }
 
-    const tenantDb = await ConnectionManager.getConnection(store_id);
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     const { data: template, error } = await tenantDb
       .from('seo_templates')
@@ -217,7 +217,7 @@ router.delete('/:id', authAdmin, async (req, res) => {
       });
     }
 
-    const tenantDb = await ConnectionManager.getConnection(store_id);
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     const { error } = await tenantDb
       .from('seo_templates')
