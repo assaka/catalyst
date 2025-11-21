@@ -36,6 +36,20 @@ if (!masterDbUrl) {
   console.warn('⚠️ MASTER_DB_USER:', process.env.MASTER_DB_USER ? 'SET' : 'NOT SET');
   console.warn('⚠️ MASTER_DB_PASSWORD:', process.env.MASTER_DB_PASSWORD ? 'SET (length: ' + (process.env.MASTER_DB_PASSWORD?.length || 0) + ')' : 'NOT SET');
   console.warn('⚠️ MASTER_DB_NAME:', process.env.MASTER_DB_NAME || 'postgres (default)');
+} else {
+  // Parse the URL to show what's being used (sanitized)
+  try {
+    const url = new URL(masterDbUrl.replace('postgresql://', 'http://'));
+    console.log('🔧 [MASTER CONNECTION] Parsed from MASTER_DB_URL:');
+    console.log('   - Host:', url.hostname);
+    console.log('   - Port:', url.port || '5432');
+    console.log('   - Database:', url.pathname.substring(1));
+    console.log('   - Username:', url.username);
+    console.log('   - Password length:', url.password?.length || 0);
+    console.log('   - Password first 3 chars:', url.password?.substring(0, 3) + '...' || 'NONE');
+  } catch (e) {
+    console.error('❌ Failed to parse MASTER_DB_URL:', e.message);
+  }
 }
 
 const masterSequelize = useMasterDbUrl
@@ -167,25 +181,28 @@ async function closeMasterConnection() {
 
 // Test connection on startup (ALWAYS - even in production, for diagnostics)
 console.log('🔧 Testing master database connection on startup...');
+console.log('🔧 Attempting to authenticate with:');
+console.log('   - Dialect:', masterSequelize.config.dialect);
+console.log('   - Host:', masterSequelize.config.host);
+console.log('   - Port:', masterSequelize.config.port);
+console.log('   - Database:', masterSequelize.config.database);
+console.log('   - Username:', masterSequelize.config.username);
+console.log('   - Has Password:', !!masterSequelize.config.password);
+console.log('   - Password Length:', masterSequelize.config.password?.length || 0);
+
 testMasterConnection()
   .then(() => {
-    console.log('✅ Master DB connection test PASSED');
+    console.log('✅ Master DB connection test PASSED - credentials are correct!');
+    console.log('✅ Job creation should work now');
   })
   .catch(err => {
     console.error('❌ Master DB connection test FAILED:', err.message);
+    console.error('❌ Full error:', err);
     console.error('❌ This will cause job scheduling to fail!');
-
-    // Log connection config (sanitized)
-    const config = masterSequelize.config;
-    console.error('❌ Connection config:', {
-      host: config.host,
-      port: config.port,
-      database: config.database,
-      username: config.username,
-      hasPassword: !!config.password,
-      passwordLength: config.password?.length || 0,
-      dialect: config.dialect
-    });
+    console.error('❌ Please check:');
+    console.error('   1. MASTER_DB_URL is set correctly in Render');
+    console.error('   2. Password in the URL matches Supabase password');
+    console.error('   3. Database user has correct permissions');
   });
 
 // Graceful shutdown
