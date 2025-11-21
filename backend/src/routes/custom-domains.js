@@ -325,12 +325,17 @@ router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) 
 
         console.log(`[SSL Check] Checking SSL for ${domain.domain} using OpenSSL...`);
 
-        const { stdout, stderr } = await execAsync(
-          `timeout 10 openssl s_client -connect ${domain.domain}:443 -servername ${domain.domain} </dev/null 2>&1`,
-          { timeout: 15000 }
-        );
+        // Use sh -c to ensure proper command execution on all platforms
+        const command = `sh -c 'echo | openssl s_client -connect ${domain.domain}:443 -servername ${domain.domain} 2>&1 | head -100'`;
+        console.log('[SSL Check] Command:', command);
 
-        console.log('[SSL Check] OpenSSL output:', stdout.substring(0, 500));
+        const { stdout, stderr } = await execAsync(command, {
+          timeout: 15000,
+          maxBuffer: 1024 * 1024
+        });
+
+        console.log('[SSL Check] OpenSSL output (first 500 chars):', stdout.substring(0, 500));
+        console.log('[SSL Check] stderr:', stderr);
 
         // Check if certificate is valid
         if (stdout.includes('Verify return code: 0')) {
