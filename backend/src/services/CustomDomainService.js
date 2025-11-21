@@ -16,32 +16,46 @@ class CustomDomainService {
    */
   static async addDomain(storeId, domainName, options = {}) {
     try {
-      // Get tenant connection
-      const connection = await ConnectionManager.getStoreConnection(storeId);
-      const { CustomDomain } = connection.models;
+      // Get tenant connection (returns Supabase client)
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
       // Validate domain format
       if (!this._isValidDomain(domainName)) {
         throw new Error('Invalid domain format');
       }
 
-      // Check if domain already exists (search across all tenant databases would be complex,
-      // so we rely on unique constraint at database level)
+      // Generate verification token
+      const crypto = require('crypto');
+      const verification_token = crypto.randomBytes(32).toString('hex');
 
       // Create domain record
-      const domain = await CustomDomain.create({
+      const domainData = {
         store_id: storeId,
         domain: domainName.toLowerCase(),
         subdomain: options.subdomain || null,
         verification_method: options.verificationMethod || 'txt',
+        verification_token: verification_token,
+        verification_status: 'pending',
         is_primary: options.isPrimary || false,
         ssl_provider: 'vercel',
-        dns_provider: options.dnsProvider || 'manual'
-      });
+        ssl_status: 'pending',
+        dns_provider: options.dnsProvider || 'manual',
+        is_active: true,
+        metadata: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
 
-      // Generate verification token
-      domain.generateVerificationToken();
-      await domain.save();
+      const { data: domain, error: insertError } = await tenantDb
+        .from('custom_domains')
+        .insert(domainData)
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Error inserting domain:', insertError);
+        throw new Error(insertError.message || 'Failed to create domain record');
+      }
 
       // Automatically add domain to Vercel via API (for SSL provisioning)
       const vercelService = require('./vercel-domain-service');
@@ -49,21 +63,31 @@ class CustomDomainService {
         try {
           const vercelResult = await vercelService.addDomain(domainName);
           if (vercelResult.success) {
-            domain.metadata = {
-              ...domain.metadata,
-              vercel_added: true,
-              vercel_added_at: new Date().toISOString()
-            };
-            await domain.save();
+            const { error: updateError } = await tenantDb
+              .from('custom_domains')
+              .update({
+                metadata: {
+                  ...domain.metadata,
+                  vercel_added: true,
+                  vercel_added_at: new Date().toISOString()
+                },
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', domain.id);
+
+            if (updateError) {
+              console.error('Error updating domain metadata:', updateError);
+            }
           }
         } catch (vercelError) {
           // Silent fail - domain can be added to Vercel manually
+          console.error('Vercel domain add failed:', vercelError);
         }
       }
 
       return {
         success: true,
-        domain: domain.toJSON(),
+        domain: domain,
         verification_instructions: this._getVerificationInstructions(domain)
       };
     } catch (error) {
@@ -77,12 +101,17 @@ class CustomDomainService {
    */
   static async verifyDomain(domainId, storeId) {
     try {
-      // Get tenant connection
-      const connection = await ConnectionManager.getStoreConnection(storeId);
-      const { CustomDomain, Store } = connection.models;
+      // Get tenant connection (returns Supabase client)
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      const domain = await CustomDomain.findByPk(domainId);
-      if (!domain) {
+      const { data: domain, error: fetchError } = await tenantDb
+        .from('custom_domains')
+        .select('*')
+        .eq('id', domainId)
+        .eq('store_id', storeId)
+        .single();
+
+      if (fetchError || !domain) {
         throw new Error('Domain not found');
       }
 
@@ -91,8 +120,13 @@ class CustomDomainService {
       }
 
       // Update status to verifying
-      domain.verification_status = 'verifying';
-      await domain.save();
+      await tenantDb
+        .from('custom_domains')
+        .update({
+          verification_status: 'verifying',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', domainId);
 
       // Verify based on method
       let verified = false;
@@ -120,17 +154,32 @@ class CustomDomainService {
       }
 
       if (verified) {
-        await domain.markAsVerified();
+        // Mark domain as verified
+        const { data: updatedDomain, error: updateError } = await tenantDb
+          .from('custom_domains')
+          .update({
+            verification_status: 'verified',
+            verified_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', domainId)
+          .select()
+          .single();
+
+        if (updateError) {
+          throw new Error('Failed to update domain verification status');
+        }
 
         // Update store
-        await Store.update(
-          {
+        await tenantDb
+          .from('stores')
+          .update({
             custom_domain: domain.domain,
             domain_verified: true,
-            ...(domain.is_primary && { primary_domain: domain.domain })
-          },
-          { where: { id: domain.store_id } }
-        );
+            ...(domain.is_primary && { primary_domain: domain.domain }),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', domain.store_id);
 
         // Check SSL status from Vercel
         const vercelService = require('./vercel-domain-service');
@@ -139,7 +188,13 @@ class CustomDomainService {
             try {
               const sslStatus = await vercelService.checkSSLStatus(domain.domain);
               if (sslStatus.success && sslStatus.ssl_status) {
-                await domain.update({ ssl_status: sslStatus.ssl_status });
+                await tenantDb
+                  .from('custom_domains')
+                  .update({
+                    ssl_status: sslStatus.ssl_status,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', domainId);
               }
             } catch (error) {
               // Silent fail
@@ -150,11 +205,16 @@ class CustomDomainService {
         return {
           success: true,
           message: 'Domain verified successfully. SSL certificate will be provisioned automatically.',
-          domain: domain.toJSON()
+          domain: updatedDomain
         };
       } else {
-        domain.verification_status = 'failed';
-        await domain.save();
+        await tenantDb
+          .from('custom_domains')
+          .update({
+            verification_status: 'failed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', domainId);
 
         return {
           success: false,
@@ -265,17 +325,27 @@ class CustomDomainService {
    */
   static async provisionSSLCertificate(domainId, storeId) {
     try {
-      // Get tenant connection
-      const connection = await ConnectionManager.getStoreConnection(storeId);
-      const { CustomDomain } = connection.models;
+      // Get tenant connection (returns Supabase client)
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      const domain = await CustomDomain.findByPk(domainId);
-      if (!domain || !domain.verified_at) {
+      const { data: domain, error: fetchError } = await tenantDb
+        .from('custom_domains')
+        .select('*')
+        .eq('id', domainId)
+        .eq('store_id', storeId)
+        .single();
+
+      if (fetchError || !domain || !domain.verified_at) {
         throw new Error('Domain must be verified before SSL provisioning');
       }
 
-      domain.ssl_status = 'pending';
-      await domain.save();
+      await tenantDb
+        .from('custom_domains')
+        .update({
+          ssl_status: 'pending',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', domainId);
 
       return {
         success: true,
@@ -293,16 +363,36 @@ class CustomDomainService {
    */
   static async checkDNSConfiguration(domainId, storeId) {
     try {
-      // Get tenant connection
-      const connection = await ConnectionManager.getStoreConnection(storeId);
-      const { CustomDomain } = connection.models;
+      // Get tenant connection (returns Supabase client)
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      const domain = await CustomDomain.findByPk(domainId);
-      if (!domain) {
+      const { data: domain, error: fetchError } = await tenantDb
+        .from('custom_domains')
+        .select('*')
+        .eq('id', domainId)
+        .eq('store_id', storeId)
+        .single();
+
+      if (fetchError || !domain) {
         throw new Error('Domain not found');
       }
 
-      const requiredRecords = domain.getRequiredDNSRecords();
+      // Get required DNS records
+      const requiredRecords = [
+        {
+          type: 'A',
+          name: '@',
+          value: '76.76.21.21',
+          required: true
+        },
+        {
+          type: 'TXT',
+          name: `_catalyst-verification.${domain.domain}`,
+          value: domain.verification_token,
+          required: true
+        }
+      ];
+
       const results = [];
 
       for (const record of requiredRecords) {
@@ -387,28 +477,28 @@ class CustomDomainService {
    */
   static async removeDomain(domainId, storeId) {
     try {
-      // Get tenant connection
-      const connection = await ConnectionManager.getStoreConnection(storeId);
-      const { CustomDomain, Store } = connection.models;
-      const { Op } = require('sequelize');
+      // Get tenant connection (returns Supabase client)
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      const domain = await CustomDomain.findOne({
-        where: { id: domainId, store_id: storeId }
-      });
+      const { data: domain, error: fetchError } = await tenantDb
+        .from('custom_domains')
+        .select('*')
+        .eq('id', domainId)
+        .eq('store_id', storeId)
+        .single();
 
-      if (!domain) {
+      if (fetchError || !domain) {
         throw new Error('Domain not found');
       }
 
       if (domain.is_primary) {
-        const otherDomains = await CustomDomain.count({
-          where: {
-            store_id: storeId,
-            id: { [Op.ne]: domainId }
-          }
-        });
+        const { count, error: countError } = await tenantDb
+          .from('custom_domains')
+          .select('*', { count: 'exact', head: true })
+          .eq('store_id', storeId)
+          .neq('id', domainId);
 
-        if (otherDomains > 0) {
+        if (!countError && count > 0) {
           throw new Error('Cannot remove primary domain. Set another domain as primary first.');
         }
       }
@@ -423,16 +513,20 @@ class CustomDomainService {
         }
       }
 
-      await domain.destroy();
+      await tenantDb
+        .from('custom_domains')
+        .delete()
+        .eq('id', domainId);
 
-      await Store.update(
-        {
+      await tenantDb
+        .from('stores')
+        .update({
           custom_domain: null,
           domain_verified: false,
-          ...(domain.is_primary && { primary_domain: null })
-        },
-        { where: { id: storeId } }
-      );
+          ...(domain.is_primary && { primary_domain: null }),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
 
       return { success: true, message: 'Domain removed successfully' };
     } catch (error) {
@@ -445,15 +539,17 @@ class CustomDomainService {
    */
   static async setPrimaryDomain(domainId, storeId) {
     try {
-      // Get tenant connection
-      const connection = await ConnectionManager.getStoreConnection(storeId);
-      const { CustomDomain, Store } = connection.models;
+      // Get tenant connection (returns Supabase client)
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      const domain = await CustomDomain.findOne({
-        where: { id: domainId, store_id: storeId }
-      });
+      const { data: domain, error: fetchError } = await tenantDb
+        .from('custom_domains')
+        .select('*')
+        .eq('id', domainId)
+        .eq('store_id', storeId)
+        .single();
 
-      if (!domain) {
+      if (fetchError || !domain) {
         throw new Error('Domain not found');
       }
 
@@ -462,25 +558,42 @@ class CustomDomainService {
       }
 
       // Unset other primary domains
-      await CustomDomain.update(
-        { is_primary: false },
-        { where: { store_id: storeId } }
-      );
+      await tenantDb
+        .from('custom_domains')
+        .update({
+          is_primary: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('store_id', storeId);
 
       // Set this domain as primary
-      domain.is_primary = true;
-      await domain.save();
+      const { data: updatedDomain, error: updateError } = await tenantDb
+        .from('custom_domains')
+        .update({
+          is_primary: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', domainId)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw new Error('Failed to update domain');
+      }
 
       // Update store
-      await Store.update(
-        { primary_domain: domain.domain },
-        { where: { id: storeId } }
-      );
+      await tenantDb
+        .from('stores')
+        .update({
+          primary_domain: domain.domain,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
 
       return {
         success: true,
         message: 'Primary domain updated successfully',
-        domain: domain.toJSON()
+        domain: updatedDomain
       };
     } catch (error) {
       console.error('Error setting primary domain:', error);
