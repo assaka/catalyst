@@ -235,21 +235,79 @@ IntegrationConfig.prototype.updateSyncStatus = async function(status, error = nu
 };
 
 IntegrationConfig.prototype.updateConnectionStatus = async function(status, error = null) {
-  this.connection_status = status;
-  this.connection_error = error;
-  this.connection_tested_at = new Date();
-  await this.save();
+  // Use ConnectionManager to avoid deprecated sequelize connection
+  const ConnectionManager = require('../services/database/ConnectionManager');
+
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(this.store_id);
+
+    const updateData = {
+      connection_status: status,
+      connection_error: error,
+      connection_tested_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { error: updateError } = await tenantDb
+      .from('integration_configs')
+      .update(updateData)
+      .eq('id', this.id);
+
+    if (updateError) {
+      console.error('Error updating connection status:', updateError);
+      throw updateError;
+    }
+
+    // Update local instance
+    Object.assign(this, updateData);
+  } catch (err) {
+    console.error('IntegrationConfig.updateConnectionStatus error:', err);
+    throw err;
+  }
 };
 
 // Static methods for common operations
 IntegrationConfig.findByStoreAndType = async function(storeId, integrationType) {
-  return await this.findOne({
-    where: {
-      store_id: storeId,
-      integration_type: integrationType,
-      is_active: true
+  // Use ConnectionManager to avoid deprecated sequelize connection
+  const ConnectionManager = require('../services/database/ConnectionManager');
+
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data, error } = await tenantDb
+      .from('integration_configs')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('integration_type', integrationType)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching integration config:', error);
+      return null;
     }
-  });
+
+    if (!data) {
+      return null;
+    }
+
+    // Decrypt sensitive data before returning
+    const decryptedData = {
+      ...data,
+      config_data: IntegrationConfig.decryptSensitiveData(data.config_data, integrationType)
+    };
+
+    // Create a model-like object with the instance methods
+    const instance = Object.create(IntegrationConfig.prototype);
+    Object.assign(instance, decryptedData);
+    instance.isNewRecord = false;
+    instance.dataValues = decryptedData;
+
+    return instance;
+  } catch (error) {
+    console.error('IntegrationConfig.findByStoreAndType error:', error);
+    throw error;
+  }
 };
 
 IntegrationConfig.createOrUpdate = async function(storeId, integrationType, configData) {
