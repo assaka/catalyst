@@ -150,10 +150,6 @@ export function clearCacheKeys(keys) {
 
     localStorage.removeItem('storeProviderCache');
     localStorage.setItem('forceRefreshStore', Date.now().toString());
-
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
   } catch (error) {
     console.warn('Failed to clear specific cache keys:', error);
   }
