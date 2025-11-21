@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Plus, Trash2, Loader2, Info, ChevronDown, ChevronUp, Edit, X, ChevronsUpDown, Check, Save } from "lucide-react";
+import { FileText, Plus, Trash2, Loader2, Info, ChevronDown, ChevronUp, Edit, X, ChevronsUpDown, Check, Save, AlertTriangle } from "lucide-react";
 import SaveButton from "@/components/ui/save-button.jsx";
 import { SeoTemplate, Category, AttributeSet, Attribute } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
@@ -16,6 +16,16 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import { clearSeoTemplatesCache } from "@/utils/cacheUtils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function SeoTemplates() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -25,6 +35,8 @@ export default function SeoTemplates() {
   const [flashMessage, setFlashMessage] = useState(null);
   const [showVariables, setShowVariables] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState(null);
 
   // Conditions data
   const [categories, setCategories] = useState([]);
@@ -372,13 +384,16 @@ export default function SeoTemplates() {
     }
   };
 
-  const handleDeleteTemplate = async (templateId) => {
-    if (!confirm('Are you sure you want to delete this template?')) {
-      return;
-    }
+  const handleDeleteTemplate = (template) => {
+    setTemplateToDelete(template);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!templateToDelete) return;
 
     try {
-      await SeoTemplate.delete(templateId);
+      await SeoTemplate.delete(templateToDelete.id);
       await loadTemplates();
 
       setFlashMessage({
@@ -395,6 +410,9 @@ export default function SeoTemplates() {
         type: 'error',
         message: 'Failed to delete SEO template'
       });
+    } finally {
+      setDeleteModalOpen(false);
+      setTemplateToDelete(null);
     }
   };
 
@@ -825,7 +843,7 @@ export default function SeoTemplates() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDeleteTemplate(template.id)}
+                      onClick={() => handleDeleteTemplate(template)}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -836,6 +854,51 @@ export default function SeoTemplates() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <AlertDialogTitle>Delete SEO Template</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-3">
+              Are you sure you want to delete this SEO template? This action cannot be undone.
+              {templateToDelete && (
+                <div className="mt-3 p-3 bg-muted rounded-md">
+                  <div className="text-sm">
+                    <div className="text-muted-foreground">Template:</div>
+                    <div className="font-semibold text-foreground">
+                      {templateToDelete.name || `${templateToDelete.type} Template`}
+                    </div>
+                    <div className="text-muted-foreground mt-2">Type:</div>
+                    <div className="font-semibold text-foreground capitalize">{templateToDelete.type}</div>
+                    {(templateToDelete.template?.meta_title || templateToDelete.meta_title) && (
+                      <>
+                        <div className="text-muted-foreground mt-2">Title Template:</div>
+                        <div className="font-mono text-xs text-foreground">
+                          {templateToDelete.template?.meta_title || templateToDelete.meta_title}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
