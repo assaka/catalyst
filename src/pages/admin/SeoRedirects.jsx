@@ -5,13 +5,23 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RefreshCw, Plus, Trash2, Download, Upload, HelpCircle, AlertCircle, CheckCircle, Info, ChevronDown } from "lucide-react";
+import { RefreshCw, Plus, Trash2, Download, Upload, HelpCircle, AlertCircle, CheckCircle, Info, ChevronDown, AlertTriangle } from "lucide-react";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import adminApiClient from "@/api/admin-client";
-import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAlertTypes } from "@/hooks/useAlert";
 import SaveButton from "@/components/ui/save-button.jsx";
+import FlashMessage from "@/components/storefront/FlashMessage.jsx";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function SeoRedirects() {
   const { getSelectedStoreId } = useStoreSelection();
@@ -22,6 +32,9 @@ export default function SeoRedirects() {
   const [toUrl, setToUrl] = useState('');
   const [redirectType, setRedirectType] = useState('301');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [flashMessage, setFlashMessage] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [redirectToDelete, setRedirectToDelete] = useState(null);
 
   // Check if To URL is an absolute URL
   const isAbsoluteUrl = toUrl.startsWith('http://') || toUrl.startsWith('https://');
@@ -33,7 +46,7 @@ export default function SeoRedirects() {
   const loadRedirects = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      toast.error('No store selected');
+      setFlashMessage({ type: 'error', message: 'No store selected' });
       return;
     }
 
@@ -43,7 +56,7 @@ export default function SeoRedirects() {
       setRedirects(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error loading redirects:', error);
-      toast.error('Failed to load redirects');
+      setFlashMessage({ type: 'error', message: 'Failed to load redirects' });
     } finally {
       setLoading(false);
     }
@@ -69,12 +82,12 @@ export default function SeoRedirects() {
   const handleAddRedirect = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      toast.error('No store selected');
+      setFlashMessage({ type: 'error', message: 'No store selected' });
       return;
     }
 
     if (!fromUrl || !toUrl) {
-      toast.error('Please enter both From and To URLs');
+      setFlashMessage({ type: 'error', message: 'Please enter both From and To URLs' });
       return;
     }
 
@@ -92,14 +105,7 @@ export default function SeoRedirects() {
         is_active: true
       });
 
-      toast.success('Redirect added successfully!', {
-        style: {
-          background: '#10B981',
-          color: 'white',
-          fontWeight: '500'
-        },
-        duration: 3000
-      });
+      setFlashMessage({ type: 'success', message: 'Redirect added successfully!' });
       setFromUrl('');
       setToUrl('');
       setRedirectType('301');
@@ -109,50 +115,53 @@ export default function SeoRedirects() {
 
       // Check if it's a duplicate URL error (409 Conflict)
       if (error.response?.status === 409) {
-        toast.error(error.response.data.message || 'This redirect already exists', {
-          duration: 5000
+        setFlashMessage({
+          type: 'error',
+          message: error.response.data.message || 'This redirect already exists'
         });
       } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
+        setFlashMessage({ type: 'error', message: error.response.data.message });
       } else {
-        toast.error('Failed to add redirect');
+        setFlashMessage({ type: 'error', message: 'Failed to add redirect' });
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteRedirect = async (id) => {
-    const confirmed = await showConfirm(
-      'Are you sure you want to delete this redirect? This action cannot be undone.',
-      'Delete Redirect'
-    );
+  const handleDeleteRedirect = (redirect) => {
+    setRedirectToDelete(redirect);
+    setDeleteModalOpen(true);
+  };
 
-    if (!confirmed) {
-      return;
-    }
+  const confirmDelete = async () => {
+    if (!redirectToDelete) return;
 
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      toast.error('No store selected');
+      setFlashMessage({ type: 'error', message: 'No store selected' });
+      setDeleteModalOpen(false);
       return;
     }
 
     try {
       setLoading(true);
-      await adminApiClient.delete(`/redirects/${id}?store_id=${storeId}`);
-      toast.success('Redirect deleted successfully');
+      await adminApiClient.delete(`/redirects/${redirectToDelete.id}?store_id=${storeId}`);
+      setFlashMessage({ type: 'success', message: 'Redirect deleted successfully' });
       await loadRedirects();
     } catch (error) {
       console.error('Error deleting redirect:', error);
-      toast.error('Failed to delete redirect');
+      setFlashMessage({ type: 'error', message: 'Failed to delete redirect' });
     } finally {
       setLoading(false);
+      setDeleteModalOpen(false);
+      setRedirectToDelete(null);
     }
   };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <div className="flex items-center gap-2 mb-6">
         <RefreshCw className="h-6 w-6" />
         <h1 className="text-3xl font-bold">URL Redirects</h1>
@@ -294,7 +303,7 @@ export default function SeoRedirects() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteRedirect(redirect.id)}
+                        onClick={() => handleDeleteRedirect(redirect)}
                         disabled={loading}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -437,6 +446,41 @@ export default function SeoRedirects() {
         </Card>
       </Collapsible>
       <AlertComponent />
+
+      <AlertDialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <AlertDialogTitle>Delete Redirect</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-3">
+              Are you sure you want to delete this redirect? This action cannot be undone.
+              {redirectToDelete && (
+                <div className="mt-3 p-3 bg-muted rounded-md">
+                  <div className="text-sm font-mono">
+                    <div className="text-muted-foreground">From:</div>
+                    <div className="font-semibold text-foreground">{redirectToDelete.from_url}</div>
+                    <div className="text-muted-foreground mt-2">To:</div>
+                    <div className="font-semibold text-foreground">{redirectToDelete.to_url}</div>
+                  </div>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
