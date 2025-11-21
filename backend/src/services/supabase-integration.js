@@ -427,11 +427,14 @@ class SupabaseIntegration {
             await token.destroy();
 
             // Update config to mark as disconnected
-            const tenantDb = ConnectionManager.getConnection(storeId);
-            const config = await tenantDb
+            const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+            const { data: config } = await tenantDb
               .from('integration_configs')
-              .where({ store_id: storeId, integration_type: 'supabase', is_active: true })
-              .first();
+              .select('*')
+              .eq('store_id', storeId)
+              .eq('integration_type', 'supabase')
+              .eq('is_active', true)
+              .maybeSingle();
             if (config) {
               await tenantDb
                 .from('integration_configs')
@@ -556,7 +559,7 @@ class SupabaseIntegration {
         }
 
         // Update connection status
-        const tenantDb = ConnectionManager.getConnection(storeId);
+        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
         const config = await tenantDb
           .from('integration_configs')
           .where({ store_id: storeId, integration_type: 'supabase', is_active: true })
@@ -606,7 +609,7 @@ class SupabaseIntegration {
       
     } catch (error) {
       // Update connection status
-      const tenantDb = ConnectionManager.getConnection(storeId);
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
       const config = await tenantDb
         .from('integration_configs')
         .where({ store_id: storeId, integration_type: 'supabase', is_active: true })
@@ -636,7 +639,7 @@ class SupabaseIntegration {
       console.log('Disconnecting Supabase for store:', storeId);
 
       // Get current config data before deletion
-      const tenantDb = ConnectionManager.getConnection(storeId);
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
       const config = await tenantDb
         .from('integration_configs')
         .where({ store_id: storeId, integration_type: 'supabase', is_active: true })
@@ -885,7 +888,7 @@ class SupabaseIntegration {
       }
 
       // Update IntegrationConfig as well
-      const tenantDb = ConnectionManager.getConnection(storeId);
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
       const config = await tenantDb
         .from('integration_configs')
         .where({ store_id: storeId, integration_type: 'supabase', is_active: true })
@@ -1456,7 +1459,7 @@ class SupabaseIntegration {
       }
 
       // Also update IntegrationConfig
-      const tenantDb = ConnectionManager.getConnection(storeId);
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
       const integrationConfig = await tenantDb
         .from('integration_configs')
         .where({ store_id: storeId, integration_type: 'supabase', is_active: true })

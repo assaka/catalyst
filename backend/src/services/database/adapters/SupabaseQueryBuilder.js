@@ -72,6 +72,21 @@ class SupabaseQueryBuilder {
     return this;
   }
 
+  // COMPATIBILITY: Support Knex-style where() method
+  where(conditions) {
+    // Convert { col1: val1, col2: val2 } to chained .eq() calls
+    for (const [column, value] of Object.entries(conditions)) {
+      this.query = this.query.eq(column, value);
+    }
+    return this;
+  }
+
+  // COMPATIBILITY: Support Knex-style first() method
+  async first() {
+    const { data, error } = await this.query.maybeSingle();
+    return data; // Return data directly like Knex does
+  }
+
   // ORDERING
   order(column, options = { ascending: true }) {
     this.query = this.query.order(column, options);
