@@ -12,6 +12,14 @@ router.get('/', async (req, res) => {
 
     console.log('🎯 Public CMS Pages: Request received', { slug, store_id });
 
+    // Validate store_id is provided
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
     const lang = getLanguageFromRequest(req);
     console.log('🌍 Public CMS Pages: Requesting language:', lang);
 
@@ -30,7 +38,8 @@ router.get('/', async (req, res) => {
     }
 
     // Get CMS pages with translations from normalized table
-    const pages = await getCMSPagesWithTranslations(where, lang);
+    // FIXED: Pass storeId as first parameter, then where, then lang
+    const pages = await getCMSPagesWithTranslations(store_id, where, lang);
 
     console.log('🎯 Public CMS Pages: Query successful, found:', pages.length, 'page(s)');
     if (pages.length > 0) {
