@@ -268,6 +268,25 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
       return;
     }
 
+    // Validate attribute conditions - check for empty text values
+    const attributeConditions = formData.conditions.attribute_conditions || [];
+    for (let i = 0; i < attributeConditions.length; i++) {
+      const condition = attributeConditions[i];
+      const selectedAttr = attributes.find(attr => attr.code === condition.attribute_code);
+
+      // Check if attribute is text type and value is empty
+      if (selectedAttr && selectedAttr.type === 'text' && !condition.attribute_value?.trim()) {
+        showWarning(`Please provide a value for the text attribute "${getAttributeLabel(selectedAttr, currentLanguage)}" in Specific Attribute Values.`);
+        return;
+      }
+
+      // Also check if any attribute condition is incomplete
+      if (!condition.attribute_code || !condition.attribute_value?.trim()) {
+        showWarning('Please complete all attribute conditions or remove incomplete ones.');
+        return;
+      }
+    }
+
     setSaveSuccess(false);
     setLoading(true);
 
@@ -312,9 +331,24 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     return attribute?.options || [];
   };
 
+  const isAttributeConditionInvalid = (condition) => {
+    if (!condition.attribute_code) return false;
+
+    const selectedAttr = attributes.find(attr => attr.code === condition.attribute_code);
+    if (!selectedAttr) return false;
+
+    // For text type attributes, value cannot be empty
+    if (selectedAttr.type === 'text' && !condition.attribute_value?.trim()) {
+      return true;
+    }
+
+    return false;
+  };
+
   const renderConditionValueInput = (condition, index) => {
     const selectedAttr = attributes.find(attr => attr.code === condition.attribute_code);
     const hasOptions = selectedAttr && (selectedAttr.type === 'select' || selectedAttr.type === 'multiselect') && selectedAttr.options?.length > 0;
+    const isInvalid = isAttributeConditionInvalid(condition);
 
     if (hasOptions) {
       return (
@@ -337,12 +371,17 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     }
 
     return (
-      <Input
-        placeholder="Value"
-        value={condition.attribute_value}
-        onChange={(e) => updateAttributeCondition(index, 'attribute_value', e.target.value)}
-        className="flex-1"
-      />
+      <div className="flex-1">
+        <Input
+          placeholder="Value"
+          value={condition.attribute_value}
+          onChange={(e) => updateAttributeCondition(index, 'attribute_value', e.target.value)}
+          className={`w-full ${isInvalid ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+        />
+        {isInvalid && (
+          <p className="text-xs text-red-600 mt-1">Value is required for text attributes</p>
+        )}
+      </div>
     );
   };
 
