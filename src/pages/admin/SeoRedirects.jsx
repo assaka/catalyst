@@ -224,7 +224,7 @@ export default function SeoRedirects() {
           </div>
         </CardContent>
       </Card>
-      <div className="flex justify-end mt-4">
+      <div className="flex justify-end mt-4 mb-8">
         <SaveButton
             onClick={handleAddRedirect}
             loading={loading}

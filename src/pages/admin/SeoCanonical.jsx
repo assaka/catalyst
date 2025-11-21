@@ -337,7 +337,7 @@ export default function SeoCanonical() {
           </div>
         </CardContent>
       </Card>
-      <div className="flex justify-end my-8">
+      <div className="flex justify-end mt-4 mb-8">
         <SaveButton
             onClick={handleSave}
             loading={saving}
