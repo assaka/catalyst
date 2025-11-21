@@ -222,10 +222,10 @@ class BackgroundJobManager extends EventEmitter {
           metadata
         });
       } else {
-        // Use Supabase client directly
+        // Use Supabase client directly - map to job_queue table schema
         const jobData = {
           id: uuidv4(),
-          type,
+          job_type: type,  // job_queue uses 'job_type' not 'type'
           payload,
           priority,
           status: 'pending',
@@ -235,13 +235,12 @@ class BackgroundJobManager extends EventEmitter {
           store_id: storeId,
           user_id: userId,
           metadata,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          created_at: new Date().toISOString()
         };
 
         console.log('📝 Creating job via Supabase client:', { type, storeId });
         const { data, error } = await masterDbClient
-          .from('jobs')
+          .from('job_queue')
           .insert(jobData)
           .select()
           .single();
