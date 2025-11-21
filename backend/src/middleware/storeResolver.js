@@ -25,10 +25,12 @@ const storeResolver = (options = {}) => {
     }
 
     // FIXED: Use Supabase client instead of Sequelize to avoid connection issues
+    // Master DB stores table only has: id, user_id, slug, status, is_active, created_at, updated_at
+    // Full store data (name, etc.) is in tenant DB
     const { masterDbClient } = require('../database/masterConnection');
     const { data: stores, error: queryError } = await masterDbClient
       .from('stores')
-      .select('id, name, slug, is_active, user_id, created_at')
+      .select('id, slug, is_active, user_id, created_at')
       .eq('user_id', req.user.id)
       .eq('is_active', true)
       .order('created_at', { ascending: false });
