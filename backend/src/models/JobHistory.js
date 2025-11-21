@@ -1,7 +1,8 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../database/connection');
+const { masterSequelize } = require('../database/masterConnection');
 
-const JobHistory = sequelize.define('JobHistory', {
+// JobHistory model is in MASTER DB (platform-level job history)
+const JobHistory = masterSequelize.define('JobHistory', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
