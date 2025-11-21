@@ -1,6 +1,3 @@
-const ConnectionManager = require('../services/database/ConnectionManager');
-const { QueryTypes } = require('sequelize');
-
 /**
  * Store Resolution Middleware
  * Automatically resolves the user's store ID from the database and attaches it to req.storeId
@@ -27,16 +24,18 @@ const storeResolver = (options = {}) => {
       });
     }
 
-    const masterConnection = ConnectionManager.getMasterConnection();
-    const stores = await masterConnection.query(`
-      SELECT id, name, slug, is_active, user_id, created_at
-      FROM stores
-      WHERE user_id = :userId AND is_active = true
-      ORDER BY created_at DESC
-    `, {
-      replacements: { userId: req.user.id },
-      type: QueryTypes.SELECT
-    });
+    // FIXED: Use Supabase client instead of Sequelize to avoid connection issues
+    const { masterDbClient } = require('../database/masterConnection');
+    const { data: stores, error: queryError } = await masterDbClient
+      .from('stores')
+      .select('id, name, slug, is_active, user_id, created_at')
+      .eq('user_id', req.user.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (queryError) {
+      throw new Error(`Master DB query failed: ${queryError.message}`);
+    }
 
     if (!stores || stores.length === 0) {
       if (fallbackStoreId) {
