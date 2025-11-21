@@ -717,3 +717,7 @@ try {
 }
 
 module.exports = jobManager;
+// IMMEDIATE REGISTRATION - Run at module load time
+console.log('🚀 IMMEDIATE: Registering job types at module load...');
+jobManager.registerJobTypes();
+console.log(`✅ IMMEDIATE: ${jobManager.workers.size} job types ready`);
