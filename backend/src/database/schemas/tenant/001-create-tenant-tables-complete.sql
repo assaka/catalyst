@@ -2366,7 +2366,6 @@ CREATE TABLE IF NOT EXISTS products (
   purchase_count INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
   type VARCHAR(50) DEFAULT 'simple'::character varying,
   parent_id UUID,
   configurable_attributes JSONB DEFAULT '[]'::jsonb,
