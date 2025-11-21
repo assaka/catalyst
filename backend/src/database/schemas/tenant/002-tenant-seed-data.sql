@@ -115,12 +115,14 @@ VALUES
   ('35b0b080-3257-4fd2-a2d2-477ac0c93abb', 'job_scheduler', 'Job Scheduler', 'Clock', '/admin/job-scheduler', 'store', 920, true, true, NULL, 'advanced', NULL, 'Schedule recurring tasks and cron jobs (plugin support)', '{"text":"New","color":"purple","variant":"outline"}'::jsonb, '2025-11-13T06:13:20.486Z', '2025-11-13T06:13:20.486Z', 'new')
 ON CONFLICT DO NOTHING;
 
+-- attribute_sets (1 row)
+INSERT INTO attribute_sets ("id", "name", "description", "is_default", "sort_order", "store_id", "attribute_ids", "created_at", "updated_at") VALUES ('7e7f4624-b053-4cbe-8725-2ba850fe1000', 'Default', '', 'true', '0', '947fa171-625f-4374-9c30-574d8c6e5abf', '[]', '2025-11-21 09:07:46.006', '2025-11-21 09:07:46.006');
 
 -- categories (1 row)
 -- Default root category for new stores
-INSERT INTO categories (id, slug, sort_order, is_active, hide_in_menu, parent_id, level, created_at, updated_at)
+INSERT INTO categories (id, store_id, slug, sort_order, is_active, hide_in_menu, parent_id, level, created_at, updated_at)
 VALUES
-  ('00000000-0000-0000-0000-000000000001', 'root-catalog', 0, true, false, NULL, 0, NOW(), NOW())
+  ('5eecab88-324b-4a9a-b0ec-fe5553f5a66a', '22e0c463-afbc-424e-86e3-dcd9e6df4904', 'root-catalog', 0, true, false, NULL, 0, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 
@@ -128,10 +130,9 @@ ON CONFLICT DO NOTHING;
 -- Translations for default root category
 INSERT INTO category_translations (category_id, language_code, name, description, created_at, updated_at)
 VALUES
-  ('00000000-0000-0000-0000-000000000001', 'en', 'Root Catalog', 'Default root category for product catalog', NOW(), NOW()),
-  ('00000000-0000-0000-0000-000000000001', 'nl', 'Hoofdcatalogus', 'Standaard hoofdcategorie voor productcatalogus', NOW(), NOW())
+  ('5eecab88-324b-4a9a-b0ec-fe5553f5a66a', 'en', 'Root Catalog', 'Default root category for product catalog', NOW(), NOW()),
+  ('5eecab88-324b-4a9a-b0ec-fe5553f5a66a', 'nl', 'Hoofdcatalogus', 'Standaard hoofdcategorie voor productcatalogus', NOW(), NOW())
 ON CONFLICT DO NOTHING;
-
 
 -- cms_pages (3 rows)
 INSERT INTO cms_pages (id, slug, is_active, meta_title, meta_description, meta_keywords, meta_robots_tag, store_id, related_product_ids, published_at, sort_order, created_at, updated_at, is_system, seo)

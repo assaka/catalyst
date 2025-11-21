@@ -215,7 +215,8 @@ END $$;`;
             'email_templates',
             'payment_methods',
             'pdf_templates',
-            'shipping_methods'
+            'shipping_methods',
+            'attribute_sets'
           ];
 
           const updateQueries = tablesToUpdate.map(table =>
@@ -296,7 +297,8 @@ END $$;`;
         'email_templates',
         'payment_methods',
         'pdf_templates',
-        'shipping_methods'
+        'shipping_methods',
+        'attribute_sets'
       ];
 
       for (const table of tablesToUpdate) {
