@@ -200,20 +200,60 @@ class BackgroundJobManager extends EventEmitter {
     const scheduledAt = new Date(Date.now() + delay);
 
     // Create job record in database (source of truth)
+    // Use Supabase client directly to avoid Sequelize authentication issues
     let job;
     try {
-      job = await Job.create({
-        type,
-        payload,
-        priority,
-        status: 'pending',
-        scheduled_at: scheduledAt,
-        max_retries: maxRetries,
-        retry_count: 0,
-        store_id: storeId,
-        user_id: userId,
-        metadata
-      });
+      const { masterDbClient } = require('../database/masterConnection');
+      const { v4: uuidv4 } = require('uuid');
+
+      if (!masterDbClient) {
+        console.error('❌ masterDbClient not available, falling back to Sequelize');
+        // Fallback to Sequelize
+        job = await Job.create({
+          type,
+          payload,
+          priority,
+          status: 'pending',
+          scheduled_at: scheduledAt,
+          max_retries: maxRetries,
+          retry_count: 0,
+          store_id: storeId,
+          user_id: userId,
+          metadata
+        });
+      } else {
+        // Use Supabase client directly
+        const jobData = {
+          id: uuidv4(),
+          type,
+          payload,
+          priority,
+          status: 'pending',
+          scheduled_at: scheduledAt.toISOString(),
+          max_retries: maxRetries,
+          retry_count: 0,
+          store_id: storeId,
+          user_id: userId,
+          metadata,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        console.log('📝 Creating job via Supabase client:', { type, storeId });
+        const { data, error } = await masterDbClient
+          .from('jobs')
+          .insert(jobData)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('❌ Supabase job creation failed:', error);
+          throw new Error(`Failed to create job: ${error.message}`);
+        }
+
+        job = data;
+        console.log('✅ Job created via Supabase:', job.id);
+      }
     } catch (error) {
       console.error('❌ Failed to create job in database:', error.message);
       console.error('Database error details:', {
