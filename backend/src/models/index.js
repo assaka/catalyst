@@ -272,9 +272,7 @@ const defineAssociations = () => {
 
   // IntegrationConfig associations - REMOVED (IntegrationConfig is now a pure service class, not a Sequelize model)
 
-  // ImportStatistic associations
-  ImportStatistic.belongsTo(Store, { foreignKey: 'store_id' });
-  Store.hasMany(ImportStatistic, { foreignKey: 'store_id' });
+  // ImportStatistic associations - REMOVED (now a pure service class)
 
   // Plugin associations (plugins are platform-wide, no store association)
   
