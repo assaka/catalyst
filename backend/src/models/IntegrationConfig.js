@@ -1,122 +1,15 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../database/connection');
+/**
+ * IntegrationConfig - Pure service class (NO SEQUELIZE)
+ *
+ * This class provides methods to interact with integration_configs table
+ * using ConnectionManager for proper tenant database isolation.
+ *
+ * All methods are static and use direct Supabase queries through ConnectionManager.
+ */
+
 const crypto = require('crypto');
 
-const IntegrationConfig = sequelize.define('IntegrationConfig', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  store_id: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: 'stores',
-      key: 'id'
-    }
-  },
-  integration_type: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    validate: {
-      isIn: [[
-        // E-commerce platforms
-        'akeneo', 'magento', 'shopify', 'woocommerce',
-
-        // Database integrations
-        'supabase', // Legacy - will be split into supabase-database + supabase-storage
-        'supabase-database',
-        'postgresql',
-        'mysql',
-
-        // Storage integrations
-        'supabase-storage',
-        'google-cloud-storage',
-        'aws-s3',
-        'cloudflare-r2',
-        'local-storage',
-
-        // Marketplace integrations
-        'amazon',
-        'ebay',
-        'google-shopping',
-        'facebook',
-        'instagram'
-      ]]
-    }
-  },
-  config_data: {
-    type: DataTypes.JSONB,
-    allowNull: false,
-    defaultValue: {}
-  },
-  is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-  },
-  last_sync_at: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  sync_status: {
-    type: DataTypes.ENUM('idle', 'syncing', 'success', 'error'),
-    defaultValue: 'idle'
-  },
-  sync_error: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  connection_status: {
-    type: DataTypes.ENUM('untested', 'success', 'failed'),
-    defaultValue: 'untested'
-  },
-  connection_tested_at: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  connection_error: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  }
-}, {
-  tableName: 'integration_configs',
-  indexes: [
-    {
-      unique: true,
-      fields: ['store_id', 'integration_type']
-    }
-  ],
-  hooks: {
-    beforeCreate: (integrationConfig) => {
-      integrationConfig.config_data = IntegrationConfig.encryptSensitiveData(
-        integrationConfig.config_data, 
-        integrationConfig.integration_type
-      );
-    },
-    beforeUpdate: (integrationConfig) => {
-      if (integrationConfig.changed('config_data')) {
-        integrationConfig.config_data = IntegrationConfig.encryptSensitiveData(
-          integrationConfig.config_data, 
-          integrationConfig.integration_type
-        );
-      }
-    },
-    afterFind: (result) => {
-      if (!result) return;
-      
-      const configs = Array.isArray(result) ? result : [result];
-      configs.forEach(config => {
-        if (config && config.config_data) {
-          config.config_data = IntegrationConfig.decryptSensitiveData(
-            config.config_data, 
-            config.integration_type
-          );
-        }
-      });
-    }
-  }
-});
+const IntegrationConfig = {};
 
 // Encryption/Decryption utilities
 IntegrationConfig.getEncryptionKey = () => {
@@ -224,14 +117,38 @@ IntegrationConfig.decryptSensitiveData = (configData, integrationType) => {
   return decrypted;
 };
 
-// Instance methods
-IntegrationConfig.prototype.updateSyncStatus = async function(status, error = null) {
-  this.sync_status = status;
-  this.sync_error = error;
-  if (status === 'success') {
-    this.last_sync_at = new Date();
+// Static method to update sync status (removed instance method - use static instead)
+IntegrationConfig.updateSyncStatus = async function(configId, storeId, status, error = null) {
+  const ConnectionManager = require('../services/database/ConnectionManager');
+
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const updateData = {
+      sync_status: status,
+      sync_error: error,
+      updated_at: new Date().toISOString()
+    };
+
+    if (status === 'success') {
+      updateData.last_sync_at = new Date().toISOString();
+    }
+
+    const { error: updateError } = await tenantDb
+      .from('integration_configs')
+      .update(updateData)
+      .eq('id', configId);
+
+    if (updateError) {
+      console.error('Error updating sync status:', updateError);
+      throw updateError;
+    }
+
+    return updateData;
+  } catch (err) {
+    console.error('IntegrationConfig.updateSyncStatus error:', err);
+    throw err;
   }
-  await this.save();
 };
 
 // Static method to update connection status (replaces instance method)
@@ -311,58 +228,105 @@ IntegrationConfig.findByStoreAndType = async function(storeId, integrationType) 
 };
 
 IntegrationConfig.createOrUpdate = async function(storeId, integrationType, configData) {
-  // First try to find active config
-  let existingConfig = await this.findByStoreAndType(storeId, integrationType);
+  const ConnectionManager = require('../services/database/ConnectionManager');
+  const { v4: uuidv4 } = require('uuid');
 
-  // If not found, check for inactive config (to avoid unique constraint violation)
-  if (!existingConfig) {
-    existingConfig = await this.findOne({
-      where: {
-        store_id: storeId,
-        integration_type: integrationType
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Encrypt sensitive data before saving
+    const encryptedData = IntegrationConfig.encryptSensitiveData(configData, integrationType);
+
+    // First try to find active config
+    const { data: existingConfig } = await tenantDb
+      .from('integration_configs')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('integration_type', integrationType)
+      .maybeSingle();
+
+    if (existingConfig) {
+      // Update existing
+      const updateData = {
+        config_data: encryptedData,
+        is_active: true,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data: updated, error: updateError } = await tenantDb
+        .from('integration_configs')
+        .update(updateData)
+        .eq('id', existingConfig.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw updateError;
       }
-    });
-  }
 
-  if (existingConfig) {
-    existingConfig.config_data = configData;
-    existingConfig.is_active = true;
-    await existingConfig.save();
-    return existingConfig;
-  } else {
-    try {
-      return await this.create({
+      return {
+        ...updated,
+        config_data: IntegrationConfig.decryptSensitiveData(updated.config_data, integrationType)
+      };
+    } else {
+      // Create new
+      const newConfig = {
+        id: uuidv4(),
         store_id: storeId,
         integration_type: integrationType,
-        config_data: configData,
-        is_active: true
-      });
-    } catch (error) {
-      console.error('IntegrationConfig.create failed:', {
-        storeId,
-        integrationType,
-        configData,
-        error: error.message,
-        name: error.name,
-        errors: error.errors?.map(e => ({
-          field: e.path,
-          message: e.message,
-          type: e.type,
-          value: e.value
-        }))
-      });
-      throw error;
+        config_data: encryptedData,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data: created, error: createError } = await tenantDb
+        .from('integration_configs')
+        .insert(newConfig)
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('IntegrationConfig.create failed:', createError);
+        throw createError;
+      }
+
+      return {
+        ...created,
+        config_data: IntegrationConfig.decryptSensitiveData(created.config_data, integrationType)
+      };
     }
+  } catch (error) {
+    console.error('IntegrationConfig.createOrUpdate error:', error);
+    throw error;
   }
 };
 
 IntegrationConfig.getActiveConfigs = async function(storeId) {
-  return await this.findAll({
-    where: {
-      store_id: storeId,
-      is_active: true
+  const ConnectionManager = require('../services/database/ConnectionManager');
+
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data, error } = await tenantDb
+      .from('integration_configs')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('is_active', true);
+
+    if (error) {
+      throw error;
     }
-  });
+
+    // Decrypt sensitive data for all configs
+    return (data || []).map(config => ({
+      ...config,
+      config_data: IntegrationConfig.decryptSensitiveData(config.config_data, config.integration_type)
+    }));
+  } catch (error) {
+    console.error('IntegrationConfig.getActiveConfigs error:', error);
+    throw error;
+  }
 };
 
 module.exports = IntegrationConfig;
