@@ -437,8 +437,57 @@ router.post('/import/collections',
 );
 
 /**
+ * @route POST /api/shopify/import/products-direct
+ * @desc Import Shopify products directly with real-time progress (SSE)
+ * @access Private
+ */
+router.post('/import/products-direct', storeAuth, async (req, res) => {
+  try {
+    const { limit = null, overwrite = false } = req.body;
+
+    // Set headers for SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const sendProgress = (data) => {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    sendProgress({ stage: 'initializing', message: 'Initializing Shopify connection...' });
+
+    const importService = new ShopifyImportService(req.storeId);
+    const initResult = await importService.initialize();
+
+    if (!initResult.success) {
+      sendProgress({ stage: 'error', message: initResult.message });
+      res.end();
+      return;
+    }
+
+    sendProgress({ stage: 'importing', message: 'Starting product import...' });
+
+    const result = await importService.importProducts({
+      limit,
+      overwrite,
+      progressCallback: (progress) => {
+        sendProgress(progress);
+      }
+    });
+
+    sendProgress({ stage: 'complete', result });
+    res.end();
+
+  } catch (error) {
+    console.error('Direct products import failed:', error);
+    res.write(`data: ${JSON.stringify({ stage: 'error', message: error.message })}\n\n`);
+    res.end();
+  }
+});
+
+/**
  * @route POST /api/shopify/import/products
- * @desc Import Shopify products
+ * @desc Import Shopify products (background job - DEPRECATED, use /import/products-direct)
  * @access Private
  */
 router.post('/import/products',
