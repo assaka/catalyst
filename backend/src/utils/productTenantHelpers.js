@@ -116,8 +116,11 @@ async function createProduct(storeId, productData) {
 async function updateProduct(storeId, productId, productData) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+  // Exclude translation fields (name, description, short_description) - these go in product_translations table
+  const { name, description, short_description, ...productFieldsOnly } = productData;
+
   const updateFields = {
-    ...productData,
+    ...productFieldsOnly,
     updated_at: new Date().toISOString()
   };
 
