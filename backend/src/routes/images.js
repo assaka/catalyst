@@ -194,18 +194,20 @@ router.get('/product-status/:store_id', authMiddleware, async (req, res) => {
     const { limit = 20, offset = 0 } = req.query;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { Product } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const products = await Product.findAll({
-      where: { store_id },
-      attributes: ['id', 'sku', 'name', 'images'],
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['updated_at', 'DESC']]
-    });
+    const { data: products, error: productsError, count } = await tenantDb
+      .from('products')
+      .select('id, sku, name, images')
+      .eq('store_id', store_id)
+      .order('updated_at', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 
-    const productStatus = products.map(product => ({
+    if (productsError) {
+      throw productsError;
+    }
+
+    const productStatus = (products || []).map(product => ({
       id: product.id,
       sku: product.sku,
       name: product.name,
@@ -225,7 +227,7 @@ router.get('/product-status/:store_id', authMiddleware, async (req, res) => {
       pagination: {
         limit: parseInt(limit),
         offset: parseInt(offset),
-        total: await Product.count({ where: { store_id } })
+        total: count || 0
       }
     });
   } catch (error) {
@@ -265,19 +267,21 @@ router.post('/bulk-process', authMiddleware, async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { Product } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     const syncService = new AkeneoSyncService();
     await syncService.initialize(store_id);
 
     // Get selected products
-    const products = await Product.findAll({
-      where: {
-        store_id,
-        id: product_ids
-      }
-    });
+    const { data: products, error: productsError } = await tenantDb
+      .from('products')
+      .select('*')
+      .eq('store_id', store_id)
+      .in('id', product_ids);
+
+    if (productsError) {
+      throw productsError;
+    }
 
     if (products.length === 0) {
       return res.status(404).json({
@@ -311,7 +315,10 @@ router.post('/bulk-process', authMiddleware, async (req, res) => {
             const catalystImages = syncService.imageProcessor.convertToCatalystFormat(processedImages);
 
             // Update product
-            await product.update({ images: catalystImages });
+            await tenantDb
+              .from('products')
+              .update({ images: catalystImages, updated_at: new Date().toISOString() })
+              .eq('id', product.id);
             return true;
           }
 
@@ -382,12 +389,16 @@ router.post('/supabase/upload-product/:productId',
       }
 
       // Get tenant connection
-      const connection = await ConnectionManager.getStoreConnection(store_id);
-      const { SupabaseOAuthToken } = connection.models;
+      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
       // Check if Supabase is connected
-      const token = await SupabaseOAuthToken.findByStore(store_id);
-      if (!token) {
+      const { data: token, error: tokenError } = await tenantDb
+        .from('supabase_oauth_tokens')
+        .select('*')
+        .eq('store_id', store_id)
+        .maybeSingle();
+
+      if (tokenError || !token) {
         return res.status(400).json({
           success: false,
           message: 'Supabase not connected for this store'
@@ -438,11 +449,15 @@ router.post('/supabase/upload-product/:productId/single',
       }
 
       // Get tenant connection
-      const connection = await ConnectionManager.getStoreConnection(store_id);
-      const { SupabaseOAuthToken } = connection.models;
+      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-      const token = await SupabaseOAuthToken.findByStore(store_id);
-      if (!token) {
+      const { data: token, error: tokenError } = await tenantDb
+        .from('supabase_oauth_tokens')
+        .select('*')
+        .eq('store_id', store_id)
+        .maybeSingle();
+
+      if (tokenError || !token) {
         return res.status(400).json({
           success: false,
           message: 'Supabase not connected for this store'
