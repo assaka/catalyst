@@ -20,6 +20,7 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
   const [showTranslations, setShowTranslations] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [hasManuallyEditedIdentifier, setHasManuallyEditedIdentifier] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     identifier: '',
@@ -73,6 +74,12 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
                   typeof block.placement === 'string' ? [block.placement] : ['content'],
         translations: translations
       });
+
+      // If block has an identifier, consider it manually set
+      setHasManuallyEditedIdentifier(!!(block.identifier));
+    } else {
+      // For new blocks, reset the manual edit flag
+      setHasManuallyEditedIdentifier(false);
     }
   }, [block]);
 
@@ -80,13 +87,31 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
 
-      // Bidirectional syncing: title/content ↔ translations.en
-      if (field === 'title' || field === 'content') {
+      // Special handling for title to update identifier (only if not manually edited)
+      if (field === 'title') {
+        if (!hasManuallyEditedIdentifier) {
+          const newIdentifier = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+          updated.identifier = newIdentifier;
+        }
+
+        // Bidirectional syncing: title ↔ translations.en
         updated.translations = {
           ...prev.translations,
           en: {
             ...prev.translations?.en,
-            [field]: value
+            title: value
+          }
+        };
+      } else if (field === 'identifier') {
+        // Direct identifier edit
+        setHasManuallyEditedIdentifier(true);
+      } else if (field === 'content') {
+        // Bidirectional syncing: content ↔ translations.en
+        updated.translations = {
+          ...prev.translations,
+          en: {
+            ...prev.translations?.en,
+            content: value
           }
         };
       }
@@ -368,9 +393,6 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
               onChange={(e) => handleInputChange('identifier', e.target.value)}
               placeholder="unique-block-identifier"
             />
-            <p className="text-sm text-gray-500 mt-1">
-              Unique identifier for this block (auto-generated from title if empty)
-            </p>
           </div>
 
           <div>
