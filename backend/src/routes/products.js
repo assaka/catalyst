@@ -62,10 +62,18 @@ router.get('/', authAdmin, async (req, res) => {
 
     // Apply all translations if requested (for admin translation management)
     let products = rows;
+    console.log('🔍 include_all_translations param:', include_all_translations, 'type:', typeof include_all_translations);
     if (include_all_translations === 'true') {
-      console.log('🌍 Products: Including all translations');
+      console.log('🌍 Products: Including all translations for', rows.length, 'products');
       const tenantDb = await ConnectionManager.getStoreConnection(store_id);
       products = await applyAllProductTranslations(rows, tenantDb);
+      console.log('✅ Applied translations. First product sample:', products[0] ? {
+        id: products[0].id,
+        hasTranslations: !!products[0].translations,
+        translationsKeys: products[0].translations ? Object.keys(products[0].translations) : []
+      } : 'no products');
+    } else {
+      console.log('⚠️ Skipping translations - parameter not matched');
     }
 
     res.json({
