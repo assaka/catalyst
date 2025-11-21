@@ -693,7 +693,7 @@ class CustomDomainService {
         updated_at: new Date().toISOString()
       };
 
-      // Upsert into master DB lookup table
+      // 1. Upsert into custom_domains_lookup table (all domains)
       const { error } = await masterDbClient
         .from('custom_domains_lookup')
         .upsert(lookupData, {
@@ -702,10 +702,43 @@ class CustomDomainService {
         });
 
       if (error) {
-        console.error('Error syncing domain to master DB:', error);
+        console.error('Error syncing domain to master DB lookup table:', error);
         // Don't throw - this is a non-critical operation
       } else {
-        console.log(`✓ Synced domain ${domain.domain} to master DB lookup table`);
+        console.log(`✓ Synced domain ${domain.domain} to custom_domains_lookup table`);
+      }
+
+      // 2. Update master stores table with count and primary domain
+      // Get current count of verified active domains
+      const { count, error: countError } = await masterDbClient
+        .from('custom_domains_lookup')
+        .select('*', { count: 'exact', head: true })
+        .eq('store_id', storeId)
+        .eq('is_verified', true)
+        .eq('is_active', true);
+
+      const domainsCount = countError ? 0 : (count || 0);
+
+      const storeUpdate = {
+        custom_domains_count: domainsCount,
+        updated_at: new Date().toISOString()
+      };
+
+      // If this is the PRIMARY domain, also set it
+      if (domain.is_primary && domain.verification_status === 'verified') {
+        storeUpdate.primary_custom_domain = domain.domain.toLowerCase();
+        storeUpdate.domain_verified = true;
+      }
+
+      const { error: storeError } = await masterDbClient
+        .from('stores')
+        .update(storeUpdate)
+        .eq('id', storeId);
+
+      if (storeError) {
+        console.error('Error updating master stores table:', storeError);
+      } else {
+        console.log(`✓ Updated master stores table (count: ${domainsCount}, primary: ${domain.is_primary})`);
       }
     } catch (error) {
       console.error('Error syncing domain to master DB:', error);
@@ -717,18 +750,38 @@ class CustomDomainService {
    * Remove domain from master DB lookup table
    * @private
    */
-  static async _removeFromMasterDB(domainName) {
+  static async _removeFromMasterDB(domainName, storeId = null, wasPrimary = false) {
     try {
+      // 1. Remove from custom_domains_lookup table
       const { error } = await masterDbClient
         .from('custom_domains_lookup')
         .delete()
         .eq('domain', domainName.toLowerCase());
 
       if (error) {
-        console.error('Error removing domain from master DB:', error);
+        console.error('Error removing domain from master DB lookup table:', error);
         // Don't throw - this is a non-critical operation
       } else {
-        console.log(`✓ Removed domain ${domainName} from master DB lookup table`);
+        console.log(`✓ Removed domain ${domainName} from custom_domains_lookup table`);
+      }
+
+      // 2. If this was the primary domain, clear it from master stores table
+      if (wasPrimary && storeId) {
+        const { error: storeError } = await masterDbClient
+          .from('stores')
+          .update({
+            primary_custom_domain: null,
+            domain_verified: false,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', storeId)
+          .eq('primary_custom_domain', domainName.toLowerCase());
+
+        if (storeError) {
+          console.error('Error clearing primary domain from master stores table:', storeError);
+        } else {
+          console.log(`✓ Cleared primary_custom_domain from master stores table`);
+        }
       }
     } catch (error) {
       console.error('Error removing domain from master DB:', error);

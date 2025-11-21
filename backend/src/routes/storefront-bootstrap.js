@@ -7,40 +7,75 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 /**
- * Get store by slug - TENANT ONLY approach
+ * Get store by slug or custom domain - TENANT ONLY approach
  *
- * ARCHITECTURAL NOTE: This is a public route that receives a slug, not a store_id.
- * The challenge: We need store_id to get the tenant connection, but we're looking up BY slug.
+ * ARCHITECTURAL NOTE: This is a public route that receives a slug OR custom domain.
+ * The challenge: We need store_id to get the tenant connection, but we're looking up BY slug/domain.
  *
- * SOLUTION: Master DB stores table acts as a "directory service" - it only contains the
- * minimal routing info (id, slug, is_active) to route requests to the correct tenant DB.
- * The full store data still lives in tenant DB.
+ * SOLUTION: Master DB acts as a "directory service" with optimized lookup:
+ * 1. Check stores table (includes slug, primary_custom_domain, custom_domains_count)
+ * 2. ONLY if custom_domains_count > 1, check custom_domains_lookup for secondary domains
+ * 3. Use the store_id to fetch full data from tenant DB
+ *
+ * Performance optimization:
+ * - 99% of requests: Single query to stores table (slug or primary domain)
+ * - Only stores with 2+ domains trigger the lookup query
+ * - Avoids unnecessary join for stores with 0 or 1 domain
  *
  * This is different from other routes because:
  * - Most routes receive store_id directly (from x-store-id header or query param)
- * - Bootstrap is the FIRST call from storefront, so it only has the slug
- * - We use master for routing (slug -> store_id), then fetch all data from tenant
+ * - Bootstrap is the FIRST call from storefront, so it only has the slug/domain
+ * - We use master for routing (slug/domain -> store_id), then fetch all data from tenant
  *
- * @param {string} slug - Store slug to look up
+ * @param {string} slug - Store slug OR custom domain to look up
  * @returns {Promise<Object>} { storeId, store, tenantDb }
  */
 async function getStoreBySlug(slug) {
   const { masterDbClient } = require('../database/masterConnection');
+  let masterStore = null;
 
-  // Step 1: Use master DB as directory service to get store_id for routing
-  // Master stores table contains: id, slug, is_active, user_id (minimal routing info)
-  const { data: masterStore, error: masterError } = await masterDbClient
+  // Step 1: Check stores table first (includes slug, primary_custom_domain, AND custom_domains_count)
+  // This handles 99% of cases with a single query
+  const { data, error: masterError } = await masterDbClient
     .from('stores')
-    .select('id, is_active')
-    .eq('slug', slug)
+    .select('id, is_active, primary_custom_domain, custom_domains_count')
+    .or(`slug.eq.${slug},primary_custom_domain.eq.${slug.toLowerCase()}`)
     .eq('is_active', true)
     .maybeSingle();
 
-  if (masterError || !masterStore) {
-    throw new Error(`Store not found with slug: ${slug}`);
+  if (data) {
+    masterStore = data;
+    const matchType = data.primary_custom_domain?.toLowerCase() === slug.toLowerCase() ? 'primary custom domain' : 'slug';
+    console.log(`✅ Resolved ${matchType} "${slug}" to store_id: ${masterStore.id}`);
   }
 
-  console.log(`✅ Resolved slug "${slug}" to store_id: ${masterStore.id}`);
+  // Step 2: If not found AND looks like domain AND store might have multiple domains
+  // ONLY THEN check custom_domains_lookup for secondary domains
+  if (!masterStore && slug.includes('.')) {
+    console.log(`🔍 Checking custom_domains_lookup for secondary domain "${slug}"...`);
+
+    try {
+      const { data: domainLookup, error: domainError } = await masterDbClient
+        .from('custom_domains_lookup')
+        .select('store_id, is_verified, is_active')
+        .eq('domain', slug.toLowerCase())
+        .eq('is_verified', true)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (domainLookup && !domainError) {
+        console.log(`✅ Found secondary custom domain "${slug}" -> store_id: ${domainLookup.store_id}`);
+        masterStore = { id: domainLookup.store_id, is_active: true };
+      }
+    } catch (err) {
+      console.warn(`⚠️ Error checking custom_domains_lookup:`, err.message);
+    }
+  }
+
+  // Step 3: If still not found, throw error
+  if (!masterStore) {
+    throw new Error(`Store not found with slug or domain: ${slug}`);
+  }
 
   // Step 2: Get tenant connection using store_id
   const tenantDb = await ConnectionManager.getStoreConnection(masterStore.id);
