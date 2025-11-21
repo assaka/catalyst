@@ -704,4 +704,16 @@ class BackgroundJobManager extends EventEmitter {
 
 // Export singleton instance
 const jobManager = new BackgroundJobManager();
+
+// CRITICAL: Register job types immediately on module load
+// This ensures jobs are registered even if initialize() is never called or fails
+console.log('📝 Pre-registering job types on module load...');
+try {
+  jobManager.registerJobTypes();
+  console.log(`✅ Pre-registered ${jobManager.workers.size} job types at module load`);
+} catch (error) {
+  console.error('❌ CRITICAL: Failed to pre-register job types:', error.message);
+  console.error(error.stack);
+}
+
 module.exports = jobManager;

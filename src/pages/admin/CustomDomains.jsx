@@ -67,6 +67,8 @@ const CustomDomains = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [domainToDelete, setDomainToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [dnsDebugData, setDnsDebugData] = useState(null);
+  const [isDnsDebugOpen, setIsDnsDebugOpen] = useState(false);
 
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {
@@ -194,19 +196,9 @@ const CustomDomains = () => {
           }
         });
 
-        // Create detailed alert
-        const details = [
-          `Domain: ${response.debug.domain}`,
-          '',
-          'DNS Records Found:',
-          `  CNAME: ${response.debug.actual_records.cname?.found ? '✓ ' + response.debug.actual_records.cname.values.join(', ') : '✗ Not found'}`,
-          `  TXT: ${response.debug.actual_records.txt?.found ? '✓ Found' : '✗ Not found'}`,
-          `  TXT Match: ${response.debug.actual_records.txt?.matches_expected ? '✓ Correct' : '✗ Incorrect or missing'}`,
-          '',
-          'Can Verify: ' + (response.debug.can_verify ? '✓ YES' : '✗ NO')
-        ].join('\n');
-
-        alert('DNS Debug Report\n\n' + details + '\n\nCheck console for full details.');
+        // Open debug modal
+        setDnsDebugData(response);
+        setIsDnsDebugOpen(true);
       }
     } catch (error) {
       console.error('Error debugging DNS:', error);
@@ -966,6 +958,180 @@ const CustomDomains = () => {
         cancelText="Cancel"
         loading={deleting}
       />
+
+      {/* DNS Debug Modal */}
+      <Dialog open={isDnsDebugOpen} onOpenChange={setIsDnsDebugOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Globe className="w-5 h-5 text-blue-600" />
+              DNS Debug Report
+            </DialogTitle>
+            <DialogDescription>
+              Detailed DNS configuration analysis for {dnsDebugData?.debug?.domain}
+            </DialogDescription>
+          </DialogHeader>
+
+          {dnsDebugData && (
+            <div className="space-y-4">
+              {/* Verification Status */}
+              <div className="rounded-lg border p-4 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-sm text-gray-700">Verification Status</h3>
+                  {dnsDebugData.debug.can_verify ? (
+                    <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Ready to Verify
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">
+                      <XCircle className="w-3 h-3 mr-1" />
+                      Cannot Verify Yet
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* DNS Records */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-sm text-gray-700">DNS Records Found</h3>
+
+                {/* A Record */}
+                <div className="rounded-lg border p-3 bg-white">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">A</span>
+                        <span className="text-sm font-medium">A Record</span>
+                      </div>
+                      {dnsDebugData.debug.actual_records.a?.found ? (
+                        <div className="space-y-1">
+                          <p className="text-xs text-gray-600">
+                            Values: {dnsDebugData.debug.actual_records.a.values.join(', ')}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {dnsDebugData.debug.actual_records.a.note}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500">Not configured</p>
+                      )}
+                    </div>
+                    {dnsDebugData.debug.actual_records.a?.matches_expected ? (
+                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    )}
+                  </div>
+                </div>
+
+                {/* CNAME Record */}
+                <div className="rounded-lg border p-3 bg-white">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">CNAME</span>
+                        <span className="text-sm font-medium">CNAME Record</span>
+                      </div>
+                      {dnsDebugData.debug.actual_records.cname?.found ? (
+                        <div className="space-y-1">
+                          <p className="text-xs text-gray-600">
+                            Values: {dnsDebugData.debug.actual_records.cname.values.join(', ')}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {dnsDebugData.debug.actual_records.cname.note}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500">{dnsDebugData.debug.actual_records.cname?.message || 'Not configured'}</p>
+                      )}
+                    </div>
+                    {dnsDebugData.debug.actual_records.cname?.matches_expected ? (
+                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    ) : (
+                      <Info className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    )}
+                  </div>
+                </div>
+
+                {/* TXT Record */}
+                <div className="rounded-lg border p-3 bg-white">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">TXT</span>
+                        <span className="text-sm font-medium">Verification Record</span>
+                      </div>
+                      {dnsDebugData.debug.actual_records.txt?.found ? (
+                        <div className="space-y-1">
+                          <p className="text-xs text-gray-600">
+                            Record: {dnsDebugData.debug.actual_records.txt.record_name}
+                          </p>
+                          <p className="text-xs font-mono text-gray-500 break-all">
+                            {dnsDebugData.debug.actual_records.txt.values[0]}
+                          </p>
+                          {dnsDebugData.debug.actual_records.txt.matches_expected ? (
+                            <p className="text-xs text-green-600 font-medium">✓ Token matches</p>
+                          ) : (
+                            <p className="text-xs text-red-600 font-medium">✗ Token doesn't match</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500">{dnsDebugData.debug.actual_records.txt?.message || 'Not configured'}</p>
+                      )}
+                    </div>
+                    {dnsDebugData.debug.actual_records.txt?.matches_expected ? (
+                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Expected Token */}
+              <div className="rounded-lg border p-4 bg-blue-50 border-blue-200">
+                <h3 className="font-medium text-sm text-blue-900 mb-2">Expected Verification Token</h3>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs font-mono bg-white p-2 rounded border break-all">
+                    {dnsDebugData.debug.verification_token}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(dnsDebugData.debug.verification_token);
+                      toast.success('Token copied to clipboard');
+                    }}
+                  >
+                    <Copy className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Recommendations */}
+              {dnsDebugData.recommendations && dnsDebugData.recommendations.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="font-medium text-sm text-gray-700">Recommendations</h3>
+                  {dnsDebugData.recommendations.map((rec, idx) => (
+                    <Alert key={idx} className={rec.type === 'error' ? 'border-red-200 bg-red-50' : rec.type === 'success' ? 'border-green-200 bg-green-50' : 'border-blue-200 bg-blue-50'}>
+                      <AlertDescription className="text-sm">
+                        {rec.message}
+                      </AlertDescription>
+                    </Alert>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDnsDebugOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
