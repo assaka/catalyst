@@ -63,6 +63,39 @@ export default function ShippingMethodsPage() {
     return `${symbol}${num.toFixed(decimals)}`;
   };
 
+  // Helper function to format shipping method description
+  const getMethodDescription = (method) => {
+    switch (method.type) {
+      case 'flat_rate':
+        return `${formatPrice(parseFloat(method.flat_rate_cost || 0))} Flat Rate`;
+
+      case 'free_shipping':
+        return `Free over ${formatPrice(parseFloat(method.free_shipping_min_order || 0))}`;
+
+      case 'weight_based':
+        if (method.weight_ranges && method.weight_ranges.length > 0) {
+          return `Weight-based (${method.weight_ranges.length} ranges)`;
+        }
+        return 'Weight-based';
+
+      case 'price_based':
+        if (method.price_ranges && method.price_ranges.length > 0) {
+          const firstRange = method.price_ranges[0];
+          const minPrice = formatPrice(parseFloat(firstRange.min_price || 0));
+          const maxPrice = formatPrice(parseFloat(firstRange.max_price || 0));
+          const cost = formatPrice(parseFloat(firstRange.cost || 0));
+          if (method.price_ranges.length === 1) {
+            return `${cost} for ${minPrice}-${maxPrice}`;
+          }
+          return `Price-based (${method.price_ranges.length} ranges)`;
+        }
+        return 'Price-based';
+
+      default:
+        return 'Custom shipping';
+    }
+  };
+
   useEffect(() => {
     if (selectedStore) {
       loadData();
@@ -249,8 +282,7 @@ export default function ShippingMethodsPage() {
                           </Badge>
                           <span>•</span>
                           <span>
-                            {method.type === 'flat_rate' ? `${formatPrice(parseFloat(method.flat_rate_cost || 0))} Flat Rate` :
-                             `Free over ${formatPrice(parseFloat(method.free_shipping_min_order || 0))}`}
+                            {getMethodDescription(method)}
                           </span>
                         </div>
                       </div>
