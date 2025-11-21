@@ -1,7 +1,7 @@
 const { EventEmitter } = require('events');
 const Job = require('../models/Job');
 const JobHistory = require('../models/JobHistory');
-const { sequelize } = require('../database/connection');
+const { masterSequelize } = require('../database/masterConnection');
 const bullMQManager = require('./BullMQManager');
 
 /**
@@ -298,7 +298,7 @@ class BackgroundJobManager extends EventEmitter {
     return Job.findOne({
       where: {
         status: 'pending',
-        scheduled_at: { [sequelize.Sequelize.Op.lte]: new Date() }
+        scheduled_at: { [masterSequelize.Sequelize.Op.lte]: new Date() }
       },
       order: [
         ['priority', 'DESC'], // High priority first
@@ -501,9 +501,9 @@ class BackgroundJobManager extends EventEmitter {
     }
 
     const [totalJobs, completedJobs, failedJobs, pendingJobs, runningJobs] = await Promise.all([
-      Job.count({ where: { created_at: { [sequelize.Sequelize.Op.gte]: since } } }),
-      Job.count({ where: { status: 'completed', created_at: { [sequelize.Sequelize.Op.gte]: since } } }),
-      Job.count({ where: { status: 'failed', created_at: { [sequelize.Sequelize.Op.gte]: since } } }),
+      Job.count({ where: { created_at: { [masterSequelize.Sequelize.Op.gte]: since } } }),
+      Job.count({ where: { status: 'completed', created_at: { [masterSequelize.Sequelize.Op.gte]: since } } }),
+      Job.count({ where: { status: 'failed', created_at: { [masterSequelize.Sequelize.Op.gte]: since } } }),
       Job.count({ where: { status: 'pending' } }),
       Job.count({ where: { status: 'running' } })
     ]);

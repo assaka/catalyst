@@ -67,28 +67,6 @@ const ShopifyIntegration = () => {
                   </p>
                 </div>
               </div>
-
-              <div className="flex items-center space-x-2">
-                {connectionStatus?.connected ? (
-                  <>
-                    <button
-                      onClick={checkConnectionStatus}
-                      disabled={loading}
-                      className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                      title="Refresh connection status"
-                    >
-                      <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                    </button>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Connected
-                    </span>
-                  </>
-                ) : (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                    Not Connected
-                  </span>
-                )}
-              </div>
             </div>
           </div>
 
