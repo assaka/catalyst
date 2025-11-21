@@ -56,7 +56,15 @@ export default function SeoRedirects() {
       setRedirects(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error loading redirects:', error);
-      setFlashMessage({ type: 'error', message: 'Failed to load redirects' });
+
+      // Extract error message from various possible locations
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to load redirects';
+
+      setFlashMessage({ type: 'error', message: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -106,7 +114,6 @@ export default function SeoRedirects() {
       });
 
       setFlashMessage({ type: 'success', message: 'Redirect added successfully!' });
-      console.log('FlashMessage set to:', { type: 'success', message: 'Redirect added successfully!' });
       setFromUrl('');
       setToUrl('');
       setRedirectType('301');
@@ -114,17 +121,17 @@ export default function SeoRedirects() {
     } catch (error) {
       console.error('Error adding redirect:', error);
 
-      // Check if it's a duplicate URL error (409 Conflict)
-      if (error.response?.status === 409) {
-        setFlashMessage({
-          type: 'error',
-          message: error.response.data.message || 'This redirect already exists'
-        });
-      } else if (error.response?.data?.message) {
-        setFlashMessage({ type: 'error', message: error.response.data.message });
-      } else {
-        setFlashMessage({ type: 'error', message: 'Failed to add redirect' });
-      }
+      // Extract error message from various possible locations
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to add redirect';
+
+      setFlashMessage({
+        type: 'error',
+        message: errorMessage
+      });
     } finally {
       setLoading(false);
     }
@@ -152,15 +159,21 @@ export default function SeoRedirects() {
       await loadRedirects();
     } catch (error) {
       console.error('Error deleting redirect:', error);
-      setFlashMessage({ type: 'error', message: 'Failed to delete redirect' });
+
+      // Extract error message from various possible locations
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to delete redirect';
+
+      setFlashMessage({ type: 'error', message: errorMessage });
     } finally {
       setLoading(false);
       setDeleteModalOpen(false);
       setRedirectToDelete(null);
     }
   };
-
-  console.log('Current flashMessage state:', flashMessage);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
