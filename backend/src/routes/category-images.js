@@ -43,18 +43,17 @@ router.post('/:categoryId/image', upload.single('image'), async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Category } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Verify category exists and belongs to store
-    const category = await Category.findOne({
-      where: {
-        id: categoryId,
-        store_id: storeId
-      }
-    });
+    const { data: category, error: categoryError } = await tenantDb
+      .from('categories')
+      .select('*')
+      .eq('id', categoryId)
+      .eq('store_id', storeId)
+      .single();
 
-    if (!category) {
+    if (!category || categoryError) {
       return res.status(404).json({
         success: false,
         error: 'Category not found or access denied'
@@ -89,19 +88,23 @@ router.post('/:categoryId/image', upload.single('image'), async (req, res) => {
     }
 
     // Update category image_url
-    await category.update({
-      image_url: uploadResult.publicUrl || uploadResult.url,
-      // Store additional metadata in a separate field if needed
-      image_metadata: {
-        filename: uploadResult.filename,
-        path: uploadResult.path,
-        bucket: uploadResult.bucket,
-        size: uploadResult.size,
-        provider: 'supabase',
-        uploaded_at: new Date().toISOString(),
-        original_name: req.file.originalname
-      }
-    });
+    await tenantDb
+      .from('categories')
+      .update({
+        image_url: uploadResult.publicUrl || uploadResult.url,
+        // Store additional metadata in a separate field if needed
+        image_metadata: {
+          filename: uploadResult.filename,
+          path: uploadResult.path,
+          bucket: uploadResult.bucket,
+          size: uploadResult.size,
+          provider: 'supabase',
+          uploaded_at: new Date().toISOString(),
+          original_name: req.file.originalname
+        },
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', categoryId);
 
     res.json({
       success: true,
@@ -142,18 +145,17 @@ router.post('/:categoryId/banner', upload.single('banner'), async (req, res) => 
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Category } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Verify category exists and belongs to store
-    const category = await Category.findOne({
-      where: {
-        id: categoryId,
-        store_id: storeId
-      }
-    });
+    const { data: category, error: categoryError } = await tenantDb
+      .from('categories')
+      .select('*')
+      .eq('id', categoryId)
+      .eq('store_id', storeId)
+      .single();
 
-    if (!category) {
+    if (!category || categoryError) {
       return res.status(404).json({
         success: false,
         error: 'Category not found or access denied'
@@ -241,8 +243,7 @@ router.get('/:categoryId/images', async (req, res) => {
     const { categoryId } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Category } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Verify category exists and belongs to store
     const category = await Category.findOne({
@@ -298,18 +299,17 @@ router.delete('/:categoryId/image', async (req, res) => {
     const { categoryId } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Category } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Verify category exists and belongs to store
-    const category = await Category.findOne({
-      where: {
-        id: categoryId,
-        store_id: storeId
-      }
-    });
+    const { data: category, error: categoryError } = await tenantDb
+      .from('categories')
+      .select('*')
+      .eq('id', categoryId)
+      .eq('store_id', storeId)
+      .single();
 
-    if (!category) {
+    if (!category || categoryError) {
       return res.status(404).json({
         success: false,
         error: 'Category not found or access denied'
@@ -360,10 +360,14 @@ router.delete('/:categoryId/image', async (req, res) => {
     }
 
     // Remove image from category
-    await category.update({
-      image_url: null,
-      image_metadata: null
-    });
+    await tenantDb
+      .from('categories')
+      .update({
+        image_url: null,
+        image_metadata: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', categoryId);
 
     res.json({
       success: true,
@@ -392,18 +396,17 @@ router.delete('/:categoryId/banners/:bannerId', async (req, res) => {
     const { categoryId, bannerId } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Category } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Verify category exists and belongs to store
-    const category = await Category.findOne({
-      where: {
-        id: categoryId,
-        store_id: storeId
-      }
-    });
+    const { data: category, error: categoryError } = await tenantDb
+      .from('categories')
+      .select('*')
+      .eq('id', categoryId)
+      .eq('store_id', storeId)
+      .single();
 
-    if (!category) {
+    if (!category || categoryError) {
       return res.status(404).json({
         success: false,
         error: 'Category not found or access denied'
@@ -461,7 +464,10 @@ router.delete('/:categoryId/banners/:bannerId', async (req, res) => {
     });
 
     // Update category in database
-    await category.update({ banner_images: updatedBanners });
+    await tenantDb
+      .from('categories')
+      .update({ banner_images: updatedBanners, updated_at: new Date().toISOString() })
+      .eq('id', categoryId);
 
     res.json({
       success: true,
@@ -500,18 +506,17 @@ router.post('/:categoryId/banners/reorder', async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Category } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Verify category exists and belongs to store
-    const category = await Category.findOne({
-      where: {
-        id: categoryId,
-        store_id: storeId
-      }
-    });
+    const { data: category, error: categoryError } = await tenantDb
+      .from('categories')
+      .select('*')
+      .eq('id', categoryId)
+      .eq('store_id', storeId)
+      .single();
 
-    if (!category) {
+    if (!category || categoryError) {
       return res.status(404).json({
         success: false,
         error: 'Category not found or access denied'
@@ -550,7 +555,10 @@ router.post('/:categoryId/banners/reorder', async (req, res) => {
     });
 
     // Update category in database
-    await category.update({ banner_images: reorderedBanners });
+    await tenantDb
+      .from('categories')
+      .update({ banner_images: reorderedBanners, updated_at: new Date().toISOString() })
+      .eq('id', categoryId);
 
     res.json({
       success: true,

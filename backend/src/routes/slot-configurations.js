@@ -12,22 +12,22 @@ router.get('/public', async (req, res) => {
       return res.status(400).json({ success: false, error: 'store_id is required' });
     }
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { SlotConfiguration } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const where = {
-      store_id,
-      is_active: true
-    };
+    const { data: configurations, error } = await tenantDb
+      .from('slot_configurations')
+      .select('*')
+      .eq('store_id', store_id)
+      .eq('is_active', true)
+      .order('updated_at', { ascending: false });
 
-    const configurations = await SlotConfiguration.findAll({
-      where,
-      order: [['updated_at', 'DESC']]
-    });
+    if (error) {
+      throw error;
+    }
 
     // Filter by page_name and slot_type if provided (stored in configuration JSON)
-    let filtered = configurations;
+    let filtered = configurations || [];
     if (page_name || slot_type) {
       filtered = configurations.filter(config => {
         const conf = config.configuration || {};
@@ -53,24 +53,25 @@ router.get('/slot-configurations', authMiddleware, async (req, res) => {
       return res.status(400).json({ success: false, error: 'store_id is required' });
     }
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { SlotConfiguration } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const where = {
-      user_id: req.user.id
-    };
+    let query = tenantDb
+      .from('slot_configurations')
+      .select('*')
+      .eq('user_id', req.user.id);
 
-    if (store_id) where.store_id = store_id;
-    if (is_active !== undefined) where.is_active = is_active === 'true';
+    if (store_id) query = query.eq('store_id', store_id);
+    if (is_active !== undefined) query = query.eq('is_active', is_active === 'true');
 
-    const configurations = await SlotConfiguration.findAll({
-      where,
-      order: [['updated_at', 'DESC']]
-    });
+    const { data: configurations, error } = await query.order('updated_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
 
     // Filter by page_name and slot_type if provided (stored in configuration JSON)
-    let filtered = configurations;
+    let filtered = configurations || [];
     if (page_name || slot_type) {
       filtered = configurations.filter(config => {
         const conf = config.configuration || {};
@@ -96,18 +97,17 @@ router.get('/slot-configurations/:id', authMiddleware, async (req, res) => {
       return res.status(400).json({ success: false, error: 'store_id is required' });
     }
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { SlotConfiguration } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const configuration = await SlotConfiguration.findOne({
-      where: {
-        id: req.params.id,
-        user_id: req.user.id
-      }
-    });
+    const { data: configuration, error } = await tenantDb
+      .from('slot_configurations')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
+      .single();
 
-    if (!configuration) {
+    if (!configuration || error) {
       return res.status(404).json({ success: false, error: 'Configuration not found' });
     }
 
@@ -128,21 +128,20 @@ router.post('/draft/:storeId/:pageType', authMiddleware, async (req, res) => {
       return res.status(400).json({ success: false, error: 'storeId is required' });
     }
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { SlotConfiguration } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Check if a draft configuration already exists for this user/store and pageType
-    const existing = await SlotConfiguration.findOne({
-      where: {
-        user_id: req.user.id,
-        store_id: storeId,
-        is_active: false
-      }
-    });
+    const { data: existing, error: findError } = await tenantDb
+      .from('slot_configurations')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .eq('store_id', storeId)
+      .eq('is_active', false)
+      .maybeSingle();
 
     // If draft exists for the same page type, return it
-    if (existing) {
+    if (existing && !findError) {
       const existingPageType = existing.configuration?.metadata?.pageType;
       if (existingPageType === pageType) {
         console.log('✅ Returning existing draft slot configuration for user/store/page:', req.user.id, storeId, pageType);
@@ -152,11 +151,22 @@ router.post('/draft/:storeId/:pageType', authMiddleware, async (req, res) => {
       // Different page type - update with new configuration if staticConfiguration provided
       if (staticConfiguration) {
         console.log('🔄 Updating draft with new page configuration:', pageType);
-        existing.configuration = staticConfiguration;
-        existing.changed('configuration', true);
-        await existing.save();
 
-        return res.json({ success: true, data: existing });
+        const { data: updated, error: updateError } = await tenantDb
+          .from('slot_configurations')
+          .update({
+            configuration: staticConfiguration,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        return res.json({ success: true, data: updated });
       }
 
       // Return existing draft even if page type doesn't match
@@ -174,12 +184,23 @@ router.post('/draft/:storeId/:pageType', authMiddleware, async (req, res) => {
     };
 
     console.log('➕ Creating new draft slot configuration for user/store/page:', req.user.id, storeId, pageType);
-    const newConfiguration = await SlotConfiguration.create({
-      user_id: req.user.id,
-      store_id: storeId,
-      configuration: newConfig,
-      is_active: false
-    });
+
+    const { data: newConfiguration, error: createError } = await tenantDb
+      .from('slot_configurations')
+      .insert({
+        user_id: req.user.id,
+        store_id: storeId,
+        configuration: newConfig,
+        is_active: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      throw createError;
+    }
 
     res.json({ success: true, data: newConfiguration });
   } catch (error) {
@@ -197,9 +218,8 @@ router.post('/slot-configurations', authMiddleware, async (req, res) => {
       return res.status(400).json({ success: false, error: 'store_id is required' });
     }
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { SlotConfiguration } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Include page_name and slot_type in the configuration JSON
     const fullConfiguration = {
@@ -209,32 +229,54 @@ router.post('/slot-configurations', authMiddleware, async (req, res) => {
     };
 
     // Check if a configuration already exists for this user/store
-    const existing = await SlotConfiguration.findOne({
-      where: {
-        user_id: req.user.id,
-        store_id: store_id || req.user.active_store_id
-      }
-    });
+    const { data: existing, error: findError } = await tenantDb
+      .from('slot_configurations')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .eq('store_id', store_id || req.user.active_store_id)
+      .maybeSingle();
 
-    if (existing) {
+    if (existing && !findError) {
       // Update the existing configuration (since we only allow one per user/store)
       console.log('🔄 Updating existing slot configuration for user/store:', req.user.id, store_id);
-      existing.configuration = fullConfiguration;
-      existing.is_active = is_active !== undefined ? is_active : true;
-      existing.changed('configuration', true);
-      await existing.save();
 
-      return res.json({ success: true, data: existing });
+      const { data: updated, error: updateError } = await tenantDb
+        .from('slot_configurations')
+        .update({
+          configuration: fullConfiguration,
+          is_active: is_active !== undefined ? is_active : true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      return res.json({ success: true, data: updated });
     }
 
     // Create new configuration
     console.log('➕ Creating new slot configuration for user/store:', req.user.id, store_id);
-    const newConfiguration = await SlotConfiguration.create({
-      user_id: req.user.id,
-      store_id: store_id || req.user.active_store_id,
-      configuration: fullConfiguration,
-      is_active: is_active !== undefined ? is_active : true
-    });
+
+    const { data: newConfiguration, error: createError } = await tenantDb
+      .from('slot_configurations')
+      .insert({
+        user_id: req.user.id,
+        store_id: store_id || req.user.active_store_id,
+        configuration: fullConfiguration,
+        is_active: is_active !== undefined ? is_active : true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      throw createError;
+    }
 
     res.json({ success: true, data: newConfiguration });
   } catch (error) {
@@ -252,18 +294,17 @@ router.put('/slot-configurations/:id', authMiddleware, async (req, res) => {
       return res.status(400).json({ success: false, error: 'store_id is required' });
     }
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { SlotConfiguration } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const configuration = await SlotConfiguration.findOne({
-      where: {
-        id: req.params.id,
-        user_id: req.user.id
-      }
-    });
+    const { data: configuration, error: findError } = await tenantDb
+      .from('slot_configurations')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
+      .single();
 
-    if (!configuration) {
+    if (!configuration || findError) {
       return res.status(404).json({ success: false, error: 'Configuration not found' });
     }
 
@@ -276,13 +317,27 @@ router.put('/slot-configurations/:id', authMiddleware, async (req, res) => {
       slot_type
     };
 
-    configuration.configuration = fullConfiguration;
-    if (is_active !== undefined) configuration.is_active = is_active;
-    configuration.changed('configuration', true);
+    const updateData = {
+      configuration: fullConfiguration,
+      updated_at: new Date().toISOString()
+    };
 
-    await configuration.save();
+    if (is_active !== undefined) {
+      updateData.is_active = is_active;
+    }
 
-    res.json({ success: true, data: configuration });
+    const { data: updated, error: updateError } = await tenantDb
+      .from('slot_configurations')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    res.json({ success: true, data: updated });
   } catch (error) {
     console.error('Error updating slot configuration:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -298,22 +353,28 @@ router.delete('/slot-configurations/:id', authMiddleware, async (req, res) => {
       return res.status(400).json({ success: false, error: 'store_id is required' });
     }
 
-    // Get tenant connection and models
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { SlotConfiguration } = connection.models;
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    const configuration = await SlotConfiguration.findOne({
-      where: {
-        id: req.params.id,
-        user_id: req.user.id
-      }
-    });
+    const { data: configuration, error: findError } = await tenantDb
+      .from('slot_configurations')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
+      .single();
 
-    if (!configuration) {
+    if (!configuration || findError) {
       return res.status(404).json({ success: false, error: 'Configuration not found' });
     }
 
-    await configuration.destroy();
+    const { error: deleteError } = await tenantDb
+      .from('slot_configurations')
+      .delete()
+      .eq('id', req.params.id);
+
+    if (deleteError) {
+      throw deleteError;
+    }
 
     res.json({ success: true, message: 'Configuration deleted successfully' });
   } catch (error) {

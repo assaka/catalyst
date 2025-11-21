@@ -122,12 +122,13 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     }
 
     // Get tenant connection for store access check
-    const tenantConnection = await ConnectionManager.getStoreConnection(settings.store_id);
-    const { Store } = tenantConnection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(settings.store_id);
 
-    const storeInfo = await Store.findByPk(settings.store_id, {
-      attributes: ['id', 'name', 'user_id']
-    });
+    const { data: storeInfo } = await tenantDb
+      .from('stores')
+      .select('id', 'name', 'user_id')
+      .eq('id', settings.store_id)
+      .single();
 
     // Check store access
     if (req.user.role !== 'admin') {
@@ -185,13 +186,14 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
     const { translations, ...settingsData } = req.body;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(store_id);
-    const { CookieConsentSettings } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // UPSERT: Check if settings already exist for this store
-    const existingSettings = await CookieConsentSettings.findOne({
-      where: { store_id }
-    });
+    const { data: existingSettings } = await tenantDb
+      .from('cookie_consent_settings')
+      .select('*')
+      .eq('store_id', store_id)
+      .maybeSingle();
 
     let settings;
     let isNew = false;
@@ -255,11 +257,14 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(existingSettingsData.store_id);
-    const { CookieConsentSettings } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(existingSettingsData.store_id);
 
     // Get the full model instance
-    const existingSettings = await CookieConsentSettings.findByPk(req.params.id);
+    const { data: existingSettings } = await tenantDb
+      .from('cookie_consent_settings')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
 
     if (!existingSettings) {
       return res.status(404).json({
@@ -330,10 +335,13 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(existingSettingsData.store_id);
-    const { CookieConsentSettings } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(existingSettingsData.store_id);
 
-    const settings = await CookieConsentSettings.findByPk(req.params.id);
+    const { data: settings } = await tenantDb
+      .from('cookie_consent_settings')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
 
     if (!settings) {
       return res.status(404).json({
@@ -407,15 +415,20 @@ router.post('/:id/translate', authMiddleware, [
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(existingSettingsData.store_id);
-    const { CookieConsentSettings, Store } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(existingSettingsData.store_id);
 
-    const settings = await CookieConsentSettings.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        attributes: ['id', 'name', 'user_id']
-      }]
-    });
+    const { data: settings } = await tenantDb
+      .from('cookie_consent_settings')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    // Get store separately since we can't join across tables
+    const { data: Store } = await tenantDb
+      .from('stores')
+      .select('id', 'name', 'user_id')
+      .eq('id', settings.store_id)
+      .single();
 
     if (!settings) {
       return res.status(404).json({
@@ -427,7 +440,7 @@ router.post('/:id/translate', authMiddleware, [
     // Check store access
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, settings.Store.id);
+      const access = await checkUserStoreAccess(req.user.id, Store.id);
 
       if (!access) {
         return res.status(403).json({

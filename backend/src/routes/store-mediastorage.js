@@ -12,10 +12,14 @@ router.get('/stores/:storeId/default-mediastorage-provider',
       const { storeId } = req.params;
 
       // Get tenant connection
-      const connection = await ConnectionManager.getStoreConnection(storeId);
-      const { Store } = connection.models;
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      const store = await Store.findByPk(storeId);
+      const { data: store } = await tenantDb
+        .from('stores')
+        .select('*')
+        .eq('id', storeId)
+        .single();
+
       if (!store) {
         return res.status(404).json({
           success: false,
@@ -66,10 +70,14 @@ router.post('/stores/:storeId/default-mediastorage-provider',
       }
 
       // Get tenant connection
-      const connection = await ConnectionManager.getStoreConnection(storeId);
-      const { Store } = connection.models;
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      const store = await Store.findByPk(storeId);
+      const { data: store } = await tenantDb
+        .from('stores')
+        .select('*')
+        .eq('id', storeId)
+        .single();
+
       if (!store) {
         return res.status(404).json({
           success: false,
@@ -88,24 +96,16 @@ router.post('/stores/:storeId/default-mediastorage-provider',
       console.log('Current settings before update:', currentSettings);
       console.log('Updating store settings with:', updatedSettings);
 
-      // Use raw query to ensure the JSON field is properly updated
-      await connection.sequelize.query(
-        `UPDATE stores
-         SET settings = :settings,
-             updated_at = NOW()
-         WHERE id = :storeId`,
-        {
-          replacements: {
-            settings: JSON.stringify(updatedSettings),
-            storeId: storeId
-          },
-          type: connection.sequelize.QueryTypes.UPDATE
-        }
-      );
+      // Update the store with new settings
+      await tenantDb
+        .from('stores')
+        .update({
+          settings: updatedSettings,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
 
-      // Reload the store to get the updated data
-      await store.reload();
-      console.log('Settings after save:', store.settings);
+      console.log('Settings after save:', updatedSettings);
 
       res.json({
         success: true,
@@ -131,10 +131,14 @@ router.delete('/stores/:storeId/default-mediastorage-provider',
       const { storeId } = req.params;
 
       // Get tenant connection
-      const connection = await ConnectionManager.getStoreConnection(storeId);
-      const { Store } = connection.models;
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      const store = await Store.findByPk(storeId);
+      const { data: store } = await tenantDb
+        .from('stores')
+        .select('*')
+        .eq('id', storeId)
+        .single();
+
       if (!store) {
         return res.status(404).json({
           success: false,
@@ -148,20 +152,14 @@ router.delete('/stores/:storeId/default-mediastorage-provider',
       delete updatedSettings.default_mediastorage_provider;
       delete updatedSettings.default_mediastorage_provider_updated_at;
 
-      // Use raw query to ensure the JSON field is properly updated
-      await connection.sequelize.query(
-        `UPDATE stores
-         SET settings = :settings,
-             updated_at = NOW()
-         WHERE id = :storeId`,
-        {
-          replacements: {
-            settings: JSON.stringify(updatedSettings),
-            storeId: storeId
-          },
-          type: connection.sequelize.QueryTypes.UPDATE
-        }
-      );
+      // Update the store with new settings
+      await tenantDb
+        .from('stores')
+        .update({
+          settings: updatedSettings,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
 
       res.json({
         success: true,

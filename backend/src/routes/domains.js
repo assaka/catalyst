@@ -22,10 +22,13 @@ router.get('/storefront-url', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Store } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const store = await Store.findByPk(storeId);
+    const { data: store } = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .single();
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -102,10 +105,13 @@ router.get('/', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Store } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const store = await Store.findByPk(storeId);
+    const { data: store } = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .single();
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -177,10 +183,13 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Store } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const store = await Store.findByPk(storeId);
+    const { data: store } = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .single();
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -211,12 +220,16 @@ router.post('/', async (req, res) => {
 
     // Add to store settings
     const updatedDomains = [...existingDomains, newDomain];
-    await store.update({
-      settings: {
-        ...store.settings,
-        custom_domains: updatedDomains
-      }
-    });
+    await tenantDb
+      .from('stores')
+      .update({
+        settings: {
+          ...store.settings,
+          custom_domains: updatedDomains
+        },
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', storeId);
 
     // If auto setup DNS is enabled, try to configure DNS via Cloudflare
     if (auto_setup_dns) {
@@ -259,10 +272,13 @@ router.post('/:domain_id/verify', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Store } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const store = await Store.findByPk(storeId);
+    const { data: store } = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .single();
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -289,12 +305,16 @@ router.post('/:domain_id/verify', async (req, res) => {
       domain.verified_at = new Date().toISOString();
       
       const updatedDomains = domains.map(d => d.id === domain_id ? domain : d);
-      await store.update({
-        settings: {
-          ...store.settings,
-          custom_domains: updatedDomains
-        }
-      });
+      await tenantDb
+        .from('stores')
+        .update({
+          settings: {
+            ...store.settings,
+            custom_domains: updatedDomains
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
 
       res.json({
         success: true,
@@ -336,10 +356,13 @@ router.post('/:domain_id/ssl/setup', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Store } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const store = await Store.findByPk(storeId);
+    const { data: store } = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .single();
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -373,12 +396,16 @@ router.post('/:domain_id/ssl/setup', async (req, res) => {
       domain.ssl_expires_at = sslResult.expires_at;
       
       const updatedDomains = domains.map(d => d.id === domain_id ? domain : d);
-      await store.update({
-        settings: {
-          ...store.settings,
-          custom_domains: updatedDomains
-        }
-      });
+      await tenantDb
+        .from('stores')
+        .update({
+          settings: {
+            ...store.settings,
+            custom_domains: updatedDomains
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId);
 
       res.json({
         success: true,
@@ -416,10 +443,13 @@ router.delete('/:domain_id', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Store } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const store = await Store.findByPk(storeId);
+    const { data: store } = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .single();
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -445,12 +475,16 @@ router.delete('/:domain_id', async (req, res) => {
       updatedDomains[0].is_primary = true;
     }
 
-    await store.update({
-      settings: {
-        ...store.settings,
-        custom_domains: updatedDomains
-      }
-    });
+    await tenantDb
+      .from('stores')
+      .update({
+        settings: {
+          ...store.settings,
+          custom_domains: updatedDomains
+        },
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', storeId);
 
     res.json({
       success: true,
@@ -480,10 +514,13 @@ router.get('/dns-records', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Store } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const store = await Store.findByPk(storeId);
+    const { data: store } = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .single();
     const domains = store?.settings?.custom_domains || [];
     
     const dnsRecords = [];
@@ -521,10 +558,13 @@ router.get('/ssl-status', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Store } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const store = await Store.findByPk(storeId);
+    const { data: store } = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('id', storeId)
+      .single();
     const domains = store?.settings?.custom_domains || [];
     
     const sslStatus = {};

@@ -46,18 +46,17 @@ router.post('/:productId/images', upload.array('images', 10), async (req, res) =
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Product } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Verify product exists and belongs to store
-    const product = await Product.findOne({
-      where: {
-        id: productId,
-        store_id: storeId
-      }
-    });
+    const { data: product, error: productError } = await tenantDb
+      .from('products')
+      .select('*')
+      .eq('id', productId)
+      .eq('store_id', storeId)
+      .single();
 
-    if (!product) {
+    if (!product || productError) {
       return res.status(404).json({
         success: false,
         error: 'Product not found or access denied'
@@ -136,7 +135,13 @@ router.post('/:productId/images', upload.array('images', 10), async (req, res) =
     const updatedImages = [...currentImages, ...newImages];
 
     // Update product in database
-    await product.update({ images: updatedImages });
+    await tenantDb
+      .from('products')
+      .update({
+        images: updatedImages,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', productId);
 
     res.json({
       success: true,
@@ -171,18 +176,17 @@ router.put('/:productId/images/:imageId', async (req, res) => {
     const { alt, sort_order } = req.body;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Product } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Verify product exists and belongs to store
-    const product = await Product.findOne({
-      where: {
-        id: productId,
-        store_id: storeId
-      }
-    });
+    const { data: product, error: productError } = await tenantDb
+      .from('products')
+      .select('*')
+      .eq('id', productId)
+      .eq('store_id', storeId)
+      .single();
 
-    if (!product) {
+    if (!product || productError) {
       return res.status(404).json({
         success: false,
         error: 'Product not found or access denied'
@@ -217,7 +221,13 @@ router.put('/:productId/images/:imageId', async (req, res) => {
     }
 
     // Update product in database
-    await product.update({ images: updatedImages });
+    await tenantDb
+      .from('products')
+      .update({
+        images: updatedImages,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', productId);
 
     res.json({
       success: true,
@@ -248,18 +258,17 @@ router.delete('/:productId/images/:imageId', async (req, res) => {
     const { productId, imageId } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Product } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Verify product exists and belongs to store
-    const product = await Product.findOne({
-      where: {
-        id: productId,
-        store_id: storeId
-      }
-    });
+    const { data: product, error: productError } = await tenantDb
+      .from('products')
+      .select('*')
+      .eq('id', productId)
+      .eq('store_id', storeId)
+      .single();
 
-    if (!product) {
+    if (!product || productError) {
       return res.status(404).json({
         success: false,
         error: 'Product not found or access denied'
@@ -323,7 +332,13 @@ router.delete('/:productId/images/:imageId', async (req, res) => {
     });
 
     // Update product in database
-    await product.update({ images: updatedImages });
+    await tenantDb
+      .from('products')
+      .update({
+        images: updatedImages,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', productId);
 
     res.json({
       success: true,
@@ -354,19 +369,17 @@ router.get('/:productId/images', async (req, res) => {
     const { productId } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Product } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Verify product exists and belongs to store
-    const product = await Product.findOne({
-      where: {
-        id: productId,
-        store_id: storeId
-      },
-      attributes: ['id', 'name', 'images']
-    });
+    const { data: product, error: productError } = await tenantDb
+      .from('products')
+      .select('id', 'name', 'images')
+      .eq('id', productId)
+      .eq('store_id', storeId)
+      .single();
 
-    if (!product) {
+    if (!product || productError) {
       return res.status(404).json({
         success: false,
         error: 'Product not found or access denied'
@@ -415,18 +428,17 @@ router.post('/:productId/images/reorder', async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { Product } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Verify product exists and belongs to store
-    const product = await Product.findOne({
-      where: {
-        id: productId,
-        store_id: storeId
-      }
-    });
+    const { data: product, error: productError } = await tenantDb
+      .from('products')
+      .select('*')
+      .eq('id', productId)
+      .eq('store_id', storeId)
+      .single();
 
-    if (!product) {
+    if (!product || productError) {
       return res.status(404).json({
         success: false,
         error: 'Product not found or access denied'
@@ -465,7 +477,13 @@ router.post('/:productId/images/reorder', async (req, res) => {
     });
 
     // Update product in database
-    await product.update({ images: reorderedImages });
+    await tenantDb
+      .from('products')
+      .update({
+        images: reorderedImages,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', productId);
 
     res.json({
       success: true,
