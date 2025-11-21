@@ -183,6 +183,12 @@ export default function BrevoProvider({
   };
 
   const handleConfigureBrevo = () => {
+    console.log('📧 handleConfigureBrevo - Setting form values:', {
+      storeName,
+      storeEmail,
+      willSetSenderName: storeName || '',
+      willSetSenderEmail: storeEmail || ''
+    });
     setShowConfig(true);
     // Pre-fill with store data from Settings > General
     setSenderName(storeName || '');
