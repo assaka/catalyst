@@ -68,7 +68,13 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
       hasPage: !!page,
       productsCount: products?.length || 0,
       productsArray: products,
-      pageRelatedIds: page?.related_product_ids
+      pageRelatedIds: page?.related_product_ids,
+      firstProductSample: products?.[0] ? {
+        id: products[0].id,
+        name: products[0].name,
+        translations: products[0].translations,
+        hasTranslations: !!products[0].translations
+      } : null
     });
 
     if (page) {
