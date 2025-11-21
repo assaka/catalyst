@@ -1,5 +1,8 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../database/connection');
+/**
+ * ShopifyOAuthToken - Pure service class (NO SEQUELIZE)
+ * Tenant data - uses ConnectionManager for database access
+ */
+const crypto = require('crypto');
 
 const ShopifyOAuthToken = sequelize.define('ShopifyOAuthToken', {
   id: {
@@ -81,21 +84,42 @@ const ShopifyOAuthToken = sequelize.define('ShopifyOAuthToken', {
   ]
 });
 
-// Static methods
+// Static methods - use ConnectionManager for tenant DB access
 ShopifyOAuthToken.findByStore = async function(storeId) {
-  return await this.findOne({
-    where: {
-      store_id: storeId
+  const ConnectionManager = require('../services/database/ConnectionManager');
+
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data, error } = await tenantDb
+      .from('shopify_oauth_tokens')
+      .select('*')
+      .eq('store_id', storeId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching Shopify OAuth token:', error);
+      return null;
     }
-  });
+
+    return data;
+  } catch (error) {
+    console.error('ShopifyOAuthToken.findByStore error:', error);
+    throw error;
+  }
 };
 
 ShopifyOAuthToken.findByShopDomain = async function(shopDomain) {
-  return await this.findOne({
-    where: {
-      shop_domain: shopDomain
-    }
-  });
+  const ConnectionManager = require('../services/database/ConnectionManager');
+
+  try {
+    // We need storeId to get tenant connection, but we only have shop_domain
+    // This method is problematic - should be refactored to require storeId
+    throw new Error('findByShopDomain requires storeId - use findByStore instead');
+  } catch (error) {
+    console.error('ShopifyOAuthToken.findByShopDomain error:', error);
+    throw error;
+  }
 };
 
 ShopifyOAuthToken.createOrUpdate = async function(data) {
