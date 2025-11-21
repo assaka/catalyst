@@ -990,7 +990,6 @@ export default function Categories() {
                     <Button
                       onClick={() => {
                         setSelectedCategory(null);
-                        setIsEditing(false);
                         setShowCategoryForm(true);
                       }}
                       className="flex items-center gap-2"
@@ -1019,7 +1018,6 @@ export default function Categories() {
                             <Button
                               onClick={() => {
                                 setSelectedCategory(category);
-                                setIsEditing(true);
                                 setShowCategoryForm(true);
                               }}
                               variant="outline"

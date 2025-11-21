@@ -6,6 +6,8 @@
 
 -- Tables with seed data:
 --   - admin_navigation_registry
+--   - categories
+--   - category_translations
 --   - cms_pages
 --   - cms_page_translations
 --   - cookie_consent_settings
@@ -111,6 +113,23 @@ VALUES
   ('5415ee5a-1276-4883-ac01-33d3dfcb1c2b', 'import_export_jobs', 'Jobs & Analytics', 'BarChart3', '/admin/import-export-jobs', 'import_export', 350, true, true, NULL, 'import_export', NULL, 'Monitor import/export jobs and view performance analytics', NULL, '2025-11-13T06:13:20.486Z', '2025-11-13T06:13:20.486Z', NULL),
   ('b3f52d82-6591-4a20-9ed2-d2172c6fec54', 'background_jobs', 'Background Jobs', 'Activity', '/admin/background-jobs', 'store', 910, true, true, NULL, 'advanced', NULL, 'Monitor all background job processing and queue status', NULL, '2025-11-13T06:13:20.486Z', '2025-11-13T06:13:20.486Z', NULL),
   ('35b0b080-3257-4fd2-a2d2-477ac0c93abb', 'job_scheduler', 'Job Scheduler', 'Clock', '/admin/job-scheduler', 'store', 920, true, true, NULL, 'advanced', NULL, 'Schedule recurring tasks and cron jobs (plugin support)', '{"text":"New","color":"purple","variant":"outline"}'::jsonb, '2025-11-13T06:13:20.486Z', '2025-11-13T06:13:20.486Z', 'new')
+ON CONFLICT DO NOTHING;
+
+
+-- categories (1 row)
+-- Default root category for new stores
+INSERT INTO categories (id, slug, sort_order, is_active, hide_in_menu, parent_id, level, created_at, updated_at)
+VALUES
+  ('00000000-0000-0000-0000-000000000001', 'root-catalog', 0, true, false, NULL, 0, NOW(), NOW())
+ON CONFLICT DO NOTHING;
+
+
+-- category_translations (2 rows)
+-- Translations for default root category
+INSERT INTO category_translations (category_id, language_code, name, description, created_at, updated_at)
+VALUES
+  ('00000000-0000-0000-0000-000000000001', 'en', 'Root Catalog', 'Default root category for product catalog', NOW(), NOW()),
+  ('00000000-0000-0000-0000-000000000001', 'nl', 'Hoofdcatalogus', 'Standaard hoofdcategorie voor productcatalogus', NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 
