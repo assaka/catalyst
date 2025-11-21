@@ -65,4 +65,39 @@ ImportStatistic.create = async function(storeId, statData) {
   }
 };
 
+ImportStatistic.saveImportResults = async function(storeId, importType, results) {
+  const ConnectionManager = require('../services/database/ConnectionManager');
+  const { v4: uuidv4 } = require('uuid');
+
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data, error } = await tenantDb
+      .from('import_statistics')
+      .insert({
+        id: uuidv4(),
+        store_id: storeId,
+        import_type: importType,
+        import_date: new Date().toISOString(),
+        total_processed: results.totalProcessed || 0,
+        successful_imports: results.successfulImports || 0,
+        failed_imports: results.failedImports || 0,
+        skipped_imports: results.skippedImports || 0,
+        error_details: results.errorDetails || null,
+        import_method: results.importMethod || 'manual',
+        import_source: results.importSource || 'shopify',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('ImportStatistic.saveImportResults error:', error);
+    throw error;
+  }
+};
+
 module.exports = ImportStatistic;

@@ -314,49 +314,72 @@ router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) 
       }
     }
 
-    // Use OpenSSL check if Vercel didn't confirm "active" status
+    // Use Node.js TLS check if Vercel didn't confirm "active" status
     // This catches cases where Vercel API is slow to update but SSL is actually working
-    console.log(`[SSL Check] sslStatus before OpenSSL: ${sslStatus}`);
+    console.log(`[SSL Check] sslStatus before TLS check: ${sslStatus}`);
     if (!sslStatus || sslStatus !== 'active') {
       try {
-        const { exec } = require('child_process');
-        const { promisify } = require('util');
-        const execAsync = promisify(exec);
+        const tls = require('tls');
+        const { URL } = require('url');
 
-        console.log(`[SSL Check] Checking SSL for ${domain.domain} using OpenSSL...`);
+        console.log(`[SSL Check] Checking SSL for ${domain.domain} using Node.js TLS...`);
 
-        // Use sh -c to ensure proper command execution on all platforms
-        const command = `sh -c 'echo | openssl s_client -connect ${domain.domain}:443 -servername ${domain.domain} 2>&1 | head -100'`;
-        console.log('[SSL Check] Command:', command);
+        // Create TLS connection to check certificate
+        const checkSSL = () => new Promise((resolve, reject) => {
+          const socket = tls.connect(443, domain.domain, {
+            servername: domain.domain,
+            rejectUnauthorized: true, // Verify certificate
+            timeout: 10000
+          });
 
-        const { stdout, stderr } = await execAsync(command, {
-          timeout: 15000,
-          maxBuffer: 1024 * 1024
+          socket.on('secureConnect', () => {
+            const cert = socket.getPeerCertificate();
+            const authorized = socket.authorized;
+
+            console.log('[SSL Check] TLS connection established');
+            console.log('[SSL Check] Certificate authorized:', authorized);
+
+            if (cert && cert.issuer) {
+              const issuer = `${cert.issuer.O || ''} ${cert.issuer.CN || ''}`.trim();
+              console.log('[SSL Check] Certificate issuer:', issuer);
+              sslIssuer = issuer;
+            }
+
+            socket.destroy();
+
+            if (authorized) {
+              resolve('active');
+            } else {
+              resolve('error');
+            }
+          });
+
+          socket.on('error', (err) => {
+            console.log('[SSL Check] TLS error:', err.message);
+            socket.destroy();
+
+            // If connection refused or timeout, SSL might be provisioning
+            if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+              resolve('pending');
+            } else if (err.message.includes('certificate')) {
+              resolve('error');
+            } else {
+              resolve('pending');
+            }
+          });
+
+          socket.on('timeout', () => {
+            console.log('[SSL Check] TLS connection timeout');
+            socket.destroy();
+            resolve('pending');
+          });
         });
 
-        console.log('[SSL Check] OpenSSL output (first 500 chars):', stdout.substring(0, 500));
-        console.log('[SSL Check] stderr:', stderr);
-
-        // Check if certificate is valid
-        if (stdout.includes('Verify return code: 0')) {
-          sslStatus = 'active';
-          console.log('[SSL Check] SSL certificate is ACTIVE');
-          // Extract issuer
-          const issuerMatch = stdout.match(/issuer[=:](.+)/i);
-          if (issuerMatch) {
-            sslIssuer = issuerMatch[1].trim();
-            console.log('[SSL Check] Issuer:', sslIssuer);
-          }
-        } else if (stdout.includes('Verify return code:')) {
-          const returnCodeMatch = stdout.match(/Verify return code: (\d+)/);
-          console.log('[SSL Check] SSL verification failed with code:', returnCodeMatch?.[1]);
-          sslStatus = 'error';
-        } else {
-          console.log('[SSL Check] Could not determine SSL status from output');
-          sslStatus = 'pending';
-        }
+        sslStatus = await checkSSL();
+        console.log(`[SSL Check] SSL status determined: ${sslStatus}`);
+        checkMethod = 'nodejs-tls';
       } catch (err) {
-        console.error('[SSL Check] OpenSSL check failed:', err.message);
+        console.error('[SSL Check] TLS check failed:', err.message);
         console.error('[SSL Check] Error details:', err);
         sslStatus = 'pending';
       }

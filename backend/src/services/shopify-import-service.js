@@ -1,16 +1,11 @@
 const ShopifyClient = require('./shopify-client');
 const ShopifyOAuthToken = require('../models/ShopifyOAuthToken');
-const Category = require('../models/Category');
-const Product = require('../models/Product');
-const ProductTranslation = require('../models/ProductTranslation');
-const Language = require('../models/Language');
-const Attribute = require('../models/Attribute');
-const AttributeSet = require('../models/AttributeSet');
 const ImportStatistic = require('../models/ImportStatistic');
 const StorageManager = require('./storage/StorageManager');
+const ConnectionManager = require('./database/ConnectionManager');
 const axios = require('axios');
 const path = require('path');
-const { Op } = require('sequelize');
+const { v4: uuidv4 } = require('uuid');
 
 class ShopifyImportService {
   constructor(storeId) {
@@ -166,16 +161,16 @@ class ShopifyImportService {
    */
   async importCollection(collection) {
     try {
+      const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+
       // Check if category already exists
-      const existingCategory = await Category.findOne({
-        where: {
-          store_id: this.storeId,
-          [Op.or]: [
-            { external_id: collection.id.toString() },
-            { slug: collection.handle }
-          ]
-        }
-      });
+      const { data: existingCategories } = await tenantDb
+        .from('categories')
+        .select('*')
+        .eq('store_id', this.storeId)
+        .or(`external_id.eq.${collection.id.toString()},slug.eq.${collection.handle}`);
+
+      const existingCategory = existingCategories && existingCategories.length > 0 ? existingCategories[0] : null;
 
       const categoryData = {
         name: collection.title,
@@ -195,17 +190,35 @@ class ShopifyImportService {
           template_suffix: collection.template_suffix,
           shopify_id: collection.id,
           collection_type: collection.collection_type || 'custom'
-        }
+        },
+        updated_at: new Date().toISOString()
       };
 
       if (existingCategory) {
-        await existingCategory.update(categoryData);
+        const { data, error } = await tenantDb
+          .from('categories')
+          .update(categoryData)
+          .eq('id', existingCategory.id)
+          .select()
+          .single();
+
+        if (error) throw error;
         console.log(`Updated collection: ${collection.title}`);
-        return existingCategory;
+        return data;
       } else {
-        const newCategory = await Category.create(categoryData);
+        const { data, error } = await tenantDb
+          .from('categories')
+          .insert({
+            id: uuidv4(),
+            ...categoryData,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
         console.log(`Created collection: ${collection.title}`);
-        return newCategory;
+        return data;
       }
     } catch (error) {
       console.error(`Error importing collection ${collection.title}:`, error);
@@ -407,27 +420,28 @@ class ShopifyImportService {
    */
   async importProduct(product) {
     try {
+      const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+
       // Check if product already exists
-      const existingProduct = await Product.findOne({
-        where: {
-          store_id: this.storeId,
-          [Op.or]: [
-            { external_id: product.id.toString() },
-            { sku: product.handle }
-          ]
-        }
-      });
+      const { data: existingProducts } = await tenantDb
+        .from('products')
+        .select('*')
+        .eq('store_id', this.storeId)
+        .or(`external_id.eq.${product.id.toString()},sku.eq.${product.handle}`);
+
+      const existingProduct = existingProducts && existingProducts.length > 0 ? existingProducts[0] : null;
 
       // Map collections to categories
       const categoryIds = [];
       if (product.collections && product.collections.length > 0) {
         for (const collectionId of product.collections) {
-          const category = await Category.findOne({
-            where: {
-              store_id: this.storeId,
-              external_id: collectionId.toString()
-            }
-          });
+          const { data: category } = await tenantDb
+            .from('categories')
+            .select('id')
+            .eq('store_id', this.storeId)
+            .eq('external_id', collectionId.toString())
+            .maybeSingle();
+
           if (category) {
             categoryIds.push(category.id);
           }
@@ -492,35 +506,89 @@ class ShopifyImportService {
 
       let savedProduct;
       if (existingProduct) {
-        await existingProduct.update(productData);
-        savedProduct = existingProduct;
+        const { data, error } = await tenantDb
+          .from('products')
+          .update({
+            ...productData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingProduct.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        savedProduct = data;
         console.log(`Updated product: ${product.title}`);
       } else {
-        savedProduct = await Product.create(productData);
+        const { data, error } = await tenantDb
+          .from('products')
+          .insert({
+            id: uuidv4(),
+            ...productData,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        savedProduct = data;
         console.log(`Created product: ${product.title}`);
       }
 
       // Ensure 'en' language exists before saving translations
-      await Language.findOrCreate({
-        where: { code: 'en' },
-        defaults: {
-          code: 'en',
-          name: 'English',
-          is_active: true
-        }
-      });
+      const { data: existingLanguage } = await tenantDb
+        .from('languages')
+        .select('*')
+        .eq('code', 'en')
+        .maybeSingle();
+
+      if (!existingLanguage) {
+        await tenantDb
+          .from('languages')
+          .insert({
+            id: uuidv4(),
+            code: 'en',
+            name: 'English',
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+      }
 
       // Save translations for name and description (default language: 'en')
       try {
+        // Check if translation exists
+        const { data: existingTranslation } = await tenantDb
+          .from('product_translations')
+          .select('*')
+          .eq('product_id', savedProduct.id)
+          .eq('language_code', 'en')
+          .maybeSingle();
+
         const translationData = {
-          product_id: savedProduct.id,
-          language_code: 'en',
           name: product.title,
           description: product.body_html || '',
-          short_description: product.body_html ? product.body_html.replace(/<[^>]*>/g, '').substring(0, 255) : ''
+          short_description: product.body_html ? product.body_html.replace(/<[^>]*>/g, '').substring(0, 255) : '',
+          updated_at: new Date().toISOString()
         };
 
-        await ProductTranslation.upsert(translationData);
+        if (existingTranslation) {
+          await tenantDb
+            .from('product_translations')
+            .update(translationData)
+            .eq('id', existingTranslation.id);
+        } else {
+          await tenantDb
+            .from('product_translations')
+            .insert({
+              id: uuidv4(),
+              product_id: savedProduct.id,
+              language_code: 'en',
+              ...translationData,
+              created_at: new Date().toISOString()
+            });
+        }
 
         console.log(`✅ Saved translations for product: ${product.title} (name: "${product.title}", desc length: ${(product.body_html || '').length})`);
       } catch (translationError) {
@@ -572,6 +640,8 @@ class ShopifyImportService {
    * Ensure required product attributes exist
    */
   async ensureProductAttributes() {
+    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+
     const requiredAttributes = [
       { code: 'vendor', name: 'Vendor', type: 'text' },
       { code: 'product_type', name: 'Product Type', type: 'text' },
@@ -583,22 +653,27 @@ class ShopifyImportService {
     ];
 
     for (const attrData of requiredAttributes) {
-      const existingAttr = await Attribute.findOne({
-        where: {
-          store_id: this.storeId,
-          code: attrData.code
-        }
-      });
+      const { data: existingAttr } = await tenantDb
+        .from('attributes')
+        .select('*')
+        .eq('store_id', this.storeId)
+        .eq('code', attrData.code)
+        .maybeSingle();
 
       if (!existingAttr) {
-        await Attribute.create({
-          ...attrData,
-          store_id: this.storeId,
-          is_required: false,
-          is_filterable: attrData.code === 'vendor' || attrData.code === 'product_type',
-          is_searchable: true,
-          sort_order: 100
-        });
+        await tenantDb
+          .from('attributes')
+          .insert({
+            id: uuidv4(),
+            ...attrData,
+            store_id: this.storeId,
+            is_required: false,
+            is_filterable: attrData.code === 'vendor' || attrData.code === 'product_type',
+            is_searchable: true,
+            sort_order: 100,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
       }
     }
   }
