@@ -26,9 +26,13 @@ class CustomDomainService {
         throw new Error('Invalid domain format');
       }
 
-      // Generate verification token
+      // Generate deterministic verification token based on domain name
+      // This ensures same domain always gets same token (even if deleted and re-added)
       const crypto = require('crypto');
-      const verification_token = crypto.randomBytes(32).toString('hex');
+      const verification_token = crypto
+        .createHash('sha256')
+        .update(`catalyst-verify-${domainName.toLowerCase()}-${storeId}`)
+        .digest('hex');
 
       // Create domain record
       const domainData = {
