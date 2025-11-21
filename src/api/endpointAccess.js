@@ -74,25 +74,30 @@ export function getEndpointAccessLevel(endpoint) {
 // Helper function to check if endpoint should use public API
 export function shouldUsePublicAPI(endpoint, hasToken, userRole = 'guest') {
   const accessLevel = getEndpointAccessLevel(endpoint);
-  
+
   switch (accessLevel) {
     case 'public':
-      // Always use public API for public endpoints
-      return true;
-      
+      // For public endpoints like products/categories, check if user is authenticated as admin
+      // If admin/store_owner with token, use authenticated API for full features (translations, etc.)
+      // Otherwise use public API
+      if (hasToken && (userRole === 'store_owner' || userRole === 'admin')) {
+        return false; // Use authenticated API for admin users
+      }
+      return true; // Use public API for guests/customers
+
     case 'storefront':
       // Use public API for storefront endpoints when no token or when user is a guest/customer
       // But use authenticated API when user is admin/store_owner for management purposes
       return !hasToken || userRole === 'guest' || userRole === 'customer';
-      
+
     case 'customer':
       // Customer endpoints require authentication - never use public API
       return false;
-      
+
     case 'admin':
       // Admin endpoints always require authentication - never use public API
       return false;
-      
+
     default:
       return false;
   }

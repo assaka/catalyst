@@ -933,6 +933,15 @@ class SupabaseIntegration {
         .from('integration_configs')
         .where({ store_id: storeId, integration_type: 'supabase', is_active: true })
         .first();
+
+      // CRITICAL FIX: Also check store_databases in master DB for connection credentials
+      const { masterDbClient } = require('../database/masterConnection');
+      const { data: storeDatabase } = await masterDbClient
+        .from('store_databases')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('is_active', true)
+        .maybeSingle();
       
       // Check if OAuth is configured for new connections
       if (!this.oauthConfigured && !token) {
@@ -1050,26 +1059,30 @@ class SupabaseIntegration {
         }
       }
 
-      // Check if token exists and IntegrationConfig shows as connected
-      if (!token || (config && config.config_data?.connected === false)) {
-        // Check if user might still have the app authorized on Supabase's side
-        // by looking at the config history
+      // UPDATED LOGIC: Check BOTH token AND store_databases for connection
+      // Token = OAuth connection, storeDatabase = direct credentials connection
+      const hasOAuthToken = !!token;
+      const hasDatabaseCredentials = !!storeDatabase;
+      const isConnected = hasOAuthToken || hasDatabaseCredentials;
+
+      if (!isConnected || (config && config.config_data?.connected === false)) {
+        // No connection found in either place
         let hasOrphanedAuthorization = false;
         let wasAutoDisconnected = false;
         let lastKnownProjectUrl = null;
-        
+
         if (config && config.config_data?.disconnectedAt && config.config_data?.userEmail) {
           // If we have a disconnectedAt timestamp and userEmail, the app might still be authorized
           hasOrphanedAuthorization = !config.config_data?.autoDisconnected;
           wasAutoDisconnected = !!config.config_data?.autoDisconnected;
           lastKnownProjectUrl = config.config_data?.lastKnownProjectUrl;
         }
-        
+
         return {
           connected: false,
           message: wasAutoDisconnected
             ? 'Connection was automatically removed after authorization was revoked.'
-            : hasOrphanedAuthorization 
+            : hasOrphanedAuthorization
               ? 'Supabase disconnected locally. You may need to revoke access in your Supabase account settings.'
               : 'Supabase not connected',
           oauthConfigured: true,
@@ -1078,6 +1091,18 @@ class SupabaseIntegration {
           lastKnownProjectUrl,
           connectionStatus: 'disconnected'
         };
+      }
+
+      // If we have database credentials but no OAuth token, get projectUrl from credentials
+      let projectUrl = token?.project_url;
+      if (!projectUrl && storeDatabase) {
+        try {
+          const { decryptDatabaseCredentials } = require('../utils/encryption');
+          const credentials = decryptDatabaseCredentials(storeDatabase.connection_string_encrypted);
+          projectUrl = credentials.projectUrl;
+        } catch (err) {
+          console.error('Error decrypting credentials:', err.message);
+        }
       }
 
       const isExpired = SupabaseOAuthToken.isTokenExpired(token);
@@ -1134,24 +1159,36 @@ class SupabaseIntegration {
         }
       }
 
-      // Check if service role key is properly configured
-      const hasValidServiceKey = token.service_role_key && 
+      // Check if service role key is properly configured (check both token and storeDatabase)
+      let hasValidServiceKey = token?.service_role_key &&
                                 token.service_role_key !== 'pending_configuration' &&
                                 token.service_role_key !== '';
 
+      // If no valid key from token, check storeDatabase credentials
+      if (!hasValidServiceKey && storeDatabase) {
+        try {
+          const { decryptDatabaseCredentials } = require('../utils/encryption');
+          const credentials = decryptDatabaseCredentials(storeDatabase.connection_string_encrypted);
+          hasValidServiceKey = !!credentials.serviceRoleKey && credentials.serviceRoleKey !== 'pending_configuration';
+        } catch (err) {
+          console.error('Error checking serviceRoleKey from credentials:', err.message);
+        }
+      }
+
       return {
         connected: true,
-        projectUrl: token.project_url,
-        expiresAt: token.expires_at,
-        isExpired,
-        connectionStatus: config?.connection_status || 'success',
-        lastTestedAt: config?.connection_tested_at,
+        projectUrl: projectUrl || 'Unknown',
+        expiresAt: token?.expires_at,
+        isExpired: token ? isExpired : false,
+        connectionStatus: storeDatabase?.connection_status || config?.connection_status || 'success',
+        lastTestedAt: config?.connection_tested_at || storeDatabase?.last_connection_test,
         oauthConfigured: true,
         limitedScope: hasLimitedScope,
         userEmail: config?.config_data?.userEmail,
         hasServiceRoleKey: hasValidServiceKey,
         requiresManualConfiguration: !hasValidServiceKey && !hasLimitedScope,
-        storageReady: hasValidServiceKey
+        storageReady: hasValidServiceKey,
+        connectionSource: hasOAuthToken ? 'oauth' : 'credentials' // For debugging
       };
     } catch (error) {
       console.error('Error getting connection status:', error);
