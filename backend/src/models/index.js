@@ -291,9 +291,7 @@ const defineAssociations = () => {
   SupabaseOAuthToken.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasOne(SupabaseOAuthToken, { foreignKey: 'store_id' });
   
-  // ShopifyOAuthToken associations
-  ShopifyOAuthToken.belongsTo(Store, { foreignKey: 'store_id' });
-  Store.hasOne(ShopifyOAuthToken, { foreignKey: 'store_id' });
+  // ShopifyOAuthToken associations - REMOVED (now a pure service class)
   
   // Master database associations
   // Subscription associations
