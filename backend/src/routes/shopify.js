@@ -333,11 +333,13 @@ router.get('/status', storeAuth, async (req, res) => {
 router.post('/test-connection', storeAuth, async (req, res) => {
   try {
     const result = await shopifyIntegration.testConnection(req.storeId);
-    
+
     // Update integration config connection status
     const integrationConfig = await IntegrationConfig.findByStoreAndType(req.storeId, 'shopify');
     if (integrationConfig) {
-      await integrationConfig.updateConnectionStatus(
+      await IntegrationConfig.updateConnectionStatus(
+        integrationConfig.id,
+        req.storeId,
         result.success ? 'success' : 'failed',
         result.success ? null : result.message
       );

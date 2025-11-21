@@ -234,12 +234,12 @@ IntegrationConfig.prototype.updateSyncStatus = async function(status, error = nu
   await this.save();
 };
 
-IntegrationConfig.prototype.updateConnectionStatus = async function(status, error = null) {
-  // Use ConnectionManager to avoid deprecated sequelize connection
+// Static method to update connection status (replaces instance method)
+IntegrationConfig.updateConnectionStatus = async function(configId, storeId, status, error = null) {
   const ConnectionManager = require('../services/database/ConnectionManager');
 
   try {
-    const tenantDb = await ConnectionManager.getStoreConnection(this.store_id);
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     const updateData = {
       connection_status: status,
@@ -251,15 +251,14 @@ IntegrationConfig.prototype.updateConnectionStatus = async function(status, erro
     const { error: updateError } = await tenantDb
       .from('integration_configs')
       .update(updateData)
-      .eq('id', this.id);
+      .eq('id', configId);
 
     if (updateError) {
       console.error('Error updating connection status:', updateError);
       throw updateError;
     }
 
-    // Update local instance
-    Object.assign(this, updateData);
+    return updateData;
   } catch (err) {
     console.error('IntegrationConfig.updateConnectionStatus error:', err);
     throw err;
@@ -291,19 +290,20 @@ IntegrationConfig.findByStoreAndType = async function(storeId, integrationType) 
       return null;
     }
 
+    // Ensure we have the id field
+    if (!data.id) {
+      console.error('IntegrationConfig data missing id field:', data);
+      throw new Error('Integration config data is missing required id field');
+    }
+
     // Decrypt sensitive data before returning
     const decryptedData = {
       ...data,
       config_data: IntegrationConfig.decryptSensitiveData(data.config_data, integrationType)
     };
 
-    // Create a model-like object with the instance methods
-    const instance = Object.create(IntegrationConfig.prototype);
-    Object.assign(instance, decryptedData);
-    instance.isNewRecord = false;
-    instance.dataValues = decryptedData;
-
-    return instance;
+    // Create a simplified plain object (remove backward compatibility with Sequelize)
+    return decryptedData;
   } catch (error) {
     console.error('IntegrationConfig.findByStoreAndType error:', error);
     throw error;
