@@ -29,32 +29,66 @@ class BackgroundJobManager extends EventEmitter {
    * Initialize the job manager
    */
   async initialize() {
-    if (this.initialized) return;
+    if (this.initialized) {
+      console.log('ℹ️ Background Job Manager already initialized');
+      return;
+    }
 
     console.log('🔧 Initializing Background Job Manager...');
 
-    // Try to initialize BullMQ
-    this.useBullMQ = await bullMQManager.initialize();
-    if (this.useBullMQ) {
-      console.log('✅ BullMQ initialized - using persistent queue');
-    } else {
-      console.log('ℹ️ BullMQ not available - using database queue');
+    try {
+      // Try to initialize BullMQ
+      this.useBullMQ = await bullMQManager.initialize();
+      if (this.useBullMQ) {
+        console.log('✅ BullMQ initialized - using persistent queue');
+      } else {
+        console.log('ℹ️ BullMQ not available - using database queue');
+      }
+    } catch (error) {
+      console.error('❌ BullMQ initialization failed:', error.message);
+      this.useBullMQ = false;
     }
 
-    // Ensure database tables exist
-    await this.ensureTablesExist();
+    try {
+      // Ensure database tables exist
+      await this.ensureTablesExist();
+      console.log('✅ Job tables verified');
+    } catch (error) {
+      console.error('❌ Job tables verification failed:', error.message);
+      throw error;
+    }
 
-    // Register default job types
-    this.registerJobTypes();
+    try {
+      // Register default job types - CRITICAL - must not fail
+      console.log('📝 Registering job types...');
+      this.registerJobTypes();
+      console.log(`✅ Registered ${this.workers.size} job types`);
+    } catch (error) {
+      console.error('❌ CRITICAL: Job type registration failed:', error.message);
+      console.error(error.stack);
+      throw error;
+    }
 
-    // Start the job processor
-    await this.start();
+    try {
+      // Start the job processor
+      await this.start();
+      console.log('✅ Job processor started');
+    } catch (error) {
+      console.error('❌ Job processor start failed:', error.message);
+      throw error;
+    }
 
-    // Schedule recurring system jobs
-    await this.scheduleSystemJobs();
+    try {
+      // Schedule recurring system jobs
+      await this.scheduleSystemJobs();
+      console.log('✅ System jobs scheduled');
+    } catch (error) {
+      console.error('❌ System jobs scheduling failed:', error.message);
+      // Don't throw - system jobs are optional
+    }
 
     this.initialized = true;
-    console.log('✅ Background Job Manager initialized');
+    console.log('✅ Background Job Manager fully initialized');
   }
 
   /**
@@ -74,39 +108,51 @@ class BackgroundJobManager extends EventEmitter {
    * Register default job types and their handlers
    */
   registerJobTypes() {
-    // Akeneo import jobs
-    this.registerJobType('akeneo:import:categories', require('./jobs/AkeneoImportCategoriesJob'));
-    this.registerJobType('akeneo:import:products', require('./jobs/AkeneoImportProductsJob'));
-    this.registerJobType('akeneo:import:attributes', require('./jobs/AkeneoImportAttributesJob'));
-    this.registerJobType('akeneo:import:families', require('./jobs/AkeneoImportFamiliesJob'));
-    this.registerJobType('akeneo:import:all', require('./jobs/AkeneoImportAllJob'));
+    const jobTypes = [
+      // Akeneo import jobs
+      ['akeneo:import:categories', './jobs/AkeneoImportCategoriesJob'],
+      ['akeneo:import:products', './jobs/AkeneoImportProductsJob'],
+      ['akeneo:import:attributes', './jobs/AkeneoImportAttributesJob'],
+      ['akeneo:import:families', './jobs/AkeneoImportFamiliesJob'],
+      ['akeneo:import:all', './jobs/AkeneoImportAllJob'],
 
-    // Plugin management jobs
-    this.registerJobType('plugin:install', require('./jobs/PluginInstallJob'));
-    this.registerJobType('plugin:uninstall', require('./jobs/PluginUninstallJob'));
-    this.registerJobType('plugin:update', require('./jobs/PluginUpdateJob'));
+      // Plugin management jobs
+      ['plugin:install', './jobs/PluginInstallJob'],
+      ['plugin:uninstall', './jobs/PluginUninstallJob'],
+      ['plugin:update', './jobs/PluginUpdateJob'],
 
-    // System maintenance jobs
-    this.registerJobType('system:cleanup', require('./jobs/SystemCleanupJob'));
-    this.registerJobType('system:backup', require('./jobs/SystemBackupJob'));
-    this.registerJobType('system:daily_credit_deduction', require('./jobs/DailyCreditDeductionJob'));
-    this.registerJobType('system:dynamic_cron', require('./jobs/DynamicCronJob'));
-    this.registerJobType('system:finalize_pending_orders', require('./jobs/FinalizePendingOrdersJob'));
+      // System maintenance jobs
+      ['system:cleanup', './jobs/SystemCleanupJob'],
+      ['system:backup', './jobs/SystemBackupJob'],
+      ['system:daily_credit_deduction', './jobs/DailyCreditDeductionJob'],
+      ['system:dynamic_cron', './jobs/DynamicCronJob'],
+      ['system:finalize_pending_orders', './jobs/FinalizePendingOrdersJob'],
 
-    // Translation jobs
-    this.registerJobType('translation:ui-labels:bulk', require('./jobs/UILabelsBulkTranslationJob'));
+      // Translation jobs
+      ['translation:ui-labels:bulk', './jobs/UILabelsBulkTranslationJob'],
 
-    // Shopify import jobs
-    this.registerJobType('shopify:import:collections', require('./jobs/ShopifyImportCollectionsJob'));
-    this.registerJobType('shopify:import:products', require('./jobs/ShopifyImportProductsJob'));
-    this.registerJobType('shopify:import:all', require('./jobs/ShopifyImportAllJob'));
+      // Shopify import jobs
+      ['shopify:import:collections', './jobs/ShopifyImportCollectionsJob'],
+      ['shopify:import:products', './jobs/ShopifyImportProductsJob'],
+      ['shopify:import:all', './jobs/ShopifyImportAllJob'],
 
-    // Amazon export jobs
-    this.registerJobType('amazon:export:products', require('./jobs/AmazonExportProductsJob'));
-    this.registerJobType('amazon:sync:inventory', require('./jobs/AmazonSyncInventoryJob'));
+      // Amazon export jobs
+      ['amazon:export:products', './jobs/AmazonExportProductsJob'],
+      ['amazon:sync:inventory', './jobs/AmazonSyncInventoryJob'],
 
-    // eBay export jobs
-    this.registerJobType('ebay:export:products', require('./jobs/EbayExportProductsJob'));
+      // eBay export jobs
+      ['ebay:export:products', './jobs/EbayExportProductsJob']
+    ];
+
+    for (const [type, path] of jobTypes) {
+      try {
+        const handlerClass = require(path);
+        this.registerJobType(type, handlerClass);
+      } catch (error) {
+        console.error(`❌ Failed to register job type '${type}':`, error.message);
+        // Continue registering other jobs even if one fails
+      }
+    }
   }
 
   /**
