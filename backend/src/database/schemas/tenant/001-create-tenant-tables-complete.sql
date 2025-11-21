@@ -2745,18 +2745,6 @@ CREATE TABLE IF NOT EXISTS translations (
   store_id UUID NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS translations_duplicate (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  key VARCHAR(255) NOT NULL,
-  language_code VARCHAR(10) NOT NULL,
-  value TEXT NOT NULL,
-  category VARCHAR(50) DEFAULT 'common'::character varying,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  type VARCHAR(20) DEFAULT 'system'::character varying NOT NULL,
-  store_id UUID NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS usage_metrics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
@@ -4228,15 +4216,6 @@ CREATE TABLE IF NOT EXISTS wishlists (
 --
 -- ALTER TABLE ONLY taxes
 --     ADD CONSTRAINT taxes_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: translations_duplicate translations_duplicate_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY translations_duplicate
---     ADD CONSTRAINT translations_duplicate_pkey PRIMARY KEY (id);
---
 --
 -- --
 -- -- Name: translations translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
@@ -9108,14 +9087,6 @@ ALTER TABLE ONLY consent_logs
 --
 -- ALTER TABLE ONLY taxes
 --     ADD CONSTRAINT taxes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: translations_duplicate translations_duplicate_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY translations_duplicate
---     ADD CONSTRAINT translations_duplicate_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
 --
 --
 -- --
