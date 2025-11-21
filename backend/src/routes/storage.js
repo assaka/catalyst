@@ -247,16 +247,19 @@ router.delete('/delete', async (req, res) => {
     // Delete from database (MediaAsset table) - use tenant connection
     const ConnectionManager = require('../services/database/ConnectionManager');
     try {
-      const connection = await ConnectionManager.getStoreConnection(storeId);
-      const { MediaAsset } = connection.models;
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      const deletedCount = await MediaAsset.destroy({
-        where: {
-          store_id: storeId,
-          file_path: imagePath
-        }
-      });
-      console.log(`📊 Deleted ${deletedCount} database record(s) for ${imagePath}`);
+      const { error: deleteError, count } = await tenantDb
+        .from('media_assets')
+        .delete({ count: 'exact' })
+        .eq('store_id', storeId)
+        .eq('file_path', imagePath);
+
+      if (deleteError) {
+        console.error('Database delete error:', deleteError);
+      }
+
+      console.log(`📊 Deleted ${count || 0} database record(s) for ${imagePath}`);
     } catch (dbError) {
       console.warn('Database cleanup error (file still deleted from storage):', dbError.message);
       // Don't fail the request if storage deletion succeeded but DB cleanup failed
