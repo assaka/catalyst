@@ -928,11 +928,24 @@ class SupabaseIntegration {
   async getConnectionStatus(storeId) {
     try {
       const token = await SupabaseOAuthToken.findByStore(storeId);
-      const tenantDb = ConnectionManager.getConnection(storeId);
-      const config = await tenantDb
-        .from('integration_configs')
-        .where({ store_id: storeId, integration_type: 'supabase', is_active: true })
-        .first();
+
+      // Get tenant DB connection (use async getStoreConnection instead of deprecated getConnection)
+      let tenantDb, config;
+      try {
+        tenantDb = await ConnectionManager.getStoreConnection(storeId);
+        config = await tenantDb
+          .from('integration_configs')
+          .select('*')
+          .eq('store_id', storeId)
+          .eq('integration_type', 'supabase')
+          .eq('is_active', true)
+          .maybeSingle();
+        config = config?.data;
+      } catch (tenantDbError) {
+        // Tenant DB might not be accessible yet, continue without config
+        console.warn('Could not access tenant DB for config:', tenantDbError.message);
+        config = null;
+      }
 
       // CRITICAL FIX: Also check store_databases in master DB for connection credentials
       const { masterDbClient } = require('../database/masterConnection');
