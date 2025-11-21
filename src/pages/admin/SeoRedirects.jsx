@@ -11,6 +11,7 @@ import adminApiClient from "@/api/admin-client";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAlertTypes } from "@/hooks/useAlert";
+import SaveButton from "@/components/ui/save-button.jsx";
 
 export default function SeoRedirects() {
   const { getSelectedStoreId } = useStoreSelection();
@@ -203,19 +204,16 @@ export default function SeoRedirects() {
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="flex items-end">
-              <Button
-                className="w-full"
-                onClick={handleAddRedirect}
-                disabled={loading}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Redirect
-              </Button>
-            </div>
           </div>
         </CardContent>
+        <div className="flex justify-end space-x-4">
+          <SaveButton
+              type="submit"
+              loading={loading}
+              success={handleAddRedirect}
+              defaultText="Add Redirect"
+          />
+        </div>
       </Card>
 
       <Card>

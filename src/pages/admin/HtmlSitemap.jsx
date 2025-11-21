@@ -227,7 +227,6 @@ export default function HtmlSitemap() {
           )}
         </CardContent>
       </Card>
-
       <div className="flex justify-end mt-8">
         <SaveButton
           onClick={handleSave}
