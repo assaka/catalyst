@@ -23,9 +23,14 @@ export default function EmailSettings() {
         const store = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
 
         // Handle different API response structures
-        const storeData = store?.data || store;
+        // API returns: { success: true, data: { tenantData: {...}, store: {...} } }
+        const apiData = store?.data || store;
+        const storeData = apiData?.tenantData || apiData;
 
         console.log('📧 EmailSettings - Loaded store data:', {
+          rawData: fullStoreData,
+          apiData,
+          storeData,
           hasContactDetails: !!storeData?.contact_details,
           contactEmail: storeData?.contact_details?.email,
           fallbackEmail: storeData?.contact_email,

@@ -94,7 +94,7 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
       <AlertComponent />
 
       {/* Missing Store Email Warning */}
-      {!storeEmail && (
+      {!storeEmail && !loading && (
         <Card className="border-yellow-300 bg-yellow-50">
           <CardContent className="pt-6">
             <div className="flex gap-3">
@@ -102,12 +102,12 @@ export default function EmailProviderSettings({ storeEmail, storeName }) {
               <div>
                 <p className="font-medium text-yellow-900 mb-1">Store Email Not Configured</p>
                 <p className="text-sm text-yellow-800 mb-3">
-                  To use the quick test feature, please add your store's contact email first.
+                  To pre-fill configuration forms and use the quick test feature, please add your store's contact email first.
                 </p>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.location.href = '/admin/settings?tab=general'}
+                  onClick={() => window.location.href = '/admin/settings'}
                   className="border-yellow-400 text-yellow-900 hover:bg-yellow-100"
                 >
                   Go to Settings &gt; General

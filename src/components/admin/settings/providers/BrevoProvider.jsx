@@ -15,6 +15,13 @@ export default function BrevoProvider({
   getSelectedStoreId,
   showConfirm
 }) {
+  console.log('📧 BrevoProvider - Props received:', {
+    storeEmail,
+    storeName,
+    hasStoreEmail: !!storeEmail,
+    hasStoreName: !!storeName
+  });
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
@@ -166,14 +173,8 @@ export default function BrevoProvider({
   };
 
   const handleOpenTestSection = () => {
-    if (!storeEmail) {
-      onFlashMessage({
-        type: 'error',
-        message: 'Store email not configured. Please add it in Settings > General first.'
-      });
-      return;
-    }
-    setTestEmail(storeEmail);
+    // Pre-fill with store email if available, otherwise leave empty for user to enter
+    setTestEmail(storeEmail || '');
     setShowTestSection(true);
     // Focus on the email input after a short delay
     setTimeout(() => {
