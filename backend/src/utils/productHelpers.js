@@ -2,11 +2,10 @@
  * Product Helpers for Normalized Translations
  *
  * These helpers fetch translations from the normalized product_translations table
- * and merge them with Sequelize product data.
+ * and merge them with Supabase product data.
  */
 
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { Op } = require('sequelize');
 
 /**
  * Get product translation from normalized table with English fallback
@@ -17,23 +16,29 @@ const { Op } = require('sequelize');
  * @returns {Promise<Object|null>} Translation data
  */
 async function getProductTranslation(storeId, productId, lang = 'en') {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const query = `
-    SELECT name, description, short_description, language_code
-    FROM product_translations
-    WHERE product_id = :productId AND language_code IN (:lang, 'en')
-    ORDER BY CASE WHEN language_code = :lang THEN 1 ELSE 2 END
-    LIMIT 1
-  `;
+  // Fetch translations for both requested language and English
+  const { data: translations, error } = await tenantDb
+    .from('product_translations')
+    .select('name, description, short_description, language_code')
+    .eq('product_id', productId)
+    .in('language_code', [lang, 'en']);
 
-  const results = await sequelize.query(query, {
-    replacements: { productId, lang },
-    type: sequelize.QueryTypes.SELECT
-  });
+  if (error) {
+    console.error('Error fetching product translation:', error);
+    return null;
+  }
 
-  return results[0] || null;
+  if (!translations || translations.length === 0) {
+    return null;
+  }
+
+  // Prefer requested language, fallback to English
+  const requestedLang = translations.find(t => t.language_code === lang);
+  const englishLang = translations.find(t => t.language_code === 'en');
+
+  return requestedLang || englishLang || null;
 }
 
 /**
@@ -41,14 +46,14 @@ async function getProductTranslation(storeId, productId, lang = 'en') {
  * Fetches from normalized table and merges with product JSON
  *
  * @param {string} storeId - Store ID
- * @param {Object} product - Product object (from Sequelize)
+ * @param {Object} product - Product object (from Supabase)
  * @param {string} lang - Language code
  * @returns {Promise<Object>} Product with applied translations
  */
 async function applyProductTranslations(storeId, product, lang = 'en') {
   if (!product) return null;
 
-  const productData = product.toJSON ? product.toJSON() : product;
+  const productData = { ...product };
 
   // Fetch translation from normalized table (with English fallback)
   const translation = await getProductTranslation(storeId, productData.id, lang);
@@ -75,32 +80,38 @@ async function applyProductTranslations(storeId, product, lang = 'en') {
  *
  * @param {Array} products - Array of product objects
  * @param {string} lang - Language code
+ * @param {Object} tenantDb - Tenant database connection (required)
  * @returns {Promise<Array>} Products with applied translations
  */
-async function applyProductTranslationsToMany(products, lang = 'en') {
+async function applyProductTranslationsToMany(products, lang = 'en', tenantDb = null) {
   if (!products || products.length === 0) return [];
 
-  // Fetch all translations in one query
-  const productIds = products.map(p => p.id || (p.toJSON ? p.toJSON().id : null)).filter(Boolean);
+  const productIds = products.map(p => p.id).filter(Boolean);
 
   if (productIds.length === 0) return products;
 
-  // Fetch both requested language and English fallback in one query
-  const query = `
-    SELECT product_id, language_code, name, description, short_description
-    FROM product_translations
-    WHERE product_id IN (:productIds) AND language_code IN (:lang, 'en')
-  `;
+  if (!tenantDb) {
+    console.error('❌ applyProductTranslationsToMany: tenantDb connection required');
+    return products;
+  }
 
-  // This function is deprecated - callers should pass tenantDb and query translations directly
-  // Return products as-is (original implementation used Sequelize which is deprecated)
-  return products;
+  // Fetch both requested language and English fallback in one query
+  const { data: translations, error } = await tenantDb
+    .from('product_translations')
+    .select('product_id, language_code, name, description, short_description')
+    .in('product_id', productIds)
+    .in('language_code', [lang, 'en']);
+
+  if (error) {
+    console.error('Error fetching product translations:', error);
+    return products;
+  }
 
   // Create maps for quick lookup (requested language and English fallback)
   const requestedLangMap = {};
   const englishLangMap = {};
 
-  translations.forEach(t => {
+  (translations || []).forEach(t => {
     if (t.language_code === lang) {
       requestedLangMap[t.product_id] = t;
     }
@@ -111,8 +122,7 @@ async function applyProductTranslationsToMany(products, lang = 'en') {
 
   // Apply translations to each product
   return products.map(product => {
-    // Convert to plain object but preserve all nested data
-    const productData = product.toJSON ? product.toJSON() : { ...product };
+    const productData = { ...product };
 
     // Try requested language first, then English, then keep original values
     const translation = requestedLangMap[productData.id] || englishLangMap[productData.id];
@@ -139,14 +149,13 @@ async function applyProductTranslationsToMany(products, lang = 'en') {
  * Get products with ALL translations for admin translation management
  *
  * @param {Array} products - Array of product objects
- * @param {Object} tenantDb - Tenant database connection (Supabase/Knex client)
+ * @param {Object} tenantDb - Tenant database connection (Supabase client)
  * @returns {Promise<Array>} Products with all translations nested by language code
  */
 async function applyAllProductTranslations(products, tenantDb) {
   if (!products || products.length === 0) return [];
 
-  // Convert products to plain objects
-  const productData = products.map(p => p.toJSON ? p.toJSON() : p);
+  const productData = products.map(p => ({ ...p }));
   const productIds = productData.map(p => p.id).filter(Boolean);
 
   if (productIds.length === 0) return productData;
@@ -169,7 +178,7 @@ async function applyAllProductTranslations(products, tenantDb) {
 
   // Group translations by product_id and language_code
   const translationsByProduct = {};
-  translations.forEach(t => {
+  (translations || []).forEach(t => {
     if (!translationsByProduct[t.product_id]) {
       translationsByProduct[t.product_id] = {};
     }
@@ -241,105 +250,89 @@ async function updateProductTranslations(storeId, productId, translations = {}) 
 }
 
 /**
- * Get products with all data (translations, attributes) in optimized SQL queries
- * Reduces N+1 queries by using JOINs
+ * Get products with all data (translations) in optimized queries
+ * Reduces N+1 queries by fetching translations in bulk
  *
  * @param {string} storeId - Store ID
- * @param {Object} where - Sequelize WHERE conditions
+ * @param {Object} where - WHERE conditions
  * @param {string} lang - Language code
- * @param {Object} options - { limit, offset, order }
+ * @param {Object} options - { limit, offset }
  * @returns {Promise<Object>} { rows, count }
  */
 async function getProductsOptimized(storeId, where = {}, lang = 'en', options = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const { limit, offset, order = [['created_at', 'DESC']] } = options;
+  const { limit, offset } = options;
 
-  // Build WHERE clause for raw SQL
-  const buildWhereClause = (conditions) => {
-    const clauses = [];
-    const replacements = {};
+  // Build products query
+  let productsQuery = tenantDb.from('products').select('*', { count: 'exact' });
 
-    Object.entries(conditions).forEach(([key, value]) => {
-      if (key === 'category_ids' && value[Op.contains]) {
-        // Handle JSONB contains for categories
-        clauses.push(`p.category_ids @> :category_ids`);
-        replacements.category_ids = JSON.stringify(value[Op.contains]);
-      } else if (typeof value === 'object' && value[Op.or]) {
-        // Handle complex OR conditions (for stock filtering)
-        const orClauses = value[Op.or].map((condition, idx) => {
-          if (condition.type === 'configurable') {
-            return `p.type = 'configurable'`;
-          } else if (condition.infinite_stock === true) {
-            return `p.infinite_stock = true`;
-          } else if (condition.manage_stock === false) {
-            return `p.manage_stock = false`;
-          } else if (condition[Op.and]) {
-            return `(p.manage_stock = true AND p.stock_quantity > 0)`;
-          }
-          return null;
-        }).filter(Boolean);
-        if (orClauses.length > 0) {
-          clauses.push(`(${orClauses.join(' OR ')})`);
-        }
-      } else {
-        // Simple equality
-        clauses.push(`p.${key} = :${key}`);
-        replacements[key] = value;
-      }
-    });
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    if (key === 'category_ids' && typeof value === 'object' && value.contains) {
+      // Handle JSONB contains for categories (Supabase uses contains operator)
+      productsQuery = productsQuery.contains(key, value.contains);
+    } else if (key === 'stock_filter') {
+      // Skip complex stock filters for now - can be handled separately
+      continue;
+    } else {
+      productsQuery = productsQuery.eq(key, value);
+    }
+  }
 
-    return { clause: clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '', replacements };
-  };
+  // Apply pagination
+  productsQuery = productsQuery.order('created_at', { ascending: false });
+  if (limit) productsQuery = productsQuery.limit(limit);
+  if (offset) productsQuery = productsQuery.range(offset, offset + (limit || 50) - 1);
 
-  const { clause: whereClause, replacements: whereReplacements } = buildWhereClause(where);
+  const { data: products, error: productsError, count } = await productsQuery;
 
-  // Count query
-  const countQuery = `
-    SELECT COUNT(DISTINCT p.id) as count
-    FROM products p
-    ${whereClause}
-  `;
+  if (productsError) {
+    console.error('Error fetching products:', productsError);
+    throw productsError;
+  }
 
-  // Main query with JOINs for translations
-  const paginationClause = [];
-  if (limit) paginationClause.push(`LIMIT ${parseInt(limit)}`);
-  if (offset) paginationClause.push(`OFFSET ${parseInt(offset)}`);
+  if (!products || products.length === 0) {
+    return { rows: [], count: 0 };
+  }
 
-  const dataQuery = `
-    SELECT
-      p.*,
-      COALESCE(pt.name, pt_en.name, '') as name,
-      COALESCE(pt.description, pt_en.description, '') as description,
-      COALESCE(pt.short_description, pt_en.short_description, '') as short_description
-    FROM products p
-    LEFT JOIN product_translations pt
-      ON p.id = pt.product_id AND pt.language_code = :lang
-    LEFT JOIN product_translations pt_en
-      ON p.id = pt_en.product_id AND pt_en.language_code = 'en'
-    ${whereClause}
-    ORDER BY p.created_at DESC
-    ${paginationClause.join(' ')}
-  `;
+  // Fetch translations
+  const productIds = products.map(p => p.id);
+  const { data: translations, error: transError } = await tenantDb
+    .from('product_translations')
+    .select('product_id, language_code, name, description, short_description')
+    .in('product_id', productIds)
+    .in('language_code', [lang, 'en']);
 
-  const replacements = { ...whereReplacements, lang };
+  if (transError) {
+    console.error('Error fetching product translations:', transError);
+  }
 
-  // Execute both queries in parallel
-  const [countResult, products] = await Promise.all([
-    sequelize.query(countQuery, {
-      replacements,
-      type: sequelize.QueryTypes.SELECT
-    }),
-    sequelize.query(dataQuery, {
-      replacements,
-      type: sequelize.QueryTypes.SELECT
-    })
-  ]);
+  // Build translation maps
+  const requestedLangMap = {};
+  const englishLangMap = {};
 
-  const count = parseInt(countResult[0]?.count || 0);
+  (translations || []).forEach(t => {
+    if (t.language_code === lang) {
+      requestedLangMap[t.product_id] = t;
+    }
+    if (t.language_code === 'en') {
+      englishLangMap[t.product_id] = t;
+    }
+  });
 
-  return { rows: products, count };
+  // Apply translations to products
+  const rows = products.map(product => {
+    const translation = requestedLangMap[product.id] || englishLangMap[product.id];
+    return {
+      ...product,
+      name: translation?.name || '',
+      description: translation?.description || '',
+      short_description: translation?.short_description || ''
+    };
+  });
+
+  return { rows, count: count || rows.length };
 }
 
 module.exports = {
