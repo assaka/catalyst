@@ -2,7 +2,7 @@
  * Cookie Consent Settings Helpers for Normalized Translations
  *
  * These helpers construct the same format that the frontend expects
- * from normalized translation tables.
+ * from normalized translation tables using Supabase.
  */
 
 const ConnectionManager = require('../services/database/ConnectionManager');
@@ -16,93 +16,69 @@ const ConnectionManager = require('../services/database/ConnectionManager');
  * @returns {Promise<Array>} Cookie consent settings with full translations object
  */
 async function getCookieConsentSettingsWithTranslations(storeId, where = {}, lang = 'en') {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === true || value === false) {
-        return `ccs.${key} = ${value}`;
-      }
-      return `ccs.${key} = '${value}'`;
-    })
-    .join(' AND ');
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+  // Fetch cookie consent settings
+  let settingsQuery = tenantDb.from('cookie_consent_settings').select('*');
 
-  // Build translations JSON from normalized table using json_object_agg
-  const query = `
-    SELECT
-      ccs.id,
-      ccs.store_id,
-      ccs.is_enabled,
-      ccs.banner_position,
-      ccs.banner_text,
-      ccs.privacy_policy_url,
-      ccs.accept_button_text,
-      ccs.reject_button_text,
-      ccs.settings_button_text,
-      ccs.privacy_policy_text,
-      ccs.necessary_cookies,
-      ccs.analytics_cookies,
-      ccs.marketing_cookies,
-      ccs.functional_cookies,
-      ccs.theme,
-      ccs.primary_color,
-      ccs.background_color,
-      ccs.text_color,
-      ccs.gdpr_mode,
-      ccs.auto_detect_country,
-      ccs.audit_enabled,
-      ccs.consent_expiry_days,
-      ccs.show_close_button,
-      ccs.categories,
-      ccs.gdpr_countries,
-      ccs.google_analytics_id,
-      ccs.google_tag_manager_id,
-      ccs.custom_css,
-      ccs.accept_button_bg_color,
-      ccs.accept_button_text_color,
-      ccs.reject_button_bg_color,
-      ccs.reject_button_text_color,
-      ccs.save_preferences_button_bg_color,
-      ccs.save_preferences_button_text_color,
-      ccs.created_at,
-      ccs.updated_at,
-      COALESCE(
-        json_object_agg(
-          ccst.language_code,
-          json_build_object(
-            'banner_text', ccst.banner_text,
-            'accept_button_text', ccst.accept_button_text,
-            'reject_button_text', ccst.reject_button_text,
-            'settings_button_text', ccst.settings_button_text,
-            'privacy_policy_text', ccst.privacy_policy_text,
-            'save_preferences_button_text', ccst.save_preferences_button_text,
-            'necessary_name', ccst.necessary_name,
-            'necessary_description', ccst.necessary_description,
-            'analytics_name', ccst.analytics_name,
-            'analytics_description', ccst.analytics_description,
-            'marketing_name', ccst.marketing_name,
-            'marketing_description', ccst.marketing_description,
-            'functional_name', ccst.functional_name,
-            'functional_description', ccst.functional_description
-          )
-        ) FILTER (WHERE ccst.language_code IS NOT NULL),
-        '{}'::json
-      ) as translations
-    FROM cookie_consent_settings ccs
-    LEFT JOIN cookie_consent_settings_translations ccst
-      ON ccs.id = ccst.cookie_consent_settings_id
-    ${whereClause}
-    GROUP BY ccs.id
-    ORDER BY ccs.created_at DESC
-  `;
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    settingsQuery = settingsQuery.eq(key, value);
+  }
 
-  const results = await sequelize.query(query, {
-    type: sequelize.QueryTypes.SELECT
+  settingsQuery = settingsQuery.order('created_at', { ascending: false });
+
+  const { data: settings, error: settingsError } = await settingsQuery;
+
+  if (settingsError) {
+    console.error('Error fetching cookie_consent_settings:', settingsError);
+    throw settingsError;
+  }
+
+  if (!settings || settings.length === 0) {
+    return [];
+  }
+
+  // Fetch translations for all settings
+  const settingsIds = settings.map(s => s.id);
+  const { data: translations, error: transError } = await tenantDb
+    .from('cookie_consent_settings_translations')
+    .select('*')
+    .in('cookie_consent_settings_id', settingsIds);
+
+  if (transError) {
+    console.error('Error fetching cookie_consent_settings_translations:', transError);
+  }
+
+  // Build translation map
+  const transMap = {};
+  (translations || []).forEach(t => {
+    if (!transMap[t.cookie_consent_settings_id]) {
+      transMap[t.cookie_consent_settings_id] = {};
+    }
+    transMap[t.cookie_consent_settings_id][t.language_code] = {
+      banner_text: t.banner_text,
+      accept_button_text: t.accept_button_text,
+      reject_button_text: t.reject_button_text,
+      settings_button_text: t.settings_button_text,
+      privacy_policy_text: t.privacy_policy_text,
+      save_preferences_button_text: t.save_preferences_button_text,
+      necessary_name: t.necessary_name,
+      necessary_description: t.necessary_description,
+      analytics_name: t.analytics_name,
+      analytics_description: t.analytics_description,
+      marketing_name: t.marketing_name,
+      marketing_description: t.marketing_description,
+      functional_name: t.functional_name,
+      functional_description: t.functional_description
+    };
   });
 
-  return results;
+  // Merge settings with translations
+  return settings.map(setting => ({
+    ...setting,
+    translations: transMap[setting.id] || {}
+  }));
 }
 
 /**
@@ -114,81 +90,54 @@ async function getCookieConsentSettingsWithTranslations(storeId, where = {}, lan
  * @returns {Promise<Object|null>} Cookie consent settings with full translations object
  */
 async function getCookieConsentSettingsById(storeId, id, lang = 'en') {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
-  const query = `
-    SELECT
-      ccs.id,
-      ccs.store_id,
-      ccs.is_enabled,
-      ccs.banner_position,
-      ccs.banner_text,
-      ccs.privacy_policy_url,
-      ccs.accept_button_text,
-      ccs.reject_button_text,
-      ccs.settings_button_text,
-      ccs.privacy_policy_text,
-      ccs.necessary_cookies,
-      ccs.analytics_cookies,
-      ccs.marketing_cookies,
-      ccs.functional_cookies,
-      ccs.theme,
-      ccs.primary_color,
-      ccs.background_color,
-      ccs.text_color,
-      ccs.gdpr_mode,
-      ccs.auto_detect_country,
-      ccs.audit_enabled,
-      ccs.consent_expiry_days,
-      ccs.show_close_button,
-      ccs.categories,
-      ccs.gdpr_countries,
-      ccs.google_analytics_id,
-      ccs.google_tag_manager_id,
-      ccs.custom_css,
-      ccs.accept_button_bg_color,
-      ccs.accept_button_text_color,
-      ccs.reject_button_bg_color,
-      ccs.reject_button_text_color,
-      ccs.save_preferences_button_bg_color,
-      ccs.save_preferences_button_text_color,
-      ccs.created_at,
-      ccs.updated_at,
-      COALESCE(
-        json_object_agg(
-          ccst.language_code,
-          json_build_object(
-            'banner_text', ccst.banner_text,
-            'accept_button_text', ccst.accept_button_text,
-            'reject_button_text', ccst.reject_button_text,
-            'settings_button_text', ccst.settings_button_text,
-            'privacy_policy_text', ccst.privacy_policy_text,
-            'save_preferences_button_text', ccst.save_preferences_button_text,
-            'necessary_name', ccst.necessary_name,
-            'necessary_description', ccst.necessary_description,
-            'analytics_name', ccst.analytics_name,
-            'analytics_description', ccst.analytics_description,
-            'marketing_name', ccst.marketing_name,
-            'marketing_description', ccst.marketing_description,
-            'functional_name', ccst.functional_name,
-            'functional_description', ccst.functional_description
-          )
-        ) FILTER (WHERE ccst.language_code IS NOT NULL),
-        '{}'::json
-      ) as translations
-    FROM cookie_consent_settings ccs
-    LEFT JOIN cookie_consent_settings_translations ccst
-      ON ccs.id = ccst.cookie_consent_settings_id
-    WHERE ccs.id = :id
-    GROUP BY ccs.id
-  `;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const results = await sequelize.query(query, {
-    replacements: { id },
-    type: sequelize.QueryTypes.SELECT
+  // Fetch the cookie consent settings
+  const { data: setting, error: settingError } = await tenantDb
+    .from('cookie_consent_settings')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (settingError || !setting) {
+    return null;
+  }
+
+  // Fetch translations
+  const { data: translations, error: transError } = await tenantDb
+    .from('cookie_consent_settings_translations')
+    .select('*')
+    .eq('cookie_consent_settings_id', id);
+
+  if (transError) {
+    console.error('Error fetching cookie_consent_settings_translations:', transError);
+  }
+
+  // Build translations object
+  const translationsObj = {};
+  (translations || []).forEach(t => {
+    translationsObj[t.language_code] = {
+      banner_text: t.banner_text,
+      accept_button_text: t.accept_button_text,
+      reject_button_text: t.reject_button_text,
+      settings_button_text: t.settings_button_text,
+      privacy_policy_text: t.privacy_policy_text,
+      save_preferences_button_text: t.save_preferences_button_text,
+      necessary_name: t.necessary_name,
+      necessary_description: t.necessary_description,
+      analytics_name: t.analytics_name,
+      analytics_description: t.analytics_description,
+      marketing_name: t.marketing_name,
+      marketing_description: t.marketing_description,
+      functional_name: t.functional_name,
+      functional_description: t.functional_description
+    };
   });
 
-  return results[0] || null;
+  return {
+    ...setting,
+    translations: translationsObj
+  };
 }
 
 /**
@@ -200,36 +149,13 @@ async function getCookieConsentSettingsById(storeId, id, lang = 'en') {
  * @returns {Promise<Object>} Created cookie consent settings with translations
  */
 async function createCookieConsentSettingsWithTranslations(storeId, settingsData, translations = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
-  const transaction = await sequelize.transaction();
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   try {
     // Insert cookie consent settings
-    const [settings] = await sequelize.query(`
-      INSERT INTO cookie_consent_settings (
-        id, store_id, is_enabled, banner_position, banner_text, privacy_policy_url,
-        accept_button_text, reject_button_text, settings_button_text,
-        necessary_cookies, analytics_cookies, marketing_cookies, functional_cookies,
-        theme, primary_color, background_color, text_color,
-        gdpr_mode, auto_detect_country, audit_enabled, consent_expiry_days,
-        show_close_button, privacy_policy_text, categories, gdpr_countries,
-        google_analytics_id, google_tag_manager_id, custom_css,
-        created_at, updated_at
-      ) VALUES (
-        gen_random_uuid(),
-        :store_id, :is_enabled, :banner_position, :banner_text, :privacy_policy_url,
-        :accept_button_text, :reject_button_text, :settings_button_text,
-        :necessary_cookies, :analytics_cookies, :marketing_cookies, :functional_cookies,
-        :theme, :primary_color, :background_color, :text_color,
-        :gdpr_mode, :auto_detect_country, :audit_enabled, :consent_expiry_days,
-        :show_close_button, :privacy_policy_text, :categories, :gdpr_countries,
-        :google_analytics_id, :google_tag_manager_id, :custom_css,
-        NOW(), NOW()
-      )
-      RETURNING *
-    `, {
-      replacements: {
+    const { data: settings, error: settingsError } = await tenantDb
+      .from('cookie_consent_settings')
+      .insert({
         store_id: settingsData.store_id,
         is_enabled: settingsData.is_enabled !== false,
         banner_position: settingsData.banner_position || 'bottom',
@@ -252,60 +178,34 @@ async function createCookieConsentSettingsWithTranslations(storeId, settingsData
         consent_expiry_days: settingsData.consent_expiry_days || 365,
         show_close_button: settingsData.show_close_button !== false,
         privacy_policy_text: settingsData.privacy_policy_text || 'Privacy Policy',
-        categories: JSON.stringify(settingsData.categories || {}),
-        gdpr_countries: JSON.stringify(settingsData.gdpr_countries || []),
+        categories: settingsData.categories || {},
+        gdpr_countries: settingsData.gdpr_countries || [],
         google_analytics_id: settingsData.google_analytics_id || null,
         google_tag_manager_id: settingsData.google_tag_manager_id || null,
-        custom_css: settingsData.custom_css || null
-      },
-      type: sequelize.QueryTypes.SELECT,
-      transaction
-    });
+        custom_css: settingsData.custom_css || null,
+        accept_button_bg_color: settingsData.accept_button_bg_color || null,
+        accept_button_text_color: settingsData.accept_button_text_color || null,
+        reject_button_bg_color: settingsData.reject_button_bg_color || null,
+        reject_button_text_color: settingsData.reject_button_text_color || null,
+        save_preferences_button_bg_color: settingsData.save_preferences_button_bg_color || null,
+        save_preferences_button_text_color: settingsData.save_preferences_button_text_color || null
+      })
+      .select()
+      .single();
+
+    if (settingsError) {
+      console.error('Error inserting cookie_consent_settings:', settingsError);
+      throw settingsError;
+    }
 
     // Insert translations
     for (const [langCode, data] of Object.entries(translations)) {
       if (data && Object.keys(data).length > 0) {
-        await sequelize.query(`
-          INSERT INTO cookie_consent_settings_translations (
-            cookie_consent_settings_id, language_code, banner_text,
-            accept_button_text, reject_button_text, settings_button_text,
-            privacy_policy_text, save_preferences_button_text,
-            necessary_name, necessary_description,
-            analytics_name, analytics_description,
-            marketing_name, marketing_description,
-            functional_name, functional_description,
-            created_at, updated_at
-          ) VALUES (
-            :settings_id, :lang_code, :banner_text,
-            :accept_button_text, :reject_button_text, :settings_button_text,
-            :privacy_policy_text, :save_preferences_button_text,
-            :necessary_name, :necessary_description,
-            :analytics_name, :analytics_description,
-            :marketing_name, :marketing_description,
-            :functional_name, :functional_description,
-            NOW(), NOW()
-          )
-          ON CONFLICT (cookie_consent_settings_id, language_code) DO UPDATE
-          SET
-            banner_text = EXCLUDED.banner_text,
-            accept_button_text = EXCLUDED.accept_button_text,
-            reject_button_text = EXCLUDED.reject_button_text,
-            settings_button_text = EXCLUDED.settings_button_text,
-            privacy_policy_text = EXCLUDED.privacy_policy_text,
-            save_preferences_button_text = EXCLUDED.save_preferences_button_text,
-            necessary_name = EXCLUDED.necessary_name,
-            necessary_description = EXCLUDED.necessary_description,
-            analytics_name = EXCLUDED.analytics_name,
-            analytics_description = EXCLUDED.analytics_description,
-            marketing_name = EXCLUDED.marketing_name,
-            marketing_description = EXCLUDED.marketing_description,
-            functional_name = EXCLUDED.functional_name,
-            functional_description = EXCLUDED.functional_description,
-            updated_at = NOW()
-        `, {
-          replacements: {
-            settings_id: settings.id,
-            lang_code: langCode,
+        const { error: transError } = await tenantDb
+          .from('cookie_consent_settings_translations')
+          .upsert({
+            cookie_consent_settings_id: settings.id,
+            language_code: langCode,
             banner_text: data.banner_text || null,
             accept_button_text: data.accept_button_text || null,
             reject_button_text: data.reject_button_text || null,
@@ -320,18 +220,21 @@ async function createCookieConsentSettingsWithTranslations(storeId, settingsData
             marketing_description: data.marketing_description || null,
             functional_name: data.functional_name || null,
             functional_description: data.functional_description || null
-          },
-          transaction
-        });
+          }, {
+            onConflict: 'cookie_consent_settings_id,language_code'
+          });
+
+        if (transError) {
+          console.error('Error upserting cookie_consent_settings_translation:', transError);
+          // Continue with other translations
+        }
       }
     }
-
-    await transaction.commit();
 
     // Return the created settings with translations
     return await getCookieConsentSettingsById(storeId, settings.id, 'en');
   } catch (error) {
-    await transaction.rollback();
+    console.error('Error creating cookie consent settings:', error);
     throw error;
   }
 }
@@ -346,123 +249,53 @@ async function createCookieConsentSettingsWithTranslations(storeId, settingsData
  * @returns {Promise<Object>} Updated cookie consent settings with translations
  */
 async function updateCookieConsentSettingsWithTranslations(storeId, id, settingsData, translations = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
-  const transaction = await sequelize.transaction();
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   try {
-    // Build update fields
-    const updateFields = [];
-    const replacements = { id };
+    // Build update object
+    const updateData = {};
 
-    // Add all possible fields
-    const fieldMappings = {
-      is_enabled: 'is_enabled',
-      banner_position: 'banner_position',
-      banner_text: 'banner_text',
-      privacy_policy_url: 'privacy_policy_url',
-      accept_button_text: 'accept_button_text',
-      reject_button_text: 'reject_button_text',
-      settings_button_text: 'settings_button_text',
-      necessary_cookies: 'necessary_cookies',
-      analytics_cookies: 'analytics_cookies',
-      marketing_cookies: 'marketing_cookies',
-      functional_cookies: 'functional_cookies',
-      theme: 'theme',
-      primary_color: 'primary_color',
-      background_color: 'background_color',
-      text_color: 'text_color',
-      gdpr_mode: 'gdpr_mode',
-      auto_detect_country: 'auto_detect_country',
-      audit_enabled: 'audit_enabled',
-      consent_expiry_days: 'consent_expiry_days',
-      show_close_button: 'show_close_button',
-      privacy_policy_text: 'privacy_policy_text',
-      google_analytics_id: 'google_analytics_id',
-      google_tag_manager_id: 'google_tag_manager_id',
-      custom_css: 'custom_css',
-      accept_button_bg_color: 'accept_button_bg_color',
-      accept_button_text_color: 'accept_button_text_color',
-      reject_button_bg_color: 'reject_button_bg_color',
-      reject_button_text_color: 'reject_button_text_color',
-      save_preferences_button_bg_color: 'save_preferences_button_bg_color',
-      save_preferences_button_text_color: 'save_preferences_button_text_color'
-    };
+    const fields = [
+      'is_enabled', 'banner_position', 'banner_text', 'privacy_policy_url',
+      'accept_button_text', 'reject_button_text', 'settings_button_text',
+      'necessary_cookies', 'analytics_cookies', 'marketing_cookies', 'functional_cookies',
+      'theme', 'primary_color', 'background_color', 'text_color',
+      'gdpr_mode', 'auto_detect_country', 'audit_enabled', 'consent_expiry_days',
+      'show_close_button', 'privacy_policy_text', 'categories', 'gdpr_countries',
+      'google_analytics_id', 'google_tag_manager_id', 'custom_css',
+      'accept_button_bg_color', 'accept_button_text_color',
+      'reject_button_bg_color', 'reject_button_text_color',
+      'save_preferences_button_bg_color', 'save_preferences_button_text_color'
+    ];
 
-    Object.entries(fieldMappings).forEach(([key, field]) => {
-      if (settingsData[key] !== undefined) {
-        updateFields.push(`${field} = :${key}`);
-        replacements[key] = settingsData[key];
+    fields.forEach(field => {
+      if (settingsData[field] !== undefined) {
+        updateData[field] = settingsData[field];
       }
     });
 
-    // Handle JSON fields separately
-    if (settingsData.categories !== undefined) {
-      updateFields.push('categories = :categories');
-      replacements.categories = JSON.stringify(settingsData.categories);
-    }
-    if (settingsData.gdpr_countries !== undefined) {
-      updateFields.push('gdpr_countries = :gdpr_countries');
-      replacements.gdpr_countries = JSON.stringify(settingsData.gdpr_countries);
-    }
+    if (Object.keys(updateData).length > 0) {
+      updateData.updated_at = new Date().toISOString();
 
-    if (updateFields.length > 0) {
-      updateFields.push('updated_at = NOW()');
+      const { error: updateError } = await tenantDb
+        .from('cookie_consent_settings')
+        .update(updateData)
+        .eq('id', id);
 
-      await sequelize.query(`
-        UPDATE cookie_consent_settings
-        SET ${updateFields.join(', ')}
-        WHERE id = :id
-      `, {
-        replacements,
-        transaction
-      });
+      if (updateError) {
+        console.error('Error updating cookie_consent_settings:', updateError);
+        throw updateError;
+      }
     }
 
     // Update translations
     for (const [langCode, data] of Object.entries(translations)) {
       if (data && Object.keys(data).length > 0) {
-        await sequelize.query(`
-          INSERT INTO cookie_consent_settings_translations (
-            cookie_consent_settings_id, language_code, banner_text,
-            accept_button_text, reject_button_text, settings_button_text,
-            privacy_policy_text, save_preferences_button_text,
-            necessary_name, necessary_description,
-            analytics_name, analytics_description,
-            marketing_name, marketing_description,
-            functional_name, functional_description,
-            created_at, updated_at
-          ) VALUES (
-            :settings_id, :lang_code, :banner_text,
-            :accept_button_text, :reject_button_text, :settings_button_text,
-            :privacy_policy_text, :save_preferences_button_text,
-            :necessary_name, :necessary_description,
-            :analytics_name, :analytics_description,
-            :marketing_name, :marketing_description,
-            :functional_name, :functional_description,
-            NOW(), NOW()
-          )
-          ON CONFLICT (cookie_consent_settings_id, language_code) DO UPDATE
-          SET
-            banner_text = COALESCE(EXCLUDED.banner_text, cookie_consent_settings_translations.banner_text),
-            accept_button_text = COALESCE(EXCLUDED.accept_button_text, cookie_consent_settings_translations.accept_button_text),
-            reject_button_text = COALESCE(EXCLUDED.reject_button_text, cookie_consent_settings_translations.reject_button_text),
-            settings_button_text = COALESCE(EXCLUDED.settings_button_text, cookie_consent_settings_translations.settings_button_text),
-            privacy_policy_text = COALESCE(EXCLUDED.privacy_policy_text, cookie_consent_settings_translations.privacy_policy_text),
-            save_preferences_button_text = COALESCE(EXCLUDED.save_preferences_button_text, cookie_consent_settings_translations.save_preferences_button_text),
-            necessary_name = COALESCE(EXCLUDED.necessary_name, cookie_consent_settings_translations.necessary_name),
-            necessary_description = COALESCE(EXCLUDED.necessary_description, cookie_consent_settings_translations.necessary_description),
-            analytics_name = COALESCE(EXCLUDED.analytics_name, cookie_consent_settings_translations.analytics_name),
-            analytics_description = COALESCE(EXCLUDED.analytics_description, cookie_consent_settings_translations.analytics_description),
-            marketing_name = COALESCE(EXCLUDED.marketing_name, cookie_consent_settings_translations.marketing_name),
-            marketing_description = COALESCE(EXCLUDED.marketing_description, cookie_consent_settings_translations.marketing_description),
-            functional_name = COALESCE(EXCLUDED.functional_name, cookie_consent_settings_translations.functional_name),
-            functional_description = COALESCE(EXCLUDED.functional_description, cookie_consent_settings_translations.functional_description),
-            updated_at = NOW()
-        `, {
-          replacements: {
-            settings_id: id,
-            lang_code: langCode,
+        const { error: transError } = await tenantDb
+          .from('cookie_consent_settings_translations')
+          .upsert({
+            cookie_consent_settings_id: id,
+            language_code: langCode,
             banner_text: data.banner_text,
             accept_button_text: data.accept_button_text,
             reject_button_text: data.reject_button_text,
@@ -476,19 +309,23 @@ async function updateCookieConsentSettingsWithTranslations(storeId, id, settings
             marketing_name: data.marketing_name,
             marketing_description: data.marketing_description,
             functional_name: data.functional_name,
-            functional_description: data.functional_description
-          },
-          transaction
-        });
+            functional_description: data.functional_description,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'cookie_consent_settings_id,language_code'
+          });
+
+        if (transError) {
+          console.error('Error upserting cookie_consent_settings_translation:', transError);
+          // Continue with other translations
+        }
       }
     }
-
-    await transaction.commit();
 
     // Return the updated settings with translations
     return await getCookieConsentSettingsById(storeId, id, 'en');
   } catch (error) {
-    await transaction.rollback();
+    console.error('Error updating cookie consent settings:', error);
     throw error;
   }
 }
@@ -501,15 +338,17 @@ async function updateCookieConsentSettingsWithTranslations(storeId, id, settings
  * @returns {Promise<boolean>} Success status
  */
 async function deleteCookieConsentSettings(storeId, id) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  await sequelize.query(`
-    DELETE FROM cookie_consent_settings WHERE id = :id
-  `, {
-    replacements: { id },
-    type: sequelize.QueryTypes.DELETE
-  });
+  const { error } = await tenantDb
+    .from('cookie_consent_settings')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting cookie_consent_settings:', error);
+    throw error;
+  }
 
   return true;
 }

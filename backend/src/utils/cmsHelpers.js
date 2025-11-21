@@ -2,7 +2,7 @@
  * CMS Helpers for Normalized Translations
  *
  * These helpers fetch translations from normalized cms_page_translations
- * and cms_block_translations tables.
+ * and cms_block_translations tables using Supabase.
  */
 
 const ConnectionManager = require('../services/database/ConnectionManager');
@@ -83,38 +83,45 @@ async function getCMSPagesWithTranslations(storeId, where = {}, lang = 'en') {
  * @returns {Promise<Object|null>} CMS page with translated fields
  */
 async function getCMSPageById(storeId, id, lang = 'en') {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const query = `
-    SELECT
-      p.id,
-      p.slug,
-      p.is_active,
-      p.is_system,
-      p.sort_order,
-      p.seo,
-      p.store_id,
-      p.related_product_ids,
-      p.published_at,
-      p.created_at,
-      p.updated_at,
-      COALESCE(pt.title, pt_en.title, p.slug) as title,
-      COALESCE(pt.content, pt_en.content) as content
-    FROM cms_pages p
-    LEFT JOIN cms_page_translations pt
-      ON p.id = pt.cms_page_id AND pt.language_code = :lang
-    LEFT JOIN cms_page_translations pt_en
-      ON p.id = pt_en.cms_page_id AND pt_en.language_code = 'en'
-    WHERE p.id = :id
-  `;
+  // Fetch the page
+  const { data: page, error: pageError } = await tenantDb
+    .from('cms_pages')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-  const results = await sequelize.query(query, {
-    replacements: { id, lang },
-    type: sequelize.QueryTypes.SELECT
+  if (pageError || !page) {
+    return null;
+  }
+
+  // Fetch translations
+  const { data: translations, error: transError } = await tenantDb
+    .from('cms_page_translations')
+    .select('*')
+    .eq('cms_page_id', id)
+    .in('language_code', [lang, 'en']);
+
+  if (transError) {
+    console.error('Error fetching cms_page_translations:', transError);
+  }
+
+  // Build translation map
+  const transMap = {};
+  (translations || []).forEach(t => {
+    transMap[t.language_code] = t;
   });
 
-  return results[0] || null;
+  const reqLang = transMap[lang];
+  const enLang = transMap['en'];
+
+  return {
+    ...page,
+    title: reqLang?.title || enLang?.title || page.slug,
+    content: reqLang?.content || enLang?.content || null,
+    excerpt: reqLang?.excerpt || enLang?.excerpt || null
+  };
 }
 
 /**
@@ -192,35 +199,44 @@ async function getCMSBlocksWithTranslations(storeId, where = {}, lang = 'en') {
  * @returns {Promise<Object|null>} CMS block with translated fields
  */
 async function getCMSBlockById(storeId, id, lang = 'en') {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const query = `
-    SELECT
-      b.id,
-      b.identifier,
-      b.is_active,
-      b.position,
-      b.sort_order,
-      b.store_id,
-      b.created_at,
-      b.updated_at,
-      COALESCE(bt.title, bt_en.title, b.identifier) as title,
-      COALESCE(bt.content, bt_en.content) as content
-    FROM cms_blocks b
-    LEFT JOIN cms_block_translations bt
-      ON b.id = bt.cms_block_id AND bt.language_code = :lang
-    LEFT JOIN cms_block_translations bt_en
-      ON b.id = bt_en.cms_block_id AND bt_en.language_code = 'en'
-    WHERE b.id = :id
-  `;
+  // Fetch the block
+  const { data: block, error: blockError } = await tenantDb
+    .from('cms_blocks')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-  const results = await sequelize.query(query, {
-    replacements: { id, lang },
-    type: sequelize.QueryTypes.SELECT
+  if (blockError || !block) {
+    return null;
+  }
+
+  // Fetch translations
+  const { data: translations, error: transError } = await tenantDb
+    .from('cms_block_translations')
+    .select('*')
+    .eq('cms_block_id', id)
+    .in('language_code', [lang, 'en']);
+
+  if (transError) {
+    console.error('Error fetching cms_block_translations:', transError);
+  }
+
+  // Build translation map
+  const transMap = {};
+  (translations || []).forEach(t => {
+    transMap[t.language_code] = t;
   });
 
-  return results[0] || null;
+  const reqLang = transMap[lang];
+  const enLang = transMap['en'];
+
+  return {
+    ...block,
+    title: reqLang?.title || enLang?.title || block.identifier,
+    content: reqLang?.content || enLang?.content || null
+  };
 }
 
 /**
@@ -231,49 +247,43 @@ async function getCMSBlockById(storeId, id, lang = 'en') {
  * @returns {Promise<Object|null>} CMS page with all translations
  */
 async function getCMSPageWithAllTranslations(storeId, id) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const query = `
-    SELECT
-      p.id,
-      p.slug,
-      p.is_active,
-      p.is_system,
-      p.sort_order,
-      p.seo,
-      p.store_id,
-      p.related_product_ids,
-      p.published_at,
-      p.created_at,
-      p.updated_at,
-      json_object_agg(
-        COALESCE(pt.language_code, 'en'),
-        json_build_object(
-          'title', pt.title,
-          'content', pt.content,
-          'excerpt', pt.excerpt
-        )
-      ) FILTER (WHERE pt.language_code IS NOT NULL) as translations
-    FROM cms_pages p
-    LEFT JOIN cms_page_translations pt ON p.id = pt.cms_page_id
-    WHERE p.id = :id
-    GROUP BY p.id
-  `;
+  // Fetch the page
+  const { data: page, error: pageError } = await tenantDb
+    .from('cms_pages')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-  const results = await sequelize.query(query, {
-    replacements: { id },
-    type: sequelize.QueryTypes.SELECT
-  });
-
-  const page = results[0] || null;
-
-  // Ensure translations object exists even if empty
-  if (page && !page.translations) {
-    page.translations = {};
+  if (pageError || !page) {
+    return null;
   }
 
-  return page;
+  // Fetch all translations
+  const { data: translations, error: transError } = await tenantDb
+    .from('cms_page_translations')
+    .select('*')
+    .eq('cms_page_id', id);
+
+  if (transError) {
+    console.error('Error fetching cms_page_translations:', transError);
+  }
+
+  // Build translations object
+  const translationsObj = {};
+  (translations || []).forEach(t => {
+    translationsObj[t.language_code] = {
+      title: t.title,
+      content: t.content,
+      excerpt: t.excerpt
+    };
+  });
+
+  return {
+    ...page,
+    translations: translationsObj
+  };
 }
 
 /**
@@ -284,59 +294,59 @@ async function getCMSPageWithAllTranslations(storeId, id) {
  * @returns {Promise<Array>} CMS pages with all translations
  */
 async function getCMSPagesWithAllTranslations(storeId, where = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === true || value === false) {
-        return `p.${key} = ${value}`;
-      }
-      if (Array.isArray(value)) {
-        return `p.${key} IN (${value.map(v => `'${v}'`).join(', ')})`;
-      }
-      return `p.${key} = '${value}'`;
-    })
-    .join(' AND ');
+  // Fetch cms_pages
+  let pagesQuery = tenantDb.from('cms_pages').select('*');
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    if (Array.isArray(value)) {
+      pagesQuery = pagesQuery.in(key, value);
+    } else {
+      pagesQuery = pagesQuery.eq(key, value);
+    }
+  }
 
-  const query = `
-    SELECT
-      p.id,
-      p.slug,
-      p.is_active,
-      p.is_system,
-      p.sort_order,
-      p.seo,
-      p.store_id,
-      p.related_product_ids,
-      p.published_at,
-      p.created_at,
-      p.updated_at,
-      json_object_agg(
-        COALESCE(pt.language_code, 'en'),
-        json_build_object(
-          'title', pt.title,
-          'content', pt.content,
-          'excerpt', pt.excerpt
-        )
-      ) FILTER (WHERE pt.language_code IS NOT NULL) as translations
-    FROM cms_pages p
-    LEFT JOIN cms_page_translations pt ON p.id = pt.cms_page_id
-    ${whereClause}
-    GROUP BY p.id
-    ORDER BY p.sort_order ASC, p.created_at DESC
-  `;
+  pagesQuery = pagesQuery.order('sort_order', { ascending: true }).order('created_at', { ascending: false });
 
-  const results = await sequelize.query(query, {
-    type: sequelize.QueryTypes.SELECT
+  const { data: pages, error: pagesError } = await pagesQuery;
+
+  if (pagesError) {
+    console.error('Error fetching cms_pages:', pagesError);
+    throw pagesError;
+  }
+
+  if (!pages || pages.length === 0) {
+    return [];
+  }
+
+  // Fetch all translations for these pages
+  const pageIds = pages.map(p => p.id);
+  const { data: translations, error: transError } = await tenantDb
+    .from('cms_page_translations')
+    .select('*')
+    .in('cms_page_id', pageIds);
+
+  if (transError) {
+    console.error('Error fetching cms_page_translations:', transError);
+  }
+
+  // Build translation map
+  const transMap = {};
+  (translations || []).forEach(t => {
+    if (!transMap[t.cms_page_id]) transMap[t.cms_page_id] = {};
+    transMap[t.cms_page_id][t.language_code] = {
+      title: t.title,
+      content: t.content,
+      excerpt: t.excerpt
+    };
   });
 
-  // Ensure translations object exists even if empty
-  return results.map(page => ({
+  // Merge pages with translations
+  return pages.map(page => ({
     ...page,
-    translations: page.translations || {}
+    translations: transMap[page.id] || {}
   }));
 }
 
@@ -348,45 +358,42 @@ async function getCMSPagesWithAllTranslations(storeId, where = {}) {
  * @returns {Promise<Object|null>} CMS block with all translations
  */
 async function getCMSBlockWithAllTranslations(storeId, id) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const query = `
-    SELECT
-      b.id,
-      b.identifier,
-      b.is_active,
-      b.placement,
-      b.sort_order,
-      b.store_id,
-      b.created_at,
-      b.updated_at,
-      json_object_agg(
-        COALESCE(bt.language_code, 'en'),
-        json_build_object(
-          'title', bt.title,
-          'content', bt.content
-        )
-      ) FILTER (WHERE bt.language_code IS NOT NULL) as translations
-    FROM cms_blocks b
-    LEFT JOIN cms_block_translations bt ON b.id = bt.cms_block_id
-    WHERE b.id = :id
-    GROUP BY b.id
-  `;
+  // Fetch the block
+  const { data: block, error: blockError } = await tenantDb
+    .from('cms_blocks')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-  const results = await sequelize.query(query, {
-    replacements: { id },
-    type: sequelize.QueryTypes.SELECT
-  });
-
-  const block = results[0] || null;
-
-  // Ensure translations object exists even if empty
-  if (block && !block.translations) {
-    block.translations = {};
+  if (blockError || !block) {
+    return null;
   }
 
-  return block;
+  // Fetch all translations
+  const { data: translations, error: transError } = await tenantDb
+    .from('cms_block_translations')
+    .select('*')
+    .eq('cms_block_id', id);
+
+  if (transError) {
+    console.error('Error fetching cms_block_translations:', transError);
+  }
+
+  // Build translations object
+  const translationsObj = {};
+  (translations || []).forEach(t => {
+    translationsObj[t.language_code] = {
+      title: t.title,
+      content: t.content
+    };
+  });
+
+  return {
+    ...block,
+    translations: translationsObj
+  };
 }
 
 /**
@@ -397,55 +404,58 @@ async function getCMSBlockWithAllTranslations(storeId, id) {
  * @returns {Promise<Array>} CMS blocks with all translations
  */
 async function getCMSBlocksWithAllTranslations(storeId, where = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === true || value === false) {
-        return `b.${key} = ${value}`;
-      }
-      if (Array.isArray(value)) {
-        return `b.${key} IN (${value.map(v => `'${v}'`).join(', ')})`;
-      }
-      return `b.${key} = '${value}'`;
-    })
-    .join(' AND ');
+  // Fetch cms_blocks
+  let blocksQuery = tenantDb.from('cms_blocks').select('*');
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    if (Array.isArray(value)) {
+      blocksQuery = blocksQuery.in(key, value);
+    } else {
+      blocksQuery = blocksQuery.eq(key, value);
+    }
+  }
 
-  const query = `
-    SELECT
-      b.id,
-      b.identifier,
-      b.is_active,
-      b.placement,
-      b.sort_order,
-      b.store_id,
-      b.created_at,
-      b.updated_at,
-      json_object_agg(
-        COALESCE(bt.language_code, 'en'),
-        json_build_object(
-          'title', bt.title,
-          'content', bt.content
-        )
-      ) FILTER (WHERE bt.language_code IS NOT NULL) as translations
-    FROM cms_blocks b
-    LEFT JOIN cms_block_translations bt ON b.id = bt.cms_block_id
-    ${whereClause}
-    GROUP BY b.id
-    ORDER BY b.sort_order ASC, b.created_at DESC
-  `;
+  blocksQuery = blocksQuery.order('sort_order', { ascending: true }).order('created_at', { ascending: false });
 
-  const results = await sequelize.query(query, {
-    type: sequelize.QueryTypes.SELECT
+  const { data: blocks, error: blocksError } = await blocksQuery;
+
+  if (blocksError) {
+    console.error('Error fetching cms_blocks:', blocksError);
+    throw blocksError;
+  }
+
+  if (!blocks || blocks.length === 0) {
+    return [];
+  }
+
+  // Fetch all translations for these blocks
+  const blockIds = blocks.map(b => b.id);
+  const { data: translations, error: transError } = await tenantDb
+    .from('cms_block_translations')
+    .select('*')
+    .in('cms_block_id', blockIds);
+
+  if (transError) {
+    console.error('Error fetching cms_block_translations:', transError);
+  }
+
+  // Build translation map
+  const transMap = {};
+  (translations || []).forEach(t => {
+    if (!transMap[t.cms_block_id]) transMap[t.cms_block_id] = {};
+    transMap[t.cms_block_id][t.language_code] = {
+      title: t.title,
+      content: t.content
+    };
   });
 
-  // Ensure translations object exists even if empty
-  return results.map(block => ({
+  // Merge blocks with translations
+  return blocks.map(block => ({
     ...block,
-    translations: block.translations || {}
+    translations: transMap[block.id] || {}
   }));
 }
 
@@ -458,8 +468,7 @@ async function getCMSBlocksWithAllTranslations(storeId, where = {}) {
  * @returns {Promise<void>}
  */
 async function saveCMSPageTranslations(storeId, pageId, translations) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   if (!translations || typeof translations !== 'object') {
     return;
@@ -474,24 +483,23 @@ async function saveCMSPageTranslations(storeId, pageId, translations) {
     if (!title && !content && !excerpt) continue;
 
     // Upsert translation record
-    await sequelize.query(`
-      INSERT INTO cms_page_translations (cms_page_id, language_code, title, content, excerpt, created_at, updated_at)
-      VALUES (:pageId, :langCode, :title, :content, :excerpt, NOW(), NOW())
-      ON CONFLICT (cms_page_id, language_code)
-      DO UPDATE SET
-        title = EXCLUDED.title,
-        content = EXCLUDED.content,
-        excerpt = EXCLUDED.excerpt,
-        updated_at = NOW()
-    `, {
-      replacements: {
-        pageId,
-        langCode,
+    const { error } = await tenantDb
+      .from('cms_page_translations')
+      .upsert({
+        cms_page_id: pageId,
+        language_code: langCode,
         title: title || null,
         content: content || null,
-        excerpt: excerpt || null
-      }
-    });
+        excerpt: excerpt || null,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'cms_page_id,language_code'
+      });
+
+    if (error) {
+      console.error('Error upserting cms_page_translation:', error);
+      throw error;
+    }
   }
 }
 
@@ -504,8 +512,7 @@ async function saveCMSPageTranslations(storeId, pageId, translations) {
  * @returns {Promise<void>}
  */
 async function saveCMSBlockTranslations(storeId, blockId, translations) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   if (!translations || typeof translations !== 'object') {
     return;
@@ -520,22 +527,22 @@ async function saveCMSBlockTranslations(storeId, blockId, translations) {
     if (!title && !content) continue;
 
     // Upsert translation record
-    await sequelize.query(`
-      INSERT INTO cms_block_translations (cms_block_id, language_code, title, content, created_at, updated_at)
-      VALUES (:blockId, :langCode, :title, :content, NOW(), NOW())
-      ON CONFLICT (cms_block_id, language_code)
-      DO UPDATE SET
-        title = EXCLUDED.title,
-        content = EXCLUDED.content,
-        updated_at = NOW()
-    `, {
-      replacements: {
-        blockId,
-        langCode,
+    const { error } = await tenantDb
+      .from('cms_block_translations')
+      .upsert({
+        cms_block_id: blockId,
+        language_code: langCode,
         title: title || null,
-        content: content || null
-      }
-    });
+        content: content || null,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'cms_block_id,language_code'
+      });
+
+    if (error) {
+      console.error('Error upserting cms_block_translation:', error);
+      throw error;
+    }
   }
 }
 
