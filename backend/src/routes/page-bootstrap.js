@@ -43,7 +43,7 @@ router.get('/', cacheMiddleware({
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const {
       Product,
       Attribute,

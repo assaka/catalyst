@@ -43,7 +43,7 @@ router.get('/', async (req, res) => {
     console.log(`🔍 Getting plugins for store: ${storeId}`);
 
     // Get connection for this store
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const sequelize = connection.sequelize;
 
     // Get plugins from plugin_registry
@@ -123,7 +123,7 @@ router.post('/:pluginSlug/enable', async (req, res) => {
     console.log(`🚀 Enabling plugin ${pluginSlug} for store ${storeId}`);
 
     // Get connection for this store
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const sequelize = connection.sequelize;
 
     // Check plugin_registry
@@ -222,7 +222,7 @@ router.post('/:pluginSlug/disable', async (req, res) => {
     console.log(`🛑 Disabling plugin ${pluginSlug} for store ${storeId}`);
 
     // Get connection for this store
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const sequelize = connection.sequelize;
 
     // Check plugin_registry

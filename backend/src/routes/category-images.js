@@ -43,7 +43,7 @@ router.post('/:categoryId/image', upload.single('image'), async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Category } = connection.models;
 
     // Verify category exists and belongs to store
@@ -142,7 +142,7 @@ router.post('/:categoryId/banner', upload.single('banner'), async (req, res) => 
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Category } = connection.models;
 
     // Verify category exists and belongs to store
@@ -241,7 +241,7 @@ router.get('/:categoryId/images', async (req, res) => {
     const { categoryId } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Category } = connection.models;
 
     // Verify category exists and belongs to store
@@ -298,7 +298,7 @@ router.delete('/:categoryId/image', async (req, res) => {
     const { categoryId } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Category } = connection.models;
 
     // Verify category exists and belongs to store
@@ -392,7 +392,7 @@ router.delete('/:categoryId/banners/:bannerId', async (req, res) => {
     const { categoryId, bannerId } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Category } = connection.models;
 
     // Verify category exists and belongs to store
@@ -500,7 +500,7 @@ router.post('/:categoryId/banners/reorder', async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Category } = connection.models;
 
     // Verify category exists and belongs to store

@@ -8,7 +8,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 async function generateSitemapXml(storeId, baseUrl) {
   try {
     // Get tenant database connection
-    const tenantDb = await ConnectionManager.getConnection(storeId);
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Get SEO settings for the store
     const { data: seoSettings } = await tenantDb
@@ -135,7 +135,7 @@ router.get('/:storeId', async (req, res) => {
     console.log(`[Sitemap] Serving sitemap.xml for store: ${storeId}`);
 
     // Get tenant database connection
-    const tenantDb = await ConnectionManager.getConnection(storeId);
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Find the store
     const { data: store, error } = await tenantDb

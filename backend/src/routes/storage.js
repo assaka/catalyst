@@ -247,7 +247,7 @@ router.delete('/delete', async (req, res) => {
     // Delete from database (MediaAsset table) - use tenant connection
     const ConnectionManager = require('../services/database/ConnectionManager');
     try {
-      const connection = await ConnectionManager.getConnection(storeId);
+      const connection = await ConnectionManager.getStoreConnection(storeId);
       const { MediaAsset } = connection.models;
 
       const deletedCount = await MediaAsset.destroy({

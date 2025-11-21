@@ -152,7 +152,7 @@ router.get('/data/:storeId', authMiddleware, checkStoreOwnership, async (req, re
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { HeatmapInteraction } = connection.models;
 
     const options = {
@@ -192,7 +192,7 @@ router.get('/analytics/:storeId', authMiddleware, checkStoreOwnership, async (re
     } = req.query;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { HeatmapSession } = connection.models;
 
     const options = {
@@ -227,7 +227,7 @@ router.get('/realtime/:storeId', authMiddleware, checkStoreOwnership, async (req
     const startTime = new Date(Date.now() - timeWindow);
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { HeatmapInteraction } = connection.models;
 
     const stats = await HeatmapInteraction.findAll({
@@ -271,7 +271,7 @@ router.get('/summary/:storeId', authMiddleware, checkStoreOwnership, async (req,
     } = req.query;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { HeatmapInteraction } = connection.models;
 
     const options = {
@@ -308,7 +308,7 @@ router.get('/top-pages/:storeId', authMiddleware, checkStoreOwnership, async (re
     } = req.query;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { HeatmapSession } = connection.models;
 
     const options = {
@@ -356,7 +356,7 @@ router.get('/interactions/:storeId', authMiddleware, checkStoreOwnership, async 
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { HeatmapInteraction } = connection.models;
 
     const whereClause = {
@@ -419,7 +419,7 @@ router.get('/element-rankings/:storeId', authMiddleware, checkStoreOwnership, as
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { HeatmapInteraction } = connection.models;
 
     const whereClause = {
@@ -485,7 +485,7 @@ router.get('/sessions/:storeId', authMiddleware, checkStoreOwnership, async (req
     } = req.query;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { HeatmapInteraction } = connection.models;
 
     const whereClause = {
@@ -557,7 +557,7 @@ router.get('/sessions/:storeId/:sessionId', authMiddleware, checkStoreOwnership,
     const { storeId, sessionId } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { HeatmapInteraction } = connection.models;
 
     // Get all interactions for this session
@@ -651,7 +651,7 @@ router.get('/time-on-page/:storeId', authMiddleware, checkStoreOwnership, async 
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { HeatmapInteraction } = connection.models;
 
     const whereClause = {
@@ -795,7 +795,7 @@ router.get('/scroll-depth/:storeId', authMiddleware, checkStoreOwnership, async 
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { HeatmapInteraction } = connection.models;
 
     const whereClause = {
@@ -1018,7 +1018,7 @@ router.delete('/cleanup/:storeId', authMiddleware, authorize(['admin', 'store_ow
     const { retention_days = 90 } = req.query;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { HeatmapInteraction, HeatmapSession } = connection.models;
 
     const retentionDays = parseInt(retention_days);

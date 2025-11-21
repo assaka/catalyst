@@ -16,7 +16,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
  * @returns {Promise<Array>} Shipping methods with translated fields
  */
 async function getShippingMethodsWithTranslations(storeId, where = {}, options = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   const lang = options.lang || 'en';
@@ -82,7 +82,7 @@ async function getShippingMethodsWithTranslations(storeId, where = {}, options =
  * @returns {Promise<number>} Count of shipping methods
  */
 async function getShippingMethodsCount(storeId, where = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
@@ -121,7 +121,7 @@ async function getShippingMethodsCount(storeId, where = {}) {
  * @returns {Promise<Object|null>} Shipping method with translated fields
  */
 async function getShippingMethodById(storeId, id, lang = 'en') {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
   const query = `
     SELECT
@@ -165,7 +165,7 @@ async function getShippingMethodById(storeId, id, lang = 'en') {
  * @returns {Promise<Object>} Created shipping method with translations
  */
 async function createShippingMethodWithTranslations(storeId, methodData, translations = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
 
@@ -263,7 +263,7 @@ async function createShippingMethodWithTranslations(storeId, methodData, transla
  * @returns {Promise<Object>} Updated shipping method with translations
  */
 async function updateShippingMethodWithTranslations(storeId, id, methodData, translations = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
 
@@ -386,7 +386,7 @@ async function updateShippingMethodWithTranslations(storeId, id, methodData, tra
  * @returns {Promise<boolean>} Success status
  */
 async function deleteShippingMethod(storeId, id) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   await sequelize.query(`

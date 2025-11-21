@@ -17,7 +17,7 @@ const { Op } = require('sequelize');
  * @returns {Promise<Object|null>} Translation data
  */
 async function getProductTranslation(storeId, productId, lang = 'en') {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   const query = `
@@ -251,7 +251,7 @@ async function updateProductTranslations(storeId, productId, translations = {}) 
  * @returns {Promise<Object>} { rows, count }
  */
 async function getProductsOptimized(storeId, where = {}, lang = 'en', options = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   const { limit, offset, order = [['created_at', 'DESC']] } = options;

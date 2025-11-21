@@ -1356,7 +1356,7 @@ router.post('/webhook', async (req, res) => {
         // Get tenant DB connection for customer lookups
         const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-        const connection = await ConnectionManager.getConnection(store_id);
+        const connection = await ConnectionManager.getStoreConnection(store_id);
         const { Order, OrderItem, Product, Store: StoreModel, Customer } = connection.models;
 
         const existingOrder = await Order.findOne({
@@ -1928,7 +1928,7 @@ router.post('/webhook-connect', async (req, res) => {
         // Get tenant DB connection for customer lookups
         const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-        const connection = await ConnectionManager.getConnection(store_id);
+        const connection = await ConnectionManager.getStoreConnection(store_id);
         const { Order, OrderItem, Product, Store: StoreModel, Customer } = connection.models;
 
         const existingOrder = await Order.findOne({
@@ -2322,7 +2322,7 @@ async function createPreliminaryOrder(session, orderData) {
   // Get tenant DB connection for customer lookups
   const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-  const connection = await ConnectionManager.getConnection(store_id);
+  const connection = await ConnectionManager.getStoreConnection(store_id);
   const { Order, OrderItem, Product, Store: StoreModel, Customer } = connection.models;
   const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
@@ -2518,7 +2518,7 @@ async function createOrderFromCheckoutSession(session) {
 
   // Note: This function still uses Sequelize for Order/OrderItem operations with transactions
   // TODO: Convert to Supabase transactions when ready
-  const connection = await ConnectionManager.getConnection(store_id);
+  const connection = await ConnectionManager.getStoreConnection(store_id);
   const { Product, Order, OrderItem, Customer } = connection.models;
   const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();

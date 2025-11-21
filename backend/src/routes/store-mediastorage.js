@@ -12,7 +12,7 @@ router.get('/stores/:storeId/default-mediastorage-provider',
       const { storeId } = req.params;
 
       // Get tenant connection
-      const connection = await ConnectionManager.getConnection(storeId);
+      const connection = await ConnectionManager.getStoreConnection(storeId);
       const { Store } = connection.models;
 
       const store = await Store.findByPk(storeId);
@@ -66,7 +66,7 @@ router.post('/stores/:storeId/default-mediastorage-provider',
       }
 
       // Get tenant connection
-      const connection = await ConnectionManager.getConnection(storeId);
+      const connection = await ConnectionManager.getStoreConnection(storeId);
       const { Store } = connection.models;
 
       const store = await Store.findByPk(storeId);
@@ -131,7 +131,7 @@ router.delete('/stores/:storeId/default-mediastorage-provider',
       const { storeId } = req.params;
 
       // Get tenant connection
-      const connection = await ConnectionManager.getConnection(storeId);
+      const connection = await ConnectionManager.getStoreConnection(storeId);
       const { Store } = connection.models;
 
       const store = await Store.findByPk(storeId);

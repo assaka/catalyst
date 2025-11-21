@@ -13,7 +13,7 @@ router.get('/:storeId', async (req, res) => {
     console.log(`[Robots] Serving robots.txt for store: ${storeId}`);
 
     // Get tenant database connection
-    const tenantDb = await ConnectionManager.getConnection(storeId);
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Find SEO settings for the store
     const { data: seoSettings, error } = await tenantDb

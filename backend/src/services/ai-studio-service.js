@@ -198,7 +198,7 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
 
     try {
       // Get tenant connection
-      const connection = await ConnectionManager.getConnection(storeId);
+      const connection = await ConnectionManager.getStoreConnection(storeId);
       const { Product, Category, CmsPage, CmsBlock } = connection.models;
 
       if (action.scope === 'all') {

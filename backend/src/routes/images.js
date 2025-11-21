@@ -194,7 +194,7 @@ router.get('/product-status/:store_id', authMiddleware, async (req, res) => {
     const { limit = 20, offset = 0 } = req.query;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const { Product } = connection.models;
 
     const products = await Product.findAll({
@@ -265,7 +265,7 @@ router.post('/bulk-process', authMiddleware, async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const { Product } = connection.models;
 
     const syncService = new AkeneoSyncService();
@@ -382,7 +382,7 @@ router.post('/supabase/upload-product/:productId',
       }
 
       // Get tenant connection
-      const connection = await ConnectionManager.getConnection(store_id);
+      const connection = await ConnectionManager.getStoreConnection(store_id);
       const { SupabaseOAuthToken } = connection.models;
 
       // Check if Supabase is connected
@@ -438,7 +438,7 @@ router.post('/supabase/upload-product/:productId/single',
       }
 
       // Get tenant connection
-      const connection = await ConnectionManager.getConnection(store_id);
+      const connection = await ConnectionManager.getStoreConnection(store_id);
       const { SupabaseOAuthToken } = connection.models;
 
       const token = await SupabaseOAuthToken.findByStore(store_id);

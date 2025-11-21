@@ -122,7 +122,7 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     }
 
     // Get tenant connection for store access check
-    const tenantConnection = await ConnectionManager.getConnection(settings.store_id);
+    const tenantConnection = await ConnectionManager.getStoreConnection(settings.store_id);
     const { Store } = tenantConnection.models;
 
     const storeInfo = await Store.findByPk(settings.store_id, {
@@ -185,7 +185,7 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
     const { translations, ...settingsData } = req.body;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const { CookieConsentSettings } = connection.models;
 
     // UPSERT: Check if settings already exist for this store
@@ -255,7 +255,7 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(existingSettingsData.store_id);
+    const connection = await ConnectionManager.getStoreConnection(existingSettingsData.store_id);
     const { CookieConsentSettings } = connection.models;
 
     // Get the full model instance
@@ -330,7 +330,7 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(existingSettingsData.store_id);
+    const connection = await ConnectionManager.getStoreConnection(existingSettingsData.store_id);
     const { CookieConsentSettings } = connection.models;
 
     const settings = await CookieConsentSettings.findByPk(req.params.id);
@@ -407,7 +407,7 @@ router.post('/:id/translate', authMiddleware, [
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(existingSettingsData.store_id);
+    const connection = await ConnectionManager.getStoreConnection(existingSettingsData.store_id);
     const { CookieConsentSettings, Store } = connection.models;
 
     const settings = await CookieConsentSettings.findByPk(req.params.id, {
@@ -494,7 +494,7 @@ router.post('/bulk-translate', authMiddleware, [
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
 
     // Get cookie consent settings for this store with ALL translations
     const lang = getLanguageFromRequest(req);

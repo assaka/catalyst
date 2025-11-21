@@ -46,7 +46,7 @@ router.post('/:productId/images', upload.array('images', 10), async (req, res) =
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Product } = connection.models;
 
     // Verify product exists and belongs to store
@@ -171,7 +171,7 @@ router.put('/:productId/images/:imageId', async (req, res) => {
     const { alt, sort_order } = req.body;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Product } = connection.models;
 
     // Verify product exists and belongs to store
@@ -248,7 +248,7 @@ router.delete('/:productId/images/:imageId', async (req, res) => {
     const { productId, imageId } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Product } = connection.models;
 
     // Verify product exists and belongs to store
@@ -354,7 +354,7 @@ router.get('/:productId/images', async (req, res) => {
     const { productId } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Product } = connection.models;
 
     // Verify product exists and belongs to store
@@ -415,7 +415,7 @@ router.post('/:productId/images/reorder', async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Product } = connection.models;
 
     // Verify product exists and belongs to store

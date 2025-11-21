@@ -42,7 +42,7 @@ async function buildEntityWithTranslations(
   fields,
   where = {}
 ) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
   // Build WHERE clause
   const whereConditions = Object.entries(where)
@@ -96,7 +96,7 @@ async function buildEntityWithTranslations(
  * @returns {Promise<Array>} Entities with SEO JSON
  */
 async function buildEntityWithSEO(storeId, entityTable, seoTable, entityIdField, where = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
   const whereConditions = Object.entries(where)
     .map(([key, value]) => `e.${key} = '${value}'`)
@@ -158,7 +158,7 @@ async function buildEntityComplete(
   translationFields,
   where = {}
 ) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {

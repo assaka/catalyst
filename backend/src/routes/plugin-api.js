@@ -14,7 +14,7 @@ async function getTenantConnection(req) {
   if (!store_id) {
     throw new Error('store_id is required');
   }
-  return await ConnectionManager.getConnection(store_id);
+  return await ConnectionManager.getStoreConnection(store_id);
 }
 
 /**

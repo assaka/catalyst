@@ -83,7 +83,7 @@ async function getCMSPagesWithTranslations(storeId, where = {}, lang = 'en') {
  * @returns {Promise<Object|null>} CMS page with translated fields
  */
 async function getCMSPageById(storeId, id, lang = 'en') {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   const query = `
@@ -192,7 +192,7 @@ async function getCMSBlocksWithTranslations(storeId, where = {}, lang = 'en') {
  * @returns {Promise<Object|null>} CMS block with translated fields
  */
 async function getCMSBlockById(storeId, id, lang = 'en') {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   const query = `
@@ -231,7 +231,7 @@ async function getCMSBlockById(storeId, id, lang = 'en') {
  * @returns {Promise<Object|null>} CMS page with all translations
  */
 async function getCMSPageWithAllTranslations(storeId, id) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   const query = `
@@ -284,7 +284,7 @@ async function getCMSPageWithAllTranslations(storeId, id) {
  * @returns {Promise<Array>} CMS pages with all translations
  */
 async function getCMSPagesWithAllTranslations(storeId, where = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   const whereConditions = Object.entries(where)
@@ -348,7 +348,7 @@ async function getCMSPagesWithAllTranslations(storeId, where = {}) {
  * @returns {Promise<Object|null>} CMS block with all translations
  */
 async function getCMSBlockWithAllTranslations(storeId, id) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   const query = `
@@ -397,7 +397,7 @@ async function getCMSBlockWithAllTranslations(storeId, id) {
  * @returns {Promise<Array>} CMS blocks with all translations
  */
 async function getCMSBlocksWithAllTranslations(storeId, where = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   const whereConditions = Object.entries(where)
@@ -458,7 +458,7 @@ async function getCMSBlocksWithAllTranslations(storeId, where = {}) {
  * @returns {Promise<void>}
  */
 async function saveCMSPageTranslations(storeId, pageId, translations) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   if (!translations || typeof translations !== 'object') {
@@ -504,7 +504,7 @@ async function saveCMSPageTranslations(storeId, pageId, translations) {
  * @returns {Promise<void>}
  */
 async function saveCMSBlockTranslations(storeId, blockId, translations) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   if (!translations || typeof translations !== 'object') {

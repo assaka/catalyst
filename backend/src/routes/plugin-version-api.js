@@ -11,7 +11,7 @@ const jsonpatch = require('fast-json-patch');
 async function getTenantSequelize(req) {
   const storeId = req.headers['x-store-id'] || req.query.store_id;
   if (!storeId) throw new Error('Store ID is required for plugin operations');
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   return connection.sequelize;
 }
 

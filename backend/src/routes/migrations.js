@@ -21,7 +21,7 @@ router.post('/make-creator-id-nullable', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const sequelize = connection.sequelize;
 
     // Check if already nullable

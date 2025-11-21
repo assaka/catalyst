@@ -13,7 +13,7 @@ router.get('/public', async (req, res) => {
     }
 
     // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const { SlotConfiguration } = connection.models;
 
     const where = {
@@ -54,7 +54,7 @@ router.get('/slot-configurations', authMiddleware, async (req, res) => {
     }
 
     // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const { SlotConfiguration } = connection.models;
 
     const where = {
@@ -97,7 +97,7 @@ router.get('/slot-configurations/:id', authMiddleware, async (req, res) => {
     }
 
     // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const { SlotConfiguration } = connection.models;
 
     const configuration = await SlotConfiguration.findOne({
@@ -129,7 +129,7 @@ router.post('/draft/:storeId/:pageType', authMiddleware, async (req, res) => {
     }
 
     // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { SlotConfiguration } = connection.models;
 
     // Check if a draft configuration already exists for this user/store and pageType
@@ -198,7 +198,7 @@ router.post('/slot-configurations', authMiddleware, async (req, res) => {
     }
 
     // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const { SlotConfiguration } = connection.models;
 
     // Include page_name and slot_type in the configuration JSON
@@ -253,7 +253,7 @@ router.put('/slot-configurations/:id', authMiddleware, async (req, res) => {
     }
 
     // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const { SlotConfiguration } = connection.models;
 
     const configuration = await SlotConfiguration.findOne({
@@ -299,7 +299,7 @@ router.delete('/slot-configurations/:id', authMiddleware, async (req, res) => {
     }
 
     // Get tenant connection and models
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const { SlotConfiguration } = connection.models;
 
     const configuration = await SlotConfiguration.findOne({

@@ -22,7 +22,7 @@ router.get('/storefront-url', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Store } = connection.models;
 
     const store = await Store.findByPk(storeId);
@@ -102,7 +102,7 @@ router.get('/', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Store } = connection.models;
 
     const store = await Store.findByPk(storeId);
@@ -177,7 +177,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Store } = connection.models;
 
     const store = await Store.findByPk(storeId);
@@ -259,7 +259,7 @@ router.post('/:domain_id/verify', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Store } = connection.models;
 
     const store = await Store.findByPk(storeId);
@@ -336,7 +336,7 @@ router.post('/:domain_id/ssl/setup', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Store } = connection.models;
 
     const store = await Store.findByPk(storeId);
@@ -416,7 +416,7 @@ router.delete('/:domain_id', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Store } = connection.models;
 
     const store = await Store.findByPk(storeId);
@@ -480,7 +480,7 @@ router.get('/dns-records', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Store } = connection.models;
 
     const store = await Store.findByPk(storeId);
@@ -521,7 +521,7 @@ router.get('/ssl-status', async (req, res) => {
       });
     }
 
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
     const { Store } = connection.models;
 
     const store = await Store.findByPk(storeId);

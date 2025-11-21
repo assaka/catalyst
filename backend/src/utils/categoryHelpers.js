@@ -17,7 +17,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
  * @returns {Promise<Object>} { rows, count } - Categories with translated fields and total count
  */
 async function getCategoriesWithTranslations(storeId, where = {}, lang = 'en', options = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   const { limit, offset, search } = options;
@@ -123,7 +123,7 @@ async function getCategoriesWithTranslations(storeId, where = {}, lang = 'en', o
  * @returns {Promise<Object|null>} Category with translated fields
  */
 async function getCategoryById(storeId, id, lang = 'en') {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   const query = `
@@ -169,7 +169,7 @@ async function getCategoryById(storeId, id, lang = 'en') {
  * @returns {Promise<Object>} Created category with translations
  */
 async function createCategoryWithTranslations(storeId, categoryData, translations = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
 
@@ -253,7 +253,7 @@ async function createCategoryWithTranslations(storeId, categoryData, translation
  * @returns {Promise<Object>} Updated category with translations
  */
 async function updateCategoryWithTranslations(storeId, id, categoryData, translations = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
 
@@ -358,7 +358,7 @@ async function updateCategoryWithTranslations(storeId, id, categoryData, transla
  * @returns {Promise<Array>} Categories with all translations nested by language code
  */
 async function getCategoriesWithAllTranslations(storeId, where = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   const whereConditions = Object.entries(where)
@@ -456,7 +456,7 @@ async function getCategoriesWithAllTranslations(storeId, where = {}) {
  * @returns {Promise<boolean>} Success status
  */
 async function deleteCategory(storeId, id) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   await sequelize.query(`

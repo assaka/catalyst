@@ -279,7 +279,7 @@ router.post('/ai-translate-entity', authMiddleware, async (req, res) => {
     }
 
     // Get tenant connection for entity access
-    const connection = await ConnectionManager.getConnection(storeId);
+    const connection = await ConnectionManager.getStoreConnection(storeId);
 
     // Map entity types to model names
     const modelMap = {
@@ -398,7 +398,7 @@ router.post('/auto-translate-ui-label', authMiddleware, async (req, res) => {
     }
 
     // Get tenant connection for language lookup
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const { Language } = connection.models;
 
     // Get all active languages from tenant DB
@@ -905,7 +905,7 @@ router.get('/entity/:type/:id', async (req, res) => {
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
 
     // Map entity types to model names
     const modelMap = {
@@ -1581,7 +1581,7 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
     }
 
     // Get tenant connection for store-specific entities
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const { Product, Category, CmsPage, CmsBlock, ProductTab, ProductLabel, CookieConsentSettings, Attribute, AttributeValue, Store, EmailTemplate, PdfTemplate } = connection.models;
     const tenantSequelize = connection.sequelize;
 
@@ -2171,7 +2171,7 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
     // Get tenant connection if store_id is provided
     let connection, Product, Category, Attribute, CmsPage, CmsBlock, ProductTab, ProductLabel, EmailTemplate, PdfTemplate, Store, tenantSequelize;
     if (storeId) {
-      connection = await ConnectionManager.getConnection(storeId);
+      connection = await ConnectionManager.getStoreConnection(storeId);
       ({ Product, Category, Attribute, CmsPage, CmsBlock, ProductTab, ProductLabel, EmailTemplate, PdfTemplate, Store } = connection.models);
       tenantSequelize = connection.sequelize;
     }
@@ -2430,7 +2430,7 @@ router.get('/products/batch', cacheMiddleware({
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const tenantSequelize = connection.sequelize;
 
     // Single optimized query instead of N queries
@@ -2523,7 +2523,7 @@ router.get('/categories/batch', cacheMiddleware({
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const tenantSequelize = connection.sequelize;
 
     const translations = await tenantSequelize.query(`
@@ -2611,7 +2611,7 @@ router.get('/attributes/batch', cacheMiddleware({
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const tenantSequelize = connection.sequelize;
 
     const translations = await tenantSequelize.query(`
@@ -2693,7 +2693,7 @@ router.get('/attribute-values/batch', cacheMiddleware({
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const tenantSequelize = connection.sequelize;
 
     const translations = await tenantSequelize.query(`
@@ -2770,7 +2770,7 @@ router.get('/all/batch', cacheMiddleware({
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getConnection(store_id);
+    const connection = await ConnectionManager.getStoreConnection(store_id);
     const tenantSequelize = connection.sequelize;
 
     const results = {

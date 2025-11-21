@@ -16,7 +16,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
  * @returns {Promise<Array>} Cookie consent settings with full translations object
  */
 async function getCookieConsentSettingsWithTranslations(storeId, where = {}, lang = 'en') {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
   const whereConditions = Object.entries(where)
     .map(([key, value]) => {
@@ -114,7 +114,7 @@ async function getCookieConsentSettingsWithTranslations(storeId, where = {}, lan
  * @returns {Promise<Object|null>} Cookie consent settings with full translations object
  */
 async function getCookieConsentSettingsById(storeId, id, lang = 'en') {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
   const query = `
     SELECT
@@ -200,7 +200,7 @@ async function getCookieConsentSettingsById(storeId, id, lang = 'en') {
  * @returns {Promise<Object>} Created cookie consent settings with translations
  */
 async function createCookieConsentSettingsWithTranslations(storeId, settingsData, translations = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
 
@@ -346,7 +346,7 @@ async function createCookieConsentSettingsWithTranslations(storeId, settingsData
  * @returns {Promise<Object>} Updated cookie consent settings with translations
  */
 async function updateCookieConsentSettingsWithTranslations(storeId, id, settingsData, translations = {}) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
   const transaction = await sequelize.transaction();
 
@@ -501,7 +501,7 @@ async function updateCookieConsentSettingsWithTranslations(storeId, id, settings
  * @returns {Promise<boolean>} Success status
  */
 async function deleteCookieConsentSettings(storeId, id) {
-  const connection = await ConnectionManager.getConnection(storeId);
+  const connection = await ConnectionManager.getStoreConnection(storeId);
   const sequelize = connection.sequelize;
 
   await sequelize.query(`
