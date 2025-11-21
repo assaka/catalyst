@@ -106,6 +106,7 @@ export default function SeoRedirects() {
       });
 
       setFlashMessage({ type: 'success', message: 'Redirect added successfully!' });
+      console.log('FlashMessage set to:', { type: 'success', message: 'Redirect added successfully!' });
       setFromUrl('');
       setToUrl('');
       setRedirectType('301');
@@ -158,6 +159,8 @@ export default function SeoRedirects() {
       setRedirectToDelete(null);
     }
   };
+
+  console.log('Current flashMessage state:', flashMessage);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
