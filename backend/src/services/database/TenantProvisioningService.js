@@ -205,13 +205,26 @@ END $$;`;
           console.log('✅ Seed data complete - 6,598 rows inserted');
           result.dataSeeded.push('Seeded 6,598 rows via OAuth API');
 
-          // Update translations store_id from placeholder to actual store_id
-          console.log('🔄 Updating translations store_id to actual store...');
-          const updateTranslationsSQL = `UPDATE translations SET store_id = '${storeId}' WHERE store_id = '00000000-0000-0000-0000-000000000000';`;
+          // Update store_id for all tables from placeholder to actual store_id
+          console.log('🔄 Updating store_id for multiple tables...');
+
+          const tablesToUpdate = [
+            'translations',
+            'cms_pages',
+            'cookie_consent_settings',
+            'email_templates',
+            'payment_methods',
+            'pdf_templates',
+            'shipping_methods'
+          ];
+
+          const updateQueries = tablesToUpdate.map(table =>
+            `UPDATE ${table} SET store_id = '${storeId}' WHERE store_id = '00000000-0000-0000-0000-000000000000' OR store_id IS NULL;`
+          ).join('\n');
 
           await axios.post(
             `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
-            { query: updateTranslationsSQL },
+            { query: updateQueries },
             {
               headers: {
                 'Authorization': `Bearer ${options.oauthAccessToken}`,
@@ -221,8 +234,8 @@ END $$;`;
             }
           );
 
-          console.log('✅ Translations store_id updated successfully');
-          result.dataSeeded.push('Updated translations store_id');
+          console.log(`✅ store_id updated for ${tablesToUpdate.length} tables`);
+          result.dataSeeded.push(`Updated store_id for ${tablesToUpdate.length} tables`);
 
           return true;
 
@@ -273,12 +286,26 @@ END $$;`;
       await pgClient.query(seedSQL);
       result.dataSeeded.push('Seeded 6,598 rows from 15 tables');
 
-      // Update translations store_id from placeholder to actual store_id
-      console.log('🔄 Updating translations store_id to actual store...');
-      const updateTranslationsSQL = `UPDATE translations SET store_id = '${storeId}' WHERE store_id = '00000000-0000-0000-0000-000000000000';`;
-      await pgClient.query(updateTranslationsSQL);
-      console.log('✅ Translations store_id updated successfully');
-      result.dataSeeded.push('Updated translations store_id');
+      // Update store_id for all tables from placeholder to actual store_id
+      console.log('🔄 Updating store_id for multiple tables...');
+
+      const tablesToUpdate = [
+        'translations',
+        'cms_pages',
+        'cookie_consent_settings',
+        'email_templates',
+        'payment_methods',
+        'pdf_templates',
+        'shipping_methods'
+      ];
+
+      for (const table of tablesToUpdate) {
+        const updateSQL = `UPDATE ${table} SET store_id = '${storeId}' WHERE store_id = '00000000-0000-0000-0000-000000000000' OR store_id IS NULL;`;
+        await pgClient.query(updateSQL);
+      }
+
+      console.log(`✅ store_id updated for ${tablesToUpdate.length} tables`);
+      result.dataSeeded.push(`Updated store_id for ${tablesToUpdate.length} tables`);
 
       await pgClient.end();
       console.log('✅ Migration and seed complete!');
