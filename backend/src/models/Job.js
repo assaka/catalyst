@@ -2,9 +2,11 @@ const { DataTypes } = require('sequelize');
 const { masterSequelize } = require('../database/masterConnection');
 
 // Log that Job model is being initialized
-console.log('📝 Initializing Job model with masterSequelize');
-console.log('📝 Database:', masterSequelize.config?.database || 'unknown');
-console.log('📝 Host:', masterSequelize.config?.host || 'unknown');
+console.log('📝 [JOB MODEL v2] Initializing with masterSequelize');
+console.log('📝 [JOB MODEL v2] Sequelize instance:', masterSequelize.constructor.name);
+console.log('📝 [JOB MODEL v2] Database:', masterSequelize.config?.database || 'unknown');
+console.log('📝 [JOB MODEL v2] Host:', masterSequelize.config?.host || 'unknown');
+console.log('📝 [JOB MODEL v2] Username:', masterSequelize.config?.username || 'unknown');
 
 // Job model is in MASTER DB (platform-level job queue)
 const Job = masterSequelize.define('Job', {
