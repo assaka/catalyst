@@ -17,7 +17,7 @@ class CustomDomainService {
   static async addDomain(storeId, domainName, options = {}) {
     try {
       // Get tenant connection
-      const connection = await ConnectionManager.getConnection(storeId);
+      const connection = await ConnectionManager.getStoreConnection(storeId);
       const { CustomDomain } = connection.models;
 
       // Validate domain format
@@ -78,7 +78,7 @@ class CustomDomainService {
   static async verifyDomain(domainId, storeId) {
     try {
       // Get tenant connection
-      const connection = await ConnectionManager.getConnection(storeId);
+      const connection = await ConnectionManager.getStoreConnection(storeId);
       const { CustomDomain, Store } = connection.models;
 
       const domain = await CustomDomain.findByPk(domainId);
@@ -266,7 +266,7 @@ class CustomDomainService {
   static async provisionSSLCertificate(domainId, storeId) {
     try {
       // Get tenant connection
-      const connection = await ConnectionManager.getConnection(storeId);
+      const connection = await ConnectionManager.getStoreConnection(storeId);
       const { CustomDomain } = connection.models;
 
       const domain = await CustomDomain.findByPk(domainId);
@@ -294,7 +294,7 @@ class CustomDomainService {
   static async checkDNSConfiguration(domainId, storeId) {
     try {
       // Get tenant connection
-      const connection = await ConnectionManager.getConnection(storeId);
+      const connection = await ConnectionManager.getStoreConnection(storeId);
       const { CustomDomain } = connection.models;
 
       const domain = await CustomDomain.findByPk(domainId);
@@ -388,7 +388,7 @@ class CustomDomainService {
   static async removeDomain(domainId, storeId) {
     try {
       // Get tenant connection
-      const connection = await ConnectionManager.getConnection(storeId);
+      const connection = await ConnectionManager.getStoreConnection(storeId);
       const { CustomDomain, Store } = connection.models;
       const { Op } = require('sequelize');
 
@@ -446,7 +446,7 @@ class CustomDomainService {
   static async setPrimaryDomain(domainId, storeId) {
     try {
       // Get tenant connection
-      const connection = await ConnectionManager.getConnection(storeId);
+      const connection = await ConnectionManager.getStoreConnection(storeId);
       const { CustomDomain, Store } = connection.models;
 
       const domain = await CustomDomain.findOne({
