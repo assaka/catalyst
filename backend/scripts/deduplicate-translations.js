@@ -67,6 +67,12 @@ for (let i = translationsStartLine + 2; i < translationsEndLine; i++) {
 
     const uniqueKey = `${key}|${language_code}`;
 
+    // Skip non-English translations (only keep 'en')
+    if (language_code !== 'en') {
+      translations.push({ uniqueKey, lineNum: i + 1, skipped: true });
+      continue;
+    }
+
     if (!uniqueMap.has(uniqueKey)) {
       // First occurrence - keep it
       uniqueMap.set(uniqueKey, {
@@ -86,10 +92,13 @@ for (let i = translationsStartLine + 2; i < translationsEndLine; i++) {
   }
 }
 
+const skippedCount = translations.filter(t => t.skipped).length;
+
 console.log(`\n📊 Statistics:`);
 console.log(`Total translation entries found: ${translations.length}`);
-console.log(`Unique translations: ${uniqueMap.size}`);
-console.log(`Duplicates to remove: ${translations.length - uniqueMap.size}`);
+console.log(`Non-English translations removed: ${skippedCount}`);
+console.log(`Unique English translations kept: ${uniqueMap.size}`);
+console.log(`Total rows removed: ${translations.length - uniqueMap.size}`);
 
 // Count by language
 const byLang = {};
