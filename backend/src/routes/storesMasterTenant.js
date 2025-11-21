@@ -524,9 +524,42 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
           } else {
             console.error('❌ Could not fetch serviceRoleKey from any endpoint');
             console.log('   OAuth app needs "secrets:read" and "api_keys:read" scopes');
+
+            // CRITICAL FIX: Create store_databases record anyway without serviceRoleKey
+            // This ensures the connection shows as "active" in UI, user can add key later
+            console.log('📝 Creating StoreDatabase record WITHOUT serviceRoleKey (will require manual configuration)...');
+            const credentials = {
+              projectUrl,
+              serviceRoleKey: null,  // Will need to be configured manually
+              anonKey,
+              connectionString: connectionString || null
+            };
+
+            storeDb = await StoreDatabase.createWithCredentials(
+              storeId,
+              'supabase',
+              credentials
+            );
+            console.log('✅ StoreDatabase record created - connection visible in UI, but needs service role key');
           }
         } catch (keyError) {
           console.error('⚠️ Error fetching serviceRoleKey:', keyError.message);
+
+          // CRITICAL FIX: Create store_databases record anyway even on error
+          console.log('📝 Creating StoreDatabase record after key fetch error (will require manual configuration)...');
+          const credentials = {
+            projectUrl,
+            serviceRoleKey: null,  // Will need to be configured manually
+            anonKey,
+            connectionString: connectionString || null
+          };
+
+          storeDb = await StoreDatabase.createWithCredentials(
+            storeId,
+            'supabase',
+            credentials
+          );
+          console.log('✅ StoreDatabase record created - connection visible in UI, but needs service role key');
         }
       }
     }
