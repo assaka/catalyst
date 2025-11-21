@@ -93,6 +93,9 @@ class BrevoService {
    */
   async validateApiKey(apiKey) {
     try {
+      console.log('Validating Brevo API key...');
+      console.log('API key format:', apiKey ? `${apiKey.substring(0, 10)}...` : 'undefined');
+
       const response = await axios.get(`${this.brevoApiUrl}/account`, {
         headers: {
           'api-key': apiKey,
@@ -100,9 +103,15 @@ class BrevoService {
         }
       });
 
+      console.log('Validation successful, status:', response.status);
       return response.status === 200;
     } catch (error) {
-      console.error('API key validation error:', error.response?.status);
+      console.error('API key validation error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
       return false;
     }
   }
