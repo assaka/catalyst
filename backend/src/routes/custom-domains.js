@@ -310,26 +310,36 @@ router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) 
         const { promisify } = require('util');
         const execAsync = promisify(exec);
 
-        const { stdout } = await execAsync(
-          `echo | openssl s_client -connect ${domain.domain}:443 -servername ${domain.domain} 2>&1 | grep -E "(subject|issuer|Verify return code)"`,
-          { timeout: 10000 }
+        console.log(`[SSL Check] Checking SSL for ${domain.domain} using OpenSSL...`);
+
+        const { stdout, stderr } = await execAsync(
+          `timeout 10 openssl s_client -connect ${domain.domain}:443 -servername ${domain.domain} </dev/null 2>&1`,
+          { timeout: 15000 }
         );
+
+        console.log('[SSL Check] OpenSSL output:', stdout.substring(0, 500));
 
         // Check if certificate is valid
         if (stdout.includes('Verify return code: 0')) {
           sslStatus = 'active';
+          console.log('[SSL Check] SSL certificate is ACTIVE');
           // Extract issuer
-          const issuerMatch = stdout.match(/issuer=(.+)/);
+          const issuerMatch = stdout.match(/issuer[=:](.+)/i);
           if (issuerMatch) {
             sslIssuer = issuerMatch[1].trim();
+            console.log('[SSL Check] Issuer:', sslIssuer);
           }
         } else if (stdout.includes('Verify return code:')) {
+          const returnCodeMatch = stdout.match(/Verify return code: (\d+)/);
+          console.log('[SSL Check] SSL verification failed with code:', returnCodeMatch?.[1]);
           sslStatus = 'error';
         } else {
+          console.log('[SSL Check] Could not determine SSL status from output');
           sslStatus = 'pending';
         }
       } catch (err) {
-        console.error('OpenSSL check failed:', err.message);
+        console.error('[SSL Check] OpenSSL check failed:', err.message);
+        console.error('[SSL Check] Error details:', err);
         sslStatus = 'pending';
       }
     }
