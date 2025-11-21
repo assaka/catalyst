@@ -66,6 +66,10 @@ const storeResolver = (options = {}) => {
 
     next();
   } catch (error) {
+    console.error('❌ storeResolver error:', error.message);
+    console.error('   Stack:', error.stack);
+    console.error('   User ID:', req.user?.id);
+
     if (fallbackStoreId) {
       req.storeId = fallbackStoreId;
       req.store = { id: fallbackStoreId, name: 'Fallback Store', slug: 'fallback-store', is_active: true };
@@ -78,7 +82,8 @@ const storeResolver = (options = {}) => {
 
     return res.status(500).json({
       success: false,
-      error: 'Failed to resolve store information'
+      error: 'Failed to resolve store information',
+      details: error.message
     });
   }
   };
