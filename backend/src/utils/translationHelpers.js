@@ -2,12 +2,12 @@
  * Translation Helpers for Normalized Tables
  *
  * This module provides utility functions to construct the same JSON response
- * format from normalized translation tables that the frontend expects.
+ * format from normalized translation tables that the frontend expects using Supabase.
  *
  * WHY THIS EXISTS:
  * - Frontend uses translationUtils.js which expects: entity.translations[lang][field]
  * - We normalized translations from JSON columns to relational tables
- * - These helpers construct the same JSON format via SQL JOINs
+ * - These helpers construct the same JSON format via Supabase queries
  * - Frontend code requires zero changes
  */
 
@@ -23,16 +23,6 @@ const ConnectionManager = require('../services/database/ConnectionManager');
  * @param {Array<string>} fields - Fields to include (e.g., ['name', 'description'])
  * @param {object} where - WHERE clause conditions
  * @returns {Promise<Array>} Entities with translations JSON
- *
- * @example
- * const products = await buildEntityWithTranslations(
- *   storeId,
- *   'products',
- *   'product_translations',
- *   'product_id',
- *   ['name', 'description', 'short_description'],
- *   { store_id: '123', status: 'active' }
- * );
  */
 async function buildEntityWithTranslations(
   storeId,
@@ -42,47 +32,64 @@ async function buildEntityWithTranslations(
   fields,
   where = {}
 ) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
-  // Build WHERE clause
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === null) return `e.${key} IS NULL`;
-      if (Array.isArray(value)) {
-        const vals = value.map(v => `'${v}'`).join(', ');
-        return `e.${key} IN (${vals})`;
-      }
-      return `e.${key} = '${value}'`;
-    })
-    .join(' AND ');
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+  // Fetch entities
+  let entityQuery = tenantDb.from(entityTable).select('*');
 
-  // Build field list for JSON object
-  const fieldList = fields.map(f => `'${f}', t.${f}`).join(', ');
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    if (value === null) {
+      entityQuery = entityQuery.is(key, null);
+    } else if (Array.isArray(value)) {
+      entityQuery = entityQuery.in(key, value);
+    } else {
+      entityQuery = entityQuery.eq(key, value);
+    }
+  }
 
-  const query = `
-    SELECT
-      e.*,
-      COALESCE(
-        json_object_agg(
-          t.language_code,
-          json_build_object(${fieldList})
-        ) FILTER (WHERE t.language_code IS NOT NULL),
-        '{}'::json
-      ) as translations
-    FROM ${entityTable} e
-    LEFT JOIN ${translationTable} t ON e.id = t.${entityIdField}
-    ${whereClause}
-    GROUP BY e.id
-    ORDER BY e.created_at DESC
-  `;
+  entityQuery = entityQuery.order('created_at', { ascending: false });
 
-  const results = await sequelize.query(query, {
-    type: sequelize.QueryTypes.SELECT
+  const { data: entities, error: entitiesError } = await entityQuery;
+
+  if (entitiesError) {
+    console.error(`Error fetching ${entityTable}:`, entitiesError);
+    throw entitiesError;
+  }
+
+  if (!entities || entities.length === 0) {
+    return [];
+  }
+
+  // Fetch translations
+  const entityIds = entities.map(e => e.id);
+  const { data: translations, error: transError } = await tenantDb
+    .from(translationTable)
+    .select('*')
+    .in(entityIdField, entityIds);
+
+  if (transError) {
+    console.error(`Error fetching ${translationTable}:`, transError);
+  }
+
+  // Build translation map
+  const transMap = {};
+  (translations || []).forEach(t => {
+    if (!transMap[t[entityIdField]]) {
+      transMap[t[entityIdField]] = {};
+    }
+    const langData = {};
+    fields.forEach(field => {
+      langData[field] = t[field];
+    });
+    transMap[t[entityIdField]][t.language_code] = langData;
   });
 
-  return results;
+  // Merge entities with translations
+  return entities.map(entity => ({
+    ...entity,
+    translations: transMap[entity.id] || {}
+  }));
 }
 
 /**
@@ -96,13 +103,39 @@ async function buildEntityWithTranslations(
  * @returns {Promise<Array>} Entities with SEO JSON
  */
 async function buildEntityWithSEO(storeId, entityTable, seoTable, entityIdField, where = {}) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => `e.${key} = '${value}'`)
-    .join(' AND ');
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+  // Fetch entities
+  let entityQuery = tenantDb.from(entityTable).select('*');
+
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    entityQuery = entityQuery.eq(key, value);
+  }
+
+  entityQuery = entityQuery.order('created_at', { ascending: false });
+
+  const { data: entities, error: entitiesError } = await entityQuery;
+
+  if (entitiesError) {
+    console.error(`Error fetching ${entityTable}:`, entitiesError);
+    throw entitiesError;
+  }
+
+  if (!entities || entities.length === 0) {
+    return [];
+  }
+
+  // Fetch SEO data
+  const entityIds = entities.map(e => e.id);
+  const { data: seoData, error: seoError } = await tenantDb
+    .from(seoTable)
+    .select('*')
+    .in(entityIdField, entityIds);
+
+  if (seoError) {
+    console.error(`Error fetching ${seoTable}:`, seoError);
+  }
 
   const seoFields = [
     'meta_title', 'meta_description', 'meta_keywords', 'meta_robots_tag',
@@ -111,30 +144,24 @@ async function buildEntityWithSEO(storeId, entityTable, seoTable, entityIdField,
     'canonical_url'
   ];
 
-  const fieldList = seoFields.map(f => `'${f}', s.${f}`).join(', ');
-
-  const query = `
-    SELECT
-      e.*,
-      COALESCE(
-        json_object_agg(
-          s.language_code,
-          json_build_object(${fieldList})
-        ) FILTER (WHERE s.language_code IS NOT NULL),
-        '{}'::json
-      ) as seo
-    FROM ${entityTable} e
-    LEFT JOIN ${seoTable} s ON e.id = s.${entityIdField}
-    ${whereClause}
-    GROUP BY e.id
-    ORDER BY e.created_at DESC
-  `;
-
-  const results = await sequelize.query(query, {
-    type: sequelize.QueryTypes.SELECT
+  // Build SEO map
+  const seoMap = {};
+  (seoData || []).forEach(s => {
+    if (!seoMap[s[entityIdField]]) {
+      seoMap[s[entityIdField]] = {};
+    }
+    const langSeoData = {};
+    seoFields.forEach(field => {
+      langSeoData[field] = s[field];
+    });
+    seoMap[s[entityIdField]][s.language_code] = langSeoData;
   });
 
-  return results;
+  // Merge entities with SEO
+  return entities.map(entity => ({
+    ...entity,
+    seo: seoMap[entity.id] || {}
+  }));
 }
 
 /**
@@ -158,63 +185,96 @@ async function buildEntityComplete(
   translationFields,
   where = {}
 ) {
-  const connection = await ConnectionManager.getStoreConnection(storeId);
-  const sequelize = connection.sequelize;
-  const whereConditions = Object.entries(where)
-    .map(([key, value]) => {
-      if (value === null) return `e.${key} IS NULL`;
-      if (Array.isArray(value)) {
-        const vals = value.map(v => `'${v}'`).join(', ');
-        return `e.${key} IN (${vals})`;
-      }
-      return `e.${key} = '${value}'`;
-    })
-    .join(' AND ');
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  const whereClause = whereConditions ? `WHERE ${whereConditions}` : '';
+  // Fetch entities
+  let entityQuery = tenantDb.from(entityTable).select('*');
 
-  // Translation fields
-  const transFieldList = translationFields.map(f => `'${f}', t.${f}`).join(', ');
+  // Apply where conditions
+  for (const [key, value] of Object.entries(where)) {
+    if (value === null) {
+      entityQuery = entityQuery.is(key, null);
+    } else if (Array.isArray(value)) {
+      entityQuery = entityQuery.in(key, value);
+    } else {
+      entityQuery = entityQuery.eq(key, value);
+    }
+  }
 
-  // SEO fields
+  entityQuery = entityQuery.order('created_at', { ascending: false });
+
+  const { data: entities, error: entitiesError } = await entityQuery;
+
+  if (entitiesError) {
+    console.error(`Error fetching ${entityTable}:`, entitiesError);
+    throw entitiesError;
+  }
+
+  if (!entities || entities.length === 0) {
+    return [];
+  }
+
+  const entityIds = entities.map(e => e.id);
+
+  // Fetch translations
+  const { data: translations, error: transError } = await tenantDb
+    .from(translationTable)
+    .select('*')
+    .in(entityIdField, entityIds);
+
+  if (transError) {
+    console.error(`Error fetching ${translationTable}:`, transError);
+  }
+
+  // Fetch SEO data
+  const { data: seoData, error: seoError } = await tenantDb
+    .from(seoTable)
+    .select('*')
+    .in(entityIdField, entityIds);
+
+  if (seoError) {
+    console.error(`Error fetching ${seoTable}:`, seoError);
+  }
+
+  // Build translation map
+  const transMap = {};
+  (translations || []).forEach(t => {
+    if (!transMap[t[entityIdField]]) {
+      transMap[t[entityIdField]] = {};
+    }
+    const langData = {};
+    translationFields.forEach(field => {
+      langData[field] = t[field];
+    });
+    transMap[t[entityIdField]][t.language_code] = langData;
+  });
+
+  // Build SEO map
   const seoFields = [
     'meta_title', 'meta_description', 'meta_keywords', 'meta_robots_tag',
     'og_title', 'og_description', 'og_image_url',
     'twitter_title', 'twitter_description', 'twitter_image_url',
     'canonical_url'
   ];
-  const seoFieldList = seoFields.map(f => `'${f}', s.${f}`).join(', ');
 
-  const query = `
-    SELECT
-      e.*,
-      COALESCE(
-        json_object_agg(
-          t.language_code,
-          json_build_object(${transFieldList})
-        ) FILTER (WHERE t.language_code IS NOT NULL),
-        '{}'::json
-      ) as translations,
-      COALESCE(
-        json_object_agg(
-          s.language_code,
-          json_build_object(${seoFieldList})
-        ) FILTER (WHERE s.language_code IS NOT NULL),
-        '{}'::json
-      ) as seo
-    FROM ${entityTable} e
-    LEFT JOIN ${translationTable} t ON e.id = t.${entityIdField}
-    LEFT JOIN ${seoTable} s ON e.id = s.${entityIdField}
-    ${whereClause}
-    GROUP BY e.id
-    ORDER BY e.created_at DESC
-  `;
-
-  const results = await sequelize.query(query, {
-    type: sequelize.QueryTypes.SELECT
+  const seoMap = {};
+  (seoData || []).forEach(s => {
+    if (!seoMap[s[entityIdField]]) {
+      seoMap[s[entityIdField]] = {};
+    }
+    const langSeoData = {};
+    seoFields.forEach(field => {
+      langSeoData[field] = s[field];
+    });
+    seoMap[s[entityIdField]][s.language_code] = langSeoData;
   });
 
-  return results;
+  // Merge entities with translations and SEO
+  return entities.map(entity => ({
+    ...entity,
+    translations: transMap[entity.id] || {},
+    seo: seoMap[entity.id] || {}
+  }));
 }
 
 /**
