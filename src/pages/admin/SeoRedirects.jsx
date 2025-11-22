@@ -398,7 +398,7 @@ export default function SeoRedirects() {
                     <div>
                       <strong>Wrong - Don't include store prefix:</strong>
                       <div className="font-mono text-gray-600 mt-1">
-                        From: <code className="bg-gray-100 px-1">/public/hamid2/category/old-name</code>
+                        From: <code className="bg-gray-100 px-1">/public/your-store/category/old-name</code>
                       </div>
                     </div>
                   </div>

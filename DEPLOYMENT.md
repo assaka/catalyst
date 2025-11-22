@@ -147,7 +147,7 @@ After deployment, update your backend's CORS settings to include your Vercel dom
 ### Step 5: Test Deployment
 
 1. **Test Frontend**:
-   - Visit your Vercel URL
+   - Visit your URL
    - Test user registration/login
    - Test API connectivity
    - Check browser console for errors

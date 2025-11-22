@@ -38,7 +38,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 const absolutePath = window.location.pathname || '';
                 let relativePath = absolutePath;
 
-                // Remove store-specific prefix like /public/hamid2 to get the actual content path
                 if (store?.slug) {
                     const storePrefix = `/public/${store.slug}`;
                     if (absolutePath.startsWith(storePrefix)) {
@@ -146,7 +145,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             const absolutePath = window.location.pathname || '';
             let relativePath = absolutePath;
             
-            // Remove store-specific prefix like /public/hamid2 to get the actual content path
+            // Remove store-specific prefix like /public/mystore to get the actual content path
             if (store?.slug) {
                 const storePrefix = `/public/${store.slug}`;
                 if (absolutePath.startsWith(storePrefix)) {

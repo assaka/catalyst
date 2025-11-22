@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import apiClient from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -8,6 +8,7 @@ import { CheckCircle, Mail, AlertCircle } from 'lucide-react';
 export default function EmailVerification() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { storeCode } = useParams();
   const email = searchParams.get('email');
 
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -19,9 +20,9 @@ export default function EmailVerification() {
 
   useEffect(() => {
     if (!email) {
-      navigate('/public/hamid2/login');
+      navigate(`/public/${storeCode}/login`);
     }
-  }, [email, navigate]);
+  }, [email, navigate, storeCode]);
 
   const handleChange = (index, value) => {
     // Only allow digits
@@ -75,7 +76,7 @@ export default function EmailVerification() {
       if (response.success) {
         setSuccess(true);
         setTimeout(() => {
-          navigate('/public/hamid2/account');
+          navigate(`/public/${storeCode}/account`);
         }, 2000);
       } else {
         setError(response.message || 'Verification failed');

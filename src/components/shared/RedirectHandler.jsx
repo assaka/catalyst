@@ -29,7 +29,7 @@ const RedirectHandler = ({ children, storeId }) => {
         }
 
         // Extract relative path by removing /public/{storeSlug} prefix
-        // Example: /public/hamid2/category/old-name → /category/old-name
+        // Example: /public/mystore/category/old-name → /category/old-name
         let relativePath = currentPath;
         const publicMatch = currentPath.match(/^\/public\/([^\/]+)(.*)/);
         if (publicMatch) {
