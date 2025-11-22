@@ -50,7 +50,7 @@
  */
 
 const abTestingService = require('./ABTestingService');
-const ABTest = require('../../models/ABTest');
+const ConnectionManager = require('../database/ConnectionManager');
 
 class SlotConfigABTesting {
   constructor() {
@@ -135,15 +135,19 @@ class SlotConfigABTesting {
    */
   async getActiveTestsForPage(pageType, storeId) {
     try {
-      const tests = await ABTest.findAll({
-        where: {
-          store_id: storeId,
-          status: 'running'
-        }
-      });
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+      const { data: tests, error } = await tenantDb
+        .from('ab_tests')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('status', 'running');
+
+      if (error) {
+        throw error;
+      }
 
       // Filter tests that apply to this page type
-      return tests.filter(test => {
+      return (tests || []).filter(test => {
         const metadata = test.metadata || {};
         const targetPages = metadata.target_pages || [];
 
@@ -365,19 +369,30 @@ class SlotConfigABTesting {
     ];
 
     // Create test
-    const test = await ABTest.create({
-      store_id: storeId,
-      name,
-      description,
-      status: 'draft',
-      variants,
-      traffic_allocation: trafficAllocation,
-      primary_metric: primaryMetric,
-      metadata: {
-        target_pages: pageTypes,
-        test_type: 'slot_configuration'
-      }
-    });
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    const { data: test, error } = await tenantDb
+      .from('ab_tests')
+      .insert({
+        store_id: storeId,
+        name,
+        description,
+        status: 'draft',
+        variants,
+        traffic_allocation: trafficAllocation,
+        primary_metric: primaryMetric,
+        metadata: {
+          target_pages: pageTypes,
+          test_type: 'slot_configuration'
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
 
     return test;
   }

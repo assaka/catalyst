@@ -452,7 +452,7 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
     }
 
     // Apply product translations
-    const productData = await applyProductTranslations(product, lang);
+    const productData = await applyProductTranslations(store_id, product, lang);
 
     // Parse images
     if (productData.images && typeof productData.images === 'string') {
