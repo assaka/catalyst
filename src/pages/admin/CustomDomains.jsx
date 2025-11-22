@@ -1015,7 +1015,18 @@ const CustomDomains = () => {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={confirmRemoveDomain}
         title="Delete Custom Domain?"
-        description={`Are you sure you want to remove ${domainToDelete?.name}? This action cannot be undone and will immediately stop serving your store on this domain.`}
+        description={(() => {
+          const domainToRemove = domains.find(d => d.id === domainToDelete?.id);
+          const isPrimary = domainToRemove?.is_primary;
+          const storeSlug = selectedStore?.code || selectedStore?.slug;
+          const internalUrl = storeSlug ? getExternalStoreUrl(storeSlug) : 'the internal Vercel URL';
+
+          if (isPrimary) {
+            return `Are you sure you want to remove ${domainToDelete?.name}? This is your primary domain. After deletion, your store will only be accessible at ${internalUrl}. This action cannot be undone.`;
+          }
+
+          return `Are you sure you want to remove ${domainToDelete?.name}? This action cannot be undone and will immediately stop serving your store on this domain.`;
+        })()}
         confirmText="Delete Domain"
         cancelText="Cancel"
         loading={deleting}
