@@ -198,8 +198,7 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
 
     try {
       // Get tenant connection
-      const connection = await ConnectionManager.getStoreConnection(storeId);
-      const { Product, Category, CmsPage, CmsBlock } = connection.models;
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
       if (action.scope === 'all') {
         // Translate entire store
@@ -214,11 +213,12 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
 
         for (const lang of targetLanguages) {
           // Translate products
-          const products = await Product.findAll({
-            where: { store_id: storeId },
-            attributes: ['id', 'translations']
-          });
-          for (const product of products) {
+          const { data: products } = await tenantDb
+            .from('products')
+            .select('id, translations')
+            .eq('store_id', storeId);
+
+          for (const product of (products || [])) {
             if (!product.translations[lang]) {
               await translationService.aiTranslateEntity('product', product.id, 'en', lang, storeId);
               results.products++;
@@ -226,11 +226,12 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
           }
 
           // Translate categories
-          const categories = await Category.findAll({
-            where: { store_id: storeId },
-            attributes: ['id', 'translations']
-          });
-          for (const category of categories) {
+          const { data: categories } = await tenantDb
+            .from('categories')
+            .select('id, translations')
+            .eq('store_id', storeId);
+
+          for (const category of (categories || [])) {
             if (!category.translations[lang]) {
               await translationService.aiTranslateEntity('category', category.id, 'en', lang, storeId);
               results.categories++;
@@ -238,10 +239,10 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
           }
 
           // Translate CMS pages
-          const pages = await CmsPage.findAll({
-            where: { store_id: storeId },
-            attributes: ['id', 'translations']
-          });
+          const { data: pages } = await tenantDb
+            .from('cms_pages')
+            .select('id, translations')
+            .eq('store_id', storeId);
           for (const page of pages) {
             if (!page.translations[lang]) {
               await translationService.aiTranslateEntity('cms_page', page.id, 'en', lang, storeId);
@@ -250,11 +251,12 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
           }
 
           // Translate CMS blocks
-          const blocks = await CmsBlock.findAll({
-            where: { store_id: storeId },
-            attributes: ['id', 'translations']
-          });
-          for (const block of blocks) {
+          const { data: blocks } = await tenantDb
+            .from('cms_blocks')
+            .select('id, translations')
+            .eq('store_id', storeId);
+
+          for (const block of (blocks || [])) {
             if (!block.translations[lang]) {
               await translationService.aiTranslateEntity('cms_block', block.id, 'en', lang, storeId);
               results.blocks++;
