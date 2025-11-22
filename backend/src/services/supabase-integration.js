@@ -1111,11 +1111,13 @@ class SupabaseIntegration {
    * Get connection status
    */
   async getConnectionStatus(storeId) {
+    console.log('[getConnectionStatus] Called for storeId:', storeId);
     try {
       // Get tenant DB connection
       let tenantDb, config, token;
       try {
         tenantDb = await ConnectionManager.getStoreConnection(storeId);
+        console.log('[getConnectionStatus] Tenant DB connection established');
 
         // Get integration config
         const configResult = await tenantDb
@@ -1126,6 +1128,11 @@ class SupabaseIntegration {
           .eq('is_active', true)
           .maybeSingle();
         config = configResult?.data;
+        console.log('[getConnectionStatus] integration_configs result:', {
+          found: !!config,
+          connectionStatus: config?.connection_status,
+          isActive: config?.is_active
+        });
 
         // Get OAuth token from tenant DB (NOT master DB)
         const tokenResult = await tenantDb
@@ -1133,6 +1140,14 @@ class SupabaseIntegration {
           .select('*')
           .eq('store_id', storeId)
           .maybeSingle();
+
+        console.log('[getConnectionStatus] supabase_oauth_tokens query result:', {
+          found: !!tokenResult?.data,
+          hasAccessToken: !!tokenResult?.data?.access_token,
+          hasRefreshToken: !!tokenResult?.data?.refresh_token,
+          hasServiceRoleKey: !!tokenResult?.data?.service_role_key,
+          projectUrl: tokenResult?.data?.project_url
+        });
 
         if (tokenResult?.data) {
           // Decrypt tokens
@@ -1142,10 +1157,13 @@ class SupabaseIntegration {
             refresh_token: tokenResult.data.refresh_token ? decrypt(tokenResult.data.refresh_token) : null,
             service_role_key: tokenResult.data.service_role_key ? decrypt(tokenResult.data.service_role_key) : null
           };
+          console.log('[getConnectionStatus] Token decrypted successfully');
+        } else {
+          console.log('[getConnectionStatus] No OAuth token found in tenant DB');
         }
       } catch (tenantDbError) {
         // Tenant DB might not be accessible yet, continue without config
-        console.warn('Could not access tenant DB for config:', tenantDbError.message);
+        console.error('[getConnectionStatus] Error accessing tenant DB:', tenantDbError.message);
         config = null;
         token = null;
       }
