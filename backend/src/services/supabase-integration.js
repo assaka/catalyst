@@ -1155,7 +1155,9 @@ class SupabaseIntegration {
       const hasDatabaseCredentials = !!storeDatabase;
       const isConnected = hasOAuthToken || hasDatabaseCredentials;
 
-      if (!isConnected || (config && config.config_data?.connected === false)) {
+      // IMPORTANT: Don't check config.config_data.connected - it might be stale
+      // Trust the actual OAuth token presence instead
+      if (!isConnected) {
         // No connection found in either place
         let hasOrphanedAuthorization = false;
         let wasAutoDisconnected = false;
