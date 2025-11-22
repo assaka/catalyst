@@ -436,7 +436,7 @@ const CustomDomains = () => {
                     {/* Internal Vercel URL (always show) */}
                     {internalUrl && (
                       <div className="pt-2 border-t">
-                        <p className="text-xs text-muted-foreground mb-1">Internal Vercel URL</p>
+                        <p className="text-xs text-muted-foreground mb-1">Internal URL</p>
                         <a
                           href={internalUrl}
                           target="_blank"
@@ -1011,7 +1011,7 @@ const CustomDomains = () => {
           const domainToRemove = domains.find(d => d.id === domainToDelete?.id);
           const isPrimary = domainToRemove?.is_primary;
           const storeSlug = selectedStore?.code || selectedStore?.slug;
-          const internalUrl = storeSlug ? getExternalStoreUrl(storeSlug) : 'the internal Vercel URL';
+          const internalUrl = storeSlug ? getExternalStoreUrl(storeSlug) : 'the internal URL';
 
           if (isPrimary) {
             return (
@@ -1228,7 +1228,7 @@ const CustomDomains = () => {
             <Alert className="border-orange-200 bg-orange-50">
               <AlertTriangle className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-sm">
-                Without a primary domain, your store will only be accessible at the internal Vercel URL.
+                Without a primary domain, your store will only be accessible at the internal URL.
                 Select one of your other verified domains to set as the new primary.
               </AlertDescription>
             </Alert>
