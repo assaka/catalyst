@@ -227,6 +227,44 @@ IntegrationConfig.findByStoreAndType = async function(storeId, integrationType) 
   }
 };
 
+IntegrationConfig.findByStoreAndTypes = async function(storeId, integrationTypes) {
+  const ConnectionManager = require('../services/database/ConnectionManager');
+
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data, error } = await tenantDb
+      .from('integration_configs')
+      .select('*')
+      .eq('store_id', storeId)
+      .in('integration_type', integrationTypes)
+      .eq('is_active', true)
+      .order('integration_type', { ascending: false }) // Prefer newer integrations
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching integration config by types:', error);
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    // Decrypt sensitive data
+    const decryptedData = {
+      ...data,
+      config_data: IntegrationConfig.decryptSensitiveData(data.config_data, data.integration_type)
+    };
+
+    return decryptedData;
+  } catch (error) {
+    console.error('IntegrationConfig.findByStoreAndTypes error:', error);
+    throw error;
+  }
+};
+
 IntegrationConfig.createOrUpdate = async function(storeId, integrationType, configData) {
   const ConnectionManager = require('../services/database/ConnectionManager');
   const { v4: uuidv4 } = require('uuid');

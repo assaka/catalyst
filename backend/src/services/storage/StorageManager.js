@@ -1,5 +1,4 @@
-const { IntegrationConfig } = require('../../models');
-const { Op } = require('sequelize');
+const IntegrationConfig = require('../../models/IntegrationConfig');
 
 /**
  * StorageManager - Factory for storage providers
@@ -23,26 +22,16 @@ class StorageManager {
     }
 
     // Find active storage integration for this store
-    const storageConfig = await IntegrationConfig.findOne({
-      where: {
-        store_id: storeId,
-        integration_type: {
-          [Op.in]: [
-            'supabase-storage',
-            'google-cloud-storage',
-            'aws-s3',
-            'cloudflare-r2',
-            'local-storage',
-            'supabase' // Legacy - fallback to old integration
-          ]
-        },
-        is_active: true
-      },
-      order: [
-        // Prefer new-style integrations over legacy
-        ['integration_type', 'DESC']
-      ]
-    });
+    const storageTypes = [
+      'supabase-storage',
+      'google-cloud-storage',
+      'aws-s3',
+      'cloudflare-r2',
+      'local-storage',
+      'supabase' // Legacy - fallback to old integration
+    ];
+
+    const storageConfig = await IntegrationConfig.findByStoreAndTypes(storeId, storageTypes);
 
     if (!storageConfig) {
       throw new Error(`No storage provider configured for store ${storeId}. Please configure a storage integration first.`);

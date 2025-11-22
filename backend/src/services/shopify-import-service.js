@@ -449,18 +449,15 @@ class ShopifyImportService {
       }
 
       // Prepare product data (NOTE: name and description go in product_translations, not products table)
+      // Build product data incrementally to handle missing schema columns gracefully
       const productData = {
         slug: product.handle, // Shopify handle → SuprShop slug
         sku: product.handle, // Also use handle as SKU
         status: product.status === 'active' ? 'active' : 'draft',
         price: parseFloat(product.variants?.[0]?.price || 0),
-        compare_price: product.variants?.[0]?.compare_at_price ? parseFloat(product.variants[0].compare_at_price) : null,
-        cost: null,
         manage_stock: product.variants?.[0]?.inventory_management === 'shopify',
         stock_quantity: product.variants?.reduce((total, variant) => total + (variant.inventory_quantity || 0), 0) || 0,
         allow_backorders: product.variants?.[0]?.inventory_policy === 'continue',
-        weight: product.variants?.[0]?.weight || null,
-        weight_unit: product.variants?.[0]?.weight_unit || 'kg',
         category_ids: categoryIds,
         external_id: product.id.toString(),
         external_source: 'shopify',
@@ -480,20 +477,42 @@ class ShopifyImportService {
         custom_attributes: this.extractProductAttributes(product)
       };
 
+      // Add optional fields if they have values
+      if (product.variants?.[0]?.compare_at_price) {
+        productData.compare_price = parseFloat(product.variants[0].compare_at_price);
+      }
+
+      if (product.variants?.[0]?.weight) {
+        productData.weight = product.variants[0].weight;
+        productData.weight_unit = product.variants[0].weight_unit || 'kg';
+      }
+
       // Download and store images using store's storage provider
       if (product.images && product.images.length > 0) {
         const storedImages = [];
 
         for (let i = 0; i < product.images.length; i++) {
-          const image = product.images[i];
-          const storedUrl = await this.downloadAndStoreImage(image.src, product.handle, i);
+          try {
+            const image = product.images[i];
+            const storedUrl = await this.downloadAndStoreImage(image.src, product.handle, i);
 
-          storedImages.push({
-            url: storedUrl,
-            alt: image.alt || product.title,
-            position: image.position || i + 1,
-            shopify_id: image.id
-          });
+            storedImages.push({
+              url: storedUrl,
+              alt: image.alt || product.title,
+              position: image.position || i + 1,
+              shopify_id: image.id
+            });
+          } catch (imageError) {
+            console.warn(`⚠️ Failed to download image ${i} for ${product.title}, using original URL:`, imageError.message);
+            // Use original URL as fallback
+            const image = product.images[i];
+            storedImages.push({
+              url: image.src,
+              alt: image.alt || product.title,
+              position: image.position || i + 1,
+              shopify_id: image.id
+            });
+          }
         }
 
         productData.images = storedImages;
