@@ -95,8 +95,7 @@ router.get('/oauth-status', authMiddleware, async (req, res) => {
 
     // Check if OAuth tokens exist in tenant DB (for active stores)
     try {
-      const SupabaseOAuthToken = require('../models/SupabaseOAuthToken');
-      const token = await SupabaseOAuthToken.findByStore(storeId);
+      const token = await supabaseIntegration.getSupabaseToken(storeId);
 
       if (token) {
         console.log('✅ OAuth tokens found in tenant database');

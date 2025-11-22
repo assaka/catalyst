@@ -1,22 +1,202 @@
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 const ConnectionManager = require('./database/ConnectionManager');
-const SupabaseOAuthToken = require('../models/SupabaseOAuthToken'); // OAuth tokens in tenant DB
 const SupabaseProjectKeys = require('../models/SupabaseProjectKeys');
 const supabaseStorage = require('./supabase-storage');
+const { encrypt, decrypt } = require('../utils/encryption');
+const { v4: uuidv4 } = require('uuid');
 
 class SupabaseIntegration {
   constructor() {
     this.clientId = process.env.SUPABASE_OAUTH_CLIENT_ID || 'pending_configuration';
     this.clientSecret = process.env.SUPABASE_OAUTH_CLIENT_SECRET || 'pending_configuration';
-    this.redirectUri = process.env.SUPABASE_OAUTH_REDIRECT_URI || 
+    this.redirectUri = process.env.SUPABASE_OAUTH_REDIRECT_URI ||
                       `${process.env.BACKEND_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/supabase/callback`;
     this.authorizationBaseUrl = 'https://api.supabase.com/v1/oauth/authorize';
     this.tokenUrl = 'https://api.supabase.com/v1/oauth/token';
-    
+
     // Check if OAuth is properly configured
-    this.oauthConfigured = this.clientId !== 'pending_configuration' && 
+    this.oauthConfigured = this.clientId !== 'pending_configuration' &&
                            this.clientSecret !== 'pending_configuration';
+  }
+
+  /**
+   * Get Supabase OAuth token from tenant DB
+   * Queries supabase_oauth_tokens table directly (tenant-scoped)
+   * Replaces SupabaseOAuthToken.findByStore() which used deprecated master connection
+   */
+  async getSupabaseToken(storeId) {
+    try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      const { data: tokenRecord, error } = await tenantDb
+        .from('supabase_oauth_tokens')
+        .select('*')
+        .eq('store_id', storeId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[getSupabaseToken] Query error:', error);
+        return null;
+      }
+
+      if (!tokenRecord) {
+        return null;
+      }
+
+      // Decrypt sensitive fields (tokens are encrypted in DB)
+      return {
+        ...tokenRecord,
+        access_token: tokenRecord.access_token ? decrypt(tokenRecord.access_token) : tokenRecord.access_token,
+        refresh_token: tokenRecord.refresh_token ? decrypt(tokenRecord.refresh_token) : tokenRecord.refresh_token,
+        service_role_key: tokenRecord.service_role_key ? decrypt(tokenRecord.service_role_key) : tokenRecord.service_role_key
+      };
+    } catch (error) {
+      console.error('[getSupabaseToken] Error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update Supabase OAuth token in tenant DB
+   */
+  async updateSupabaseToken(storeId, updates) {
+    try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      // Encrypt sensitive fields before saving
+      const encryptedUpdates = { ...updates };
+      if (updates.access_token) {
+        encryptedUpdates.access_token = encrypt(updates.access_token);
+      }
+      if (updates.refresh_token) {
+        encryptedUpdates.refresh_token = encrypt(updates.refresh_token);
+      }
+      if (updates.service_role_key) {
+        encryptedUpdates.service_role_key = encrypt(updates.service_role_key);
+      }
+
+      const { error } = await tenantDb
+        .from('supabase_oauth_tokens')
+        .update({
+          ...encryptedUpdates,
+          updated_at: new Date()
+        })
+        .eq('store_id', storeId);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('[updateSupabaseToken] Error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete Supabase OAuth token from tenant DB
+   */
+  async deleteSupabaseToken(storeId) {
+    try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      const { error } = await tenantDb
+        .from('supabase_oauth_tokens')
+        .delete()
+        .eq('store_id', storeId);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('[deleteSupabaseToken] Error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update Supabase config in tenant DB
+   * Replaces SupabaseOAuthToken.update()
+   */
+  async updateSupabaseConfig(storeId, updates) {
+    try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      // Get existing config
+      const { data: existing } = await tenantDb
+        .from('integration_configs')
+        .select('config_data')
+        .eq('store_id', storeId)
+        .eq('integration_type', 'supabase')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      // Encrypt sensitive fields before saving
+      const configUpdates = { ...(existing?.config_data || {}) };
+
+      if (updates.access_token !== undefined) {
+        configUpdates.access_token = updates.access_token ? encrypt(updates.access_token) : null;
+      }
+      if (updates.refresh_token !== undefined) {
+        configUpdates.refresh_token = updates.refresh_token ? encrypt(updates.refresh_token) : null;
+      }
+      if (updates.service_role_key !== undefined) {
+        configUpdates.service_role_key = updates.service_role_key ? encrypt(updates.service_role_key) : null;
+      }
+      if (updates.expires_at !== undefined) {
+        configUpdates.expires_at = updates.expires_at;
+      }
+      if (updates.project_url !== undefined) {
+        configUpdates.project_url = updates.project_url;
+      }
+      if (updates.database_url !== undefined) {
+        configUpdates.database_url = updates.database_url;
+      }
+      if (updates.storage_url !== undefined) {
+        configUpdates.storage_url = updates.storage_url;
+      }
+      if (updates.auth_url !== undefined) {
+        configUpdates.auth_url = updates.auth_url;
+      }
+      if (updates.userEmail !== undefined) {
+        configUpdates.userEmail = updates.userEmail;
+      }
+      if (updates.connected !== undefined) {
+        configUpdates.connected = updates.connected;
+      }
+
+      // Update the config
+      const { error } = await tenantDb
+        .from('integration_configs')
+        .update({
+          config_data: configUpdates,
+          updated_at: new Date()
+        })
+        .eq('store_id', storeId)
+        .eq('integration_type', 'supabase')
+        .eq('is_active', true);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('[updateSupabaseConfig] Error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if OAuth token is expired
+   */
+  isTokenExpired(config) {
+    if (!config || !config.expires_at) return true;
+    return new Date(config.expires_at) <= new Date();
   }
 
   /**
@@ -292,7 +472,7 @@ class SupabaseIntegration {
    */
   async refreshAccessToken(storeId) {
     try {
-      const token = await SupabaseOAuthToken.findByStore(storeId);
+      const token = await this.getSupabaseToken(storeId);
       if (!token) {
         throw new Error('No Supabase token found for this store');
       }
@@ -313,8 +493,8 @@ class SupabaseIntegration {
 
       const { access_token, refresh_token, expires_in } = response.data;
 
-      // Update token in database
-      await token.update({
+      // Update token in tenant database
+      await this.updateSupabaseToken(storeId, {
         access_token,
         refresh_token: refresh_token || token.refresh_token,
         expires_at: new Date(Date.now() + expires_in * 1000)
@@ -331,13 +511,13 @@ class SupabaseIntegration {
    * Get valid access token (refresh if expired)
    */
   async getValidToken(storeId) {
-    const token = await SupabaseOAuthToken.findByStore(storeId);
+    const token = await this.getSupabaseToken(storeId);
     if (!token) {
       throw new Error('Supabase not connected for this store');
     }
 
     // Check if token is expired
-    if (SupabaseOAuthToken.isTokenExpired(token)) {
+    if (this.isTokenExpired(token)) {
       const refreshResult = await this.refreshAccessToken(storeId);
       return refreshResult.access_token;
     }
@@ -358,7 +538,7 @@ class SupabaseIntegration {
    * Get Supabase admin client (with service role key)
    */
   async getSupabaseAdminClient(storeId) {
-    const token = await SupabaseOAuthToken.findByStore(storeId);
+    const token = await this.getSupabaseToken(storeId);
     if (!token) {
       throw new Error('Supabase not connected for this store');
     }
@@ -387,7 +567,7 @@ class SupabaseIntegration {
    */
   async testConnection(storeId) {
     try {
-      const token = await SupabaseOAuthToken.findByStore(storeId);
+      const token = await this.getSupabaseToken(storeId);
       if (!token) {
         throw new Error('Supabase not connected for this store');
       }
@@ -424,7 +604,7 @@ class SupabaseIntegration {
             const lastProjectUrl = token.project_url;
             
             // Delete the invalid token
-            await token.destroy();
+            await this.deleteSupabaseToken(storeId);
 
             // Update config to mark as disconnected
             const tenantDb = await ConnectionManager.getStoreConnection(storeId);
@@ -549,7 +729,7 @@ class SupabaseIntegration {
           }
           
           // Save the project info and API keys
-          await token.update({
+          await this.updateSupabaseToken(storeId, {
             project_url: projectInfo.url,
             anon_key: null,  // No longer used,
             service_role_key: serviceRoleKey || null
@@ -646,11 +826,11 @@ class SupabaseIntegration {
         .first();
       const userEmail = config?.config_data?.userEmail || null;
 
-      // Delete token from database
-      const token = await SupabaseOAuthToken.findByStore(storeId);
+      // Delete token from tenant database
+      const token = await this.getSupabaseToken(storeId);
       if (token) {
-        console.log('Deleting OAuth token from database');
-        await token.destroy();
+        console.log('Deleting OAuth token from tenant database');
+        await this.deleteSupabaseToken(storeId);
       } else {
         console.log('No OAuth token found to delete');
       }
@@ -708,7 +888,7 @@ class SupabaseIntegration {
    */
   async getProjects(storeId) {
     try {
-      const token = await SupabaseOAuthToken.findByStore(storeId);
+      const token = await this.getSupabaseToken(storeId);
 
       // All Supabase connections are OAuth-based (stored in tenant DB)
       if (!token) {
@@ -773,7 +953,7 @@ class SupabaseIntegration {
    */
   async selectProject(storeId, projectId) {
     try {
-      const token = await SupabaseOAuthToken.findByStore(storeId);
+      const token = await this.getSupabaseToken(storeId);
       if (!token) {
         throw new Error('Supabase not connected for this store');
       }
@@ -862,7 +1042,7 @@ class SupabaseIntegration {
       const projectUrl = `https://${projectId}.supabase.co`;
 
       // Preserve existing service role key if new one wasn't fetched
-      const currentToken = await SupabaseOAuthToken.findByStore(storeId);
+      const currentToken = await this.getSupabaseToken(storeId);
       const preservedServiceRoleKey = serviceRoleKey || currentToken?.service_role_key || null;
 
       console.log('Service role key handling:', {
@@ -871,8 +1051,8 @@ class SupabaseIntegration {
         willPreserveKey: !!preservedServiceRoleKey
       });
 
-      // Update token with new project details
-      await token.update({
+      // Update token with new project details in tenant DB
+      await this.updateSupabaseToken(storeId, {
         project_url: projectUrl,
         anon_key: anonKey,
         service_role_key: preservedServiceRoleKey,
@@ -932,24 +1112,42 @@ class SupabaseIntegration {
    */
   async getConnectionStatus(storeId) {
     try {
-      const token = await SupabaseOAuthToken.findByStore(storeId);
-
-      // Get tenant DB connection (use async getStoreConnection instead of deprecated getConnection)
-      let tenantDb, config;
+      // Get tenant DB connection
+      let tenantDb, config, token;
       try {
         tenantDb = await ConnectionManager.getStoreConnection(storeId);
-        config = await tenantDb
+
+        // Get integration config
+        const configResult = await tenantDb
           .from('integration_configs')
           .select('*')
           .eq('store_id', storeId)
           .eq('integration_type', 'supabase')
           .eq('is_active', true)
           .maybeSingle();
-        config = config?.data;
+        config = configResult?.data;
+
+        // Get OAuth token from tenant DB (NOT master DB)
+        const tokenResult = await tenantDb
+          .from('supabase_oauth_tokens')
+          .select('*')
+          .eq('store_id', storeId)
+          .maybeSingle();
+
+        if (tokenResult?.data) {
+          // Decrypt tokens
+          token = {
+            ...tokenResult.data,
+            access_token: tokenResult.data.access_token ? decrypt(tokenResult.data.access_token) : null,
+            refresh_token: tokenResult.data.refresh_token ? decrypt(tokenResult.data.refresh_token) : null,
+            service_role_key: tokenResult.data.service_role_key ? decrypt(tokenResult.data.service_role_key) : null
+          };
+        }
       } catch (tenantDbError) {
         // Tenant DB might not be accessible yet, continue without config
         console.warn('Could not access tenant DB for config:', tenantDbError.message);
         config = null;
+        token = null;
       }
 
       // Check if OAuth is configured for new connections
@@ -1101,7 +1299,7 @@ class SupabaseIntegration {
       // Get project URL from OAuth token
       const projectUrl = token.project_url;
 
-      const isExpired = SupabaseOAuthToken.isTokenExpired(token);
+      const isExpired = this.isTokenExpired(token);
       
       // If token is expired and we don't have a service role key, show as disconnected
       // Service role keys don't expire, so we can still use Supabase even if OAuth token expires
@@ -1134,8 +1332,8 @@ class SupabaseIntegration {
         console.log('Service role key missing, attempting to fetch from Supabase API...');
         const keyFetchResult = await this.fetchAndUpdateApiKeys(storeId);
         if (keyFetchResult.updated) {
-          // Reload token to get updated keys
-          await token.reload();
+          // Refetch token to get updated keys
+          token = await this.getSupabaseToken(storeId);
         } else if (keyFetchResult.requiresReconnection) {
           // OAuth token lacks permissions
           return {
@@ -1189,7 +1387,7 @@ class SupabaseIntegration {
    */
   async getTokenInfo(storeId) {
     try {
-      const token = await SupabaseOAuthToken.findByStore(storeId);
+      const token = await this.getSupabaseToken(storeId);
       if (!token) {
         return null;
       }
@@ -1209,7 +1407,7 @@ class SupabaseIntegration {
    */
   async fetchAndUpdateApiKeys(storeId) {
     try {
-      const token = await SupabaseOAuthToken.findByStore(storeId);
+      const token = await this.getSupabaseToken(storeId);
       if (!token || !token.project_url || token.project_url === 'pending_configuration') {
         return { success: false, message: 'No project configured' };
       }
@@ -1333,7 +1531,7 @@ class SupabaseIntegration {
 
       // Update if we found new key
       if (serviceRoleKey && serviceRoleKey !== token.service_role_key) {
-        await token.update({ service_role_key: serviceRoleKey });
+        await this.updateSupabaseToken(storeId, { service_role_key: serviceRoleKey });
         updated = true;
         console.log('Updated service role key for project');
       }
@@ -1375,7 +1573,7 @@ class SupabaseIntegration {
    */
   async updateProjectConfig(storeId, config) {
     try {
-      const token = await SupabaseOAuthToken.findByStore(storeId);
+      const token = await this.getSupabaseToken(storeId);
       if (!token) {
         throw new Error('Supabase not connected for this store');
       }
@@ -1414,7 +1612,7 @@ class SupabaseIntegration {
         updateData.auth_url = config.authUrl;
       }
 
-      await token.update(updateData);
+      await this.updateSupabaseToken(storeId, updateData);
 
       // Store keys for this specific project
       if (projectId && (config.anonKey || config.serviceRoleKey)) {
