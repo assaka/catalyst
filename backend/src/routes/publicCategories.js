@@ -134,10 +134,16 @@ router.get('/by-slug/:slug/full', async (req, res) => {
       .eq('is_active', true)
       .maybeSingle();
 
-    if (catError || !category) {
+    if (catError) {
+      console.error('Error fetching category:', catError);
+      throw catError;
+    }
+
+    if (!category) {
       return res.status(404).json({
         success: false,
-        message: 'Category not found'
+        message: `Category "${slug}" not found`,
+        reason: 'Category does not exist or is inactive'
       });
     }
 
@@ -252,10 +258,16 @@ router.get('/:id', async (req, res) => {
       .eq('is_active', true)
       .maybeSingle();
 
-    if (catError || !category) {
+    if (catError) {
+      console.error('Error fetching category:', catError);
+      throw catError;
+    }
+
+    if (!category) {
       return res.status(404).json({
         success: false,
-        message: 'Category not found'
+        message: `Category "${slug}" not found`,
+        reason: 'Category does not exist or is inactive'
       });
     }
 
