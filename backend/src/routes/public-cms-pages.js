@@ -39,9 +39,11 @@ router.get('/', async (req, res) => {
 
     // Get CMS pages with translations from normalized table
     // FIXED: Pass storeId as first parameter, then where, then lang
+    console.log('🔍 Calling getCMSPagesWithTranslations with:', { store_id, where, lang });
     const pages = await getCMSPagesWithTranslations(store_id, where, lang);
 
     console.log('🎯 Public CMS Pages: Query successful, found:', pages.length, 'page(s)');
+    console.log('📋 Where conditions used:', JSON.stringify(where));
     if (pages.length > 0) {
       console.log('📝 First CMS page:', {
         slug: pages[0].slug,

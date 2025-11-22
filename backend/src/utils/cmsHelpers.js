@@ -18,17 +18,22 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 async function getCMSPagesWithTranslations(storeId, where = {}, lang = 'en') {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+  console.log('🔍 getCMSPagesWithTranslations called with:', { storeId, where, lang });
+
   // Fetch cms_pages
   let pagesQuery = tenantDb.from('cms_pages').select('*');
 
   // Apply where conditions
   for (const [key, value] of Object.entries(where)) {
+    console.log(`  📌 Adding where condition: ${key} = ${value}`);
     pagesQuery = pagesQuery.eq(key, value);
   }
 
   pagesQuery = pagesQuery.order('sort_order', { ascending: true }).order('created_at', { ascending: false });
 
   const { data: pages, error: pagesError } = await pagesQuery;
+
+  console.log('📊 Query result:', { pageCount: pages?.length || 0, hasError: !!pagesError });
 
   if (pagesError) {
     console.error('Error fetching cms_pages:', pagesError);
