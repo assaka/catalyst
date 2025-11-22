@@ -50,9 +50,9 @@ router.get('/', cacheProducts(180), async (req, res) => {
       console.warn('Could not load store settings for stock filtering:', error.message);
     }
 
-    // Category filtering (JSON contains)
+    // Category filtering (JSON contains) - use cs filter for JSONB array
     if (category_id) {
-      query = query.contains('category_ids', [category_id]);
+      query = query.filter('category_ids', 'cs', `{"${category_id}"}`);
     }
 
     // Simple filters

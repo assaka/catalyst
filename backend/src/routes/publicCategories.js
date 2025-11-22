@@ -169,13 +169,14 @@ router.get('/by-slug/:slug/full', async (req, res) => {
     };
 
     // 2. Load products for this category
+    // Note: category_ids is a JSONB array, use @> operator for contains
     const { data: products, error: prodsError } = await tenantDb
       .from('products')
       .select('*')
       .eq('store_id', store_id)
       .eq('status', 'active')
       .eq('visibility', 'visible')
-      .contains('category_ids', [category.id])
+      .filter('category_ids', 'cs', `{"${category.id}"}`)
       .order('created_at', { ascending: false })
       .limit(100);
 
