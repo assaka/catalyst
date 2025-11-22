@@ -710,62 +710,7 @@ class SupabaseIntegration {
     try {
       const token = await SupabaseOAuthToken.findByStore(storeId);
 
-      // CRITICAL FIX: Also check store_databases for connection
-      const { masterDbClient } = require('../database/masterConnection');
-      console.log('[getProjects] masterDbClient initialized:', !!masterDbClient);
-
-      let storeDatabase = null;
-      if (masterDbClient) {
-        try {
-          const result = await masterDbClient
-            .from('store_databases')
-            .select('*')
-            .eq('store_id', storeId)
-            .eq('is_active', true)
-            .maybeSingle();
-          storeDatabase = result?.data;
-          console.log('[getProjects] store_databases query result:', {
-            found: !!storeDatabase,
-            storeId,
-            hasOAuthToken: !!token
-          });
-        } catch (dbError) {
-          console.error('[getProjects] Error querying store_databases:', dbError.message);
-        }
-      } else {
-        console.warn('[getProjects] masterDbClient is null - cannot check store_databases');
-      }
-
-      // If connected via store_databases, return the single project from credentials
-      if (!token && storeDatabase) {
-        try {
-          const { decryptDatabaseCredentials } = require('../utils/encryption');
-          const credentials = decryptDatabaseCredentials(storeDatabase.connection_string_encrypted);
-
-          // Return a single "project" based on the store_databases credentials
-          return {
-            success: true,
-            projects: [{
-              id: credentials.projectId || 'connected-project',
-              name: credentials.projectName || 'Connected Project',
-              url: credentials.projectUrl,
-              region: credentials.region || 'unknown',
-              organizationId: null,
-              createdAt: storeDatabase.created_at,
-              isCurrent: true,
-              hasKeysConfigured: !!credentials.serviceRoleKey,
-              status: storeDatabase.connection_status === 'connected' ? 'ACTIVE' : 'UNKNOWN',
-              source: 'store_databases' // Indicator this came from store_databases
-            }],
-            currentProjectUrl: credentials.projectUrl,
-            connectionSource: 'credentials'
-          };
-        } catch (err) {
-          console.error('Error decrypting store database credentials:', err.message);
-          throw new Error('Failed to get project from store database credentials');
-        }
-      }
-
+      // All Supabase connections are OAuth-based (stored in tenant DB)
       if (!token) {
         throw new Error('Supabase not connected for this store');
       }
@@ -1007,32 +952,6 @@ class SupabaseIntegration {
         config = null;
       }
 
-      // CRITICAL FIX: Also check store_databases in master DB for connection credentials
-      const { masterDbClient } = require('../database/masterConnection');
-      console.log('[getConnectionStatus] masterDbClient initialized:', !!masterDbClient);
-
-      let storeDatabase = null;
-      if (masterDbClient) {
-        try {
-          const result = await masterDbClient
-            .from('store_databases')
-            .select('*')
-            .eq('store_id', storeId)
-            .eq('is_active', true)
-            .maybeSingle();
-          storeDatabase = result?.data;
-          console.log('[getConnectionStatus] store_databases query result:', {
-            found: !!storeDatabase,
-            storeId,
-            hasCredentials: !!storeDatabase?.connection_string_encrypted
-          });
-        } catch (dbError) {
-          console.error('[getConnectionStatus] Error querying store_databases:', dbError.message);
-        }
-      } else {
-        console.warn('[getConnectionStatus] masterDbClient is null - cannot check store_databases');
-      }
-      
       // Check if OAuth is configured for new connections
       if (!this.oauthConfigured && !token) {
         return {
@@ -1149,15 +1068,9 @@ class SupabaseIntegration {
         }
       }
 
-      // UPDATED LOGIC: Check BOTH token AND store_databases for connection
-      // Token = OAuth connection, storeDatabase = direct credentials connection
-      const hasOAuthToken = !!token;
-      const hasDatabaseCredentials = !!storeDatabase;
-      const isConnected = hasOAuthToken || hasDatabaseCredentials;
-
-      // IMPORTANT: Don't check config.config_data.connected - it might be stale
-      // Trust the actual OAuth token presence instead
-      if (!isConnected) {
+      // Check if we have an OAuth token (all Supabase connections are OAuth-based)
+      // Trust the actual OAuth token presence, not stale config flags
+      if (!token) {
         // No connection found in either place
         let hasOrphanedAuthorization = false;
         let wasAutoDisconnected = false;
@@ -1185,17 +1098,8 @@ class SupabaseIntegration {
         };
       }
 
-      // If we have database credentials but no OAuth token, get projectUrl from credentials
-      let projectUrl = token?.project_url;
-      if (!projectUrl && storeDatabase) {
-        try {
-          const { decryptDatabaseCredentials } = require('../utils/encryption');
-          const credentials = decryptDatabaseCredentials(storeDatabase.connection_string_encrypted);
-          projectUrl = credentials.projectUrl;
-        } catch (err) {
-          console.error('Error decrypting credentials:', err.message);
-        }
-      }
+      // Get project URL from OAuth token
+      const projectUrl = token.project_url;
 
       const isExpired = SupabaseOAuthToken.isTokenExpired(token);
       
@@ -1251,36 +1155,24 @@ class SupabaseIntegration {
         }
       }
 
-      // Check if service role key is properly configured (check both token and storeDatabase)
-      let hasValidServiceKey = token?.service_role_key &&
-                                token.service_role_key !== 'pending_configuration' &&
-                                token.service_role_key !== '';
-
-      // If no valid key from token, check storeDatabase credentials
-      if (!hasValidServiceKey && storeDatabase) {
-        try {
-          const { decryptDatabaseCredentials } = require('../utils/encryption');
-          const credentials = decryptDatabaseCredentials(storeDatabase.connection_string_encrypted);
-          hasValidServiceKey = !!credentials.serviceRoleKey && credentials.serviceRoleKey !== 'pending_configuration';
-        } catch (err) {
-          console.error('Error checking serviceRoleKey from credentials:', err.message);
-        }
-      }
+      // Check if service role key is properly configured
+      const hasValidServiceKey = token.service_role_key &&
+                                  token.service_role_key !== 'pending_configuration' &&
+                                  token.service_role_key !== '';
 
       return {
         connected: true,
         projectUrl: projectUrl || 'Unknown',
-        expiresAt: token?.expires_at,
-        isExpired: token ? isExpired : false,
-        connectionStatus: storeDatabase?.connection_status || config?.connection_status || 'success',
-        lastTestedAt: config?.connection_tested_at || storeDatabase?.last_connection_test,
+        expiresAt: token.expires_at,
+        isExpired,
+        connectionStatus: config?.connection_status || 'success',
+        lastTestedAt: config?.connection_tested_at,
         oauthConfigured: true,
         limitedScope: hasLimitedScope,
         userEmail: config?.config_data?.userEmail,
         hasServiceRoleKey: hasValidServiceKey,
         requiresManualConfiguration: !hasValidServiceKey && !hasLimitedScope,
-        storageReady: hasValidServiceKey,
-        connectionSource: hasOAuthToken ? 'oauth' : 'credentials' // For debugging
+        storageReady: hasValidServiceKey
       };
     } catch (error) {
       console.error('Error getting connection status:', error);
