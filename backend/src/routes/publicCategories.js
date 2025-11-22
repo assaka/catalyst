@@ -169,16 +169,19 @@ router.get('/by-slug/:slug/full', async (req, res) => {
     };
 
     // 2. Load products for this category
-    // Note: category_ids is a JSONB array, use @> operator for contains
-    const { data: products, error: prodsError } = await tenantDb
+    // Fetch all products and filter in JavaScript since JSONB array queries are complex
+    const { data: allProducts, error: prodsError } = await tenantDb
       .from('products')
       .select('*')
       .eq('store_id', store_id)
       .eq('status', 'active')
       .eq('visibility', 'visible')
-      .filter('category_ids', 'cs', `{"${category.id}"}`)
-      .order('created_at', { ascending: false })
-      .limit(100);
+      .order('created_at', { ascending: false });
+
+    // Filter products that have this category in their category_ids array
+    const products = (allProducts || []).filter(p =>
+      p.category_ids && Array.isArray(p.category_ids) && p.category_ids.includes(category.id)
+    ).slice(0, 100);
 
     if (prodsError) {
       console.error('Error loading category products:', prodsError.message);

@@ -50,10 +50,8 @@ router.get('/', cacheProducts(180), async (req, res) => {
       console.warn('Could not load store settings for stock filtering:', error.message);
     }
 
-    // Category filtering (JSON contains) - use cs filter for JSONB array
-    if (category_id) {
-      query = query.filter('category_ids', 'cs', `{"${category_id}"}`);
-    }
+    // Category filtering will be done in JavaScript after fetch
+    // (JSONB array containment queries are complex in Supabase)
 
     // Simple filters
     if (featured === 'true' || featured === true) query = query.eq('featured', true);
@@ -123,14 +121,22 @@ router.get('/', cacheProducts(180), async (req, res) => {
       throw new Error(queryError.message);
     }
 
+    // Apply category filter in JavaScript if needed
+    let filteredRows = rows || [];
+    if (category_id) {
+      filteredRows = filteredRows.filter(p =>
+        p.category_ids && Array.isArray(p.category_ids) && p.category_ids.includes(category_id)
+      );
+    }
+
     // Get language from request headers/query
     const lang = getLanguageFromRequest(req);
 
     // Apply product translations from normalized table
-    const productsWithTranslations = await applyProductTranslationsToMany(rows || [], lang, tenantDb);
+    const productsWithTranslations = await applyProductTranslationsToMany(filteredRows, lang, tenantDb);
 
     // Load attribute values for all products (full feature preservation)
-    const productIds = (rows || []).map(p => p.id);
+    const productIds = filteredRows.map(p => p.id);
     let attributeValuesData = [];
 
     if (productIds.length > 0) {
