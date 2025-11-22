@@ -152,8 +152,7 @@ router.get('/data/:storeId', authMiddleware, checkStoreOwnership, async (req, re
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { HeatmapInteraction } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     const options = {
       startDate: start_date ? new Date(start_date) : undefined,
@@ -164,7 +163,39 @@ router.get('/data/:storeId', authMiddleware, checkStoreOwnership, async (req, re
       deviceTypes: device_types ? device_types.split(',') : ['desktop', 'tablet', 'mobile']
     };
 
-    const heatmapData = await HeatmapInteraction.getHeatmapData(storeId, page_url, options);
+    // Inline getHeatmapData logic with Supabase
+    let query = tenantDb
+      .from('heatmap_interactions')
+      .select('x_coordinate, y_coordinate, viewport_width, viewport_height, interaction_type, device_type, time_on_element, timestamp_utc')
+      .eq('store_id', storeId)
+      .eq('page_url', page_url)
+      .in('interaction_type', options.interactionTypes)
+      .in('device_type', options.deviceTypes)
+      .order('timestamp_utc', { ascending: false });
+
+    if (options.startDate) {
+      query = query.gte('timestamp_utc', options.startDate.toISOString());
+    }
+    if (options.endDate) {
+      query = query.lte('timestamp_utc', options.endDate.toISOString());
+    }
+
+    const { data: interactions, error: interactionsError } = await query;
+
+    if (interactionsError) {
+      throw interactionsError;
+    }
+
+    // Normalize coordinates to target viewport
+    const heatmapData = (interactions || []).map(interaction => {
+      const scaleX = options.viewportWidth / interaction.viewport_width;
+      const scaleY = options.viewportHeight / interaction.viewport_height;
+      return {
+        ...interaction,
+        normalized_x: Math.round(interaction.x_coordinate * scaleX),
+        normalized_y: Math.round(interaction.y_coordinate * scaleY)
+      };
+    });
 
     res.json({
       success: true,
@@ -192,16 +223,47 @@ router.get('/analytics/:storeId', authMiddleware, checkStoreOwnership, async (re
     } = req.query;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { HeatmapSession } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     const options = {
-      startDate: start_date ? new Date(start_date) : undefined,
-      endDate: end_date ? new Date(end_date) : undefined,
+      startDate: start_date ? new Date(start_date) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      endDate: end_date ? new Date(end_date) : new Date(),
       deviceType: device_type || null
     };
 
-    const analytics = await HeatmapSession.getSessionAnalytics(storeId, options);
+    // Inline getSessionAnalytics logic with Supabase
+    let sessionsQuery = tenantDb
+      .from('heatmap_sessions')
+      .select('id, bounce_session, conversion_session, total_duration, page_count, interaction_count, device_type')
+      .eq('store_id', storeId)
+      .gte('session_start', options.startDate.toISOString())
+      .lte('session_start', options.endDate.toISOString());
+
+    if (options.deviceType) {
+      sessionsQuery = sessionsQuery.eq('device_type', options.deviceType);
+    }
+
+    const { data: sessions, error: sessionsError } = await sessionsQuery;
+
+    if (sessionsError) {
+      throw sessionsError;
+    }
+
+    // Aggregate in JavaScript
+    const analytics = {
+      total_sessions: sessions?.length || 0,
+      bounce_sessions: sessions?.filter(s => s.bounce_session === true).length || 0,
+      conversion_sessions: sessions?.filter(s => s.conversion_session === true).length || 0,
+      avg_session_duration: sessions?.length > 0
+        ? sessions.reduce((sum, s) => sum + (s.total_duration || 0), 0) / sessions.length
+        : 0,
+      avg_pages_per_session: sessions?.length > 0
+        ? sessions.reduce((sum, s) => sum + (s.page_count || 0), 0) / sessions.length
+        : 0,
+      avg_interactions_per_session: sessions?.length > 0
+        ? sessions.reduce((sum, s) => sum + (s.interaction_count || 0), 0) / sessions.length
+        : 0
+    };
 
     res.json({
       success: true,
@@ -227,24 +289,38 @@ router.get('/realtime/:storeId', authMiddleware, checkStoreOwnership, async (req
     const startTime = new Date(Date.now() - timeWindow);
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { HeatmapInteraction } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const stats = await HeatmapInteraction.findAll({
-      where: {
-        store_id: storeId,
-        timestamp_utc: {
-          [Op.gte]: startTime
-        }
-      },
-      attributes: [
-        'interaction_type',
-        [HeatmapInteraction.sequelize.fn('COUNT', '*'), 'count'],
-        [HeatmapInteraction.sequelize.fn('COUNT', HeatmapInteraction.sequelize.fn('DISTINCT', HeatmapInteraction.sequelize.col('session_id'))), 'unique_sessions']
-      ],
-      group: ['interaction_type'],
-      raw: true
+    // Fetch interactions and aggregate in JavaScript
+    const { data: interactions, error: interactionsError } = await tenantDb
+      .from('heatmap_interactions')
+      .select('interaction_type, session_id')
+      .eq('store_id', storeId)
+      .gte('timestamp_utc', startTime.toISOString());
+
+    if (interactionsError) {
+      throw interactionsError;
+    }
+
+    // Group by interaction_type
+    const grouped = {};
+    (interactions || []).forEach(i => {
+      if (!grouped[i.interaction_type]) {
+        grouped[i.interaction_type] = {
+          interaction_type: i.interaction_type,
+          count: 0,
+          sessions: new Set()
+        };
+      }
+      grouped[i.interaction_type].count++;
+      grouped[i.interaction_type].sessions.add(i.session_id);
     });
+
+    const stats = Object.values(grouped).map(g => ({
+      interaction_type: g.interaction_type,
+      count: g.count,
+      unique_sessions: g.sessions.size
+    }));
 
     res.json({
       success: true,
@@ -271,16 +347,64 @@ router.get('/summary/:storeId', authMiddleware, checkStoreOwnership, async (req,
     } = req.query;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { HeatmapInteraction } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     const options = {
-      startDate: start_date ? new Date(start_date) : undefined,
-      endDate: end_date ? new Date(end_date) : undefined,
+      startDate: start_date ? new Date(start_date) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      endDate: end_date ? new Date(end_date) : new Date(),
       groupBy: group_by
     };
 
-    const summary = await HeatmapInteraction.getHeatmapSummary(storeId, options);
+    // Inline getHeatmapSummary logic - fetch and aggregate in JS
+    const { data: interactions, error: summaryError } = await tenantDb
+      .from('heatmap_interactions')
+      .select(`${group_by}, interaction_type, session_id, time_on_element, device_type`)
+      .eq('store_id', storeId)
+      .gte('timestamp_utc', options.startDate.toISOString())
+      .lte('timestamp_utc', options.endDate.toISOString());
+
+    if (summaryError) {
+      throw summaryError;
+    }
+
+    // Group and aggregate
+    const grouped = {};
+    (interactions || []).forEach(i => {
+      const key = `${i[group_by]}:${i.interaction_type}`;
+      if (!grouped[key]) {
+        grouped[key] = {
+          [group_by]: i[group_by],
+          interaction_type: i.interaction_type,
+          interaction_count: 0,
+          sessions: new Set(),
+          time_sum: 0,
+          time_count: 0,
+          desktop_count: 0,
+          mobile_count: 0,
+          tablet_count: 0
+        };
+      }
+      grouped[key].interaction_count++;
+      grouped[key].sessions.add(i.session_id);
+      if (i.time_on_element) {
+        grouped[key].time_sum += i.time_on_element;
+        grouped[key].time_count++;
+      }
+      if (i.device_type === 'desktop') grouped[key].desktop_count++;
+      if (i.device_type === 'mobile') grouped[key].mobile_count++;
+      if (i.device_type === 'tablet') grouped[key].tablet_count++;
+    });
+
+    const summary = Object.values(grouped).map(g => ({
+      [group_by]: g[group_by],
+      interaction_type: g.interaction_type,
+      interaction_count: g.interaction_count,
+      unique_sessions: g.sessions.size,
+      avg_time_on_element: g.time_count > 0 ? g.time_sum / g.time_count : null,
+      desktop_count: g.desktop_count,
+      mobile_count: g.mobile_count,
+      tablet_count: g.tablet_count
+    })).sort((a, b) => b.interaction_count - a.interaction_count);
 
     res.json({
       success: true,
@@ -308,16 +432,56 @@ router.get('/top-pages/:storeId', authMiddleware, checkStoreOwnership, async (re
     } = req.query;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { HeatmapSession } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     const options = {
-      startDate: start_date ? new Date(start_date) : undefined,
-      endDate: end_date ? new Date(end_date) : undefined,
+      startDate: start_date ? new Date(start_date) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      endDate: end_date ? new Date(end_date) : new Date(),
       limit: parseInt(limit)
     };
 
-    const topPages = await HeatmapSession.getTopPages(storeId, options);
+    // Inline getTopPages logic - fetch and aggregate in JS
+    const { data: sessions, error: sessionsError } = await tenantDb
+      .from('heatmap_sessions')
+      .select('first_page_url, total_duration, page_count, bounce_session')
+      .eq('store_id', storeId)
+      .gte('session_start', options.startDate.toISOString())
+      .lte('session_start', options.endDate.toISOString());
+
+    if (sessionsError) {
+      throw sessionsError;
+    }
+
+    // Group by first_page_url
+    const grouped = {};
+    (sessions || []).forEach(s => {
+      const pageUrl = s.first_page_url;
+      if (!grouped[pageUrl]) {
+        grouped[pageUrl] = {
+          page_url: pageUrl,
+          sessions: 0,
+          total_duration: 0,
+          total_page_views: 0,
+          bounces: 0
+        };
+      }
+      grouped[pageUrl].sessions++;
+      grouped[pageUrl].total_duration += s.total_duration || 0;
+      grouped[pageUrl].total_page_views += s.page_count || 0;
+      if (s.bounce_session) grouped[pageUrl].bounces++;
+    });
+
+    const topPages = Object.values(grouped)
+      .map(g => ({
+        page_url: g.page_url,
+        sessions: g.sessions,
+        avg_duration: g.sessions > 0 ? g.total_duration / g.sessions : 0,
+        avg_page_views: g.sessions > 0 ? g.total_page_views / g.sessions : 0,
+        bounces: g.bounces,
+        bounce_rate: g.sessions > 0 ? Math.round((g.bounces * 100.0) / g.sessions * 100) / 100 : 0
+      }))
+      .sort((a, b) => b.sessions - a.sessions)
+      .slice(0, options.limit);
 
     res.json({
       success: true,
@@ -356,34 +520,36 @@ router.get('/interactions/:storeId', authMiddleware, checkStoreOwnership, async 
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { HeatmapInteraction } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const whereClause = {
-      store_id: storeId,
-      page_url
-    };
+    // Build query
+    let query = tenantDb
+      .from('heatmap_interactions')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('page_url', page_url)
+      .order('timestamp_utc', { ascending: false })
+      .limit(parseInt(limit));
 
     if (x_coordinate && y_coordinate) {
-      whereClause.x_coordinate = parseInt(x_coordinate);
-      whereClause.y_coordinate = parseInt(y_coordinate);
+      query = query.eq('x_coordinate', parseInt(x_coordinate));
+      query = query.eq('y_coordinate', parseInt(y_coordinate));
     }
 
     if (interaction_type) {
-      whereClause.interaction_type = interaction_type;
+      query = query.eq('interaction_type', interaction_type);
     }
 
     if (start_date && end_date) {
-      whereClause.timestamp_utc = {
-        [Op.between]: [new Date(start_date), new Date(end_date)]
-      };
+      query = query.gte('timestamp_utc', new Date(start_date).toISOString());
+      query = query.lte('timestamp_utc', new Date(end_date).toISOString());
     }
 
-    const interactions = await HeatmapInteraction.findAll({
-      where: whereClause,
-      order: [['timestamp_utc', 'DESC']],
-      limit: parseInt(limit)
-    });
+    const { data: interactions, error: interactionsError } = await query;
+
+    if (interactionsError) {
+      throw interactionsError;
+    }
 
     res.json({
       success: true,
@@ -419,42 +585,65 @@ router.get('/element-rankings/:storeId', authMiddleware, checkStoreOwnership, as
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { HeatmapInteraction } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const whereClause = {
-      store_id: storeId,
-      page_url,
-      interaction_type: ['click', 'touch'], // Focus on click/touch interactions
-      element_selector: {
-        [Op.ne]: null // Only include elements with selectors
-      }
-    };
+    // Build query
+    let query = tenantDb
+      .from('heatmap_interactions')
+      .select('element_selector, element_tag, element_id, element_class, element_text, session_id, x_coordinate, y_coordinate')
+      .eq('store_id', storeId)
+      .eq('page_url', page_url)
+      .in('interaction_type', ['click', 'touch'])
+      .not('element_selector', 'is', null);
 
     if (start_date && end_date) {
-      whereClause.timestamp_utc = {
-        [Op.between]: [new Date(start_date), new Date(end_date)]
-      };
+      query = query.gte('timestamp_utc', new Date(start_date).toISOString());
+      query = query.lte('timestamp_utc', new Date(end_date).toISOString());
     }
 
-    const rankings = await HeatmapInteraction.findAll({
-      where: whereClause,
-      attributes: [
-        'element_selector',
-        'element_tag',
-        'element_id',
-        'element_class',
-        'element_text',
-        [HeatmapInteraction.sequelize.fn('COUNT', '*'), 'click_count'],
-        [HeatmapInteraction.sequelize.fn('COUNT', HeatmapInteraction.sequelize.fn('DISTINCT', HeatmapInteraction.sequelize.col('session_id'))), 'unique_users'],
-        [HeatmapInteraction.sequelize.fn('AVG', HeatmapInteraction.sequelize.col('x_coordinate')), 'avg_x'],
-        [HeatmapInteraction.sequelize.fn('AVG', HeatmapInteraction.sequelize.col('y_coordinate')), 'avg_y']
-      ],
-      group: ['element_selector', 'element_tag', 'element_id', 'element_class', 'element_text'],
-      order: [[HeatmapInteraction.sequelize.fn('COUNT', '*'), 'DESC']],
-      limit: parseInt(limit),
-      raw: true
+    const { data: interactions, error: interactionsError } = await query;
+
+    if (interactionsError) {
+      throw interactionsError;
+    }
+
+    // Group and aggregate in JavaScript
+    const grouped = {};
+    (interactions || []).forEach(i => {
+      const key = i.element_selector;
+      if (!grouped[key]) {
+        grouped[key] = {
+          element_selector: i.element_selector,
+          element_tag: i.element_tag,
+          element_id: i.element_id,
+          element_class: i.element_class,
+          element_text: i.element_text,
+          click_count: 0,
+          sessions: new Set(),
+          x_sum: 0,
+          y_sum: 0
+        };
+      }
+      grouped[key].click_count++;
+      grouped[key].sessions.add(i.session_id);
+      grouped[key].x_sum += i.x_coordinate || 0;
+      grouped[key].y_sum += i.y_coordinate || 0;
     });
+
+    const rankings = Object.values(grouped)
+      .map(g => ({
+        element_selector: g.element_selector,
+        element_tag: g.element_tag,
+        element_id: g.element_id,
+        element_class: g.element_class,
+        element_text: g.element_text,
+        click_count: g.click_count,
+        unique_users: g.sessions.size,
+        avg_x: g.click_count > 0 ? g.x_sum / g.click_count : 0,
+        avg_y: g.click_count > 0 ? g.y_sum / g.click_count : 0
+      }))
+      .sort((a, b) => b.click_count - a.click_count)
+      .slice(0, parseInt(limit));
 
     res.json({
       success: true,
@@ -485,51 +674,80 @@ router.get('/sessions/:storeId', authMiddleware, checkStoreOwnership, async (req
     } = req.query;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { HeatmapInteraction } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const whereClause = {
-      store_id: storeId
-    };
+    // Build query
+    let query = tenantDb
+      .from('heatmap_interactions')
+      .select('session_id, user_id, device_type, user_agent, timestamp_utc, page_url, interaction_type')
+      .eq('store_id', storeId);
 
     if (page_url) {
-      whereClause.page_url = page_url;
+      query = query.eq('page_url', page_url);
     }
 
     if (device_type && device_type !== 'all') {
-      whereClause.device_type = device_type;
+      query = query.eq('device_type', device_type);
     }
 
     if (start_date && end_date) {
-      whereClause.timestamp_utc = {
-        [Op.between]: [new Date(start_date), new Date(end_date)]
-      };
+      query = query.gte('timestamp_utc', new Date(start_date).toISOString());
+      query = query.lte('timestamp_utc', new Date(end_date).toISOString());
     }
 
-    // Get unique sessions with aggregated data
-    const sessions = await HeatmapInteraction.findAll({
-      where: whereClause,
-      attributes: [
-        'session_id',
-        'user_id',
-        'device_type',
-        'user_agent',
-        [HeatmapInteraction.sequelize.fn('MIN', HeatmapInteraction.sequelize.col('timestamp_utc')), 'session_start'],
-        [HeatmapInteraction.sequelize.fn('MAX', HeatmapInteraction.sequelize.col('timestamp_utc')), 'session_end'],
-        [HeatmapInteraction.sequelize.fn('COUNT', '*'), 'interaction_count'],
-        [HeatmapInteraction.sequelize.fn('COUNT', HeatmapInteraction.sequelize.fn('DISTINCT', HeatmapInteraction.sequelize.col('page_url'))), 'pages_visited'],
-        [HeatmapInteraction.sequelize.fn('COUNT', HeatmapInteraction.sequelize.literal("CASE WHEN interaction_type = 'click' THEN 1 END")), 'click_count'],
-        [HeatmapInteraction.sequelize.fn('COUNT', HeatmapInteraction.sequelize.literal("CASE WHEN interaction_type = 'scroll' THEN 1 END")), 'scroll_count']
-      ],
-      group: ['session_id', 'user_id', 'device_type', 'user_agent'],
-      order: [[HeatmapInteraction.sequelize.fn('MIN', HeatmapInteraction.sequelize.col('timestamp_utc')), 'DESC']],
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      raw: true
+    const { data: interactions, error: interactionsError } = await query;
+
+    if (interactionsError) {
+      throw interactionsError;
+    }
+
+    // Group by session_id and aggregate
+    const grouped = {};
+    (interactions || []).forEach(i => {
+      const key = i.session_id;
+      if (!grouped[key]) {
+        grouped[key] = {
+          session_id: i.session_id,
+          user_id: i.user_id,
+          device_type: i.device_type,
+          user_agent: i.user_agent,
+          timestamps: [],
+          pages: new Set(),
+          interaction_count: 0,
+          click_count: 0,
+          scroll_count: 0
+        };
+      }
+      grouped[key].timestamps.push(new Date(i.timestamp_utc));
+      grouped[key].pages.add(i.page_url);
+      grouped[key].interaction_count++;
+      if (i.interaction_type === 'click') grouped[key].click_count++;
+      if (i.interaction_type === 'scroll') grouped[key].scroll_count++;
     });
 
+    const sessions = Object.values(grouped).map(g => {
+      const timestamps = g.timestamps.sort((a, b) => a - b);
+      const session_start = timestamps[0];
+      const session_end = timestamps[timestamps.length - 1];
+      return {
+        session_id: g.session_id,
+        user_id: g.user_id,
+        device_type: g.device_type,
+        user_agent: g.user_agent,
+        session_start: session_start.toISOString(),
+        session_end: session_end.toISOString(),
+        interaction_count: g.interaction_count,
+        pages_visited: g.pages.size,
+        click_count: g.click_count,
+        scroll_count: g.scroll_count
+      };
+    }).sort((a, b) => new Date(b.session_start) - new Date(a.session_start));
+
+    // Apply pagination
+    const paginatedSessions = sessions.slice(parseInt(offset), parseInt(offset) + parseInt(limit));
+
     // Calculate session duration for each
-    const sessionsWithDuration = sessions.map(session => ({
+    const sessionsWithDuration = paginatedSessions.map(session => ({
       ...session,
       duration_ms: new Date(session.session_end) - new Date(session.session_start),
       duration_seconds: Math.round((new Date(session.session_end) - new Date(session.session_start)) / 1000)
@@ -557,18 +775,19 @@ router.get('/sessions/:storeId/:sessionId', authMiddleware, checkStoreOwnership,
     const { storeId, sessionId } = req.params;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { HeatmapInteraction } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Get all interactions for this session
-    const interactions = await HeatmapInteraction.findAll({
-      where: {
-        store_id: storeId,
-        session_id: sessionId
-      },
-      order: [['timestamp_utc', 'ASC']],
-      raw: true
-    });
+    const { data: interactions, error: interactionsError } = await tenantDb
+      .from('heatmap_interactions')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('session_id', sessionId)
+      .order('timestamp_utc', { ascending: true });
+
+    if (interactionsError) {
+      throw interactionsError;
+    }
 
     if (interactions.length === 0) {
       return res.status(404).json({
@@ -651,36 +870,47 @@ router.get('/time-on-page/:storeId', authMiddleware, checkStoreOwnership, async 
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { HeatmapInteraction } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const whereClause = {
-      store_id: storeId
-    };
+    // Build query
+    let query = tenantDb
+      .from('heatmap_interactions')
+      .select('session_id, timestamp_utc')
+      .eq('store_id', storeId);
 
     if (start_date && end_date) {
-      whereClause.timestamp_utc = {
-        [Op.between]: [new Date(start_date), new Date(end_date)]
-      };
+      query = query.gte('timestamp_utc', new Date(start_date).toISOString());
+      query = query.lte('timestamp_utc', new Date(end_date).toISOString());
     }
 
-    // Get all sessions for this page with their durations
-    const sessions = await HeatmapInteraction.findAll({
-      where: whereClause,
-      attributes: [
-        'session_id',
-        [HeatmapInteraction.sequelize.fn('MIN', HeatmapInteraction.sequelize.col('timestamp_utc')), 'session_start'],
-        [HeatmapInteraction.sequelize.fn('MAX', HeatmapInteraction.sequelize.col('timestamp_utc')), 'session_end']
-      ],
-      group: ['session_id'],
-      having: HeatmapInteraction.sequelize.where(
-        HeatmapInteraction.sequelize.fn('COUNT', HeatmapInteraction.sequelize.col('page_url')),
-        {
-          [Op.gte]: 1
-        }
-      ),
-      raw: true
+    const { data: interactions, error: interactionsError } = await query;
+
+    if (interactionsError) {
+      throw interactionsError;
+    }
+
+    // Group by session_id and find MIN/MAX timestamps
+    const sessionGroups = {};
+    (interactions || []).forEach(i => {
+      if (!sessionGroups[i.session_id]) {
+        sessionGroups[i.session_id] = {
+          session_id: i.session_id,
+          timestamps: []
+        };
+      }
+      sessionGroups[i.session_id].timestamps.push(new Date(i.timestamp_utc));
     });
+
+    const sessions = Object.values(sessionGroups)
+      .filter(g => g.timestamps.length >= 1)
+      .map(g => {
+        const timestamps = g.timestamps.sort((a, b) => a - b);
+        return {
+          session_id: g.session_id,
+          session_start: timestamps[0].toISOString(),
+          session_end: timestamps[timestamps.length - 1].toISOString()
+        };
+      });
 
     // Filter for the specific page URL and calculate durations
     const pageSessions = [];
@@ -795,30 +1025,28 @@ router.get('/scroll-depth/:storeId', authMiddleware, checkStoreOwnership, async 
     }
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { HeatmapInteraction } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    const whereClause = {
-      store_id: storeId,
-      page_url,
-      interaction_type: 'scroll',
-      scroll_depth_percent: {
-        [Op.ne]: null
-      }
-    };
+    // Build query
+    let query = tenantDb
+      .from('heatmap_interactions')
+      .select('session_id, scroll_depth_percent')
+      .eq('store_id', storeId)
+      .eq('page_url', page_url)
+      .eq('interaction_type', 'scroll')
+      .not('scroll_depth_percent', 'is', null);
 
     if (start_date && end_date) {
-      whereClause.timestamp_utc = {
-        [Op.between]: [new Date(start_date), new Date(end_date)]
-      };
+      query = query.gte('timestamp_utc', new Date(start_date).toISOString());
+      query = query.lte('timestamp_utc', new Date(end_date).toISOString());
     }
 
     // Get all scroll interactions
-    const scrollData = await HeatmapInteraction.findAll({
-      where: whereClause,
-      attributes: ['session_id', 'scroll_depth_percent'],
-      raw: true
-    });
+    const { data: scrollData, error: scrollError } = await query;
+
+    if (scrollError) {
+      throw scrollError;
+    }
 
     if (scrollData.length === 0) {
       return res.json({
@@ -1018,31 +1246,34 @@ router.delete('/cleanup/:storeId', authMiddleware, authorize(['admin', 'store_ow
     const { retention_days = 90 } = req.query;
 
     // Get tenant connection
-    const connection = await ConnectionManager.getStoreConnection(storeId);
-    const { HeatmapInteraction, HeatmapSession } = connection.models;
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     const retentionDays = parseInt(retention_days);
     const cutoffDate = new Date(Date.now() - (retentionDays * 24 * 60 * 60 * 1000));
 
-    const deletedInteractions = await HeatmapInteraction.destroy({
-      where: {
-        store_id: storeId,
-        timestamp_utc: {
-          [Op.lt]: cutoffDate
-        }
-      }
-    });
+    // Delete old interactions
+    const { error: interactionsError, count: deletedInteractions } = await tenantDb
+      .from('heatmap_interactions')
+      .delete({ count: 'exact' })
+      .eq('store_id', storeId)
+      .lt('timestamp_utc', cutoffDate.toISOString());
 
-    const deletedSessions = await HeatmapSession.destroy({
-      where: {
-        store_id: storeId,
-        session_start: {
-          [Op.lt]: cutoffDate
-        }
-      }
-    });
+    if (interactionsError) {
+      console.error('Error deleting interactions:', interactionsError);
+    }
 
-    console.log(`Cleaned up ${deletedInteractions} interactions and ${deletedSessions} sessions older than ${retentionDays} days`);
+    // Delete old sessions
+    const { error: sessionsError, count: deletedSessions } = await tenantDb
+      .from('heatmap_sessions')
+      .delete({ count: 'exact' })
+      .eq('store_id', storeId)
+      .lt('session_start', cutoffDate.toISOString());
+
+    if (sessionsError) {
+      console.error('Error deleting sessions:', sessionsError);
+    }
+
+    console.log(`Cleaned up ${deletedInteractions || 0} interactions and ${deletedSessions || 0} sessions older than ${retentionDays} days`);
 
     res.json({
       success: true,
