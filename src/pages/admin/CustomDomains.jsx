@@ -69,6 +69,9 @@ const CustomDomains = () => {
   const [deleting, setDeleting] = useState(false);
   const [dnsDebugData, setDnsDebugData] = useState(null);
   const [isDnsDebugOpen, setIsDnsDebugOpen] = useState(false);
+  const [selectPrimaryDialogOpen, setSelectPrimaryDialogOpen] = useState(false);
+  const [availableDomainsForPrimary, setAvailableDomainsForPrimary] = useState([]);
+  const [selectedNewPrimary, setSelectedNewPrimary] = useState(null);
 
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {
@@ -244,6 +247,27 @@ const CustomDomains = () => {
   };
 
   const handleRemoveDomain = (domainId, domainName) => {
+    const domainToRemove = domains.find(d => d.id === domainId);
+
+    // Check if this is the primary domain and there are other domains
+    if (domainToRemove?.is_primary) {
+      const otherVerifiedDomains = domains.filter(d =>
+        d.id !== domainId &&
+        d.verification_status === 'verified' &&
+        d.ssl_status === 'active'
+      );
+
+      // If there are other verified domains, ask user to select new primary
+      if (otherVerifiedDomains.length > 0) {
+        setDomainToDelete({ id: domainId, name: domainName });
+        setAvailableDomainsForPrimary(otherVerifiedDomains);
+        setSelectedNewPrimary(otherVerifiedDomains[0]?.id || null);
+        setSelectPrimaryDialogOpen(true);
+        return;
+      }
+    }
+
+    // Normal deletion (not primary, or only domain)
     setDomainToDelete({ id: domainId, name: domainName });
     setDeleteDialogOpen(true);
   };
@@ -263,6 +287,37 @@ const CustomDomains = () => {
       }
     } catch (error) {
       console.error('Error removing domain:', error);
+      toast.error(error.response?.data?.message || 'Failed to remove domain');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const confirmRemovePrimaryWithNewSelection = async () => {
+    if (!domainToDelete || !selectedNewPrimary) return;
+
+    try {
+      setDeleting(true);
+
+      // First, set the new primary domain
+      await handleSetPrimary(selectedNewPrimary);
+
+      // Wait a bit for the primary to update
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Then delete the old primary domain
+      const response = await apiClient.delete(`/custom-domains/${domainToDelete.id}`);
+
+      if (response.success) {
+        toast.success('Primary domain transferred and old domain removed successfully');
+        setSelectPrimaryDialogOpen(false);
+        setDomainToDelete(null);
+        setSelectedNewPrimary(null);
+        setAvailableDomainsForPrimary([]);
+        loadDomains();
+      }
+    } catch (error) {
+      console.error('Error removing primary domain:', error);
       toast.error(error.response?.data?.message || 'Failed to remove domain');
     } finally {
       setDeleting(false);
@@ -1135,6 +1190,77 @@ const CustomDomains = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDnsDebugOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Select New Primary Domain Dialog */}
+      <Dialog open={selectPrimaryDialogOpen} onOpenChange={setSelectPrimaryDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              Select New Primary Domain
+            </DialogTitle>
+            <DialogDescription>
+              You're deleting the primary domain <span className="font-semibold">{domainToDelete?.name}</span>.
+              Your store will only be accessible via the internal URL unless you select a new primary domain.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <Alert className="border-orange-200 bg-orange-50">
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-sm">
+                Without a primary domain, your store will only be accessible at the internal Vercel URL.
+                Select one of your other verified domains to set as the new primary.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <Label>Select New Primary Domain</Label>
+              <Select value={selectedNewPrimary} onValueChange={setSelectedNewPrimary}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a domain..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableDomainsForPrimary.map((domain) => (
+                    <SelectItem key={domain.id} value={domain.id}>
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        {domain.domain}
+                        <Badge variant="outline" className="ml-2">
+                          <Shield className="w-3 h-3 mr-1" />
+                          SSL Active
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectPrimaryDialogOpen(false);
+                setDomainToDelete(null);
+                setSelectedNewPrimary(null);
+                setAvailableDomainsForPrimary([]);
+              }}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmRemovePrimaryWithNewSelection}
+              disabled={!selectedNewPrimary || deleting}
+            >
+              {deleting ? 'Processing...' : 'Transfer Primary & Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>

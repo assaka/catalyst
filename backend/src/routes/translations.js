@@ -1722,20 +1722,30 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
             where: { attribute_id: { [Op.in]: attributeIds } }
           });
         } else if (entityConfig.special && entityType === 'custom_option') {
-          // Handle Custom Options with raw query (no model defined)
-          const [customOptions] = await tenantSequelize.query(`
-            SELECT id, translations
-            FROM custom_option_rules
-            WHERE store_id = :storeId
-          `, {
-            replacements: { storeId: store_id }
-          });
-          entities = customOptions;
+          // Handle Custom Options with Supabase query
+          const { data: customOptions, error: customError } = await connection
+            .from('custom_option_rules')
+            .select('id, translations')
+            .eq('store_id', store_id);
+
+          if (customError) {
+            throw customError;
+          }
+
+          entities = customOptions || [];
         } else if (entityConfig.special && entityType === 'stock_labels') {
-          // Handle Stock Labels (stored in store.settings.stock_settings)
-          const store = await Store.findByPk(store_id, {
-            attributes: ['id', 'settings']
-          });
+          // Handle Stock Labels (stored in store.settings.stock_settings) - fetch from master DB
+          const { masterDbClient } = require('../database/masterConnection');
+          const { data: store, error: storeError } = await masterDbClient
+            .from('stores')
+            .select('id, settings')
+            .eq('id', store_id)
+            .single();
+
+          if (storeError) {
+            throw storeError;
+          }
+
           const stockSettings = store?.settings?.stock_settings || {};
           // Create a pseudo-entity with translations
           entities = [{
@@ -2479,26 +2489,17 @@ router.get('/products/batch', cacheMiddleware({
 
     // Get tenant connection
     const connection = await ConnectionManager.getStoreConnection(store_id);
-    const tenantSequelize = connection.sequelize;
 
     // Single optimized query instead of N queries
-    const translations = await tenantSequelize.query(`
-      SELECT
-        product_id,
-        language_code,
-        name,
-        description,
-        short_description,
-        meta_title,
-        meta_description,
-        meta_keywords
-      FROM product_translations
-      WHERE product_id IN (:productIds)
-        AND language_code = :lang
-    `, {
-      replacements: { productIds, lang },
-      type: tenantSequelize.QueryTypes.SELECT
-    });
+    const { data: translations, error: transError } = await connection
+      .from('product_translations')
+      .select('product_id, language_code, name, description, short_description, meta_title, meta_description, meta_keywords')
+      .in('product_id', productIds)
+      .eq('language_code', lang);
+
+    if (transError) {
+      throw transError;
+    }
 
     // Transform to object map for easy lookup: { productId: translation }
     const translationMap = {};
@@ -2572,24 +2573,16 @@ router.get('/categories/batch', cacheMiddleware({
 
     // Get tenant connection
     const connection = await ConnectionManager.getStoreConnection(store_id);
-    const tenantSequelize = connection.sequelize;
 
-    const translations = await tenantSequelize.query(`
-      SELECT
-        category_id,
-        language_code,
-        name,
-        description,
-        meta_title,
-        meta_description,
-        meta_keywords
-      FROM category_translations
-      WHERE category_id IN (:categoryIds)
-        AND language_code = :lang
-    `, {
-      replacements: { categoryIds, lang },
-      type: tenantSequelize.QueryTypes.SELECT
-    });
+    const { data: translations, error: transError } = await connection
+      .from('category_translations')
+      .select('category_id, language_code, name, description, meta_title, meta_description, meta_keywords')
+      .in('category_id', categoryIds)
+      .eq('language_code', lang);
+
+    if (transError) {
+      throw transError;
+    }
 
     const translationMap = {};
     translations.forEach(t => {
@@ -2660,21 +2653,16 @@ router.get('/attributes/batch', cacheMiddleware({
 
     // Get tenant connection
     const connection = await ConnectionManager.getStoreConnection(store_id);
-    const tenantSequelize = connection.sequelize;
 
-    const translations = await tenantSequelize.query(`
-      SELECT
-        attribute_id,
-        language_code,
-        label,
-        description
-      FROM attribute_translations
-      WHERE attribute_id IN (:attributeIds)
-        AND language_code = :lang
-    `, {
-      replacements: { attributeIds, lang },
-      type: tenantSequelize.QueryTypes.SELECT
-    });
+    const { data: translations, error: transError } = await connection
+      .from('attribute_translations')
+      .select('attribute_id, language_code, label, description')
+      .in('attribute_id', attributeIds)
+      .eq('language_code', lang);
+
+    if (transError) {
+      throw transError;
+    }
 
     const translationMap = {};
     translations.forEach(t => {
@@ -2742,20 +2730,16 @@ router.get('/attribute-values/batch', cacheMiddleware({
 
     // Get tenant connection
     const connection = await ConnectionManager.getStoreConnection(store_id);
-    const tenantSequelize = connection.sequelize;
 
-    const translations = await tenantSequelize.query(`
-      SELECT
-        attribute_value_id,
-        language_code,
-        label
-      FROM attribute_value_translations
-      WHERE attribute_value_id IN (:valueIds)
-        AND language_code = :lang
-    `, {
-      replacements: { valueIds, lang },
-      type: tenantSequelize.QueryTypes.SELECT
-    });
+    const { data: translations, error: transError } = await connection
+      .from('attribute_value_translations')
+      .select('attribute_value_id, language_code, label')
+      .in('attribute_value_id', valueIds)
+      .eq('language_code', lang);
+
+    if (transError) {
+      throw transError;
+    }
 
     const translationMap = {};
     translations.forEach(t => {
@@ -2819,7 +2803,7 @@ router.get('/all/batch', cacheMiddleware({
 
     // Get tenant connection
     const connection = await ConnectionManager.getStoreConnection(store_id);
-    const tenantSequelize = connection.sequelize;
+    
 
     const results = {
       products: {},
