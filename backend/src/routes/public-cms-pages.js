@@ -12,11 +12,11 @@ router.get('/', async (req, res) => {
 
     console.log('🎯 Public CMS Pages: Request received', { slug, store_id });
 
-    // Validate store_id is provided
-    if (!store_id) {
+    // Validate store_id is provided and valid
+    if (!store_id || store_id === 'undefined' || store_id === 'null') {
       return res.status(400).json({
         success: false,
-        message: 'store_id is required'
+        message: 'Valid store_id is required (received: ' + store_id + ')'
       });
     }
 
