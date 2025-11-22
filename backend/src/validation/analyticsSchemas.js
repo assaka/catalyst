@@ -306,14 +306,14 @@ const heatmapInteractionSchema = Joi.object({
         }),
 
     scroll_position: Joi.number()
-        .integer()
         .min(0)
         .max(100000)
         .optional()
         .allow(null)
         .messages({
             'number.min': 'scroll_position must be at least 0',
-            'number.max': 'scroll_position must not exceed 100000'
+            'number.max': 'scroll_position must not exceed 100000',
+            'number.base': 'scroll_position must be a number'
         }),
 
     scroll_depth_percent: Joi.number()
