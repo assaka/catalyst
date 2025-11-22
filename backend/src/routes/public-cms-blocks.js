@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
     };
 
     // Get CMS blocks with translations from normalized table
-    const blocks = await getCMSBlocksWithTranslations(where, lang);
+    const blocks = await getCMSBlocksWithTranslations(store_id, where, lang);
 
     // Return data directly (not wrapped) for storefront client compatibility
     // Storefront client expects direct array, not {success: true, data: ...}
