@@ -2382,6 +2382,54 @@ CREATE TABLE IF NOT EXISTS product_translations (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
+-- ============================================
+-- PRODUCT FILES TABLE
+-- Stores images, videos, documents, and other media files for products
+-- Replaces JSONB images column for better performance and flexibility
+-- ============================================
+CREATE TABLE IF NOT EXISTS product_files (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  file_url TEXT NOT NULL,
+  file_type VARCHAR(20) DEFAULT 'image' CHECK (file_type IN ('image', 'video', 'document', '3d_model', 'pdf')),
+  position INTEGER NOT NULL DEFAULT 0,
+  is_primary BOOLEAN DEFAULT false,
+  alt_text TEXT,
+  title TEXT,
+  file_size INTEGER, -- bytes
+  mime_type VARCHAR(100),
+  metadata JSONB DEFAULT '{}', -- Extra data: width, height, duration, shopify_id, akeneo_code, thumbnail_url, etc.
+  store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_product_files_product ON product_files(product_id, position);
+CREATE INDEX IF NOT EXISTS idx_product_files_primary ON product_files(product_id, is_primary) WHERE is_primary = true;
+CREATE INDEX IF NOT EXISTS idx_product_files_store ON product_files(store_id);
+CREATE INDEX IF NOT EXISTS idx_product_files_type ON product_files(product_id, file_type);
+CREATE INDEX IF NOT EXISTS idx_product_files_url ON product_files(file_url); -- For duplicate detection
+
+-- Unique constraint: only one primary file per product per type
+CREATE UNIQUE INDEX IF NOT EXISTS idx_product_files_unique_primary
+  ON product_files(product_id, file_type)
+  WHERE is_primary = true;
+
+-- Trigger for updated_at
+CREATE OR REPLACE FUNCTION update_product_files_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_product_files_updated_at
+  BEFORE UPDATE ON product_files
+  FOR EACH ROW
+  EXECUTE FUNCTION update_product_files_updated_at();
+
 CREATE TABLE IF NOT EXISTS product_variants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_product_id UUID NOT NULL,

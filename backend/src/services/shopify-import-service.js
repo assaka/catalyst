@@ -490,41 +490,8 @@ class ShopifyImportService {
         productData.weight_unit = product.variants[0].weight_unit || 'kg';
       }
 
-      // Download and store images using store's storage provider
-      if (product.images && product.images.length > 0) {
-        const storedImages = [];
-
-        for (let i = 0; i < product.images.length; i++) {
-          try {
-            const image = product.images[i];
-            const storedUrl = await this.downloadAndStoreImage(image.src, product.handle, i);
-
-            storedImages.push({
-              url: storedUrl,
-              alt: image.alt || product.title,
-              position: image.position || i + 1,
-              shopify_id: image.id
-            });
-          } catch (imageError) {
-            console.warn(`⚠️ Failed to download image ${i} for ${product.title}, using original URL:`, imageError.message);
-            // Use original URL as fallback
-            const image = product.images[i];
-            storedImages.push({
-              url: image.src,
-              alt: image.alt || product.title,
-              position: image.position || i + 1,
-              shopify_id: image.id
-            });
-          }
-        }
-
-        productData.images = storedImages;
-
-        // Set main image (first image)
-        if (storedImages.length > 0) {
-          productData.image_url = storedImages[0].url;
-        }
-      }
+      // Note: Images will be stored in product_files table after product is saved
+      // Don't set productData.images - it will be handled separately
 
       let savedProduct;
       if (existingProduct) {
@@ -616,6 +583,82 @@ class ShopifyImportService {
       } catch (translationError) {
         console.error(`❌ Failed to save translations for ${product.title}:`, translationError.message);
         console.error('Translation error details:', translationError);
+      }
+
+      // Save images to product_files table
+      if (product.images && product.images.length > 0) {
+        try {
+          // First, delete existing images for this product to avoid duplicates on re-import
+          await tenantDb
+            .from('product_files')
+            .delete()
+            .eq('product_id', savedProduct.id)
+            .eq('file_type', 'image');
+
+          console.log(`🖼️  Processing ${product.images.length} images for ${product.title}`);
+
+          for (let i = 0; i < product.images.length; i++) {
+            try {
+              const image = product.images[i];
+
+              // Download and store image using storage provider
+              const storedUrl = await this.downloadAndStoreImage(image.src, product.handle, i);
+
+              // Insert into product_files table
+              await tenantDb
+                .from('product_files')
+                .insert({
+                  id: uuidv4(),
+                  product_id: savedProduct.id,
+                  file_url: storedUrl,
+                  file_type: 'image',
+                  position: i,
+                  is_primary: i === 0, // First image is primary
+                  alt_text: image.alt || product.title,
+                  metadata: {
+                    shopify_id: image.id,
+                    shopify_position: image.position,
+                    original_src: image.src
+                  },
+                  store_id: this.storeId,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                });
+
+              console.log(`✅ Saved image ${i + 1}/${product.images.length} for ${product.title}`);
+            } catch (imageError) {
+              console.warn(`⚠️ Failed to process image ${i} for ${product.title}, using original URL:`, imageError.message);
+
+              // Fallback: Insert with original Shopify URL
+              const image = product.images[i];
+              await tenantDb
+                .from('product_files')
+                .insert({
+                  id: uuidv4(),
+                  product_id: savedProduct.id,
+                  file_url: image.src,
+                  file_type: 'image',
+                  position: i,
+                  is_primary: i === 0,
+                  alt_text: image.alt || product.title,
+                  metadata: {
+                    shopify_id: image.id,
+                    shopify_position: image.position,
+                    original_src: image.src,
+                    storage_error: imageError.message
+                  },
+                  store_id: this.storeId,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                });
+            }
+          }
+
+          console.log(`✅ Saved ${product.images.length} images for product: ${product.title}`);
+        } catch (imagesError) {
+          console.error(`❌ Failed to save images for ${product.title}:`, imagesError.message);
+          // Don't throw - images are not critical, product is already saved
+        }
       }
 
       return savedProduct;
