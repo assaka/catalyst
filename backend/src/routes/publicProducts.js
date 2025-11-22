@@ -291,7 +291,7 @@ router.get('/:id', cacheProduct(300), async (req, res) => {
     }
 
     // Apply product translations from normalized table
-    const productData = await applyProductTranslations(product, lang);
+    const productData = await applyProductTranslations(store_id, product, lang);
 
     // Ensure images is properly parsed as JSON array
     if (productData.images && typeof productData.images === 'string') {
