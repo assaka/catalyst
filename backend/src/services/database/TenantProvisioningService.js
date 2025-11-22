@@ -134,7 +134,7 @@ class TenantProvisioningService {
       console.log('Reading tenant migration files...');
 
       // Read migration SQL files
-      const migrationPath = path.join(__dirname, '../../database/schemas/tenant/001-create-tenant-tables-complete.sql');
+      const migrationPath = path.join(__dirname, '../../database/schemas/tenant/001-create-tenant-tables.sql');
       const seedPath = path.join(__dirname, '../../database/schemas/tenant/002-tenant-seed-data.sql');
 
       const migrationSQL = await fs.readFile(migrationPath, 'utf-8');
