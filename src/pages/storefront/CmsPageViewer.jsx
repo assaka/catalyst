@@ -69,7 +69,7 @@ export default function CmsPageViewer() {
             };
             fetchPage();
         }
-    }, [slug]);
+    }, [slug, settings?.store_id]); // Re-run when store_id becomes available
 
     // Listen for language changes and refetch the page
     useEffect(() => {
