@@ -32,15 +32,7 @@ router.get('/', async (req, res) => {
     // Build where clause
     let query = tenantDb
       .from('wishlists')
-      .select(`
-        *,
-        products:product_id (
-          id,
-          price,
-          images,
-          slug
-        )
-      `)
+      .select('*')
       .eq('store_id', store_id)
       .order('added_at', { ascending: false });
 
@@ -57,17 +49,37 @@ router.get('/', async (req, res) => {
       throw error;
     }
 
+    // Fetch associated products separately
+    const productIds = (wishlist || []).map(item => item.product_id).filter(Boolean);
+    let products = [];
+    if (productIds.length > 0) {
+      const { data: productsData, error: productsError } = await tenantDb
+        .from('products')
+        .select('id, price, images, slug')
+        .in('id', productIds);
+
+      if (productsError) {
+        console.error('Error fetching products:', productsError);
+      } else {
+        products = productsData || [];
+      }
+    }
+
+    // Create product map
+    const productMap = {};
+    products.forEach(p => { productMap[p.id] = p; });
+
     // Get language and apply translations
     const lang = getLanguageFromRequest(req);
-    const wishlistWithTranslations = await Promise.all(
-      (wishlist || []).map(async (item) => {
-        if (item.products) {
-          const [productWithTranslation] = await applyProductTranslationsToMany([item.products], lang);
-          item.products = productWithTranslation;
-        }
-        return item;
-      })
-    );
+    const productsWithTranslations = await applyProductTranslationsToMany(products, lang, tenantDb);
+    const translatedProductMap = {};
+    productsWithTranslations.forEach(p => { translatedProductMap[p.id] = p; });
+
+    // Merge wishlist with translated products
+    const wishlistWithTranslations = (wishlist || []).map(item => ({
+      ...item,
+      products: translatedProductMap[item.product_id] || null
+    }));
 
     res.json({
       success: true,
