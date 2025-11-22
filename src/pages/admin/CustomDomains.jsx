@@ -400,21 +400,6 @@ const CustomDomains = () => {
                 );
               })()}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const primaryDomain = domains.find(d => d.is_primary && d.verification_status === 'verified' && d.ssl_status === 'active');
-                const storeCode = selectedStore?.code || selectedStore?.slug;
-                const currentUrl = primaryDomain
-                  ? `https://${primaryDomain.domain}`
-                  : storeCode ? getExternalStoreUrl(storeCode) : '';
-                copyToClipboard(currentUrl);
-              }}
-            >
-              <Copy className="w-4 h-4 mr-2" />
-              Copy URL
-            </Button>
           </div>
         </CardContent>
       </Card>
