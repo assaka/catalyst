@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
-const { masterDbClient } = require('../database/masterConnection');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const abTestingService = require('../services/analytics/ABTestingServiceSupabase');
 const path = require('path');
@@ -62,7 +61,8 @@ async function loadPageConfig(pageType) {
 
 // Helper: Find latest published configuration
 async function findLatestPublished(storeId, pageType) {
-  const { data, error } = await masterDbClient
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+  const { data, error } = await tenantDb
     .from('slot_configurations')
     .select('*')
     .eq('store_id', storeId)
@@ -78,7 +78,8 @@ async function findLatestPublished(storeId, pageType) {
 
 // Helper: Find latest acceptance configuration
 async function findLatestAcceptance(storeId, pageType) {
-  const { data, error } = await masterDbClient
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+  const { data, error } = await tenantDb
     .from('slot_configurations')
     .select('*')
     .eq('store_id', storeId)
@@ -94,7 +95,8 @@ async function findLatestAcceptance(storeId, pageType) {
 
 // Helper: Find latest draft (includes both init and draft status)
 async function findLatestDraft(userId, storeId, pageType) {
-  const { data, error } = await masterDbClient
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+  const { data, error } = await tenantDb
     .from('slot_configurations')
     .select('*')
     .eq('user_id', userId)
@@ -111,7 +113,8 @@ async function findLatestDraft(userId, storeId, pageType) {
 
 // Helper: Find configuration by ID
 async function findById(configId) {
-  const { data, error } = await masterDbClient
+  const tenantDb = await ConnectionManager.getStoreConnection(configId); // Note: Will need storeId instead
+  const { data, error } = await tenantDb
     .from('slot_configurations')
     .select('*')
     .eq('id', configId)
@@ -123,13 +126,14 @@ async function findById(configId) {
 
 // Helper: Upsert draft configuration
 async function upsertDraft(userId, storeId, pageType, configuration = null, isNewChanges = true, isReset = false) {
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
   // Try to find existing draft or init record
   const existingRecord = await findLatestDraft(userId, storeId, pageType);
 
   if (existingRecord) {
     // Handle init->draft transition
     if (existingRecord.status === 'init' && configuration) {
-      const { data, error } = await masterDbClient
+      const { data, error } = await tenantDb
         .from('slot_configurations')
         .update({
           configuration: configuration,
@@ -147,7 +151,7 @@ async function upsertDraft(userId, storeId, pageType, configuration = null, isNe
 
     // Update existing draft
     if (configuration) {
-      const { data, error } = await masterDbClient
+      const { data, error } = await tenantDb
         .from('slot_configurations')
         .update({
           configuration: configuration,
@@ -165,7 +169,7 @@ async function upsertDraft(userId, storeId, pageType, configuration = null, isNe
   }
 
   // Determine version number
-  const { data: maxVersionData } = await masterDbClient
+  const { data: maxVersionData } = await tenantDb
     .from('slot_configurations')
     .select('version_number')
     .eq('store_id', storeId)
@@ -178,7 +182,7 @@ async function upsertDraft(userId, storeId, pageType, configuration = null, isNe
 
   // If configuration is provided, create a draft; otherwise create an init record
   if (configuration) {
-    const { data, error } = await masterDbClient
+    const { data, error } = await tenantDb
       .from('slot_configurations')
       .insert({
         user_id: userId,
@@ -226,7 +230,7 @@ async function upsertDraft(userId, storeId, pageType, configuration = null, isNe
     }
 
     // Create init/draft record
-    const { data, error } = await masterDbClient
+    const { data, error } = await tenantDb
       .from('slot_configurations')
       .insert({
         user_id: userId,
@@ -255,7 +259,7 @@ async function publishToAcceptance(draftId, publishedByUserId) {
     throw new Error('Draft not found or not in draft status');
   }
 
-  const { data, error } = await masterDbClient
+  const { data, error } = await tenantDb
     .from('slot_configurations')
     .update({
       status: 'acceptance',
@@ -277,7 +281,7 @@ async function publishToProduction(acceptanceId, publishedByUserId) {
     throw new Error('Configuration not found or not in acceptance status');
   }
 
-  const { data, error } = await masterDbClient
+  const { data, error } = await tenantDb
     .from('slot_configurations')
     .update({
       status: 'published',
@@ -299,7 +303,7 @@ async function publishDraft(draftId, publishedByUserId) {
     throw new Error('Draft not found or already published');
   }
 
-  const { data, error } = await masterDbClient
+  const { data, error } = await tenantDb
     .from('slot_configurations')
     .update({
       status: 'published',
@@ -317,7 +321,7 @@ async function publishDraft(draftId, publishedByUserId) {
 
 // Helper: Get version history
 async function getVersionHistory(storeId, pageType, limit = 20) {
-  const { data, error } = await masterDbClient
+  const { data, error } = await tenantDb
     .from('slot_configurations')
     .select('*')
     .eq('store_id', storeId)
@@ -353,7 +357,7 @@ async function createRevertDraft(versionId, userId, storeId) {
     };
 
     // Update existing draft with the reverted configuration
-    const { data, error } = await masterDbClient
+    const { data, error } = await tenantDb
       .from('slot_configurations')
       .update({
         configuration: targetVersion.configuration,
@@ -374,7 +378,7 @@ async function createRevertDraft(versionId, userId, storeId) {
     return data;
   } else {
     // Create new draft with the reverted configuration
-    const { data: maxVersionData } = await masterDbClient
+    const { data: maxVersionData } = await tenantDb
       .from('slot_configurations')
       .select('version_number')
       .eq('store_id', storeId)
@@ -385,7 +389,7 @@ async function createRevertDraft(versionId, userId, storeId) {
 
     const maxVersion = maxVersionData ? maxVersionData.version_number : 0;
 
-    const { data, error } = await masterDbClient
+    const { data, error } = await tenantDb
       .from('slot_configurations')
       .insert({
         user_id: userId,
@@ -421,7 +425,7 @@ async function revertToVersion(versionId, userId, storeId) {
   }
 
   // Mark all versions after this one as reverted
-  const { error: updateError } = await masterDbClient
+  const { error: updateError } = await tenantDb
     .from('slot_configurations')
     .update({
       status: 'reverted',
@@ -435,7 +439,7 @@ async function revertToVersion(versionId, userId, storeId) {
   if (updateError) throw updateError;
 
   // Get the next version number
-  const { data: maxVersionData } = await masterDbClient
+  const { data: maxVersionData } = await tenantDb
     .from('slot_configurations')
     .select('version_number')
     .eq('store_id', storeId)
@@ -447,7 +451,7 @@ async function revertToVersion(versionId, userId, storeId) {
   const maxVersion = maxVersionData ? maxVersionData.version_number : 0;
 
   // Create a new published version based on the target version
-  const { data: newVersion, error } = await masterDbClient
+  const { data: newVersion, error } = await tenantDb
     .from('slot_configurations')
     .insert({
       user_id: userId,
@@ -481,7 +485,7 @@ async function undoRevert(draftId, userId, storeId) {
 
   if (revertMetadata?.noPreviousDraft) {
     // No draft existed before revert - just delete the revert draft
-    const { error } = await masterDbClient
+    const { error } = await tenantDb
       .from('slot_configurations')
       .delete()
       .eq('id', draftId);
@@ -493,7 +497,7 @@ async function undoRevert(draftId, userId, storeId) {
     const updatedMetadata = { ...(revertDraft.metadata || {}) };
     delete updatedMetadata.revertMetadata;
 
-    const { data, error } = await masterDbClient
+    const { data, error } = await tenantDb
       .from('slot_configurations')
       .update({
         configuration: revertMetadata.originalConfiguration,
@@ -511,7 +515,7 @@ async function undoRevert(draftId, userId, storeId) {
     return { restored: true, draft: data, message: 'Previous draft state restored' };
   } else {
     // No metadata available - just delete the revert draft (fallback)
-    const { error } = await masterDbClient
+    const { error } = await tenantDb
       .from('slot_configurations')
       .delete()
       .eq('id', draftId);
@@ -524,7 +528,7 @@ async function undoRevert(draftId, userId, storeId) {
 // Helper: Set current editing configuration
 async function setCurrentEdit(configId, userId, storeId, pageType) {
   // Clear any existing current_edit_id for this user/store/page
-  await masterDbClient
+  await tenantDb
     .from('slot_configurations')
     .update({ current_edit_id: null })
     .eq('user_id', userId)
@@ -532,7 +536,7 @@ async function setCurrentEdit(configId, userId, storeId, pageType) {
     .eq('page_type', pageType);
 
   // Set the new current_edit_id
-  const { data: config, error } = await masterDbClient
+  const { data: config, error } = await tenantDb
     .from('slot_configurations')
     .update({ current_edit_id: configId })
     .eq('id', configId)
@@ -545,7 +549,7 @@ async function setCurrentEdit(configId, userId, storeId, pageType) {
 
 // Helper: Get current editing configuration
 async function getCurrentEdit(userId, storeId, pageType) {
-  const { data, error } = await masterDbClient
+  const { data, error } = await tenantDb
     .from('slot_configurations')
     .select('*')
     .eq('user_id', userId)
@@ -619,7 +623,7 @@ router.get('/public/slot-configurations', async (req, res) => {
 
     // If no published version, try to find draft
     if (!configuration) {
-      const { data, error } = await masterDbClient
+      const { data, error } = await tenantDb
         .from('slot_configurations')
         .select('*')
         .eq('store_id', store_id)
@@ -639,7 +643,7 @@ router.get('/public/slot-configurations', async (req, res) => {
 
       try {
         // Get the first user to assign the configuration to
-        const { data: firstUser, error: userError } = await masterDbClient
+        const { data: firstUser, error: userError } = await tenantDb
           .from('users')
           .select('id')
           .limit(1)
@@ -878,7 +882,7 @@ router.put('/draft/:configId', authMiddleware, async (req, res) => {
 
     // For reset operations, set has_unpublished_changes = false
     // For normal edits, set has_unpublished_changes = true
-    const { data: updatedDraft, error } = await masterDbClient
+    const { data: updatedDraft, error } = await tenantDb
       .from('slot_configurations')
       .update({
         configuration: configuration,
@@ -1206,7 +1210,7 @@ router.delete('/draft/:configId', authMiddleware, async (req, res) => {
       });
     }
 
-    const { error } = await masterDbClient
+    const { error } = await tenantDb
       .from('slot_configurations')
       .delete()
       .eq('id', configId);
@@ -1235,7 +1239,7 @@ router.post('/destroy/:storeId/:pageType?', authMiddleware, async (req, res) => 
     console.log(`🗑️ Destroying layout for store ${storeId}, page ${pageType}`);
 
     // Get count of configurations before deleting
-    const { data: configsToDelete, error: countError } = await masterDbClient
+    const { data: configsToDelete, error: countError } = await tenantDb
       .from('slot_configurations')
       .select('id')
       .eq('store_id', storeId)
@@ -1245,7 +1249,7 @@ router.post('/destroy/:storeId/:pageType?', authMiddleware, async (req, res) => 
     const deletedCount = configsToDelete ? configsToDelete.length : 0;
 
     // Delete all configurations (drafts and published versions) for this store/page
-    const { error: deleteError } = await masterDbClient
+    const { error: deleteError } = await tenantDb
       .from('slot_configurations')
       .delete()
       .eq('store_id', storeId)
