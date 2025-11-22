@@ -553,7 +553,7 @@ const CustomDomains = () => {
                               size="sm"
                               onClick={() => showDNSInstructions(domain)}
                             >
-                              DNS Setup
+                              Configure
                             </Button>
                             <Button
                               variant="outline"
