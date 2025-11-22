@@ -408,10 +408,20 @@ class AttributeMappingService {
   async updateMappingUsage(mappingId) {
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
+    // First get current usage_count
+    const { data: currentMapping } = await tenantDb
+      .from('integration_attribute_mappings')
+      .select('usage_count')
+      .eq('id', mappingId)
+      .single();
+
+    if (!currentMapping) return;
+
+    // Then increment it
     await tenantDb
       .from('integration_attribute_mappings')
       .update({
-        usage_count: tenantDb.raw('usage_count + 1'),
+        usage_count: (currentMapping.usage_count || 0) + 1,
         last_used_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })

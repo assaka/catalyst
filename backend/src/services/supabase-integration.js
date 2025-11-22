@@ -709,6 +709,46 @@ class SupabaseIntegration {
   async getProjects(storeId) {
     try {
       const token = await SupabaseOAuthToken.findByStore(storeId);
+
+      // CRITICAL FIX: Also check store_databases for connection
+      const { masterDbClient } = require('../database/masterConnection');
+      const { data: storeDatabase } = await masterDbClient
+        .from('store_databases')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      // If connected via store_databases, return the single project from credentials
+      if (!token && storeDatabase) {
+        try {
+          const { decryptDatabaseCredentials } = require('../utils/encryption');
+          const credentials = decryptDatabaseCredentials(storeDatabase.connection_string_encrypted);
+
+          // Return a single "project" based on the store_databases credentials
+          return {
+            success: true,
+            projects: [{
+              id: credentials.projectId || 'connected-project',
+              name: credentials.projectName || 'Connected Project',
+              url: credentials.projectUrl,
+              region: credentials.region || 'unknown',
+              organizationId: null,
+              createdAt: storeDatabase.created_at,
+              isCurrent: true,
+              hasKeysConfigured: !!credentials.serviceRoleKey,
+              status: storeDatabase.connection_status === 'connected' ? 'ACTIVE' : 'UNKNOWN',
+              source: 'store_databases' // Indicator this came from store_databases
+            }],
+            currentProjectUrl: credentials.projectUrl,
+            connectionSource: 'credentials'
+          };
+        } catch (err) {
+          console.error('Error decrypting store database credentials:', err.message);
+          throw new Error('Failed to get project from store database credentials');
+        }
+      }
+
       if (!token) {
         throw new Error('Supabase not connected for this store');
       }
