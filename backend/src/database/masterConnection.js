@@ -137,7 +137,9 @@ const masterSequelize = useMasterDbUrl
 
 let masterDbClient = null;
 
+// First try explicit MASTER_SUPABASE_URL and MASTER_SUPABASE_SERVICE_KEY
 if (process.env.MASTER_SUPABASE_URL && process.env.MASTER_SUPABASE_SERVICE_KEY) {
+  console.log('🔧 [MASTER SUPABASE] Initializing from MASTER_SUPABASE_URL...');
   masterDbClient = createClient(
     process.env.MASTER_SUPABASE_URL,
     process.env.MASTER_SUPABASE_SERVICE_KEY,
@@ -148,6 +150,48 @@ if (process.env.MASTER_SUPABASE_URL && process.env.MASTER_SUPABASE_SERVICE_KEY) 
       }
     }
   );
+  console.log('✅ [MASTER SUPABASE] Client initialized from explicit env vars');
+}
+// Fallback: Try to parse from MASTER_DB_URL if it's a Supabase URL
+else if (masterDbUrl && masterDbUrl.includes('.supabase.co')) {
+  try {
+    console.log('🔧 [MASTER SUPABASE] Attempting to initialize from MASTER_DB_URL...');
+
+    // Extract project ref from pooler URL: postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres
+    const urlMatch = masterDbUrl.match(/postgres\.([^:]+):([^@]+)@aws-0-([^.]+)\.pooler\.supabase\.co/);
+
+    if (urlMatch) {
+      const [, projectRef, password, region] = urlMatch;
+      const supabaseUrl = `https://${projectRef}.supabase.co`;
+
+      console.log('🔧 [MASTER SUPABASE] Extracted from MASTER_DB_URL:');
+      console.log('   - Project Ref:', projectRef);
+      console.log('   - Region:', region);
+      console.log('   - Supabase URL:', supabaseUrl);
+
+      // Check if we have SUPABASE_SERVICE_ROLE_KEY or MASTER_SUPABASE_SERVICE_KEY
+      const serviceKey = process.env.MASTER_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      if (serviceKey && serviceKey !== 'your-service-role-key-here') {
+        masterDbClient = createClient(supabaseUrl, serviceKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        });
+        console.log('✅ [MASTER SUPABASE] Client initialized from MASTER_DB_URL + service key');
+      } else {
+        console.warn('⚠️ [MASTER SUPABASE] Service role key not available - masterDbClient will be null');
+        console.warn('   Set MASTER_SUPABASE_SERVICE_KEY or SUPABASE_SERVICE_ROLE_KEY');
+      }
+    } else {
+      console.warn('⚠️ [MASTER SUPABASE] Could not parse Supabase project ref from MASTER_DB_URL');
+    }
+  } catch (parseError) {
+    console.error('❌ [MASTER SUPABASE] Error parsing MASTER_DB_URL:', parseError.message);
+  }
+} else {
+  console.warn('⚠️ [MASTER SUPABASE] masterDbClient not initialized - no Supabase env vars found');
 }
 
 // ============================================
