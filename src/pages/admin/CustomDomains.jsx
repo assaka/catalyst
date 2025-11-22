@@ -561,15 +561,7 @@ const CustomDomains = () => {
                               onClick={() => handleDebugDNS(domain.id)}
                               className="bg-blue-50"
                             >
-                              <AlertTriangle className="w-3 h-3 mr-1 text-blue-600" />
-                              Debug DNS
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleCheckDNS(domain.id)}
-                            >
-                              <RefreshCw className="w-3 h-3 mr-1" />
+                              <RefreshCw className="w-3 h-3 mr-1 text-blue-600" />
                               Check DNS
                             </Button>
                             <Button
@@ -1022,7 +1014,19 @@ const CustomDomains = () => {
           const internalUrl = storeSlug ? getExternalStoreUrl(storeSlug) : 'the internal Vercel URL';
 
           if (isPrimary) {
-            return `Are you sure you want to remove ${domainToDelete?.name}? This is your primary domain. After deletion, your store will only be accessible at ${internalUrl}. This action cannot be undone.`;
+            return (
+              <div className="space-y-2">
+                <p>Are you sure you want to remove <span className="font-semibold">{domainToDelete?.name}</span>?</p>
+                <Alert className="border-orange-200 bg-orange-50">
+                  <AlertTriangle className="h-4 w-4 text-orange-600" />
+                  <AlertDescription className="text-sm">
+                    This is your <strong>primary domain</strong>. After deletion, your store will only be accessible at: <br/>
+                    <code className="text-xs bg-white px-1 py-0.5 rounded mt-1 inline-block">{internalUrl}</code>
+                  </AlertDescription>
+                </Alert>
+                <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
+              </div>
+            );
           }
 
           return `Are you sure you want to remove ${domainToDelete?.name}? This action cannot be undone and will immediately stop serving your store on this domain.`;
