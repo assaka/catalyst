@@ -3,8 +3,8 @@
  * Processes customer activity events from the unified event bus
  */
 
-const { CustomerActivity } = require('../../../models');
 const eventBus = require('../EventBus');
+const ConnectionManager = require('../../database/ConnectionManager');
 
 class CustomerActivityHandler {
   constructor() {
@@ -59,11 +59,23 @@ class CustomerActivityHandler {
         }
       }));
 
-      // Bulk insert
-      await CustomerActivity.bulkCreate(activities, {
-        validate: true,
-        returning: true
-      });
+      // Get store_id from first activity (all should have same store_id in a batch)
+      const store_id = activities[0]?.store_id;
+      if (!store_id) {
+        throw new Error('store_id not found in activity events');
+      }
+
+      // Get tenant connection
+      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+      // Bulk insert using Supabase
+      const { error: insertError } = await tenantDb
+        .from('customer_activities')
+        .insert(activities);
+
+      if (insertError) {
+        throw insertError;
+      }
 
       console.log(`[CUSTOMER ACTIVITY] Processed batch of ${activities.length} events`);
 

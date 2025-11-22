@@ -3,10 +3,9 @@
  * Processes heatmap interaction events from the unified event bus
  */
 
-const HeatmapInteraction = require('../../../models/HeatmapInteraction');
-const HeatmapSession = require('../../../models/HeatmapSession');
 const { UAParser } = require('ua-parser-js');
 const eventBus = require('../EventBus');
+const ConnectionManager = require('../../database/ConnectionManager');
 
 class HeatmapHandler {
   constructor() {
@@ -95,15 +94,27 @@ class HeatmapHandler {
         sessionUpdates.get(sessionKey).interaction_count++;
       }
 
-      // Bulk insert interactions
-      await HeatmapInteraction.bulkCreate(interactions, {
-        validate: true,
-        returning: true
-      });
+      // Get store_id from first interaction
+      const store_id = interactions[0]?.store_id;
+      if (!store_id) {
+        throw new Error('store_id not found in interaction events');
+      }
+
+      // Get tenant connection
+      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+      // Bulk insert interactions using Supabase
+      const { error: insertError } = await tenantDb
+        .from('heatmap_interactions')
+        .insert(interactions);
+
+      if (insertError) {
+        throw insertError;
+      }
 
       // Update sessions
       for (const [, sessionData] of sessionUpdates) {
-        await this.updateSession(sessionData);
+        await this.updateSession(sessionData, tenantDb);
       }
 
       console.log(`[HEATMAP] Processed batch of ${interactions.length} interactions, ${sessionUpdates.size} sessions`);
@@ -123,9 +134,28 @@ class HeatmapHandler {
   /**
    * Update or create session
    */
-  async updateSession(sessionData) {
+  async updateSession(sessionData, tenantDb) {
     try {
-      await HeatmapSession.createOrUpdate(sessionData);
+      // Upsert session using Supabase
+      const { error } = await tenantDb
+        .from('heatmap_sessions')
+        .upsert({
+          session_id: sessionData.session_id,
+          store_id: sessionData.store_id,
+          user_id: sessionData.user_id,
+          last_page_url: sessionData.last_page_url,
+          device_type: sessionData.device_type,
+          browser_name: sessionData.browser_name,
+          operating_system: sessionData.operating_system,
+          interaction_count: sessionData.interaction_count,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'session_id'
+        });
+
+      if (error) {
+        throw error;
+      }
     } catch (error) {
       console.error('[HEATMAP] Session update error:', {
         error: error.message,
