@@ -352,29 +352,51 @@ const CustomDomains = () => {
                   ? `https://${primaryDomain.domain}`
                   : storeCode ? getExternalStoreUrl(storeCode) : 'Store code not available';
 
+                const internalUrl = storeCode ? getExternalStoreUrl(storeCode) : null;
+
                 return (
-                  <>
-                    <a
-                      href={currentUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline font-mono text-lg flex items-center gap-2"
-                    >
-                      {currentUrl}
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                    {!primaryDomain && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Using default platform URL. Add a custom domain to use your own domain name.
+                  <div className="space-y-3">
+                    {/* Primary URL */}
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {primaryDomain ? 'Primary Custom Domain' : 'Default Platform URL'}
                       </p>
+                      <a
+                        href={currentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline font-mono text-base flex items-center gap-2"
+                      >
+                        {currentUrl}
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                      {primaryDomain && (
+                        <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          SSL Active, Verified
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Internal Vercel URL (always show) */}
+                    {internalUrl && (
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground mb-1">Internal Vercel URL</p>
+                        <a
+                          href={internalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-600 hover:underline font-mono text-sm flex items-center gap-2"
+                        >
+                          {internalUrl}
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Always accessible (even without custom domain)
+                        </p>
+                      </div>
                     )}
-                    {primaryDomain && (
-                      <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3" />
-                        Using custom domain: {primaryDomain.domain}
-                      </p>
-                    )}
-                  </>
+                  </div>
                 );
               })()}
             </div>
