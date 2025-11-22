@@ -3,6 +3,7 @@ const ShopifyOAuthToken = require('../models/ShopifyOAuthToken');
 const ImportStatistic = require('../models/ImportStatistic');
 const StorageManager = require('./storage/StorageManager');
 const ConnectionManager = require('./database/ConnectionManager');
+const AttributeMappingService = require('./AttributeMappingService');
 const axios = require('axios');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -11,6 +12,7 @@ class ShopifyImportService {
   constructor(storeId) {
     this.storeId = storeId;
     this.client = null;
+    this.attributeMapper = new AttributeMappingService(storeId, 'shopify');
     this.importStats = {
       collections: { total: 0, imported: 0, skipped: 0, failed: 0 },
       products: { total: 0, imported: 0, skipped: 0, failed: 0 },
@@ -448,6 +450,10 @@ class ShopifyImportService {
         }
       }
 
+      // Extract and process attributes using AttributeMappingService
+      const rawAttributes = this.extractProductAttributes(product);
+      const { attributes: processedAttributes } = await this.attributeMapper.processProductAttributes(rawAttributes);
+
       // Prepare product data (NOTE: name and description go in product_translations, not products table)
       // Build product data incrementally to handle missing schema columns gracefully
       const productData = {
@@ -465,16 +471,13 @@ class ShopifyImportService {
         meta_title: product.title,
         meta_description: product.body_html ? product.body_html.replace(/<[^>]*>/g, '').substring(0, 160) : '',
         url_key: product.handle,
+        attributes: processedAttributes, // Use processed attributes with deduplication
         seo_data: {
           handle: product.handle,
           template_suffix: product.template_suffix,
           shopify_id: product.id,
-          vendor: product.vendor,
-          product_type: product.product_type,
-          tags: product.tags,
           variants_count: product.variants?.length || 0
-        },
-        custom_attributes: this.extractProductAttributes(product)
+        }
       };
 
       // Add optional fields if they have values
