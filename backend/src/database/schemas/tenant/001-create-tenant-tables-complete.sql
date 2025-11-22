@@ -905,6 +905,67 @@ CREATE TABLE IF NOT EXISTS attributes (
   is_configurable BOOLEAN DEFAULT false
 );
 
+-- ============================================
+-- INTEGRATION ATTRIBUTE MAPPINGS TABLE
+-- Cross-platform attribute mapping for multi-source integrations
+-- Maps external platform attributes (Shopify, Magento, Akeneo, etc.) to internal Catalyst attributes
+-- ============================================
+CREATE TABLE IF NOT EXISTS integration_attribute_mappings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- External Platform Side
+  integration_source VARCHAR(50) NOT NULL, -- 'shopify', 'magento', 'akeneo', 'woocommerce', 'bigcommerce', etc.
+  external_attribute_code VARCHAR(255) NOT NULL, -- The attribute code/key from external platform
+  external_attribute_name VARCHAR(255), -- Human-readable name from external platform
+  external_attribute_type VARCHAR(50), -- Type in external system ('text', 'select', etc.)
+
+  -- Catalyst Side (Internal)
+  internal_attribute_id UUID NOT NULL REFERENCES attributes(id) ON DELETE CASCADE,
+  internal_attribute_code VARCHAR(255) NOT NULL, -- Denormalized for quick lookups
+
+  -- Mapping Configuration
+  is_active BOOLEAN DEFAULT true,
+  mapping_direction VARCHAR(20) DEFAULT 'bidirectional' CHECK (mapping_direction IN ('import_only', 'export_only', 'bidirectional')),
+  mapping_source VARCHAR(50) DEFAULT 'auto', -- 'auto' (system-detected), 'manual' (user-configured), 'ai' (AI-suggested)
+  confidence_score DECIMAL(3,2) DEFAULT 1.00, -- For auto-mapped attributes (0.00-1.00)
+
+  -- Value Transformation Rules (Optional)
+  value_transformation JSONB DEFAULT '{}', -- Rules for transforming values between platforms
+
+  -- Metadata
+  store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+  notes TEXT,
+  last_used_at TIMESTAMP, -- Track when mapping was last used in import/export
+  usage_count INTEGER DEFAULT 0, -- How many times this mapping has been used
+
+  -- Timestamps
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  created_by UUID, -- User who created the mapping
+
+  -- Constraints
+  UNIQUE(store_id, integration_source, external_attribute_code) -- One mapping per external attribute per source
+);
+
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_integration_attr_lookup ON integration_attribute_mappings(store_id, integration_source, external_attribute_code, is_active);
+CREATE INDEX IF NOT EXISTS idx_integration_attr_internal ON integration_attribute_mappings(internal_attribute_id);
+CREATE INDEX IF NOT EXISTS idx_integration_attr_source ON integration_attribute_mappings(integration_source, is_active);
+
+-- Trigger for updated_at
+CREATE OR REPLACE FUNCTION update_integration_attribute_mappings_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_integration_attribute_mappings_updated_at
+  BEFORE UPDATE ON integration_attribute_mappings
+  FOR EACH ROW
+  EXECUTE FUNCTION update_integration_attribute_mappings_updated_at();
+
 CREATE TABLE IF NOT EXISTS blacklist_countries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
