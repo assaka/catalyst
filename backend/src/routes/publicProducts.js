@@ -127,7 +127,7 @@ router.get('/', cacheProducts(180), async (req, res) => {
     const lang = getLanguageFromRequest(req);
 
     // Apply product translations from normalized table
-    const productsWithTranslations = await applyProductTranslationsToMany(rows || [], lang);
+    const productsWithTranslations = await applyProductTranslationsToMany(rows || [], lang, tenantDb);
 
     // Load attribute values for all products (full feature preservation)
     const productIds = (rows || []).map(p => p.id);

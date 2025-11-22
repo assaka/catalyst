@@ -339,8 +339,16 @@ router.post('/:id/translate', authMiddleware, authorize(['admin', 'store_owner']
       });
     }
 
-    const { fromLang, toLang } = req.body;
-    const category = await getCategoryById(req.params.id, fromLang);
+    const { fromLang, toLang, store_id } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const category = await getCategoryById(store_id, req.params.id, fromLang);
 
     if (!category) {
       return res.status(404).json({
