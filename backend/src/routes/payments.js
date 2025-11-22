@@ -1356,12 +1356,15 @@ router.post('/webhook', async (req, res) => {
         // Get tenant DB connection for customer lookups
         const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-        const connection = await ConnectionManager.getStoreConnection(store_id);
-        const { Order, OrderItem, Product, Store: StoreModel, Customer } = connection.models;
+        const { data: existingOrder, error: orderError } = await tenantDb
+          .from('orders')
+          .select('*')
+          .eq('payment_reference', session.id)
+          .maybeSingle();
 
-        const existingOrder = await Order.findOne({
-          where: { payment_reference: session.id }
-        });
+        if (orderError) {
+          console.error('Error finding existing order:', orderError);
+        }
 
         let finalOrder = null;
         let statusAlreadyUpdated = false; // Track if email was already sent
@@ -1376,11 +1379,14 @@ router.post('/webhook', async (req, res) => {
           if (isOnlinePayment) {
             console.log('🔄 Online payment confirmed - updating order status to paid/processing...');
             // Update the existing preliminary order to mark as paid and processing
-            await existingOrder.update({
-              status: 'processing',
-              payment_status: 'paid',
-              updatedAt: new Date()
-            });
+            await tenantDb
+              .from('orders')
+              .update({
+                status: 'processing',
+                payment_status: 'paid',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingOrder.id);
             statusAlreadyUpdated = false; // Send email since this is first confirmation
           } else {
             console.log('✅ Order status already correct (offline payment or already updated)');
@@ -1388,7 +1394,10 @@ router.post('/webhook', async (req, res) => {
           }
 
           // Verify order items exist
-          const itemCount = await OrderItem.count({ where: { order_id: existingOrder.id } });
+          const { count: itemCount, error: countError } = await tenantDb
+            .from('order_items')
+            .select('*', { count: 'exact', head: true })
+            .eq('order_id', existingOrder.id);
           console.log('✅ Verified:', itemCount, 'OrderItems already exist for order', existingOrder.id);
 
           if (itemCount === 0) {
@@ -1405,7 +1414,10 @@ router.post('/webhook', async (req, res) => {
           console.log('Order created successfully with ID:', order.id, 'Order Number:', order.order_number);
 
           // Verify order items were created
-          const itemCount = await OrderItem.count({ where: { order_id: order.id } });
+          const { count: itemCount } = await tenantDb
+            .from('order_items')
+            .select('*', { count: 'exact', head: true })
+            .eq('order_id', order.id);
           console.log('✅ Verified:', itemCount, 'OrderItems created for order', order.id);
 
           if (itemCount === 0) {
@@ -1425,21 +1437,44 @@ router.post('/webhook', async (req, res) => {
 
             const emailService = require('../services/email-service');
 
-            // Get order with full details for email
-            const orderWithDetails = await Order.findByPk(finalOrder.id, {
-              include: [{
-                model: OrderItem,
-                as: 'OrderItems',
-                include: [{
-                  model: Product,
-                  attributes: ['id', 'sku']
-                }]
-              }, {
-                model: StoreModel,
-                as: 'Store',
-                attributes: ['id', 'name', 'slug', 'currency', 'settings'] // Explicitly include settings
-              }]
-            });
+            // Get order with full details for email - fetch related data separately
+            const { data: orderWithDetails } = await tenantDb
+              .from('orders')
+              .select('*')
+              .eq('id', finalOrder.id)
+              .single();
+
+            // Fetch order items with products
+            const { data: orderItems } = await tenantDb
+              .from('order_items')
+              .select('*')
+              .eq('order_id', finalOrder.id);
+
+            // Fetch products for the items
+            const productIds = orderItems?.map(item => item.product_id).filter(Boolean) || [];
+            const { data: products } = productIds.length > 0 ? await tenantDb
+              .from('products')
+              .select('id, sku')
+              .in('id', productIds) : { data: [] };
+
+            const productMap = {};
+            (products || []).forEach(p => { productMap[p.id] = p; });
+
+            // Attach products to items
+            orderWithDetails.OrderItems = (orderItems || []).map(item => ({
+              ...item,
+              Product: productMap[item.product_id] || null
+            }));
+
+            // Fetch store from master DB
+            const { masterDbClient } = require('../database/masterConnection');
+            const { data: storeData } = await masterDbClient
+              .from('stores')
+              .select('id, name, slug, currency, settings')
+              .eq('id', store_id)
+              .single();
+
+            orderWithDetails.Store = storeData;
 
             // Try to get customer details
             let customer = null;
@@ -1928,12 +1963,15 @@ router.post('/webhook-connect', async (req, res) => {
         // Get tenant DB connection for customer lookups
         const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-        const connection = await ConnectionManager.getStoreConnection(store_id);
-        const { Order, OrderItem, Product, Store: StoreModel, Customer } = connection.models;
+        const { data: existingOrder, error: orderError } = await tenantDb
+          .from('orders')
+          .select('*')
+          .eq('payment_reference', session.id)
+          .maybeSingle();
 
-        const existingOrder = await Order.findOne({
-          where: { payment_reference: session.id }
-        });
+        if (orderError) {
+          console.error('Error finding existing order:', orderError);
+        }
 
         let finalOrder = null;
         let statusAlreadyUpdated = false;
@@ -1950,11 +1988,14 @@ router.post('/webhook-connect', async (req, res) => {
 
           if (isOnlinePayment) {
             console.log('🔄 Online payment confirmed - updating order status to paid/processing...');
-            await existingOrder.update({
-              status: 'processing',
-              payment_status: 'paid',
-              updatedAt: new Date()
-            });
+            await tenantDb
+              .from('orders')
+              .update({
+                status: 'processing',
+                payment_status: 'paid',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingOrder.id);
             statusAlreadyUpdated = false; // Send emails
             console.log('📧 Will SEND emails (order was pending, now confirmed)');
           } else {
@@ -2322,13 +2363,9 @@ async function createPreliminaryOrder(session, orderData) {
   // Get tenant DB connection for customer lookups
   const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-  const connection = await ConnectionManager.getStoreConnection(store_id);
-  const { Order, OrderItem, Product, Store: StoreModel, Customer } = connection.models;
-  const sequelize = connection.sequelize;
-  const transaction = await sequelize.transaction();
+  let orderId = null;
 
   try {
-
     // Calculate totals
     const subtotal = items.reduce((sum, item) => {
       const basePrice = parseFloat(item.price || 0);
@@ -2357,57 +2394,67 @@ async function createPreliminaryOrder(session, orderData) {
     console.log('💾 Final billing address for order:', JSON.stringify(finalBillingAddress, null, 2));
 
     // Determine order status based on payment_flow
-    // Online payments (Stripe, PayPal): pending until webhook confirms
-    // Offline payments (Bank Transfer, COD): immediately confirmed
     const orderStatus = paymentFlow === 'offline' ? 'processing' : 'pending';
     const paymentStatus = paymentFlow === 'offline' ? 'paid' : 'pending';
 
     console.log(`💾 Order status will be: ${orderStatus}, payment status: ${paymentStatus} (payment flow: ${paymentFlow})`);
 
-    // Create the preliminary order
-    const order = await Order.create({
-      order_number: order_number,
-      status: orderStatus,
-      payment_status: paymentStatus,
-      fulfillment_status: 'pending',
-      customer_email,
-      customer_id: validatedCustomerId, // Only set if customer exists in database
-      billing_address: finalBillingAddress,
-      shipping_address: finalShippingAddress,
-      subtotal: subtotal.toFixed(2),
-      tax_amount: taxAmountNum.toFixed(2),
-      shipping_amount: shippingCostNum.toFixed(2),
-      discount_amount: discountAmountNum.toFixed(2),
-      payment_fee_amount: paymentFeeNum.toFixed(2),
-      total_amount: totalAmount.toFixed(2),
-      currency: store.currency || 'USD',
-      delivery_date: delivery_date ? new Date(delivery_date) : null,
-      delivery_time_slot,
-      delivery_instructions,
-      payment_method: 'stripe',
-      payment_reference: session.id, // Use session ID as payment reference
-      shipping_method: selected_shipping_method,
-      coupon_code: applied_coupon?.code || null,
-      store_id
-    }, { transaction });
+    // Create the preliminary order (using Supabase)
+    const { data: order, error: orderError } = await tenantDb
+      .from('orders')
+      .insert({
+        order_number: order_number,
+        status: orderStatus,
+        payment_status: paymentStatus,
+        fulfillment_status: 'pending',
+        customer_email,
+        customer_id: validatedCustomerId,
+        billing_address: finalBillingAddress,
+        shipping_address: finalShippingAddress,
+        subtotal: subtotal.toFixed(2),
+        tax_amount: taxAmountNum.toFixed(2),
+        shipping_amount: shippingCostNum.toFixed(2),
+        discount_amount: discountAmountNum.toFixed(2),
+        payment_fee_amount: paymentFeeNum.toFixed(2),
+        total_amount: totalAmount.toFixed(2),
+        currency: store.currency || 'USD',
+        delivery_date: delivery_date ? new Date(delivery_date).toISOString() : null,
+        delivery_time_slot,
+        delivery_instructions,
+        payment_method: 'stripe',
+        payment_reference: session.id,
+        shipping_method: selected_shipping_method,
+        coupon_code: applied_coupon?.code || null,
+        store_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
 
+    if (orderError) {
+      console.error('❌ Error creating order:', orderError);
+      throw orderError;
+    }
+
+    orderId = order.id;
     console.log('💾 Preliminary order created:', order.id, order.order_number);
 
-    // Create OrderItems
+    // Create OrderItems (sequential operations)
+    const orderItemsData = [];
     for (const item of items) {
       const basePrice = parseFloat(item.price || 0);
       const optionsPrice = (item.selected_options || []).reduce((sum, opt) => sum + parseFloat(opt.price || 0), 0);
       const unitPrice = basePrice + optionsPrice;
       const totalPrice = unitPrice * (item.quantity || 1);
 
-      // Extract product image from item if available
       let productImage = null;
       if (item.images && Array.isArray(item.images) && item.images.length > 0) {
         const firstImage = item.images[0];
         productImage = typeof firstImage === 'object' ? firstImage.url : firstImage;
       }
 
-      const orderItemData = {
+      orderItemsData.push({
         order_id: order.id,
         product_id: item.product_id,
         product_name: item.product_name || item.name || 'Product',
@@ -2418,14 +2465,24 @@ async function createPreliminaryOrder(session, orderData) {
         total_price: totalPrice.toFixed(2),
         original_price: unitPrice.toFixed(2),
         selected_options: item.selected_options || [],
-        product_attributes: {}
-      };
+        product_attributes: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
 
-      console.log('💾 Creating preliminary OrderItem:', orderItemData.product_name);
-      await OrderItem.create(orderItemData, { transaction });
+      console.log('💾 Prepared OrderItem:', orderItemsData[orderItemsData.length - 1].product_name);
     }
 
-    await transaction.commit();
+    // Bulk insert order items
+    const { error: itemsError } = await tenantDb
+      .from('order_items')
+      .insert(orderItemsData);
+
+    if (itemsError) {
+      console.error('❌ Error creating order items:', itemsError);
+      throw itemsError;
+    }
+
     console.log('✅ Preliminary order and items created successfully');
 
     // Send order success email immediately ONLY for offline payments
@@ -2436,21 +2493,44 @@ async function createPreliminaryOrder(session, orderData) {
 
         const emailService = require('../services/email-service');
 
-        // Get order with full details for email
-        const orderWithDetails = await Order.findByPk(order.id, {
-          include: [{
-            model: OrderItem,
-            as: 'OrderItems',
-            include: [{
-              model: Product,
-              attributes: ['id', 'sku']
-            }]
-          }, {
-            model: StoreModel,
-            as: 'Store',
-            attributes: ['id', 'name', 'slug', 'currency', 'settings'] // Explicitly include settings
-          }]
-        });
+        // Get order with full details for email - fetch related data separately
+        const { data: orderWithDetails } = await tenantDb
+          .from('orders')
+          .select('*')
+          .eq('id', order.id)
+          .single();
+
+        // Fetch order items
+        const { data: orderItems } = await tenantDb
+          .from('order_items')
+          .select('*')
+          .eq('order_id', order.id);
+
+        // Fetch products for the items
+        const productIds = orderItems?.map(item => item.product_id).filter(Boolean) || [];
+        const { data: products } = productIds.length > 0 ? await tenantDb
+          .from('products')
+          .select('id, sku')
+          .in('id', productIds) : { data: [] };
+
+        const productMap = {};
+        (products || []).forEach(p => { productMap[p.id] = p; });
+
+        // Attach products to items
+        orderWithDetails.OrderItems = (orderItems || []).map(item => ({
+          ...item,
+          Product: productMap[item.product_id] || null
+        }));
+
+        // Fetch store from master DB
+        const { masterDbClient } = require('../database/masterConnection');
+        const { data: storeData } = await masterDbClient
+          .from('stores')
+          .select('id, name, slug, currency, settings')
+          .eq('id', store_id)
+          .single();
+
+        orderWithDetails.Store = storeData;
 
         // Try to get customer details
         let customer = null;
@@ -2500,7 +2580,12 @@ async function createPreliminaryOrder(session, orderData) {
     return order;
 
   } catch (error) {
-    await transaction.rollback();
+    // Cleanup on error - delete order if it was created
+    if (orderId) {
+      console.log('🧹 Cleaning up failed order:', orderId);
+      await tenantDb.from('order_items').delete().eq('order_id', orderId);
+      await tenantDb.from('orders').delete().eq('id', orderId);
+    }
     console.error('❌ Error creating preliminary order:', error);
     throw error;
   }
@@ -2516,12 +2601,8 @@ async function createOrderFromCheckoutSession(session) {
   // Get tenant DB connection for orders
   const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-  // Note: This function still uses Sequelize for Order/OrderItem operations with transactions
-  // TODO: Convert to Supabase transactions when ready
-  const connection = await ConnectionManager.getStoreConnection(store_id);
-  const { Product, Order, OrderItem, Customer } = connection.models;
-  const sequelize = connection.sequelize;
-  const transaction = await sequelize.transaction();
+  // Converted to Supabase with sequential operations and error recovery
+  let orderId = null;
 
   try {
     const { delivery_date, delivery_time_slot, delivery_instructions, coupon_code, shipping_method_name, shipping_method_id, payment_fee, payment_method, tax_amount } = session.metadata || {};
@@ -2684,32 +2765,45 @@ async function createOrderFromCheckoutSession(session) {
       }
     }
 
-    // Create the order within transaction
-    const order = await Order.create({
-      order_number: order_number,
-      store_id: store_id, // Keep as UUID string
-      customer_email: session.customer_email || session.customer_details?.email,
-      customer_id: validatedCustomerId, // Only set if customer exists in database
-      customer_phone: session.customer_details?.phone,
-      billing_address: billingAddress,
-      shipping_address: shippingAddress,
-      subtotal: subtotal,
-      tax_amount: final_tax_amount,
-      shipping_amount: shipping_cost, // Use shipping_amount instead of shipping_cost
-      discount_amount: (session.total_details?.amount_discount || 0) / 100,
-      payment_fee_amount: payment_fee_amount,
-      total_amount: total_amount,
-      currency: session.currency.toUpperCase(),
-      delivery_date: delivery_date ? new Date(delivery_date) : null,
-      delivery_time_slot: delivery_time_slot || null,
-      delivery_instructions: delivery_instructions || null,
-      payment_method: 'stripe',
-      payment_reference: session.id, // Use session ID for lookup
-      payment_status: 'paid',
-      status: 'processing',
-      coupon_code: coupon_code || null,
-      shipping_method: shipping_method_name || null // Use shipping_method instead of shipping_method_name
-    }, { transaction });
+    // Create the order (using Supabase)
+    const { data: order, error: orderError } = await tenantDb
+      .from('orders')
+      .insert({
+        order_number: order_number,
+        store_id: store_id,
+        customer_email: session.customer_email || session.customer_details?.email,
+        customer_id: validatedCustomerId,
+        customer_phone: session.customer_details?.phone,
+        billing_address: billingAddress,
+        shipping_address: shippingAddress,
+        subtotal: subtotal,
+        tax_amount: final_tax_amount,
+        shipping_amount: shipping_cost,
+        discount_amount: (session.total_details?.amount_discount || 0) / 100,
+        payment_fee_amount: payment_fee_amount,
+        total_amount: total_amount,
+        currency: session.currency.toUpperCase(),
+        delivery_date: delivery_date ? new Date(delivery_date).toISOString() : null,
+        delivery_time_slot: delivery_time_slot || null,
+        delivery_instructions: delivery_instructions || null,
+        payment_method: 'stripe',
+        payment_reference: session.id,
+        payment_status: 'paid',
+        status: 'processing',
+        coupon_code: coupon_code || null,
+        shipping_method: shipping_method_name || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (orderError) {
+      console.error('❌ Error creating order:', orderError);
+      throw orderError;
+    }
+
+    orderId = order.id;
     
     // Group line items by product and reconstruct order items
     const productMap = new Map();
@@ -2839,19 +2933,34 @@ async function createOrderFromCheckoutSession(session) {
       
       console.log('Creating order item:', JSON.stringify(orderItemData, null, 2));
       
-      const createdItem = await OrderItem.create(orderItemData, { transaction });
+      const { data: createdItem, error: itemError } = await tenantDb
+        .from('order_items')
+        .insert({
+          ...orderItemData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (itemError) {
+        console.error('❌ Error creating order item:', itemError);
+        throw itemError;
+      }
+
       console.log('Created order item with ID:', createdItem.id);
     }
-    
-    // Commit the transaction
-    await transaction.commit();
-    
+
     console.log(`Order created successfully: ${order.order_number}`);
     return order;
-    
+
   } catch (error) {
-    // Rollback the transaction on error
-    await transaction.rollback();
+    // Cleanup on error - delete order if it was created
+    if (orderId) {
+      console.log('🧹 Cleaning up failed order:', orderId);
+      await tenantDb.from('order_items').delete().eq('order_id', orderId);
+      await tenantDb.from('orders').delete().eq('id', orderId);
+    }
     console.error('Error creating order from checkout session:', error);
     throw error;
   }
