@@ -654,13 +654,23 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         }
 
         if (oauthData) {
-          // Use tenant DB connection to save OAuth tokens
+          // Use tenant DB connection to save OAuth tokens (with encryption)
+          const { encrypt } = require('../utils/encryption');
+
           const { data: savedToken, error: tokenError } = await tenantDb
             .from('supabase_oauth_tokens')
             .insert({
               id: require('uuid').v4(),
               store_id: storeId,
-              ...oauthData,
+              access_token: encrypt(oauthData.access_token),
+              refresh_token: encrypt(oauthData.refresh_token),
+              expires_at: oauthData.expires_at,
+              project_url: oauthData.project_url,
+              service_role_key: oauthData.service_role_key ? encrypt(oauthData.service_role_key) : null,
+              database_url: oauthData.database_url || null,
+              storage_url: oauthData.storage_url || null,
+              auth_url: oauthData.auth_url || null,
+              anon_key: null, // No longer used
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             })
