@@ -591,8 +591,7 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
     });
 
     // 4. Load custom option rules
-    const { supabase } = require('../database/connection');
-    const { data: customOptionRules } = await supabase
+    const { data: customOptionRules } = await tenantDb
       .from('custom_option_rules')
       .select('*')
       .eq('store_id', store_id)

@@ -136,25 +136,43 @@ class HeatmapHandler {
    */
   async updateSession(sessionData, tenantDb) {
     try {
-      // Upsert session using Supabase
-      const { error } = await tenantDb
+      // Check if session exists first, then update or insert
+      const { data: existingSession } = await tenantDb
         .from('heatmap_sessions')
-        .upsert({
-          session_id: sessionData.session_id,
-          store_id: sessionData.store_id,
-          user_id: sessionData.user_id,
-          last_page_url: sessionData.last_page_url,
-          device_type: sessionData.device_type,
-          browser_name: sessionData.browser_name,
-          operating_system: sessionData.operating_system,
-          interaction_count: sessionData.interaction_count,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'session_id'
-        });
+        .select('session_id')
+        .eq('session_id', sessionData.session_id)
+        .maybeSingle();
 
-      if (error) {
-        throw error;
+      if (existingSession) {
+        // Update existing session
+        const { error } = await tenantDb
+          .from('heatmap_sessions')
+          .update({
+            last_page_url: sessionData.last_page_url,
+            interaction_count: sessionData.interaction_count,
+            updated_at: new Date().toISOString()
+          })
+          .eq('session_id', sessionData.session_id);
+
+        if (error) throw error;
+      } else {
+        // Insert new session
+        const { error } = await tenantDb
+          .from('heatmap_sessions')
+          .insert({
+            session_id: sessionData.session_id,
+            store_id: sessionData.store_id,
+            user_id: sessionData.user_id,
+            last_page_url: sessionData.last_page_url,
+            device_type: sessionData.device_type,
+            browser_name: sessionData.browser_name,
+            operating_system: sessionData.operating_system,
+            interaction_count: sessionData.interaction_count,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) throw error;
       }
     } catch (error) {
       console.error('[HEATMAP] Session update error:', {
