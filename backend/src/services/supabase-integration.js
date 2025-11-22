@@ -712,12 +712,29 @@ class SupabaseIntegration {
 
       // CRITICAL FIX: Also check store_databases for connection
       const { masterDbClient } = require('../database/masterConnection');
-      const { data: storeDatabase } = await masterDbClient
-        .from('store_databases')
-        .select('*')
-        .eq('store_id', storeId)
-        .eq('is_active', true)
-        .maybeSingle();
+      console.log('[getProjects] masterDbClient initialized:', !!masterDbClient);
+
+      let storeDatabase = null;
+      if (masterDbClient) {
+        try {
+          const result = await masterDbClient
+            .from('store_databases')
+            .select('*')
+            .eq('store_id', storeId)
+            .eq('is_active', true)
+            .maybeSingle();
+          storeDatabase = result?.data;
+          console.log('[getProjects] store_databases query result:', {
+            found: !!storeDatabase,
+            storeId,
+            hasOAuthToken: !!token
+          });
+        } catch (dbError) {
+          console.error('[getProjects] Error querying store_databases:', dbError.message);
+        }
+      } else {
+        console.warn('[getProjects] masterDbClient is null - cannot check store_databases');
+      }
 
       // If connected via store_databases, return the single project from credentials
       if (!token && storeDatabase) {
@@ -992,12 +1009,29 @@ class SupabaseIntegration {
 
       // CRITICAL FIX: Also check store_databases in master DB for connection credentials
       const { masterDbClient } = require('../database/masterConnection');
-      const { data: storeDatabase } = await masterDbClient
-        .from('store_databases')
-        .select('*')
-        .eq('store_id', storeId)
-        .eq('is_active', true)
-        .maybeSingle();
+      console.log('[getConnectionStatus] masterDbClient initialized:', !!masterDbClient);
+
+      let storeDatabase = null;
+      if (masterDbClient) {
+        try {
+          const result = await masterDbClient
+            .from('store_databases')
+            .select('*')
+            .eq('store_id', storeId)
+            .eq('is_active', true)
+            .maybeSingle();
+          storeDatabase = result?.data;
+          console.log('[getConnectionStatus] store_databases query result:', {
+            found: !!storeDatabase,
+            storeId,
+            hasCredentials: !!storeDatabase?.connection_string_encrypted
+          });
+        } catch (dbError) {
+          console.error('[getConnectionStatus] Error querying store_databases:', dbError.message);
+        }
+      } else {
+        console.warn('[getConnectionStatus] masterDbClient is null - cannot check store_databases');
+      }
       
       // Check if OAuth is configured for new connections
       if (!this.oauthConfigured && !token) {
