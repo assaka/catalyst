@@ -36,11 +36,14 @@ export default function CmsPageViewer() {
                     console.log('🌍 CmsPageViewer: Fetching page with language:', currentLanguage);
 
                     // Fetch CMS page using StorefrontCmsPage which uses public API (better performance)
+                    console.log('🔍 CmsPageViewer: settings object:', settings);
+                    console.log('🔍 CmsPageViewer: settings.store_id:', settings?.store_id);
                     if (!settings?.store_id) {
                         console.warn('⚠️ CmsPageViewer: store_id not available yet, skipping API call');
                         setLoading(false);
                         return;
                     }
+                    console.log('✅ CmsPageViewer: store_id available, proceeding with API call');
                     const pages = await StorefrontCmsPage.filter({ slug: slug, store_id: settings.store_id });
 
                     console.log('📥 CmsPageViewer: Received page:', pages.length > 0 ? pages[0].slug : 'not found');
