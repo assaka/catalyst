@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 
 export default function CmsPageViewer() {
     const { pageSlug, storeCode } = useParams();
-    const { settings } = useStore();
+    const { settings, store } = useStore();
     const slug = pageSlug;
     const { showNotFound } = useNotFound();
     const [page, setPage] = useState(null);
@@ -36,15 +36,15 @@ export default function CmsPageViewer() {
                     console.log('🌍 CmsPageViewer: Fetching page with language:', currentLanguage);
 
                     // Fetch CMS page using StorefrontCmsPage which uses public API (better performance)
-                    console.log('🔍 CmsPageViewer: settings object:', settings);
-                    console.log('🔍 CmsPageViewer: settings.store_id:', settings?.store_id);
-                    if (!settings?.store_id) {
+                    console.log('🔍 CmsPageViewer: store object:', store);
+                    console.log('🔍 CmsPageViewer: store.id:', store?.id);
+                    if (!store?.id) {
                         console.warn('⚠️ CmsPageViewer: store_id not available yet, skipping API call');
                         setLoading(false);
                         return;
                     }
                     console.log('✅ CmsPageViewer: store_id available, proceeding with API call');
-                    const pages = await StorefrontCmsPage.filter({ slug: slug, store_id: settings.store_id });
+                    const pages = await StorefrontCmsPage.filter({ slug: slug, store_id: store.id });
 
                     console.log('📥 CmsPageViewer: Received page:', pages.length > 0 ? pages[0].slug : 'not found');
 
@@ -72,7 +72,7 @@ export default function CmsPageViewer() {
             };
             fetchPage();
         }
-    }, [slug, settings?.store_id]); // Re-run when store_id becomes available
+    }, [slug, store?.id]); // Re-run when store_id becomes available
 
     // Listen for language changes and refetch the page
     useEffect(() => {
@@ -88,11 +88,11 @@ export default function CmsPageViewer() {
                         console.log('🔄 CmsPageViewer: Refetching page for language:', newLanguage);
 
                         // Use StorefrontCmsPage which uses public API (better performance)
-                        if (!settings?.store_id) {
+                        if (!store?.id) {
                             console.warn('⚠️ CmsPageViewer: store_id not available, skipping API call');
                             return;
                         }
-                        const pages = await StorefrontCmsPage.filter({ slug: slug, store_id: settings.store_id });
+                        const pages = await StorefrontCmsPage.filter({ slug: slug, store_id: store.id });
 
                         if (pages && pages.length > 0) {
                             const currentPage = pages[0];
