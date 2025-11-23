@@ -269,8 +269,9 @@ class ShopifyImportService {
         };
       }
 
-      // Ensure we have required attributes for products
-      await this.ensureProductAttributes();
+      // Ensure we have required attributes for products and Shopify attribute set
+      const shopifyAttributeSet = await this.ensureProductAttributes();
+      this.shopifyAttributeSetId = shopifyAttributeSet.id;
 
       // Process products
       for (const product of productsToImport) {
@@ -481,6 +482,7 @@ class ShopifyImportService {
         external_id: product.id.toString(),
         external_source: 'shopify',
         store_id: this.storeId,
+        attribute_set_id: this.shopifyAttributeSetId, // Assign Shopify attribute set
         attributes: processedAttributes // Use processed attributes with deduplication
       };
 
@@ -822,20 +824,67 @@ class ShopifyImportService {
   }
 
   /**
-   * Ensure required product attributes exist
+   * Ensure Shopify attribute set exists and return its ID
+   */
+  async ensureShopifyAttributeSet() {
+    const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
+
+    // Check if Shopify attribute set already exists
+    const { data: existingSet } = await tenantDb
+      .from('attribute_sets')
+      .select('*')
+      .eq('store_id', this.storeId)
+      .eq('name', 'Shopify')
+      .maybeSingle();
+
+    if (existingSet) {
+      return existingSet;
+    }
+
+    // Create Shopify attribute set
+    const { data: newSet, error } = await tenantDb
+      .from('attribute_sets')
+      .insert({
+        id: uuidv4(),
+        name: 'Shopify',
+        description: 'Attribute set for products imported from Shopify',
+        is_default: false,
+        sort_order: 0,
+        store_id: this.storeId,
+        attribute_ids: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to create Shopify attribute set:', error);
+      throw error;
+    }
+
+    console.log('✅ Created Shopify attribute set');
+    return newSet;
+  }
+
+  /**
+   * Ensure required product attributes exist and assign to Shopify attribute set
    */
   async ensureProductAttributes() {
     const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
     const requiredAttributes = [
-      { code: 'vendor', name: 'Vendor', type: 'text' },
-      { code: 'product_type', name: 'Product Type', type: 'text' },
-      { code: 'tags', name: 'Tags', type: 'text' },
-      { code: 'barcode', name: 'Barcode', type: 'text' },
-      { code: 'option1', name: 'Option 1', type: 'text' },
-      { code: 'option2', name: 'Option 2', type: 'text' },
-      { code: 'option3', name: 'Option 3', type: 'text' }
+      { code: 'vendor', name: 'Vendor', type: 'text', filterable: true },
+      { code: 'product_type', name: 'Product Type', type: 'text', filterable: true },
+      { code: 'tags', name: 'Tags', type: 'text', filterable: false },
+      { code: 'barcode', name: 'Barcode', type: 'text', filterable: false },
+      { code: 'weight', name: 'Weight', type: 'text', filterable: false },
+      { code: 'option1', name: 'Option 1', type: 'text', filterable: false },
+      { code: 'option2', name: 'Option 2', type: 'text', filterable: false },
+      { code: 'option3', name: 'Option 3', type: 'text', filterable: false }
     ];
+
+    const attributeIds = [];
 
     for (const attrData of requiredAttributes) {
       const { data: existingAttr } = await tenantDb
@@ -845,22 +894,50 @@ class ShopifyImportService {
         .eq('code', attrData.code)
         .maybeSingle();
 
+      let attributeId;
+
       if (!existingAttr) {
-        await tenantDb
+        const { data: newAttr } = await tenantDb
           .from('attributes')
           .insert({
             id: uuidv4(),
-            ...attrData,
+            name: attrData.name,
+            code: attrData.code,
+            type: attrData.type,
             store_id: this.storeId,
             is_required: false,
-            is_filterable: attrData.code === 'vendor' || attrData.code === 'product_type',
+            is_filterable: attrData.filterable,
             is_searchable: true,
             sort_order: 100,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          });
+          })
+          .select()
+          .single();
+
+        attributeId = newAttr.id;
+      } else {
+        attributeId = existingAttr.id;
       }
+
+      attributeIds.push(attributeId);
     }
+
+    // Get or create Shopify attribute set
+    const attributeSet = await this.ensureShopifyAttributeSet();
+
+    // Update attribute set with all attribute IDs
+    await tenantDb
+      .from('attribute_sets')
+      .update({
+        attribute_ids: attributeIds,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', attributeSet.id);
+
+    console.log(`✅ Assigned ${attributeIds.length} attributes to Shopify attribute set`);
+
+    return attributeSet;
   }
 
   /**
