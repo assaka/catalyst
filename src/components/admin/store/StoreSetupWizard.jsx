@@ -12,22 +12,29 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [migrationStatus, setMigrationStatus] = useState(null);
   const [supabaseConnected, setSupabaseConnected] = useState(false);
+  const [selectedDatabaseType, setSelectedDatabaseType] = useState(null);
 
   const steps = [
     {
       id: 1,
-      title: 'Supabase Authentication',
-      description: 'Connect your store to Supabase for database and authentication',
-      icon: Shield
+      title: 'Database Selection',
+      description: 'Choose your database provider',
+      icon: Database
     },
     {
       id: 2,
+      title: 'Database Connection',
+      description: 'Connect to your selected database provider',
+      icon: Shield
+    },
+    {
+      id: 3,
       title: 'Database Migration',
       description: 'Initialize your store database with required tables',
       icon: Database
     },
     {
-      id: 3,
+      id: 4,
       title: 'Store Configuration',
       description: 'Complete your store setup',
       icon: Settings
@@ -43,30 +50,33 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
       console.warn('StoreSetupWizard: Invalid storeId, skipping connection check:', storeId);
       return;
     }
-    
+
     try {
-      const response = await apiClient.get('/supabase/status');
-      if (response.success && response.connected) {
-        setConnectionStatus(response);
+      // Check if database is already configured
+      const dbResponse = await apiClient.get(`/store-database/status?store_id=${storeId}`);
+      if (dbResponse.success && dbResponse.database) {
+        const provider = dbResponse.database.provider;
+        setSelectedDatabaseType(provider);
+        setConnectionStatus(dbResponse.database);
         setSupabaseConnected(true);
-        setCurrentStep(2);
+        setCurrentStep(3); // Skip to migration step
       }
     } catch (error) {
       console.error('Failed to check existing connection:', error);
     }
   };
 
-  // Poll for Supabase connection status changes
+  // Poll for database connection status changes
   useEffect(() => {
-    if (currentStep === 1 && !supabaseConnected && storeId && storeId !== 'undefined') {
+    if (currentStep === 2 && !supabaseConnected && storeId && storeId !== 'undefined' && selectedDatabaseType) {
       const pollInterval = setInterval(async () => {
         try {
-          const response = await apiClient.get('/supabase/status');
-          if (response.success && response.connected && !supabaseConnected) {
+          const response = await apiClient.get(`/store-database/status?store_id=${storeId}`);
+          if (response.success && response.database && !supabaseConnected) {
             setSupabaseConnected(true);
-            setConnectionStatus(response);
-            setCurrentStep(2);
-            toast.success('Supabase connected! Ready to initialize database.');
+            setConnectionStatus(response.database);
+            setCurrentStep(3);
+            toast.success(`${selectedDatabaseType} connected! Ready to initialize database.`);
             clearInterval(pollInterval);
           }
         } catch (error) {
@@ -77,7 +87,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
       // Clean up interval on component unmount or when connection is established
       return () => clearInterval(pollInterval);
     }
-  }, [currentStep, storeId, supabaseConnected]);
+  }, [currentStep, storeId, supabaseConnected, selectedDatabaseType]);
 
   const handleDatabaseMigration = async () => {
     if (!storeId || storeId === 'undefined') {
@@ -100,7 +110,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
           details: response.details
         });
         toast.success('Database migration completed!');
-        setCurrentStep(3);
+        setCurrentStep(4);
       } else {
         setMigrationStatus({ 
           status: 'error', 
@@ -121,49 +131,171 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
   };
 
 
+  const databaseOptions = [
+    {
+      id: 'supabase',
+      name: 'Supabase',
+      description: 'PostgreSQL with built-in authentication, real-time, and storage',
+      icon: Database,
+      color: 'green',
+      recommended: true
+    },
+    {
+      id: 'neon',
+      name: 'Neon',
+      description: 'Serverless PostgreSQL with auto-scaling and branching',
+      icon: Database,
+      color: 'blue'
+    },
+    {
+      id: 'planetscale',
+      name: 'PlanetScale',
+      description: 'MySQL-compatible serverless database platform',
+      icon: Database,
+      color: 'purple'
+    }
+  ];
+
   const renderStep1 = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <Shield className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Connect to Supabase</h3>
+        <Database className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">Choose Your Database</h3>
         <p className="text-gray-600">
-          Set up your store's backend infrastructure with Supabase for authentication and data storage.
+          Select a database provider for your store. You can change this later if needed.
         </p>
       </div>
 
-      {/* Use SupabaseIntegration component with OAuth project selection */}
-      <SupabaseIntegration 
-        storeId={storeId}
-        context="wizard"
-      />
-
-      {connectionStatus && (
-        <Card className={connectionStatus.connected ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}>
-          <CardContent className="pt-4">
-            <div className="flex items-start space-x-2">
-              {connectionStatus.connected ? (
-                <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-              )}
-              <div>
-                <p className={`text-sm font-medium ${connectionStatus.connected ? 'text-green-800' : 'text-red-800'}`}>
-                  {connectionStatus.message}
-                </p>
-                {connectionStatus.project_url && (
-                  <p className="text-xs text-gray-600 mt-1">
-                    Project: {connectionStatus.project_url}
-                  </p>
+      <div className="grid grid-cols-1 gap-4">
+        {databaseOptions.map((option) => (
+          <Card
+            key={option.id}
+            className={`cursor-pointer transition-all ${
+              selectedDatabaseType === option.id
+                ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50'
+                : 'hover:border-gray-400'
+            }`}
+            onClick={() => setSelectedDatabaseType(option.id)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start space-x-4">
+                <div className={`p-3 rounded-lg bg-${option.color}-100`}>
+                  <option.icon className={`w-6 h-6 text-${option.color}-600`} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <h4 className="font-semibold text-gray-900">{option.name}</h4>
+                    {option.recommended && (
+                      <Badge variant="secondary" className="text-xs">Recommended</Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600">{option.description}</p>
+                </div>
+                {selectedDatabaseType === option.id && (
+                  <CheckCircle className="w-5 h-5 text-blue-600" />
                 )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Button
+        onClick={() => setCurrentStep(2)}
+        disabled={!selectedDatabaseType}
+        className="w-full"
+        size="lg"
+      >
+        <ArrowRight className="w-5 h-5 mr-2" />
+        Continue with {selectedDatabaseType ? databaseOptions.find(o => o.id === selectedDatabaseType)?.name : 'Selected Database'}
+      </Button>
     </div>
   );
 
-  const renderStep2 = () => (
+  const renderStep2 = () => {
+    const renderDatabaseConnection = () => {
+      if (selectedDatabaseType === 'supabase') {
+        return <SupabaseIntegration storeId={storeId} context="wizard" />;
+      } else if (selectedDatabaseType === 'neon') {
+        return (
+          <div className="text-center py-6">
+            <Button
+              onClick={async () => {
+                try {
+                  const response = await apiClient.get(`/database-oauth/neon/authorize?store_id=${storeId}`);
+                  if (response.authUrl) {
+                    window.location.href = response.authUrl;
+                  }
+                } catch (error) {
+                  toast.error('Failed to initiate Neon connection');
+                }
+              }}
+              size="lg"
+            >
+              Connect to Neon
+            </Button>
+          </div>
+        );
+      } else if (selectedDatabaseType === 'planetscale') {
+        return (
+          <div className="text-center py-6">
+            <Button
+              onClick={async () => {
+                try {
+                  const response = await apiClient.get(`/database-oauth/planetscale/authorize?store_id=${storeId}`);
+                  if (response.authUrl) {
+                    window.location.href = response.authUrl;
+                  }
+                } catch (error) {
+                  toast.error('Failed to initiate PlanetScale connection');
+                }
+              }}
+              size="lg"
+            >
+              Connect to PlanetScale
+            </Button>
+          </div>
+        );
+      }
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <Shield className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Connect to {databaseOptions.find(o => o.id === selectedDatabaseType)?.name}
+          </h3>
+          <p className="text-gray-600">
+            Set up your store's backend infrastructure with {databaseOptions.find(o => o.id === selectedDatabaseType)?.name} for data storage.
+          </p>
+        </div>
+
+        {renderDatabaseConnection()}
+
+        {connectionStatus && (
+          <Card className={connectionStatus.connected ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}>
+            <CardContent className="pt-4">
+              <div className="flex items-start space-x-2">
+                {connectionStatus.connected ? (
+                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                )}
+                <div>
+                  <p className={`text-sm font-medium ${connectionStatus.connected ? 'text-green-800' : 'text-red-800'}`}>
+                    {connectionStatus.message || (connectionStatus.connected ? 'Connected Successfully' : 'Connection Failed')}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
+
+  const renderStep3 = () => (
     <div className="space-y-6">
       <div className="text-center">
         <Database className="w-16 h-16 text-green-600 mx-auto mb-4" />
@@ -180,7 +312,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
               <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-green-800">
-                  Supabase Connected Successfully
+                  {databaseOptions.find(o => o.id === selectedDatabaseType)?.name} Connected Successfully
                 </p>
                 <p className="text-xs text-green-700 mt-1">
                   Ready to initialize database
@@ -265,13 +397,13 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
     </div>
   );
 
-  const renderStep3 = () => (
+  const renderStep4 = () => (
     <div className="space-y-6">
       <div className="text-center">
         <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-gray-900 mb-2">Setup Complete!</h3>
         <p className="text-gray-600">
-          Your store is now ready with Supabase authentication and database.
+          Your store is now ready with {databaseOptions.find(o => o.id === selectedDatabaseType)?.name} database.
         </p>
       </div>
 
@@ -279,7 +411,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
         <CardContent className="pt-4">
           <h4 className="font-medium text-green-900 mb-2">What's been configured:</h4>
           <ul className="text-sm text-green-800 space-y-1">
-            <li>✓ Supabase authentication connected</li>
+            <li>✓ {databaseOptions.find(o => o.id === selectedDatabaseType)?.name} database connected</li>
             <li>✓ Database tables initialized</li>
             <li>✓ Store configurations applied</li>
             <li>✓ Ready for product management</li>
@@ -382,11 +514,12 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
           {currentStep === 1 && renderStep1()}
           {currentStep === 2 && renderStep2()}
           {currentStep === 3 && renderStep3()}
+          {currentStep === 4 && renderStep4()}
         </CardContent>
       </Card>
 
       {/* Footer Actions */}
-      {currentStep < 3 && (
+      {currentStep < 4 && (
         <div className="flex justify-between mt-6">
           <Button
             variant="ghost"
@@ -395,7 +528,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
           >
             Skip Setup
           </Button>
-          {currentStep > 1 && (
+          {currentStep > 1 && currentStep !== 3 && (
             <Button
               variant="outline"
               onClick={() => setCurrentStep(currentStep - 1)}
