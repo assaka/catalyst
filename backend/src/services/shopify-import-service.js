@@ -476,7 +476,6 @@ class ShopifyImportService {
         external_id: product.id.toString(),
         external_source: 'shopify',
         store_id: this.storeId,
-        url_key: product.handle,
         attributes: processedAttributes // Use processed attributes with deduplication
       };
 
@@ -487,7 +486,7 @@ class ShopifyImportService {
 
       if (product.variants?.[0]?.weight) {
         productData.weight = product.variants[0].weight;
-        productData.weight_unit = product.variants[0].weight_unit || 'kg';
+        // Note: weight_unit column doesn't exist in products table, weight is stored as numeric only
       }
 
       // Note: Images will be stored in product_files table after product is saved
