@@ -337,7 +337,7 @@ router.put('/:id',
 
     // Update translations in normalized table if provided
     if (translations && Object.keys(translations).length > 0) {
-      await updateProductTranslations(req.params.id, translations);
+      await updateProductTranslations(store_id, req.params.id, translations);
     }
 
     res.json({
