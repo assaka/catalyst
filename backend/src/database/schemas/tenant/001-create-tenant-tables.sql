@@ -2471,14 +2471,19 @@ CREATE TABLE IF NOT EXISTS product_tabs (
 );
 
 CREATE TABLE IF NOT EXISTS product_translations (
-  product_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  language_code VARCHAR(10),
-  name VARCHAR(255) NOT NULL,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  language_code VARCHAR(10) NOT NULL,
+  name VARCHAR(255),
   description TEXT,
   short_description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  UNIQUE(product_id, language_code)
 );
+
+CREATE INDEX IF NOT EXISTS idx_product_translations_product_id ON product_translations(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_translations_language ON product_translations(language_code);
 
 -- ============================================
 -- PRODUCT FILES TABLE

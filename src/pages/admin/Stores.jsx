@@ -11,13 +11,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import apiClient from '@/api/client';
-import StoreSetupWizard from '@/components/admin/store/StoreSetupWizard';
 
 export default function Stores() {
+  const navigate = useNavigate();
   const { selectStore, refreshStores } = useStoreSelection();
   const [stores, setStores] = useState([]);
   const [user, setUser] = useState(null);
@@ -36,9 +36,6 @@ export default function Stores() {
     description: '',
     slug: '' // Added slug to newStore state as required by new handleCreateStore logic
   });
-  const [showWizard, setShowWizard] = useState(false);
-  const [createdStoreId, setCreatedStoreId] = useState(null);
-  const [createdStoreName, setCreatedStoreName] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -151,17 +148,12 @@ export default function Stores() {
       setNewStore({ name: '', client_email: '', description: '', slug: '' });
       setCreateError('');
 
-      // Close the create dialog first
+      // Close the create dialog
       setShowCreateStore(false);
 
-      // Wait a bit for the create dialog to close, then open the wizard
-      console.log('🔄 Opening wizard in 300ms...');
-      setTimeout(() => {
-        console.log('🎬 Now opening wizard!');
-        setShowWizard(true);
-      }, 300);
-
-      loadData();
+      // Redirect to onboarding page with store ID
+      console.log('🔄 Redirecting to onboarding page...');
+      navigate(`/admin/onboarding?storeId=${storeData.id}&storeName=${encodeURIComponent(storeData.name || newStore.name)}`);
     } catch (error) {
       console.error("Error creating store:", error);
 
@@ -179,25 +171,6 @@ export default function Stores() {
     }
   };
 
-  const handleWizardComplete = () => {
-    // Save store ID before clearing state
-    const storeId = createdStoreId;
-    setShowWizard(false);
-    setCreatedStoreId(null);
-    setCreatedStoreName(null);
-    // Redirect to store dashboard
-    window.location.href = `/admin/dashboard?store=${storeId}`;
-  };
-
-  const handleWizardSkip = () => {
-    // Save store ID before clearing state
-    const storeId = createdStoreId;
-    setShowWizard(false);
-    setCreatedStoreId(null);
-    setCreatedStoreName(null);
-    // Redirect to store settings for manual setup
-    window.location.href = `/admin/settings?store=${storeId}`;
-  };
 
   const handleTogglePublished = async (storeId, currentStatus) => {
     const newStatus = !currentStatus;
@@ -315,7 +288,7 @@ export default function Stores() {
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Create New Store</DialogTitle>
+              <DialogTitle>Create New Storea</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               {createError && (
@@ -568,19 +541,6 @@ export default function Stores() {
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Store Setup Wizard Modal */}
-      {console.log('🎨 Rendering wizard dialog:', { showWizard, createdStoreId, createdStoreName })}
-      <Dialog open={showWizard} onOpenChange={setShowWizard}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <StoreSetupWizard
-            storeId={createdStoreId}
-            storeName={createdStoreName}
-            onComplete={handleWizardComplete}
-            onSkip={handleWizardSkip}
-          />
         </DialogContent>
       </Dialog>
 
