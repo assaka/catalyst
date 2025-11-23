@@ -926,7 +926,6 @@ class ShopifyImportService {
           .from('attributes')
           .insert({
             id: uuidv4(),
-            name: attrData.name,
             code: attrData.code,
             type: attrData.type,
             store_id: this.storeId,
@@ -941,8 +940,52 @@ class ShopifyImportService {
           .single();
 
         attributeId = newAttr.id;
+
+        // Create English translation for the attribute
+        const { data: existingTranslation } = await tenantDb
+          .from('attribute_translations')
+          .select('id')
+          .eq('attribute_id', attributeId)
+          .eq('language_code', 'en')
+          .maybeSingle();
+
+        if (!existingTranslation) {
+          await tenantDb
+            .from('attribute_translations')
+            .insert({
+              attribute_id: attributeId,
+              language_code: 'en',
+              label: attrData.name,
+              description: null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          console.log(`✅ Created English translation for attribute: ${attrData.code}`);
+        }
       } else {
         attributeId = existingAttr.id;
+
+        // Ensure English translation exists for existing attributes too
+        const { data: existingTranslation } = await tenantDb
+          .from('attribute_translations')
+          .select('id')
+          .eq('attribute_id', attributeId)
+          .eq('language_code', 'en')
+          .maybeSingle();
+
+        if (!existingTranslation) {
+          await tenantDb
+            .from('attribute_translations')
+            .insert({
+              attribute_id: attributeId,
+              language_code: 'en',
+              label: attrData.name,
+              description: null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          console.log(`✅ Added missing English translation for attribute: ${attrData.code}`);
+        }
       }
 
       attributeIds.push(attributeId);

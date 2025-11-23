@@ -211,7 +211,6 @@ class AttributeMappingService {
       .insert({
         id: uuidv4(),
         code: attributeData.code,
-        name: attributeData.name,
         type: attributeData.type || 'text',
         is_required: false,
         is_filterable: attributeData.is_filterable || false,
@@ -229,12 +228,30 @@ class AttributeMappingService {
       throw error;
     }
 
+    // Create English translation for the attribute
+    try {
+      await tenantDb
+        .from('attribute_translations')
+        .insert({
+          attribute_id: data.id,
+          language_code: 'en',
+          label: attributeData.name,
+          description: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      console.log(`✅ Created English translation for attribute: ${data.code}`);
+    } catch (translationError) {
+      console.error(`⚠️ Failed to create translation for ${data.code}:`, translationError);
+      // Don't throw - attribute is created, translation can be added later
+    }
+
     // Add to cache
     const normalized = this.normalizeAttributeKey(data.code);
     this.attributeCache.set(normalized.canonical, data);
     this.attributeCache.set(data.code, data);
 
-    console.log(`✅ Created new attribute: ${data.code} (${data.name})`);
+    console.log(`✅ Created new attribute: ${data.code} (${attributeData.name})`);
     return data;
   }
 
