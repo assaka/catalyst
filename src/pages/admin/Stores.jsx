@@ -147,14 +147,19 @@ export default function Stores() {
         name: storeData.name || newStore.name
       });
 
-      // Close the create dialog and show the wizard
-      setShowCreateStore(false);
-      console.log('🔄 Opening wizard...');
-      setShowWizard(true);
-
       // Reset the form
       setNewStore({ name: '', client_email: '', description: '', slug: '' });
       setCreateError('');
+
+      // Close the create dialog first
+      setShowCreateStore(false);
+
+      // Wait a bit for the create dialog to close, then open the wizard
+      console.log('🔄 Opening wizard in 300ms...');
+      setTimeout(() => {
+        console.log('🎬 Now opening wizard!');
+        setShowWizard(true);
+      }, 300);
 
       loadData();
     } catch (error) {
