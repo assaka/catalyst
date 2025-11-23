@@ -172,7 +172,7 @@ export default function Stores() {
 
         <Button
           className="bg-blue-600 hover:bg-blue-700"
-          onClick={() => navigate('/admin/onboarding')}
+          onClick={() => navigate('/admin/store-onboarding')}
         >
           <Plus className="w-4 h-4 mr-2" />
           Create Store
@@ -192,7 +192,7 @@ export default function Stores() {
                   : 'Create your first store to start selling online.'
               }
             </p>
-            <Button onClick={() => navigate('/admin/onboarding')}>
+            <Button onClick={() => navigate('/admin/store-onboarding')}>
               <Plus className="w-4 h-4 mr-2" />
               Create Your First Store
             </Button>
