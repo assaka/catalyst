@@ -138,8 +138,8 @@ ON CONFLICT DO NOTHING;
 INSERT INTO cms_pages (id, slug, is_active, meta_title, meta_description, meta_keywords, meta_robots_tag, store_id, related_product_ids, published_at, sort_order, created_at, updated_at, is_system, seo)
 VALUES
   ('f04fac32-51e5-4162-a35e-5d496dd2410a', 'yryryryr', true, '', '', '', 'index, follow', '157d4590-49bf-4b0b-bd77-abe131909528', '["4df411ea-a896-4a3c-9f83-53640886b9ea","01c89d04-b9e0-43c4-aa75-f1b743b5eaa3"]'::jsonb, NULL, 0, '2025-10-23T08:56:11.639Z', '2025-10-23T13:12:55.382Z', false, '{}'::jsonb),
-  ('bbb26804-4ff2-4e8b-ba2b-e8c203704176', '404-page-not-foundd-wh', true, '404 - Page Not Found | {{store_name}}', 'Sorry, we couldn''t find the page you''re looking for. Browse our products or contact us for assistance.', '404, page not found, error, help', 'noindex, nofollow', '157d4590-49bf-4b0b-bd77-abe131909528', '[]'::jsonb, NULL, 0, '2025-08-03T13:25:59.349Z', '2025-10-23T14:32:28.325Z', true, '{}'::jsonb),
-  ('b80190d0-653a-46e3-962c-1abb0078b8c9', 'privacy-policy', true, 'Privacy Policy | Hamid', 'Learn how Hamid collects, uses, and protects your personal information. Read our privacy policy for details on data protection and your rights.', 'privacy policy, data protection, personal information, privacy rights, GDPR', 'index, follow', '157d4590-49bf-4b0b-bd77-abe131909528', '[]'::jsonb, NULL, 9998, '2025-10-23T15:34:30.823Z', '2025-10-23T15:34:30.823Z', true, '{}'::jsonb)
+  ('bbb26804-4ff2-4e8b-ba2b-e8c203704176', '404-page-not-found', true, '404 - Page Not Found | {{store_name}}', 'Sorry, we couldn''t find the page you''re looking for. Browse our products or contact us for assistance.', '404, page not found, error, help', 'noindex, nofollow', '157d4590-49bf-4b0b-bd77-abe131909528', '[]'::jsonb, NULL, 0, '2025-08-03T13:25:59.349Z', '2025-10-23T14:32:28.325Z', true, '{}'::jsonb),
+  ('b80190d0-653a-46e3-962c-1abb0078b8c9', 'privacy-policy', true, 'Privacy Policy | {{store_name}}', 'Learn how {{store_name}} collects, uses, and protects your personal information. Read our privacy policy for details on data protection and your rights.', 'privacy policy, data protection, personal information, privacy rights, GDPR', 'index, follow', '157d4590-49bf-4b0b-bd77-abe131909528', '[]'::jsonb, NULL, 9998, '2025-10-23T15:34:30.823Z', '2025-10-23T15:34:30.823Z', true, '{}'::jsonb)
 ON CONFLICT DO NOTHING;
 
 
@@ -157,7 +157,7 @@ INSERT INTO "public"."cms_page_translations" ("cms_page_id", "language_code", "t
     <section style="margin-bottom: 2rem;">
       <h2 style="font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Introduction</h2>
       <p style="margin-bottom: 1rem;">
-        Welcome to Hamid. We respect your privacy and are committed to protecting your personal data.
+        Welcome to {{store_name}}. We respect your privacy and are committed to protecting your personal data.
         This privacy policy will inform you about how we look after your personal data when you visit our website
         and tell you about your privacy rights and how the law protects you.
       </p>
@@ -246,7 +246,7 @@ INSERT INTO "public"."cms_page_translations" ("cms_page_id", "language_code", "t
       </p>
       <div style="background-color: #F3F4F6; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
         <p style="margin: 0; color: #374151;">
-          <strong>Email:</strong> <a href="mailto:privacy@Hamid.com" style="color: #2563EB; text-decoration: none;">privacy@Hamid.com</a>
+          <strong>Email:</strong> <a href="mailto:{{store_email}}" style="color: #2563EB; text-decoration: none;">{{store_email}}</a>
         </p>
       </div>
     </section>
@@ -256,7 +256,7 @@ INSERT INTO "public"."cms_page_translations" ("cms_page_id", "language_code", "t
   <div style="font-size: 6rem; font-weight: bold; color: #9CA3AF; margin-bottom: 1rem;">404</div>
 
   <h1 style="font-size: 2rem; font-weight: bold; color: #111827; margin-bottom: 1rem;">
-    Oops! Page Not Found Hamid
+    Oops! Page Not Found
   </h1>
 
   <p style="color: #6B7280; margin-bottom: 2rem; font-size: 1.1rem; line-height: 1.6;">
@@ -286,12 +286,12 @@ INSERT INTO "public"."cms_page_translations" ("cms_page_id", "language_code", "t
     </p>
   </div>
 </div>
-', null, '2025-10-24 16:42:17.998+00', '2025-10-24 16:42:17.998+00'), ('f04fac32-51e5-4162-a35e-5d496dd2410a', 'en', 'hamidr-en-new-latest', 'hello there in latest', null, '2025-10-24 16:42:17.918+00', '2025-10-26 06:25:02.007+00');
+', null, '2025-10-24 16:42:17.998+00', '2025-10-24 16:42:17.998+00');
 
 -- cookie_consent_settings (1 rows)
 INSERT INTO cookie_consent_settings (id, is_enabled, banner_position, banner_text, privacy_policy_url, accept_button_text, reject_button_text, settings_button_text, necessary_cookies, analytics_cookies, marketing_cookies, functional_cookies, theme, primary_color, background_color, text_color, gdpr_mode, auto_detect_country, audit_enabled, consent_expiry_days, show_close_button, privacy_policy_text, categories, gdpr_countries, google_analytics_id, google_tag_manager_id, custom_css, store_id, created_at, updated_at, translations, accept_button_bg_color, accept_button_text_color, reject_button_bg_color, reject_button_text_color, save_preferences_button_bg_color, save_preferences_button_text_color)
 VALUES
-  ('0f2cedc3-4af4-4a43-a4c6-3682faa95eab', true, 'bottom', 'We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking ''Accept All'', you consent to our use of cookies.', 'cms-page/privacy-policy', 'Accept All', 'Reject All', 'Cookie Settings', true, false, false, false, 'light', '#007bff', '#ffffff', '#333333', false, false, true, 365, true, 'Privacy Policy', '[{"id":"necessary","name":"Necessary Cookies","description":"These cookies are necessary for the website to function and cannot be switched off.","required":true,"default_enabled":true},{"id":"analytics","name":"Analytics Cookies","description":"These cookies help us understand how visitors interact with our website.","required":false,"default_enabled":false},{"id":"marketing","name":"Marketing Cookies","description":"These cookies are used to deliver personalized advertisements.","required":false,"default_enabled":false}]'::jsonb, '["AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE"]'::jsonb, NULL, NULL, '.cookie-hamid {}', '157d4590-49bf-4b0b-bd77-abe131909528', '2025-10-17T18:19:57.435Z', '2025-10-26T01:33:47.627Z', '{"en":{"banner_text":"We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking ''Accept All'', you consent to our use of cookies.","analytics_name":"Analytics Cookies","marketing_name":"Marketing Cookies","necessary_name":"Necessary Cookies","functional_name":"Functional Cookies","accept_button_text":"Accept Alldddqqweqwe","reject_button_text":"Reject All","privacy_policy_text":"Privacy Policy","settings_button_text":"Cookie Settings","analytics_description":"These cookies help us understand how visitors interact with our website.","marketing_description":"These cookies are used to deliver personalized advertisements.","necessary_description":"These cookies are necessary for the website to function and cannot be switched off.","functional_description":"These cookies enable enhanced functionality and personalization."},"nl":{"banner_text":"hamid-test-nl","necessary_name":"Noodzakelijk","accept_button_text":"","reject_button_text":"","privacy_policy_text":"","settings_button_text":""}}'::jsonb, '#800000', '#ffffff', '#ffffff', '#374151', '#ffff00', '#ffffff')
+  ('0f2cedc3-4af4-4a43-a4c6-3682faa95eab', true, 'bottom', 'We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking ''Accept All'', you consent to our use of cookies.', 'cms-page/privacy-policy', 'Accept All', 'Reject All', 'Cookie Settings', true, false, false, false, 'light', '#007bff', '#ffffff', '#333333', false, false, true, 365, true, 'Privacy Policy', '[{"id":"necessary","name":"Necessary Cookies","description":"These cookies are necessary for the website to function and cannot be switched off.","required":true,"default_enabled":true},{"id":"analytics","name":"Analytics Cookies","description":"These cookies help us understand how visitors interact with our website.","required":false,"default_enabled":false},{"id":"marketing","name":"Marketing Cookies","description":"These cookies are used to deliver personalized advertisements.","required":false,"default_enabled":false}]'::jsonb, '["AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE"]'::jsonb, NULL, NULL, '.cookie {}', '157d4590-49bf-4b0b-bd77-abe131909528', '2025-10-17T18:19:57.435Z', '2025-10-26T01:33:47.627Z', '{"en":{"banner_text":"We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking ''Accept All'', you consent to our use of cookies.","analytics_name":"Analytics Cookies","marketing_name":"Marketing Cookies","necessary_name":"Necessary Cookies","functional_name":"Functional Cookies","accept_button_text":"Accept All","reject_button_text":"Reject All","privacy_policy_text":"Privacy Policy","settings_button_text":"Cookie Settings","analytics_description":"These cookies help us understand how visitors interact with our website.","marketing_description":"These cookies are used to deliver personalized advertisements.","necessary_description":"These cookies are necessary for the website to function and cannot be switched off.","functional_description":"These cookies enable enhanced functionality and personalization."}}'::jsonb, '#800000', '#ffffff', '#ffffff', '#374151', '#ffff00', '#ffffff')
 ON CONFLICT DO NOTHING;
 
 
@@ -343,7 +343,8 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
                 <a href="{{login_url}}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                   Go to My Account
                 </a>
-              </p>
+              </p' ||
+                          '>
               <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
               <p style="color: #999; font-size: 12px;">
                 Best regards,<br>
@@ -1712,7 +1713,6 @@ VALUES
   ('b52700a3-6d8c-4042-ad4e-652df6c8cb82', 'message.invalid_email', 'en', 'Invalid email address', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('dce06882-6e9b-40b3-8d24-840015d90a1f', 'stock.low_stock_label', 'en', 'Low stock{, {just {quantity} {item} left}}', 'stock', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('7ff979c7-e102-4c9a-a0f9-0b5c94bbb8a9', 'common.additional_products', 'en', 'Additional Products', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
-  ('71cc44ed-b84b-4491-93cd-70108f3b3687', 'common.hamidtest', 'en', 'this my first ui label', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'custom', '00000000-0000-0000-0000-000000000000'),
   ('e423adac-5a0f-4880-a372-bdabf0a42098', 'common.coupon_not_active', 'en', 'This coupon is not yet active', 'common', '2025-11-07T18:34:17.198Z', '2025-11-12T22:28:53.341Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('133eadd2-e0ed-4e05-b1e4-a81011265987', 'checkout.step_2step_1', 'en', 'Information', 'checkout', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('6301212b-22c0-40de-8435-6a65560934f1', 'common.your_wishlist_is_empty', 'en', 'Your wishlist is empty.', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
