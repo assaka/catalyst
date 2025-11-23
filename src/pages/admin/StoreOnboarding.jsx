@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,23 +22,14 @@ const STEPS = [
 
 export default function StoreOnboarding() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-
-  // Check if we're coming from Create Store with an existing store
-  const urlStoreId = searchParams.get('storeId');
-  const urlStoreName = searchParams.get('storeName');
-
-  const [currentStep, setCurrentStep] = useState(urlStoreId ? 2 : 1); // Skip step 1 if store exists
+  const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [storeId, setStoreId] = useState(urlStoreId || null);
-  const [completedSteps, setCompletedSteps] = useState(urlStoreId ? [1] : []); // Mark step 1 as completed if store exists
+  const [storeId, setStoreId] = useState(null);
+  const [completedSteps, setCompletedSteps] = useState([]);
 
-  const [storeData, setStoreData] = useState({
-    name: urlStoreName ? decodeURIComponent(urlStoreName) : '',
-    slug: ''
-  });
+  const [storeData, setStoreData] = useState({ name: '', slug: '' });
   const [dbData, setDbData] = useState({ connectionString: '', serviceRoleKey: '' });
   const [oauthCompleted, setOauthCompleted] = useState(false);
   const [needsServiceKey, setNeedsServiceKey] = useState(false);

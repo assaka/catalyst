@@ -23,19 +23,9 @@ export default function Stores() {
   const [user, setUser] = useState(null);
   const [clients, setClients] = useState([]); // Keep state for clients, though its usage in loadData is removed by outline
   const [loading, setLoading] = useState(true);
-  const [showCreateStore, setShowCreateStore] = useState(false);
-  const [createError, setCreateError] = useState('');
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [storeToPublish, setStoreToPublish] = useState(null);
   const [storeUptimes, setStoreUptimes] = useState({});
-  const [newStore, setNewStore] = useState({
-    name: '',
-    // client_email and description are kept here because UI still references them
-    // but their handling in handleCreateStore is removed by the outline.
-    client_email: '',
-    description: '',
-    slug: '' // Added slug to newStore state as required by new handleCreateStore logic
-  });
 
   useEffect(() => {
     loadData();
@@ -77,97 +67,6 @@ export default function Stores() {
       setStores([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Add function to refresh user data specifically
-  const refreshUserData = async () => {
-    try {
-      console.log('🔄 Refreshing user data for Create Store modal...');
-      const userData = await User.me();
-      console.log('✅ Fresh user data received:', {
-        email: userData?.email,
-        credits: userData?.credits,
-        creditsType: typeof userData?.credits
-      });
-      setUser(userData);
-    } catch (error) {
-      console.error('❌ Error refreshing user data:', error);
-    }
-  };
-
-  const handleCreateStore = async () => {
-    setCreateError('');
-
-    // Store creation is now free - credits only charged when publishing
-
-    // Dynamically generate slug if not provided, to ensure validation works
-    // and to align with previous functionality where slug was derived from name.
-    // The outline removed the generation but added validation for slug.
-    let storeSlug = newStore.slug;
-    if (!storeSlug && newStore.name) {
-      storeSlug = newStore.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    }
-
-    if (!newStore.name) {
-      setCreateError("Store Name is required.");
-      return;
-    }
-
-    try {
-      // The outline significantly simplifies this logic, removing client_email handling,
-      // credit deductions, and specific owner_id/agency_id assignments in favor of user_id.
-      // Remove client_email from the request data since it's not supported by the model
-      const storeRequest = {
-        name: newStore.name,
-        description: newStore.description,
-        slug: storeSlug,
-        user_id: user.id
-      };
-
-
-      const createdStore = await Store.create(storeRequest);
-
-      // Store created successfully - get the store data
-      const storeData = createdStore.data || createdStore;
-      console.log('✅ Store created:', storeData);
-
-      // Store the created store ID and name for the wizard
-      setCreatedStoreId(storeData.id);
-      setCreatedStoreName(storeData.name || newStore.name);
-      console.log('📝 Set wizard state:', { id: storeData.id, name: storeData.name || newStore.name });
-
-      // Refresh stores list and auto-select the new store
-      await refreshStores();
-      selectStore({
-        id: storeData.id,
-        name: storeData.name || newStore.name
-      });
-
-      // Reset the form
-      setNewStore({ name: '', client_email: '', description: '', slug: '' });
-      setCreateError('');
-
-      // Close the create dialog
-      setShowCreateStore(false);
-
-      // Redirect to onboarding page with store ID
-      console.log('🔄 Redirecting to onboarding page...');
-      navigate(`/admin/onboarding?storeId=${storeData.id}&storeName=${encodeURIComponent(storeData.name || newStore.name)}`);
-    } catch (error) {
-      console.error("Error creating store:", error);
-
-      // Handle specific error messages from the backend
-      if (error.response?.data?.message) {
-        setCreateError(error.response.data.message);
-      } else if (error.response?.data?.errors) {
-        const errorMessages = error.response.data.errors.map(e => e.message || e.msg || 'Unknown error');
-        setCreateError(errorMessages.join(', '));
-      } else if (error.message) {
-        setCreateError(error.message);
-      } else {
-        setCreateError('Failed to create store. Please try again.');
-      }
     }
   };
 
@@ -271,100 +170,13 @@ export default function Stores() {
           </p>
         </div>
 
-        <Dialog open={showCreateStore} onOpenChange={async (open) => {
-          setShowCreateStore(open);
-          if (!open) {
-            setCreateError('');
-          } else {
-            // Refresh user data when opening dialog to get latest credits
-            await refreshUserData();
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Store
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Storea</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              {createError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-800">{createError}</p>
-                </div>
-              )}
-              <div>
-                <Label htmlFor="storeName">Store Name *</Label>
-                <Input
-                  id="storeName"
-                  value={newStore.name}
-                  onChange={(e) => setNewStore({ ...newStore, name: e.target.value })}
-                  placeholder="My Awesome Store"
-                />
-              </div>
-
-              {/* Input for slug - not provided in outline, but needed for new validation logic */}
-              <div>
-                <Label htmlFor="storeSlug">Store Slug (Optional, will be generated if empty)</Label>
-                <Input
-                  id="storeSlug"
-                  value={newStore.slug}
-                  onChange={(e) => setNewStore({ ...newStore, slug: e.target.value })}
-                  placeholder="my-awesome-store"
-                />
-              </div>
-
-              {(user?.account_type === 'agency' || user?.role === 'admin') && (
-                <div>
-                  <Label htmlFor="clientEmail">Client Email (optional)</Label>
-                  <Input
-                    id="clientEmail"
-                    value={newStore.client_email}
-                    onChange={(e) => setNewStore({ ...newStore, client_email: e.target.value })}
-                    placeholder="client@example.com"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    {user?.role === 'admin' ? 'Leave empty to create under your admin account' : 'Leave empty to create under your agency account'}
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <Label htmlFor="storeDescription">Description</Label>
-                <Input
-                  id="storeDescription"
-                  value={newStore.description}
-                  onChange={(e) => setNewStore({ ...newStore, description: e.target.value })}
-                  placeholder="Brief description of the store"
-                />
-              </div>
-
-              {user?.account_type === 'agency' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p className="text-sm text-blue-800">
-                    <strong>Store Pricing:</strong> Stores are free to create and develop. Publishing costs 1 credit per day.
-                    During development, you can view your store on a preview URL.
-                  </p>
-                </div>
-              )}
-
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowCreateStore(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreateStore}
-                  disabled={!newStore.name}
-                >
-                  Create Store
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button
+          className="bg-blue-600 hover:bg-blue-700"
+          onClick={() => navigate('/admin/onboarding')}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Create Store
+        </Button>
       </div>
 
       {stores.length === 0 ? (
@@ -380,7 +192,7 @@ export default function Stores() {
                   : 'Create your first store to start selling online.'
               }
             </p>
-            <Button onClick={() => setShowCreateStore(true)}>
+            <Button onClick={() => navigate('/admin/onboarding')}>
               <Plus className="w-4 h-4 mr-2" />
               Create Your First Store
             </Button>
