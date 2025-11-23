@@ -53,6 +53,16 @@ class TenantProvisioningService {
       console.log('Seeding initial data...');
       // await this.seedInitialData(tenantDb, storeId, options, result);
 
+      // 4. Verify migrations succeeded before creating store record
+      if (result.errors.some(e => e.step === 'migrations')) {
+        console.error('❌ Skipping store record creation - migrations failed');
+        return {
+          ...result,
+          success: false,
+          message: 'Database provisioning failed - migrations did not complete'
+        };
+      }
+
       // 4. Create store record in tenant DB
       if (tenantDb) {
         // Use Supabase client
@@ -169,7 +179,7 @@ END $$;`;
 
           // Execute migrations first (creates 137 tables)
           console.log('📤 Running migrations via Management API...');
-          await axios.post(
+          const migrationResponse = await axios.post(
             `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
             { query: fixedMigrationSQL },
             {
@@ -182,6 +192,13 @@ END $$;`;
             }
           );
 
+          console.log('✅ Migration API response:', migrationResponse.data);
+
+          // Check if migration actually succeeded
+          if (migrationResponse.data && migrationResponse.data.error) {
+            throw new Error(`Migration failed: ${migrationResponse.data.error}`);
+          }
+
           console.log('✅ Migrations complete - 137 tables created');
           result.tablesCreated.push('Created 137 tables via OAuth API');
 
@@ -189,7 +206,7 @@ END $$;`;
           console.log('📊 Seed SQL size:', (seedSQL.length / 1024).toFixed(2), 'KB');
           console.log('📤 Running seed data via Management API...');
 
-          await axios.post(
+          const seedResponse = await axios.post(
             `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
             { query: seedSQL },
             {
@@ -201,6 +218,13 @@ END $$;`;
               timeout: 180000 // 3 minutes for seed data
             }
           );
+
+          console.log('✅ Seed API response:', seedResponse.data);
+
+          // Check if seeding actually succeeded
+          if (seedResponse.data && seedResponse.data.error) {
+            console.warn('⚠️ Seed data warning:', seedResponse.data.error);
+          }
 
           console.log('✅ Seed data complete - 6,598 rows inserted');
           result.dataSeeded.push('Seeded 6,598 rows via OAuth API');
@@ -241,8 +265,19 @@ END $$;`;
           return true;
 
         } catch (apiError) {
-          console.error('Supabase Management API failed:', apiError.response?.data || apiError.message);
-          throw new Error('Failed to run migrations via Supabase API: ' + (apiError.response?.data?.message || apiError.message));
+          console.error('❌ Supabase Management API failed:', apiError.message);
+          console.error('   Response status:', apiError.response?.status);
+          console.error('   Response data:', JSON.stringify(apiError.response?.data, null, 2));
+
+          const errorMessage = apiError.response?.data?.message || apiError.response?.data?.error || apiError.message;
+
+          result.errors.push({
+            step: 'migrations',
+            error: `Failed to run migrations via Supabase API: ${errorMessage}`,
+            details: apiError.response?.data
+          });
+
+          throw new Error(`Migration API failed: ${errorMessage}`);
         }
       }
 

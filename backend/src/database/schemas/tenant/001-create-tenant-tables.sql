@@ -911,7 +911,7 @@ CREATE TABLE IF NOT EXISTS akeneo_import_statistics (
 CREATE TABLE IF NOT EXISTS import_statistics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
-  import_type VARCHAR(50) NOT NULL,
+  import_type VARCHAR(50) NOT NULL, -- 'attributes', 'products', 'categories', 'customers', 'orders', etc.
   import_date TIMESTAMP DEFAULT NOW() NOT NULL,
   total_processed INTEGER DEFAULT 0 NOT NULL,
   successful_imports INTEGER DEFAULT 0 NOT NULL,

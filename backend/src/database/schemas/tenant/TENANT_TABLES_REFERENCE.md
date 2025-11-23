@@ -72,7 +72,8 @@ Each store has its own separate tenant database containing all store-specific op
 - `integration_configs`
 - `integration_logs`
 - `akeneo_schedules`
-- `akeneo_import_statistics`
+- `akeneo_import_statistics` (legacy - Akeneo-specific)
+- `import_statistics` (general - for all import sources: Shopify, Akeneo, etc.)
 - `marketplace_credentials` (Amazon, eBay, etc.)
 
 #### **Email & Notifications**
