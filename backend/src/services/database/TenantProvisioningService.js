@@ -177,11 +177,24 @@ END $$;`;
           console.log('✅ Migration SQL syntax fixed');
           console.log('📊 Migration SQL size:', (fixedMigrationSQL.length / 1024).toFixed(2), 'KB');
 
+          // Wrap migration SQL with deferred constraints to handle circular dependencies
+          const wrappedMigrationSQL = `
+-- Disable foreign key checks temporarily
+SET CONSTRAINTS ALL DEFERRED;
+
+${fixedMigrationSQL}
+
+-- Re-enable foreign key checks
+SET CONSTRAINTS ALL IMMEDIATE;
+`;
+
+          console.log('✅ Migration SQL wrapped with deferred constraints');
+
           // Execute migrations first (creates 137 tables)
           console.log('📤 Running migrations via Management API...');
           const migrationResponse = await axios.post(
             `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
-            { query: fixedMigrationSQL },
+            { query: wrappedMigrationSQL },
             {
               headers: {
                 'Authorization': `Bearer ${options.oauthAccessToken}`,

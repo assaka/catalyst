@@ -9,7 +9,8 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nConvert supabase-integration service from Sequelize to ConnectionManager\n\n- Replace IntegrationConfig model with direct knex queries to integration_configs table\n- All queries now use ConnectionManager.getConnection(storeId)\n- Maintain support for connection status tracking, config updates, and disconnection flows\n- Service manages Supabase OAuth integrations with storeId-based tenant isolation\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git reset:*)",
       "Bash(git pull:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nPrevent duplicate API calls in CmsPageViewer\n\nAdded useRef guard to prevent duplicate fetch calls caused by:\n- React Strict Mode (runs effects twice in dev)\n- Rapid state changes triggering re-renders\n\nUses fetchingRef to track if fetch is in progress and skip duplicates.\n\nReduces unnecessary API calls.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nPrevent duplicate API calls in CmsPageViewer\n\nAdded useRef guard to prevent duplicate fetch calls caused by:\n- React Strict Mode (runs effects twice in dev)\n- Rapid state changes triggering re-renders\n\nUses fetchingRef to track if fetch is in progress and skip duplicates.\n\nReduces unnecessary API calls.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": [],
