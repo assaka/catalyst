@@ -927,6 +927,7 @@ class ShopifyImportService {
           .insert({
             id: uuidv4(),
             code: attrData.code,
+            name: attrData.name,
             type: attrData.type,
             store_id: this.storeId,
             is_required: false,
