@@ -275,22 +275,46 @@ async function saveAttributeTranslations(tenantDb, attributeId, translations) {
     const label = data.name || data.label || ''; // Accept 'name' (new) or 'label' (old) for backward compatibility
     const description = data.description || null;
 
-    // Use upsert pattern
-    const { error } = await tenantDb
+    // Check if translation exists
+    const { data: existing } = await tenantDb
       .from('attribute_translations')
-      .upsert({
-        attribute_id: attributeId,
-        language_code: langCode,
-        label: label !== undefined ? label : null,
-        description: description !== undefined ? description : null,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'attribute_id,language_code'
-      });
+      .select('id')
+      .eq('attribute_id', attributeId)
+      .eq('language_code', langCode)
+      .maybeSingle();
 
-    if (error) {
-      console.error('Error saving attribute translation:', error);
-      throw error;
+    if (existing) {
+      // Update existing translation
+      const { error } = await tenantDb
+        .from('attribute_translations')
+        .update({
+          label: label !== undefined ? label : null,
+          description: description !== undefined ? description : null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('attribute_id', attributeId)
+        .eq('language_code', langCode);
+
+      if (error) {
+        console.error('Error updating attribute translation:', error);
+        throw error;
+      }
+    } else {
+      // Insert new translation
+      const { error } = await tenantDb
+        .from('attribute_translations')
+        .insert({
+          attribute_id: attributeId,
+          language_code: langCode,
+          label: label !== undefined ? label : null,
+          description: description !== undefined ? description : null,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error inserting attribute translation:', error);
+        throw error;
+      }
     }
   }
 }
@@ -313,22 +337,46 @@ async function saveAttributeValueTranslations(tenantDb, valueId, translations) {
     const value = data.label || ''; // JSON uses 'label', but table uses 'value'
     const description = data.description || null;
 
-    // Use upsert pattern
-    const { error } = await tenantDb
+    // Check if translation exists
+    const { data: existing } = await tenantDb
       .from('attribute_value_translations')
-      .upsert({
-        attribute_value_id: valueId,
-        language_code: langCode,
-        value: value !== undefined ? value : null,
-        description: description !== undefined ? description : null,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'attribute_value_id,language_code'
-      });
+      .select('id')
+      .eq('attribute_value_id', valueId)
+      .eq('language_code', langCode)
+      .maybeSingle();
 
-    if (error) {
-      console.error('Error saving attribute value translation:', error);
-      throw error;
+    if (existing) {
+      // Update existing translation
+      const { error } = await tenantDb
+        .from('attribute_value_translations')
+        .update({
+          value: value !== undefined ? value : null,
+          description: description !== undefined ? description : null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('attribute_value_id', valueId)
+        .eq('language_code', langCode);
+
+      if (error) {
+        console.error('Error updating attribute value translation:', error);
+        throw error;
+      }
+    } else {
+      // Insert new translation
+      const { error } = await tenantDb
+        .from('attribute_value_translations')
+        .insert({
+          attribute_value_id: valueId,
+          language_code: langCode,
+          value: value !== undefined ? value : null,
+          description: description !== undefined ? description : null,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error inserting attribute value translation:', error);
+        throw error;
+      }
     }
   }
 }
