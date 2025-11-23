@@ -554,12 +554,16 @@ class ShopifyImportService {
       // Save translations for name and description (default language: 'en')
       try {
         // Check if translation exists
-        const { data: existingTranslation } = await tenantDb
+        const { data: existingTranslation, error: selectError } = await tenantDb
           .from('product_translations')
           .select('*')
           .eq('product_id', savedProduct.id)
           .eq('language_code', 'en')
           .maybeSingle();
+
+        if (selectError) {
+          console.error(`❌ Error checking existing translation for ${product.title}:`, selectError);
+        }
 
         const translationData = {
           name: product.title,
@@ -568,27 +572,48 @@ class ShopifyImportService {
           updated_at: new Date().toISOString()
         };
 
+        console.log(`💾 Saving translation for ${product.title}:`, {
+          product_id: savedProduct.id,
+          language_code: 'en',
+          name: translationData.name,
+          description_length: translationData.description.length,
+          short_description_length: translationData.short_description.length,
+          existing: !!existingTranslation
+        });
+
         if (existingTranslation) {
-          await tenantDb
+          const { data: updated, error: updateError } = await tenantDb
             .from('product_translations')
             .update(translationData)
-            .eq('id', existingTranslation.id);
+            .eq('product_id', savedProduct.id)
+            .eq('language_code', 'en')
+            .select();
+
+          if (updateError) {
+            console.error(`❌ Update error for ${product.title}:`, updateError);
+            throw updateError;
+          }
+          console.log(`✅ Updated translation for product: ${product.title}`, updated);
         } else {
-          await tenantDb
+          const { data: inserted, error: insertError } = await tenantDb
             .from('product_translations')
             .insert({
-              id: uuidv4(),
               product_id: savedProduct.id,
               language_code: 'en',
               ...translationData,
               created_at: new Date().toISOString()
-            });
-        }
+            })
+            .select();
 
-        console.log(`✅ Saved translations for product: ${product.title} (name: "${product.title}", desc length: ${(product.body_html || '').length})`);
+          if (insertError) {
+            console.error(`❌ Insert error for ${product.title}:`, insertError);
+            throw insertError;
+          }
+          console.log(`✅ Inserted translation for product: ${product.title}`, inserted);
+        }
       } catch (translationError) {
         console.error(`❌ Failed to save translations for ${product.title}:`, translationError.message);
-        console.error('Translation error details:', translationError);
+        console.error('Translation error details:', JSON.stringify(translationError, null, 2));
       }
 
       // Save SEO metadata to product_seo table
