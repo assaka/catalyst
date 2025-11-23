@@ -685,6 +685,37 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
+CREATE TABLE IF NOT EXISTS stores (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL,
+  description TEXT,
+  logo_url VARCHAR(255),
+  banner_url VARCHAR(255),
+  theme_color VARCHAR(255) DEFAULT '#3B82F6'::character varying,
+  currency VARCHAR(255) DEFAULT 'USD'::character varying,
+  timezone VARCHAR(255) DEFAULT 'UTC'::character varying,
+  is_active BOOLEAN DEFAULT true,
+  settings JSON DEFAULT '{}'::json,
+  contact_email VARCHAR(255),
+  contact_phone VARCHAR(255),
+  address_line1 VARCHAR(255),
+  address_line2 VARCHAR(255),
+  city VARCHAR(255),
+  state VARCHAR(255),
+  postal_code VARCHAR(255),
+  country VARCHAR(255),
+  website_url VARCHAR(255),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  stripe_account_id VARCHAR(255),
+  user_id UUID NOT NULL,
+  deployment_status enum_deployment_status DEFAULT 'draft'::enum_deployment_status,
+  published BOOLEAN DEFAULT false,
+  published_at TIMESTAMP WITH TIME ZONE
+);
+
 CREATE TABLE IF NOT EXISTS _migrations (
   name VARCHAR(255) PRIMARY KEY,
   run_at TIMESTAMP DEFAULT NOW(),
@@ -2842,35 +2873,6 @@ CREATE TABLE IF NOT EXISTS store_uptime (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS stores (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name VARCHAR(255) NOT NULL,
-  slug VARCHAR(255) NOT NULL,
-  description TEXT,
-  logo_url VARCHAR(255),
-  banner_url VARCHAR(255),
-  theme_color VARCHAR(255) DEFAULT '#3B82F6'::character varying,
-  currency VARCHAR(255) DEFAULT 'USD'::character varying,
-  timezone VARCHAR(255) DEFAULT 'UTC'::character varying,
-  is_active BOOLEAN DEFAULT true,
-  settings JSON DEFAULT '{}'::json,
-  contact_email VARCHAR(255),
-  contact_phone VARCHAR(255),
-  address_line1 VARCHAR(255),
-  address_line2 VARCHAR(255),
-  city VARCHAR(255),
-  state VARCHAR(255),
-  postal_code VARCHAR(255),
-  country VARCHAR(255),
-  website_url VARCHAR(255),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  stripe_account_id VARCHAR(255),
-  user_id UUID NOT NULL,
-  deployment_status enum_deployment_status DEFAULT 'draft'::enum_deployment_status,
-  published BOOLEAN DEFAULT false,
-  published_at TIMESTAMP WITH TIME ZONE
-);
 
 -- CREATE TABLE IF NOT EXISTS subscriptions (
 --   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
