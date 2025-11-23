@@ -133,10 +133,12 @@ export default function Stores() {
 
       // Store created successfully - get the store data
       const storeData = createdStore.data || createdStore;
+      console.log('✅ Store created:', storeData);
 
       // Store the created store ID and name for the wizard
       setCreatedStoreId(storeData.id);
       setCreatedStoreName(storeData.name || newStore.name);
+      console.log('📝 Set wizard state:', { id: storeData.id, name: storeData.name || newStore.name });
 
       // Refresh stores list and auto-select the new store
       await refreshStores();
@@ -147,6 +149,7 @@ export default function Stores() {
 
       // Close the create dialog and show the wizard
       setShowCreateStore(false);
+      console.log('🔄 Opening wizard...');
       setShowWizard(true);
 
       // Reset the form
@@ -172,19 +175,23 @@ export default function Stores() {
   };
 
   const handleWizardComplete = () => {
+    // Save store ID before clearing state
+    const storeId = createdStoreId;
     setShowWizard(false);
     setCreatedStoreId(null);
     setCreatedStoreName(null);
     // Redirect to store dashboard
-    window.location.href = `/admin/dashboard?store=${createdStoreId}`;
+    window.location.href = `/admin/dashboard?store=${storeId}`;
   };
 
   const handleWizardSkip = () => {
+    // Save store ID before clearing state
+    const storeId = createdStoreId;
     setShowWizard(false);
     setCreatedStoreId(null);
     setCreatedStoreName(null);
     // Redirect to store settings for manual setup
-    window.location.href = `/admin/settings?store=${createdStoreId}`;
+    window.location.href = `/admin/settings?store=${storeId}`;
   };
 
   const handleTogglePublished = async (storeId, currentStatus) => {
@@ -560,6 +567,7 @@ export default function Stores() {
       </Dialog>
 
       {/* Store Setup Wizard Modal */}
+      {console.log('🎨 Rendering wizard dialog:', { showWizard, createdStoreId, createdStoreName })}
       <Dialog open={showWizard} onOpenChange={setShowWizard}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <StoreSetupWizard
