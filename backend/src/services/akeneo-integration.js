@@ -914,7 +914,6 @@ class AkeneoIntegration {
               await tenantDb
                 .from('attributes')
                 .update({
-                name: attribute.name,
                 type: attribute.type,
                 is_required: attribute.is_required,
                 // Don't update is_filterable for existing attributes to preserve user customizations
@@ -927,28 +926,61 @@ class AkeneoIntegration {
                 updated_at: new Date().toISOString()
               })
                 .eq('id', existingAttribute.id);
-              
+
+              // Ensure English translation exists for existing attribute
+              const { data: existingTranslation } = await tenantDb
+                .from('attribute_translations')
+                .select('id')
+                .eq('attribute_id', existingAttribute.id)
+                .eq('language_code', 'en')
+                .maybeSingle();
+
+              if (!existingTranslation) {
+                await tenantDb
+                  .from('attribute_translations')
+                  .insert({
+                    attribute_id: existingAttribute.id,
+                    language_code: 'en',
+                    label: attribute.name,
+                    description: null,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  });
+                console.log(`✅ Added missing English translation for existing attribute: ${attribute.code}`);
+              } else {
+                // Update existing translation
+                await tenantDb
+                  .from('attribute_translations')
+                  .update({
+                    label: attribute.name,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('attribute_id', existingAttribute.id)
+                  .eq('language_code', 'en');
+              }
+
               console.log(`✅ Updated attribute: ${attribute.name} (${attribute.code}) - Preserved filterable setting`);
             } else {
               // Define default filterable attributes for new imports only
               const defaultFilterableAttributes = ['price', 'name', 'color', 'colour', 'brand', 'manufacturer'];
-              
+
               // Define price-related attributes that should NOT be filterable
               const excludedPriceAttributes = [
-                'retail_price', 'minimal_price', 'price_type', 'dealer_price', 
+                'retail_price', 'minimal_price', 'price_type', 'dealer_price',
                 'price_view', 'msrp_display_actual_price_type'
               ];
-              
+
               // For new attributes, check if it should be filterable by default (exact match only, excluding specific price attributes)
-              const shouldBeFilterable = defaultFilterableAttributes.includes(attribute.code.toLowerCase()) && 
+              const shouldBeFilterable = defaultFilterableAttributes.includes(attribute.code.toLowerCase()) &&
                                         !excludedPriceAttributes.includes(attribute.code.toLowerCase());
-              
+
               // Remove temporary fields
               const attributeData = { ...attribute };
               delete attributeData.akeneo_code;
               delete attributeData.akeneo_type;
               delete attributeData.akeneo_group;
-              
+              delete attributeData.name; // Remove name - it goes in translations table
+
               // Override filterable setting for new attributes
               if (shouldBeFilterable) {
                 attributeData.is_filterable = true;
@@ -957,7 +989,7 @@ class AkeneoIntegration {
                 attributeData.is_filterable = false;
                 console.log(`🚫 Setting ${attribute.code} as not filterable (not in default criteria)`);
               }
-              
+
               // Create new attribute
               const { data: newAttribute, error: createError } = await tenantDb
                 .from('attributes')
@@ -968,8 +1000,26 @@ class AkeneoIntegration {
               if (createError) {
                 throw new Error(`Failed to create attribute: ${createError.message}`);
               }
+
+              // Create English translation for the new attribute
+              try {
+                await tenantDb
+                  .from('attribute_translations')
+                  .insert({
+                    attribute_id: newAttribute.id,
+                    language_code: 'en',
+                    label: attribute.name,
+                    description: null,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  });
+              } catch (translationError) {
+                console.error(`⚠️ Failed to create translation for ${attribute.code}:`, translationError);
+                // Don't throw - attribute is created, translation can be added later
+              }
+
               if (processed <= 10 || processed % 100 === 0) {
-                console.log(`✅ Created attribute: ${newAttribute.name} (${newAttribute.code}) - Type: ${newAttribute.type} - Filterable: ${newAttribute.is_filterable}`);
+                console.log(`✅ Created attribute: ${attribute.name} (${newAttribute.code}) - Type: ${newAttribute.type} - Filterable: ${newAttribute.is_filterable}`);
               }
             }
           } else {
