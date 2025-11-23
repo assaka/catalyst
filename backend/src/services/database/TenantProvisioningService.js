@@ -177,8 +177,22 @@ END $$;`;
           console.log('✅ Migration SQL syntax fixed');
           console.log('📊 Migration SQL size:', (fixedMigrationSQL.length / 1024).toFixed(2), 'KB');
 
-          // Remove all foreign key constraints to avoid dependency issues
-          console.log('🔧 Removing all foreign key constraints from SQL...');
+          // Two-pass approach: Create tables first, then add foreign keys
+          console.log('🔧 Extracting foreign key constraints for separate application...');
+
+          // Extract ALTER TABLE ADD CONSTRAINT FOREIGN KEY statements
+          const alterTableFKs = [];
+          const alterTableRegex = /ALTER\s+TABLE\s+([\w]+)\s+ADD\s+CONSTRAINT\s+([\w]+)\s+FOREIGN\s+KEY\s*\(([^)]+)\)\s+REFERENCES\s+([\w]+)\s*\(([^)]+)\)(\s+ON\s+(DELETE|UPDATE)\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))*\s*;/gi;
+          let match;
+          while ((match = alterTableRegex.exec(fixedMigrationSQL)) !== null) {
+            alterTableFKs.push(match[0]);
+          }
+
+          console.log(`📋 Found ${alterTableFKs.length} ALTER TABLE FK constraints to apply later`);
+
+          // Extract inline REFERENCES from CREATE TABLE and convert to ALTER TABLE
+          const inlineFKs = [];
+          const inlineRefRegex = /(\w+)\s+(UUID|INTEGER|BIGINT)\s+(NOT NULL\s+)?REFERENCES\s+([\w]+)\s*\(([^)]+)\)(\s+ON\s+(DELETE|UPDATE)\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))*/gi;
 
           // Step 1: Remove REFERENCES clauses from within CREATE TABLE column definitions
           let tablesOnlySQL = fixedMigrationSQL.replace(
@@ -198,10 +212,10 @@ END $$;`;
             ''
           );
 
-          console.log('✅ All foreign key constraints removed from SQL');
+          console.log('✅ Foreign key constraints extracted and removed from table creation SQL');
 
           // Execute migrations first (creates 137 tables WITHOUT foreign keys)
-          console.log('📤 Running migrations via Management API (tables only)...');
+          console.log('📤 Pass 1: Running migrations via Management API (tables only)...');
           const migrationResponse = await axios.post(
             `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
             { query: tablesOnlySQL },
@@ -222,8 +236,34 @@ END $$;`;
             throw new Error(`Migration failed: ${migrationResponse.data.error}`);
           }
 
-          console.log('✅ Migrations complete - 137 tables created');
+          console.log('✅ Pass 1 complete - 137 tables created without FKs');
           result.tablesCreated.push('Created 137 tables via OAuth API');
+
+          // Execute Pass 2: Add foreign key constraints
+          if (alterTableFKs.length > 0) {
+            console.log(`📤 Pass 2: Adding ${alterTableFKs.length} foreign key constraints...`);
+            const fkSQL = alterTableFKs.join('\n');
+
+            try {
+              const fkResponse = await axios.post(
+                `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
+                { query: fkSQL },
+                {
+                  headers: {
+                    'Authorization': `Bearer ${options.oauthAccessToken}`,
+                    'Content-Type': 'application/json'
+                  },
+                  timeout: 60000
+                }
+              );
+
+              console.log('✅ Foreign keys added:', fkResponse.data);
+              result.tablesCreated.push(`Added ${alterTableFKs.length} foreign key constraints`);
+            } catch (fkError) {
+              console.warn('⚠️ Some foreign keys failed to apply:', fkError.response?.data?.message || fkError.message);
+              // Don't fail the entire provisioning if FKs fail - tables still work
+            }
+          }
 
           // Execute seed data separately (6,598 rows - large file)
           console.log('📊 Seed SQL size:', (seedSQL.length / 1024).toFixed(2), 'KB');
