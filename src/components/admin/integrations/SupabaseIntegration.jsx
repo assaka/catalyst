@@ -226,7 +226,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         apiClient.isLoggedOut = false;
       }
       
-      const response = await apiClient.post('/supabase/connect', { store_id: storeId });
+      const response = await apiClient.post(`/supabase/connect?storeId=${storeId}`);
 
       if (response.success) {
         // Open OAuth URL in new window
@@ -288,7 +288,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   const handleTestConnection = async () => {
     try {
       setTesting(true);
-      const response = await apiClient.post('/supabase/test', { store_id: storeId });
+      const response = await apiClient.post('/supabase/test');
 
       if (response.success) {
         // Check if connection has limited scope
@@ -344,7 +344,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   const handleDisconnectConfirm = async () => {
     try {
       setDisconnecting(true);
-      const response = await apiClient.post('/supabase/disconnect', { store_id: storeId });
+      const response = await apiClient.post('/supabase/disconnect');
 
       if (response.success) {
         toast.success('Supabase disconnected successfully', {
@@ -375,7 +375,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       setTestingUpload(true);
       setUploadResult(null);
       
-      const response = await apiClient.post('/supabase/storage/test-upload', { store_id: storeId });
+      const response = await apiClient.post('/supabase/storage/test-upload');
 
       if (response.success) {
         toast.success('Test image uploaded successfully!');
