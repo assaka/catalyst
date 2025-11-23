@@ -187,12 +187,6 @@ class ShopifyImportService {
         sort_order: collection.sort_order || 0,
         meta_title: collection.title,
         meta_description: collection.body_html ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 160) : '',
-        seo: {
-          handle: collection.handle,
-          template_suffix: collection.template_suffix,
-          shopify_id: collection.id,
-          collection_type: collection.collection_type || 'custom'
-        },
         updated_at: new Date().toISOString()
       };
 
@@ -483,13 +477,7 @@ class ShopifyImportService {
         external_source: 'shopify',
         store_id: this.storeId,
         url_key: product.handle,
-        attributes: processedAttributes, // Use processed attributes with deduplication
-        seo: {
-          handle: product.handle,
-          template_suffix: product.template_suffix,
-          shopify_id: product.id,
-          variants_count: product.variants?.length || 0
-        }
+        attributes: processedAttributes // Use processed attributes with deduplication
       };
 
       // Add optional fields if they have values
@@ -604,13 +592,31 @@ class ShopifyImportService {
           .from('product_seo')
           .select('*')
           .eq('product_id', savedProduct.id)
-          .eq('language_code', 'en')
           .maybeSingle();
 
+        // Extract SEO data from Shopify product
+        // Shopify can provide SEO through metafields: metafields_global_title_tag and metafields_global_description_tag
+        const metaTitleFromShopify = product.metafields_global_title_tag || product.seo_title || product.title;
+        const metaDescriptionFromShopify = product.metafields_global_description_tag ||
+                                           product.seo_description ||
+                                           (product.body_html ? product.body_html.replace(/<[^>]*>/g, '').substring(0, 160) : '');
+
+        // Get primary product image for OG and Twitter cards
+        const primaryImageUrl = product.images?.[0]?.src || product.image?.src || null;
+
         const seoData = {
-          meta_title: product.title,
-          meta_description: product.body_html ? product.body_html.replace(/<[^>]*>/g, '').substring(0, 160) : '',
+          language_code: 'en',
+          meta_title: metaTitleFromShopify,
+          meta_description: metaDescriptionFromShopify,
+          meta_keywords: product.tags ? (Array.isArray(product.tags) ? product.tags.join(', ') : product.tags) : null,
           meta_robots_tag: 'index, follow',
+          og_title: metaTitleFromShopify,
+          og_description: metaDescriptionFromShopify,
+          og_image_url: primaryImageUrl,
+          twitter_title: metaTitleFromShopify,
+          twitter_description: metaDescriptionFromShopify,
+          twitter_image_url: primaryImageUrl,
+          canonical_url: null, // Will be set by frontend based on store URL
           updated_at: new Date().toISOString()
         };
 
@@ -618,20 +624,18 @@ class ShopifyImportService {
           await tenantDb
             .from('product_seo')
             .update(seoData)
-            .eq('product_id', savedProduct.id)
-            .eq('language_code', 'en');
+            .eq('product_id', savedProduct.id);
         } else {
           await tenantDb
             .from('product_seo')
             .insert({
               product_id: savedProduct.id,
-              language_code: 'en',
               ...seoData,
               created_at: new Date().toISOString()
             });
         }
 
-        console.log(`✅ Saved SEO metadata for product: ${product.title}`);
+        console.log(`✅ Saved SEO metadata for product: ${product.title} (meta_title: "${metaTitleFromShopify}")`);
       } catch (seoError) {
         console.error(`❌ Failed to save SEO metadata for ${product.title}:`, seoError.message);
         console.error('SEO error details:', seoError);

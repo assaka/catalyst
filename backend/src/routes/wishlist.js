@@ -165,8 +165,101 @@ router.post('/', async (req, res) => {
   }
 });
 
+// @route   DELETE /api/wishlist (with product_id query param)
+// @desc    Remove item from wishlist by product_id
+// @access  Public
+router.delete('/', async (req, res) => {
+  try {
+    const { product_id, session_id, user_id, store_id } = req.query;
+
+    // If product_id is provided, remove specific item
+    if (product_id) {
+      if (!store_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'store_id is required'
+        });
+      }
+
+      if (!session_id && !user_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'session_id or user_id is required'
+        });
+      }
+
+      // Get tenant connection
+      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+      // Build delete query
+      let deleteQuery = tenantDb
+        .from('wishlists')
+        .delete()
+        .eq('product_id', product_id)
+        .eq('store_id', store_id);
+
+      if (user_id) {
+        deleteQuery = deleteQuery.eq('user_id', user_id);
+      } else {
+        deleteQuery = deleteQuery.eq('session_id', session_id);
+      }
+
+      const { error: deleteError } = await deleteQuery;
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      res.json({
+        success: true,
+        message: 'Item removed from wishlist'
+      });
+      return;
+    }
+
+    // Otherwise, clear entire wishlist by session_id (existing functionality)
+    if (!session_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'session_id is required'
+      });
+    }
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Delete all items for session
+    const { error } = await tenantDb
+      .from('wishlists')
+      .delete()
+      .eq('session_id', session_id);
+
+    if (error) {
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      message: 'Wishlist cleared successfully'
+    });
+  } catch (error) {
+    console.error('Remove from wishlist error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   DELETE /api/wishlist/:id
-// @desc    Remove item from wishlist
+// @desc    Remove item from wishlist by ID
 // @access  Public
 router.delete('/:id', async (req, res) => {
   try {
@@ -212,53 +305,6 @@ router.delete('/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Remove from wishlist error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
-// @route   DELETE /api/wishlist
-// @desc    Clear wishlist by session_id
-// @access  Public
-router.delete('/', async (req, res) => {
-  try {
-    const { session_id, store_id } = req.query;
-
-    if (!session_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'session_id is required'
-      });
-    }
-
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    // Get tenant connection
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-
-    // Delete all items for session
-    const { error } = await tenantDb
-      .from('wishlists')
-      .delete()
-      .eq('session_id', session_id);
-
-    if (error) {
-      throw error;
-    }
-
-    res.json({
-      success: true,
-      message: 'Wishlist cleared successfully'
-    });
-  } catch (error) {
-    console.error('Clear wishlist error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

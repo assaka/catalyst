@@ -448,12 +448,12 @@ class StorefrontWishlistService {
   }
 
   async addItem(productId, storeId) {
-    const data = { 
+    const data = {
       product_id: productId,
-      store_id: storeId,
-      session_id: this.client.getOrCreateSessionId() // Include session_id in body for guest users
+      store_id: storeId
+      // session_id is automatically added by customerRequest for POST requests
     };
-    
+
     try {
       // Use customerRequest which handles both authenticated and guest users
       return await this.client.customerRequest('POST', this.endpoint, data);
