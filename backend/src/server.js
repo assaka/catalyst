@@ -492,12 +492,16 @@ app.get('/robots.txt', async (req, res) => {
     const { masterDbClient } = require('./database/masterConnection');
     const ConnectionManager = require('./services/database/ConnectionManager');
 
+    console.log('[Robots] Request received, storeSlug:', req.storeSlug);
+    console.log('[Robots] masterDbClient initialized?', !!masterDbClient);
+
     // Check if request came from custom domain (set by domainResolver middleware)
     let targetStoreSlug = req.storeSlug;
     let store = null;
 
     // If not from custom domain, get the first active store as default
     if (!targetStoreSlug) {
+      console.log('[Robots] No storeSlug, fetching default store');
       const { data: defaultStore, error: defaultStoreError } = await masterDbClient
         .from('stores')
         .select('*')
@@ -506,7 +510,10 @@ app.get('/robots.txt', async (req, res) => {
         .limit(1)
         .single();
 
+      console.log('[Robots] Default store query result:', { hasStore: !!defaultStore, error: defaultStoreError });
+
       if (defaultStoreError || !defaultStore) {
+        console.log('[Robots] No default store found, returning minimal robots.txt');
         return res.set({
           'Content-Type': 'text/plain; charset=utf-8',
           'Cache-Control': 'public, max-age=3600'
@@ -519,11 +526,14 @@ Disallow: /admin/`);
       store = defaultStore;
     } else {
       // Find store by slug for custom domain
+      console.log('[Robots] Finding store by slug:', targetStoreSlug);
       const { data: storeData, error: storeError } = await masterDbClient
         .from('stores')
         .select('*')
         .eq('slug', targetStoreSlug)
         .single();
+
+      console.log('[Robots] Store query result:', { hasStore: !!storeData, error: storeError });
 
       if (storeError || !storeData) {
         console.warn(`[Robots] Store not found for slug: ${targetStoreSlug}`);
@@ -542,19 +552,31 @@ Disallow: /admin/`);
       }).send('# Store not found\nUser-agent: *\nDisallow: /');
     }
 
+    console.log('[Robots] Store found:', { id: store.id, slug: store.slug });
+
     // Find SEO settings for the store from tenant DB
     const tenantDb = await ConnectionManager.getStoreConnection(store.id);
-    const { data: seoSettings } = await tenantDb
+    console.log('[Robots] Got tenant DB connection');
+
+    const { data: seoSettings, error: seoError } = await tenantDb
       .from('seo_settings')
       .select('*')
       .eq('store_id', store.id)
       .single();
 
+    console.log('[Robots] SEO settings query:', {
+      hasSeoSettings: !!seoSettings,
+      hasRobotsTxt: !!(seoSettings?.robots_txt_content),
+      error: seoError
+    });
+
     let robotsContent = '';
 
     if (seoSettings && seoSettings.robots_txt_content) {
+      console.log('[Robots] Using custom robots_txt_content from DB');
       robotsContent = seoSettings.robots_txt_content;
     } else {
+      console.log('[Robots] Using default robots.txt content');
       // Default robots.txt content with store-specific sitemap
       const baseUrl = store.custom_domain || `${req.protocol}://${req.get('host')}/public/${targetStoreSlug}`;
       robotsContent = `User-agent: *
@@ -569,6 +591,8 @@ Disallow: /login
 Sitemap: ${baseUrl}/sitemap.xml`;
     }
 
+    console.log('[Robots] Sending robots.txt, length:', robotsContent.length);
+
     // Set proper content-type and headers for robots.txt
     res.set({
       'Content-Type': 'text/plain; charset=utf-8',
@@ -579,6 +603,7 @@ Sitemap: ${baseUrl}/sitemap.xml`;
     res.send(robotsContent);
   } catch (error) {
     console.error('[Robots] Error serving default robots.txt:', error);
+    console.error('[Robots] Error stack:', error.stack);
     res.set({
       'Content-Type': 'text/plain; charset=utf-8',
       'Cache-Control': 'public, max-age=3600'
