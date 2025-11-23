@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { StorefrontCmsPage, StorefrontProduct } from '@/api/storefront-entities';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
@@ -22,6 +22,7 @@ export default function CmsPageViewer() {
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
+    const fetchingRef = useRef(false); // Prevent duplicate calls
 
     useEffect(() => {
         if (!slug) {
@@ -30,7 +31,14 @@ export default function CmsPageViewer() {
         }
         if (slug) {
             const fetchPage = async () => {
+                // Prevent duplicate calls (React Strict Mode runs effects twice)
+                if (fetchingRef.current) {
+                    console.log('⏭️ CmsPageViewer: Already fetching, skipping duplicate call');
+                    return;
+                }
+
                 try {
+                    fetchingRef.current = true;
                     setLoading(true);
                     const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
                     console.log('🌍 CmsPageViewer: Fetching page with language:', currentLanguage);
@@ -41,6 +49,7 @@ export default function CmsPageViewer() {
                     if (!store?.id) {
                         console.warn('⚠️ CmsPageViewer: store_id not available yet, skipping API call');
                         setLoading(false);
+                        fetchingRef.current = false;
                         return;
                     }
                     console.log('✅ CmsPageViewer: store_id available, proceeding with API call');
@@ -68,6 +77,7 @@ export default function CmsPageViewer() {
                     console.error("Error fetching CMS page:", error);
                 } finally {
                     setLoading(false);
+                    fetchingRef.current = false;
                 }
             };
             fetchPage();
