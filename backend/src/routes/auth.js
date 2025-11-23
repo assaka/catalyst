@@ -891,6 +891,120 @@ router.post('/logout', require('../middleware/authMiddleware').authMiddleware, a
       }
     }
 
+    // CRITICAL: Transfer user cart and wishlist to guest session on logout
+    // Get or create session_id from request body or header
+    const guestSessionId = req.body.session_id || req.headers['x-session-id'];
+
+    if (guestSessionId && userStoreId && req.user.role === 'customer') {
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(userStoreId);
+
+        // CART TRANSFER: Move user's cart to session
+        const { data: userCart } = await tenantDb
+          .from('carts')
+          .select('*')
+          .eq('user_id', req.user.id)
+          .eq('store_id', userStoreId)
+          .maybeSingle();
+
+        if (userCart) {
+          // Check if session already has a cart
+          const { data: sessionCart } = await tenantDb
+            .from('carts')
+            .select('*')
+            .eq('session_id', guestSessionId)
+            .eq('store_id', userStoreId)
+            .maybeSingle();
+
+          if (sessionCart) {
+            // Merge user cart items into session cart
+            const mergedItems = [...sessionCart.items];
+
+            userCart.items.forEach(userItem => {
+              const existingIndex = mergedItems.findIndex(item =>
+                item.product_id === userItem.product_id &&
+                JSON.stringify(item.selected_options || []) === JSON.stringify(userItem.selected_options || [])
+              );
+
+              if (existingIndex >= 0) {
+                // Product exists, add quantities
+                mergedItems[existingIndex].quantity += userItem.quantity;
+              } else {
+                // New product, add to cart
+                mergedItems.push(userItem);
+              }
+            });
+
+            // Update session cart with merged items
+            await tenantDb
+              .from('carts')
+              .update({
+                items: mergedItems,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', sessionCart.id);
+
+            // Delete user cart
+            await tenantDb
+              .from('carts')
+              .delete()
+              .eq('id', userCart.id);
+          } else {
+            // No session cart exists, transfer user cart to session
+            await tenantDb
+              .from('carts')
+              .update({
+                session_id: guestSessionId,
+                user_id: null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', userCart.id);
+          }
+        }
+
+        // WISHLIST TRANSFER: Move user's wishlist to session
+        const { data: userWishlist } = await tenantDb
+          .from('wishlists')
+          .select('*')
+          .eq('user_id', req.user.id)
+          .eq('store_id', userStoreId);
+
+        if (userWishlist && userWishlist.length > 0) {
+          // Get existing session wishlist items
+          const { data: sessionWishlist } = await tenantDb
+            .from('wishlists')
+            .select('*')
+            .eq('session_id', guestSessionId)
+            .eq('store_id', userStoreId);
+
+          const sessionProductIds = new Set((sessionWishlist || []).map(item => item.product_id));
+
+          // Transfer user wishlist items to session
+          for (const userItem of userWishlist) {
+            if (!sessionProductIds.has(userItem.product_id)) {
+              // Update user item to belong to session
+              await tenantDb
+                .from('wishlists')
+                .update({
+                  session_id: guestSessionId,
+                  user_id: null
+                })
+                .eq('id', userItem.id);
+            } else {
+              // Item already in session wishlist, delete user duplicate
+              await tenantDb
+                .from('wishlists')
+                .delete()
+                .eq('id', userItem.id);
+            }
+          }
+        }
+      } catch (transferError) {
+        console.error('Error transferring cart/wishlist to session on logout:', transferError);
+        // Don't fail logout if transfer fails, just log it
+      }
+    }
+
     // In a JWT-based system, we can't invalidate tokens server-side without a blacklist
     // For now, we'll just log the event and return success
     // TODO: Implement token blacklisting for enhanced security
@@ -1161,6 +1275,118 @@ router.post('/customer/login', [
       .from('customers')
       .update({ last_login: new Date().toISOString() })
       .eq('id', customer.id);
+
+    // CRITICAL: Merge guest cart and wishlist to authenticated user
+    // Get session_id from request body or header
+    const guestSessionId = req.body.session_id || req.headers['x-session-id'];
+
+    if (guestSessionId) {
+      try {
+        // CART MERGE: Transfer guest cart items to user cart
+        const { data: guestCart } = await tenantDb
+          .from('carts')
+          .select('*')
+          .eq('session_id', guestSessionId)
+          .eq('store_id', store_id)
+          .maybeSingle();
+
+        if (guestCart && guestCart.items && guestCart.items.length > 0) {
+          // Check if user already has a cart
+          const { data: userCart } = await tenantDb
+            .from('carts')
+            .select('*')
+            .eq('user_id', customer.id)
+            .eq('store_id', store_id)
+            .maybeSingle();
+
+          if (userCart) {
+            // Merge items: Add guest items to existing user cart, avoiding duplicates
+            const mergedItems = [...userCart.items];
+
+            guestCart.items.forEach(guestItem => {
+              const existingIndex = mergedItems.findIndex(item =>
+                item.product_id === guestItem.product_id &&
+                JSON.stringify(item.selected_options || []) === JSON.stringify(guestItem.selected_options || [])
+              );
+
+              if (existingIndex >= 0) {
+                // Product exists, add quantities
+                mergedItems[existingIndex].quantity += guestItem.quantity;
+              } else {
+                // New product, add to cart
+                mergedItems.push(guestItem);
+              }
+            });
+
+            // Update user cart with merged items
+            await tenantDb
+              .from('carts')
+              .update({
+                items: mergedItems,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', userCart.id);
+
+            // Delete guest cart
+            await tenantDb
+              .from('carts')
+              .delete()
+              .eq('id', guestCart.id);
+          } else {
+            // No user cart exists, transfer guest cart to user
+            await tenantDb
+              .from('carts')
+              .update({
+                user_id: customer.id,
+                session_id: null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', guestCart.id);
+          }
+        }
+
+        // WISHLIST MERGE: Transfer guest wishlist items to user wishlist
+        const { data: guestWishlist } = await tenantDb
+          .from('wishlists')
+          .select('*')
+          .eq('session_id', guestSessionId)
+          .eq('store_id', store_id);
+
+        if (guestWishlist && guestWishlist.length > 0) {
+          // Get existing user wishlist items
+          const { data: userWishlist } = await tenantDb
+            .from('wishlists')
+            .select('*')
+            .eq('user_id', customer.id)
+            .eq('store_id', store_id);
+
+          const userProductIds = new Set((userWishlist || []).map(item => item.product_id));
+
+          // Transfer guest wishlist items that don't already exist in user wishlist
+          for (const guestItem of guestWishlist) {
+            if (!userProductIds.has(guestItem.product_id)) {
+              // Update guest item to belong to user
+              await tenantDb
+                .from('wishlists')
+                .update({
+                  user_id: customer.id,
+                  session_id: null
+                })
+                .eq('id', guestItem.id);
+            } else {
+              // Item already in user wishlist, delete guest duplicate
+              await tenantDb
+                .from('wishlists')
+                .delete()
+                .eq('id', guestItem.id);
+            }
+          }
+        }
+      } catch (mergeError) {
+        console.error('Error merging guest cart/wishlist to user:', mergeError);
+        // Don't fail login if merge fails, just log it
+      }
+    }
 
     // Generate token
     const token = generateToken(customer, rememberMe);
