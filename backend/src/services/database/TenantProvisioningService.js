@@ -177,24 +177,22 @@ END $$;`;
           console.log('✅ Migration SQL syntax fixed');
           console.log('📊 Migration SQL size:', (fixedMigrationSQL.length / 1024).toFixed(2), 'KB');
 
-          // Wrap migration SQL with deferred constraints to handle circular dependencies
-          const wrappedMigrationSQL = `
--- Disable foreign key checks temporarily
-SET CONSTRAINTS ALL DEFERRED;
+          // Remove REFERENCES clauses to avoid FK dependency issues during table creation
+          console.log('🔧 Removing foreign key REFERENCES from CREATE TABLE statements...');
+          let tablesOnlySQL = fixedMigrationSQL.replace(
+            /REFERENCES\s+[\w]+\s*\([^)]+\)(\s+ON\s+(DELETE|UPDATE)\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))?/gi,
+            ''
+          );
 
-${fixedMigrationSQL}
+          // Also remove NOT NULL from columns that had REFERENCES (they're now just regular columns)
+          // This is safer - we'll add constraints back later
+          console.log('✅ Foreign key references removed from table definitions');
 
--- Re-enable foreign key checks
-SET CONSTRAINTS ALL IMMEDIATE;
-`;
-
-          console.log('✅ Migration SQL wrapped with deferred constraints');
-
-          // Execute migrations first (creates 137 tables)
-          console.log('📤 Running migrations via Management API...');
+          // Execute migrations first (creates 137 tables WITHOUT foreign keys)
+          console.log('📤 Running migrations via Management API (tables only)...');
           const migrationResponse = await axios.post(
             `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
-            { query: wrappedMigrationSQL },
+            { query: tablesOnlySQL },
             {
               headers: {
                 'Authorization': `Bearer ${options.oauthAccessToken}`,
