@@ -891,23 +891,6 @@ CREATE TABLE IF NOT EXISTS akeneo_custom_mappings (
   updated_by UUID
 );
 
-CREATE TABLE IF NOT EXISTS akeneo_import_statistics (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL,
-  import_type VARCHAR(50) NOT NULL,
-  import_date TIMESTAMP DEFAULT NOW() NOT NULL,
-  total_processed INTEGER DEFAULT 0 NOT NULL,
-  successful_imports INTEGER DEFAULT 0 NOT NULL,
-  failed_imports INTEGER DEFAULT 0 NOT NULL,
-  skipped_imports INTEGER DEFAULT 0 NOT NULL,
-  import_source VARCHAR(100) DEFAULT 'akeneo'::character varying,
-  import_method VARCHAR(50) DEFAULT 'manual'::character varying,
-  error_details TEXT,
-  processing_time_seconds INTEGER,
-  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS import_statistics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
@@ -5245,41 +5228,6 @@ CREATE INDEX IF NOT EXISTS idx_ai_user_prefs_user ON ai_user_preferences USING b
 --
 
 CREATE INDEX IF NOT EXISTS idx_akeneo_custom_mappings_store_id ON akeneo_custom_mappings USING btree (store_id);
-
-
---
--- Name: idx_akeneo_import_statistics_date; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_date ON akeneo_import_statistics USING btree (import_date DESC);
-
-
---
--- Name: idx_akeneo_import_statistics_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_store_id ON akeneo_import_statistics USING btree (store_id);
-
-
---
--- Name: idx_akeneo_import_statistics_store_type; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_store_type ON akeneo_import_statistics USING btree (store_id, import_type);
-
-
---
--- Name: idx_akeneo_import_statistics_type; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_type ON akeneo_import_statistics USING btree (import_type);
-
-
---
--- Name: idx_akeneo_import_statistics_unique; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX IF NOT EXISTS idx_akeneo_import_statistics_unique ON akeneo_import_statistics USING btree (store_id, import_type, import_date);
 
 
 --
