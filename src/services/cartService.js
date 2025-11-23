@@ -262,12 +262,40 @@ class CartService {
       const sessionId = this.getSessionId();
       const user = await this.getCurrentUser();
 
+      // CRITICAL FIX: Get existing cart first, then add new item to items array
+      const existingCart = await this.getCart(true, storeId);
+      const currentItems = existingCart?.items || [];
+
+      // Check if product already exists in cart
+      const existingItemIndex = currentItems.findIndex(item =>
+        item.product_id === productId &&
+        JSON.stringify(item.selected_options || []) === JSON.stringify(selectedOptions)
+      );
+
+      let updatedItems;
+      if (existingItemIndex >= 0) {
+        // Update quantity if item exists
+        updatedItems = [...currentItems];
+        updatedItems[existingItemIndex] = {
+          ...updatedItems[existingItemIndex],
+          quantity: updatedItems[existingItemIndex].quantity + parseInt(quantity)
+        };
+      } else {
+        // Add new item to cart
+        updatedItems = [
+          ...currentItems,
+          {
+            product_id: productId,
+            quantity: parseInt(quantity),
+            price: parseFloat(price),
+            selected_options: selectedOptions
+          }
+        ];
+      }
+
       const cartData = {
         store_id: storeId,
-        product_id: productId,
-        quantity: parseInt(quantity),
-        price: parseFloat(price),
-        selected_options: selectedOptions,
+        items: updatedItems,
         session_id: sessionId
       };
 

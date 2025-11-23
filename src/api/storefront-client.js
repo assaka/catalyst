@@ -169,13 +169,16 @@ class StorefrontApiClient {
   async customerRequest(method, endpoint, data = null, customHeaders = {}) {
     const token = this.getCustomerToken();
     let finalEndpoint = endpoint;
-    
+
     // Always ensure we have a session ID for guest functionality
     this.sessionId = this.getOrCreateSessionId();
 
-    // Always add session_id to URL - simpler approach
-    const separator = endpoint.includes('?') ? '&' : '?';
-    finalEndpoint = `${endpoint}${separator}session_id=${this.sessionId}`;
+    // For GET and DELETE requests, add session_id to URL
+    // For POST, PUT, PATCH requests, add session_id to body
+    if (method === 'GET' || method === 'DELETE') {
+      const separator = endpoint.includes('?') ? '&' : '?';
+      finalEndpoint = `${endpoint}${separator}session_id=${this.sessionId}`;
+    }
 
     const url = this.buildAuthUrl(finalEndpoint);
     const headers = this.getCustomerHeaders(customHeaders);
@@ -187,7 +190,12 @@ class StorefrontApiClient {
     };
 
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-      config.body = JSON.stringify(data);
+      // CRITICAL FIX: Include session_id in body for POST/PUT/PATCH requests
+      const bodyData = {
+        ...data,
+        session_id: this.sessionId
+      };
+      config.body = JSON.stringify(bodyData);
     }
 
     try {
