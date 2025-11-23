@@ -60,9 +60,9 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Return data directly (not wrapped) for storefront client compatibility
-    // Storefront client expects direct array/object, not {success: true, data: ...}
-    res.json(slug ? pages[0] : pages);
+    // Return data as array for consistent frontend handling
+    // Frontend expects array format and checks pages.length
+    res.json(pages);
 
   } catch (error) {
     console.error('🚨 Public CMS Pages error:', error);
