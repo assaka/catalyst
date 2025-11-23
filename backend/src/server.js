@@ -489,7 +489,8 @@ Disallow: /admin/`);
 // Standard robots.txt route (for default store or custom domain)
 app.get('/robots.txt', async (req, res) => {
   try {
-    const { Store, SeoSettings } = require('./models'); // Master/Tenant hybrid models
+    const { masterDbClient } = require('./database/masterConnection');
+    const ConnectionManager = require('./services/database/ConnectionManager');
 
     // Check if request came from custom domain (set by domainResolver middleware)
     let targetStoreSlug = req.storeSlug;
@@ -497,12 +498,15 @@ app.get('/robots.txt', async (req, res) => {
 
     // If not from custom domain, get the first active store as default
     if (!targetStoreSlug) {
-      const defaultStore = await Store.findOne({
-        where: { is_active: true },
-        order: [['createdAt', 'ASC']]
-      });
+      const { data: defaultStore, error: defaultStoreError } = await masterDbClient
+        .from('stores')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
 
-      if (!defaultStore) {
+      if (defaultStoreError || !defaultStore) {
         return res.set({
           'Content-Type': 'text/plain; charset=utf-8',
           'Cache-Control': 'public, max-age=3600'
@@ -515,9 +519,20 @@ Disallow: /admin/`);
       store = defaultStore;
     } else {
       // Find store by slug for custom domain
-      store = await Store.findOne({
-        where: { slug: targetStoreSlug }
-      });
+      const { data: storeData, error: storeError } = await masterDbClient
+        .from('stores')
+        .select('*')
+        .eq('slug', targetStoreSlug)
+        .single();
+
+      if (storeError || !storeData) {
+        console.warn(`[Robots] Store not found for slug: ${targetStoreSlug}`);
+        return res.status(404).set({
+          'Content-Type': 'text/plain; charset=utf-8'
+        }).send('# Store not found\nUser-agent: *\nDisallow: /');
+      }
+
+      store = storeData;
     }
 
     if (!store) {
@@ -527,10 +542,13 @@ Disallow: /admin/`);
       }).send('# Store not found\nUser-agent: *\nDisallow: /');
     }
 
-    // Find SEO settings for the store
-    const seoSettings = await SeoSettings.findOne({
-      where: { store_id: store.id }
-    });
+    // Find SEO settings for the store from tenant DB
+    const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+    const { data: seoSettings } = await tenantDb
+      .from('seo_settings')
+      .select('*')
+      .eq('store_id', store.id)
+      .single();
 
     let robotsContent = '';
 
@@ -573,7 +591,7 @@ Disallow: /admin/`);
 // Standard sitemap.xml route (for default store or custom domain)
 app.get('/sitemap.xml', async (req, res) => {
   try {
-    const { Store } = require('./models'); // Master/Tenant hybrid model
+    const { masterDbClient } = require('./database/masterConnection');
     const { generateSitemapXml } = require('./routes/sitemap');
 
     // Check if request came from custom domain (set by domainResolver middleware)
@@ -582,12 +600,15 @@ app.get('/sitemap.xml', async (req, res) => {
 
     // If not from custom domain, get the first active store as default
     if (!targetStoreSlug) {
-      const defaultStore = await Store.findOne({
-        where: { is_active: true },
-        order: [['createdAt', 'ASC']]
-      });
+      const { data: defaultStore, error: defaultStoreError } = await masterDbClient
+        .from('stores')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
 
-      if (!defaultStore) {
+      if (defaultStoreError || !defaultStore) {
         return res.status(404).set({
           'Content-Type': 'text/plain; charset=utf-8'
         }).send('No active store found');
@@ -597,9 +618,20 @@ app.get('/sitemap.xml', async (req, res) => {
       store = defaultStore;
     } else {
       // Find store by slug for custom domain
-      store = await Store.findOne({
-        where: { slug: targetStoreSlug }
-      });
+      const { data: storeData, error: storeError } = await masterDbClient
+        .from('stores')
+        .select('*')
+        .eq('slug', targetStoreSlug)
+        .single();
+
+      if (storeError || !storeData) {
+        console.warn(`[Sitemap] Store not found for slug: ${targetStoreSlug}`);
+        return res.status(404).set({
+          'Content-Type': 'text/plain; charset=utf-8'
+        }).send('Store not found');
+      }
+
+      store = storeData;
     }
 
     if (!store) {
@@ -643,16 +675,18 @@ app.get('/sitemap.xml', async (req, res) => {
 // Public store-specific sitemap.xml route
 app.get('/public/:storeSlug/sitemap.xml', async (req, res) => {
   try {
-    const { Store } = require('./models'); // Master/Tenant hybrid model
+    const { masterDbClient } = require('./database/masterConnection');
     const { generateSitemapXml } = require('./routes/sitemap');
     const { storeSlug } = req.params;
 
     // Find store by slug
-    const store = await Store.findOne({
-      where: { slug: storeSlug }
-    });
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('slug', storeSlug)
+      .single();
 
-    if (!store) {
+    if (storeError || !store) {
       console.warn(`[Sitemap] Store not found for slug: ${storeSlug}`);
       return res.status(404).set({
         'Content-Type': 'text/plain; charset=utf-8'
