@@ -187,7 +187,7 @@ class ShopifyImportService {
         sort_order: collection.sort_order || 0,
         meta_title: collection.title,
         meta_description: collection.body_html ? collection.body_html.replace(/<[^>]*>/g, '').substring(0, 160) : '',
-        seo_data: {
+        seo: {
           handle: collection.handle,
           template_suffix: collection.template_suffix,
           shopify_id: collection.id,
@@ -422,6 +422,20 @@ class ShopifyImportService {
    */
   async importProduct(product) {
     try {
+      // Log the full product object to see what Shopify sends
+      console.log('🔍 Shopify Product Data:', JSON.stringify({
+        id: product.id,
+        title: product.title,
+        handle: product.handle,
+        metafields_global_title_tag: product.metafields_global_title_tag,
+        metafields_global_description_tag: product.metafields_global_description_tag,
+        metafield_title: product.metafield_title,
+        metafield_description: product.metafield_description,
+        seo_title: product.seo_title,
+        seo_description: product.seo_description,
+        metafields: product.metafields
+      }, null, 2));
+
       const tenantDb = await ConnectionManager.getStoreConnection(this.storeId);
 
       // Check if product already exists
@@ -470,7 +484,7 @@ class ShopifyImportService {
         store_id: this.storeId,
         url_key: product.handle,
         attributes: processedAttributes, // Use processed attributes with deduplication
-        seo_data: {
+        seo: {
           handle: product.handle,
           template_suffix: product.template_suffix,
           shopify_id: product.id,
