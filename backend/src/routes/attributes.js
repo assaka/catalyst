@@ -343,18 +343,20 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
       return res.status(404).json({ success: false, message: 'Attribute not found' });
     }
 
-    // Extract translations from request body
-    const { translations, ...attributeData } = req.body;
+    // Extract translations and non-table fields from request body
+    const { translations, name, label, ...attributeData } = req.body;
 
-    // Update attribute fields (excluding translations)
-    const { error: updateError } = await tenantDb
-      .from('attributes')
-      .update(attributeData)
-      .eq('id', req.params.id)
-      .eq('store_id', store_id);
+    // Only update if there are attribute fields to update
+    if (Object.keys(attributeData).length > 0) {
+      const { error: updateError } = await tenantDb
+        .from('attributes')
+        .update(attributeData)
+        .eq('id', req.params.id)
+        .eq('store_id', store_id);
 
-    if (updateError) {
-      throw updateError;
+      if (updateError) {
+        throw updateError;
+      }
     }
 
     // Save translations to normalized table if provided
