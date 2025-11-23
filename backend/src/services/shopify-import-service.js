@@ -421,12 +421,17 @@ class ShopifyImportService {
         id: product.id,
         title: product.title,
         handle: product.handle,
+        options: product.options,
+        variants: product.variants?.map(v => ({
+          option1: v.option1,
+          option2: v.option2,
+          option3: v.option3,
+          grams: v.grams,
+          weight: v.weight,
+          weight_unit: v.weight_unit
+        })),
         metafields_global_title_tag: product.metafields_global_title_tag,
         metafields_global_description_tag: product.metafields_global_description_tag,
-        metafield_title: product.metafield_title,
-        metafield_description: product.metafield_description,
-        seo_title: product.seo_title,
-        seo_description: product.seo_description,
         metafields: product.metafields
       }, null, 2));
 
@@ -724,6 +729,44 @@ class ShopifyImportService {
   }
 
   /**
+   * Format metric values to human-readable strings
+   */
+  formatMetricValue(value, metricType) {
+    if (value === null || value === undefined) return null;
+
+    const conversions = {
+      grams: {
+        threshold: 1000,
+        convert: (g) => g >= 1000 ? `${(g / 1000).toFixed(2)} kg` : `${g} grams`,
+        unit: 'grams'
+      },
+      weight: {
+        threshold: 1000,
+        convert: (g) => g >= 1000 ? `${(g / 1000).toFixed(2)} kg` : `${g} grams`,
+        unit: 'grams'
+      },
+      milliliters: {
+        threshold: 1000,
+        convert: (ml) => ml >= 1000 ? `${(ml / 1000).toFixed(2)} L` : `${ml} ml`,
+        unit: 'ml'
+      },
+      centimeters: {
+        threshold: 100,
+        convert: (cm) => cm >= 100 ? `${(cm / 100).toFixed(2)} m` : `${cm} cm`,
+        unit: 'cm'
+      }
+    };
+
+    const conversion = conversions[metricType];
+    if (conversion) {
+      return conversion.convert(value);
+    }
+
+    // Default: just return value with unit
+    return `${value} ${metricType}`;
+  }
+
+  /**
    * Extract custom attributes from Shopify product
    */
   extractProductAttributes(product) {
@@ -733,7 +776,7 @@ class ShopifyImportService {
     if (product.vendor) attributes.vendor = product.vendor;
     if (product.product_type) attributes.product_type = product.product_type;
     if (product.tags) attributes.tags = product.tags;
-    
+
     // Handle metafields if available
     if (product.metafields) {
       product.metafields.forEach(metafield => {
@@ -742,15 +785,37 @@ class ShopifyImportService {
       });
     }
 
-    // Handle variant-specific attributes
+    // Handle variant-specific attributes with proper option names
     if (product.variants && product.variants.length > 0) {
       const mainVariant = product.variants[0];
-      
-      if (mainVariant.option1) attributes.option1 = mainVariant.option1;
-      if (mainVariant.option2) attributes.option2 = mainVariant.option2;
-      if (mainVariant.option3) attributes.option3 = mainVariant.option3;
+
+      // Map option values to their proper names from product.options
+      // Shopify product.options = [{ name: "Size", position: 1, values: [...] }, ...]
+      // Variant has option1, option2, option3 which map to the option names by position
+      if (product.options && Array.isArray(product.options)) {
+        product.options.forEach((option, index) => {
+          const optionKey = `option${index + 1}`;
+          const optionValue = mainVariant[optionKey];
+
+          if (optionValue && option.name) {
+            // Use the actual option name (e.g., "Size", "Color") instead of "option1"
+            attributes[option.name.toLowerCase().replace(/\s+/g, '_')] = optionValue;
+          }
+        });
+      } else {
+        // Fallback to option1/2/3 if product.options not available
+        if (mainVariant.option1) attributes.option1 = mainVariant.option1;
+        if (mainVariant.option2) attributes.option2 = mainVariant.option2;
+        if (mainVariant.option3) attributes.option3 = mainVariant.option3;
+      }
+
+      // Handle barcode
       if (mainVariant.barcode) attributes.barcode = mainVariant.barcode;
-      if (mainVariant.grams) attributes.grams = mainVariant.grams;
+
+      // Handle weight with smart formatting
+      if (mainVariant.grams) {
+        attributes.weight = this.formatMetricValue(mainVariant.grams, 'grams');
+      }
     }
 
     return attributes;

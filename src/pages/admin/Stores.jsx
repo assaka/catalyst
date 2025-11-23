@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import apiClient from '@/api/client';
+import StoreSetupWizard from '@/components/admin/store/StoreSetupWizard';
 
 export default function Stores() {
   const { selectStore, refreshStores } = useStoreSelection();
@@ -35,6 +36,9 @@ export default function Stores() {
     description: '',
     slug: '' // Added slug to newStore state as required by new handleCreateStore logic
   });
+  const [showWizard, setShowWizard] = useState(false);
+  const [createdStoreId, setCreatedStoreId] = useState(null);
+  const [createdStoreName, setCreatedStoreName] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -97,9 +101,9 @@ export default function Stores() {
 
   const handleCreateStore = async () => {
     setCreateError('');
-    
+
     // Store creation is now free - credits only charged when publishing
-    
+
     // Dynamically generate slug if not provided, to ensure validation works
     // and to align with previous functionality where slug was derived from name.
     // The outline removed the generation but added validation for slug.
@@ -123,33 +127,36 @@ export default function Stores() {
         slug: storeSlug,
         user_id: user.id
       };
-      
-      
+
+
       const createdStore = await Store.create(storeRequest);
 
-      setShowCreateStore(false);
-      // Reset only name and slug as specified in the outline,
-      // despite client_email and description being present in the input fields.
-      setNewStore({ name: '', client_email: '', description: '', slug: '' });
-      setCreateError('');
-      
-      // Store created successfully - auto-select and redirect to store dashboard
+      // Store created successfully - get the store data
       const storeData = createdStore.data || createdStore;
-      
+
+      // Store the created store ID and name for the wizard
+      setCreatedStoreId(storeData.id);
+      setCreatedStoreName(storeData.name || newStore.name);
+
       // Refresh stores list and auto-select the new store
       await refreshStores();
       selectStore({
         id: storeData.id,
         name: storeData.name || newStore.name
       });
-      
-      // Redirect to store dashboard
-      window.location.href = `/admin/settings?store=${storeData.id}`;
-      
+
+      // Close the create dialog and show the wizard
+      setShowCreateStore(false);
+      setShowWizard(true);
+
+      // Reset the form
+      setNewStore({ name: '', client_email: '', description: '', slug: '' });
+      setCreateError('');
+
       loadData();
     } catch (error) {
       console.error("Error creating store:", error);
-      
+
       // Handle specific error messages from the backend
       if (error.response?.data?.message) {
         setCreateError(error.response.data.message);
@@ -162,6 +169,22 @@ export default function Stores() {
         setCreateError('Failed to create store. Please try again.');
       }
     }
+  };
+
+  const handleWizardComplete = () => {
+    setShowWizard(false);
+    setCreatedStoreId(null);
+    setCreatedStoreName(null);
+    // Redirect to store dashboard
+    window.location.href = `/admin/dashboard?store=${createdStoreId}`;
+  };
+
+  const handleWizardSkip = () => {
+    setShowWizard(false);
+    setCreatedStoreId(null);
+    setCreatedStoreName(null);
+    // Redirect to store settings for manual setup
+    window.location.href = `/admin/settings?store=${createdStoreId}`;
   };
 
   const handleTogglePublished = async (storeId, currentStatus) => {
@@ -533,6 +556,18 @@ export default function Stores() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Store Setup Wizard Modal */}
+      <Dialog open={showWizard} onOpenChange={setShowWizard}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <StoreSetupWizard
+            storeId={createdStoreId}
+            storeName={createdStoreName}
+            onComplete={handleWizardComplete}
+            onSkip={handleWizardSkip}
+          />
         </DialogContent>
       </Dialog>
 
