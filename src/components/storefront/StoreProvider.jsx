@@ -92,8 +92,8 @@ export const StoreProvider = ({ children }) => {
         // Merge settings with defaults
         const mergedSettings = mergeStoreSettings(store);
 
-        // Set API client context
-        storefrontApiClient.setStoreContext(store.slug);
+        // Set API client context with both slug and ID
+        storefrontApiClient.setStoreContext(store.slug, store.id);
 
         // Initialize language
         const savedLang = localStorage.getItem('catalyst_language');

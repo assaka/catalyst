@@ -3,6 +3,7 @@ class StorefrontApiClient {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
     this.currentStoreSlug = null;
+    this.currentStoreId = null;
     this.customerToken = null;
 
     // Storefront client is public by default
@@ -14,8 +15,9 @@ class StorefrontApiClient {
   }
 
   // Set the current store context
-  setStoreContext(storeSlug) {
+  setStoreContext(storeSlug, storeId = null) {
     this.currentStoreSlug = storeSlug;
+    this.currentStoreId = storeId;
     // Load the token for this store
     this.customerToken = this.getCustomerToken();
   }
@@ -94,6 +96,11 @@ class StorefrontApiClient {
     // Add language header from localStorage
     const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
     headers['X-Language'] = currentLanguage;
+
+    // Add store ID header if available
+    if (this.currentStoreId) {
+      headers['X-Store-Id'] = this.currentStoreId;
+    }
 
     return headers;
   }
