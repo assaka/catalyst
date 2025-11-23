@@ -922,7 +922,7 @@ class ShopifyImportService {
       let attributeId;
 
       if (!existingAttr) {
-        const { data: newAttr } = await tenantDb
+        const { data: newAttr, error: insertError } = await tenantDb
           .from('attributes')
           .insert({
             id: uuidv4(),
@@ -938,6 +938,10 @@ class ShopifyImportService {
           })
           .select()
           .single();
+
+        if (insertError || !newAttr) {
+          throw new Error(`Failed to create attribute ${attrData.code}: ${insertError?.message || 'Unknown error'}`);
+        }
 
         attributeId = newAttr.id;
 
