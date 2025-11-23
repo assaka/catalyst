@@ -468,8 +468,6 @@ class ShopifyImportService {
         external_id: product.id.toString(),
         external_source: 'shopify',
         store_id: this.storeId,
-        meta_title: product.title,
-        meta_description: product.body_html ? product.body_html.replace(/<[^>]*>/g, '').substring(0, 160) : '',
         url_key: product.handle,
         attributes: processedAttributes, // Use processed attributes with deduplication
         seo_data: {
@@ -583,6 +581,46 @@ class ShopifyImportService {
       } catch (translationError) {
         console.error(`❌ Failed to save translations for ${product.title}:`, translationError.message);
         console.error('Translation error details:', translationError);
+      }
+
+      // Save SEO metadata to product_seo table
+      try {
+        // Check if SEO record exists
+        const { data: existingSeo } = await tenantDb
+          .from('product_seo')
+          .select('*')
+          .eq('product_id', savedProduct.id)
+          .eq('language_code', 'en')
+          .maybeSingle();
+
+        const seoData = {
+          meta_title: product.title,
+          meta_description: product.body_html ? product.body_html.replace(/<[^>]*>/g, '').substring(0, 160) : '',
+          meta_robots_tag: 'index, follow',
+          updated_at: new Date().toISOString()
+        };
+
+        if (existingSeo) {
+          await tenantDb
+            .from('product_seo')
+            .update(seoData)
+            .eq('product_id', savedProduct.id)
+            .eq('language_code', 'en');
+        } else {
+          await tenantDb
+            .from('product_seo')
+            .insert({
+              product_id: savedProduct.id,
+              language_code: 'en',
+              ...seoData,
+              created_at: new Date().toISOString()
+            });
+        }
+
+        console.log(`✅ Saved SEO metadata for product: ${product.title}`);
+      } catch (seoError) {
+        console.error(`❌ Failed to save SEO metadata for ${product.title}:`, seoError.message);
+        console.error('SEO error details:', seoError);
       }
 
       // Save images to product_files table
