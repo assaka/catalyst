@@ -289,9 +289,14 @@ export default function Products() {
       const { id, ...updateData } = productData;
 
       const result = await Product.update(id, updateData);
-      await loadData();
-      setShowProductForm(false);
+
+      // Clear selected product and close form BEFORE reloading data
+      // This prevents the modal from reopening with stale data
       setSelectedProduct(null);
+      setShowProductForm(false);
+
+      // Reload the product list with fresh data
+      await loadData();
 
     } catch (error) {
       console.error("Error updating product:", error);
@@ -1367,7 +1372,13 @@ export default function Products() {
           </CardContent>
         </Card>
 
-        <Dialog open={showProductForm} onOpenChange={setShowProductForm}>
+        <Dialog open={showProductForm} onOpenChange={(open) => {
+          setShowProductForm(open);
+          // Clear selected product when dialog is closed
+          if (!open) {
+            setSelectedProduct(null);
+          }
+        }}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
