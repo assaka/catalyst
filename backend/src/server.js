@@ -428,25 +428,31 @@ app.use('/api/preview', previewRoutes);
 // Store-specific robots.txt route (for multi-store)
 app.get('/public/:storeSlug/robots.txt', async (req, res) => {
   try {
-    const { Store, SeoSettings } = require('./models'); // Master/Tenant hybrid models
+    const { masterDbClient } = require('./database/masterConnection');
+    const ConnectionManager = require('./services/database/ConnectionManager');
     const { storeSlug } = req.params;
 
-    // Find store by slug
-    const store = await Store.findOne({
-      where: { slug: storeSlug }
-    });
+    // Find store by slug from master DB
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('slug', storeSlug)
+      .single();
 
-    if (!store) {
+    if (storeError || !store) {
       console.warn(`[Robots] Store not found for slug: ${storeSlug}`);
       return res.status(404).set({
         'Content-Type': 'text/plain; charset=utf-8'
       }).send('# Store not found\nUser-agent: *\nDisallow: /');
     }
 
-    // Find SEO settings for the store
-    const seoSettings = await SeoSettings.findOne({
-      where: { store_id: store.id }
-    });
+    // Find SEO settings for the store from tenant DB
+    const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+    const { data: seoSettings } = await tenantDb
+      .from('seo_settings')
+      .select('*')
+      .eq('store_id', store.id)
+      .single();
 
     let robotsContent = '';
 
