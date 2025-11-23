@@ -177,16 +177,28 @@ END $$;`;
           console.log('✅ Migration SQL syntax fixed');
           console.log('📊 Migration SQL size:', (fixedMigrationSQL.length / 1024).toFixed(2), 'KB');
 
-          // Remove REFERENCES clauses to avoid FK dependency issues during table creation
-          console.log('🔧 Removing foreign key REFERENCES from CREATE TABLE statements...');
+          // Remove all foreign key constraints to avoid dependency issues
+          console.log('🔧 Removing all foreign key constraints from SQL...');
+
+          // Step 1: Remove REFERENCES clauses from within CREATE TABLE column definitions
           let tablesOnlySQL = fixedMigrationSQL.replace(
             /REFERENCES\s+[\w]+\s*\([^)]+\)(\s+ON\s+(DELETE|UPDATE)\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))?/gi,
             ''
           );
 
-          // Also remove NOT NULL from columns that had REFERENCES (they're now just regular columns)
-          // This is safer - we'll add constraints back later
-          console.log('✅ Foreign key references removed from table definitions');
+          // Step 2: Remove entire ALTER TABLE...ADD CONSTRAINT...FOREIGN KEY statements
+          tablesOnlySQL = tablesOnlySQL.replace(
+            /ALTER\s+TABLE\s+[\w]+\s+ADD\s+CONSTRAINT\s+[\w]+\s+FOREIGN\s+KEY\s*\([^)]+\)[^;]*;/gi,
+            ''
+          );
+
+          // Step 3: Remove ALTER TABLE...ADD FOREIGN KEY statements (without CONSTRAINT name)
+          tablesOnlySQL = tablesOnlySQL.replace(
+            /ALTER\s+TABLE\s+[\w]+\s+ADD\s+FOREIGN\s+KEY\s*\([^)]+\)[^;]*;/gi,
+            ''
+          );
+
+          console.log('✅ All foreign key constraints removed from SQL');
 
           // Execute migrations first (creates 137 tables WITHOUT foreign keys)
           console.log('📤 Running migrations via Management API (tables only)...');
