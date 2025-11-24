@@ -12,7 +12,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { CreditTransaction } = require('../models/master');
+const CreditTransaction = require('../models/CreditTransaction');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { masterDbClient } = require('../database/masterConnection');
 const ConnectionManager = require('../services/database/ConnectionManager');

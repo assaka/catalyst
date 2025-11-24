@@ -174,6 +174,64 @@ const CreditTransaction = {
     }
 
     return data || [];
+  },
+
+  async findAll(options = {}) {
+    const { where = {}, order = [], limit, offset } = options;
+
+    let query = masterDbClient.from(this.tableName).select('*');
+
+    // Apply where conditions
+    Object.keys(where).forEach(key => {
+      query = query.eq(key, where[key]);
+    });
+
+    // Apply ordering
+    if (order.length > 0) {
+      const [field, direction] = order[0];
+      query = query.order(field, { ascending: direction === 'ASC' });
+    } else {
+      query = query.order('created_at', { ascending: false });
+    }
+
+    // Apply pagination
+    if (limit) {
+      query = query.limit(limit);
+    }
+    if (offset) {
+      query = query.range(offset, offset + (limit || 50) - 1);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error in findAll:', error);
+      throw new Error(`Failed to find transactions: ${error.message}`);
+    }
+
+    return data || [];
+  },
+
+  async count(options = {}) {
+    const { where = {} } = options;
+
+    let query = masterDbClient
+      .from(this.tableName)
+      .select('id', { count: 'exact', head: true });
+
+    // Apply where conditions
+    Object.keys(where).forEach(key => {
+      query = query.eq(key, where[key]);
+    });
+
+    const { count, error } = await query;
+
+    if (error) {
+      console.error('Error in count:', error);
+      return 0;
+    }
+
+    return count || 0;
   }
 };
 

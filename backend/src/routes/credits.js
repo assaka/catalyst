@@ -95,10 +95,11 @@ router.get('/transactions', authMiddleware, async (req, res) => {
       data: transactions.map(tx => ({
         id: tx.id,
         transaction_type: tx.transaction_type,
-        amount_usd: parseFloat(tx.amount_usd),
-        credits_purchased: parseFloat(tx.credits_purchased),
+        amount_usd: parseFloat(tx.amount_usd || 0),
+        credits_amount: parseFloat(tx.credits_amount || 0),
         status: tx.status,
-        created_date: tx.createdAt,
+        description: tx.description,
+        created_at: tx.created_at,
         metadata: tx.metadata
       })),
       total: transactions.length

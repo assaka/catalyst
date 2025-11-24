@@ -1060,6 +1060,67 @@ app.use('/api/consent-logs', authMiddleware, consentLogRoutes);
 app.use('/api/custom-option-rules', authMiddleware, customOptionRuleRoutes);
 app.use('/api/addresses', addressRoutes);
 // CMS blocks route moved to line 1522 with correct /api/public/cms-blocks path
+
+// Public invitation endpoint (no auth required) - must be before authMiddleware
+app.get('/api/invitations/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { masterDbClient } = require('./database/masterConnection');
+
+    // Find invitation in master DB
+    const { data: invitation, error: inviteError } = await masterDbClient
+      .from('store_invitations')
+      .select('id, store_id, invited_email, invited_by, role, message, expires_at, status, created_at')
+      .eq('invitation_token', token)
+      .maybeSingle();
+
+    if (inviteError || !invitation) {
+      return res.status(404).json({ success: false, message: 'Invitation not found' });
+    }
+
+    if (new Date(invitation.expires_at) < new Date()) {
+      return res.status(410).json({ success: false, message: 'This invitation has expired' });
+    }
+
+    if (invitation.status !== 'pending') {
+      return res.status(410).json({ success: false, message: 'This invitation has already been used' });
+    }
+
+    // Get store info
+    const { data: store } = await masterDbClient
+      .from('stores')
+      .select('id, name, domain')
+      .eq('id', invitation.store_id)
+      .single();
+
+    // Get inviter info
+    let inviter = null;
+    if (invitation.invited_by) {
+      const { data: inviterInfo } = await masterDbClient
+        .from('users')
+        .select('id, email, first_name, last_name')
+        .eq('id', invitation.invited_by)
+        .single();
+      inviter = inviterInfo;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: invitation.id,
+        role: invitation.role,
+        message: invitation.message,
+        expires_at: invitation.expires_at,
+        store: store || { name: 'Store' },
+        inviter
+      }
+    });
+  } catch (error) {
+    console.error('Get invitation error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 app.use('/api/store-teams', authMiddleware, storeTeamRoutes);
 app.use('/api/integrations', authMiddleware, integrationRoutes);
 app.use('/api/supabase', supabaseRoutes);

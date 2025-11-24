@@ -40,7 +40,7 @@ export default function AcceptInvitation() {
 
       // Use direct fetch for public endpoint (no auth required)
       const apiUrl = import.meta.env.VITE_API_URL || 'https://catalyst-backend-fzhu.onrender.com';
-      const response = await fetch(`${apiUrl}/api/store-teams/invitation/${token}`);
+      const response = await fetch(`${apiUrl}/api/invitations/${token}`);
       const data = await response.json();
 
       if (response.ok && data.success) {
