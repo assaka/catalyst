@@ -1943,6 +1943,7 @@ registerSlotComponent('BreadcrumbRenderer', BreadcrumbRenderer);
 registerSlotComponent('StockStatus', StockStatus);
 registerSlotComponent('ProductImage', ProductImage);
 registerSlotComponent('ProductThumbnails', ProductThumbnails);
+registerSlotComponent('ProductGallery', ProductGallery);
 
 export {
   QuantitySelector,

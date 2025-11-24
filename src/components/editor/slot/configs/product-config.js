@@ -135,7 +135,7 @@ export const productConfig = {
     product_gallery_container: {
       id: 'product_gallery_container',
       type: 'component',
-      component: 'ProductImageGallery',
+      component: 'ProductGallery',
       content: '',
       className: 'w-full',
       parentClassName: '',
@@ -150,7 +150,7 @@ export const productConfig = {
       metadata: {
         hierarchical: true,
         displayName: 'Product Image Gallery',
-        component: 'ProductImageGallery'
+        component: 'ProductGallery'
       }
     },
 

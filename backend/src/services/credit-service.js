@@ -396,52 +396,30 @@ class CreditService {
     const balanceBeforeNum = parseFloat(balanceBefore);
     const balanceAfterNum = parseFloat(deductResult.remaining_balance);
 
-    // Log to store_uptime table (master DB)
+    // Log to store_uptime table (tenant DB)
     try {
-      await masterSequelize.query(`
-        INSERT INTO store_uptime (
-          id,
-          store_id,
-          user_id,
-          charged_date,
-          credits_charged,
-          user_balance_before,
-          user_balance_after,
-          store_name,
-          metadata,
-          created_at
-        ) VALUES (
-          gen_random_uuid(),
-          $1,
-          $2,
-          CURRENT_DATE,
-          $3::numeric,
-          $4::numeric,
-          $5::numeric,
-          $6,
-          $7,
-          NOW()
-        )
-        ON CONFLICT (store_id, charged_date) DO UPDATE SET
-          credits_charged = EXCLUDED.credits_charged,
-          user_balance_after = EXCLUDED.user_balance_after,
-          metadata = EXCLUDED.metadata
-      `, {
-        bind: [
-          storeId,
-          userId,
-          dailyCostNum,
-          balanceBeforeNum,
-          balanceAfterNum,
-          store.name,
-          JSON.stringify({
+      const ConnectionManager = require('./database/ConnectionManager');
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      await tenantDb
+        .from('store_uptime')
+        .insert({
+          store_id: storeId,
+          user_id: userId,
+          charged_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+          credits_charged: dailyCostNum,
+          user_balance_before: balanceBeforeNum,
+          user_balance_after: balanceAfterNum,
+          store_name: store.name,
+          metadata: {
             charge_type: 'daily',
             deduction_time: new Date().toISOString()
-          })
-        ],
-        type: masterSequelize.QueryTypes.INSERT
-      });
+          },
+          created_at: new Date().toISOString()
+        })
+        .select();
     } catch (uptimeError) {
+      console.error('Failed to log uptime:', uptimeError.message);
       // Silent fail - uptime logging is not critical
     }
 
@@ -660,81 +638,108 @@ class CreditService {
   /**
    * Get store uptime report
    * Shows daily credit charges for published stores
+   * Queries tenant databases for uptime data
    */
   async getUptimeReport(userId, days = 30, storeId = null) {
-    // Build query conditions
-    let whereCondition = 'WHERE su.user_id = $1';
-    const bindings = [userId];
+    const ConnectionManager = require('./database/ConnectionManager');
+    const Store = require('../models/Store');
 
+    // Get stores for this user
+    let stores;
     if (storeId) {
-      whereCondition += ' AND su.store_id = $2';
-      bindings.push(storeId);
+      const store = await Store.findOne({
+        where: { id: storeId, user_id: userId }
+      });
+      stores = store ? [store] : [];
+    } else {
+      stores = await Store.findAll({
+        where: { user_id: userId }
+      });
     }
 
-    // Get uptime records (master DB)
-    const uptimeRecords = await masterSequelize.query(`
-      SELECT
-        su.id,
-        su.store_id,
-        su.store_name,
-        su.charged_date,
-        su.credits_charged,
-        su.user_balance_before,
-        su.user_balance_after,
-        su.created_at,
-        s.published as currently_published
-      FROM store_uptime su
-      LEFT JOIN stores s ON su.store_id = s.id
-      ${whereCondition}
-      ORDER BY su.charged_date DESC, su.created_at DESC
-      LIMIT $${bindings.length + 1}
-    `, {
-      bind: [...bindings, parseInt(days) * 10], // Fetch more records than days for safety
-      type: masterSequelize.QueryTypes.SELECT
+    if (stores.length === 0) {
+      return {
+        records: [],
+        summary: {
+          total_stores: 0,
+          total_days: 0,
+          total_credits_charged: 0
+        },
+        store_breakdown: [],
+        period_days: parseInt(days)
+      };
+    }
+
+    // Query each store's tenant DB for uptime records
+    const allRecords = [];
+    const storeBreakdownMap = new Map();
+
+    for (const store of stores) {
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+
+        // Get uptime records for this store
+        const { data: records, error } = await tenantDb
+          .from('store_uptime')
+          .select('*')
+          .eq('user_id', userId)
+          .order('charged_date', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(parseInt(days) * 10);
+
+        if (!error && records) {
+          // Add current published status to each record
+          const recordsWithStatus = records.map(r => ({
+            ...r,
+            currently_published: store.published
+          }));
+          allRecords.push(...recordsWithStatus);
+
+          // Calculate store breakdown
+          const storeTotal = records.reduce((sum, r) => sum + parseFloat(r.credits_charged || 0), 0);
+          const dates = records.map(r => new Date(r.charged_date));
+
+          storeBreakdownMap.set(store.id, {
+            store_id: store.id,
+            store_name: store.name,
+            days_running: records.length,
+            total_credits: storeTotal,
+            first_charge: dates.length > 0 ? new Date(Math.min(...dates)).toISOString() : null,
+            last_charge: dates.length > 0 ? new Date(Math.max(...dates)).toISOString() : null,
+            currently_published: store.published
+          });
+        }
+      } catch (error) {
+        console.error(`Failed to get uptime for store ${store.id}:`, error.message);
+        // Continue with other stores
+      }
+    }
+
+    // Sort all records by date
+    allRecords.sort((a, b) => {
+      const dateCompare = new Date(b.charged_date) - new Date(a.charged_date);
+      if (dateCompare !== 0) return dateCompare;
+      return new Date(b.created_at) - new Date(a.created_at);
     });
 
-    // Get summary statistics (master DB)
-    const [summary] = await masterSequelize.query(`
-      SELECT
-        COUNT(DISTINCT su.store_id) as total_stores,
-        COUNT(*) as total_days,
-        SUM(su.credits_charged) as total_credits_charged,
-        MIN(su.charged_date) as first_charge_date,
-        MAX(su.charged_date) as last_charge_date
-      FROM store_uptime su
-      ${whereCondition}
-    `, {
-      bind: bindings,
-      type: masterSequelize.QueryTypes.SELECT
-    });
+    // Calculate summary
+    const totalCredits = allRecords.reduce((sum, r) => sum + parseFloat(r.credits_charged || 0), 0);
+    const dates = allRecords.map(r => new Date(r.charged_date));
+    const summary = {
+      total_stores: storeBreakdownMap.size,
+      total_days: allRecords.length,
+      total_credits_charged: totalCredits,
+      first_charge_date: dates.length > 0 ? new Date(Math.min(...dates)).toISOString() : null,
+      last_charge_date: dates.length > 0 ? new Date(Math.max(...dates)).toISOString() : null
+    };
 
-    // Get per-store summary (master DB)
-    const storeBreakdown = await masterSequelize.query(`
-      SELECT
-        su.store_id,
-        su.store_name,
-        COUNT(*) as days_running,
-        SUM(su.credits_charged) as total_credits,
-        MIN(su.charged_date) as first_charge,
-        MAX(su.charged_date) as last_charge,
-        s.published as currently_published
-      FROM store_uptime su
-      LEFT JOIN stores s ON su.store_id = s.id
-      ${whereCondition}
-      GROUP BY su.store_id, su.store_name, s.published
-      ORDER BY total_credits DESC
-    `, {
-      bind: bindings,
-      type: masterSequelize.QueryTypes.SELECT
-    });
+    // Convert breakdown map to array and sort by total credits
+    const storeBreakdown = Array.from(storeBreakdownMap.values())
+      .sort((a, b) => b.total_credits - a.total_credits);
 
     return {
-      records: uptimeRecords,
-      summary: summary || {
-        total_stores: 0,
-        total_days: 0,
-        total_credits_charged: 0
-      },
+      records: allRecords,
+      summary,
       store_breakdown: storeBreakdown,
       period_days: parseInt(days)
     };
