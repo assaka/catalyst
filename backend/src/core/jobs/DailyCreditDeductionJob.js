@@ -1,5 +1,5 @@
 const BaseJobHandler = require('./BaseJobHandler');
-const { masterSequelize } = require('../../database/masterConnection');
+const { masterDbClient } = require('../../database/masterConnection');
 const creditService = require('../../services/credit-service');
 
 /**
@@ -15,17 +15,23 @@ class DailyCreditDeductionJob extends BaseJobHandler {
 
   async execute() {
     try {
-      // Query published stores from master DB
-      const publishedStores = await masterSequelize.query(`
-        SELECT id, user_id, name, slug, published
-        FROM stores
-        WHERE published = true
-        ORDER BY created_at DESC
-      `, {
-        type: masterSequelize.QueryTypes.SELECT
-      });
+      // Verify masterDbClient is available
+      if (!masterDbClient) {
+        throw new Error('masterDbClient not initialized - check MASTER_SUPABASE_URL and MASTER_SUPABASE_SERVICE_KEY');
+      }
 
-      if (publishedStores.length === 0) {
+      // Query published stores from master DB
+      const { data: publishedStores, error: storesError } = await masterDbClient
+        .from('stores')
+        .select('id, user_id, name, slug, published')
+        .eq('published', true)
+        .order('created_at', { ascending: false });
+
+      if (storesError) {
+        throw new Error(`Failed to fetch published stores: ${storesError.message}`);
+      }
+
+      if (!publishedStores || publishedStores.length === 0) {
         return {
           success: true,
           message: 'No published stores found',
@@ -49,14 +55,21 @@ class DailyCreditDeductionJob extends BaseJobHandler {
 
         try {
           // Query user from master DB
-          const [owner] = await masterSequelize.query(`
-            SELECT id, email
-            FROM users
-            WHERE id = $1
-          `, {
-            bind: [store.user_id],
-            type: masterSequelize.QueryTypes.SELECT
-          });
+          const { data: owner, error: ownerError } = await masterDbClient
+            .from('users')
+            .select('id, email')
+            .eq('id', store.user_id)
+            .maybeSingle();
+
+          if (ownerError) {
+            results.failed++;
+            results.errors.push({
+              store_id: store.id,
+              store_name: store.name,
+              error: `Failed to fetch owner: ${ownerError.message}`
+            });
+            continue;
+          }
 
           if (!owner) {
             results.failed++;
@@ -99,15 +112,17 @@ class DailyCreditDeductionJob extends BaseJobHandler {
       }
 
       // Process custom domains - query from master DB
-      const activeCustomDomains = await masterSequelize.query(`
-        SELECT id, store_id, domain, is_active, verification_status
-        FROM custom_domains
-        WHERE is_active = true
-          AND verification_status = 'verified'
-        ORDER BY created_at DESC
-      `, {
-        type: masterSequelize.QueryTypes.SELECT
-      });
+      const { data: activeCustomDomains, error: domainsError } = await masterDbClient
+        .from('custom_domains')
+        .select('id, store_id, domain, is_active, verification_status')
+        .eq('is_active', true)
+        .eq('verification_status', 'verified')
+        .order('created_at', { ascending: false });
+
+      if (domainsError) {
+        console.error('Failed to fetch custom domains:', domainsError.message);
+        // Continue with store results even if domain query fails
+      }
 
       const domainResults = {
         processed: 0,
@@ -117,19 +132,28 @@ class DailyCreditDeductionJob extends BaseJobHandler {
         errors: []
       };
 
-      for (const domain of activeCustomDomains) {
+      const domainsToProcess = activeCustomDomains || [];
+
+      for (const domain of domainsToProcess) {
         domainResults.processed++;
 
         try {
           // Query store from master DB
-          const [store] = await masterSequelize.query(`
-            SELECT id, name, slug, user_id
-            FROM stores
-            WHERE id = $1
-          `, {
-            bind: [domain.store_id],
-            type: masterSequelize.QueryTypes.SELECT
-          });
+          const { data: store, error: storeError } = await masterDbClient
+            .from('stores')
+            .select('id, name, slug, user_id')
+            .eq('id', domain.store_id)
+            .maybeSingle();
+
+          if (storeError) {
+            domainResults.failed++;
+            domainResults.errors.push({
+              domain_id: domain.id,
+              domain_name: domain.domain,
+              error: `Failed to fetch store: ${storeError.message}`
+            });
+            continue;
+          }
 
           if (!store) {
             domainResults.failed++;
