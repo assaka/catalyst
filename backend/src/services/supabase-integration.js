@@ -377,6 +377,44 @@ class SupabaseIntegration {
         expires_at: tokenData.expires_at
       });
 
+      // Check if this database is already being used by another store
+      console.log('🔍 Checking for duplicate database before storing OAuth tokens...');
+      const { masterDbClient } = require('../database/masterConnection');
+
+      // Skip check for placeholder URLs
+      const isPlaceholder = tokenData.project_url && (
+        tokenData.project_url.includes('pending-configuration') ||
+        tokenData.project_url === 'Configuration pending'
+      );
+
+      if (!isPlaceholder && tokenData.project_url) {
+        try {
+          const projectUrl = new URL(tokenData.project_url);
+          const host = projectUrl.hostname;
+
+          const { data: existingDb, error: checkError } = await masterDbClient
+            .from('store_databases')
+            .select('store_id, host')
+            .eq('host', host)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (!checkError && existingDb && existingDb.store_id !== storeId) {
+            console.error('❌ Database already in use by another store:', existingDb.store_id);
+            throw new Error('This Supabase database is already being used by another store. Please select a different database or create a new Supabase project.');
+          }
+
+          console.log('✅ Database URL is available');
+        } catch (checkErr) {
+          // If it's our duplicate error, re-throw it
+          if (checkErr.message.includes('already being used')) {
+            throw checkErr;
+          }
+          // Otherwise log and continue (don't block OAuth on check errors)
+          console.error('⚠️ Error checking for duplicate database:', checkErr.message);
+        }
+      }
+
       // STEP 1: ALWAYS store in Redis (persists across server restarts)
       const tokenDataToStore = {
         access_token: tokenData.access_token,
