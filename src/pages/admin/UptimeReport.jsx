@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Activity, Calendar, DollarSign, TrendingUp, Download } from 'lucide-react';
 import apiClient from '@/api/client';
-import { Store } from '@/api';
+import { Store } from '@/api/entities';
 
 export default function UptimeReport() {
   const [loading, setLoading] = useState(true);
