@@ -917,18 +917,19 @@ router.get('/time-on-page/:storeId', authMiddleware, checkStoreOwnership, async 
 
     for (const session of sessions) {
       // Check if this session has interactions on the target page
-      const pageInteractions = await HeatmapInteraction.findAll({
-        where: {
-          store_id: storeId,
-          session_id: session.session_id,
-          page_url: page_url
-        },
-        attributes: ['timestamp_utc'],
-        order: [['timestamp_utc', 'ASC']],
-        raw: true
-      });
+      const { data: pageInteractions, error: pageError } = await tenantDb
+        .from('heatmap_interactions')
+        .select('timestamp_utc')
+        .eq('store_id', storeId)
+        .eq('session_id', session.session_id)
+        .eq('page_url', page_url)
+        .order('timestamp_utc', { ascending: true });
 
-      if (pageInteractions.length > 0) {
+      if (pageError) {
+        throw pageError;
+      }
+
+      if (pageInteractions && pageInteractions.length > 0) {
         const firstInteraction = new Date(pageInteractions[0].timestamp_utc);
         const lastInteraction = new Date(pageInteractions[pageInteractions.length - 1].timestamp_utc);
         const durationSeconds = (lastInteraction - firstInteraction) / 1000;
