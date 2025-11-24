@@ -200,7 +200,8 @@ class ApiClient {
       const result = await response.json();
 
       if (!response.ok) {
-        const error = new Error(result.message || `HTTP error! status: ${response.status}`);
+        const errorMessage = result.error || result.message || `HTTP error! status: ${response.status}`;
+        const error = new Error(errorMessage);
         error.status = response.status;
         error.data = result;
         throw error;
@@ -299,24 +300,25 @@ class ApiClient {
       if (!response.ok) {
         // Check for authentication failures that should trigger logout
         if (response.status === 401 || response.status === 403) {
-          const errorMessage = result.message || '';
-          
+          const errorMessage = result.message || result.error || '';
+
           // Check for specific authentication error patterns
-          const isAuthError = errorMessage.includes('store_owner_auth_token') || 
+          const isAuthError = errorMessage.includes('store_owner_auth_token') ||
                              errorMessage.includes('Missing store_owner_auth_token') ||
                              errorMessage.includes('Invalid token') ||
                              errorMessage.includes('Unauthorized') ||
                              errorMessage.includes('Authentication failed') ||
                              errorMessage.includes('Token expired');
-          
+
           if (isAuthError && !isAuthRoute) {
             console.warn('❌ Authentication failure detected, logging out user:', errorMessage);
             this.handleAuthenticationFailure();
           }
         }
-        
-        // Handle API errors
-        const error = new Error(result.message || `HTTP error! status: ${response.status}`);
+
+        // Handle API errors - check both 'error' and 'message' fields
+        const errorMessage = result.error || result.message || `HTTP error! status: ${response.status}`;
+        const error = new Error(errorMessage);
         error.status = response.status;
         error.data = result;
         throw error;
@@ -581,7 +583,8 @@ class ApiClient {
       const result = await response.json();
 
       if (!response.ok) {
-        const error = new Error(result.message || `HTTP error! status: ${response.status}`);
+        const errorMessage = result.error || result.message || `HTTP error! status: ${response.status}`;
+        const error = new Error(errorMessage);
         error.status = response.status;
         error.data = result;
         throw error;
