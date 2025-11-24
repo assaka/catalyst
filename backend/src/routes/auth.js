@@ -783,7 +783,9 @@ router.post('/login', [
 
     // For store owners/admins, fetch their first ACTIVE store from master DB to include in token
     if (authenticatedUser.role === 'store_owner' || authenticatedUser.role === 'admin') {
-      const { data: userStores } = await masterDbClient
+      console.log('🔍 Fetching active stores for user:', authenticatedUser.id, authenticatedUser.email);
+
+      const { data: userStores, error: storesError } = await masterDbClient
         .from('stores')
         .select('id, name, slug, is_active')
         .eq('user_id', authenticatedUser.id)
@@ -791,11 +793,25 @@ router.post('/login', [
         .order('created_at', { ascending: true })
         .limit(1);
 
+      console.log('🔍 Stores query result:', {
+        found: userStores?.length || 0,
+        error: storesError,
+        stores: userStores
+      });
+
       if (userStores && userStores.length > 0) {
         authenticatedUser.store_id = userStores[0].id;
-        console.log('🔍 Added first active store to token:', userStores[0].name, '(slug:', userStores[0].slug + ')', userStores[0].id);
+        console.log('✅ Added first active store to token:', userStores[0].name, '(slug:', userStores[0].slug + ')', userStores[0].id);
       } else {
-        console.log('⚠️ Store owner has no active stores');
+        console.log('⚠️ Store owner has no active stores. Checking all stores...');
+
+        // Debug: Check all stores for this user
+        const { data: allStores } = await masterDbClient
+          .from('stores')
+          .select('id, name, slug, is_active, user_id')
+          .eq('user_id', authenticatedUser.id);
+
+        console.log('🔍 All stores for user:', allStores);
       }
     }
 
