@@ -54,13 +54,26 @@ async function checkDatabaseUrlDuplicate(projectUrl, currentStoreId = null) {
 
     console.log('🔍 Checking for duplicate database URL:', { host, currentStoreId });
 
+    // First, check if there are ANY records in store_databases (for debugging)
+    const { data: allDbs, error: countError } = await masterDbClient
+      .from('store_databases')
+      .select('store_id, host, is_active')
+      .limit(10);
+
+    console.log('📊 Sample store_databases records:', allDbs?.length || 0);
+    if (allDbs && allDbs.length > 0) {
+      console.log('   Sample records:', allDbs.map(db => ({ store_id: db.store_id, host: db.host, is_active: db.is_active })));
+    }
+
     // Query store_databases table to check if this host is already in use
     const { data: existingDb, error } = await masterDbClient
       .from('store_databases')
-      .select('store_id, host')
+      .select('store_id, host, is_active')
       .eq('host', host)
       .eq('is_active', true)
       .maybeSingle();
+
+    console.log('🔍 Query result for host', host, ':', existingDb);
 
     if (error) {
       console.error('Error checking for duplicate database:', error);
