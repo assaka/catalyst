@@ -25,6 +25,11 @@ const MasterStore = masterSequelize.define('Store', {
     },
     onDelete: 'CASCADE'
   },
+  slug: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    unique: true
+  },
   status: {
     type: DataTypes.ENUM(
       'pending_database',  // Waiting for database connection

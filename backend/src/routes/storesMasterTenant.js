@@ -43,66 +43,114 @@ router.post('/', authMiddleware, async (req, res) => {
       });
     }
 
-    // Check store limit using Supabase client
-    const { count, error: countError } = await masterDbClient
-      .from('stores')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
+    // Generate slug from name
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
-    const maxStores = 5;
-    if (count >= maxStores) {
-      return res.status(403).json({
-        success: false,
-        error: `Maximum number of stores (${maxStores}) reached`,
-        code: 'STORE_LIMIT_REACHED'
-      });
+    // Check if a store with this slug and status='pending_database' already exists
+    const { data: existingStore, error: checkError } = await masterDbClient
+      .from('stores')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('slug', slug)
+      .eq('status', 'pending_database')
+      .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking for existing store:', checkError);
     }
 
-    // Create store in master DB using Supabase client
     const { v4: uuidv4 } = require('uuid');
-    const storeId = uuidv4();
+    let store;
+    let storeId;
+    let isUpdate = false;
 
-    const { data: store, error: storeError } = await masterDbClient
-      .from('stores')
-      .insert({
-        id: storeId,
-        user_id: userId,
-        status: 'pending_database',
-        is_active: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+    if (existingStore) {
+      // Update existing pending_database store
+      console.log('Found existing pending_database store, updating:', existingStore.id);
+      storeId = existingStore.id;
+      isUpdate = true;
 
-    if (storeError) {
-      throw new Error(`Failed to create store: ${storeError.message}`);
+      const { data: updatedStore, error: updateError } = await masterDbClient
+        .from('stores')
+        .update({
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storeId)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw new Error(`Failed to update store: ${updateError.message}`);
+      }
+
+      store = updatedStore;
+    } else {
+      // Check store limit only for new stores
+      const { count, error: countError } = await masterDbClient
+        .from('stores')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+      const maxStores = 5;
+      if (count >= maxStores) {
+        return res.status(403).json({
+          success: false,
+          error: `Maximum number of stores (${maxStores}) reached`,
+          code: 'STORE_LIMIT_REACHED'
+        });
+      }
+
+      // Create new store in master DB
+      storeId = uuidv4();
+
+      const { data: newStore, error: storeError } = await masterDbClient
+        .from('stores')
+        .insert({
+          id: storeId,
+          user_id: userId,
+          slug: slug,
+          status: 'pending_database',
+          is_active: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (storeError) {
+        throw new Error(`Failed to create store: ${storeError.message}`);
+      }
+
+      store = newStore;
+
+      // Initialize credit balance for new stores only
+      const { error: balanceError } = await masterDbClient
+        .from('credit_balances')
+        .insert({
+          id: uuidv4(),
+          store_id: storeId,
+          balance: 0.00,
+          reserved_balance: 0.00,
+          lifetime_purchased: 0.00,
+          lifetime_spent: 0.00,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (balanceError) {
+        console.warn('Failed to create credit balance:', balanceError.message);
+      }
     }
 
-    // Initialize credit balance
-    const { error: balanceError } = await masterDbClient
-      .from('credit_balances')
-      .insert({
-        id: uuidv4(),
-        store_id: storeId,
-        balance: 0.00,
-        reserved_balance: 0.00,
-        lifetime_purchased: 0.00,
-        lifetime_spent: 0.00,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-
-    if (balanceError) {
-      console.warn('Failed to create credit balance:', balanceError.message);
-    }
-
-    res.status(201).json({
+    res.status(isUpdate ? 200 : 201).json({
       success: true,
-      message: 'Store created successfully. Please connect a database to activate it.',
+      message: isUpdate
+        ? 'Existing pending store found. Please connect a database to activate it.'
+        : 'Store created successfully. Please connect a database to activate it.',
       data: {
         store
-      }
+      },
+      isUpdate
     });
   } catch (error) {
     console.error('Store creation error:', error);
