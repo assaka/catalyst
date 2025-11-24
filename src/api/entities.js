@@ -1296,6 +1296,10 @@ class StoreTeamService extends BaseEntity {
   async getInvitations(storeId) {
     try {
       const response = await apiClient.get(`${this.endpoint}/${storeId}/invitations`);
+      // apiClient transforms response and may return the invitations array directly
+      if (Array.isArray(response)) {
+        return response;
+      }
       return response?.data?.invitations || response?.invitations || [];
     } catch (error) {
       console.error(`StoreTeamService.getInvitations() error:`, error.message);
