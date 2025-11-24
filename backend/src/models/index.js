@@ -309,20 +309,14 @@ const defineAssociations = () => {
   Store.hasMany(CustomDomain, { foreignKey: 'store_id', as: 'customDomains' });
 
   // Credit system associations
+  // Note: Credit model still uses Sequelize
   Credit.belongsTo(User, { foreignKey: 'user_id' });
   Credit.belongsTo(Store, { foreignKey: 'store_id' });
   User.hasMany(Credit, { foreignKey: 'user_id' });
   Store.hasMany(Credit, { foreignKey: 'store_id' });
 
-  CreditTransaction.belongsTo(User, { foreignKey: 'user_id' });
-  CreditTransaction.belongsTo(Store, { foreignKey: 'store_id' });
-  User.hasMany(CreditTransaction, { foreignKey: 'user_id' });
-  Store.hasMany(CreditTransaction, { foreignKey: 'store_id' });
-
-  CreditUsage.belongsTo(User, { foreignKey: 'user_id' });
-  CreditUsage.belongsTo(Store, { foreignKey: 'store_id' });
-  User.hasMany(CreditUsage, { foreignKey: 'user_id' });
-  Store.hasMany(CreditUsage, { foreignKey: 'store_id' });
+  // Note: CreditTransaction, CreditUsage now use Supabase client - no Sequelize associations needed
+  // Associations are handled at the database level via foreign keys
 
   // Job associations
   Job.belongsTo(Store, { foreignKey: 'store_id' });
@@ -342,9 +336,8 @@ const defineAssociations = () => {
   // CronJobExecution associations
   CronJobExecution.belongsTo(CronJob, { foreignKey: 'cron_job_id', as: 'cronJob' });
 
-  // AkeneoSchedule associations
-  AkeneoSchedule.belongsTo(Store, { foreignKey: 'store_id' });
-  Store.hasMany(AkeneoSchedule, { foreignKey: 'store_id' });
+  // Note: AkeneoSchedule now uses Supabase client - no Sequelize associations needed
+  // Associations are handled at the database level via foreign keys
 
   // Phoenix Slot System associations
   SlotConfiguration.belongsTo(User, { foreignKey: 'user_id' });
