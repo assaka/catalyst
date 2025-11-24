@@ -126,11 +126,11 @@ router.get('/transactions', authMiddleware, async (req, res) => {
       data: {
         transactions: transactions.map(t => ({
           id: t.id,
-          amount: parseFloat(t.amount),
+          amount_usd: parseFloat(t.amount_usd || 0),
+          credits_amount: parseFloat(t.credits_amount || 0),
           type: t.transaction_type,
           description: t.description,
-          payment_method: t.payment_method,
-          payment_status: t.payment_status,
+          status: t.status,
           created_at: t.created_at
         })),
         pagination: {
