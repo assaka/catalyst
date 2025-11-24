@@ -83,9 +83,6 @@ export default function ABTesting() {
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   const [testToAction, setTestToAction] = useState(null);
 
-  console.log('[ABTesting] selectedStore:', selectedStore);
-  console.log('[ABTesting] viewMode:', viewMode);
-
   // Fetch all tests
   const { data: testsData, isLoading } = useQuery({
     queryKey: ['ab-tests', selectedStore?.id, filterStatus],
