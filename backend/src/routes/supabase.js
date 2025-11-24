@@ -493,10 +493,20 @@ router.get('/callback', async (req, res) => {
           if (window.opener) {
             console.log('✅ Window opener found, sending postMessage');
 
+            const errorMessage = '${error.message.replace(/'/g, "\\'")}';
+
+            // ALSO store in sessionStorage as fallback
+            try {
+              window.opener.sessionStorage.setItem('supabase_oauth_error', errorMessage);
+              console.log('✅ Error stored in parent sessionStorage');
+            } catch (storageErr) {
+              console.error('❌ Failed to store in sessionStorage:', storageErr);
+            }
+
             // Send message to parent (use '*' to ensure it gets through regardless of origin)
             window.opener.postMessage({
               type: 'supabase-oauth-error',
-              error: '${error.message.replace(/'/g, "\\'")}'
+              error: errorMessage
             }, '*');
 
             console.log('📤 postMessage sent to parent window');
@@ -507,7 +517,7 @@ router.get('/callback', async (req, res) => {
               attempts++;
               window.opener.postMessage({
                 type: 'supabase-oauth-error',
-                error: '${error.message.replace(/'/g, "\\'")}'
+                error: errorMessage
               }, '*');
               console.log('📤 Retry #' + attempts + ' - postMessage sent');
 

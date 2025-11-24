@@ -131,6 +131,20 @@ export default function StoreOnboarding() {
           window.removeEventListener('message', messageHandler);
           console.log('🔍 After 500ms wait, oauthError is:', oauthError);
 
+          // Check sessionStorage as fallback if postMessage didn't work
+          if (!oauthError) {
+            try {
+              const storedError = sessionStorage.getItem('supabase_oauth_error');
+              if (storedError) {
+                console.log('✅ Found error in sessionStorage:', storedError);
+                oauthError = storedError;
+                sessionStorage.removeItem('supabase_oauth_error'); // Clean up
+              }
+            } catch (e) {
+              console.error('❌ Failed to check sessionStorage:', e);
+            }
+          }
+
           // If we received an error message, show it immediately
           if (oauthError) {
             console.error('❌ OAuth failed with error:', oauthError);
