@@ -1196,16 +1196,31 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                         selectedStoreSlug: localStorage.getItem('selectedStoreSlug'),
                         selectedStoreName: localStorage.getItem('selectedStoreName')
                       });
+
+                      // CRITICAL: Wait a tick to ensure localStorage is fully written
+                      await new Promise(resolve => setTimeout(resolve, 50));
+
+                      const dashboardUrl = createAdminUrl("DASHBOARD");
+                      console.log('🔍 Redirecting to dashboard with full page reload:', dashboardUrl);
+                      window.location.href = dashboardUrl;
                     } else {
-                      console.error('❌ No valid store found in dropdown!');
+                      // FALLBACK: No active store found - clear auth and redirect to login
+                      console.error('❌ No valid active store found! Clearing auth and redirecting to login...');
+
+                      // Clear all authentication data
+                      localStorage.removeItem('store_owner_auth_token');
+                      localStorage.removeItem('store_owner_user_data');
+                      localStorage.removeItem('selectedStoreId');
+                      localStorage.removeItem('selectedStoreSlug');
+                      localStorage.removeItem('selectedStoreName');
+                      localStorage.setItem('user_logged_out', 'true');
+                      apiClient.clearToken();
+                      apiClient.isLoggedOut = true;
+
+                      // Redirect to login with error message
+                      const loginUrl = createAdminUrl("ADMIN_AUTH");
+                      window.location.href = loginUrl + '?error=no_active_store';
                     }
-
-                    // CRITICAL: Wait a tick to ensure localStorage is fully written
-                    await new Promise(resolve => setTimeout(resolve, 50));
-
-                    const dashboardUrl = createAdminUrl("DASHBOARD");
-                    console.log('🔍 Redirecting to dashboard with full page reload:', dashboardUrl);
-                    window.location.href = dashboardUrl;
                   } catch (dropdownError) {
                     console.error('❌ Error fetching dropdown:', dropdownError);
                     // Last resort: just set the storeId and navigate
