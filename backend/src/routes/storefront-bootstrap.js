@@ -38,7 +38,7 @@ async function getStoreBySlug(slug) {
   // This handles 99% of cases with a single query
   const { data, error: masterError } = await masterDbClient
     .from('stores')
-    .select('id, is_active, primary_custom_domain, custom_domains_count')
+    .select('id, is_active, primary_custom_domain, custom_domains_count, published')
     .or(`slug.eq.${slug},primary_custom_domain.eq.${slug.toLowerCase()}`)
     .eq('is_active', true)
     .maybeSingle();
@@ -91,6 +91,9 @@ async function getStoreBySlug(slug) {
   if (tenantError || !store) {
     throw new Error(`Store data not found in tenant DB for store_id: ${masterStore.id}`);
   }
+
+  // Override published field from master DB (master is authoritative for published status)
+  store.published = masterStore.published;
 
   console.log(`✅ Loaded full store data from tenant DB:`, store.name);
 
