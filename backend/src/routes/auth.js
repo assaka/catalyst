@@ -35,7 +35,18 @@ const generateToken = (user, rememberMe = false) => {
   // Also include for store owners/admins for context
   if (user.store_id) {
     payload.store_id = user.store_id;
+    console.log('🔍 generateToken: Including store_id in JWT payload:', user.store_id);
+  } else {
+    console.log('⚠️ generateToken: No store_id in user object');
   }
+
+  console.log('🔍 generateToken: Final payload:', {
+    id: payload.id,
+    email: payload.email,
+    role: payload.role,
+    has_store_id: !!payload.store_id,
+    store_id: payload.store_id
+  });
 
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
 };
