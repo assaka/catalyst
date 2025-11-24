@@ -178,10 +178,16 @@ export default function Billing() {
     setPaymentError('');
     try {
       const userData = await User.me();
+      console.log('📊 [Billing] User data loaded:', { id: userData?.id, credits: userData?.credits });
       setUser(userData);
       // Credit transactions are global - backend filters by authenticated user
       const transactionData = await CreditTransaction.findAll();
-      setTransactions(transactionData);
+      console.log('📋 [Billing] Transactions loaded:', {
+        count: transactionData?.length || 0,
+        isArray: Array.isArray(transactionData),
+        data: transactionData
+      });
+      setTransactions(Array.isArray(transactionData) ? transactionData : []);
     } catch (error) {
       console.error("Error loading billing data:", error);
     } finally {

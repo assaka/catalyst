@@ -378,24 +378,38 @@ router.post('/refresh', async (req, res) => {
 
 /**
  * GET /api/auth/me
- * Get current authenticated user info
+ * Get current authenticated user info (fresh from database)
  */
 router.get('/me', authMiddleware, async (req, res) => {
   try {
-    // Return user data from JWT (matches old format exactly)
-    // The old /me endpoint just returned req.user directly
-    const response = {
-      success: true,
-      data: req.user
+    // Fetch fresh user data from database (not stale JWT data)
+    // This ensures credits and other fields are always up-to-date
+    const { data: freshUser, error } = await masterDbClient
+      .from('users')
+      .select('id, email, first_name, last_name, full_name, role, credits, created_at, updated_at')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error || !freshUser) {
+      console.error('Failed to fetch fresh user data:', error);
+      // Fallback to JWT data if database query fails
+      return res.json({
+        success: true,
+        data: req.user
+      });
+    }
+
+    // Merge fresh data with JWT data (keep store_id from JWT)
+    const userData = {
+      ...req.user,
+      ...freshUser,
+      store_id: req.user.store_id // Preserve store context from JWT
     };
 
-    // DEBUG: Log what we're returning
-    console.log('=== /api/auth/me RESPONSE ===');
-    console.log('Response:', JSON.stringify(response, null, 2));
-    console.log('req.user keys:', Object.keys(req.user));
-    console.log('=============================');
-
-    res.json(response);
+    res.json({
+      success: true,
+      data: userData
+    });
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({
