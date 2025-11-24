@@ -422,9 +422,17 @@ export default function Dashboard() {
                 <div className="space-y-4">
                   {products.slice(0, 5).map((product) => (
                     <div key={product.id} className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <Package className="w-5 h-5 text-gray-600" />
-                      </div>
+                      {product.images?.[0]?.url || product.images?.[0] ? (
+                        <img
+                          src={product.images[0]?.url || product.images[0]}
+                          alt={product.name}
+                          className="w-10 h-10 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <Package className="w-5 h-5 text-gray-600" />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-900 truncate">{product.name}</p>
                         <p className="text-sm text-gray-500">${product.price}</p>
