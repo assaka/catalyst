@@ -670,7 +670,24 @@ class CreditService {
 
     try {
       // Query this store's tenant DB for uptime records
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+      let tenantDb;
+      try {
+        tenantDb = await ConnectionManager.getStoreConnection(storeId);
+      } catch (connectionError) {
+        // Store doesn't have a database configured - return empty result
+        console.warn(`No database configured for store ${storeId}:`, connectionError.message);
+        return {
+          records: [],
+          summary: {
+            total_stores: 0,
+            total_days: 0,
+            total_credits_charged: 0
+          },
+          store_breakdown: [],
+          period_days: parseInt(days),
+          message: 'Store database not configured'
+        };
+      }
 
       // Get uptime records for this store
       const { data: records, error } = await tenantDb
@@ -684,7 +701,18 @@ class CreditService {
 
       if (error) {
         console.error('Error querying store_uptime:', error);
-        throw new Error(`Failed to query uptime: ${error.message}`);
+        // Return empty result instead of throwing
+        return {
+          records: [],
+          summary: {
+            total_stores: 0,
+            total_days: 0,
+            total_credits_charged: 0
+          },
+          store_breakdown: [],
+          period_days: parseInt(days),
+          message: `Query error: ${error.message}`
+        };
       }
 
       const uptimeRecords = records || [];
