@@ -56,7 +56,9 @@ if (!masterDbUrl) {
 let parsedDbConfig = null;
 if (useMasterDbUrl) {
   try {
-    const dbUrl = new URL(masterDbUrl);
+    // Replace postgresql:// with http:// for URL parsing (Node.js URL class handles http better)
+    const urlForParsing = masterDbUrl.replace(/^postgres(ql)?:\/\//, 'http://');
+    const dbUrl = new URL(urlForParsing);
     parsedDbConfig = {
       host: dbUrl.hostname,
       port: parseInt(dbUrl.port) || 5432,
@@ -64,14 +66,20 @@ if (useMasterDbUrl) {
       username: decodeURIComponent(dbUrl.username), // Handle URL-encoded characters
       password: decodeURIComponent(dbUrl.password)  // Handle URL-encoded characters
     };
-    console.log('🔧 [MASTER CONNECTION] Parsed DB config:');
+    console.log('🔧 [MASTER CONNECTION] Parsed DB config for Sequelize:');
     console.log('   - Host:', parsedDbConfig.host);
     console.log('   - Port:', parsedDbConfig.port);
     console.log('   - Database:', parsedDbConfig.database);
     console.log('   - Username:', parsedDbConfig.username);
     console.log('   - Password length:', parsedDbConfig.password?.length || 0);
+
+    // Verify username was parsed correctly (should contain '.' for Supabase pooler)
+    if (parsedDbConfig.username === 'postgres' && masterDbUrl.includes('postgres.')) {
+      console.warn('⚠️ [MASTER CONNECTION] Username may be truncated! Expected postgres.PROJECT_REF');
+    }
   } catch (parseError) {
     console.error('❌ Failed to parse MASTER_DB_URL for Sequelize:', parseError.message);
+    console.error('❌ URL (first 50 chars):', masterDbUrl?.substring(0, 50));
   }
 }
 
