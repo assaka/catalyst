@@ -109,19 +109,27 @@ export default function StoreOnboarding() {
       // Step 3: Listen for OAuth error messages from popup
       let oauthError = null;
       const messageHandler = (event) => {
+        console.log('📨 Message received from popup:', event.data);
         if (event.data && event.data.type === 'supabase-oauth-error') {
           console.error('❌ OAuth error received:', event.data.error);
           oauthError = event.data.error;
         }
       };
+      console.log('👂 Adding message listener for OAuth errors');
       window.addEventListener('message', messageHandler);
 
       // Step 4: Wait for popup to close, then verify OAuth via API
       const checkClosed = setInterval(async () => {
         if (popup.closed) {
           clearInterval(checkClosed);
+          console.log('🔍 Popup closed detected');
+          console.log('   oauthError:', oauthError);
+
+          // Wait a bit for any pending messages to arrive
+          await new Promise(resolve => setTimeout(resolve, 100));
+
           window.removeEventListener('message', messageHandler);
-          console.log('🔍 Popup closed, checking OAuth status via API...');
+          console.log('🔍 Checking OAuth status via API...');
 
           // If we received an error message, show it immediately
           if (oauthError) {

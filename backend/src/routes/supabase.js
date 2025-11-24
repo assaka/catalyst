@@ -486,18 +486,28 @@ router.get('/callback', async (req, res) => {
           <div class="error-details">${error.message}</div>
         </div>
         <script>
+          console.log('🚨 OAuth Error Page Loaded');
+          console.log('   Error:', '${error.message.replace(/'/g, "\\'")}');
+
           // Notify parent window of error immediately
           if (window.opener) {
+            console.log('✅ Window opener found, sending postMessage');
+
+            // Send message to parent (use '*' to ensure it gets through regardless of origin)
             window.opener.postMessage({
               type: 'supabase-oauth-error',
               error: '${error.message.replace(/'/g, "\\'")}'
-            }, '${process.env.FRONTEND_URL || 'http://localhost:3000'}');
+            }, '*');
 
-            // Parent will close this window, but try to close anyway after a short delay
+            console.log('📤 postMessage sent to parent window');
+
+            // Keep window open longer to ensure message is delivered
             setTimeout(() => {
+              console.log('🚪 Closing error window');
               window.close();
-            }, 500);
+            }, 2000);
           } else {
+            console.error('❌ No window opener found');
             // No opener, show manual close button immediately
             document.querySelector('.container').innerHTML =
               '<div class="error">✗</div>' +
