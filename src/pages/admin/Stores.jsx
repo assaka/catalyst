@@ -292,7 +292,7 @@ export default function Stores() {
                       } variant="outline">
                         {store.status === 'pending_database' ? 'Pending DB' :
                          store.status === 'provisioning' ? 'Provisioning' :
-                         store.status === 'active' ? 'Active' :
+                         store.status === 'active' ? 'Ready' :
                          store.status === 'suspended' ? 'Suspended' :
                          store.status === 'inactive' ? 'Inactive' :
                          store.status}
