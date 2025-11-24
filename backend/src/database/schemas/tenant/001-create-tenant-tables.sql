@@ -2024,7 +2024,7 @@ CREATE TABLE IF NOT EXISTS pdf_templates (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS platform_admins (
+-- CREATE TABLE IF NOT EXISTS platform_admins (
 --   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 --   user_id UUID NOT NULL,
 --   role VARCHAR(50) DEFAULT 'support'::character varying NOT NULL,
