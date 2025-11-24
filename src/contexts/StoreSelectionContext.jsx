@@ -76,22 +76,37 @@ export const StoreSelectionProvider = ({ children }) => {
       
       setAvailableStores(stores);
       
-      // Auto-select first store or load from localStorage
+      // Auto-select first ACTIVE store or load from localStorage
       if (stores.length > 0) {
         const savedStoreId = localStorage.getItem('selectedStoreId');
-        const savedStore = savedStoreId ? stores.find(s => s.id === savedStoreId) : null;
-        
+        let savedStore = savedStoreId ? stores.find(s => s.id === savedStoreId) : null;
+
+        console.log('🔍 StoreSelection: savedStoreId from localStorage:', savedStoreId);
+        console.log('🔍 StoreSelection: Found savedStore:', savedStore ? savedStore.name : 'NOT FOUND');
+        console.log('🔍 StoreSelection: Available stores:', stores.map(s => ({ id: s.id, name: s.name, slug: s.slug })));
+
         if (savedStore) {
+          // Found the saved store - use it
+          console.log('✅ StoreSelection: Using saved store:', savedStore.name);
           setSelectedStore(savedStore);
+          localStorage.setItem('selectedStoreId', savedStore.id);
           localStorage.setItem('selectedStoreName', savedStore.name);
-          localStorage.setItem('selectedStoreSlug', savedStore.slug);
+          localStorage.setItem('selectedStoreSlug', savedStore.slug || savedStore.code);
         } else if (!selectedStore) {
-          // Only auto-select if we don't have a current selection
-          setSelectedStore(stores[0]);
-          localStorage.setItem('selectedStoreId', stores[0].id);
-          localStorage.setItem('selectedStoreName', stores[0].name);
-          localStorage.setItem('selectedStoreSlug', stores[0].slug);
+          // No saved store or not found - use first ACTIVE store
+          const firstActiveStore = stores.find(s => s.is_active) || stores[0];
+          console.log('⚠️ StoreSelection: Saved store not found, using first active store:', firstActiveStore.name);
+          setSelectedStore(firstActiveStore);
+          localStorage.setItem('selectedStoreId', firstActiveStore.id);
+          localStorage.setItem('selectedStoreName', firstActiveStore.name);
+          localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);
         }
+
+        console.log('✅ StoreSelection: Final localStorage values:', {
+          selectedStoreId: localStorage.getItem('selectedStoreId'),
+          selectedStoreName: localStorage.getItem('selectedStoreName'),
+          selectedStoreSlug: localStorage.getItem('selectedStoreSlug')
+        });
       }
     } catch (error) {
       console.error('❌ StoreSelection: Error loading stores:', error);
