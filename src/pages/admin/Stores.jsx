@@ -26,6 +26,8 @@ export default function Stores() {
   const [loading, setLoading] = useState(true);
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [storeToPublish, setStoreToPublish] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [storeToDelete, setStoreToDelete] = useState(null);
   const [storeUptimes, setStoreUptimes] = useState({});
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', 'pending_database', 'provisioning', 'suspended', 'inactive'
 
@@ -130,13 +132,24 @@ export default function Stores() {
   };
 
   const handleDeleteStore = async (storeId) => {
-    if (window.confirm('Are you sure you want to delete this store? This action cannot be undone.')) {
-      try {
-        await Store.delete(storeId);
-        loadData();
-      } catch (error) {
-        console.error('Error deleting store:', error);
-      }
+    const store = stores.find(s => s.id === storeId);
+    setStoreToDelete({ id: storeId, name: store?.name });
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteStore = async () => {
+    if (!storeToDelete) return;
+
+    try {
+      await Store.delete(storeToDelete.id);
+      setShowDeleteConfirm(false);
+      setStoreToDelete(null);
+      loadData();
+    } catch (error) {
+      console.error('Error deleting store:', error);
+      alert('Failed to delete store. Please try again.');
+      setShowDeleteConfirm(false);
+      setStoreToDelete(null);
     }
   };
 
@@ -419,6 +432,58 @@ export default function Stores() {
               >
                 <Play className="w-4 h-4 mr-2" />
                 Start Running
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="w-5 h-5" />
+              Delete Store?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-900 font-medium mb-2">
+                Store: {storeToDelete?.name}
+              </p>
+              <p className="text-sm text-red-800">
+                This action cannot be undone. The store will be permanently suspended.
+              </p>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-sm text-amber-900 font-medium mb-2">
+                Warning:
+              </p>
+              <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
+                <li>All store data will be inaccessible</li>
+                <li>This store will be marked as suspended</li>
+                <li>You will not be charged for this store anymore</li>
+              </ul>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setStoreToDelete(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700"
+                onClick={confirmDeleteStore}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Store
               </Button>
             </div>
           </div>
