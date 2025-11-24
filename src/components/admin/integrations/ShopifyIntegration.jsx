@@ -85,8 +85,9 @@ const ShopifyIntegration = () => {
       }
     } catch (error) {
       console.error('Error checking storage configuration:', error);
-      // Keep as null if check fails (don't assume it's not configured)
-      setStorageConfigured(null);
+      // Set defaults if check fails
+      setStorageConfigured(false);
+      setStorageProvider('External URLs');
     }
   };
 
@@ -406,6 +407,13 @@ const ShopifyIntegration = () => {
     return new Date(dateString).toLocaleString();
   };
 
+  // Debug: Log render conditions for Media Storage alert
+  console.log('Media Storage Alert Conditions:', {
+    connected: connectionStatus?.connected,
+    storageProvider,
+    storageConfigured,
+    shouldShow: connectionStatus?.connected && storageProvider
+  });
 
   return (
     <div className="bg-white">
