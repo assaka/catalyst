@@ -1136,7 +1136,7 @@ app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
     const { token } = req.params;
     const { password, firstName, lastName } = req.body;
     const { masterDbClient } = require('./database/masterConnection');
-    const bcrypt = require('bcrypt');
+    const bcrypt = require('bcryptjs');
     const jwt = require('jsonwebtoken');
     const ConnectionManager = require('./services/database/ConnectionManager');
 
