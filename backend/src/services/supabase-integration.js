@@ -1159,7 +1159,101 @@ class SupabaseIntegration {
           };
           console.log('[getConnectionStatus] Token decrypted successfully');
         } else {
-          console.log('[getConnectionStatus] No OAuth token found in tenant DB');
+          console.log('[getConnectionStatus] No OAuth token found in tenant DB, checking Redis/memory...');
+
+          // Check Redis for pending OAuth tokens (from recent OAuth callback)
+          try {
+            const { getRedisClient } = require('../config/redis');
+            const redisClient = getRedisClient();
+
+            if (redisClient) {
+              const redisKey = `oauth:pending:${storeId}`;
+              const tokenDataStr = await redisClient.get(redisKey);
+
+              if (tokenDataStr) {
+                const tokenData = JSON.parse(tokenDataStr);
+                console.log('[getConnectionStatus] Found OAuth tokens in Redis, migrating to tenant DB...');
+
+                // Save to tenant database
+                const { data: savedToken, error: saveError } = await tenantDb
+                  .from('supabase_oauth_tokens')
+                  .insert({
+                    store_id: storeId,
+                    access_token: tokenData.access_token ? encrypt(tokenData.access_token) : null,
+                    refresh_token: tokenData.refresh_token ? encrypt(tokenData.refresh_token) : null,
+                    expires_at: tokenData.expires_at,
+                    project_url: tokenData.project_url,
+                    service_role_key: tokenData.service_role_key ? encrypt(tokenData.service_role_key) : null,
+                    database_url: tokenData.database_url,
+                    storage_url: tokenData.storage_url,
+                    auth_url: tokenData.auth_url
+                  })
+                  .select()
+                  .single();
+
+                if (saveError) {
+                  console.error('[getConnectionStatus] Error saving tokens to tenant DB:', saveError);
+                } else {
+                  console.log('[getConnectionStatus] ✅ Tokens migrated to tenant DB successfully');
+
+                  // Clean up Redis
+                  await redisClient.del(redisKey);
+                  console.log('[getConnectionStatus] 🧹 Cleaned up Redis key');
+
+                  // Set token from saved data
+                  token = {
+                    ...savedToken,
+                    access_token: tokenData.access_token,
+                    refresh_token: tokenData.refresh_token,
+                    service_role_key: tokenData.service_role_key
+                  };
+                }
+              }
+            }
+
+            // Check memory fallback if still no token
+            if (!token && global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {
+              const tokenData = global.pendingOAuthTokens.get(storeId);
+              console.log('[getConnectionStatus] Found OAuth tokens in memory, migrating to tenant DB...');
+
+              // Save to tenant database
+              const { data: savedToken, error: saveError } = await tenantDb
+                .from('supabase_oauth_tokens')
+                .insert({
+                  store_id: storeId,
+                  access_token: tokenData.access_token ? encrypt(tokenData.access_token) : null,
+                  refresh_token: tokenData.refresh_token ? encrypt(tokenData.refresh_token) : null,
+                  expires_at: tokenData.expires_at,
+                  project_url: tokenData.project_url,
+                  service_role_key: tokenData.service_role_key ? encrypt(tokenData.service_role_key) : null,
+                  database_url: tokenData.database_url,
+                  storage_url: tokenData.storage_url,
+                  auth_url: tokenData.auth_url
+                })
+                .select()
+                .single();
+
+              if (saveError) {
+                console.error('[getConnectionStatus] Error saving tokens to tenant DB:', saveError);
+              } else {
+                console.log('[getConnectionStatus] ✅ Tokens migrated to tenant DB successfully');
+
+                // Clean up memory
+                global.pendingOAuthTokens.delete(storeId);
+                console.log('[getConnectionStatus] 🧹 Cleaned up memory cache');
+
+                // Set token from saved data
+                token = {
+                  ...savedToken,
+                  access_token: tokenData.access_token,
+                  refresh_token: tokenData.refresh_token,
+                  service_role_key: tokenData.service_role_key
+                };
+              }
+            }
+          } catch (migrationError) {
+            console.error('[getConnectionStatus] Error during token migration:', migrationError);
+          }
         }
       } catch (tenantDbError) {
         // Tenant DB might not be accessible yet, continue without config
