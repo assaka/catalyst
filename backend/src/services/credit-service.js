@@ -157,7 +157,7 @@ class CreditService {
     // Calculate totals from transaction/usage history (master DB)
     const [totals] = await masterSequelize.query(`
       SELECT
-        COALESCE(SUM(ct.credits_purchased), 0) as total_purchased,
+        COALESCE(SUM(ct.credits_amount), 0) as total_purchased,
         COALESCE(SUM(cu.credits_used), 0) as total_used
       FROM users u
       LEFT JOIN credit_transactions ct ON u.id = ct.user_id
@@ -470,7 +470,7 @@ class CreditService {
     console.log(`✅ [CreditService] Transaction found:`, {
       id: transaction.id,
       user_id: transaction.user_id,
-      credits_purchased: transaction.credits_purchased,
+      credits_amount: transaction.credits_amount,
       amount_usd: transaction.amount_usd,
       status: transaction.status,
       current_status: transaction.status
@@ -484,15 +484,15 @@ class CreditService {
       type: masterSequelize.QueryTypes.SELECT
     });
 
-    // Parse credits_purchased as decimal (users.credits is NUMERIC type)
-    const creditsToAdd = parseFloat(transaction.credits_purchased);
+    // Parse credits_amount as decimal (users.credits is NUMERIC type)
+    const creditsToAdd = parseFloat(transaction.credits_amount);
 
     console.log(`💰 [CreditService] User balance BEFORE adding credits:`, {
       userId: userBefore?.id,
       email: userBefore?.email,
       currentCredits: userBefore?.credits || 0,
-      rawCreditsValue: transaction.credits_purchased,
-      rawCreditsType: typeof transaction.credits_purchased,
+      rawCreditsValue: transaction.credits_amount,
+      rawCreditsType: typeof transaction.credits_amount,
       parsedCreditsValue: creditsToAdd,
       parsedCreditsType: typeof creditsToAdd
     });
