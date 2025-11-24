@@ -23,6 +23,16 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -54,6 +64,8 @@ import {
   Edit,
   Eye,
   Trash2,
+  Copy,
+  AlertTriangle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -67,6 +79,9 @@ export default function ABTesting() {
   const [selectedTest, setSelectedTest] = useState(null);
   const [viewMode, setViewMode] = useState(null); // 'edit', 'results', null
   const [filterStatus, setFilterStatus] = useState('all');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
+  const [testToAction, setTestToAction] = useState(null);
 
   console.log('[ABTesting] selectedStore:', selectedStore);
   console.log('[ABTesting] viewMode:', viewMode);
@@ -131,6 +146,49 @@ export default function ABTesting() {
   const handleCloseDialog = () => {
     setViewMode(null);
     setSelectedTest(null);
+  };
+
+  const handleRecreateTest = (test) => {
+    // Create a copy of the test without id and dates, reset status to draft
+    const recreatedTest = {
+      ...test,
+      id: undefined,
+      name: `${test.name} (Copy)`,
+      status: 'draft',
+      start_date: null,
+      end_date: null,
+      created_at: undefined,
+      updated_at: undefined,
+      winner_variant_id: undefined,
+    };
+    setSelectedTest(recreatedTest);
+    setViewMode('edit');
+  };
+
+  const handleDeleteClick = (test) => {
+    setTestToAction(test);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCompleteClick = (test) => {
+    setTestToAction(test);
+    setCompleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (testToAction) {
+      deleteTestMutation.mutate(testToAction.id);
+    }
+    setDeleteDialogOpen(false);
+    setTestToAction(null);
+  };
+
+  const handleConfirmComplete = () => {
+    if (testToAction) {
+      completeTestMutation.mutate({ testId: testToAction.id });
+    }
+    setCompleteDialogOpen(false);
+    setTestToAction(null);
   };
 
   const getStatusBadge = (status) => {
@@ -369,12 +427,16 @@ export default function ABTesting() {
                                 <Eye className="w-4 h-4 mr-2" />
                                 View Results
                               </DropdownMenuItem>
+                              {test.status === 'completed' && (
+                                <DropdownMenuItem onClick={() => handleRecreateTest(test)}>
+                                  <Copy className="w-4 h-4 mr-2" />
+                                  Recreate Test
+                                </DropdownMenuItem>
+                              )}
                               {(test.status === 'running' || test.status === 'paused') && (
                                 <>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() => completeTestMutation.mutate({ testId: test.id })}
-                                  >
+                                  <DropdownMenuItem onClick={() => handleCompleteClick(test)}>
                                     <CheckCircle2 className="w-4 h-4 mr-2" />
                                     Complete Test
                                   </DropdownMenuItem>
@@ -382,11 +444,7 @@ export default function ABTesting() {
                               )}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                onClick={() => {
-                                  if (confirm('Are you sure you want to delete this test?')) {
-                                    deleteTestMutation.mutate(test.id);
-                                  }
-                                }}
+                                onClick={() => handleDeleteClick(test)}
                                 className="text-red-600"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
@@ -448,6 +506,64 @@ export default function ABTesting() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Complete Test Confirmation Dialog */}
+      <AlertDialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                <CheckCircle2 className="h-5 w-5 text-blue-600" />
+              </div>
+              <AlertDialogTitle>Complete Test</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-2">
+              Are you sure you want to complete "{testToAction?.name}"? This will stop the test and
+              no more data will be collected. You can still view the results afterwards.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmComplete}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Complete Test
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Test Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <Trash2 className="h-5 w-5 text-red-600" />
+              </div>
+              <AlertDialogTitle>Delete Test</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-2">
+              Are you sure you want to delete "{testToAction?.name}"? This action cannot be undone.
+              {testToAction?.status === 'running' && (
+                <span className="block mt-2 text-amber-600 font-medium">
+                  Warning: This test is currently running and will be stopped.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Test
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
