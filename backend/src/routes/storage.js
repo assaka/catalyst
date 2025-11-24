@@ -365,12 +365,15 @@ router.get('/status', async (req, res) => {
 
     console.log('📊 Checking storage status for store:', storeId);
 
-    // Check store settings first
+    // Check store settings and primary database configuration
     const ConnectionManager = require('../services/database/ConnectionManager');
     const { masterDbClient } = require('../database/masterConnection');
 
     let storeSettings = null;
+    let primaryDatabase = null;
+
     try {
+      // Get store settings
       const { data: store } = await masterDbClient
         .from('stores')
         .select('settings')
@@ -379,8 +382,20 @@ router.get('/status', async (req, res) => {
 
       storeSettings = store?.settings;
       console.log('📋 Store settings:', storeSettings);
+
+      // Get primary database configuration for media storage
+      const { data: primaryDb } = await masterDbClient
+        .from('store_databases')
+        .select('database_type, is_primary, is_active')
+        .eq('store_id', storeId)
+        .eq('is_primary', true)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      primaryDatabase = primaryDb;
+      console.log('💾 Primary database:', primaryDatabase);
     } catch (err) {
-      console.warn('Could not fetch store settings:', err.message);
+      console.warn('Could not fetch store configuration:', err.message);
     }
 
     // Get current provider with timeout
@@ -413,21 +428,50 @@ router.get('/status', async (req, res) => {
       configured = false;
     }
 
-    // Override with store settings if available
-    const defaultProvider = storeSettings?.default_mediastorage_provider ||
-                           storeSettings?.default_database_provider;
+    // Determine provider from multiple sources (priority order)
+    // 1. Primary database (store_databases where is_primary=true)
+    // 2. Store settings (default_mediastorage_provider)
+    // 3. Store settings (default_database_provider as fallback)
+    // 4. Connection check result
 
-    if (defaultProvider) {
-      console.log(`✅ Store has default provider in settings: ${defaultProvider}`);
-      provider = defaultProvider;
-      // If provider is set in settings, consider it configured
-      // even if the connection check failed (could be temp network issue)
+    let providerSource = 'none';
+
+    // Priority 1: Primary database
+    if (primaryDatabase?.database_type) {
+      console.log(`✅ Using primary database: ${primaryDatabase.database_type}`);
+      provider = primaryDatabase.database_type;
       configured = true;
-    } else if (!configured) {
-      console.log(`⚠️ No provider configured in settings and connection check failed`);
+      providerSource = 'primary_database';
+    }
+    // Priority 2 & 3: Store settings
+    else {
+      const defaultProvider = storeSettings?.default_mediastorage_provider ||
+                             storeSettings?.default_database_provider;
+
+      if (defaultProvider) {
+        console.log(`✅ Store has default provider in settings: ${defaultProvider}`);
+        provider = defaultProvider;
+        configured = true;
+        providerSource = 'store_settings';
+      }
+      // Priority 4: Connection check
+      else if (currentProvider) {
+        console.log(`✅ Provider detected from connection check: ${currentProvider.type}`);
+        provider = currentProvider.type;
+        configured = true;
+        providerSource = 'connection_check';
+      }
+      else {
+        console.log(`⚠️ No provider configured`);
+      }
     }
 
-    console.log('📤 Returning status:', { configured, provider, fromSettings: !!defaultProvider });
+    console.log('📤 Returning status:', {
+      configured,
+      provider,
+      providerSource,
+      hasPrimaryDb: !!primaryDatabase
+    });
 
     res.json({
       success: true,
@@ -436,7 +480,10 @@ router.get('/status', async (req, res) => {
       provider: provider,
       integrationType: provider,
       debug: {
-        storeSettings: defaultProvider || 'none',
+        providerSource: providerSource,
+        primaryDatabase: primaryDatabase?.database_type || 'none',
+        storeSettings: storeSettings?.default_mediastorage_provider ||
+                      storeSettings?.default_database_provider || 'none',
         errorDetails: errorDetails,
         connectionCheckPassed: !!currentProvider
       }
