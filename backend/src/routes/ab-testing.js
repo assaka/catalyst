@@ -69,7 +69,8 @@ router.get('/active/:storeId', async (req, res) => {
     if (pageType) {
       tests = await slotConfigABTesting.getActiveTestsForPage(pageType, storeId);
     } else {
-      const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+      const adapter = await ConnectionManager.getStoreConnection(storeId);
+      const supabaseClient = adapter.client || adapter.getClient();
 
       const { data, error } = await supabaseClient
         .from('ab_tests')
@@ -227,7 +228,8 @@ router.post('/:storeId', authMiddleware, checkStoreOwnership, async (req, res) =
       });
     }
 
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const adapter = await ConnectionManager.getStoreConnection(storeId);
+    const supabaseClient = adapter.client || adapter.getClient();
 
     const { data: test, error } = await supabaseClient
       .from('ab_tests')
@@ -278,7 +280,8 @@ router.get('/:storeId', authMiddleware, checkStoreOwnership, async (req, res) =>
     console.log('[AB TESTING API] Getting tests for store:', storeId, 'with status filter:', status);
 
     // Get store connection
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const adapter = await ConnectionManager.getStoreConnection(storeId);
+    const supabaseClient = adapter.client || adapter.getClient();
 
     if (!supabaseClient) {
       throw new Error('Failed to get database connection for store');
@@ -330,7 +333,8 @@ router.get('/:storeId/test/:testId', authMiddleware, checkStoreOwnership, async 
   try {
     const { storeId, testId } = req.params;
 
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const adapter = await ConnectionManager.getStoreConnection(storeId);
+    const supabaseClient = adapter.client || adapter.getClient();
 
     const { data: test, error } = await supabaseClient
       .from('ab_tests')
@@ -370,7 +374,8 @@ router.put('/:storeId/test/:testId', authMiddleware, checkStoreOwnership, async 
   try {
     const { storeId, testId } = req.params;
 
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const adapter = await ConnectionManager.getStoreConnection(storeId);
+    const supabaseClient = adapter.client || adapter.getClient();
 
     // Check if test exists
     const { data: existingTest, error: fetchError } = await supabaseClient
@@ -433,7 +438,8 @@ router.post('/:storeId/test/:testId/start', authMiddleware, checkStoreOwnership,
   try {
     const { storeId, testId } = req.params;
 
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const adapter = await ConnectionManager.getStoreConnection(storeId);
+    const supabaseClient = adapter.client || adapter.getClient();
 
     // Check current status
     const { data: existingTest, error: fetchError } = await supabaseClient
@@ -491,7 +497,8 @@ router.post('/:storeId/test/:testId/pause', authMiddleware, checkStoreOwnership,
   try {
     const { storeId, testId } = req.params;
 
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const adapter = await ConnectionManager.getStoreConnection(storeId);
+    const supabaseClient = adapter.client || adapter.getClient();
 
     const { data: test, error } = await supabaseClient
       .from('ab_tests')
@@ -533,7 +540,8 @@ router.post('/:storeId/test/:testId/complete', authMiddleware, checkStoreOwnersh
     const { storeId, testId } = req.params;
     const { winner_variant_id } = req.body;
 
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const adapter = await ConnectionManager.getStoreConnection(storeId);
+    const supabaseClient = adapter.client || adapter.getClient();
 
     const updates = {
       status: 'completed',
@@ -606,7 +614,8 @@ router.delete('/:storeId/test/:testId', authMiddleware, checkStoreOwnership, asy
   try {
     const { storeId, testId } = req.params;
 
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+    const adapter = await ConnectionManager.getStoreConnection(storeId);
+    const supabaseClient = adapter.client || adapter.getClient();
 
     // Check if test has assignments
     const { count, error: countError } = await supabaseClient
