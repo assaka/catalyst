@@ -1161,8 +1161,10 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                       selectedStoreName: localStorage.getItem('selectedStoreName')
                     });
 
-                    // IMPORTANT: Use window.location.href instead of navigate() to force a full page reload
-                    // This ensures localStorage is properly read by dashboard components
+                    // CRITICAL: Wait a tick to ensure localStorage is fully written
+                    // Then use window.location.href to force a full page reload
+                    await new Promise(resolve => setTimeout(resolve, 50));
+
                     const dashboardUrl = createAdminUrl("DASHBOARD");
                     console.log('🔍 Redirecting to dashboard with full page reload:', dashboardUrl);
                     window.location.href = dashboardUrl;
