@@ -1500,7 +1500,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             )}
             
             <p className="text-xs text-gray-500">
-              Images will be stored with hierarchical paths (e.g., /h/a/hamid.png) and saved instantly when uploaded.
+              Images will be stored with hierarchical paths (e.g., /p/r/productimage.png) and saved instantly when uploaded.
             </p>
             </AccordionContent>
           </AccordionItem>

@@ -2,6 +2,7 @@ const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
+const { fetchProductImages } = require('../utils/productHelpers');
 const router = express.Router();
 
 // @route   GET /api/public/categories
@@ -208,7 +209,10 @@ router.get('/by-slug/:slug/full', async (req, res) => {
       prodTransMap[t.product_id][t.language_code] = t;
     });
 
-    // Apply translations to products
+    // Fetch images from product_files table
+    const imagesByProduct = await fetchProductImages(productIds, tenantDb);
+
+    // Apply translations and images to products
     const productsWithTrans = (products || []).map(p => {
       const trans = prodTransMap[p.id];
       const reqLang = trans?.[lang];
@@ -217,7 +221,8 @@ router.get('/by-slug/:slug/full', async (req, res) => {
       return {
         ...p,
         name: reqLang?.name || enLang?.name || p.name,
-        description: reqLang?.description || enLang?.description || p.description
+        description: reqLang?.description || enLang?.description || p.description,
+        images: imagesByProduct[p.id] || []
       };
     });
 
