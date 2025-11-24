@@ -494,17 +494,23 @@ class SupabaseIntegration {
         stack: error.stack
       });
       
+      // If it's our duplicate database error, re-throw as-is
+      if (error.isDuplicateDatabase || error.message?.includes('already connected')) {
+        console.error('🚫 Re-throwing duplicate database error from outer catch');
+        throw error;
+      }
+
       // More specific error messages
       if (error.name === 'SequelizeValidationError') {
         const validationErrors = error.errors?.map(e => `${e.path}: ${e.message}`).join(', ') || 'Unknown validation error';
         console.error('Sequelize validation error details:', error.errors);
-        
+
         // Check if we have the access token (connection actually succeeded)
         if (access_token && refresh_token) {
           console.log('Connection successful despite validation warning - returning success with limited scope');
           // Return success with limited scope since we have valid tokens
-          return { 
-            success: true, 
+          return {
+            success: true,
             project: {
               url: projectData?.project_url || 'https://pending-configuration.supabase.co'
             },
@@ -513,7 +519,7 @@ class SupabaseIntegration {
             message: 'Connected with limited permissions. Some features may be restricted.'
           };
         }
-        
+
         // Only throw error if we don't have valid tokens
         throw new Error(`Unable to save connection details. Please try reconnecting.`);
       } else if (error.response?.status === 400) {
