@@ -911,14 +911,36 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     const { masterDbClient } = require('../database/masterConnection');
 
     // Get stores from master DB with all relevant fields for the admin UI
+    // Note: published field may not exist yet (migration pending), so we'll handle it gracefully
     const { data: stores, error } = await masterDbClient
       .from('stores')
-      .select('id, user_id, slug, status, is_active, published, published_at, created_at, updated_at')
+      .select('id, user_id, slug, status, is_active, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
     if (error) {
       throw new Error(error.message);
+    }
+
+    // Try to fetch published status separately (in case column doesn't exist yet)
+    let publishedMap = {};
+    try {
+      const { data: publishedData } = await masterDbClient
+        .from('stores')
+        .select('id, published, published_at')
+        .eq('user_id', userId);
+
+      if (publishedData) {
+        publishedData.forEach(item => {
+          publishedMap[item.id] = {
+            published: item.published,
+            published_at: item.published_at
+          };
+        });
+      }
+    } catch (pubError) {
+      console.warn('⚠️ Published column not available yet (migration pending):', pubError.message);
+      // Default all stores to published: false if column doesn't exist
     }
 
     // Fetch store names from tenant DB for each store
@@ -969,8 +991,8 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
           slug: store.slug,
           status: store.status,
           is_active: store.is_active,
-          published: store.published,  // Publishing status from master DB
-          published_at: store.published_at,
+          published: publishedMap[store.id]?.published || false,  // Publishing status from master DB (default false if column missing)
+          published_at: publishedMap[store.id]?.published_at || null,
           created_at: store.created_at,
           updated_at: store.updated_at,
           settings: storeSettings,
