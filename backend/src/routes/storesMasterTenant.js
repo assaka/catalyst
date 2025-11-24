@@ -251,6 +251,10 @@ router.post('/', authMiddleware, async (req, res) => {
  */
 router.post('/:id/connect-database', authMiddleware, async (req, res) => {
   try {
+    console.log('========================================');
+    console.log('🚀 CONNECT-DATABASE ENDPOINT HIT');
+    console.log('========================================');
+
     const storeId = req.params.id;
 
     console.log('📥 connect-database request:', {
