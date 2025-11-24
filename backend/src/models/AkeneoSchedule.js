@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../database/connection');
+const { masterSequelize } = require('../database/masterConnection');
 
-const AkeneoSchedule = sequelize.define('AkeneoSchedule', {
+const AkeneoSchedule = masterSequelize.define('AkeneoSchedule', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
@@ -80,6 +80,9 @@ const AkeneoSchedule = sequelize.define('AkeneoSchedule', {
   }
 }, {
   tableName: 'akeneo_schedules',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [
     {
       fields: ['store_id']
@@ -95,41 +98,42 @@ const AkeneoSchedule = sequelize.define('AkeneoSchedule', {
 
 // Class methods for credit management
 AkeneoSchedule.prototype.checkCreditsBeforeExecution = async function(userId) {
-  const Credit = require('./Credit');
+  const CreditService = require('../services/credit-service');
   const requiredCredits = parseFloat(this.credit_cost) || 0.1;
-  
-  return await Credit.hasEnoughCredits(userId, this.store_id, requiredCredits);
+
+  return await CreditService.hasEnoughCredits(userId, this.store_id, requiredCredits);
 };
 
 AkeneoSchedule.prototype.deductCreditsForExecution = async function(userId) {
-  const Credit = require('./Credit');
-  const CreditUsage = require('./CreditUsage');
-  
+  const CreditService = require('../services/credit-service');
+
   const requiredCredits = parseFloat(this.credit_cost) || 0.1;
-  
+
   try {
-    // Record the credit usage
-    const usage = await CreditUsage.recordAkeneoScheduleUsage(
+    // Use credit-service to deduct credits (handles users.credits update and usage logging)
+    const result = await CreditService.deduct(
       userId,
       this.store_id,
-      this.id,
       requiredCredits,
+      `Akeneo scheduled ${this.import_type} import`,
       {
         import_type: this.import_type,
         schedule_type: this.schedule_type,
         filters: this.filters,
         options: this.options
-      }
+      },
+      this.id,
+      'akeneo_schedule'
     );
-    
+
     // Update the schedule with the credit usage reference
     await this.update({
-      last_credit_usage: usage.id
+      last_credit_usage: result.usage_id
     });
-    
+
     return {
       success: true,
-      usage_id: usage.id,
+      usage_id: result.usage_id,
       credits_deducted: requiredCredits
     };
   } catch (error) {
@@ -141,9 +145,9 @@ AkeneoSchedule.prototype.deductCreditsForExecution = async function(userId) {
 };
 
 AkeneoSchedule.getSchedulesNeedingCredits = async function(userId, storeId) {
-  const Credit = require('./Credit');
-  const currentBalance = await Credit.getBalance(userId, storeId);
-  
+  const CreditService = require('../services/credit-service');
+  const currentBalance = await CreditService.getBalance(userId, storeId);
+
   // Get active schedules for the store
   const activeSchedules = await this.findAll({
     where: {
@@ -151,13 +155,13 @@ AkeneoSchedule.getSchedulesNeedingCredits = async function(userId, storeId) {
       is_active: true
     }
   });
-  
+
   // Filter schedules that can't run due to insufficient credits
   const schedulesNeedingCredits = activeSchedules.filter(schedule => {
     const requiredCredits = parseFloat(schedule.credit_cost) || 0.1;
     return currentBalance < requiredCredits;
   });
-  
+
   return {
     current_balance: currentBalance,
     active_schedules: activeSchedules.length,

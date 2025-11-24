@@ -1,7 +1,7 @@
 const { DataTypes, Op } = require('sequelize');
-const { sequelize } = require('../database/connection');
+const { masterSequelize } = require('../database/masterConnection');
 
-const CreditUsage = sequelize.define('CreditUsage', {
+const CreditUsage = masterSequelize.define('CreditUsage', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
@@ -52,6 +52,9 @@ const CreditUsage = sequelize.define('CreditUsage', {
   }
 }, {
   tableName: 'credit_usage',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [
     {
       fields: ['user_id', 'store_id']
@@ -65,33 +68,9 @@ const CreditUsage = sequelize.define('CreditUsage', {
     {
       fields: ['usage_type']
     }
-  ],
-  hooks: {
-    afterCreate: async (usage) => {
-      // Deduct credits from balance when usage is recorded
-      if (usage.credits_used > 0) {
-        const Credit = require('./Credit');
-
-        // Initialize balance if it doesn't exist
-        await Credit.initializeBalance(usage.user_id, usage.store_id);
-
-        // Update the balance
-        await sequelize.query(`
-          UPDATE credits
-          SET balance = balance - :credits,
-              total_used = total_used + :credits,
-              updated_at = CURRENT_TIMESTAMP
-          WHERE user_id = :userId AND store_id = :storeId
-        `, {
-          replacements: {
-            credits: usage.credits_used,
-            userId: usage.user_id,
-            storeId: usage.store_id
-          }
-        });
-      }
-    }
-  }
+  ]
+  // Note: Hooks removed - credit balance updates now handled by credit-service.js
+  // which updates users.credits (single source of truth) when usage is recorded
 });
 
 // Class methods for credit usage tracking
@@ -139,31 +118,31 @@ CreditUsage.getUsageHistory = async function(userId, storeId = null, limit = 100
 
   return await this.findAll({
     where,
-    order: [['createdAt', 'DESC']],
+    order: [['created_at', 'DESC']],
     limit
   });
 };
 
 CreditUsage.getUsageStats = async function(userId, storeId, startDate = null, endDate = null) {
   const where = { user_id: userId, store_id: storeId };
-  
+
   if (startDate) {
-    where.createdAt = where.createdAt || {};
-    where.createdAt[Op.gte] = startDate;
+    where.created_at = where.created_at || {};
+    where.created_at[Op.gte] = startDate;
   }
-  
+
   if (endDate) {
-    where.createdAt = where.createdAt || {};
-    where.createdAt[Op.lte] = endDate;
+    where.created_at = where.created_at || {};
+    where.created_at[Op.lte] = endDate;
   }
 
   const stats = await this.findAll({
     where,
     attributes: [
       'usage_type',
-      [sequelize.fn('COUNT', sequelize.col('id')), 'usage_count'],
-      [sequelize.fn('SUM', sequelize.col('credits_used')), 'total_credits_used'],
-      [sequelize.fn('AVG', sequelize.col('credits_used')), 'avg_credits_per_usage']
+      [masterSequelize.fn('COUNT', masterSequelize.col('id')), 'usage_count'],
+      [masterSequelize.fn('SUM', masterSequelize.col('credits_used')), 'total_credits_used'],
+      [masterSequelize.fn('AVG', masterSequelize.col('credits_used')), 'avg_credits_per_usage']
     ],
     group: ['usage_type']
   });

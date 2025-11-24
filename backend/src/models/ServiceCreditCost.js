@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../database/connection');
+const { masterSequelize } = require('../database/masterConnection');
 
-const ServiceCreditCost = sequelize.define('ServiceCreditCost', {
+const ServiceCreditCost = masterSequelize.define('ServiceCreditCost', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
@@ -98,7 +98,8 @@ const ServiceCreditCost = sequelize.define('ServiceCreditCost', {
 }, {
   tableName: 'service_credit_costs',
   timestamps: true,
-  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [
     {
       fields: ['service_category']
