@@ -1151,22 +1151,45 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                       stores: stores
                     });
 
-                    // Find the store that matches our storeId from JWT
-                    const store = stores.find(s => s.id === storeId);
+                    // CRITICAL: Don't blindly trust storeId from JWT
+                    // Check if it's actually active, otherwise use first active store
+                    let selectedStore = stores.find(s => s.id === storeId);
 
-                    if (store) {
-                      console.log('✅ Found store in dropdown:', {
-                        id: store.id,
-                        name: store.name,
-                        slug: store.slug,
-                        code: store.code,
-                        is_active: store.is_active
+                    if (selectedStore) {
+                      console.log('🔍 Found JWT store in dropdown:', {
+                        id: selectedStore.id,
+                        name: selectedStore.name,
+                        slug: selectedStore.slug,
+                        is_active: selectedStore.is_active,
+                        status: selectedStore.status
+                      });
+
+                      // Check if this store is actually active and ready
+                      if (!selectedStore.is_active || selectedStore.status === 'pending_database') {
+                        console.warn('⚠️ JWT store is not active or pending_database, selecting first active store instead');
+                        selectedStore = null;
+                      }
+                    }
+
+                    // If JWT store not found or not active, use first active store
+                    if (!selectedStore) {
+                      console.log('🔍 Finding first active store with database...');
+                      selectedStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
+                      console.log('✅ Selected first active store:', selectedStore?.name);
+                    }
+
+                    if (selectedStore) {
+                      console.log('✅ Final selected store:', {
+                        id: selectedStore.id,
+                        name: selectedStore.name,
+                        slug: selectedStore.slug,
+                        is_active: selectedStore.is_active
                       });
 
                       // Set all store context in localStorage
-                      localStorage.setItem('selectedStoreId', store.id);
-                      localStorage.setItem('selectedStoreSlug', store.slug || store.code);
-                      localStorage.setItem('selectedStoreName', store.name);
+                      localStorage.setItem('selectedStoreId', selectedStore.id);
+                      localStorage.setItem('selectedStoreSlug', selectedStore.slug || selectedStore.code);
+                      localStorage.setItem('selectedStoreName', selectedStore.name);
 
                       console.log('✅ Store context set in localStorage:', {
                         selectedStoreId: localStorage.getItem('selectedStoreId'),
@@ -1174,13 +1197,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                         selectedStoreName: localStorage.getItem('selectedStoreName')
                       });
                     } else {
-                      console.warn('⚠️ storeId from JWT not found in dropdown, using first active store');
-                      const firstActiveStore = stores.find(s => s.is_active) || stores[0];
-                      if (firstActiveStore) {
-                        localStorage.setItem('selectedStoreId', firstActiveStore.id);
-                        localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);
-                        localStorage.setItem('selectedStoreName', firstActiveStore.name);
-                      }
+                      console.error('❌ No valid store found in dropdown!');
                     }
 
                     // CRITICAL: Wait a tick to ensure localStorage is fully written
