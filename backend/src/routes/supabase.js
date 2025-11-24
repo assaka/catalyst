@@ -501,11 +501,27 @@ router.get('/callback', async (req, res) => {
 
             console.log('📤 postMessage sent to parent window');
 
+            // Try sending multiple times to ensure delivery
+            let attempts = 0;
+            const sendInterval = setInterval(() => {
+              attempts++;
+              window.opener.postMessage({
+                type: 'supabase-oauth-error',
+                error: '${error.message.replace(/'/g, "\\'")}'
+              }, '*');
+              console.log('📤 Retry #' + attempts + ' - postMessage sent');
+
+              if (attempts >= 3) {
+                clearInterval(sendInterval);
+              }
+            }, 300);
+
             // Keep window open longer to ensure message is delivered
             setTimeout(() => {
-              console.log('🚪 Closing error window');
+              clearInterval(sendInterval);
+              console.log('🚪 Closing error window after 3 seconds');
               window.close();
-            }, 2000);
+            }, 3000);
           } else {
             console.error('❌ No window opener found');
             // No opener, show manual close button immediately

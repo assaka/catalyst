@@ -648,26 +648,13 @@ class CreditService {
   /**
    * Get store uptime report
    * Shows daily credit charges for published stores
-   * Queries tenant databases for uptime data
+   * Queries only tenant database - no master DB access needed
    */
   async getUptimeReport(userId, days = 30, storeId = null) {
     const ConnectionManager = require('./database/ConnectionManager');
-    const Store = require('../models/Store');
 
-    // Get stores for this user
-    let stores;
-    if (storeId) {
-      const store = await Store.findOne({
-        where: { id: storeId, user_id: userId }
-      });
-      stores = store ? [store] : [];
-    } else {
-      stores = await Store.findAll({
-        where: { user_id: userId }
-      });
-    }
-
-    if (stores.length === 0) {
+    // Store ID is required (from query param or current store context)
+    if (!storeId) {
       return {
         records: [],
         summary: {
@@ -676,83 +663,64 @@ class CreditService {
           total_credits_charged: 0
         },
         store_breakdown: [],
-        period_days: parseInt(days)
+        period_days: parseInt(days),
+        message: 'Store ID is required'
       };
     }
 
-    // Query each store's tenant DB for uptime records
-    const allRecords = [];
-    const storeBreakdownMap = new Map();
+    try {
+      // Query this store's tenant DB for uptime records
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    for (const store of stores) {
-      try {
-        const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+      // Get uptime records for this store
+      const { data: records, error } = await tenantDb
+        .from('store_uptime')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('store_id', storeId)
+        .order('charged_date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(parseInt(days) * 10);
 
-        // Get uptime records for this store
-        const { data: records, error } = await tenantDb
-          .from('store_uptime')
-          .select('*')
-          .eq('user_id', userId)
-          .order('charged_date', { ascending: false })
-          .order('created_at', { ascending: false })
-          .limit(parseInt(days) * 10);
-
-        if (!error && records) {
-          // Add current published status to each record
-          const recordsWithStatus = records.map(r => ({
-            ...r,
-            currently_published: store.published
-          }));
-          allRecords.push(...recordsWithStatus);
-
-          // Calculate store breakdown
-          const storeTotal = records.reduce((sum, r) => sum + parseFloat(r.credits_charged || 0), 0);
-          const dates = records.map(r => new Date(r.charged_date));
-
-          storeBreakdownMap.set(store.id, {
-            store_id: store.id,
-            store_name: store.name,
-            days_running: records.length,
-            total_credits: storeTotal,
-            first_charge: dates.length > 0 ? new Date(Math.min(...dates)).toISOString() : null,
-            last_charge: dates.length > 0 ? new Date(Math.max(...dates)).toISOString() : null,
-            currently_published: store.published
-          });
-        }
-      } catch (error) {
-        console.error(`Failed to get uptime for store ${store.id}:`, error.message);
-        // Continue with other stores
+      if (error) {
+        console.error('Error querying store_uptime:', error);
+        throw new Error(`Failed to query uptime: ${error.message}`);
       }
+
+      const uptimeRecords = records || [];
+
+      // Calculate summary statistics
+      const totalCredits = uptimeRecords.reduce((sum, r) => sum + parseFloat(r.credits_charged || 0), 0);
+      const dates = uptimeRecords.map(r => new Date(r.charged_date));
+
+      const summary = {
+        total_stores: uptimeRecords.length > 0 ? 1 : 0,
+        total_days: uptimeRecords.length,
+        total_credits_charged: totalCredits,
+        first_charge_date: dates.length > 0 ? new Date(Math.min(...dates)).toISOString() : null,
+        last_charge_date: dates.length > 0 ? new Date(Math.max(...dates)).toISOString() : null
+      };
+
+      // Store breakdown (single store)
+      const storeBreakdown = uptimeRecords.length > 0 ? [{
+        store_id: storeId,
+        store_name: uptimeRecords[0]?.store_name || 'Unknown',
+        days_running: uptimeRecords.length,
+        total_credits: totalCredits,
+        first_charge: dates.length > 0 ? new Date(Math.min(...dates)).toISOString() : null,
+        last_charge: dates.length > 0 ? new Date(Math.max(...dates)).toISOString() : null
+      }] : [];
+
+      return {
+        records: uptimeRecords,
+        summary,
+        store_breakdown: storeBreakdown,
+        period_days: parseInt(days)
+      };
+    } catch (error) {
+      console.error(`Failed to get uptime report:`, error);
+      throw error;
     }
-
-    // Sort all records by date
-    allRecords.sort((a, b) => {
-      const dateCompare = new Date(b.charged_date) - new Date(a.charged_date);
-      if (dateCompare !== 0) return dateCompare;
-      return new Date(b.created_at) - new Date(a.created_at);
-    });
-
-    // Calculate summary
-    const totalCredits = allRecords.reduce((sum, r) => sum + parseFloat(r.credits_charged || 0), 0);
-    const dates = allRecords.map(r => new Date(r.charged_date));
-    const summary = {
-      total_stores: storeBreakdownMap.size,
-      total_days: allRecords.length,
-      total_credits_charged: totalCredits,
-      first_charge_date: dates.length > 0 ? new Date(Math.min(...dates)).toISOString() : null,
-      last_charge_date: dates.length > 0 ? new Date(Math.max(...dates)).toISOString() : null
-    };
-
-    // Convert breakdown map to array and sort by total credits
-    const storeBreakdown = Array.from(storeBreakdownMap.values())
-      .sort((a, b) => b.total_credits - a.total_credits);
-
-    return {
-      records: allRecords,
-      summary,
-      store_breakdown: storeBreakdown,
-      period_days: parseInt(days)
-    };
   }
 }
 

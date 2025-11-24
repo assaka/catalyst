@@ -176,13 +176,24 @@ router.get('/transactions', authMiddleware, async (req, res) => {
 /**
  * GET /api/credits/uptime-report
  * Get store uptime report showing daily charges for published stores
+ * Requires store_id query parameter or uses current store from auth context
  */
 router.get('/uptime-report', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
     const { days = 30, store_id } = req.query;
 
-    const report = await creditService.getUptimeReport(userId, days, store_id);
+    // Use store_id from query param, or fall back to current store from auth context
+    const targetStoreId = store_id || req.user.store_id;
+
+    if (!targetStoreId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required. Provide store_id query parameter.'
+      });
+    }
+
+    const report = await creditService.getUptimeReport(userId, days, targetStoreId);
 
     res.json({
       success: true,

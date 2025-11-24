@@ -125,11 +125,11 @@ export default function StoreOnboarding() {
           console.log('🔍 Popup closed detected');
           console.log('   oauthError:', oauthError);
 
-          // Wait a bit for any pending messages to arrive
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Wait longer for any pending messages to arrive
+          await new Promise(resolve => setTimeout(resolve, 500));
 
           window.removeEventListener('message', messageHandler);
-          console.log('🔍 Checking OAuth status via API...');
+          console.log('🔍 After 500ms wait, oauthError is:', oauthError);
 
           // If we received an error message, show it immediately
           if (oauthError) {
@@ -138,6 +138,8 @@ export default function StoreOnboarding() {
             setLoading(false);
             return;
           }
+
+          console.log('🔍 No error received, checking OAuth status via API...');
 
           // Verify OAuth succeeded by checking database/memory state
           try {
@@ -151,12 +153,13 @@ export default function StoreOnboarding() {
               setSuccess('Supabase connected! Please provide your Service Role Key to complete setup.');
               setLoading(false);
             } else {
-              console.log('❌ OAuth not found via API');
-              setError('OAuth was cancelled or failed. Please try again.');
+              console.log('❌ OAuth not found via API - this likely means an error occurred');
+              // Instead of generic message, suggest checking for duplicates
+              setError('OAuth connection failed. This database may already be in use by another store.');
             }
           } catch (apiError) {
             console.error('Error checking OAuth status:', apiError);
-            setError('Failed to verify OAuth connection. Please try again.');
+            setError(apiError.message || 'Failed to verify OAuth connection. Please try again.');
           }
 
           setLoading(false);
