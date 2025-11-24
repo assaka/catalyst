@@ -36,6 +36,18 @@ async function checkDatabaseUrlDuplicate(projectUrl, currentStoreId = null) {
       return { isDuplicate: false };
     }
 
+    // Skip check for placeholder/pending URLs
+    const placeholderUrls = [
+      'pending-configuration.supabase.co',
+      'https://pending-configuration.supabase.co',
+      'Configuration pending'
+    ];
+
+    if (placeholderUrls.some(placeholder => projectUrl.includes(placeholder))) {
+      console.log('⏭️ Skipping duplicate check for placeholder URL:', projectUrl);
+      return { isDuplicate: false };
+    }
+
     // Extract hostname from project URL
     const url = new URL(projectUrl);
     const host = url.hostname;
@@ -441,6 +453,8 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     // Check if this database URL is already being used by another store
     console.log('🔍 Checking for duplicate database URL...');
+    console.log('   projectUrl:', projectUrl);
+    console.log('   storeId:', storeId);
     const duplicateCheck = await checkDatabaseUrlDuplicate(projectUrl, storeId);
 
     if (duplicateCheck.isDuplicate) {
