@@ -356,6 +356,57 @@ router.get('/stats', async (req, res) => {
 });
 
 /**
+ * GET /api/storage/status
+ * Get current storage configuration status for a store
+ */
+router.get('/status', async (req, res) => {
+  try {
+    const { storeId } = req;
+
+    console.log('📊 Checking storage status for store:', storeId);
+
+    // Get current provider with timeout
+    let currentProvider = null;
+    let configured = false;
+    let provider = 'External URLs';
+
+    try {
+      const providerPromise = storageManager.getStorageProvider(storeId);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout getting storage provider')), 3000);
+      });
+      currentProvider = await Promise.race([providerPromise, timeoutPromise]);
+
+      if (currentProvider && currentProvider.type) {
+        configured = true;
+        provider = currentProvider.type;
+      }
+    } catch (error) {
+      console.log('Could not get current provider:', error.message);
+      configured = false;
+    }
+
+    res.json({
+      success: true,
+      configured: configured,
+      hasProvider: configured,
+      provider: provider,
+      integrationType: provider
+    });
+
+  } catch (error) {
+    console.error('Storage status error:', error);
+    res.status(500).json({
+      success: false,
+      configured: false,
+      hasProvider: false,
+      provider: 'External URLs',
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/storage/providers
  * Get available storage providers and their status
  */
