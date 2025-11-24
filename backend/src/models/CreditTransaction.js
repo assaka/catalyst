@@ -1,149 +1,204 @@
-const { DataTypes } = require('sequelize');
-const { masterSequelize } = require('../database/masterConnection');
+/**
+ * CreditTransaction Model
+ * Uses masterDbClient (Supabase) for database operations
+ */
 
-const CreditTransaction = masterSequelize.define('CreditTransaction', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  user_id: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
-  },
-  store_id: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: 'stores',
-      key: 'id'
-    }
-  },
-  transaction_type: {
-    type: DataTypes.ENUM('purchase', 'bonus', 'refund'),
-    allowNull: false
-  },
-  amount_usd: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-    validate: {
-      min: 0
-    }
-  },
-  credits_purchased: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-    validate: {
-      min: 0
-    }
-  },
-  stripe_payment_intent_id: {
-    type: DataTypes.STRING(255),
-    allowNull: true
-  },
-  stripe_charge_id: {
-    type: DataTypes.STRING(255),
-    allowNull: true
-  },
-  status: {
-    type: DataTypes.ENUM('pending', 'completed', 'failed', 'refunded'),
-    allowNull: false,
-    defaultValue: 'pending'
-  },
-  metadata: {
-    type: DataTypes.JSONB,
-    defaultValue: {}
-  }
-}, {
+const { masterDbClient } = require('../database/masterConnection');
+const { v4: uuidv4 } = require('uuid');
+
+const CreditTransaction = {
   tableName: 'credit_transactions',
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
-  indexes: [
-    {
-      fields: ['user_id']
-    },
-    {
-      fields: ['status']
-    },
-    {
-      fields: ['stripe_payment_intent_id']
+
+  /**
+   * Create a new credit transaction
+   */
+  async create(data) {
+    const record = {
+      id: data.id || uuidv4(),
+      user_id: data.user_id,
+      store_id: data.store_id,
+      transaction_type: data.transaction_type,
+      amount_usd: data.amount_usd,
+      credits_purchased: data.credits_purchased,
+      stripe_payment_intent_id: data.stripe_payment_intent_id || null,
+      stripe_charge_id: data.stripe_charge_id || null,
+      status: data.status || 'pending',
+      metadata: data.metadata || {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data: result, error } = await masterDbClient
+      .from(this.tableName)
+      .insert(record)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating credit transaction:', error);
+      throw new Error(`Failed to create credit transaction: ${error.message}`);
     }
-  ]
-});
 
-// Class methods for credit transaction management
-CreditTransaction.createPurchase = async function(userId, storeId, amountUsd, creditsAmount, paymentIntentId = null) {
-  return await this.create({
-    user_id: userId,
-    store_id: storeId,
-    transaction_type: 'purchase',
-    amount_usd: amountUsd,
-    credits_purchased: creditsAmount,
-    stripe_payment_intent_id: paymentIntentId,
-    status: 'pending'
-  });
-};
+    return result;
+  },
 
-CreditTransaction.createBonus = async function(userId, storeId, creditsAmount, description = null) {
-  return await this.create({
-    user_id: userId,
-    store_id: storeId,
-    transaction_type: 'bonus',
-    amount_usd: 0.00,
-    credits_purchased: creditsAmount,
-    status: 'completed',
-    metadata: { description: description || 'Bonus credits' }
-  });
-};
+  /**
+   * Find transaction by primary key
+   */
+  async findByPk(id) {
+    const { data, error } = await masterDbClient
+      .from(this.tableName)
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
 
-CreditTransaction.markCompleted = async function(transactionId, stripeChargeId = null) {
-  const transaction = await this.findByPk(transactionId);
-  if (!transaction) {
-    throw new Error('Transaction not found');
-  }
-
-  const updateData = { status: 'completed' };
-  if (stripeChargeId) {
-    updateData.stripe_charge_id = stripeChargeId;
-  }
-
-  await transaction.update(updateData);
-  return transaction;
-};
-
-CreditTransaction.markFailed = async function(transactionId, reason = null) {
-  const transaction = await this.findByPk(transactionId);
-  if (!transaction) {
-    throw new Error('Transaction not found');
-  }
-
-  await transaction.update({
-    status: 'failed',
-    metadata: {
-      ...transaction.metadata,
-      failure_reason: reason
+    if (error) {
+      console.error('Error finding credit transaction:', error);
+      throw new Error(`Failed to find credit transaction: ${error.message}`);
     }
-  });
 
-  return transaction;
-};
+    return data;
+  },
 
-CreditTransaction.getUserTransactions = async function(userId, storeId = null, limit = 50) {
-  const where = { user_id: userId };
-  if (storeId) {
-    where.store_id = storeId;
+  /**
+   * Update a transaction
+   */
+  async update(updateData, options) {
+    const { where } = options;
+
+    const { data, error } = await masterDbClient
+      .from(this.tableName)
+      .update({
+        ...updateData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', where.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating credit transaction:', error);
+      throw new Error(`Failed to update credit transaction: ${error.message}`);
+    }
+
+    return [1, [data]]; // Sequelize-compatible return format
+  },
+
+  /**
+   * Create a purchase transaction
+   */
+  async createPurchase(userId, storeId, amountUsd, creditsAmount, paymentIntentId = null) {
+    return await this.create({
+      user_id: userId,
+      store_id: storeId,
+      transaction_type: 'purchase',
+      amount_usd: amountUsd,
+      credits_purchased: creditsAmount,
+      stripe_payment_intent_id: paymentIntentId,
+      status: 'pending'
+    });
+  },
+
+  /**
+   * Create a bonus transaction
+   */
+  async createBonus(userId, storeId, creditsAmount, description = null) {
+    return await this.create({
+      user_id: userId,
+      store_id: storeId,
+      transaction_type: 'bonus',
+      amount_usd: 0.00,
+      credits_purchased: creditsAmount,
+      status: 'completed',
+      metadata: { description: description || 'Bonus credits' }
+    });
+  },
+
+  /**
+   * Mark transaction as completed
+   */
+  async markCompleted(transactionId, stripeChargeId = null) {
+    const transaction = await this.findByPk(transactionId);
+    if (!transaction) {
+      throw new Error('Transaction not found');
+    }
+
+    const updateData = {
+      status: 'completed',
+      updated_at: new Date().toISOString()
+    };
+    if (stripeChargeId) {
+      updateData.stripe_charge_id = stripeChargeId;
+    }
+
+    const { data, error } = await masterDbClient
+      .from(this.tableName)
+      .update(updateData)
+      .eq('id', transactionId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to mark transaction completed: ${error.message}`);
+    }
+
+    return data;
+  },
+
+  /**
+   * Mark transaction as failed
+   */
+  async markFailed(transactionId, reason = null) {
+    const transaction = await this.findByPk(transactionId);
+    if (!transaction) {
+      throw new Error('Transaction not found');
+    }
+
+    const { data, error } = await masterDbClient
+      .from(this.tableName)
+      .update({
+        status: 'failed',
+        metadata: {
+          ...transaction.metadata,
+          failure_reason: reason
+        },
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', transactionId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to mark transaction failed: ${error.message}`);
+    }
+
+    return data;
+  },
+
+  /**
+   * Get user transactions
+   */
+  async getUserTransactions(userId, storeId = null, limit = 50) {
+    let query = masterDbClient
+      .from(this.tableName)
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (storeId) {
+      query = query.eq('store_id', storeId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error getting user transactions:', error);
+      throw new Error(`Failed to get user transactions: ${error.message}`);
+    }
+
+    return data || [];
   }
-
-  return await this.findAll({
-    where,
-    order: [['created_at', 'DESC']],
-    limit
-  });
 };
 
 module.exports = CreditTransaction;
