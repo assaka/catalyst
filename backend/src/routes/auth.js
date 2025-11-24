@@ -781,20 +781,21 @@ router.post('/login', [
     // Update local object
     authenticatedUser.last_login = new Date().toISOString();
 
-    // For store owners/admins, fetch their first store from master DB to include in token
+    // For store owners/admins, fetch their first ACTIVE store from master DB to include in token
     if (authenticatedUser.role === 'store_owner' || authenticatedUser.role === 'admin') {
       const { data: userStores } = await masterDbClient
         .from('stores')
-        .select('id')
+        .select('id, name, is_active')
         .eq('user_id', authenticatedUser.id)
+        .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1);
 
       if (userStores && userStores.length > 0) {
         authenticatedUser.store_id = userStores[0].id;
-        console.log('🔍 Added store_id to token:', authenticatedUser.store_id);
+        console.log('🔍 Added first active store to token:', userStores[0].name, userStores[0].id);
       } else {
-        console.log('⚠️ Store owner has no stores yet');
+        console.log('⚠️ Store owner has no active stores');
       }
     }
 
