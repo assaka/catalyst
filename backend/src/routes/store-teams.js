@@ -687,6 +687,95 @@ router.delete('/:store_id/members/:member_id', authorize(['admin', 'store_owner'
   }
 });
 
+// @route   GET /api/store-teams/invitation/:token
+// @desc    Get invitation details by token (public - no auth required)
+// @access  Public
+router.get('/invitation/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    // Find invitation in master DB
+    const { data: invitation, error: inviteError } = await masterDbClient
+      .from('store_invitations')
+      .select('id, store_id, invited_email, role, message, expires_at, status, created_at')
+      .eq('invitation_token', token)
+      .maybeSingle();
+
+    if (inviteError) {
+      console.error('Error fetching invitation:', inviteError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch invitation'
+      });
+    }
+
+    if (!invitation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invitation not found'
+      });
+    }
+
+    // Check if expired
+    if (new Date(invitation.expires_at) < new Date()) {
+      return res.status(410).json({
+        success: false,
+        message: 'This invitation has expired'
+      });
+    }
+
+    // Check if already accepted
+    if (invitation.status !== 'pending') {
+      return res.status(410).json({
+        success: false,
+        message: 'This invitation has already been used'
+      });
+    }
+
+    // Get store info
+    const { data: store } = await masterDbClient
+      .from('stores')
+      .select('id, name, domain')
+      .eq('id', invitation.store_id)
+      .single();
+
+    // Get inviter info
+    const { data: inviterData } = await masterDbClient
+      .from('store_invitations')
+      .select('invited_by')
+      .eq('id', invitation.id)
+      .single();
+
+    let inviter = null;
+    if (inviterData?.invited_by) {
+      const { data: inviterInfo } = await masterDbClient
+        .from('users')
+        .select('id, email, first_name, last_name')
+        .eq('id', inviterData.invited_by)
+        .single();
+      inviter = inviterInfo;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: invitation.id,
+        role: invitation.role,
+        message: invitation.message,
+        expires_at: invitation.expires_at,
+        store: store || { name: 'Store' },
+        inviter
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get invitation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   POST /api/store-teams/accept-invitation/:token
 // @desc    Accept store team invitation
 // @access  Private

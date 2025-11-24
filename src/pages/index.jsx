@@ -91,3 +91,6 @@ export { default as RobotsTxtHandler } from './RobotsTxtHandler';
 export { default as SitemapPublic } from './storefront/SitemapPublic';
 export { default as Landing } from './storefront/Landing';
 export { default as NotFound } from './storefront/NotFound';
+
+// Invitation Pages
+export { default as AcceptInvitation } from './AcceptInvitation';

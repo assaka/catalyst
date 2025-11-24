@@ -548,6 +548,9 @@ function App() {
           {/* Auth route - redirect to admin auth */}
           <Route path="/auth" element={<Navigate to="/admin/auth" replace />} />
 
+          {/* Team Invitation */}
+          <Route path="/accept-invitation/:token" element={<Pages.AcceptInvitation />} />
+
           {/* Homepage */}
           <Route path="/" element={<PageWrapper Component={Pages.Storefront} pageName="Storefront" />} />
 
