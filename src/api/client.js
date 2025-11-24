@@ -436,6 +436,22 @@ class ApiClient {
         });
         return result;
       }
+
+      // Special handling for stores/dropdown endpoint - don't transform, return full response
+      if (endpoint === 'stores/dropdown' || endpoint === '/stores/dropdown') {
+        const duration = performance.now() - startTime;
+        apiDebugger.debugAPICall('response', {
+          debugId,
+          endpoint,
+          method,
+          duration: Math.round(duration),
+          rawResponse: result,
+          response: result,
+          status: response.status,
+          transformed: false
+        });
+        return result;
+      }
       
       let transformedResult = result;
       if (isListEndpoint && result && typeof result === 'object' && result.success && result.data) {
