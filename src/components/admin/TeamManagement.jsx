@@ -6,6 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -24,7 +34,7 @@ import {
   Eye,
   Plus,
   AlertCircle,
-  RefreshCw,
+  Send,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -93,7 +103,14 @@ export default function TeamManagement({ storeId, storeName }) {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
-  
+
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    type: null, // 'resend', 'deleteInvitation', 'removeMember'
+    data: null
+  });
+
   // Invite form state
   const [inviteForm, setInviteForm] = useState({
     email: '',
@@ -176,41 +193,95 @@ export default function TeamManagement({ storeId, storeName }) {
     }
   };
 
-  const handleRemoveMember = async (memberId, email) => {
-    if (confirm(`Are you sure you want to remove ${email} from the team?`)) {
-      try {
-        await StoreTeam.removeMember(storeId, memberId);
-        toast.success('Team member removed successfully');
-        loadTeamData();
-      } catch (error) {
-        console.error('Error removing member:', error);
-        toast.error('Failed to remove team member');
-      }
-    }
+  // Open confirmation dialogs
+  const openRemoveMemberDialog = (memberId, email) => {
+    setConfirmDialog({
+      open: true,
+      type: 'removeMember',
+      data: { memberId, email }
+    });
   };
 
-  const handleResendInvitation = async (invitationId, email) => {
+  const openResendDialog = (invitationId, email) => {
+    setConfirmDialog({
+      open: true,
+      type: 'resend',
+      data: { invitationId, email }
+    });
+  };
+
+  const openDeleteInvitationDialog = (invitationId, email) => {
+    setConfirmDialog({
+      open: true,
+      type: 'deleteInvitation',
+      data: { invitationId, email }
+    });
+  };
+
+  const closeConfirmDialog = () => {
+    setConfirmDialog({ open: false, type: null, data: null });
+  };
+
+  // Handle confirmed actions
+  const handleConfirmAction = async () => {
+    const { type, data } = confirmDialog;
+
     try {
-      await StoreTeam.resendInvitation(storeId, invitationId);
-      toast.success(`Invitation resent to ${email}`);
+      if (type === 'removeMember') {
+        await StoreTeam.removeMember(storeId, data.memberId);
+        toast.success('Team member removed successfully');
+      } else if (type === 'resend') {
+        await StoreTeam.resendInvitation(storeId, data.invitationId);
+        toast.success(`Invitation resent to ${data.email}`);
+      } else if (type === 'deleteInvitation') {
+        await StoreTeam.deleteInvitation(storeId, data.invitationId);
+        toast.success('Invitation cancelled');
+      }
       loadTeamData();
     } catch (error) {
-      console.error('Error resending invitation:', error);
-      toast.error('Failed to resend invitation');
+      console.error(`Error performing ${type}:`, error);
+      if (type === 'removeMember') {
+        toast.error('Failed to remove team member');
+      } else if (type === 'resend') {
+        toast.error('Failed to resend invitation');
+      } else if (type === 'deleteInvitation') {
+        toast.error('Failed to cancel invitation');
+      }
+    } finally {
+      closeConfirmDialog();
     }
   };
 
-  const handleDeleteInvitation = async (invitationId, email) => {
-    if (confirm(`Are you sure you want to cancel the invitation to ${email}?`)) {
-      try {
-        await StoreTeam.deleteInvitation(storeId, invitationId);
-        toast.success('Invitation cancelled');
-        loadTeamData();
-      } catch (error) {
-        console.error('Error deleting invitation:', error);
-        toast.error('Failed to cancel invitation');
-      }
+  // Get dialog content based on type
+  const getDialogContent = () => {
+    const { type, data } = confirmDialog;
+
+    if (type === 'resend') {
+      return {
+        icon: <Send className="w-6 h-6 text-blue-600" />,
+        title: 'Resend Invitation',
+        description: `Are you sure you want to resend the invitation to ${data?.email}? This will extend the expiration by 7 days.`,
+        actionText: 'Resend',
+        actionClass: 'bg-blue-600 hover:bg-blue-700'
+      };
+    } else if (type === 'deleteInvitation') {
+      return {
+        icon: <Trash2 className="w-6 h-6 text-red-600" />,
+        title: 'Cancel Invitation',
+        description: `Are you sure you want to cancel the invitation to ${data?.email}? This action cannot be undone.`,
+        actionText: 'Cancel Invitation',
+        actionClass: 'bg-red-600 hover:bg-red-700'
+      };
+    } else if (type === 'removeMember') {
+      return {
+        icon: <Trash2 className="w-6 h-6 text-red-600" />,
+        title: 'Remove Team Member',
+        description: `Are you sure you want to remove ${data?.email} from the team? They will lose access to this store.`,
+        actionText: 'Remove',
+        actionClass: 'bg-red-600 hover:bg-red-700'
+      };
     }
+    return {};
   };
 
   const openEditDialog = (member) => {
@@ -411,19 +482,20 @@ export default function TeamManagement({ storeId, storeName }) {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleResendInvitation(invitation.id, invitation.invited_email)}
+                            onClick={() => openResendDialog(invitation.id, invitation.invited_email)}
                             title="Resend invitation"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                           >
-                            <RefreshCw className="w-4 h-4" />
+                            <Send className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteInvitation(invitation.id, invitation.invited_email)}
+                            onClick={() => openDeleteInvitationDialog(invitation.id, invitation.invited_email)}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             title="Cancel invitation"
                           >
-                            <X className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
@@ -510,8 +582,8 @@ export default function TeamManagement({ storeId, storeName }) {
                             <Edit className="w-4 h-4 mr-2" />
                             Edit Permissions
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleRemoveMember(member.id, member.User?.email)}
+                          <DropdownMenuItem
+                            onClick={() => openRemoveMemberDialog(member.id, member.User?.email)}
                             className="text-red-600"
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
@@ -603,6 +675,30 @@ export default function TeamManagement({ storeId, storeName }) {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Confirmation Dialog */}
+        <AlertDialog open={confirmDialog.open} onOpenChange={(open) => !open && closeConfirmDialog()}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3">
+                {getDialogContent().icon}
+                <AlertDialogTitle>{getDialogContent().title}</AlertDialogTitle>
+              </div>
+              <AlertDialogDescription>
+                {getDialogContent().description}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmAction}
+                className={getDialogContent().actionClass}
+              >
+                {getDialogContent().actionText}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
