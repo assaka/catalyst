@@ -2865,7 +2865,8 @@ CREATE TABLE IF NOT EXISTS store_uptime (
   user_balance_after NUMERIC,
   store_name VARCHAR(255),
   metadata JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(store_id, charged_date)
 );
 
 -- CREATE TABLE IF NOT EXISTS subscriptions (

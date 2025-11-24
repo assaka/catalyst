@@ -401,23 +401,33 @@ class CreditService {
       const ConnectionManager = require('./database/ConnectionManager');
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      await tenantDb
+      const uptimeData = {
+        store_id: storeId,
+        user_id: userId,
+        charged_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+        credits_charged: dailyCostNum,
+        user_balance_before: balanceBeforeNum,
+        user_balance_after: balanceAfterNum,
+        store_name: store.name,
+        metadata: {
+          charge_type: 'daily',
+          deduction_time: new Date().toISOString()
+        },
+        created_at: new Date().toISOString()
+      };
+
+      // Use upsert to handle duplicate daily charges (one per store per day)
+      const { data, error } = await tenantDb
         .from('store_uptime')
-        .insert({
-          store_id: storeId,
-          user_id: userId,
-          charged_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
-          credits_charged: dailyCostNum,
-          user_balance_before: balanceBeforeNum,
-          user_balance_after: balanceAfterNum,
-          store_name: store.name,
-          metadata: {
-            charge_type: 'daily',
-            deduction_time: new Date().toISOString()
-          },
-          created_at: new Date().toISOString()
+        .upsert(uptimeData, {
+          onConflict: 'store_id,charged_date',
+          ignoreDuplicates: false
         })
         .select();
+
+      if (error) {
+        console.error('Uptime logging error:', error.message);
+      }
     } catch (uptimeError) {
       console.error('Failed to log uptime:', uptimeError.message);
       // Silent fail - uptime logging is not critical
