@@ -18,4 +18,30 @@ router.get('/test', cacheMiddleware({
   });
 });
 
+/**
+ * Clear cache for a specific store's bootstrap
+ * GET /api/cache-test/clear-bootstrap/:slug
+ */
+router.get('/clear-bootstrap/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { invalidateCache } = require('../utils/cacheManager');
+
+    await invalidateCache(`bootstrap:${slug}:*`);
+
+    res.json({
+      success: true,
+      message: `Bootstrap cache cleared for store: ${slug}`,
+      slug: slug
+    });
+  } catch (error) {
+    console.error('Cache clear error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear cache',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;
