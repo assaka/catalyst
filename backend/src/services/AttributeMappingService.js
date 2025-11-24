@@ -211,6 +211,7 @@ class AttributeMappingService {
       .insert({
         id: uuidv4(),
         code: attributeData.code,
+        name: attributeData.name,
         type: attributeData.type || 'text',
         is_required: false,
         is_filterable: attributeData.is_filterable || false,
