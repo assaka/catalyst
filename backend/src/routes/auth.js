@@ -793,14 +793,16 @@ router.post('/login', [
     authenticatedUser.last_login = new Date().toISOString();
 
     // For store owners/admins, fetch their first ACTIVE store from master DB to include in token
+    // CRITICAL: Must have is_active=true AND status NOT pending_database
     if (authenticatedUser.role === 'store_owner' || authenticatedUser.role === 'admin') {
       console.log('🔍 Fetching active stores for user:', authenticatedUser.id, authenticatedUser.email);
 
       const { data: userStores, error: storesError } = await masterDbClient
         .from('stores')
-        .select('id, name, slug, is_active')
+        .select('id, name, slug, is_active, status')
         .eq('user_id', authenticatedUser.id)
         .eq('is_active', true)
+        .neq('status', 'pending_database')
         .order('created_at', { ascending: true })
         .limit(1);
 
@@ -812,14 +814,14 @@ router.post('/login', [
 
       if (userStores && userStores.length > 0) {
         authenticatedUser.store_id = userStores[0].id;
-        console.log('✅ Added first active store to token:', userStores[0].name, '(slug:', userStores[0].slug + ')', userStores[0].id);
+        console.log('✅ Added first active store to token:', userStores[0].name, '(slug:', userStores[0].slug + ')', 'status:', userStores[0].status, userStores[0].id);
       } else {
-        console.log('⚠️ Store owner has no active stores. Checking all stores...');
+        console.log('⚠️ Store owner has no active stores with database. Checking all stores...');
 
         // Debug: Check all stores for this user
         const { data: allStores } = await masterDbClient
           .from('stores')
-          .select('id, name, slug, is_active, user_id')
+          .select('id, name, slug, is_active, status, user_id')
           .eq('user_id', authenticatedUser.id);
 
         console.log('🔍 All stores for user:', allStores);
