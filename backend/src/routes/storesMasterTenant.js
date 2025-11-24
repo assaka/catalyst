@@ -469,10 +469,15 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
     }
 
     // Check if this database URL is already being used by another store
-    console.log('🔍 Checking for duplicate database URL...');
+    console.log('========================================');
+    console.log('🔍 DUPLICATE DATABASE CHECK STARTING');
+    console.log('========================================');
     console.log('   projectUrl:', projectUrl);
     console.log('   storeId:', storeId);
+
     const duplicateCheck = await checkDatabaseUrlDuplicate(projectUrl, storeId);
+
+    console.log('🔍 Duplicate check result:', duplicateCheck);
 
     if (duplicateCheck.isDuplicate) {
       console.error('❌ Database URL is already in use by another store:', duplicateCheck.existingStoreId);
