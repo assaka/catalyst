@@ -22,7 +22,6 @@ const { encryptDatabaseCredentials } = require('../utils/encryption');
 const MasterStore = require('../models/master/MasterStore');
 const StoreDatabase = require('../models/master/StoreDatabase');
 const StoreHostname = require('../models/master/StoreHostname');
-const CreditBalance = require('../models/master/CreditBalance');
 
 /**
  * Check if a database URL is already being used by another store
