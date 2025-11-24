@@ -31,9 +31,11 @@ export default function ABTestEditor({ test, storeId, onSave, onCancel }) {
   const [errors, setErrors] = useState([]);
   const [editMode, setEditMode] = useState('simple'); // 'simple' or 'advanced'
 
+  const isEditMode = test?.id; // Only edit if test has an id (not a recreated copy)
+
   const saveMutation = useMutation({
     mutationFn: (data) => {
-      if (test) {
+      if (isEditMode) {
         return abTestService.updateTest(storeId, test.id, data);
       } else {
         return abTestService.createTest(storeId, data);
@@ -457,7 +459,7 @@ export default function ABTestEditor({ test, storeId, onSave, onCancel }) {
         </Button>
         <Button onClick={handleSave} disabled={saveMutation.isPending}>
           {saveMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-          {test ? 'Update Test' : 'Create Test'}
+          {isEditMode ? 'Update Test' : 'Create Test'}
         </Button>
       </div>
     </div>

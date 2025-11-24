@@ -430,7 +430,7 @@ export default function ABTesting() {
                               {test.status === 'completed' && (
                                 <DropdownMenuItem onClick={() => handleRecreateTest(test)}>
                                   <Copy className="w-4 h-4 mr-2" />
-                                  Recreate Test
+                                  Create Test
                                 </DropdownMenuItem>
                               )}
                               {(test.status === 'running' || test.status === 'paused') && (
