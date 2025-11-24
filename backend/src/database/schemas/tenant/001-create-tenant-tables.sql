@@ -1,6 +1,10 @@
 -- ============================================
 -- TENANT DATABASE COMPLETE SCHEMA
--- Auto-generated from existing database
+-- Reorganized to fix foreign key dependencies
+-- ============================================
+
+-- ============================================
+-- SECTION 1: CREATE TYPE ENUMS
 -- ============================================
 
 CREATE TYPE IF NOT EXISTS enum_ab_tests_status AS ENUM (
@@ -161,7 +165,6 @@ CREATE TYPE IF NOT EXISTS enum_custom_domains_verification_status AS ENUM (
     'verified',
     'failed'
 );
-
 
 CREATE TYPE IF NOT EXISTS enum_customer_activities_activity_type AS ENUM (
     'page_view',
@@ -588,10 +591,9 @@ CREATE TYPE IF NOT EXISTS service_category AS ENUM (
 );
 
 -- ============================================
--- GENERIC TRIGGER FUNCTIONS
+-- SECTION 2: FUNCTIONS
 -- ============================================
 
--- Generic updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -600,7 +602,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Heatmap timestamp update function
 CREATE OR REPLACE FUNCTION update_heatmap_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -609,7 +610,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- CMS blocks updated_at function
 CREATE OR REPLACE FUNCTION update_cms_blocks_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -618,7 +618,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Cron jobs updated_at function
 CREATE OR REPLACE FUNCTION update_cron_jobs_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -627,7 +626,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Shopify OAuth tokens updated_at function
 CREATE OR REPLACE FUNCTION update_shopify_oauth_tokens_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -636,7 +634,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Plugin admin pages timestamp function
 CREATE OR REPLACE FUNCTION update_plugin_admin_pages_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -645,7 +642,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Plugin admin scripts timestamp function
 CREATE OR REPLACE FUNCTION update_plugin_admin_scripts_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -654,7 +650,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Auto increment snapshot distance for plugin version history
 CREATE OR REPLACE FUNCTION auto_increment_snapshot_distance()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -669,7 +664,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Ensure single current version for plugin version history
 CREATE OR REPLACE FUNCTION ensure_single_current_version()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -685,6 +679,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION update_integration_attribute_mappings_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_product_files_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================
+-- SECTION 3: CREATE TABLES
+-- All tables without foreign key constraints
+-- ============================================
 
 CREATE TABLE IF NOT EXISTS stores (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1034,11 +1048,6 @@ CREATE TABLE IF NOT EXISTS attributes (
   is_configurable BOOLEAN DEFAULT false
 );
 
--- ============================================
--- INTEGRATION ATTRIBUTE MAPPINGS TABLE
--- Cross-platform attribute mapping for multi-source integrations
--- Maps external platform attributes (Shopify, Magento, Akeneo, etc.) to internal Catalyst attributes
--- ============================================
 CREATE TABLE IF NOT EXISTS integration_attribute_mappings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -1049,7 +1058,7 @@ CREATE TABLE IF NOT EXISTS integration_attribute_mappings (
   external_attribute_type VARCHAR(50), -- Type in external system ('text', 'select', etc.)
 
   -- Catalyst Side (Internal)
-  internal_attribute_id UUID NOT NULL REFERENCES attributes(id) ON DELETE CASCADE,
+  internal_attribute_id UUID NOT NULL,
   internal_attribute_code VARCHAR(255) NOT NULL, -- Denormalized for quick lookups
 
   -- Mapping Configuration
@@ -1062,7 +1071,7 @@ CREATE TABLE IF NOT EXISTS integration_attribute_mappings (
   value_transformation JSONB DEFAULT '{}', -- Rules for transforming values between platforms
 
   -- Metadata
-  store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+  store_id UUID NOT NULL,
   notes TEXT,
   last_used_at TIMESTAMP, -- Track when mapping was last used in import/export
   usage_count INTEGER DEFAULT 0, -- How many times this mapping has been used
@@ -1075,25 +1084,6 @@ CREATE TABLE IF NOT EXISTS integration_attribute_mappings (
   -- Constraints
   UNIQUE(store_id, integration_source, external_attribute_code) -- One mapping per external attribute per source
 );
-
--- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_integration_attr_lookup ON integration_attribute_mappings(store_id, integration_source, external_attribute_code, is_active);
-CREATE INDEX IF NOT EXISTS idx_integration_attr_internal ON integration_attribute_mappings(internal_attribute_id);
-CREATE INDEX IF NOT EXISTS idx_integration_attr_source ON integration_attribute_mappings(integration_source, is_active);
-
--- Trigger for updated_at
-CREATE OR REPLACE FUNCTION update_integration_attribute_mappings_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_integration_attribute_mappings_updated_at
-  BEFORE UPDATE ON integration_attribute_mappings
-  FOR EACH ROW
-  EXECUTE FUNCTION update_integration_attribute_mappings_updated_at();
 
 CREATE TABLE IF NOT EXISTS blacklist_countries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2034,7 +2024,7 @@ CREATE TABLE IF NOT EXISTS pdf_templates (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- CREATE TABLE IF NOT EXISTS platform_admins (
+CREATE TABLE IF NOT EXISTS platform_admins (
 --   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 --   user_id UUID NOT NULL,
 --   role VARCHAR(50) DEFAULT 'support'::character varying NOT NULL,
@@ -2503,7 +2493,7 @@ CREATE TABLE IF NOT EXISTS product_tabs (
 
 CREATE TABLE IF NOT EXISTS product_translations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  product_id UUID NOT NULL,
   language_code VARCHAR(10) NOT NULL,
   name VARCHAR(255),
   description TEXT,
@@ -2513,17 +2503,9 @@ CREATE TABLE IF NOT EXISTS product_translations (
   UNIQUE(product_id, language_code)
 );
 
-CREATE INDEX IF NOT EXISTS idx_product_translations_product_id ON product_translations(product_id);
-CREATE INDEX IF NOT EXISTS idx_product_translations_language ON product_translations(language_code);
-
--- ============================================
--- PRODUCT FILES TABLE
--- Stores images, videos, documents, and other media files for products
--- Replaces JSONB images column for better performance and flexibility
--- ============================================
 CREATE TABLE IF NOT EXISTS product_files (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  product_id UUID NOT NULL,
   file_url TEXT NOT NULL,
   file_type VARCHAR(20) DEFAULT 'image' CHECK (file_type IN ('image', 'video', 'document', '3d_model', 'pdf')),
   position INTEGER NOT NULL DEFAULT 0,
@@ -2533,36 +2515,10 @@ CREATE TABLE IF NOT EXISTS product_files (
   file_size INTEGER, -- bytes
   mime_type VARCHAR(100),
   metadata JSONB DEFAULT '{}', -- Extra data: width, height, duration, shopify_id, akeneo_code, thumbnail_url, etc.
-  store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+  store_id UUID NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
--- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_product_files_product ON product_files(product_id, position);
-CREATE INDEX IF NOT EXISTS idx_product_files_primary ON product_files(product_id, is_primary) WHERE is_primary = true;
-CREATE INDEX IF NOT EXISTS idx_product_files_store ON product_files(store_id);
-CREATE INDEX IF NOT EXISTS idx_product_files_type ON product_files(product_id, file_type);
-CREATE INDEX IF NOT EXISTS idx_product_files_url ON product_files(file_url); -- For duplicate detection
-
--- Unique constraint: only one primary file per product per type
-CREATE UNIQUE INDEX IF NOT EXISTS idx_product_files_unique_primary
-  ON product_files(product_id, file_type)
-  WHERE is_primary = true;
-
--- Trigger for updated_at
-CREATE OR REPLACE FUNCTION update_product_files_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_product_files_updated_at
-  BEFORE UPDATE ON product_files
-  FOR EACH ROW
-  EXECUTE FUNCTION update_product_files_updated_at();
 
 CREATE TABLE IF NOT EXISTS product_variants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2873,8 +2829,7 @@ CREATE TABLE IF NOT EXISTS store_uptime (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-
--- CREATE TABLE IF NOT EXISTS subscriptions (
+CREATE TABLE IF NOT EXISTS subscriptions (
 --   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 --   store_id UUID NOT NULL,
 --   plan_name VARCHAR(50) NOT NULL,
@@ -3024,6336 +2979,1659 @@ CREATE TABLE IF NOT EXISTS wishlists (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- ALTER TABLE ONLY _migrations
---     ADD CONSTRAINT _migrations_pkey PRIMARY KEY (name);
--- --
--- -- Name: ab_test_assignments ab_test_assignments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ab_test_assignments
---     ADD CONSTRAINT ab_test_assignments_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: ab_test_variants ab_test_variants_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ab_test_variants
---     ADD CONSTRAINT ab_test_variants_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: ab_test_variants ab_test_variants_store_id_test_name_variant_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ab_test_variants
---     ADD CONSTRAINT ab_test_variants_store_id_test_name_variant_name_key UNIQUE (store_id, test_name, variant_name);
---
---
--- --
--- -- Name: ab_tests ab_tests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ab_tests
---     ADD CONSTRAINT ab_tests_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: admin_navigation_config admin_navigation_config_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY admin_navigation_config
---     ADD CONSTRAINT admin_navigation_config_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: admin_navigation_registry admin_navigation_registry_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY admin_navigation_registry
---     ADD CONSTRAINT admin_navigation_registry_key_key UNIQUE (key);
---
---
--- --
--- -- Name: admin_navigation_registry admin_navigation_registry_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY admin_navigation_registry
---     ADD CONSTRAINT admin_navigation_registry_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: ai_code_patterns ai_code_patterns_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ai_code_patterns
---     ADD CONSTRAINT ai_code_patterns_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: ai_context_documents ai_context_documents_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ai_context_documents
---     ADD CONSTRAINT ai_context_documents_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: ai_context_usage ai_context_usage_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ai_context_usage
---     ADD CONSTRAINT ai_context_usage_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: ai_plugin_examples ai_plugin_examples_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ai_plugin_examples
---     ADD CONSTRAINT ai_plugin_examples_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: ai_plugin_examples ai_plugin_examples_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ai_plugin_examples
---     ADD CONSTRAINT ai_plugin_examples_slug_key UNIQUE (slug);
---
---
--- --
--- -- Name: ai_usage_logs ai_usage_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ai_usage_logs
---     ADD CONSTRAINT ai_usage_logs_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: ai_user_preferences ai_user_preferences_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ai_user_preferences
---     ADD CONSTRAINT ai_user_preferences_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: akeneo_custom_mappings akeneo_custom_mappings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY akeneo_custom_mappings
---     ADD CONSTRAINT akeneo_custom_mappings_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: akeneo_custom_mappings akeneo_custom_mappings_store_id_mapping_type_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY akeneo_custom_mappings
---     ADD CONSTRAINT akeneo_custom_mappings_store_id_mapping_type_key UNIQUE (store_id, mapping_type);
---
---
--- --
--- -- Name: akeneo_import_statistics akeneo_import_statistics_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY akeneo_import_statistics
---     ADD CONSTRAINT akeneo_import_statistics_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: akeneo_mappings akeneo_mappings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY akeneo_mappings
---     ADD CONSTRAINT akeneo_mappings_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: akeneo_schedules akeneo_schedules_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY akeneo_schedules
---     ADD CONSTRAINT akeneo_schedules_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: attribute_sets attribute_sets_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attribute_sets
---     ADD CONSTRAINT attribute_sets_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: attribute_translations attribute_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attribute_translations
---     ADD CONSTRAINT attribute_translations_pkey PRIMARY KEY (attribute_id, language_code);
---
---
--- --
--- -- Name: attribute_value_translations attribute_value_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attribute_value_translations
---     ADD CONSTRAINT attribute_value_translations_pkey PRIMARY KEY (attribute_value_id, language_code);
---
---
--- --
--- -- Name: attribute_values attribute_values_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attribute_values
---     ADD CONSTRAINT attribute_values_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: attributes attributes_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attributes
---     ADD CONSTRAINT attributes_code_key UNIQUE (code);
---
---
--- --
--- -- Name: attributes attributes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attributes
---     ADD CONSTRAINT attributes_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: blacklist_countries blacklist_countries_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY blacklist_countries
---     ADD CONSTRAINT blacklist_countries_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: blacklist_countries blacklist_countries_store_id_country_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY blacklist_countries
---     ADD CONSTRAINT blacklist_countries_store_id_country_code_key UNIQUE (store_id, country_code);
---
---
--- --
--- -- Name: blacklist_emails blacklist_emails_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY blacklist_emails
---     ADD CONSTRAINT blacklist_emails_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: blacklist_emails blacklist_emails_store_id_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY blacklist_emails
---     ADD CONSTRAINT blacklist_emails_store_id_email_key UNIQUE (store_id, email);
---
---
--- --
--- -- Name: blacklist_ips blacklist_ips_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY blacklist_ips
---     ADD CONSTRAINT blacklist_ips_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: blacklist_ips blacklist_ips_store_id_ip_address_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY blacklist_ips
---     ADD CONSTRAINT blacklist_ips_store_id_ip_address_key UNIQUE (store_id, ip_address);
---
---
--- --
--- -- Name: blacklist_settings blacklist_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY blacklist_settings
---     ADD CONSTRAINT blacklist_settings_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: blacklist_settings blacklist_settings_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY blacklist_settings
---     ADD CONSTRAINT blacklist_settings_store_id_key UNIQUE (store_id);
---
---
--- --
--- -- Name: brevo_configurations brevo_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY brevo_configurations
---     ADD CONSTRAINT brevo_configurations_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: brevo_configurations brevo_configurations_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY brevo_configurations
---     ADD CONSTRAINT brevo_configurations_store_id_key UNIQUE (store_id);
---
---
--- --
--- -- Name: canonical_urls canonical_urls_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY canonical_urls
---     ADD CONSTRAINT canonical_urls_pkey PRIMARY KEY (id);
+-- ============================================
+-- SECTION 4: CREATE INDEXES
+-- ============================================
 
--- --
--- -- Name: carts carts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY carts
---     ADD CONSTRAINT carts_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: categories categories_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY categories
---     ADD CONSTRAINT categories_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: categories categories_store_id_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY categories
---     ADD CONSTRAINT categories_store_id_slug_key UNIQUE (store_id, slug);
---
---
--- --
--- -- Name: category_seo category_seo_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY category_seo
---     ADD CONSTRAINT category_seo_pkey PRIMARY KEY (category_id, language_code);
---
---
--- --
--- -- Name: category_translations category_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY category_translations
---     ADD CONSTRAINT category_translations_pkey PRIMARY KEY (category_id, language_code);
---
---
--- --
--- -- Name: chat_agents chat_agents_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY chat_agents
---     ADD CONSTRAINT chat_agents_email_key UNIQUE (email);
---
---
--- --
--- -- Name: chat_agents chat_agents_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY chat_agents
---     ADD CONSTRAINT chat_agents_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: chat_conversations chat_conversations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY chat_conversations
---     ADD CONSTRAINT chat_conversations_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: chat_messages chat_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY chat_messages
---     ADD CONSTRAINT chat_messages_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: chat_typing_indicators chat_typing_indicators_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY chat_typing_indicators
---     ADD CONSTRAINT chat_typing_indicators_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: cms_block_translations cms_block_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_block_translations
---     ADD CONSTRAINT cms_block_translations_pkey PRIMARY KEY (cms_block_id, language_code);
---
---
--- --
--- -- Name: cms_blocks cms_blocks_identifier_store_id_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_blocks
---     ADD CONSTRAINT cms_blocks_identifier_store_id_unique UNIQUE (identifier, store_id);
---
---
--- --
--- -- Name: cms_blocks cms_blocks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_blocks
---     ADD CONSTRAINT cms_blocks_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: cms_page_seo cms_page_seo_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_page_seo
---     ADD CONSTRAINT cms_page_seo_pkey PRIMARY KEY (cms_page_id, language_code);
---
---
--- --
--- -- Name: cms_page_translations cms_page_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_page_translations
---     ADD CONSTRAINT cms_page_translations_pkey PRIMARY KEY (cms_page_id, language_code);
---
---
--- --
--- -- Name: cms_pages cms_pages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_pages
---     ADD CONSTRAINT cms_pages_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: cms_pages cms_pages_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_pages
---     ADD CONSTRAINT cms_pages_slug_key UNIQUE (slug);
---
---
--- --
--- -- Name: consent_logs consent_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY consent_logs
---     ADD CONSTRAINT consent_logs_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: cookie_consent_settings cookie_consent_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cookie_consent_settings
---     ADD CONSTRAINT cookie_consent_settings_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: cookie_consent_settings_translations cookie_consent_settings_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cookie_consent_settings_translations
---     ADD CONSTRAINT cookie_consent_settings_translations_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: cookie_consent_settings_translations cookie_consent_settings_translations_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cookie_consent_settings_translations
---     ADD CONSTRAINT cookie_consent_settings_translations_unique UNIQUE (cookie_consent_settings_id, language_code);
---
---
--- --
--- -- Name: coupon_translations coupon_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY coupon_translations
---     ADD CONSTRAINT coupon_translations_pkey PRIMARY KEY (coupon_id, language_code);
---
---
--- --
--- -- Name: coupons coupons_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY coupons
---     ADD CONSTRAINT coupons_code_key UNIQUE (code);
---
---
--- --
--- -- Name: coupons coupons_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY coupons
---     ADD CONSTRAINT coupons_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: credit_pricing credit_pricing_credits_currency_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY credit_pricing
---     ADD CONSTRAINT credit_pricing_credits_currency_key UNIQUE (credits, currency);
---
---
--- --
--- -- Name: credit_pricing credit_pricing_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY credit_pricing
---     ADD CONSTRAINT credit_pricing_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: credit_transactions credit_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY credit_transactions
---     ADD CONSTRAINT credit_transactions_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: credit_usage credit_usage_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY credit_usage
---     ADD CONSTRAINT credit_usage_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: credits credits_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY credits
---     ADD CONSTRAINT credits_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: cron_job_executions cron_job_executions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cron_job_executions
---     ADD CONSTRAINT cron_job_executions_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: cron_job_types cron_job_types_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cron_job_types
---     ADD CONSTRAINT cron_job_types_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: cron_job_types cron_job_types_type_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cron_job_types
---     ADD CONSTRAINT cron_job_types_type_name_key UNIQUE (type_name);
---
---
--- --
--- -- Name: cron_jobs cron_jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cron_jobs
---     ADD CONSTRAINT cron_jobs_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: custom_analytics_events custom_analytics_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY custom_analytics_events
---     ADD CONSTRAINT custom_analytics_events_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: custom_domains custom_domains_domain_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY custom_domains
---     ADD CONSTRAINT custom_domains_domain_key UNIQUE (domain);
---
---
--- --
--- -- Name: custom_domains custom_domains_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY custom_domains
---     ADD CONSTRAINT custom_domains_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: custom_option_rules custom_option_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY custom_option_rules
---     ADD CONSTRAINT custom_option_rules_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: custom_pricing_discounts custom_pricing_discounts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY custom_pricing_discounts
---     ADD CONSTRAINT custom_pricing_discounts_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: custom_pricing_logs custom_pricing_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY custom_pricing_logs
---     ADD CONSTRAINT custom_pricing_logs_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: custom_pricing_rules custom_pricing_rules_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY custom_pricing_rules
---     ADD CONSTRAINT custom_pricing_rules_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: customer_activities customer_activities_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY customer_activities
---     ADD CONSTRAINT customer_activities_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: customer_addresses customer_addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY customer_addresses
---     ADD CONSTRAINT customer_addresses_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: customers customers_email_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY customers
---     ADD CONSTRAINT customers_email_unique UNIQUE (email);
---
---
--- --
--- -- Name: customers customers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY customers
---     ADD CONSTRAINT customers_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: delivery_settings delivery_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY delivery_settings
---     ADD CONSTRAINT delivery_settings_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: email_send_logs email_send_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY email_send_logs
---     ADD CONSTRAINT email_send_logs_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: email_template_translations email_template_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY email_template_translations
---     ADD CONSTRAINT email_template_translations_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: email_templates email_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY email_templates
---     ADD CONSTRAINT email_templates_pkey PRIMARY KEY (id);
---
-----
--- --
--- -- Name: heatmap_aggregations heatmap_aggregations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY heatmap_aggregations
---     ADD CONSTRAINT heatmap_aggregations_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: heatmap_aggregations heatmap_aggregations_store_id_page_url_aggregation_period_p_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY heatmap_aggregations
---     ADD CONSTRAINT heatmap_aggregations_store_id_page_url_aggregation_period_p_key UNIQUE (store_id, page_url, aggregation_period, period_start, viewport_width, viewport_height, interaction_type, x_coordinate, y_coordinate);
---
---
--- --
--- -- Name: heatmap_interactions heatmap_interactions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY heatmap_interactions
---     ADD CONSTRAINT heatmap_interactions_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: heatmap_sessions heatmap_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY heatmap_sessions
---     ADD CONSTRAINT heatmap_sessions_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: heatmap_sessions heatmap_sessions_session_id_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY heatmap_sessions
---     ADD CONSTRAINT heatmap_sessions_session_id_store_id_key UNIQUE (session_id, store_id);
---
---
--- --
--- -- Name: integration_configs integration_configs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY integration_configs
---     ADD CONSTRAINT integration_configs_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: job_history job_history_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY job_history
---     ADD CONSTRAINT job_history_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY jobs
---     ADD CONSTRAINT jobs_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: languages languages_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY languages
---     ADD CONSTRAINT languages_code_key UNIQUE (code);
---
---
--- --
--- -- Name: languages languages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY languages
---     ADD CONSTRAINT languages_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: login_attempts login_attempts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY login_attempts
---     ADD CONSTRAINT login_attempts_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: media_assets media_assets_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY media_assets
---     ADD CONSTRAINT media_assets_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: media_assets media_assets_store_id_file_path_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY media_assets
---     ADD CONSTRAINT media_assets_store_id_file_path_key UNIQUE (store_id, file_path);
---
---
--- --
--- -- Name: payment_method_translations payment_method_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY payment_method_translations
---     ADD CONSTRAINT payment_method_translations_pkey PRIMARY KEY (payment_method_id, language_code);
---
---
--- --
--- -- Name: payment_methods payment_methods_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY payment_methods
---     ADD CONSTRAINT payment_methods_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: pdf_template_translations pdf_template_translations_pdf_template_id_language_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY pdf_template_translations
---     ADD CONSTRAINT pdf_template_translations_pdf_template_id_language_code_key UNIQUE (pdf_template_id, language_code);
---
---
--- --
--- -- Name: pdf_template_translations pdf_template_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY pdf_template_translations
---     ADD CONSTRAINT pdf_template_translations_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: pdf_templates pdf_templates_identifier_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY pdf_templates
---     ADD CONSTRAINT pdf_templates_identifier_store_id_key UNIQUE (identifier, store_id);
---
---
--- --
--- -- Name: pdf_templates pdf_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY pdf_templates
---     ADD CONSTRAINT pdf_templates_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: platform_admins platform_admins_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY platform_admins
---     ADD CONSTRAINT platform_admins_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: platform_admins platform_admins_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY platform_admins
---     ADD CONSTRAINT platform_admins_user_id_key UNIQUE (user_id);
---
---
--- --
--- -- Name: plugin_admin_pages plugin_admin_pages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_admin_pages
---     ADD CONSTRAINT plugin_admin_pages_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_admin_pages plugin_admin_pages_plugin_id_page_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_admin_pages
---     ADD CONSTRAINT plugin_admin_pages_plugin_id_page_key_key UNIQUE (plugin_id, page_key);
---
---
--- --
--- -- Name: plugin_admin_pages plugin_admin_pages_route_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_admin_pages
---     ADD CONSTRAINT plugin_admin_pages_route_key UNIQUE (route);
---
---
--- --
--- -- Name: plugin_admin_scripts plugin_admin_scripts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_admin_scripts
---     ADD CONSTRAINT plugin_admin_scripts_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_admin_scripts plugin_admin_scripts_plugin_id_script_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_admin_scripts
---     ADD CONSTRAINT plugin_admin_scripts_plugin_id_script_name_key UNIQUE (plugin_id, script_name);
---
---
--- --
--- -- Name: plugin_configurations plugin_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_configurations
---     ADD CONSTRAINT plugin_configurations_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_controllers plugin_controllers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_controllers
---     ADD CONSTRAINT plugin_controllers_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_data plugin_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_data
---     ADD CONSTRAINT plugin_data_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_dependencies plugin_dependencies_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_dependencies
---     ADD CONSTRAINT plugin_dependencies_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_dependencies plugin_dependencies_plugin_id_package_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_dependencies
---     ADD CONSTRAINT plugin_dependencies_plugin_id_package_name_key UNIQUE (plugin_id, package_name);
---
---
--- --
--- -- Name: plugin_docs plugin_docs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_docs
---     ADD CONSTRAINT plugin_docs_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_entities plugin_entities_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_entities
---     ADD CONSTRAINT plugin_entities_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_events plugin_events_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_events
---     ADD CONSTRAINT plugin_events_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_hooks plugin_hooks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_hooks
---     ADD CONSTRAINT plugin_hooks_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_marketplace plugin_marketplace_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_marketplace
---     ADD CONSTRAINT plugin_marketplace_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_marketplace plugin_marketplace_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_marketplace
---     ADD CONSTRAINT plugin_marketplace_slug_key UNIQUE (slug);
---
---
--- --
--- -- Name: plugin_migrations plugin_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_migrations
---     ADD CONSTRAINT plugin_migrations_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_registry plugin_registry_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_registry
---     ADD CONSTRAINT plugin_registry_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_scripts plugin_scripts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_scripts
---     ADD CONSTRAINT plugin_scripts_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_version_comparisons plugin_version_comparisons_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_comparisons
---     ADD CONSTRAINT plugin_version_comparisons_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_version_history plugin_version_history_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_history
---     ADD CONSTRAINT plugin_version_history_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_version_patches plugin_version_patches_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_patches
---     ADD CONSTRAINT plugin_version_patches_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_version_snapshots plugin_version_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_snapshots
---     ADD CONSTRAINT plugin_version_snapshots_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_version_snapshots plugin_version_snapshots_version_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_snapshots
---     ADD CONSTRAINT plugin_version_snapshots_version_id_key UNIQUE (version_id);
---
---
--- --
--- -- Name: plugin_version_tags plugin_version_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_tags
---     ADD CONSTRAINT plugin_version_tags_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugin_widgets plugin_widgets_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_widgets
---     ADD CONSTRAINT plugin_widgets_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugins plugins_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugins
---     ADD CONSTRAINT plugins_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: plugins plugins_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugins
---     ADD CONSTRAINT plugins_slug_key UNIQUE (slug);
---
---
--- --
--- -- Name: product_attribute_values product_attribute_values_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_attribute_values
---     ADD CONSTRAINT product_attribute_values_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: product_label_translations product_label_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_label_translations
---     ADD CONSTRAINT product_label_translations_pkey PRIMARY KEY (product_label_id, language_code);
---
---
--- --
--- -- Name: product_labels product_labels_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_labels
---     ADD CONSTRAINT product_labels_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: product_seo product_seo_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_seo
---     ADD CONSTRAINT product_seo_pkey PRIMARY KEY (product_id, language_code);
---
---
--- --
--- -- Name: product_tab_translations product_tab_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_tab_translations
---     ADD CONSTRAINT product_tab_translations_pkey PRIMARY KEY (product_tab_id, language_code);
---
---
--- --
--- -- Name: product_tabs product_tabs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_tabs
---     ADD CONSTRAINT product_tabs_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: product_translations product_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_translations
---     ADD CONSTRAINT product_translations_pkey PRIMARY KEY (product_id, language_code);
---
---
--- --
--- -- Name: product_variants product_variants_parent_product_id_variant_product_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_variants
---     ADD CONSTRAINT product_variants_parent_product_id_variant_product_id_key UNIQUE (parent_product_id, variant_product_id);
---
---
--- --
--- -- Name: product_variants product_variants_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_variants
---     ADD CONSTRAINT product_variants_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: products products_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY products
---     ADD CONSTRAINT products_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: products products_sku_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY products
---     ADD CONSTRAINT products_sku_key UNIQUE (sku);
---
---
--- --
--- -- Name: products products_slug_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY products
---     ADD CONSTRAINT products_slug_key UNIQUE (slug);
---
---
--- --
--- -- Name: redirects redirects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY redirects
---     ADD CONSTRAINT redirects_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: redirects redirects_store_id_from_url_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY redirects
---     ADD CONSTRAINT redirects_store_id_from_url_key UNIQUE (store_id, from_url);
---
---
--- --
--- -- Name: sales_invoices sales_invoices_invoice_number_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_invoices
---     ADD CONSTRAINT sales_invoices_invoice_number_key UNIQUE (invoice_number);
---
---
--- --
--- -- Name: sales_invoices sales_invoices_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_invoices
---     ADD CONSTRAINT sales_invoices_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: sales_order_items sales_order_items_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_order_items
---     ADD CONSTRAINT sales_order_items_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: sales_orders sales_orders_order_number_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_orders
---     ADD CONSTRAINT sales_orders_order_number_key UNIQUE (order_number);
---
---
--- --
--- -- Name: sales_orders sales_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_orders
---     ADD CONSTRAINT sales_orders_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: sales_shipments sales_shipments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_shipments
---     ADD CONSTRAINT sales_shipments_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: sales_shipments sales_shipments_shipment_number_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_shipments
---     ADD CONSTRAINT sales_shipments_shipment_number_key UNIQUE (shipment_number);
---
---
--- --
--- -- Name: seo_settings seo_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY seo_settings
---     ADD CONSTRAINT seo_settings_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: seo_settings seo_settings_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY seo_settings
---     ADD CONSTRAINT seo_settings_store_id_key UNIQUE (store_id);
---
---
--- --
--- -- Name: seo_templates seo_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY seo_templates
---     ADD CONSTRAINT seo_templates_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: shipping_method_translations shipping_method_translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY shipping_method_translations
---     ADD CONSTRAINT shipping_method_translations_pkey PRIMARY KEY (shipping_method_id, language_code);
---
---
--- --
--- -- Name: shipping_methods shipping_methods_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY shipping_methods
---     ADD CONSTRAINT shipping_methods_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: shopify_oauth_tokens shopify_oauth_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY shopify_oauth_tokens
---     ADD CONSTRAINT shopify_oauth_tokens_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: shopify_oauth_tokens shopify_oauth_tokens_shop_domain_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY shopify_oauth_tokens
---     ADD CONSTRAINT shopify_oauth_tokens_shop_domain_key UNIQUE (shop_domain);
---
---
--- --
--- -- Name: shopify_oauth_tokens shopify_oauth_tokens_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY shopify_oauth_tokens
---     ADD CONSTRAINT shopify_oauth_tokens_store_id_key UNIQUE (store_id);
---
---
--- --
--- -- Name: slot_configurations slot_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY slot_configurations
---     ADD CONSTRAINT slot_configurations_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: store_invitations store_invitations_invitation_token_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_invitations
---     ADD CONSTRAINT store_invitations_invitation_token_key UNIQUE (invitation_token);
---
---
--- --
--- -- Name: store_invitations store_invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_invitations
---     ADD CONSTRAINT store_invitations_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: store_teams store_teams_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_teams
---     ADD CONSTRAINT store_teams_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: store_teams store_teams_store_id_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_teams
---     ADD CONSTRAINT store_teams_store_id_user_id_key UNIQUE (store_id, user_id);
---
---
--- --
--- -- Name: store_uptime store_uptime_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_uptime
---     ADD CONSTRAINT store_uptime_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: store_uptime store_uptime_store_id_charged_date_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_uptime
---     ADD CONSTRAINT store_uptime_store_id_charged_date_key UNIQUE (store_id, charged_date);
---
---
--- --
--- -- Name: stores stores_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY stores
---     ADD CONSTRAINT stores_pkey PRIMARY KEY (id);
---
--- --
--- -- Name: subscriptions subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY subscriptions
---     ADD CONSTRAINT subscriptions_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: supabase_oauth_tokens supabase_oauth_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY supabase_oauth_tokens
---     ADD CONSTRAINT supabase_oauth_tokens_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: supabase_oauth_tokens supabase_oauth_tokens_store_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY supabase_oauth_tokens
---     ADD CONSTRAINT supabase_oauth_tokens_store_id_key UNIQUE (store_id);
---
---
--- --
--- -- Name: supabase_project_keys supabase_project_keys_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY supabase_project_keys
---     ADD CONSTRAINT supabase_project_keys_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: supabase_project_keys supabase_project_keys_store_id_project_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY supabase_project_keys
---     ADD CONSTRAINT supabase_project_keys_store_id_project_id_key UNIQUE (store_id, project_id);
---
---
--- --
--- -- Name: taxes taxes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY taxes
---     ADD CONSTRAINT taxes_pkey PRIMARY KEY (id);
---
--- --
--- -- Name: translations translations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY translations
---     ADD CONSTRAINT translations_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: attribute_values unique_attribute_code; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attribute_values
---     ADD CONSTRAINT unique_attribute_code UNIQUE (attribute_id, code);
---
---
--- --
--- -- Name: plugin_controllers unique_plugin_controller; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_controllers
---     ADD CONSTRAINT unique_plugin_controller UNIQUE (plugin_id, method, path);
---
---
--- --
--- -- Name: plugin_docs unique_plugin_doc; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_docs
---     ADD CONSTRAINT unique_plugin_doc UNIQUE (plugin_id, doc_type);
---
---
--- --
--- -- Name: plugin_entities unique_plugin_entity; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_entities
---     ADD CONSTRAINT unique_plugin_entity UNIQUE (plugin_id, entity_name);
---
---
--- --
--- -- Name: plugin_migrations unique_plugin_migration; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_migrations
---     ADD CONSTRAINT unique_plugin_migration UNIQUE (plugin_id, migration_version);
---
---
--- --
--- -- Name: plugin_entities unique_plugin_table; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_entities
---     ADD CONSTRAINT unique_plugin_table UNIQUE (plugin_id, table_name);
---
---
--- --
--- -- Name: plugin_version_tags unique_plugin_tag; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_tags
---     ADD CONSTRAINT unique_plugin_tag UNIQUE (plugin_id, tag_name);
---
---
--- --
--- -- Name: plugin_version_history unique_plugin_version; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_history
---     ADD CONSTRAINT unique_plugin_version UNIQUE (plugin_id, version_number);
---
---
--- --
--- -- Name: plugin_version_comparisons unique_version_comparison; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_comparisons
---     ADD CONSTRAINT unique_version_comparison UNIQUE (from_version_id, to_version_id);
---
---
--- --
--- -- Name: admin_navigation_config uq_navigation_config_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY admin_navigation_config
---     ADD CONSTRAINT uq_navigation_config_key UNIQUE (nav_key);
---
---
--- --
--- -- Name: plugin_data uq_plugin_data_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_data
---     ADD CONSTRAINT uq_plugin_data_key UNIQUE (plugin_id, data_key);
---
---
--- --
--- -- Name: plugin_widgets uq_plugin_widget_id; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_widgets
---     ADD CONSTRAINT uq_plugin_widget_id UNIQUE (plugin_id, widget_id);
---
---
--- --
--- -- Name: usage_metrics usage_metrics_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY usage_metrics
---     ADD CONSTRAINT usage_metrics_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY users
---     ADD CONSTRAINT users_email_key UNIQUE (email);
---
---
--- --
--- -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY users
---     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: wishlists wishlists_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY wishlists
---     ADD CONSTRAINT wishlists_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: messages messages_pkey; Type: CONSTRAINT; Schema: realtime; Owner: supabase_realtime_admin
--- --
---
--- ALTER TABLE ONLY realtime.messages
---     ADD CONSTRAINT messages_pkey PRIMARY KEY (id, inserted_at);
---
---
--- --
--- -- Name: subscription pk_subscription; Type: CONSTRAINT; Schema: realtime; Owner: supabase_admin
--- --
---
--- ALTER TABLE ONLY realtime.subscription
---     ADD CONSTRAINT pk_subscription PRIMARY KEY (id);
---
---
--- --
--- -- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: realtime; Owner: supabase_admin
--- --
---
--- ALTER TABLE ONLY realtime.schema_migrations
---     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
---
---
--- --
--- -- Name: buckets_analytics buckets_analytics_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
--- --
---
--- ALTER TABLE ONLY storage.buckets_analytics
---     ADD CONSTRAINT buckets_analytics_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: buckets buckets_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
--- --
---
--- ALTER TABLE ONLY storage.buckets
---     ADD CONSTRAINT buckets_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: migrations migrations_name_key; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
--- --
---
--- ALTER TABLE ONLY storage.migrations
---     ADD CONSTRAINT migrations_name_key UNIQUE (name);
---
---
--- --
--- -- Name: migrations migrations_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
--- --
---
--- ALTER TABLE ONLY storage.migrations
---     ADD CONSTRAINT migrations_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: objects objects_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
--- --
---
--- ALTER TABLE ONLY storage.objects
---     ADD CONSTRAINT objects_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: prefixes prefixes_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
--- --
---
--- ALTER TABLE ONLY storage.prefixes
---     ADD CONSTRAINT prefixes_pkey PRIMARY KEY (bucket_id, level, name);
---
---
--- --
--- -- Name: s3_multipart_uploads_parts s3_multipart_uploads_parts_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
--- --
---
--- ALTER TABLE ONLY storage.s3_multipart_uploads_parts
---     ADD CONSTRAINT s3_multipart_uploads_parts_pkey PRIMARY KEY (id);
---
---
--- --
--- -- Name: s3_multipart_uploads s3_multipart_uploads_pkey; Type: CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
--- --
---
--- ALTER TABLE ONLY storage.s3_multipart_uploads
---     ADD CONSTRAINT s3_multipart_uploads_pkey PRIMARY KEY (id);
+CREATE INDEX IF NOT EXISTS idx_integration_attr_lookup ON integration_attribute_mappings(store_id, integration_source, external_attribute_code, is_active);
 
+CREATE INDEX IF NOT EXISTS idx_integration_attr_internal ON integration_attribute_mappings(internal_attribute_id);
 
---
--- Name: audit_logs_instance_id_idx; Type: INDEX; Schema: auth; Owner: supabase_auth_admin
---
+CREATE INDEX IF NOT EXISTS idx_integration_attr_source ON integration_attribute_mappings(integration_source, is_active);
 
---
--- Name: ab_test_assignments_assigned_at; Type: INDEX; Schema: public; Owner: postgres
---
+CREATE INDEX IF NOT EXISTS idx_product_translations_product_id ON product_translations(product_id);
+
+CREATE INDEX IF NOT EXISTS idx_product_translations_language ON product_translations(language_code);
+
+CREATE INDEX IF NOT EXISTS idx_product_files_product ON product_files(product_id, position);
+
+CREATE INDEX IF NOT EXISTS idx_product_files_primary ON product_files(product_id, is_primary) WHERE is_primary = true;
+
+CREATE INDEX IF NOT EXISTS idx_product_files_store ON product_files(store_id);
+
+CREATE INDEX IF NOT EXISTS idx_product_files_type ON product_files(product_id, file_type);
+
+CREATE INDEX IF NOT EXISTS idx_product_files_url ON product_files(file_url);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_product_files_unique_primary
+  ON product_files(product_id, file_type)
+  WHERE is_primary = true;
 
 CREATE INDEX IF NOT EXISTS ab_test_assignments_assigned_at ON ab_test_assignments USING btree (assigned_at);
 
-
---
--- Name: ab_test_assignments_converted; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS ab_test_assignments_converted ON ab_test_assignments USING btree (converted);
-
-
---
--- Name: ab_test_assignments_session_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS ab_test_assignments_session_id ON ab_test_assignments USING btree (session_id);
 
-
---
--- Name: ab_test_assignments_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS ab_test_assignments_store_id ON ab_test_assignments USING btree (store_id);
-
-
---
--- Name: ab_test_assignments_test_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS ab_test_assignments_test_id ON ab_test_assignments USING btree (test_id);
 
-
---
--- Name: ab_test_assignments_user_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS ab_test_assignments_user_id ON ab_test_assignments USING btree (user_id);
-
-
---
--- Name: ab_test_assignments_variant_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS ab_test_assignments_variant_id ON ab_test_assignments USING btree (variant_id);
 
-
---
--- Name: ab_tests_end_date; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS ab_tests_end_date ON ab_tests USING btree (end_date);
-
-
---
--- Name: ab_tests_start_date; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS ab_tests_start_date ON ab_tests USING btree (start_date);
 
-
---
--- Name: ab_tests_status; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS ab_tests_status ON ab_tests USING btree (status);
-
-
---
--- Name: ab_tests_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS ab_tests_store_id ON ab_tests USING btree (store_id);
 
-
---
--- Name: akeneo_custom_mappings_store_id_mapping_type; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX akeneo_custom_mappings_store_id_mapping_type ON akeneo_custom_mappings USING btree (store_id, mapping_type);
-
-
---
--- Name: akeneo_schedules_is_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS akeneo_schedules_is_active ON akeneo_schedules USING btree (is_active);
 
-
---
--- Name: akeneo_schedules_next_run; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS akeneo_schedules_next_run ON akeneo_schedules USING btree (next_run);
-
-
---
--- Name: akeneo_schedules_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS akeneo_schedules_store_id ON akeneo_schedules USING btree (store_id);
 
-
---
--- Name: attribute_values_attribute_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS attribute_values_attribute_id ON attribute_values USING btree (attribute_id);
-
-
---
--- Name: attribute_values_attribute_id_code; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX attribute_values_attribute_id_code ON attribute_values USING btree (attribute_id, code);
 
-
---
--- Name: brevo_configurations_is_active; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS brevo_configurations_is_active ON brevo_configurations USING btree (is_active);
-
-
---
--- Name: brevo_configurations_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX brevo_configurations_store_id ON brevo_configurations USING btree (store_id);
 
-
---
--- Name: canonical_urls_store_id_page_url; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX canonical_urls_store_id_page_url ON canonical_urls USING btree (store_id, page_url);
-
-
---
--- Name: category_translations_name_search_idx; Type: INDEX; Schema: public; Owner: postgres
---
---
--- Name: cms_blocks_identifier_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX cms_blocks_identifier_store_id ON cms_blocks USING btree (identifier, store_id);
 
-
---
--- Name: cms_page_translations_title_search_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
---
--- Name: credit_transactions_status; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS credit_transactions_status ON credit_transactions USING btree (status);
-
-
---
--- Name: credit_transactions_stripe_payment_intent_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS credit_transactions_stripe_payment_intent_id ON credit_transactions USING btree (stripe_payment_intent_id);
 
-
---
--- Name: credit_transactions_user_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS credit_transactions_user_id ON credit_transactions USING btree (user_id);
-
-
---
--- Name: credit_usage_created_at; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS credit_usage_created_at ON credit_usage USING btree (created_at);
 
-
---
--- Name: credit_usage_reference_id_reference_type; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS credit_usage_reference_id_reference_type ON credit_usage USING btree (reference_id, reference_type);
-
-
---
--- Name: credit_usage_usage_type; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS credit_usage_usage_type ON credit_usage USING btree (usage_type);
 
-
---
--- Name: credit_usage_user_id_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS credit_usage_user_id_store_id ON credit_usage USING btree (user_id, store_id);
-
---
--- Name: custom_analytics_events_enabled; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS custom_analytics_events_enabled ON custom_analytics_events USING btree (enabled);
 
-
---
--- Name: custom_analytics_events_event_category; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS custom_analytics_events_event_category ON custom_analytics_events USING btree (event_category);
-
-
---
--- Name: custom_analytics_events_priority; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS custom_analytics_events_priority ON custom_analytics_events USING btree (priority);
 
-
---
--- Name: custom_analytics_events_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS custom_analytics_events_store_id ON custom_analytics_events USING btree (store_id);
-
-
---
--- Name: custom_analytics_events_trigger_type; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS custom_analytics_events_trigger_type ON custom_analytics_events USING btree (trigger_type);
 
-
---
--- Name: custom_domains_domain; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX custom_domains_domain ON custom_domains USING btree (domain);
-
-
---
--- Name: custom_domains_is_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS custom_domains_is_active ON custom_domains USING btree (is_active);
 
-
---
--- Name: custom_domains_is_primary; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS custom_domains_is_primary ON custom_domains USING btree (is_primary);
-
-
---
--- Name: custom_domains_ssl_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS custom_domains_ssl_status ON custom_domains USING btree (ssl_status);
 
-
---
--- Name: custom_domains_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS custom_domains_store_id ON custom_domains USING btree (store_id);
-
-
---
--- Name: custom_domains_verification_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS custom_domains_verification_status ON custom_domains USING btree (verification_status);
 
-
---
--- Name: customer_activities_city; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS customer_activities_city ON customer_activities USING btree (city);
-
-
---
--- Name: customer_activities_country; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS customer_activities_country ON customer_activities USING btree (country);
 
-
---
--- Name: customer_activities_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS customer_activities_created_at ON customer_activities USING btree (created_at);
-
-
---
--- Name: customer_activities_device_type; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS customer_activities_device_type ON customer_activities USING btree (device_type);
 
-
---
--- Name: customer_activities_language; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS customer_activities_language ON customer_activities USING btree (language);
-
-
---
--- Name: customer_activities_session_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS customer_activities_session_id ON customer_activities USING btree (session_id);
 
-
---
--- Name: customer_activities_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS customer_activities_store_id ON customer_activities USING btree (store_id);
-
-
---
--- Name: customer_activities_utm_source; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS customer_activities_utm_source ON customer_activities USING btree (utm_source);
 
-
---
--- Name: customers_store_id_email; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX customers_store_id_email ON customers USING btree (store_id, email);
-
-
---
--- Name: email_send_logs_brevo_message_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS email_send_logs_brevo_message_id ON email_send_logs USING btree (brevo_message_id);
 
-
---
--- Name: email_send_logs_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS email_send_logs_created_at ON email_send_logs USING btree (created_at);
-
-
---
--- Name: email_send_logs_email_template_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS email_send_logs_email_template_id ON email_send_logs USING btree (email_template_id);
 
-
---
--- Name: email_send_logs_recipient_email; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS email_send_logs_recipient_email ON email_send_logs USING btree (recipient_email);
-
-
---
--- Name: email_send_logs_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS email_send_logs_status ON email_send_logs USING btree (status);
 
-
---
--- Name: email_send_logs_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS email_send_logs_store_id ON email_send_logs USING btree (store_id);
-
-
---
--- Name: email_template_translations_email_template_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS email_template_translations_email_template_id ON email_template_translations USING btree (email_template_id);
 
-
---
--- Name: email_template_translations_email_template_id_language_code; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX email_template_translations_email_template_id_language_code ON email_template_translations USING btree (email_template_id, language_code);
-
-
---
--- Name: email_template_translations_language_code; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS email_template_translations_language_code ON email_template_translations USING btree (language_code);
 
-
---
--- Name: email_templates_identifier_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX email_templates_identifier_store_id ON email_templates USING btree (identifier, store_id);
-
-
---
--- Name: email_templates_is_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS email_templates_is_active ON email_templates USING btree (is_active);
 
-
---
--- Name: email_templates_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS email_templates_store_id ON email_templates USING btree (store_id);
-
-
---
--- Name: idx_ai_code_patterns_framework; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_ai_code_patterns_framework ON ai_code_patterns USING btree (framework);
 
-
---
--- Name: idx_ai_code_patterns_type; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_ai_code_patterns_type ON ai_code_patterns USING btree (pattern_type, is_active);
-
-
---
--- Name: idx_ai_context_docs_category; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_ai_context_docs_category ON ai_context_documents USING btree (category);
 
-
---
--- Name: idx_ai_context_docs_mode; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_ai_context_docs_mode ON ai_context_documents USING btree (mode);
-
-
---
--- Name: idx_ai_context_docs_priority; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_ai_context_docs_priority ON ai_context_documents USING btree (priority);
 
-
---
--- Name: idx_ai_context_docs_store; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_ai_context_docs_store ON ai_context_documents USING btree (store_id);
-
-
---
--- Name: idx_ai_context_docs_type_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_ai_context_docs_type_active ON ai_context_documents USING btree (type, is_active);
 
-
---
--- Name: idx_ai_context_usage_created; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_ai_context_usage_created ON ai_context_usage USING btree (created_at);
-
-
---
--- Name: idx_ai_context_usage_document; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_ai_context_usage_document ON ai_context_usage USING btree (document_id);
 
-
---
--- Name: idx_ai_context_usage_example; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_ai_context_usage_example ON ai_context_usage USING btree (example_id);
-
-
---
--- Name: idx_ai_context_usage_pattern; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_ai_context_usage_pattern ON ai_context_usage USING btree (pattern_id);
 
-
---
--- Name: idx_ai_plugin_examples_category; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_ai_plugin_examples_category ON ai_plugin_examples USING btree (category, is_active);
-
-
---
--- Name: idx_ai_plugin_examples_complexity; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_ai_plugin_examples_complexity ON ai_plugin_examples USING btree (complexity);
 
-
---
--- Name: idx_ai_plugin_examples_template; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_ai_plugin_examples_template ON ai_plugin_examples USING btree (is_template);
-
-
---
--- Name: idx_ai_plugin_examples_usage; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_ai_plugin_examples_usage ON ai_plugin_examples USING btree (usage_count);
 
-
---
--- Name: idx_ai_usage_logs_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_created_at ON ai_usage_logs USING btree (created_at DESC);
-
-
---
--- Name: idx_ai_usage_logs_user_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_user_id ON ai_usage_logs USING btree (user_id);
 
-
---
--- Name: idx_ai_user_prefs_session; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_ai_user_prefs_session ON ai_user_preferences USING btree (session_id);
-
-
---
--- Name: idx_ai_user_prefs_store; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_ai_user_prefs_store ON ai_user_preferences USING btree (store_id);
 
-
---
--- Name: idx_ai_user_prefs_user; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_ai_user_prefs_user ON ai_user_preferences USING btree (user_id);
-
-
---
--- Name: idx_akeneo_custom_mappings_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_akeneo_custom_mappings_store_id ON akeneo_custom_mappings USING btree (store_id);
 
-
---
--- Name: idx_import_statistics_date; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_import_statistics_date ON import_statistics USING btree (import_date DESC);
-
-
---
--- Name: idx_import_statistics_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_import_statistics_store_id ON import_statistics USING btree (store_id);
 
-
---
--- Name: idx_import_statistics_store_type; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_import_statistics_store_type ON import_statistics USING btree (store_id, import_type);
-
-
---
--- Name: idx_import_statistics_type; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_import_statistics_type ON import_statistics USING btree (import_type);
 
-
---
--- Name: idx_import_statistics_source; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_import_statistics_source ON import_statistics USING btree (import_source);
-
-
---
--- Name: idx_import_statistics_unique; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_import_statistics_unique ON import_statistics USING btree (store_id, import_type, import_source, import_date);
 
-
---
--- Name: idx_akeneo_mappings_entity; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_akeneo_mappings_entity ON akeneo_mappings USING btree (entity_type, entity_id);
-
-
---
--- Name: idx_akeneo_mappings_lookup; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_akeneo_mappings_lookup ON akeneo_mappings USING btree (store_id, akeneo_code, akeneo_type, is_active);
 
-
---
--- Name: idx_akeneo_mappings_sort_order; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_akeneo_mappings_sort_order ON akeneo_mappings USING btree (sort_order);
-
-
---
--- Name: idx_akeneo_mappings_unique; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX idx_akeneo_mappings_unique ON akeneo_mappings USING btree (store_id, akeneo_code, akeneo_type, entity_type);
 
-
---
--- Name: idx_akeneo_schedules_credit_cost; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_credit_cost ON akeneo_schedules USING btree (credit_cost);
-
-
---
--- Name: idx_akeneo_schedules_is_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_is_active ON akeneo_schedules USING btree (is_active);
 
-
---
--- Name: idx_akeneo_schedules_next_run; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_next_run ON akeneo_schedules USING btree (next_run);
-
-
---
--- Name: idx_akeneo_schedules_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_status ON akeneo_schedules USING btree (status);
 
-
---
--- Name: idx_akeneo_schedules_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_store_id ON akeneo_schedules USING btree (store_id);
-
-
---
--- Name: idx_attribute_sets_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_attribute_sets_store_id ON attribute_sets USING btree (store_id);
 
-
---
--- Name: idx_attributes_code; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_attributes_code ON attributes USING btree (code);
-
-
---
--- Name: idx_attributes_is_configurable; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_attributes_is_configurable ON attributes USING btree (is_configurable) WHERE (is_configurable = true);
 
-
---
--- Name: idx_attributes_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_attributes_store_id ON attributes USING btree (store_id);
-
-
---
--- Name: idx_blacklist_countries_store_country; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_blacklist_countries_store_country ON blacklist_countries USING btree (store_id, country_code);
 
-
---
--- Name: idx_blacklist_emails_store_email; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_blacklist_emails_store_email ON blacklist_emails USING btree (store_id, email);
-
-
---
--- Name: idx_blacklist_ips_store_ip; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_blacklist_ips_store_ip ON blacklist_ips USING btree (store_id, ip_address);
 
-
---
--- Name: idx_blacklist_settings_store; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_blacklist_settings_store ON blacklist_settings USING btree (store_id);
-
-
---
--- Name: idx_brevo_configurations_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_brevo_configurations_active ON brevo_configurations USING btree (is_active);
 
-
---
--- Name: idx_brevo_configurations_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_brevo_configurations_store_id ON brevo_configurations USING btree (store_id);
-
---
--- Name: idx_categories_active_menu; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_categories_active_menu ON categories USING btree (store_id, is_active, hide_in_menu, sort_order) WHERE ((is_active = true) AND (hide_in_menu = false));
 
-
---
--- Name: idx_categories_akeneo_code; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_categories_akeneo_code ON categories USING btree (akeneo_code);
-
-
---
--- Name: idx_categories_hide_in_menu; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_categories_hide_in_menu ON categories USING btree (hide_in_menu);
 
-
---
--- Name: idx_categories_is_active; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_categories_is_active ON categories USING btree (is_active);
-
-
---
--- Name: idx_categories_level; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_categories_level ON categories USING btree (level);
 
-
---
--- Name: idx_categories_parent_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories USING btree (parent_id);
-
-
---
--- Name: idx_categories_slug; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories USING btree (slug);
 
-
---
--- Name: idx_categories_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_categories_store_id ON categories USING btree (store_id);
-
-
---
--- Name: idx_category_translations_name; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_category_translations_name ON category_translations USING btree (name);
 
-
---
--- Name: idx_cms_block_translations_block_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_cms_block_translations_block_id ON cms_block_translations USING btree (cms_block_id);
-
-
---
--- Name: idx_cms_blocks_store_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_cms_blocks_store_active ON cms_blocks USING btree (store_id, is_active);
 
-
---
--- Name: idx_cms_page_translations_page_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_cms_page_translations_page_id ON cms_page_translations USING btree (cms_page_id);
-
-
---
--- Name: idx_cms_pages_is_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_cms_pages_is_active ON cms_pages USING btree (is_active);
 
-
---
--- Name: idx_cms_pages_is_system; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_cms_pages_is_system ON cms_pages USING btree (is_system);
-
-
---
--- Name: idx_cms_pages_slug; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_cms_pages_slug ON cms_pages USING btree (slug);
 
-
---
--- Name: idx_cms_pages_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_cms_pages_store_id ON cms_pages USING btree (store_id);
-
-
---
--- Name: idx_conversations_agent; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_conversations_agent ON chat_conversations USING btree (assigned_agent_id);
 
-
---
--- Name: idx_conversations_status; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_conversations_status ON chat_conversations USING btree (status);
-
-
---
--- Name: idx_cookie_consent_translations_language; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_cookie_consent_translations_language ON cookie_consent_settings_translations USING btree (language_code);
 
-
---
--- Name: idx_cookie_consent_translations_settings_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_cookie_consent_translations_settings_id ON cookie_consent_settings_translations USING btree (cookie_consent_settings_id);
-
-
---
--- Name: idx_coupons_code; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons USING btree (code);
 
-
---
--- Name: idx_coupons_is_active; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_coupons_is_active ON coupons USING btree (is_active);
-
-
---
--- Name: idx_coupons_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_coupons_store_id ON coupons USING btree (store_id);
 
---
--- Name: idx_credit_transactions_status; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_status ON credit_transactions USING btree (status);
-
-
---
--- Name: idx_credit_transactions_user; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_user ON credit_transactions USING btree (user_id);
 
-
---
--- Name: idx_credit_usage_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_credit_usage_created_at ON credit_usage USING btree (created_at);
-
-
---
--- Name: idx_credit_usage_reference; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_credit_usage_reference ON credit_usage USING btree (reference_id, reference_type);
 
-
---
--- Name: idx_credit_usage_user_store; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_credit_usage_user_store ON credit_usage USING btree (user_id, store_id);
-
-
---
--- Name: idx_cron_job_executions_cron_job_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_cron_job_executions_cron_job_id ON cron_job_executions USING btree (cron_job_id);
 
-
---
--- Name: idx_cron_job_executions_started_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_cron_job_executions_started_at ON cron_job_executions USING btree (started_at);
-
-
---
--- Name: idx_cron_job_executions_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_cron_job_executions_status ON cron_job_executions USING btree (status);
 
-
---
--- Name: idx_cron_jobs_active; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_cron_jobs_active ON cron_jobs USING btree (is_active);
-
-
---
--- Name: idx_cron_jobs_job_type; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_cron_jobs_job_type ON cron_jobs USING btree (job_type);
 
-
---
--- Name: idx_cron_jobs_next_run; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_cron_jobs_next_run ON cron_jobs USING btree (next_run_at) WHERE ((is_active = true) AND (is_paused = false));
-
-
---
--- Name: idx_cron_jobs_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_cron_jobs_store_id ON cron_jobs USING btree (store_id);
 
-
---
--- Name: idx_cron_jobs_tags; Type: INDEX; Schema: public; Owner: postgres
---
-
---
--- Name: idx_cron_jobs_user_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_cron_jobs_user_id ON cron_jobs USING btree (user_id);
-
-
---
--- Name: idx_current_edit; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_current_edit ON slot_configurations USING btree (current_edit_id);
 
-
---
--- Name: idx_custom_domains_active_lookup; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_custom_domains_active_lookup ON custom_domains USING btree (domain, store_id) WHERE ((is_active = true) AND (verification_status = 'verified'::enum_custom_domains_verification_status));
-
-
---
--- Name: INDEX idx_custom_domains_active_lookup; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON INDEX idx_custom_domains_active_lookup IS 'Optimized partial index for fast custom domain lookups - only indexes active, verified domains';
-
-
---
--- Name: idx_custom_option_rules_is_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_custom_option_rules_is_active ON custom_option_rules USING btree (is_active);
 
-
---
--- Name: idx_custom_option_rules_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_custom_option_rules_store_id ON custom_option_rules USING btree (store_id);
-
-
---
--- Name: idx_custom_pricing_logs_event_created; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_custom_pricing_logs_event_created ON custom_pricing_logs USING btree (event_type, created_at);
 
-
---
--- Name: idx_custom_pricing_logs_rule_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_custom_pricing_logs_rule_id ON custom_pricing_logs USING btree (rule_id);
-
-
---
--- Name: idx_custom_pricing_rules_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_custom_pricing_rules_store_id ON custom_pricing_rules USING btree (store_id);
 
-
---
--- Name: idx_custom_pricing_rules_type_enabled; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_custom_pricing_rules_type_enabled ON custom_pricing_rules USING btree (type, enabled);
-
-
---
--- Name: idx_customer_activities_city; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_customer_activities_city ON customer_activities USING btree (city);
 
-
---
--- Name: idx_customer_activities_country; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_customer_activities_country ON customer_activities USING btree (country);
-
-
---
--- Name: idx_customer_activities_device_type; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_customer_activities_device_type ON customer_activities USING btree (device_type);
 
-
---
--- Name: idx_customer_activities_language; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_customer_activities_language ON customer_activities USING btree (language);
-
-
---
--- Name: idx_customer_activities_utm_source; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_customer_activities_utm_source ON customer_activities USING btree (utm_source);
 
-
---
--- Name: idx_customers_email; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_customers_email ON customers USING btree (email);
-
-
---
--- Name: idx_customers_email_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_customers_email_active ON customers USING btree (email, is_active);
 
-
---
--- Name: idx_customers_is_active; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_customers_is_active ON customers USING btree (is_active);
-
-
---
--- Name: idx_customers_is_blacklisted; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_customers_is_blacklisted ON customers USING btree (is_blacklisted);
 
-
---
--- Name: idx_customers_store_email; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_customers_store_email ON customers USING btree (store_id, email);
-
-
---
--- Name: idx_customers_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_customers_store_id ON customers USING btree (store_id);
 
-
---
--- Name: idx_delivery_settings_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_delivery_settings_store_id ON delivery_settings USING btree (store_id);
-
-
---
--- Name: idx_email_send_logs_brevo_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_email_send_logs_brevo_id ON email_send_logs USING btree (brevo_message_id);
 
-
---
--- Name: idx_email_send_logs_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_email_send_logs_created_at ON email_send_logs USING btree (created_at);
-
-
---
--- Name: idx_email_send_logs_recipient; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_email_send_logs_recipient ON email_send_logs USING btree (recipient_email);
 
-
---
--- Name: idx_email_send_logs_status; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_email_send_logs_status ON email_send_logs USING btree (status);
-
-
---
--- Name: idx_email_send_logs_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_email_send_logs_store_id ON email_send_logs USING btree (store_id);
 
-
---
--- Name: idx_email_send_logs_template_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_email_send_logs_template_id ON email_send_logs USING btree (email_template_id);
-
-
---
--- Name: idx_email_template_translations_language; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_email_template_translations_language ON email_template_translations USING btree (language_code);
 
-
---
--- Name: idx_email_template_translations_template_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_email_template_translations_template_id ON email_template_translations USING btree (email_template_id);
-
-
---
--- Name: idx_email_templates_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_email_templates_active ON email_templates USING btree (is_active);
 
-
---
--- Name: idx_email_templates_identifier; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_email_templates_identifier ON email_templates USING btree (identifier);
-
-
---
--- Name: idx_email_templates_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_email_templates_store_id ON email_templates USING btree (store_id);
 
---
--- Name: idx_heatmap_aggregations_lookup; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_heatmap_aggregations_lookup ON heatmap_aggregations USING btree (store_id, page_url, aggregation_period, period_start);
-
-
---
--- Name: idx_heatmap_coordinates; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_heatmap_coordinates ON heatmap_interactions USING btree (store_id, page_url, interaction_type, x_coordinate, y_coordinate);
 
-
---
--- Name: idx_heatmap_interactions_coordinates; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_heatmap_interactions_coordinates ON heatmap_interactions USING btree (store_id, page_url, interaction_type, x_coordinate, y_coordinate);
-
-
---
--- Name: idx_heatmap_interactions_session; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_heatmap_interactions_session ON heatmap_interactions USING btree (session_id);
 
-
---
--- Name: idx_heatmap_interactions_store_page_time; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_heatmap_interactions_store_page_time ON heatmap_interactions USING btree (store_id, page_url, timestamp_utc DESC);
-
-
---
--- Name: idx_heatmap_interactions_viewport; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_heatmap_interactions_viewport ON heatmap_interactions USING btree (viewport_width, viewport_height);
 
-
---
--- Name: idx_heatmap_session; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_heatmap_session ON heatmap_interactions USING btree (session_id);
-
-
---
--- Name: idx_heatmap_sessions_session_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_heatmap_sessions_session_id ON heatmap_sessions USING btree (session_id);
 
-
---
--- Name: idx_heatmap_sessions_store_time; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_heatmap_sessions_store_time ON heatmap_sessions USING btree (store_id, session_start DESC);
-
-
---
--- Name: idx_heatmap_store_page_time; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_heatmap_store_page_time ON heatmap_interactions USING btree (store_id, page_url, timestamp_utc);
 
-
---
--- Name: idx_heatmap_viewport; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_heatmap_viewport ON heatmap_interactions USING btree (viewport_width, viewport_height);
-
-
---
--- Name: idx_integration_configs_connection_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_integration_configs_connection_status ON integration_configs USING btree (store_id, integration_type, connection_status);
 
-
---
--- Name: idx_job_history_executed_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_job_history_executed_at ON job_history USING btree (executed_at);
-
-
---
--- Name: idx_job_history_job_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_job_history_job_id ON job_history USING btree (job_id);
 
-
---
--- Name: idx_job_history_status; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_job_history_status ON job_history USING btree (status);
-
-
---
--- Name: idx_job_history_timeline; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_job_history_timeline ON job_history USING btree (job_id, executed_at);
 
-
---
--- Name: idx_jobs_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs USING btree (created_at);
-
-
---
--- Name: idx_jobs_priority; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_jobs_priority ON jobs USING btree (priority);
 
-
---
--- Name: idx_jobs_queue; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_jobs_queue ON jobs USING btree (status, priority, scheduled_at);
-
-
---
--- Name: idx_jobs_scheduled_at; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_jobs_scheduled_at ON jobs USING btree (scheduled_at);
 
-
---
--- Name: idx_jobs_status; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs USING btree (status);
-
-
---
--- Name: idx_jobs_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_jobs_store_id ON jobs USING btree (store_id);
 
-
---
--- Name: idx_jobs_type; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_jobs_type ON jobs USING btree (type);
-
-
---
--- Name: idx_jobs_user_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs USING btree (user_id);
 
-
---
--- Name: idx_login_attempts_email_time; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_login_attempts_email_time ON login_attempts USING btree (email, attempted_at);
-
-
---
--- Name: idx_login_attempts_ip_time; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts USING btree (ip_address, attempted_at);
 
-
---
--- Name: idx_media_assets_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_media_assets_created_at ON media_assets USING btree (created_at DESC);
-
-
---
--- Name: idx_media_assets_folder; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_media_assets_folder ON media_assets USING btree (folder);
 
-
---
--- Name: idx_media_assets_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_media_assets_store_id ON media_assets USING btree (store_id);
-
-
---
--- Name: idx_messages_conversation; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON chat_messages USING btree (conversation_id);
 
-
---
--- Name: idx_migrations_executed_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_migrations_executed_at ON _migrations USING btree (executed_at);
-
-
---
--- Name: idx_migrations_filename; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_migrations_filename ON _migrations USING btree (filename);
 
-
---
--- Name: idx_navigation_config_hidden; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_navigation_config_hidden ON admin_navigation_config USING btree (is_hidden);
-
-
---
--- Name: idx_navigation_config_key; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_navigation_config_key ON admin_navigation_config USING btree (nav_key);
 
-
---
--- Name: idx_navigation_registry_core; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_navigation_registry_core ON admin_navigation_registry USING btree (is_core);
-
-
---
--- Name: idx_navigation_registry_key; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_navigation_registry_key ON admin_navigation_registry USING btree (key);
 
-
---
--- Name: idx_navigation_registry_parent; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_navigation_registry_parent ON admin_navigation_registry USING btree (parent_key);
-
-
---
--- Name: idx_navigation_registry_plugin; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_navigation_registry_plugin ON admin_navigation_registry USING btree (plugin_id);
 
-
---
--- Name: idx_parent_version; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_parent_version ON slot_configurations USING btree (parent_version_id);
-
---
--- Name: idx_payment_methods_payment_flow; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_payment_methods_payment_flow ON payment_methods USING btree (payment_flow);
 
-
---
--- Name: idx_pdf_template_translations_language; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_pdf_template_translations_language ON pdf_template_translations USING btree (language_code);
-
-
---
--- Name: idx_pdf_template_translations_template_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_pdf_template_translations_template_id ON pdf_template_translations USING btree (pdf_template_id);
 
-
---
--- Name: idx_pdf_templates_identifier; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_pdf_templates_identifier ON pdf_templates USING btree (identifier);
-
-
---
--- Name: idx_pdf_templates_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_pdf_templates_store_id ON pdf_templates USING btree (store_id);
 
-
---
--- Name: idx_pdf_templates_type; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_pdf_templates_type ON pdf_templates USING btree (template_type);
-
-
---
--- Name: idx_plugin_admin_pages_enabled; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_admin_pages_enabled ON plugin_admin_pages USING btree (is_enabled);
 
-
---
--- Name: idx_plugin_admin_pages_plugin; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_admin_pages_plugin ON plugin_admin_pages USING btree (plugin_id);
-
-
---
--- Name: idx_plugin_admin_pages_route; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_admin_pages_route ON plugin_admin_pages USING btree (route);
 
-
---
--- Name: idx_plugin_admin_scripts_enabled; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_admin_scripts_enabled ON plugin_admin_scripts USING btree (is_enabled);
-
-
---
--- Name: idx_plugin_admin_scripts_order; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_admin_scripts_order ON plugin_admin_scripts USING btree (load_order);
 
-
---
--- Name: idx_plugin_admin_scripts_plugin; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_admin_scripts_plugin ON plugin_admin_scripts USING btree (plugin_id);
-
-
---
--- Name: idx_plugin_comparison_computed; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_comparison_computed ON plugin_version_comparisons USING btree (computed_at DESC);
 
-
---
--- Name: idx_plugin_comparison_from; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_comparison_from ON plugin_version_comparisons USING btree (from_version_id);
-
-
---
--- Name: idx_plugin_comparison_plugin; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_comparison_plugin ON plugin_version_comparisons USING btree (plugin_id);
 
-
---
--- Name: idx_plugin_comparison_to; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_comparison_to ON plugin_version_comparisons USING btree (to_version_id);
-
-
---
--- Name: idx_plugin_controllers_enabled; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_controllers_enabled ON plugin_controllers USING btree (is_enabled);
 
-
---
--- Name: idx_plugin_controllers_method_path; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_controllers_method_path ON plugin_controllers USING btree (method, path);
-
-
---
--- Name: idx_plugin_controllers_plugin_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_controllers_plugin_id ON plugin_controllers USING btree (plugin_id);
 
-
---
--- Name: idx_plugin_data_key; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_data_key ON plugin_data USING btree (data_key);
-
-
---
--- Name: idx_plugin_data_plugin; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_data_plugin ON plugin_data USING btree (plugin_id);
 
-
---
--- Name: idx_plugin_data_plugin_key; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_data_plugin_key ON plugin_data USING btree (plugin_id, data_key);
-
-
---
--- Name: idx_plugin_dependencies_plugin_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_dependencies_plugin_id ON plugin_dependencies USING btree (plugin_id);
 
-
---
--- Name: idx_plugin_docs_plugin_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_docs_plugin_id ON plugin_docs USING btree (plugin_id);
-
-
---
--- Name: idx_plugin_docs_type; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_docs_type ON plugin_docs USING btree (doc_type);
 
-
---
--- Name: idx_plugin_docs_visible; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_docs_visible ON plugin_docs USING btree (is_visible);
-
-
---
--- Name: idx_plugin_entities_migration_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_entities_migration_status ON plugin_entities USING btree (migration_status);
 
-
---
--- Name: idx_plugin_entities_plugin_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_entities_plugin_id ON plugin_entities USING btree (plugin_id);
-
-
---
--- Name: idx_plugin_entities_table_name; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_entities_table_name ON plugin_entities USING btree (table_name);
 
-
---
--- Name: idx_plugin_events_enabled; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_events_enabled ON plugin_events USING btree (is_enabled) WHERE (is_enabled = true);
-
-
---
--- Name: idx_plugin_events_name; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_events_name ON plugin_events USING btree (event_name);
 
-
---
--- Name: idx_plugin_events_plugin; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_events_plugin ON plugin_events USING btree (plugin_id);
-
-
---
--- Name: idx_plugin_events_plugin_name; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_events_plugin_name ON plugin_events USING btree (plugin_id, event_name);
 
-
---
--- Name: idx_plugin_hooks_enabled; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_hooks_enabled ON plugin_hooks USING btree (is_enabled) WHERE (is_enabled = true);
-
-
---
--- Name: idx_plugin_hooks_name; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_hooks_name ON plugin_hooks USING btree (hook_name);
 
-
---
--- Name: idx_plugin_hooks_plugin; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_hooks_plugin ON plugin_hooks USING btree (plugin_id);
-
-
---
--- Name: idx_plugin_hooks_plugin_name; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_hooks_plugin_name ON plugin_hooks USING btree (plugin_id, hook_name);
 
-
---
--- Name: idx_plugin_marketplace_slug; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_marketplace_slug ON plugin_marketplace USING btree (slug);
-
-
---
--- Name: idx_plugin_marketplace_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_marketplace_status ON plugin_marketplace USING btree (status);
 
-
---
--- Name: idx_plugin_migrations_executed_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_migrations_executed_at ON plugin_migrations USING btree (executed_at DESC);
-
-
---
--- Name: idx_plugin_migrations_plugin_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_migrations_plugin_id ON plugin_migrations USING btree (plugin_id);
 
-
---
--- Name: idx_plugin_migrations_status; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_migrations_status ON plugin_migrations USING btree (status);
-
-
---
--- Name: idx_plugin_migrations_version; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_migrations_version ON plugin_migrations USING btree (migration_version);
 
-
---
--- Name: idx_plugin_patch_change_type; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_patch_change_type ON plugin_version_patches USING btree (change_type);
-
-
---
--- Name: idx_plugin_patch_component; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_patch_component ON plugin_version_patches USING btree (component_type, component_id);
 
---
--- Name: idx_plugin_patch_plugin; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_patch_plugin ON plugin_version_patches USING btree (plugin_id);
-
-
---
--- Name: idx_plugin_patch_version; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_patch_version ON plugin_version_patches USING btree (version_id);
 
-
---
--- Name: idx_plugin_registry_category; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_registry_category ON plugin_registry USING btree (category);
-
-
---
--- Name: idx_plugin_registry_creator; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_registry_creator ON plugin_registry USING btree (creator_id);
 
-
---
--- Name: idx_plugin_registry_deprecated; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_registry_deprecated ON plugin_registry USING btree (deprecated_at);
-
-
---
--- Name: idx_plugin_registry_is_public; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_registry_is_public ON plugin_registry USING btree (is_public);
 
-
---
--- Name: idx_plugin_registry_status; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_registry_status ON plugin_registry USING btree (status);
-
-
---
--- Name: idx_plugin_scripts_enabled; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_scripts_enabled ON plugin_scripts USING btree (is_enabled) WHERE (is_enabled = true);
 
-
---
--- Name: idx_plugin_scripts_plugin; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_scripts_plugin ON plugin_scripts USING btree (plugin_id);
-
-
---
--- Name: idx_plugin_scripts_plugin_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_scripts_plugin_id ON plugin_scripts USING btree (plugin_id);
 
-
---
--- Name: idx_plugin_scripts_type_scope; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_scripts_type_scope ON plugin_scripts USING btree (script_type, scope);
-
-
---
--- Name: idx_plugin_snapshot_created_at; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_snapshot_created_at ON plugin_version_snapshots USING btree (created_at DESC);
 
---
--- Name: idx_plugin_snapshot_plugin; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_snapshot_plugin ON plugin_version_snapshots USING btree (plugin_id);
-
-
---
--- Name: idx_plugin_snapshot_version; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_snapshot_version ON plugin_version_snapshots USING btree (version_id);
 
-
---
--- Name: idx_plugin_tag_name; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_tag_name ON plugin_version_tags USING btree (tag_name);
-
-
---
--- Name: idx_plugin_tag_plugin; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_tag_plugin ON plugin_version_tags USING btree (plugin_id);
 
-
---
--- Name: idx_plugin_tag_type; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_tag_type ON plugin_version_tags USING btree (tag_type);
-
-
---
--- Name: idx_plugin_tag_version; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_tag_version ON plugin_version_tags USING btree (version_id);
 
-
---
--- Name: idx_plugin_version_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_version_created_at ON plugin_version_history USING btree (created_at DESC);
-
-
---
--- Name: idx_plugin_version_is_current; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_version_is_current ON plugin_version_history USING btree (is_current) WHERE (is_current = true);
 
-
---
--- Name: idx_plugin_version_is_published; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_version_is_published ON plugin_version_history USING btree (is_published) WHERE (is_published = true);
-
-
---
--- Name: idx_plugin_version_parent; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_version_parent ON plugin_version_history USING btree (parent_version_id);
 
-
---
--- Name: idx_plugin_version_plugin_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_version_plugin_id ON plugin_version_history USING btree (plugin_id);
-
-
---
--- Name: idx_plugin_version_type; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_version_type ON plugin_version_history USING btree (version_type);
 
-
---
--- Name: idx_plugin_widgets_plugin; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_plugin_widgets_plugin ON plugin_widgets USING btree (plugin_id);
-
-
---
--- Name: idx_plugin_widgets_widget_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_plugin_widgets_widget_id ON plugin_widgets USING btree (widget_id);
 
-
---
--- Name: idx_product_attribute_values_product; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_product_attribute_values_product ON product_attribute_values USING btree (product_id, attribute_id);
-
-
---
--- Name: idx_product_attribute_values_value; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_product_attribute_values_value ON product_attribute_values USING btree (attribute_id, value_id);
 
-
---
--- Name: idx_product_labels_sort_order; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_product_labels_sort_order ON product_labels USING btree (sort_order);
-
-
---
--- Name: idx_product_tabs_tab_type; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_product_tabs_tab_type ON product_tabs USING btree (tab_type);
 
-
---
--- Name: idx_product_translations_name; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_product_translations_name ON product_translations USING btree (name);
-
---
--- Name: idx_product_variants_parent; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_product_variants_parent ON product_variants USING btree (parent_product_id);
 
-
---
--- Name: idx_product_variants_variant; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_product_variants_variant ON product_variants USING btree (variant_product_id);
-
-
---
--- Name: idx_products_active_visible; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_products_active_visible ON products USING btree (store_id, status, visibility) WHERE (((status)::text = 'active'::text) AND ((visibility)::text = 'visible'::text));
 
---
--- Name: idx_products_external_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_products_external_id ON products USING btree (external_id);
-
-
---
--- Name: idx_products_external_source; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_products_external_source ON products USING btree (external_source);
 
-
---
--- Name: idx_products_featured; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_products_featured ON products USING btree (featured);
-
-
---
--- Name: idx_products_parent_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_products_parent_id ON products USING btree (parent_id);
 
-
---
--- Name: idx_products_price; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_products_price ON products USING btree (price);
-
-
---
--- Name: idx_products_sku; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_products_sku ON products USING btree (sku);
 
-
---
--- Name: idx_products_slug; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products USING btree (slug);
-
-
---
--- Name: idx_products_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_products_status ON products USING btree (status);
 
-
---
--- Name: idx_products_stock; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_products_stock ON products USING btree (manage_stock, stock_quantity, infinite_stock) WHERE (manage_stock = true);
-
-
---
--- Name: idx_products_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_products_store_id ON products USING btree (store_id);
 
-
---
--- Name: idx_products_type; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_products_type ON products USING btree (type);
-
-
---
--- Name: idx_redirects_from_url; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_redirects_from_url ON redirects USING btree (from_url);
 
-
---
--- Name: idx_redirects_is_active; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_redirects_is_active ON redirects USING btree (is_active);
-
-
---
--- Name: idx_redirects_store_from_unique; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX idx_redirects_store_from_unique ON redirects USING btree (store_id, from_url);
 
-
---
--- Name: idx_redirects_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_redirects_store_id ON redirects USING btree (store_id);
-
---
--- Name: idx_shipping_methods_is_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_shipping_methods_is_active ON shipping_methods USING btree (is_active);
 
-
---
--- Name: idx_shipping_methods_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_shipping_methods_store_id ON shipping_methods USING btree (store_id);
-
-
---
--- Name: idx_shopify_oauth_tokens_client_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_shopify_oauth_tokens_client_id ON shopify_oauth_tokens USING btree (client_id);
 
-
---
--- Name: idx_shopify_oauth_tokens_shop_domain; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_shopify_oauth_tokens_shop_domain ON shopify_oauth_tokens USING btree (shop_domain);
-
-
---
--- Name: idx_shopify_oauth_tokens_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_shopify_oauth_tokens_store_id ON shopify_oauth_tokens USING btree (store_id);
 
-
---
--- Name: idx_slot_configurations_is_active; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_slot_configurations_is_active ON slot_configurations USING btree (is_active);
-
-
---
--- Name: idx_slot_configurations_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_slot_configurations_store_id ON slot_configurations USING btree (store_id);
 
-
---
--- Name: idx_store_invitations_email; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_store_invitations_email ON store_invitations USING btree (invited_email);
-
-
---
--- Name: idx_store_invitations_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_store_invitations_status ON store_invitations USING btree (status);
 
-
---
--- Name: idx_store_invitations_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_store_invitations_store_id ON store_invitations USING btree (store_id);
-
-
---
--- Name: idx_store_invitations_token; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_store_invitations_token ON store_invitations USING btree (invitation_token);
 
-
---
--- Name: idx_store_status_page_version; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_store_status_page_version ON slot_configurations USING btree (store_id, status, page_type, version_number);
-
-
---
--- Name: idx_store_teams_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_store_teams_status ON store_teams USING btree (status);
 
-
---
--- Name: idx_store_teams_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_store_teams_store_id ON store_teams USING btree (store_id);
-
-
---
--- Name: idx_store_teams_user_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_store_teams_user_id ON store_teams USING btree (user_id);
 
-
---
--- Name: idx_store_uptime_charged_date; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_store_uptime_charged_date ON store_uptime USING btree (charged_date);
-
-
---
--- Name: idx_store_uptime_created_at; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_store_uptime_created_at ON store_uptime USING btree (created_at);
 
-
---
--- Name: idx_store_uptime_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_store_uptime_store_id ON store_uptime USING btree (store_id);
-
-
---
--- Name: idx_store_uptime_user_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_store_uptime_user_id ON store_uptime USING btree (user_id);
 
-
---
--- Name: idx_store_uptime_user_store; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_store_uptime_user_store ON store_uptime USING btree (user_id, store_id);
-
-
---
--- Name: idx_stores_deployment_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_stores_deployment_status ON stores USING btree (deployment_status);
 
-
---
--- Name: idx_stores_is_active; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_stores_is_active ON stores USING btree (is_active);
-
-
---
--- Name: idx_stores_published; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_stores_published ON stores USING btree (published);
 
-
---
--- Name: idx_stores_published_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_stores_published_at ON stores USING btree (published_at);
-
-
---
--- Name: idx_stores_slug; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_stores_slug ON stores USING btree (slug);
 
-
---
--- Name: idx_supabase_oauth_tokens_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_supabase_oauth_tokens_store_id ON supabase_oauth_tokens USING btree (store_id);
-
-
---
--- Name: idx_supabase_project_keys_store_project; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_supabase_project_keys_store_project ON supabase_project_keys USING btree (store_id, project_id);
 
-
---
--- Name: idx_taxes_is_active; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_taxes_is_active ON taxes USING btree (is_active);
-
-
---
--- Name: idx_taxes_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_taxes_store_id ON taxes USING btree (store_id);
 
-
---
--- Name: idx_translations_type; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_translations_type ON translations USING btree (type);
-
-
---
--- Name: idx_typing_conversation; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_typing_conversation ON chat_typing_indicators USING btree (conversation_id);
 
-
---
--- Name: idx_user_store_status_page; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_user_store_status_page ON slot_configurations USING btree (user_id, store_id, status, page_type);
-
-
---
--- Name: idx_users_account_type; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_users_account_type ON users USING btree (account_type);
 
-
---
--- Name: idx_users_email; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_users_email ON users USING btree (email);
-
-
---
--- Name: idx_users_is_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users USING btree (is_active);
 
-
---
--- Name: idx_users_role; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS idx_users_role ON users USING btree (role);
-
-
---
--- Name: integration_configs_store_id_integration_type; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX integration_configs_store_id_integration_type ON integration_configs USING btree (store_id, integration_type);
 
-
---
--- Name: job_history_executed_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS job_history_executed_at ON job_history USING btree (executed_at);
-
-
---
--- Name: job_history_job_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS job_history_job_id ON job_history USING btree (job_id);
 
-
---
--- Name: job_history_job_id_executed_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS job_history_job_id_executed_at ON job_history USING btree (job_id, executed_at);
-
-
---
--- Name: job_history_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS job_history_status ON job_history USING btree (status);
 
-
---
--- Name: jobs_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS jobs_created_at ON jobs USING btree (created_at);
-
-
---
--- Name: jobs_priority; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS jobs_priority ON jobs USING btree (priority);
 
-
---
--- Name: jobs_scheduled_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS jobs_scheduled_at ON jobs USING btree (scheduled_at);
-
-
---
--- Name: jobs_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS jobs_status ON jobs USING btree (status);
 
-
---
--- Name: jobs_status_priority_scheduled_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS jobs_status_priority_scheduled_at ON jobs USING btree (status, priority, scheduled_at);
-
-
---
--- Name: jobs_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS jobs_store_id ON jobs USING btree (store_id);
 
-
---
--- Name: jobs_type; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS jobs_type ON jobs USING btree (type);
-
-
---
--- Name: jobs_user_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS jobs_user_id ON jobs USING btree (user_id);
 
-
---
--- Name: login_attempts_email_attempted_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS login_attempts_email_attempted_at ON login_attempts USING btree (email, attempted_at);
-
-
---
--- Name: login_attempts_ip_address_attempted_at; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS login_attempts_ip_address_attempted_at ON login_attempts USING btree (ip_address, attempted_at);
 
-
---
--- Name: media_assets_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS media_assets_created_at ON media_assets USING btree (created_at);
-
-
---
--- Name: media_assets_folder; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS media_assets_folder ON media_assets USING btree (folder);
 
-
---
--- Name: media_assets_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS media_assets_store_id ON media_assets USING btree (store_id);
-
-
---
--- Name: media_assets_store_id_file_path; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX media_assets_store_id_file_path ON media_assets USING btree (store_id, file_path);
 
-
---
--- Name: pdf_template_translations_language_code; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS pdf_template_translations_language_code ON pdf_template_translations USING btree (language_code);
-
-
---
--- Name: pdf_template_translations_pdf_template_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS pdf_template_translations_pdf_template_id ON pdf_template_translations USING btree (pdf_template_id);
 
-
---
--- Name: pdf_template_translations_pdf_template_id_language_code; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX pdf_template_translations_pdf_template_id_language_code ON pdf_template_translations USING btree (pdf_template_id, language_code);
-
-
---
--- Name: pdf_templates_identifier_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX pdf_templates_identifier_store_id ON pdf_templates USING btree (identifier, store_id);
 
-
---
--- Name: pdf_templates_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS pdf_templates_store_id ON pdf_templates USING btree (store_id);
-
-
---
--- Name: pdf_templates_template_type; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS pdf_templates_template_type ON pdf_templates USING btree (template_type);
 
---
--- Name: plugin_configurations_health_status; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS plugin_configurations_health_status ON plugin_configurations USING btree (health_status);
-
-
---
--- Name: plugin_configurations_is_enabled; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS plugin_configurations_is_enabled ON plugin_configurations USING btree (is_enabled);
 
-
---
--- Name: plugin_configurations_plugin_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS plugin_configurations_plugin_id ON plugin_configurations USING btree (plugin_id);
-
-
---
--- Name: plugin_configurations_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS plugin_configurations_store_id ON plugin_configurations USING btree (store_id);
 
-
---
--- Name: plugins_category; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS plugins_category ON plugins USING btree (category);
-
-
---
--- Name: plugins_is_enabled; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS plugins_is_enabled ON plugins USING btree (is_enabled);
 
-
---
--- Name: plugins_is_installed; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS plugins_is_installed ON plugins USING btree (is_installed);
-
-
---
--- Name: plugins_slug; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX plugins_slug ON plugins USING btree (slug);
 
-
---
--- Name: plugins_source_type; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS plugins_source_type ON plugins USING btree (source_type);
-
-
---
--- Name: plugins_status; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS plugins_status ON plugins USING btree (status);
 
-
---
--- Name: product_attribute_values_attribute_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS product_attribute_values_attribute_id ON product_attribute_values USING btree (attribute_id);
-
-
---
--- Name: product_attribute_values_product_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS product_attribute_values_product_id ON product_attribute_values USING btree (product_id);
 
-
---
--- Name: product_attribute_values_value_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS product_attribute_values_value_id ON product_attribute_values USING btree (value_id);
-
-
---
--- Name: product_labels_store_id_slug; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX product_labels_store_id_slug ON product_labels USING btree (store_id, slug);
 
-
---
--- Name: product_tabs_store_id_slug; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX product_tabs_store_id_slug ON product_tabs USING btree (store_id, slug);
-
---
--- Name: product_variants_parent_product_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS product_variants_parent_product_id ON product_variants USING btree (parent_product_id);
 
-
---
--- Name: product_variants_parent_product_id_variant_product_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX product_variants_parent_product_id_variant_product_id ON product_variants USING btree (parent_product_id, variant_product_id);
-
-
---
--- Name: product_variants_variant_product_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS product_variants_variant_product_id ON product_variants USING btree (variant_product_id);
 
-
---
--- Name: redirects_entity_type_entity_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS redirects_entity_type_entity_id ON redirects USING btree (entity_type, entity_id);
-
-
---
--- Name: redirects_store_id_from_url; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX redirects_store_id_from_url ON redirects USING btree (store_id, from_url);
 
-
---
--- Name: seo_templates_store_id_name; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX seo_templates_store_id_name ON seo_templates USING btree (store_id, name);
-
-
---
--- Name: shopify_oauth_tokens_shop_domain; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX shopify_oauth_tokens_shop_domain ON shopify_oauth_tokens USING btree (shop_domain);
 
-
---
--- Name: shopify_oauth_tokens_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX shopify_oauth_tokens_store_id ON shopify_oauth_tokens USING btree (store_id);
-
-
---
--- Name: slot_configurations_is_active; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS slot_configurations_is_active ON slot_configurations USING btree (is_active);
 
-
---
--- Name: slot_configurations_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS slot_configurations_store_id ON slot_configurations USING btree (store_id);
-
-
---
--- Name: store_invitations_expires_at; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS store_invitations_expires_at ON store_invitations USING btree (expires_at);
 
-
---
--- Name: store_invitations_invitation_token; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS store_invitations_invitation_token ON store_invitations USING btree (invitation_token);
-
-
---
--- Name: store_invitations_invited_email; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS store_invitations_invited_email ON store_invitations USING btree (invited_email);
 
-
---
--- Name: store_invitations_status; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS store_invitations_status ON store_invitations USING btree (status);
-
-
---
--- Name: store_invitations_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS store_invitations_store_id ON store_invitations USING btree (store_id);
 
-
---
--- Name: store_teams_status; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS store_teams_status ON store_teams USING btree (status);
-
-
---
--- Name: store_teams_store_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS store_teams_store_id ON store_teams USING btree (store_id);
 
-
---
--- Name: store_teams_user_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS store_teams_user_id ON store_teams USING btree (user_id);
-
---
--- Name: supabase_project_keys_store_id_project_id; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX supabase_project_keys_store_id_project_id ON supabase_project_keys USING btree (store_id, project_id);
 
-
---
--- Name: translations_category_index; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS translations_category_index ON translations USING btree (category);
-
---
--- Name: translations_language_code_index; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS translations_language_code_index ON translations USING btree (language_code);
 
-
---
--- Name: translations_store_id_index; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS translations_store_id_index ON translations USING btree (store_id);
-
-
---
--- Name: translations_store_key_language_unique; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX translations_store_key_language_unique ON translations USING btree (store_id, key, language_code);
 
-
---
--- Name: unique_customer_email; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX unique_customer_email ON customers USING btree (email);
-
-
---
--- Name: unique_email_role; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX unique_email_role ON users USING btree (email, role);
 
-
---
--- Name: unique_plugin_store_config; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX unique_plugin_store_config ON plugin_configurations USING btree (plugin_id, store_id);
-
-
---
--- Name: unique_session_store_cart; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX unique_session_store_cart ON carts USING btree (session_id, store_id);
 
-
---
--- Name: unique_store_session; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX unique_store_session ON heatmap_sessions USING btree (store_id, session_id);
-
-
---
--- Name: unique_store_user; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX unique_store_user ON store_teams USING btree (store_id, user_id);
 
-
---
--- Name: unique_test_session; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX unique_test_session ON ab_test_assignments USING btree (test_id, session_id);
-
-
---
--- Name: usage_metrics_metric_date; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE INDEX IF NOT EXISTS usage_metrics_metric_date ON usage_metrics USING btree (metric_date);
 
-
---
--- Name: usage_metrics_store_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE INDEX IF NOT EXISTS usage_metrics_store_id ON usage_metrics USING btree (store_id);
-
-
---
--- Name: usage_metrics_store_id_metric_date_metric_hour; Type: INDEX; Schema: public; Owner: postgres
---
 
 CREATE UNIQUE INDEX usage_metrics_store_id_metric_date_metric_hour ON usage_metrics USING btree (store_id, metric_date, metric_hour);
 
-
---
--- Name: wishlists_session_id_product_id; Type: INDEX; Schema: public; Owner: postgres
---
-
 CREATE UNIQUE INDEX wishlists_session_id_product_id ON wishlists USING btree (session_id, product_id);
 
---
--- Name: plugin_versions_with_tags _RETURN; Type: RULE; Schema: public; Owner: postgres
---
-
-CREATE OR REPLACE VIEW plugin_versions_with_tags AS
-SELECT vh.id,
-       vh.plugin_id,
-       vh.version_number,
-       vh.version_type,
-       vh.commit_message,
-       vh.is_current,
-       vh.is_published,
-       vh.files_changed,
-       vh.lines_added,
-       vh.lines_deleted,
-       vh.created_at,
-       vh.created_by_name,
-       COALESCE(json_agg(json_build_object('name', vt.tag_name, 'type', vt.tag_type)) FILTER (WHERE (vt.id IS NOT NULL)), '[]'::json) AS tags
-FROM (plugin_version_history vh
-    LEFT JOIN plugin_version_tags vt ON ((vh.id = vt.version_id)))
-GROUP BY vh.id;
-
-
 -- ============================================
--- TRIGGERS
+-- SECTION 5: CREATE TRIGGERS
 -- ============================================
 
--- Plugin admin pages trigger
+CREATE TRIGGER trigger_integration_attribute_mappings_updated_at
+  BEFORE UPDATE ON integration_attribute_mappings
+  FOR EACH ROW
+  EXECUTE FUNCTION update_integration_attribute_mappings_updated_at();
+
+CREATE TRIGGER trigger_product_files_updated_at
+  BEFORE UPDATE ON product_files
+  FOR EACH ROW
+  EXECUTE FUNCTION update_product_files_updated_at();
+
 CREATE TRIGGER plugin_admin_pages_updated_at
   BEFORE UPDATE ON plugin_admin_pages
   FOR EACH ROW
   EXECUTE FUNCTION update_plugin_admin_pages_timestamp();
 
--- Plugin admin scripts trigger
 CREATE TRIGGER plugin_admin_scripts_updated_at
   BEFORE UPDATE ON plugin_admin_scripts
   FOR EACH ROW
   EXECUTE FUNCTION update_plugin_admin_scripts_timestamp();
 
--- Plugin version history auto increment snapshot distance
 CREATE TRIGGER trigger_auto_increment_snapshot_distance
   BEFORE INSERT ON plugin_version_history
   FOR EACH ROW
   EXECUTE FUNCTION auto_increment_snapshot_distance();
 
--- Plugin version history ensure single current version
 CREATE TRIGGER trigger_ensure_single_current_version
   BEFORE INSERT OR UPDATE ON plugin_version_history
   FOR EACH ROW
   EXECUTE FUNCTION ensure_single_current_version();
 
--- CMS blocks trigger
 CREATE TRIGGER trigger_update_cms_blocks_updated_at
   BEFORE UPDATE ON cms_blocks
   FOR EACH ROW
   EXECUTE FUNCTION update_cms_blocks_updated_at();
 
--- AB test variants trigger
 CREATE TRIGGER update_ab_test_variants_updated_at
   BEFORE UPDATE ON ab_test_variants
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Attribute sets trigger
 CREATE TRIGGER update_attribute_sets_updated_at
   BEFORE UPDATE ON attribute_sets
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Attributes trigger
 CREATE TRIGGER update_attributes_updated_at
   BEFORE UPDATE ON attributes
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Brevo configurations trigger
 CREATE TRIGGER update_brevo_configurations_updated_at
   BEFORE UPDATE ON brevo_configurations
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- CMS pages trigger
 CREATE TRIGGER update_cms_pages_updated_at
   BEFORE UPDATE ON cms_pages
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Coupons trigger
 CREATE TRIGGER update_coupons_updated_at
   BEFORE UPDATE ON coupons
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Credit pricing trigger
 CREATE TRIGGER update_credit_pricing_updated_at
   BEFORE UPDATE ON credit_pricing
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Credit transactions trigger
 CREATE TRIGGER update_credit_transactions_updated_at
   BEFORE UPDATE ON credit_transactions
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Cron jobs trigger
 CREATE TRIGGER update_cron_jobs_updated_at
   BEFORE UPDATE ON cron_jobs
   FOR EACH ROW
   EXECUTE FUNCTION update_cron_jobs_updated_at();
 
--- Custom option rules trigger
 CREATE TRIGGER update_custom_option_rules_updated_at
   BEFORE UPDATE ON custom_option_rules
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Customers trigger
 CREATE TRIGGER update_customers_updated_at
   BEFORE UPDATE ON customers
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Delivery settings trigger
 CREATE TRIGGER update_delivery_settings_updated_at
   BEFORE UPDATE ON delivery_settings
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Email send logs trigger
 CREATE TRIGGER update_email_send_logs_updated_at
   BEFORE UPDATE ON email_send_logs
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Email template translations trigger
 CREATE TRIGGER update_email_template_translations_updated_at
   BEFORE UPDATE ON email_template_translations
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Email templates trigger
 CREATE TRIGGER update_email_templates_updated_at
   BEFORE UPDATE ON email_templates
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Heatmap aggregations trigger
 CREATE TRIGGER update_heatmap_aggregations_timestamp
   BEFORE UPDATE ON heatmap_aggregations
   FOR EACH ROW
   EXECUTE FUNCTION update_heatmap_timestamp();
 
--- Heatmap interactions trigger
 CREATE TRIGGER update_heatmap_interactions_timestamp
   BEFORE UPDATE ON heatmap_interactions
   FOR EACH ROW
   EXECUTE FUNCTION update_heatmap_timestamp();
 
--- Heatmap sessions trigger
 CREATE TRIGGER update_heatmap_sessions_timestamp
   BEFORE UPDATE ON heatmap_sessions
   FOR EACH ROW
   EXECUTE FUNCTION update_heatmap_timestamp();
 
--- Jobs trigger
 CREATE TRIGGER update_jobs_updated_at
   BEFORE UPDATE ON jobs
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Admin navigation config trigger
 CREATE TRIGGER update_navigation_config_updated_at
   BEFORE UPDATE ON admin_navigation_config
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- PDF template translations trigger
 CREATE TRIGGER update_pdf_template_translations_updated_at
   BEFORE UPDATE ON pdf_template_translations
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Plugin data trigger
 CREATE TRIGGER update_plugin_data_updated_at
   BEFORE UPDATE ON plugin_data
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Plugin events trigger
 CREATE TRIGGER update_plugin_events_updated_at
   BEFORE UPDATE ON plugin_events
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Plugin hooks trigger
 CREATE TRIGGER update_plugin_hooks_updated_at
   BEFORE UPDATE ON plugin_hooks
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Plugin scripts trigger
 CREATE TRIGGER update_plugin_scripts_updated_at
   BEFORE UPDATE ON plugin_scripts
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Products trigger
 CREATE TRIGGER update_products_updated_at
   BEFORE UPDATE ON products
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Redirects trigger
 CREATE TRIGGER update_redirects_updated_at
   BEFORE UPDATE ON redirects
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Shipping methods trigger
 CREATE TRIGGER update_shipping_methods_updated_at
   BEFORE UPDATE ON shipping_methods
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Shopify OAuth tokens trigger
 CREATE TRIGGER update_shopify_oauth_tokens_updated_at
   BEFORE UPDATE ON shopify_oauth_tokens
   FOR EACH ROW
   EXECUTE FUNCTION update_shopify_oauth_tokens_updated_at();
 
--- Stores trigger
 CREATE TRIGGER update_stores_updated_at
   BEFORE UPDATE ON stores
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Supabase OAuth tokens trigger
 CREATE TRIGGER update_supabase_oauth_tokens_updated_at
   BEFORE UPDATE ON supabase_oauth_tokens
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Taxes trigger
 CREATE TRIGGER update_taxes_updated_at
   BEFORE UPDATE ON taxes
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Users trigger
 CREATE TRIGGER update_users_updated_at
   BEFORE UPDATE ON users
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+-- ============================================
+-- SECTION 6: FOREIGN KEY CONSTRAINTS
+-- All foreign keys added at the end
+-- ============================================
 
---
--- Name: mfa_amr_claims mfa_amr_claims_session_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
---
+ALTER TABLE integration_attribute_mappings ADD CONSTRAINT fk_integration_attribute_mappings_internal_attribute_id
+    FOREIGN KEY (internal_attribute_id) REFERENCES attributes(id) ON DELETE CASCADE;
 
--- ALTER TABLE ONLY auth.mfa_amr_claims
+ALTER TABLE integration_attribute_mappings ADD CONSTRAINT fk_integration_attribute_mappings_store_id
+    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE product_translations ADD CONSTRAINT fk_product_translations_product_id
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
+
+ALTER TABLE product_files ADD CONSTRAINT fk_product_files_product_id
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
+
+ALTER TABLE product_files ADD CONSTRAINT fk_product_files_store_id
+    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.mfa_amr_claims
 --     ADD CONSTRAINT mfa_amr_claims_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: mfa_challenges mfa_challenges_auth_factor_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.mfa_challenges
---     ADD CONSTRAINT mfa_challenges_auth_factor_id_fkey FOREIGN KEY (factor_id) REFERENCES auth.mfa_factors(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: mfa_factors mfa_factors_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.mfa_factors
---     ADD CONSTRAINT mfa_factors_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: oauth_authorizations oauth_authorizations_client_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.oauth_authorizations
---     ADD CONSTRAINT oauth_authorizations_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: oauth_authorizations oauth_authorizations_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.oauth_authorizations
---     ADD CONSTRAINT oauth_authorizations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: oauth_consents oauth_consents_client_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.oauth_consents
---     ADD CONSTRAINT oauth_consents_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: oauth_consents oauth_consents_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.oauth_consents
---     ADD CONSTRAINT oauth_consents_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: one_time_tokens one_time_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.one_time_tokens
---     ADD CONSTRAINT one_time_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: refresh_tokens refresh_tokens_session_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.refresh_tokens
---     ADD CONSTRAINT refresh_tokens_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: saml_providers saml_providers_sso_provider_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.saml_providers
---     ADD CONSTRAINT saml_providers_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: saml_relay_states saml_relay_states_flow_state_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.saml_relay_states
---     ADD CONSTRAINT saml_relay_states_flow_state_id_fkey FOREIGN KEY (flow_state_id) REFERENCES auth.flow_state(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: saml_relay_states saml_relay_states_sso_provider_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.saml_relay_states
---     ADD CONSTRAINT saml_relay_states_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: sessions sessions_oauth_client_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.sessions
---     ADD CONSTRAINT sessions_oauth_client_id_fkey FOREIGN KEY (oauth_client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: sessions sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.sessions
---     ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: sso_domains sso_domains_sso_provider_id_fkey; Type: FK CONSTRAINT; Schema: auth; Owner: supabase_auth_admin
--- --
---
--- ALTER TABLE ONLY auth.sso_domains
---     ADD CONSTRAINT sso_domains_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: ab_test_assignments ab_test_assignments_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ab_test_assignments
---     ADD CONSTRAINT ab_test_assignments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: ab_test_assignments ab_test_assignments_test_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ab_test_assignments
---     ADD CONSTRAINT ab_test_assignments_test_id_fkey FOREIGN KEY (test_id) REFERENCES ab_tests(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: ab_test_assignments ab_test_assignments_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ab_test_assignments
---     ADD CONSTRAINT ab_test_assignments_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: ab_test_variants ab_test_variants_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ab_test_variants
---     ADD CONSTRAINT ab_test_variants_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: ab_tests ab_tests_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ab_tests
---     ADD CONSTRAINT ab_tests_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: ai_usage_logs ai_usage_logs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY ai_usage_logs
---     ADD CONSTRAINT ai_usage_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: akeneo_custom_mappings akeneo_custom_mappings_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY akeneo_custom_mappings
---     ADD CONSTRAINT akeneo_custom_mappings_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
---
---
--- --
--- -- Name: akeneo_custom_mappings akeneo_custom_mappings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY akeneo_custom_mappings
---     ADD CONSTRAINT akeneo_custom_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: akeneo_custom_mappings akeneo_custom_mappings_updated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY akeneo_custom_mappings
---     ADD CONSTRAINT akeneo_custom_mappings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL;
---
---
--- --
--- -- Name: akeneo_import_statistics akeneo_import_statistics_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY akeneo_import_statistics
---     ADD CONSTRAINT akeneo_import_statistics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: akeneo_mappings akeneo_mappings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY akeneo_mappings
---     ADD CONSTRAINT akeneo_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: akeneo_schedules akeneo_schedules_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY akeneo_schedules
---     ADD CONSTRAINT akeneo_schedules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: attribute_sets attribute_sets_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attribute_sets
---     ADD CONSTRAINT attribute_sets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: attribute_translations attribute_translations_attribute_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attribute_translations
---     ADD CONSTRAINT attribute_translations_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: attribute_translations attribute_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attribute_translations
---     ADD CONSTRAINT attribute_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: attribute_value_translations attribute_value_translations_attribute_value_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attribute_value_translations
---     ADD CONSTRAINT attribute_value_translations_attribute_value_id_fkey FOREIGN KEY (attribute_value_id) REFERENCES attribute_values(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: attribute_value_translations attribute_value_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attribute_value_translations
---     ADD CONSTRAINT attribute_value_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: attribute_values attribute_values_attribute_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attribute_values
---     ADD CONSTRAINT attribute_values_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: attributes attributes_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY attributes
---     ADD CONSTRAINT attributes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: blacklist_countries blacklist_countries_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY blacklist_countries
---     ADD CONSTRAINT blacklist_countries_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: blacklist_emails blacklist_emails_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY blacklist_emails
---     ADD CONSTRAINT blacklist_emails_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: blacklist_ips blacklist_ips_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY blacklist_ips
---     ADD CONSTRAINT blacklist_ips_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: blacklist_settings blacklist_settings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY blacklist_settings
---     ADD CONSTRAINT blacklist_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: brevo_configurations brevo_configurations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY brevo_configurations
---     ADD CONSTRAINT brevo_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: canonical_urls canonical_urls_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY canonical_urls
---     ADD CONSTRAINT canonical_urls_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: canonical_urls canonical_urls_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY canonical_urls
---     ADD CONSTRAINT canonical_urls_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: carts carts_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY carts
---     ADD CONSTRAINT carts_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: carts carts_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY carts
---     ADD CONSTRAINT carts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: categories categories_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY categories
---     ADD CONSTRAINT categories_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: categories categories_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY categories
---     ADD CONSTRAINT categories_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: category_seo category_seo_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY category_seo
---     ADD CONSTRAINT category_seo_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: category_seo category_seo_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY category_seo
---     ADD CONSTRAINT category_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: category_translations category_translations_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY category_translations
---     ADD CONSTRAINT category_translations_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: category_translations category_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY category_translations
---     ADD CONSTRAINT category_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: chat_messages chat_messages_conversation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY chat_messages
---     ADD CONSTRAINT chat_messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: chat_typing_indicators chat_typing_indicators_conversation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY chat_typing_indicators
---     ADD CONSTRAINT chat_typing_indicators_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: cms_block_translations cms_block_translations_cms_block_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_block_translations
---     ADD CONSTRAINT cms_block_translations_cms_block_id_fkey FOREIGN KEY (cms_block_id) REFERENCES cms_blocks(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: cms_block_translations cms_block_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_block_translations
---     ADD CONSTRAINT cms_block_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: cms_blocks cms_blocks_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_blocks
---     ADD CONSTRAINT cms_blocks_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: cms_page_seo cms_page_seo_cms_page_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_page_seo
---     ADD CONSTRAINT cms_page_seo_cms_page_id_fkey FOREIGN KEY (cms_page_id) REFERENCES cms_pages(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: cms_page_seo cms_page_seo_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_page_seo
---     ADD CONSTRAINT cms_page_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: cms_page_translations cms_page_translations_cms_page_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_page_translations
---     ADD CONSTRAINT cms_page_translations_cms_page_id_fkey FOREIGN KEY (cms_page_id) REFERENCES cms_pages(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: cms_page_translations cms_page_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_page_translations
---     ADD CONSTRAINT cms_page_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: cms_pages cms_pages_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cms_pages
---     ADD CONSTRAINT cms_pages_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: consent_logs consent_logs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
-ALTER TABLE ONLY consent_logs
-    ADD CONSTRAINT consent_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: consent_logs consent_logs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
-ALTER TABLE ONLY consent_logs
-    ADD CONSTRAINT consent_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: cookie_consent_settings cookie_consent_settings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cookie_consent_settings
---     ADD CONSTRAINT cookie_consent_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: coupon_translations coupon_translations_coupon_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY coupon_translations
---     ADD CONSTRAINT coupon_translations_coupon_id_fkey FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: coupon_translations coupon_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY coupon_translations
---     ADD CONSTRAINT coupon_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: coupons coupons_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY coupons
---     ADD CONSTRAINT coupons_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: credit_transactions credit_transactions_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY credit_transactions
---     ADD CONSTRAINT credit_transactions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: credit_transactions credit_transactions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY credit_transactions
---     ADD CONSTRAINT credit_transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: credit_usage credit_usage_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY credit_usage
---     ADD CONSTRAINT credit_usage_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: credit_usage credit_usage_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY credit_usage
---     ADD CONSTRAINT credit_usage_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: credits credits_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY credits
---     ADD CONSTRAINT credits_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: credits credits_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY credits
---     ADD CONSTRAINT credits_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: cron_job_executions cron_job_executions_cron_job_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cron_job_executions
---     ADD CONSTRAINT cron_job_executions_cron_job_id_fkey FOREIGN KEY (cron_job_id) REFERENCES cron_jobs(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: cron_job_executions cron_job_executions_triggered_by_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cron_job_executions
---     ADD CONSTRAINT cron_job_executions_triggered_by_user_fkey FOREIGN KEY (triggered_by_user) REFERENCES users(id);
---
---
--- --
--- -- Name: cron_jobs cron_jobs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cron_jobs
---     ADD CONSTRAINT cron_jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: cron_jobs cron_jobs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cron_jobs
---     ADD CONSTRAINT cron_jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: custom_analytics_events custom_analytics_events_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY custom_analytics_events
---     ADD CONSTRAINT custom_analytics_events_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: custom_domains custom_domains_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY custom_domains
---     ADD CONSTRAINT custom_domains_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: custom_option_rules custom_option_rules_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY custom_option_rules
---     ADD CONSTRAINT custom_option_rules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: custom_pricing_discounts custom_pricing_discounts_rule_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY custom_pricing_discounts
---     ADD CONSTRAINT custom_pricing_discounts_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES custom_pricing_rules(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: custom_pricing_logs custom_pricing_logs_rule_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY custom_pricing_logs
---     ADD CONSTRAINT custom_pricing_logs_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES custom_pricing_rules(id);
---
---
--- --
--- -- Name: customer_activities customer_activities_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY customer_activities
---     ADD CONSTRAINT customer_activities_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: customer_activities customer_activities_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY customer_activities
---     ADD CONSTRAINT customer_activities_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: customer_activities customer_activities_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY customer_activities
---     ADD CONSTRAINT customer_activities_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: customer_addresses customer_addresses_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY customer_addresses
---     ADD CONSTRAINT customer_addresses_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: customer_addresses customer_addresses_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY customer_addresses
---     ADD CONSTRAINT customer_addresses_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: customers customers_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY customers
---     ADD CONSTRAINT customers_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: delivery_settings delivery_settings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY delivery_settings
---     ADD CONSTRAINT delivery_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: email_send_logs email_send_logs_email_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY email_send_logs
---     ADD CONSTRAINT email_send_logs_email_template_id_fkey FOREIGN KEY (email_template_id) REFERENCES email_templates(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: email_send_logs email_send_logs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY email_send_logs
---     ADD CONSTRAINT email_send_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: email_template_translations email_template_translations_email_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY email_template_translations
---     ADD CONSTRAINT email_template_translations_email_template_id_fkey FOREIGN KEY (email_template_id) REFERENCES email_templates(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: email_templates email_templates_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY email_templates
---     ADD CONSTRAINT email_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: cookie_consent_settings_translations fk_cookie_consent_settings; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY cookie_consent_settings_translations
---     ADD CONSTRAINT fk_cookie_consent_settings FOREIGN KEY (cookie_consent_settings_id) REFERENCES cookie_consent_settings(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: admin_navigation_registry fk_navigation_parent; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY admin_navigation_registry
---     ADD CONSTRAINT fk_navigation_parent FOREIGN KEY (parent_key) REFERENCES admin_navigation_registry(key) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_version_comparisons fk_plugin_comparison_from; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_comparisons
---     ADD CONSTRAINT fk_plugin_comparison_from FOREIGN KEY (from_version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_version_comparisons fk_plugin_comparison_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_comparisons
---     ADD CONSTRAINT fk_plugin_comparison_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_version_comparisons fk_plugin_comparison_to; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_comparisons
---     ADD CONSTRAINT fk_plugin_comparison_to FOREIGN KEY (to_version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_controllers fk_plugin_controllers_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_controllers
---     ADD CONSTRAINT fk_plugin_controllers_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_docs fk_plugin_docs_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_docs
---     ADD CONSTRAINT fk_plugin_docs_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_entities fk_plugin_entities_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_entities
---     ADD CONSTRAINT fk_plugin_entities_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_migrations fk_plugin_migrations_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_migrations
---     ADD CONSTRAINT fk_plugin_migrations_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_version_patches fk_plugin_patch_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_patches
---     ADD CONSTRAINT fk_plugin_patch_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_version_patches fk_plugin_patch_version; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_patches
---     ADD CONSTRAINT fk_plugin_patch_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_version_snapshots fk_plugin_snapshot_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_snapshots
---     ADD CONSTRAINT fk_plugin_snapshot_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_version_snapshots fk_plugin_snapshot_version; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_snapshots
---     ADD CONSTRAINT fk_plugin_snapshot_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_version_tags fk_plugin_tag_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_tags
---     ADD CONSTRAINT fk_plugin_tag_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_version_tags fk_plugin_tag_version; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_tags
---     ADD CONSTRAINT fk_plugin_tag_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: plugin_version_history fk_plugin_version_parent; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_history
---     ADD CONSTRAINT fk_plugin_version_parent FOREIGN KEY (parent_version_id) REFERENCES plugin_version_history(id) ON DELETE SET NULL;
---
---
--- --
--- -- Name: plugin_version_history fk_plugin_version_plugin; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_version_history
---     ADD CONSTRAINT fk_plugin_version_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: heatmap_aggregations heatmap_aggregations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY heatmap_aggregations
---     ADD CONSTRAINT heatmap_aggregations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: heatmap_interactions heatmap_interactions_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY heatmap_interactions
---     ADD CONSTRAINT heatmap_interactions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: heatmap_interactions heatmap_interactions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY heatmap_interactions
---     ADD CONSTRAINT heatmap_interactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
---
---
--- --
--- -- Name: heatmap_sessions heatmap_sessions_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY heatmap_sessions
---     ADD CONSTRAINT heatmap_sessions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: heatmap_sessions heatmap_sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY heatmap_sessions
---     ADD CONSTRAINT heatmap_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
---
---
--- --
--- -- Name: integration_configs integration_configs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY integration_configs
---     ADD CONSTRAINT integration_configs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
---
---
--- --
--- -- Name: job_history job_history_job_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY job_history
---     ADD CONSTRAINT job_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: jobs jobs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY jobs
---     ADD CONSTRAINT jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: jobs jobs_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY jobs
---     ADD CONSTRAINT jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
---
---
--- --
--- -- Name: media_assets media_assets_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY media_assets
---     ADD CONSTRAINT media_assets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: media_assets media_assets_uploaded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY media_assets
---     ADD CONSTRAINT media_assets_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES users(id);
---
---
--- --
--- -- Name: payment_method_translations payment_method_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY payment_method_translations
---     ADD CONSTRAINT payment_method_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: payment_method_translations payment_method_translations_payment_method_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY payment_method_translations
---     ADD CONSTRAINT payment_method_translations_payment_method_id_fkey FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: payment_methods payment_methods_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY payment_methods
---     ADD CONSTRAINT payment_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: pdf_template_translations pdf_template_translations_pdf_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY pdf_template_translations
---     ADD CONSTRAINT pdf_template_translations_pdf_template_id_fkey FOREIGN KEY (pdf_template_id) REFERENCES pdf_templates(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: pdf_templates pdf_templates_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY pdf_templates
---     ADD CONSTRAINT pdf_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: platform_admins platform_admins_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY platform_admins
---     ADD CONSTRAINT platform_admins_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: plugin_configurations plugin_configurations_last_configured_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_configurations
---     ADD CONSTRAINT plugin_configurations_last_configured_by_fkey FOREIGN KEY (last_configured_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: plugin_configurations plugin_configurations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_configurations
---     ADD CONSTRAINT plugin_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: plugin_marketplace plugin_marketplace_author_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_marketplace
---     ADD CONSTRAINT plugin_marketplace_author_id_fkey FOREIGN KEY (author_id) REFERENCES users(id);
---
---
--- --
--- -- Name: plugin_registry plugin_registry_creator_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY plugin_registry
---     ADD CONSTRAINT plugin_registry_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id);
---
---
--- --
--- -- Name: product_attribute_values product_attribute_values_attribute_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_attribute_values
---     ADD CONSTRAINT product_attribute_values_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: product_attribute_values product_attribute_values_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_attribute_values
---     ADD CONSTRAINT product_attribute_values_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: product_attribute_values product_attribute_values_value_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_attribute_values
---     ADD CONSTRAINT product_attribute_values_value_id_fkey FOREIGN KEY (value_id) REFERENCES attribute_values(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: product_label_translations product_label_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_label_translations
---     ADD CONSTRAINT product_label_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: product_label_translations product_label_translations_product_label_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_label_translations
---     ADD CONSTRAINT product_label_translations_product_label_id_fkey FOREIGN KEY (product_label_id) REFERENCES product_labels(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: product_labels product_labels_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_labels
---     ADD CONSTRAINT product_labels_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: product_seo product_seo_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_seo
---     ADD CONSTRAINT product_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: product_seo product_seo_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_seo
---     ADD CONSTRAINT product_seo_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: product_tab_translations product_tab_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_tab_translations
---     ADD CONSTRAINT product_tab_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: product_tab_translations product_tab_translations_product_tab_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_tab_translations
---     ADD CONSTRAINT product_tab_translations_product_tab_id_fkey FOREIGN KEY (product_tab_id) REFERENCES product_tabs(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: product_tabs product_tabs_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_tabs
---     ADD CONSTRAINT product_tabs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: product_translations product_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_translations
---     ADD CONSTRAINT product_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: product_translations product_translations_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_translations
---     ADD CONSTRAINT product_translations_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: product_variants product_variants_parent_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_variants
---     ADD CONSTRAINT product_variants_parent_product_id_fkey FOREIGN KEY (parent_product_id) REFERENCES products(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: product_variants product_variants_variant_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY product_variants
---     ADD CONSTRAINT product_variants_variant_product_id_fkey FOREIGN KEY (variant_product_id) REFERENCES products(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: products products_attribute_set_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY products
---     ADD CONSTRAINT products_attribute_set_id_fkey FOREIGN KEY (attribute_set_id) REFERENCES attribute_sets(id) ON DELETE SET NULL;
---
---
--- --
--- -- Name: products products_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY products
---     ADD CONSTRAINT products_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES products(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: products products_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY products
---     ADD CONSTRAINT products_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: redirects redirects_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY redirects
---     ADD CONSTRAINT redirects_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: sales_invoices sales_invoices_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_invoices
---     ADD CONSTRAINT sales_invoices_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id);
---
---
--- --
--- -- Name: sales_invoices sales_invoices_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_invoices
---     ADD CONSTRAINT sales_invoices_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
---
---
--- --
--- -- Name: sales_order_items sales_order_items_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_order_items
---     ADD CONSTRAINT sales_order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: sales_order_items sales_order_items_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_order_items
---     ADD CONSTRAINT sales_order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: sales_orders sales_orders_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_orders
---     ADD CONSTRAINT sales_orders_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: sales_orders sales_orders_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_orders
---     ADD CONSTRAINT sales_orders_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: sales_shipments sales_shipments_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_shipments
---     ADD CONSTRAINT sales_shipments_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id);
---
---
--- --
--- -- Name: sales_shipments sales_shipments_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY sales_shipments
---     ADD CONSTRAINT sales_shipments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
---
---
--- --
--- -- Name: seo_settings seo_settings_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY seo_settings
---     ADD CONSTRAINT seo_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: seo_templates seo_templates_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY seo_templates
---     ADD CONSTRAINT seo_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: shipping_method_translations shipping_method_translations_language_code_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY shipping_method_translations
---     ADD CONSTRAINT shipping_method_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: shipping_method_translations shipping_method_translations_shipping_method_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY shipping_method_translations
---     ADD CONSTRAINT shipping_method_translations_shipping_method_id_fkey FOREIGN KEY (shipping_method_id) REFERENCES shipping_methods(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: shipping_methods shipping_methods_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY shipping_methods
---     ADD CONSTRAINT shipping_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: shopify_oauth_tokens shopify_oauth_tokens_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY shopify_oauth_tokens
---     ADD CONSTRAINT shopify_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: slot_configurations slot_configurations_acceptance_published_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY slot_configurations
---     ADD CONSTRAINT slot_configurations_acceptance_published_by_fkey FOREIGN KEY (acceptance_published_by) REFERENCES users(id);
---
---
--- --
--- -- Name: slot_configurations slot_configurations_current_edit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY slot_configurations
---     ADD CONSTRAINT slot_configurations_current_edit_id_fkey FOREIGN KEY (current_edit_id) REFERENCES slot_configurations(id);
---
---
--- --
--- -- Name: slot_configurations slot_configurations_parent_version_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY slot_configurations
---     ADD CONSTRAINT slot_configurations_parent_version_id_fkey FOREIGN KEY (parent_version_id) REFERENCES slot_configurations(id);
---
---
--- --
--- -- Name: slot_configurations slot_configurations_published_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY slot_configurations
---     ADD CONSTRAINT slot_configurations_published_by_fkey FOREIGN KEY (published_by) REFERENCES users(id);
---
---
--- --
--- -- Name: slot_configurations slot_configurations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY slot_configurations
---     ADD CONSTRAINT slot_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: slot_configurations slot_configurations_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY slot_configurations
---     ADD CONSTRAINT slot_configurations_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: store_invitations store_invitations_accepted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_invitations
---     ADD CONSTRAINT store_invitations_accepted_by_fkey FOREIGN KEY (accepted_by) REFERENCES users(id);
---
---
--- --
--- -- Name: store_invitations store_invitations_invited_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_invitations
---     ADD CONSTRAINT store_invitations_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
---
---
--- --
--- -- Name: store_invitations store_invitations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_invitations
---     ADD CONSTRAINT store_invitations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: store_teams store_teams_invited_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_teams
---     ADD CONSTRAINT store_teams_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
---
---
--- --
--- -- Name: store_teams store_teams_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_teams
---     ADD CONSTRAINT store_teams_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: store_teams store_teams_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_teams
---     ADD CONSTRAINT store_teams_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: store_uptime store_uptime_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_uptime
---     ADD CONSTRAINT store_uptime_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: store_uptime store_uptime_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY store_uptime
---     ADD CONSTRAINT store_uptime_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: stores stores_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY stores
---     ADD CONSTRAINT stores_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
---
---
--- --
--- -- Name: subscriptions subscriptions_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY subscriptions
---     ADD CONSTRAINT subscriptions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: supabase_oauth_tokens supabase_oauth_tokens_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY supabase_oauth_tokens
---     ADD CONSTRAINT supabase_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: supabase_project_keys supabase_project_keys_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY supabase_project_keys
---     ADD CONSTRAINT supabase_project_keys_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: taxes taxes_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY taxes
---     ADD CONSTRAINT taxes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
---
---
--- --
--- -- Name: translations translations_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY translations
---     ADD CONSTRAINT translations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
---
---
--- --
--- -- Name: usage_metrics usage_metrics_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY usage_metrics
---     ADD CONSTRAINT usage_metrics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: wishlists wishlists_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY wishlists
---     ADD CONSTRAINT wishlists_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: wishlists wishlists_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY wishlists
---     ADD CONSTRAINT wishlists_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
---
---
--- --
--- -- Name: wishlists wishlists_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
--- --
---
--- ALTER TABLE ONLY wishlists
---     ADD CONSTRAINT wishlists_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
---
---
--- --
--- -- Name: objects objects_bucketId_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
--- --
---
--- ALTER TABLE ONLY storage.objects
---     ADD CONSTRAINT "objects_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
---
---
--- --
--- -- Name: prefixes prefixes_bucketId_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
--- --
---
--- ALTER TABLE ONLY storage.prefixes
---     ADD CONSTRAINT "prefixes_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
---
---
--- --
--- -- Name: s3_multipart_uploads s3_multipart_uploads_bucket_id_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
--- --
---
--- ALTER TABLE ONLY storage.s3_multipart_uploads
---     ADD CONSTRAINT s3_multipart_uploads_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
---
---
--- --
--- -- Name: s3_multipart_uploads_parts s3_multipart_uploads_parts_bucket_id_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
--- --
---
--- ALTER TABLE ONLY storage.s3_multipart_uploads_parts
---     ADD CONSTRAINT s3_multipart_uploads_parts_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
---
---
--- --
--- -- Name: s3_multipart_uploads_parts s3_multipart_uploads_parts_upload_id_fkey; Type: FK CONSTRAINT; Schema: storage; Owner: supabase_storage_admin
--- --
---
--- ALTER TABLE ONLY storage.s3_multipart_uploads_parts
---     ADD CONSTRAINT s3_multipart_uploads_parts_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES storage.s3_multipart_uploads(id) ON DELETE CASCADE;
 
+ALTER TABLE ONLY auth.mfa_challenges
+--     ADD CONSTRAINT mfa_challenges_auth_factor_id_fkey FOREIGN KEY (factor_id) REFERENCES auth.mfa_factors(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.mfa_factors
+--     ADD CONSTRAINT mfa_factors_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.oauth_authorizations
+--     ADD CONSTRAINT oauth_authorizations_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.oauth_authorizations
+--     ADD CONSTRAINT oauth_authorizations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.oauth_consents
+--     ADD CONSTRAINT oauth_consents_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.oauth_consents
+--     ADD CONSTRAINT oauth_consents_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.one_time_tokens
+--     ADD CONSTRAINT one_time_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.refresh_tokens
+--     ADD CONSTRAINT refresh_tokens_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.saml_providers
+--     ADD CONSTRAINT saml_providers_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.saml_relay_states
+--     ADD CONSTRAINT saml_relay_states_flow_state_id_fkey FOREIGN KEY (flow_state_id) REFERENCES auth.flow_state(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.saml_relay_states
+--     ADD CONSTRAINT saml_relay_states_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.sessions
+--     ADD CONSTRAINT sessions_oauth_client_id_fkey FOREIGN KEY (oauth_client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.sessions
+--     ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY auth.sso_domains
+--     ADD CONSTRAINT sso_domains_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY ab_test_assignments
+--     ADD CONSTRAINT ab_test_assignments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY ab_test_assignments
+--     ADD CONSTRAINT ab_test_assignments_test_id_fkey FOREIGN KEY (test_id) REFERENCES ab_tests(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY ab_test_assignments
+--     ADD CONSTRAINT ab_test_assignments_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY ab_test_variants
+--     ADD CONSTRAINT ab_test_variants_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY ab_tests
+--     ADD CONSTRAINT ab_tests_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY ai_usage_logs
+--     ADD CONSTRAINT ai_usage_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY akeneo_custom_mappings
+--     ADD CONSTRAINT akeneo_custom_mappings_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY akeneo_custom_mappings
+--     ADD CONSTRAINT akeneo_custom_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY akeneo_custom_mappings
+--     ADD CONSTRAINT akeneo_custom_mappings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY akeneo_import_statistics
+--     ADD CONSTRAINT akeneo_import_statistics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY akeneo_mappings
+--     ADD CONSTRAINT akeneo_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY akeneo_schedules
+--     ADD CONSTRAINT akeneo_schedules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY attribute_sets
+--     ADD CONSTRAINT attribute_sets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY attribute_translations
+--     ADD CONSTRAINT attribute_translations_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY attribute_translations
+--     ADD CONSTRAINT attribute_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY attribute_value_translations
+--     ADD CONSTRAINT attribute_value_translations_attribute_value_id_fkey FOREIGN KEY (attribute_value_id) REFERENCES attribute_values(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY attribute_value_translations
+--     ADD CONSTRAINT attribute_value_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY attribute_values
+--     ADD CONSTRAINT attribute_values_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY attributes
+--     ADD CONSTRAINT attributes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY blacklist_countries
+--     ADD CONSTRAINT blacklist_countries_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY blacklist_emails
+--     ADD CONSTRAINT blacklist_emails_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY blacklist_ips
+--     ADD CONSTRAINT blacklist_ips_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY blacklist_settings
+--     ADD CONSTRAINT blacklist_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY brevo_configurations
+--     ADD CONSTRAINT brevo_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY canonical_urls
+--     ADD CONSTRAINT canonical_urls_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY canonical_urls
+--     ADD CONSTRAINT canonical_urls_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY carts
+--     ADD CONSTRAINT carts_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY carts
+--     ADD CONSTRAINT carts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY categories
+--     ADD CONSTRAINT categories_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY categories
+--     ADD CONSTRAINT categories_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY category_seo
+--     ADD CONSTRAINT category_seo_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY category_seo
+--     ADD CONSTRAINT category_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY category_translations
+--     ADD CONSTRAINT category_translations_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY category_translations
+--     ADD CONSTRAINT category_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY chat_messages
+--     ADD CONSTRAINT chat_messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY chat_typing_indicators
+--     ADD CONSTRAINT chat_typing_indicators_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY cms_block_translations
+--     ADD CONSTRAINT cms_block_translations_cms_block_id_fkey FOREIGN KEY (cms_block_id) REFERENCES cms_blocks(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY cms_block_translations
+--     ADD CONSTRAINT cms_block_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY cms_blocks
+--     ADD CONSTRAINT cms_blocks_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY cms_page_seo
+--     ADD CONSTRAINT cms_page_seo_cms_page_id_fkey FOREIGN KEY (cms_page_id) REFERENCES cms_pages(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY cms_page_seo
+--     ADD CONSTRAINT cms_page_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY cms_page_translations
+--     ADD CONSTRAINT cms_page_translations_cms_page_id_fkey FOREIGN KEY (cms_page_id) REFERENCES cms_pages(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY cms_page_translations
+--     ADD CONSTRAINT cms_page_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY cms_pages
+--     ADD CONSTRAINT cms_pages_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY consent_logs
+--     ADD CONSTRAINT consent_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY consent_logs
+--     ADD CONSTRAINT consent_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY cookie_consent_settings
+--     ADD CONSTRAINT cookie_consent_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY coupon_translations
+--     ADD CONSTRAINT coupon_translations_coupon_id_fkey FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY coupon_translations
+--     ADD CONSTRAINT coupon_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY coupons
+--     ADD CONSTRAINT coupons_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY credit_transactions
+--     ADD CONSTRAINT credit_transactions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY credit_transactions
+--     ADD CONSTRAINT credit_transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY credit_usage
+--     ADD CONSTRAINT credit_usage_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY credit_usage
+--     ADD CONSTRAINT credit_usage_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY credits
+--     ADD CONSTRAINT credits_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY credits
+--     ADD CONSTRAINT credits_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY cron_job_executions
+--     ADD CONSTRAINT cron_job_executions_cron_job_id_fkey FOREIGN KEY (cron_job_id) REFERENCES cron_jobs(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY cron_job_executions
+--     ADD CONSTRAINT cron_job_executions_triggered_by_user_fkey FOREIGN KEY (triggered_by_user) REFERENCES users(id);
+
+ALTER TABLE ONLY cron_jobs
+--     ADD CONSTRAINT cron_jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY cron_jobs
+--     ADD CONSTRAINT cron_jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY custom_analytics_events
+--     ADD CONSTRAINT custom_analytics_events_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY custom_domains
+--     ADD CONSTRAINT custom_domains_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY custom_option_rules
+--     ADD CONSTRAINT custom_option_rules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY custom_pricing_discounts
+--     ADD CONSTRAINT custom_pricing_discounts_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES custom_pricing_rules(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY custom_pricing_logs
+--     ADD CONSTRAINT custom_pricing_logs_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES custom_pricing_rules(id);
+
+ALTER TABLE ONLY customer_activities
+--     ADD CONSTRAINT customer_activities_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY customer_activities
+--     ADD CONSTRAINT customer_activities_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY customer_activities
+--     ADD CONSTRAINT customer_activities_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY customer_addresses
+--     ADD CONSTRAINT customer_addresses_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY customer_addresses
+--     ADD CONSTRAINT customer_addresses_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY customers
+--     ADD CONSTRAINT customers_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY delivery_settings
+--     ADD CONSTRAINT delivery_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY email_send_logs
+--     ADD CONSTRAINT email_send_logs_email_template_id_fkey FOREIGN KEY (email_template_id) REFERENCES email_templates(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY email_send_logs
+--     ADD CONSTRAINT email_send_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY email_template_translations
+--     ADD CONSTRAINT email_template_translations_email_template_id_fkey FOREIGN KEY (email_template_id) REFERENCES email_templates(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY email_templates
+--     ADD CONSTRAINT email_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY cookie_consent_settings_translations
+--     ADD CONSTRAINT fk_cookie_consent_settings FOREIGN KEY (cookie_consent_settings_id) REFERENCES cookie_consent_settings(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY admin_navigation_registry
+--     ADD CONSTRAINT fk_navigation_parent FOREIGN KEY (parent_key) REFERENCES admin_navigation_registry(key) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_version_comparisons
+--     ADD CONSTRAINT fk_plugin_comparison_from FOREIGN KEY (from_version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_version_comparisons
+--     ADD CONSTRAINT fk_plugin_comparison_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_version_comparisons
+--     ADD CONSTRAINT fk_plugin_comparison_to FOREIGN KEY (to_version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_controllers
+--     ADD CONSTRAINT fk_plugin_controllers_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_docs
+--     ADD CONSTRAINT fk_plugin_docs_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_entities
+--     ADD CONSTRAINT fk_plugin_entities_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_migrations
+--     ADD CONSTRAINT fk_plugin_migrations_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_version_patches
+--     ADD CONSTRAINT fk_plugin_patch_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_version_patches
+--     ADD CONSTRAINT fk_plugin_patch_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_version_snapshots
+--     ADD CONSTRAINT fk_plugin_snapshot_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_version_snapshots
+--     ADD CONSTRAINT fk_plugin_snapshot_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_version_tags
+--     ADD CONSTRAINT fk_plugin_tag_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_version_tags
+--     ADD CONSTRAINT fk_plugin_tag_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY plugin_version_history
+--     ADD CONSTRAINT fk_plugin_version_parent FOREIGN KEY (parent_version_id) REFERENCES plugin_version_history(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY plugin_version_history
+--     ADD CONSTRAINT fk_plugin_version_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY heatmap_aggregations
+--     ADD CONSTRAINT heatmap_aggregations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY heatmap_interactions
+--     ADD CONSTRAINT heatmap_interactions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY heatmap_interactions
+--     ADD CONSTRAINT heatmap_interactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY heatmap_sessions
+--     ADD CONSTRAINT heatmap_sessions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY heatmap_sessions
+--     ADD CONSTRAINT heatmap_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY integration_configs
+--     ADD CONSTRAINT integration_configs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
+
+ALTER TABLE ONLY job_history
+--     ADD CONSTRAINT job_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY jobs
+--     ADD CONSTRAINT jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY jobs
+--     ADD CONSTRAINT jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY media_assets
+--     ADD CONSTRAINT media_assets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY media_assets
+--     ADD CONSTRAINT media_assets_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES users(id);
+
+ALTER TABLE ONLY payment_method_translations
+--     ADD CONSTRAINT payment_method_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY payment_method_translations
+--     ADD CONSTRAINT payment_method_translations_payment_method_id_fkey FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY payment_methods
+--     ADD CONSTRAINT payment_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY pdf_template_translations
+--     ADD CONSTRAINT pdf_template_translations_pdf_template_id_fkey FOREIGN KEY (pdf_template_id) REFERENCES pdf_templates(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY pdf_templates
+--     ADD CONSTRAINT pdf_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY platform_admins
+--     ADD CONSTRAINT platform_admins_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY plugin_configurations
+--     ADD CONSTRAINT plugin_configurations_last_configured_by_fkey FOREIGN KEY (last_configured_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY plugin_configurations
+--     ADD CONSTRAINT plugin_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY plugin_marketplace
+--     ADD CONSTRAINT plugin_marketplace_author_id_fkey FOREIGN KEY (author_id) REFERENCES users(id);
+
+ALTER TABLE ONLY plugin_registry
+--     ADD CONSTRAINT plugin_registry_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id);
+
+ALTER TABLE ONLY product_attribute_values
+--     ADD CONSTRAINT product_attribute_values_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY product_attribute_values
+--     ADD CONSTRAINT product_attribute_values_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY product_attribute_values
+--     ADD CONSTRAINT product_attribute_values_value_id_fkey FOREIGN KEY (value_id) REFERENCES attribute_values(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY product_label_translations
+--     ADD CONSTRAINT product_label_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY product_label_translations
+--     ADD CONSTRAINT product_label_translations_product_label_id_fkey FOREIGN KEY (product_label_id) REFERENCES product_labels(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY product_labels
+--     ADD CONSTRAINT product_labels_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY product_seo
+--     ADD CONSTRAINT product_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY product_seo
+--     ADD CONSTRAINT product_seo_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY product_tab_translations
+--     ADD CONSTRAINT product_tab_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY product_tab_translations
+--     ADD CONSTRAINT product_tab_translations_product_tab_id_fkey FOREIGN KEY (product_tab_id) REFERENCES product_tabs(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY product_tabs
+--     ADD CONSTRAINT product_tabs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY product_translations
+--     ADD CONSTRAINT product_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY product_translations
+--     ADD CONSTRAINT product_translations_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY product_variants
+--     ADD CONSTRAINT product_variants_parent_product_id_fkey FOREIGN KEY (parent_product_id) REFERENCES products(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY product_variants
+--     ADD CONSTRAINT product_variants_variant_product_id_fkey FOREIGN KEY (variant_product_id) REFERENCES products(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY products
+--     ADD CONSTRAINT products_attribute_set_id_fkey FOREIGN KEY (attribute_set_id) REFERENCES attribute_sets(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY products
+--     ADD CONSTRAINT products_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES products(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY products
+--     ADD CONSTRAINT products_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY redirects
+--     ADD CONSTRAINT redirects_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY sales_invoices
+--     ADD CONSTRAINT sales_invoices_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id);
+
+ALTER TABLE ONLY sales_invoices
+--     ADD CONSTRAINT sales_invoices_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
+
+ALTER TABLE ONLY sales_order_items
+--     ADD CONSTRAINT sales_order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY sales_order_items
+--     ADD CONSTRAINT sales_order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY sales_orders
+--     ADD CONSTRAINT sales_orders_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY sales_orders
+--     ADD CONSTRAINT sales_orders_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY sales_shipments
+--     ADD CONSTRAINT sales_shipments_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id);
+
+ALTER TABLE ONLY sales_shipments
+--     ADD CONSTRAINT sales_shipments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
+
+ALTER TABLE ONLY seo_settings
+--     ADD CONSTRAINT seo_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY seo_templates
+--     ADD CONSTRAINT seo_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY shipping_method_translations
+--     ADD CONSTRAINT shipping_method_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY shipping_method_translations
+--     ADD CONSTRAINT shipping_method_translations_shipping_method_id_fkey FOREIGN KEY (shipping_method_id) REFERENCES shipping_methods(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY shipping_methods
+--     ADD CONSTRAINT shipping_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY shopify_oauth_tokens
+--     ADD CONSTRAINT shopify_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY slot_configurations
+--     ADD CONSTRAINT slot_configurations_acceptance_published_by_fkey FOREIGN KEY (acceptance_published_by) REFERENCES users(id);
+
+ALTER TABLE ONLY slot_configurations
+--     ADD CONSTRAINT slot_configurations_current_edit_id_fkey FOREIGN KEY (current_edit_id) REFERENCES slot_configurations(id);
+
+ALTER TABLE ONLY slot_configurations
+--     ADD CONSTRAINT slot_configurations_parent_version_id_fkey FOREIGN KEY (parent_version_id) REFERENCES slot_configurations(id);
+
+ALTER TABLE ONLY slot_configurations
+--     ADD CONSTRAINT slot_configurations_published_by_fkey FOREIGN KEY (published_by) REFERENCES users(id);
+
+ALTER TABLE ONLY slot_configurations
+--     ADD CONSTRAINT slot_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY slot_configurations
+--     ADD CONSTRAINT slot_configurations_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY store_invitations
+--     ADD CONSTRAINT store_invitations_accepted_by_fkey FOREIGN KEY (accepted_by) REFERENCES users(id);
+
+ALTER TABLE ONLY store_invitations
+--     ADD CONSTRAINT store_invitations_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
+
+ALTER TABLE ONLY store_invitations
+--     ADD CONSTRAINT store_invitations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY store_teams
+--     ADD CONSTRAINT store_teams_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
+
+ALTER TABLE ONLY store_teams
+--     ADD CONSTRAINT store_teams_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY store_teams
+--     ADD CONSTRAINT store_teams_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY store_uptime
+--     ADD CONSTRAINT store_uptime_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY store_uptime
+--     ADD CONSTRAINT store_uptime_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY stores
+--     ADD CONSTRAINT stores_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE ONLY subscriptions
+--     ADD CONSTRAINT subscriptions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY supabase_oauth_tokens
+--     ADD CONSTRAINT supabase_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY supabase_project_keys
+--     ADD CONSTRAINT supabase_project_keys_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY taxes
+--     ADD CONSTRAINT taxes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY translations
+--     ADD CONSTRAINT translations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
+
+ALTER TABLE ONLY usage_metrics
+--     ADD CONSTRAINT usage_metrics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY wishlists
+--     ADD CONSTRAINT wishlists_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY wishlists
+--     ADD CONSTRAINT wishlists_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+
+ALTER TABLE ONLY wishlists
+--     ADD CONSTRAINT wishlists_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+ALTER TABLE ONLY storage.objects
+--     ADD CONSTRAINT "objects_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
+
+ALTER TABLE ONLY storage.prefixes
+--     ADD CONSTRAINT "prefixes_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
+
+ALTER TABLE ONLY storage.s3_multipart_uploads
+--     ADD CONSTRAINT s3_multipart_uploads_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
+
+ALTER TABLE ONLY storage.s3_multipart_uploads_parts
+--     ADD CONSTRAINT s3_multipart_uploads_parts_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
+
+ALTER TABLE ONLY storage.s3_multipart_uploads_parts
+--     ADD CONSTRAINT s3_multipart_uploads_parts_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES storage.s3_multipart_uploads(id) ON DELETE CASCADE;
