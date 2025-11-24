@@ -1227,6 +1227,17 @@ router.patch('/:id', authMiddleware, async (req, res) => {
 
       masterResult = masterData;
       console.log('✅ Master DB updated:', Object.keys(masterUpdates));
+
+      // Clear storefront bootstrap cache if published status changed
+      if ('published' in masterUpdates) {
+        try {
+          const { invalidateCache } = require('../utils/cacheManager');
+          await invalidateCache(`bootstrap:${store.slug}:*`);
+          console.log('✅ Cleared bootstrap cache for store:', store.slug);
+        } catch (cacheError) {
+          console.warn('⚠️ Failed to clear cache:', cacheError.message);
+        }
+      }
     }
 
     // Update tenant DB if there are tenant fields AND store is operational
@@ -1331,6 +1342,17 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
       masterResult = masterData;
       console.log('✅ Master DB updated:', Object.keys(masterUpdates));
+
+      // Clear storefront bootstrap cache if published status changed
+      if ('published' in masterUpdates) {
+        try {
+          const { invalidateCache } = require('../utils/cacheManager');
+          await invalidateCache(`bootstrap:${store.slug}:*`);
+          console.log('✅ Cleared bootstrap cache for store:', store.slug);
+        } catch (cacheError) {
+          console.warn('⚠️ Failed to clear cache:', cacheError.message);
+        }
+      }
     }
 
     // Update tenant DB if there are tenant fields AND store is operational
