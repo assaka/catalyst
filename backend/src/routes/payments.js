@@ -1832,34 +1832,57 @@ router.post('/webhook', async (req, res) => {
                 storeName: store.name
               });
 
-              // Send email asynchronously (don't block webhook response)
-              emailService.sendTransactionalEmail(result.store_id, 'credit_purchase_email', {
-                recipientEmail: user.email,
-                customer: {
-                  first_name: user.first_name,
-                  last_name: user.last_name,
-                  email: user.email
-                },
-                transaction: {
-                  id: result.id,
-                  credits_purchased: result.credits_purchased,
-                  amount_usd: result.amount_usd,
-                  created_at: result.created_at || new Date(),
-                  balance: finalUserBalance || user.credits || 0,
-                  metadata: result.metadata || {}
-                },
-                store: {
-                  name: store.name,
-                  domain: store.custom_domain || `https://yourdomain.com/public/${store.slug}`
-                },
-                languageCode: 'en'
-              }).then(() => {
-                console.log(`✅ [${piRequestId}] Credit purchase email sent successfully to: ${user.email}`);
-              }).catch(emailError => {
-                console.error(`❌ [${piRequestId}] Failed to send credit purchase email:`, emailError.message);
-                console.error(`❌ [${piRequestId}] Email error details:`, emailError);
-                // Don't fail the webhook if email fails
-              });
+              // Send simple credit purchase confirmation email
+              const creditsAmount = result.credits_amount || paymentIntent.metadata?.credits_amount || 0;
+              const amountUsd = result.amount_usd || (paymentIntent.amount / 100) || 0;
+              const newBalance = finalUserBalance || user.credits || 0;
+              const transactionDate = new Date(result.created_at || Date.now()).toLocaleString();
+
+              const emailSubject = `Credit Purchase Confirmed - ${creditsAmount} Credits`;
+              const emailHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2 style="color: #333;">Credit Purchase Confirmed</h2>
+                  <p>Hi ${user.first_name || 'there'},</p>
+                  <p>Your credit purchase has been completed successfully!</p>
+
+                  <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #333;">Transaction Details</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                      <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Transaction ID:</strong></td>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">${result.id}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Credits Purchased:</strong></td>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">${creditsAmount} credits</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Amount Paid:</strong></td>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">$${parseFloat(amountUsd).toFixed(2)} USD</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Date:</strong></td>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">${transactionDate}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0;"><strong>New Balance:</strong></td>
+                        <td style="padding: 8px 0; color: #28a745; font-weight: bold;">${parseFloat(newBalance).toFixed(2)} credits</td>
+                      </tr>
+                    </table>
+                  </div>
+
+                  <p>Thank you for your purchase!</p>
+                  <p style="color: #666; font-size: 12px;">This is an automated message from ${store.name}.</p>
+                </div>
+              `;
+
+              emailService.sendViaBrevo(result.store_id, user.email, emailSubject, emailHtml)
+                .then(() => {
+                  console.log(`✅ [${piRequestId}] Credit purchase email sent successfully to: ${user.email}`);
+                }).catch(emailError => {
+                  console.error(`❌ [${piRequestId}] Failed to send credit purchase email:`, emailError.message);
+                  // Don't fail the webhook if email fails
+                });
             } else {
               console.warn(`⚠️ [${piRequestId}] Cannot send email - user or store not found:`, {
                 hasUser: !!user,
