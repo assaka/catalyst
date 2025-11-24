@@ -771,7 +771,7 @@ export default function StorefrontLayout({ children }) {
                 </div>
             </footer>
             
-            {settings?.cookie_consent?.enabled && (
+            {settings?.cookie_consent?.enabled && !isStorePaused && (
                 <CookieConsentBanner />
             )}
             </div>
