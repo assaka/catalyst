@@ -160,26 +160,7 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_plan ON subscriptions(plan_name);
 
 -- ============================================
--- 6. CREDIT_BALANCES TABLE
--- Current credit balance per store (source of truth)
--- ============================================
-CREATE TABLE IF NOT EXISTS credit_balances (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID UNIQUE NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
-  balance DECIMAL(10, 2) NOT NULL DEFAULT 0.00 CHECK (balance >= 0),
-  reserved_balance DECIMAL(10, 2) DEFAULT 0.00 CHECK (reserved_balance >= 0), -- For pending transactions
-  lifetime_purchased DECIMAL(10, 2) DEFAULT 0.00,
-  lifetime_spent DECIMAL(10, 2) DEFAULT 0.00,
-  last_purchase_at TIMESTAMP,
-  last_spent_at TIMESTAMP,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_credit_balances_store_id ON credit_balances(store_id);
-
--- ============================================
--- 7. CREDIT_TRANSACTIONS TABLE
+-- 6. CREDIT_TRANSACTIONS TABLE
 -- All credit purchases, adjustments, refunds
 -- ============================================
 CREATE TABLE IF NOT EXISTS credit_transactions (
@@ -220,7 +201,7 @@ CREATE INDEX IF NOT EXISTS idx_credit_transactions_type ON credit_transactions(t
 CREATE INDEX IF NOT EXISTS idx_credit_transactions_created ON credit_transactions(created_at DESC);
 
 -- ============================================
--- 8. SERVICE_CREDIT_COSTS TABLE
+-- 7. SERVICE_CREDIT_COSTS TABLE
 -- Pricing for all services that consume credits
 -- (Keep existing if already exists, or create new)
 -- ============================================
@@ -268,7 +249,7 @@ CREATE INDEX IF NOT EXISTS idx_service_credit_costs_category ON service_credit_c
 CREATE INDEX IF NOT EXISTS idx_service_credit_costs_active ON service_credit_costs(is_active) WHERE is_active = true;
 
 -- ============================================
--- 9. JOB_QUEUE TABLE
+-- 8. JOB_QUEUE TABLE
 -- Centralized job queue (from Multi-Tenant Job Architecture)
 -- ============================================
 CREATE TABLE IF NOT EXISTS job_queue (
@@ -312,7 +293,7 @@ CREATE INDEX IF NOT EXISTS idx_job_queue_pending ON job_queue(status, priority, 
 CREATE INDEX IF NOT EXISTS idx_job_queue_created ON job_queue(created_at DESC);
 
 -- ============================================
--- 10. USAGE_METRICS TABLE
+-- 9. USAGE_METRICS TABLE
 -- Store usage tracking for analytics
 -- ============================================
 CREATE TABLE IF NOT EXISTS usage_metrics (
@@ -347,7 +328,7 @@ CREATE TABLE IF NOT EXISTS usage_metrics (
 CREATE INDEX IF NOT EXISTS idx_usage_metrics_store_date ON usage_metrics(store_id, metric_date DESC);
 
 -- ============================================
--- 11. API_USAGE_LOGS TABLE
+-- 10. API_USAGE_LOGS TABLE
 -- API call logging for monitoring
 -- ============================================
 CREATE TABLE IF NOT EXISTS api_usage_logs (
@@ -376,7 +357,7 @@ CREATE INDEX IF NOT EXISTS idx_api_usage_logs_created ON api_usage_logs(created_
 CREATE INDEX IF NOT EXISTS idx_api_usage_logs_endpoint ON api_usage_logs(endpoint);
 
 -- ============================================
--- 12. BILLING_TRANSACTIONS TABLE
+-- 11. BILLING_TRANSACTIONS TABLE
 -- Payment history for subscriptions
 -- ============================================
 CREATE TABLE IF NOT EXISTS billing_transactions (
@@ -451,9 +432,6 @@ CREATE TRIGGER update_store_hostnames_updated_at BEFORE UPDATE ON store_hostname
 CREATE TRIGGER update_subscriptions_updated_at BEFORE UPDATE ON subscriptions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_credit_balances_updated_at BEFORE UPDATE ON credit_balances
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================
 -- COMMENTS FOR DOCUMENTATION
 -- ============================================
@@ -462,7 +440,6 @@ COMMENT ON TABLE stores IS 'Minimal store registry with slug for routing. Full s
 COMMENT ON TABLE store_databases IS 'Encrypted tenant database connection credentials. Allows backend to connect to each store tenant DB';
 COMMENT ON TABLE store_hostnames IS 'Maps hostnames/domains to stores for fast tenant resolution';
 COMMENT ON TABLE subscriptions IS 'Store subscription plans and billing information';
-COMMENT ON TABLE credit_balances IS 'Current credit balance per store (source of truth)';
 COMMENT ON TABLE credit_transactions IS 'Credit purchase history and adjustments';
 COMMENT ON TABLE service_credit_costs IS 'Pricing for all services that consume credits';
 COMMENT ON TABLE job_queue IS 'Centralized job queue for processing tenant jobs';

@@ -12,44 +12,27 @@
 
 const express = require('express');
 const router = express.Router();
-const { CreditBalance, CreditTransaction } = require('../models/master');
+const { CreditTransaction } = require('../models/master');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { masterDbClient } = require('../database/masterConnection');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const creditService = require('../services/credit-service');
 
 /**
  * GET /api/credits/balance
- * Get current credit balance from master DB (source of truth)
+ * Get current credit balance from master DB (source of truth: users.credits)
  */
 router.get('/balance', authMiddleware, async (req, res) => {
   try {
+    const userId = req.user.id;
     const storeId = req.user.store_id;
 
-    // Query master DB for balance
-    const creditBalance = await CreditBalance.findByStore(storeId);
-
-    if (!creditBalance) {
-      // Create if doesn't exist
-      const newBalance = await CreditBalance.create({
-        store_id: storeId,
-        balance: 0.00
-      });
-
-      return res.json({
-        success: true,
-        data: {
-          balance: 0.00,
-          reserved: 0.00,
-          available: 0.00,
-          lifetime_purchased: 0.00,
-          lifetime_spent: 0.00
-        }
-      });
-    }
+    // Get balance from users.credits (single source of truth)
+    const balance = await creditService.getBalance(userId, storeId);
 
     // Sync to tenant DB cache
     try {
-      await syncBalanceToTenant(storeId, creditBalance.balance);
+      await syncBalanceToTenant(storeId, balance);
     } catch (syncError) {
       console.warn('Failed to sync balance to tenant:', syncError.message);
     }
@@ -57,13 +40,7 @@ router.get('/balance', authMiddleware, async (req, res) => {
     res.json({
       success: true,
       data: {
-        balance: parseFloat(creditBalance.balance),
-        reserved: parseFloat(creditBalance.reserved_balance),
-        available: creditBalance.getAvailableBalance(),
-        lifetime_purchased: parseFloat(creditBalance.lifetime_purchased),
-        lifetime_spent: parseFloat(creditBalance.lifetime_spent),
-        last_purchase: creditBalance.last_purchase_at,
-        last_spent: creditBalance.last_spent_at
+        balance: balance
       }
     });
   } catch (error) {
@@ -215,6 +192,7 @@ router.get('/uptime-report', authMiddleware, async (req, res) => {
  */
 router.post('/purchase', authMiddleware, async (req, res) => {
   try {
+    const userId = req.user.id;
     const storeId = req.user.store_id;
     const { amount, paymentMethod = 'stripe', paymentProviderId } = req.body;
 
@@ -243,11 +221,12 @@ router.post('/purchase', authMiddleware, async (req, res) => {
       }
     );
 
-    // Update balance
-    const balance = await CreditBalance.addToStore(storeId, amount);
+    // Update balance using creditService (updates users.credits)
+    await creditService.completePurchaseTransaction(transaction.id);
+    const newBalance = await creditService.getBalance(userId, storeId);
 
     // Sync to tenant cache
-    await syncBalanceToTenant(storeId, balance.balance);
+    await syncBalanceToTenant(storeId, newBalance);
 
     res.json({
       success: true,
@@ -259,8 +238,7 @@ router.post('/purchase', authMiddleware, async (req, res) => {
           type: transaction.transaction_type
         },
         balance: {
-          current: parseFloat(balance.balance),
-          available: balance.getAvailableBalance()
+          current: newBalance
         }
       }
     });
@@ -280,6 +258,7 @@ router.post('/purchase', authMiddleware, async (req, res) => {
  */
 router.post('/spend', authMiddleware, async (req, res) => {
   try {
+    const userId = req.user.id;
     const storeId = req.user.store_id;
     const { amount, serviceKey, description } = req.body;
 
@@ -291,42 +270,40 @@ router.post('/spend', authMiddleware, async (req, res) => {
       });
     }
 
-    // Get balance
-    const balance = await CreditBalance.findByStore(storeId);
+    // Check balance using creditService
+    const hasCredits = await creditService.hasEnoughCredits(userId, storeId, amount);
 
-    if (!balance || !balance.hasSufficientBalance(amount)) {
+    if (!hasCredits) {
+      const currentBalance = await creditService.getBalance(userId, storeId);
       return res.status(402).json({
         success: false,
         error: 'Insufficient credits',
         code: 'INSUFFICIENT_CREDITS',
         required: amount,
-        available: balance ? balance.getAvailableBalance() : 0
+        available: currentBalance
       });
     }
 
-    // Deduct credits
-    await balance.deductCredits(amount);
-
-    // Record in tenant DB spending log
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-    await tenantDb.from('credit_spending_log').insert({
-      store_id: storeId,
+    // Deduct credits using creditService
+    const result = await creditService.deduct(
+      userId,
+      storeId,
       amount,
-      service_key: serviceKey,
-      description: description || 'Credit spent',
-      created_at: new Date().toISOString()
-    });
+      description || 'Credit spent',
+      { service_key: serviceKey },
+      null,
+      serviceKey || 'manual_spend'
+    );
 
     // Sync balance to tenant cache
-    await syncBalanceToTenant(storeId, balance.balance);
+    await syncBalanceToTenant(storeId, result.remaining_balance);
 
     res.json({
       success: true,
       message: `${amount} credits spent successfully`,
       data: {
         amount_spent: amount,
-        new_balance: parseFloat(balance.balance),
-        available: balance.getAvailableBalance()
+        new_balance: result.remaining_balance
       }
     });
   } catch (error) {
@@ -345,24 +322,19 @@ router.post('/spend', authMiddleware, async (req, res) => {
  */
 router.post('/sync', authMiddleware, async (req, res) => {
   try {
+    const userId = req.user.id;
     const storeId = req.user.store_id;
 
-    const balance = await CreditBalance.findByStore(storeId);
+    // Get balance from users.credits (single source of truth)
+    const balance = await creditService.getBalance(userId, storeId);
 
-    if (!balance) {
-      return res.status(404).json({
-        success: false,
-        error: 'Credit balance not found'
-      });
-    }
-
-    await syncBalanceToTenant(storeId, balance.balance);
+    await syncBalanceToTenant(storeId, balance);
 
     res.json({
       success: true,
       message: 'Balance synced to tenant cache',
       data: {
-        balance: parseFloat(balance.balance)
+        balance: balance
       }
     });
   } catch (error) {

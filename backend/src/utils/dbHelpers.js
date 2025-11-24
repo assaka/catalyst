@@ -341,24 +341,37 @@ async function getMasterSubscription(storeId) {
 }
 
 /**
- * Get credit balance from master DB
+ * Get credit balance from master DB (users.credits is single source of truth)
  *
  * @param {string} storeId - Store UUID
  * @returns {Promise<number>} Credit balance
  */
 async function getMasterCreditBalance(storeId) {
-  const { data: creditBalance, error } = await masterDbClient
-    .from('credit_balances')
-    .select('balance')
-    .eq('store_id', storeId)
+  // Get store to find user_id
+  const { data: store, error: storeError } = await masterDbClient
+    .from('stores')
+    .select('user_id')
+    .eq('id', storeId)
     .maybeSingle();
 
-  if (error) {
-    console.error('Error fetching credit balance:', error);
+  if (storeError || !store) {
+    console.error('Error fetching store:', storeError);
     return 0;
   }
 
-  return creditBalance?.balance || 0;
+  // Get user credits (single source of truth)
+  const { data: user, error: userError } = await masterDbClient
+    .from('users')
+    .select('credits')
+    .eq('id', store.user_id)
+    .maybeSingle();
+
+  if (userError) {
+    console.error('Error fetching user credits:', userError);
+    return 0;
+  }
+
+  return parseFloat(user?.credits || 0);
 }
 
 /**

@@ -205,24 +205,6 @@ router.post('/', authMiddleware, async (req, res) => {
       }
 
       store = newStore;
-
-      // Initialize credit balance for new stores only
-      const { error: balanceError } = await masterDbClient
-        .from('credit_balances')
-        .insert({
-          id: uuidv4(),
-          store_id: storeId,
-          balance: 0.00,
-          reserved_balance: 0.00,
-          lifetime_purchased: 0.00,
-          lifetime_spent: 0.00,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-
-      if (balanceError) {
-        console.warn('Failed to create credit balance:', balanceError.message);
-      }
     }
 
     res.status(isUpdate ? 200 : 201).json({
@@ -1110,17 +1092,17 @@ router.get('/:id', authMiddleware, async (req, res) => {
     // Get connection info (skipped - causes Sequelize issues)
     const connectionInfo = null;
 
-    // Get credit balance using Supabase client
-    let creditBalance = null;
+    // Get user credits (single source of truth: users.credits)
+    let userCredits = null;
     try {
-      const { data: balance } = await masterDbClient
-        .from('credit_balances')
-        .select('*')
-        .eq('store_id', storeId)
+      const { data: user } = await masterDbClient
+        .from('users')
+        .select('credits')
+        .eq('id', store.user_id)
         .maybeSingle();
-      creditBalance = balance;
+      userCredits = user ? parseFloat(user.credits || 0) : 0;
     } catch (err) {
-      console.warn('Could not fetch credit balance:', err.message);
+      console.warn('Could not fetch user credits:', err.message);
     }
 
     // Get tenant data if store is active
@@ -1152,10 +1134,8 @@ router.get('/:id', authMiddleware, async (req, res) => {
         hostname: primaryHostname?.hostname || null,
         slug: primaryHostname?.slug || null,
         connection: connectionInfo,
-        credits: creditBalance ? {
-          balance: parseFloat(creditBalance.balance),
-          reserved: parseFloat(creditBalance.reserved_balance),
-          available: parseFloat(creditBalance.balance) - parseFloat(creditBalance.reserved_balance)
+        credits: userCredits !== null ? {
+          balance: userCredits
         } : null,
         tenantData: tenantStoreData
       }

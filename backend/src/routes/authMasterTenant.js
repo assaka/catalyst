@@ -101,24 +101,6 @@ router.post('/register', async (req, res) => {
       throw new Error(`Failed to create store: ${storeError.message}`);
     }
 
-    // Initialize credit balance
-    const { error: balanceError } = await masterDbClient
-      .from('credit_balances')
-      .insert({
-        id: uuidv4(),
-        store_id: storeId,
-        balance: 0.00,
-        reserved_balance: 0.00,
-        lifetime_purchased: 0.00,
-        lifetime_spent: 0.00,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-
-    if (balanceError) {
-      console.warn('Failed to create credit balance:', balanceError.message);
-      // Don't fail registration if credit balance fails
-    }
 
     // Generate JWT tokens
     const tokens = generateTokenPair(user, storeId);

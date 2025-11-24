@@ -9,7 +9,6 @@ const MasterUser = require('./MasterUser');
 const MasterStore = require('./MasterStore');
 const StoreDatabase = require('./StoreDatabase');
 const StoreHostname = require('./StoreHostname');
-const CreditBalance = require('./CreditBalance');
 const CreditTransaction = require('./CreditTransaction');
 
 // Define associations
@@ -44,16 +43,6 @@ function setupMasterAssociations() {
     as: 'store'
   });
 
-  // Store → CreditBalance (one-to-one)
-  MasterStore.hasOne(CreditBalance, {
-    foreignKey: 'store_id',
-    as: 'creditBalance'
-  });
-  CreditBalance.belongsTo(MasterStore, {
-    foreignKey: 'store_id',
-    as: 'store'
-  });
-
   // Store → CreditTransactions (one-to-many)
   MasterStore.hasMany(CreditTransaction, {
     foreignKey: 'store_id',
@@ -84,7 +73,6 @@ module.exports = {
   MasterStore,
   StoreDatabase,
   StoreHostname,
-  CreditBalance,
   CreditTransaction,
   setupMasterAssociations
 };

@@ -50,7 +50,7 @@ router.get('/master-db', async (req, res) => {
 
       const tableNames = tables.map(t => t.tablename);
       const expectedTables = ['users', 'stores', 'store_databases', 'store_hostnames',
-                              'subscriptions', 'credit_balances', 'credit_transactions',
+                              'subscriptions', 'credit_transactions',
                               'service_credit_costs', 'job_queue'];
 
       const missingTables = expectedTables.filter(t => !tableNames.includes(t));
@@ -67,10 +67,10 @@ router.get('/master-db', async (req, res) => {
 
     // Test 5: Models load
     try {
-      const { MasterUser, MasterStore, CreditBalance } = require('../models/master');
+      const { MasterUser, MasterStore } = require('../models/master');
       results.tests.models = {
         success: true,
-        loaded: ['MasterUser', 'MasterStore', 'CreditBalance']
+        loaded: ['MasterUser', 'MasterStore']
       };
     } catch (error) {
       results.tests.models = { success: false, error: error.message };

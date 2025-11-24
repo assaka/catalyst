@@ -2,10 +2,9 @@
  * Master Database Connection
  *
  * This connection is for the MASTER database which contains:
- * - users (agency/store owners only)
+ * - users (agency/store owners only, includes credits column)
  * - stores (minimal registry)
  * - subscriptions
- * - credit_balances
  * - credit_transactions
  * - store_databases (tenant connection credentials)
  * - store_hostnames (hostname mapping)
