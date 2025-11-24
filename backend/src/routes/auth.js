@@ -32,7 +32,8 @@ const generateToken = (user, rememberMe = false) => {
   };
 
   // Include store_id for customers to enforce store binding
-  if (user.role === 'customer' && user.store_id) {
+  // Also include for store owners/admins for context
+  if (user.store_id) {
     payload.store_id = user.store_id;
   }
 
@@ -549,13 +550,13 @@ router.post('/check-email', [
 });
 
 // @route   POST /api/auth/login
-// @desc    Login user from tenant database
+// @desc    Login user - store_owner/admin from master DB, customers from tenant DB
 // @access  Public
-// @note    TENANT ONLY - requires store_id
+// @note    store_id required ONLY for customer login
 router.post('/login', [
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
   body('password').notEmpty().withMessage('Password is required'),
-  body('store_id').notEmpty().withMessage('store_id is required'),
+  body('store_id').optional().isUUID().withMessage('store_id must be a valid UUID'),
   body('role').optional().isIn(['admin', 'store_owner', 'customer']).withMessage('Invalid role'),
   body('rememberMe').optional().isBoolean().withMessage('Remember me must be a boolean')
 ], async (req, res) => {
@@ -570,77 +571,116 @@ router.post('/login', [
 
     const { email, password, store_id, role, rememberMe } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress;
+    const bcrypt = require('bcryptjs');
+    const { masterDbClient } = require('../database/masterConnection');
 
-    // Get tenant connection
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-
-    // Check rate limiting (from tenant DB)
-    const recentAttempts = await tenantDb
-      .from('login_attempts')
-      .select('*')
-      .or(`email.eq.${email},ip_address.eq.${ipAddress}`)
-      .gte('attempted_at', new Date(Date.now() - 15 * 60 * 1000).toISOString())
-      .order('attempted_at', { ascending: false });
-
-    if (recentAttempts.data && recentAttempts.data.length >= 5) {
-      return res.status(429).json({
+    // Validate: customers MUST provide store_id
+    if (role === 'customer' && !store_id) {
+      return res.status(400).json({
         success: false,
-        message: 'Too many login attempts. Please try again later.'
+        message: 'store_id is required for customer login'
       });
     }
 
-    // Find users with this email based on role
     let users = [];
-    const bcrypt = require('bcryptjs');
+    let authenticatedUser = null;
+    let loginDb = null; // Track which DB we're using for login attempts
 
-    if (role === 'customer') {
+    // CRITICAL: Store owners and admins ALWAYS authenticate against MASTER DB
+    if (role === 'store_owner' || role === 'admin') {
+      console.log(`🔍 Authenticating ${role} against MASTER DB:`, email);
+
+      // Query master DB for store owner/admin
+      const { data: masterUsers, error } = await masterDbClient
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .in('role', ['store_owner', 'admin']);
+
+      if (error) {
+        console.error('Master DB query error:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Database error during authentication'
+        });
+      }
+
+      users = masterUsers || [];
+      console.log(`🔍 Found ${users.length} users in master DB`);
+
+    } else if (role === 'customer') {
+      console.log('🔍 Authenticating customer against TENANT DB:', email, 'store_id:', store_id);
+
+      // Get tenant connection
+      loginDb = await ConnectionManager.getStoreConnection(store_id);
+
+      // Check rate limiting (from tenant DB)
+      const recentAttempts = await loginDb
+        .from('login_attempts')
+        .select('*')
+        .or(`email.eq.${email},ip_address.eq.${ipAddress}`)
+        .gte('attempted_at', new Date(Date.now() - 15 * 60 * 1000).toISOString())
+        .order('attempted_at', { ascending: false });
+
+      if (recentAttempts.data && recentAttempts.data.length >= 5) {
+        return res.status(429).json({
+          success: false,
+          message: 'Too many login attempts. Please try again later.'
+        });
+      }
+
       // Search in customers table (tenant DB)
-      const { data: customers } = await tenantDb
+      const { data: customers } = await loginDb
         .from('customers')
         .select('*')
         .eq('email', email)
         .eq('store_id', store_id);
 
       users = customers || [];
-    } else if (role === 'store_owner' || role === 'admin') {
-      // Search in users table (tenant DB)
-      const { data: tenantUsers } = await tenantDb
-        .from('users')
-        .select('*')
-        .eq('email', email);
+      console.log(`🔍 Found ${users.length} customers in tenant DB`);
 
-      users = tenantUsers || [];
     } else {
-      // No role specified - search users table first, then customers
-      const { data: tenantUsers } = await tenantDb
+      // No role specified - try master DB first (store owners/admins), then tenant DB (customers)
+      console.log('🔍 No role specified, trying MASTER DB first:', email);
+
+      const { data: masterUsers } = await masterDbClient
         .from('users')
         .select('*')
-        .eq('email', email);
+        .eq('email', email)
+        .in('role', ['store_owner', 'admin']);
 
-      if (tenantUsers && tenantUsers.length > 0) {
-        users = tenantUsers;
-      } else {
-        const { data: customers } = await tenantDb
+      if (masterUsers && masterUsers.length > 0) {
+        users = masterUsers;
+        console.log('🔍 Found user in master DB');
+      } else if (store_id) {
+        // Try tenant DB if store_id provided
+        console.log('🔍 Not in master DB, trying TENANT DB');
+        loginDb = await ConnectionManager.getStoreConnection(store_id);
+
+        const { data: customers } = await loginDb
           .from('customers')
           .select('*')
           .eq('email', email)
           .eq('store_id', store_id);
 
         users = customers || [];
+        console.log(`🔍 Found ${users.length} customers in tenant DB`);
       }
     }
 
     if (!users || users.length === 0) {
-      // Log failed attempt
-      await tenantDb
-        .from('login_attempts')
-        .insert({
-          email,
-          ip_address: ipAddress,
-          success: false,
-          attempted_at: new Date().toISOString(),
-          store_id
-        });
+      // Log failed attempt (only for tenant DB customers)
+      if (loginDb) {
+        await loginDb
+          .from('login_attempts')
+          .insert({
+            email,
+            ip_address: ipAddress,
+            success: false,
+            attempted_at: new Date().toISOString(),
+            store_id
+          });
+      }
 
       return res.status(400).json({
         success: false,
@@ -649,8 +689,6 @@ router.post('/login', [
     }
 
     // Try to find a user account that matches the password
-    let authenticatedUser = null;
-
     if (role) {
       // First try the specified role
       const roleUser = users.find(u => u.role === role);
@@ -676,16 +714,18 @@ router.post('/login', [
     }
 
     if (!authenticatedUser) {
-      // Log failed attempt
-      await tenantDb
-        .from('login_attempts')
-        .insert({
-          email,
-          ip_address: ipAddress,
-          success: false,
-          attempted_at: new Date().toISOString(),
-          store_id
-        });
+      // Log failed attempt (only for tenant DB customers)
+      if (loginDb) {
+        await loginDb
+          .from('login_attempts')
+          .insert({
+            email,
+            ip_address: ipAddress,
+            success: false,
+            attempted_at: new Date().toISOString(),
+            store_id
+          });
+      }
 
       return res.status(400).json({
         success: false,
@@ -712,26 +752,51 @@ router.post('/login', [
       });
     }
 
-    // Log successful attempt
-    await tenantDb
-      .from('login_attempts')
-      .insert({
-        email,
-        ip_address: ipAddress,
-        success: true,
-        attempted_at: new Date().toISOString(),
-        store_id
-      });
+    // Log successful attempt and update last_login based on user type
+    if (authenticatedUser.role === 'customer') {
+      // Customer login - use tenant DB
+      await loginDb
+        .from('login_attempts')
+        .insert({
+          email,
+          ip_address: ipAddress,
+          success: true,
+          attempted_at: new Date().toISOString(),
+          store_id
+        });
 
-    // Update last login
-    const tableName = authenticatedUser.role === 'customer' ? 'customers' : 'users';
-    await tenantDb
-      .from(tableName)
-      .update({ last_login: new Date().toISOString() })
-      .eq('id', authenticatedUser.id);
+      await loginDb
+        .from('customers')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', authenticatedUser.id);
+
+    } else {
+      // Store owner/admin login - use master DB
+      await masterDbClient
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', authenticatedUser.id);
+    }
 
     // Update local object
     authenticatedUser.last_login = new Date().toISOString();
+
+    // For store owners/admins, fetch their first store from master DB to include in token
+    if (authenticatedUser.role === 'store_owner' || authenticatedUser.role === 'admin') {
+      const { data: userStores } = await masterDbClient
+        .from('stores')
+        .select('id')
+        .eq('user_id', authenticatedUser.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (userStores && userStores.length > 0) {
+        authenticatedUser.store_id = userStores[0].id;
+        console.log('🔍 Added store_id to token:', authenticatedUser.store_id);
+      } else {
+        console.log('⚠️ Store owner has no stores yet');
+      }
+    }
 
     // Generate token with remember me option
     const token = generateToken(authenticatedUser, rememberMe);
