@@ -6,6 +6,7 @@ const { authorize, storeOwnerOnly } = require('../middleware/auth');
 const { checkStoreOwnership, checkTeamMembership } = require('../middleware/storeAuth');
 const crypto = require('crypto');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const emailService = require('../services/email-service');
 const router = express.Router();
 
 // NOTE: HYBRID ARCHITECTURE
@@ -285,12 +286,37 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
       });
     }
 
-    // TODO: Send email invitation
-    console.log('📧 Email invitation should be sent:', {
-      to: email,
-      invitationId: invitation.id,
-      token: invitation.invitation_token
-    });
+    // Send email invitation
+    try {
+      // Get store info from master DB
+      const { data: store } = await masterDbClient
+        .from('stores')
+        .select('id, name, domain')
+        .eq('id', store_id)
+        .single();
+
+      // Get inviter info from master DB
+      const { data: inviter } = await masterDbClient
+        .from('users')
+        .select('id, email, first_name, last_name')
+        .eq('id', req.user.id)
+        .single();
+
+      // Send the invitation email
+      const emailResult = await emailService.sendTeamInvitationEmail(
+        store_id,
+        invitation,
+        store || { name: 'Store', domain: '' },
+        inviter || { email: req.user.email }
+      );
+
+      if (!emailResult.success) {
+        console.warn('⚠️ Invitation created but email failed:', emailResult.message);
+      }
+    } catch (emailError) {
+      // Log but don't fail - invitation was created successfully
+      console.error('⚠️ Failed to send invitation email:', emailError.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -365,13 +391,39 @@ router.post('/:store_id/invitations/:invitation_id/resend', authorize(['admin', 
       });
     }
 
-    // TODO: Send email invitation
-    console.log('📧 Resending email invitation:', {
-      to: invitation.invited_email,
-      invitationId: invitation.id,
-      token: invitation.invitation_token,
-      newExpiresAt
-    });
+    // Send email invitation
+    try {
+      // Get store info from master DB
+      const { data: store } = await masterDbClient
+        .from('stores')
+        .select('id, name, domain')
+        .eq('id', store_id)
+        .single();
+
+      // Get inviter info from master DB
+      const { data: inviter } = await masterDbClient
+        .from('users')
+        .select('id, email, first_name, last_name')
+        .eq('id', invitation.invited_by)
+        .single();
+
+      // Update invitation with new expires_at for email
+      const updatedInvitation = { ...invitation, expires_at: newExpiresAt };
+
+      // Send the invitation email
+      const emailResult = await emailService.sendTeamInvitationEmail(
+        store_id,
+        updatedInvitation,
+        store || { name: 'Store', domain: '' },
+        inviter || { email: 'Team Admin' }
+      );
+
+      if (!emailResult.success) {
+        console.warn('⚠️ Invitation updated but email failed:', emailResult.message);
+      }
+    } catch (emailError) {
+      console.error('⚠️ Failed to resend invitation email:', emailError.message);
+    }
 
     res.json({
       success: true,

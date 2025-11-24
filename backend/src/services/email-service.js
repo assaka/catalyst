@@ -502,6 +502,131 @@ class EmailService {
   }
 
   /**
+   * Send team invitation email
+   * @param {string} storeId - Store ID
+   * @param {Object} invitation - Invitation data
+   * @param {Object} store - Store data
+   * @param {Object} inviter - Inviter user data
+   * @returns {Promise<Object>} Send result
+   */
+  async sendTeamInvitationEmail(storeId, invitation, store, inviter) {
+    try {
+      console.log(`📧 [EMAIL SERVICE] Sending team invitation email to: ${invitation.invited_email}`);
+
+      // Check if Brevo is configured
+      const isConfigured = await brevoService.isConfigured(storeId);
+      if (!isConfigured) {
+        console.warn(`⚠️ [EMAIL SERVICE] Brevo not configured for store ${storeId}, skipping invitation email`);
+        return {
+          success: false,
+          message: 'Email service not configured for this store'
+        };
+      }
+
+      const inviteUrl = `${process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app'}/accept-invitation/${invitation.invitation_token}`;
+      const expiresDate = new Date(invitation.expires_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      const subject = `You've been invited to join ${store.name}`;
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Invitation</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); border-radius: 8px 8px 0 0;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">You're Invited!</h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                Hi there,
+              </p>
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                <strong>${inviter.first_name || inviter.email}</strong> has invited you to join the team at <strong>${store.name}</strong> as ${invitation.role === 'admin' ? 'an' : 'a'} <strong>${invitation.role}</strong>.
+              </p>
+
+              ${invitation.message ? `
+              <div style="margin: 20px 0; padding: 16px; background-color: #f9fafb; border-left: 4px solid #3b82f6; border-radius: 0 4px 4px 0;">
+                <p style="margin: 0; color: #6b7280; font-size: 14px; font-style: italic;">"${invitation.message}"</p>
+              </div>
+              ` : ''}
+
+              <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
+                Click the button below to accept this invitation:
+              </p>
+
+              <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td align="center">
+                    <a href="${inviteUrl}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 6px;">
+                      Accept Invitation
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 30px 0 0; color: #9ca3af; font-size: 14px; line-height: 1.6;">
+                This invitation will expire on <strong>${expiresDate}</strong>.
+              </p>
+
+              <p style="margin: 20px 0 0; color: #9ca3af; font-size: 14px; line-height: 1.6;">
+                If you didn't expect this invitation, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 20px 40px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                © ${new Date().getFullYear()} ${store.name}. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `;
+
+      const result = await this.sendViaBrevo(storeId, invitation.invited_email, subject, htmlContent);
+
+      console.log(`✅ [EMAIL SERVICE] Team invitation email sent to ${invitation.invited_email}`);
+
+      return {
+        success: true,
+        message: 'Invitation email sent successfully',
+        messageId: result.messageId
+      };
+    } catch (error) {
+      console.error('❌ [EMAIL SERVICE] Failed to send team invitation email:', error.message);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+  }
+
+  /**
    * Get email statistics for a store
    * @param {string} storeId - Store ID
    * @param {number} days - Number of days to look back
