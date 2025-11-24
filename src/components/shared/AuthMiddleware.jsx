@@ -1085,23 +1085,47 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
               return;
             }
             
-            // For store owners, use the store_id from JWT token (set by backend to first active store)
-            console.log('✅ Store owner login successful, setting up store context...');
+            // For store owners, check if they have active stores and redirect accordingly
+            console.log('✅ Store owner login successful, checking for active stores...');
             setTimeout(async () => {
               try {
                 // Get user data which includes store_id from JWT token
                 const userData = actualResponse.data?.user || actualResponse.user || actualResponse;
 
-                if (userData.store_id) {
-                  // Backend provided store_id in token - use it directly
-                  console.log('🔍 Using store_id from token:', userData.store_id);
+                console.log('🔍 User data from login response:', {
+                  hasStoreId: !!userData.store_id,
+                  store_id: userData.store_id,
+                  userKeys: Object.keys(userData)
+                });
 
-                  // Fetch store details to get slug
+                // Try to get store_id from user data, or decode from JWT token
+                let storeId = userData.store_id;
+
+                if (!storeId && token) {
+                  // Decode JWT to get store_id
                   try {
-                    const storeResponse = await apiClient.get(`/stores/${userData.store_id}`);
+                    const base64Url = token.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+                    const tokenData = JSON.parse(jsonPayload);
+                    storeId = tokenData.store_id;
+                    console.log('🔍 Decoded store_id from JWT:', storeId);
+                  } catch (decodeError) {
+                    console.error('❌ Error decoding JWT:', decodeError);
+                  }
+                }
+
+                if (storeId) {
+                  // Backend found first active store - fetch details and redirect to dashboard
+                  console.log('🔍 First active store found:', storeId);
+
+                  try {
+                    const storeResponse = await apiClient.get(`/stores/${storeId}`);
                     const store = storeResponse.data || storeResponse;
 
-                    console.log('🔍 Setting store from token:', store.name, store.slug);
+                    console.log('✅ Setting active store:', store.name, '(slug:', store.slug + ')');
                     localStorage.setItem('selectedStoreId', store.id);
                     localStorage.setItem('selectedStoreSlug', store.slug || store.code);
 
@@ -1110,22 +1134,22 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                     navigate(dashboardUrl);
                   } catch (storeError) {
                     console.error('❌ Error fetching store details:', storeError);
-                    // Fallback: set store_id without slug
-                    localStorage.setItem('selectedStoreId', userData.store_id);
+                    // Fallback: set store_id without slug and go to dashboard
+                    localStorage.setItem('selectedStoreId', storeId);
                     navigate(createAdminUrl("DASHBOARD"));
                   }
                 } else {
-                  // No store_id in token - user has no stores, redirect to onboarding
-                  console.log('🔍 No store_id in token, redirecting to onboarding...');
+                  // No active stores found - redirect to onboarding
+                  console.log('⚠️ No active stores found, redirecting to onboarding...');
                   const onboardingUrl = createAdminUrl("StoreOnboarding");
                   navigate(onboardingUrl || '/admin/store-onboarding');
                 }
               } catch (error) {
-                console.error('❌ Error setting up store context:', error);
-                console.error('Error details:', error.message, error.status);
+                console.error('❌ Error during post-login setup:', error);
+                console.error('Error details:', error.message, error.stack);
 
-                // If setup failed, redirect to onboarding
-                console.log('🔍 Store setup failed, redirecting to onboarding...');
+                // On error, redirect to onboarding (safer fallback)
+                console.log('🔍 Error occurred, redirecting to onboarding...');
                 const onboardingUrl = createAdminUrl("StoreOnboarding");
                 navigate(onboardingUrl || '/admin/store-onboarding');
               }
