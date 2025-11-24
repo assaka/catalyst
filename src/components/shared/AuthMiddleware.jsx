@@ -1105,7 +1105,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                 console.log('🔍 Token received:', token ? token.substring(0, 50) + '...' : 'NO TOKEN');
 
                 if (!storeId && token) {
-                  // Decode JWT to get store_id
+                  // Decode JWT to get store_id (check both snake_case and camelCase)
                   try {
                     const base64Url = token.split('.')[1];
                     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -1113,13 +1113,17 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                       return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
                     }).join(''));
                     const tokenData = JSON.parse(jsonPayload);
-                    storeId = tokenData.store_id;
+                    // Check both store_id (snake_case) and storeId (camelCase) for compatibility
+                    storeId = tokenData.store_id || tokenData.storeId;
                     console.log('🔍 Decoded JWT payload:', {
                       id: tokenData.id,
+                      userId: tokenData.userId,
                       email: tokenData.email,
                       role: tokenData.role,
                       has_store_id: !!tokenData.store_id,
                       store_id: tokenData.store_id,
+                      has_storeId: !!tokenData.storeId,
+                      storeId: tokenData.storeId,
                       allKeys: Object.keys(tokenData)
                     });
                   } catch (decodeError) {
