@@ -490,7 +490,7 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
       return res.status(409).json({
         success: false,
-        error: 'This Supabase database is already being used by another store. Please select a different database or create a new Supabase project.',
+        error: 'This Supabase database is already connected to another store. Please use a different Supabase project.',
         code: 'DATABASE_ALREADY_IN_USE'
       });
     }

@@ -401,7 +401,7 @@ class SupabaseIntegration {
 
           if (!checkError && existingDb && existingDb.store_id !== storeId) {
             console.error('❌ Database already in use by another store:', existingDb.store_id);
-            throw new Error('This Supabase database is already being used by another store. Please select a different database or create a new Supabase project.');
+            throw new Error('This Supabase database is already connected to another store. Please use a different Supabase project.');
           }
 
           console.log('✅ Database URL is available');

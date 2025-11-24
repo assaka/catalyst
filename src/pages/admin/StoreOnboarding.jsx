@@ -106,11 +106,30 @@ export default function StoreOnboarding() {
         throw new Error('Please allow popups for this site');
       }
 
-      // Step 3: Wait for popup to close, then verify OAuth via API
+      // Step 3: Listen for OAuth error messages from popup
+      let oauthError = null;
+      const messageHandler = (event) => {
+        if (event.data && event.data.type === 'supabase-oauth-error') {
+          console.error('❌ OAuth error received:', event.data.error);
+          oauthError = event.data.error;
+        }
+      };
+      window.addEventListener('message', messageHandler);
+
+      // Step 4: Wait for popup to close, then verify OAuth via API
       const checkClosed = setInterval(async () => {
         if (popup.closed) {
           clearInterval(checkClosed);
+          window.removeEventListener('message', messageHandler);
           console.log('🔍 Popup closed, checking OAuth status via API...');
+
+          // If we received an error message, show it immediately
+          if (oauthError) {
+            console.error('❌ OAuth failed with error:', oauthError);
+            setError(oauthError);
+            setLoading(false);
+            return;
+          }
 
           // Verify OAuth succeeded by checking database/memory state
           try {
