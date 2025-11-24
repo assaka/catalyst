@@ -80,15 +80,21 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
       return;
     }
 
+    // CRITICAL: For admin panel, check if selectedStoreId is available before making API call
+    const selectedStoreId = localStorage.getItem('selectedStoreId');
+    if (!selectedStoreId || selectedStoreId === 'undefined') {
+      console.warn('⚠️ TranslationContext: No store selected yet, using English fallback');
+      const fallback = [
+        { code: 'en', name: 'English', native_name: 'English', is_active: true, is_rtl: false }
+      ];
+      window.__languagesCache = fallback;
+      setAvailableLanguages(fallback);
+      setLoading(false);
+      return; // Don't make API call without store_id!
+    }
+
     // Otherwise fetch from API (for admin panel ONLY)
     window.__languagesFetching = true;
-
-    // DEBUG: Log when we're making API call
-    console.warn('⚠️ TranslationContext calling /api/languages (should use bootstrap!)', {
-      hasInitialLanguages: !!initialLanguages,
-      initialLangLength: initialLanguages?.length,
-      availableLangLength: availableLanguages.length
-    });
 
     try {
       const response = await api.get('/languages');
@@ -313,6 +319,21 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
     };
 
     initializeTranslations();
+
+    // Listen for store selection changes and reload languages
+    const handleStoreChange = () => {
+      // Clear the cache so languages get reloaded for the new store
+      window.__languagesCache = null;
+      window.__languagesFetching = false;
+      // Reload languages for the newly selected store
+      loadAvailableLanguages();
+    };
+
+    window.addEventListener('storeSelectionChanged', handleStoreChange);
+
+    return () => {
+      window.removeEventListener('storeSelectionChanged', handleStoreChange);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeId]); // Only re-run when storeId changes, NOT when initialTranslations changes
 
