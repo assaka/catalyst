@@ -442,9 +442,6 @@ export default function StoreOnboarding() {
                   autoFocus
                   className="mt-2 font-mono text-xs"
                 />
-                <p className="text-xs text-amber-600 mt-1">
-                  💡 Make sure to replace [YOUR-PASSWORD] with your actual database password before pasting
-                </p>
               </div>
 
               <div className="flex gap-3">
