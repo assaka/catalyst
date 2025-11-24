@@ -1825,3 +1825,11 @@ VALUES
   ('92597919-c7fd-4907-9bbb-51d9997f373c', 'account.forgot_password', 'en', 'Forgot password?', 'account', '2025-11-07T18:34:17.198Z', '2025-11-12T22:28:53.341Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('42ab27b9-1a5b-419d-94bb-efb5a21d44b5', 'checkout.enter_shipping_address', 'en', 'Enter shipping address', 'checkout', '2025-11-07T18:34:17.198Z', '2025-11-12T22:28:53.341Z', 'system', '00000000-0000-0000-0000-000000000000')
 ON CONFLICT DO NOTHING;
+
+-- =============================================
+-- SEO Settings
+-- =============================================
+-- NOTE: Default SEO settings (including robots.txt with dynamic sitemap URL)
+-- are now created by TenantProvisioningService.seedDefaultSeoSettings()
+-- during the store provisioning process. This ensures the sitemap URL is
+-- correctly set based on the store's custom domain or slug.

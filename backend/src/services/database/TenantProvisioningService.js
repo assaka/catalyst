@@ -93,6 +93,15 @@ class TenantProvisioningService {
         result.errors.push({ step: 'create_user', error: 'No database client available' });
       }
 
+      // 6. Seed default SEO settings with robots.txt
+      if (tenantDb) {
+        console.log('Seeding default SEO settings via Supabase client...');
+        await this.seedDefaultSeoSettings(tenantDb, storeId, options, result);
+      } else if (options.oauthAccessToken && options.projectId) {
+        console.log('Seeding default SEO settings via Management API SQL...');
+        await this.seedDefaultSeoSettingsViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
+      }
+
       console.log(`✅ Tenant provisioning complete for store ${storeId}`);
 
       return {
@@ -656,6 +665,170 @@ VALUES (
       console.error('User creation via API error:', error.response?.data || error.message);
       result.errors.push({
         step: 'create_user',
+        error: error.message
+      });
+      // Don't throw - non-blocking
+      return false;
+    }
+  }
+
+  /**
+   * Seed default SEO settings with robots.txt
+   * @private
+   */
+  async seedDefaultSeoSettings(tenantDb, storeId, options, result) {
+    try {
+      // First, get the store record to access custom_domain and slug
+      const { data: store, error: storeError } = await tenantDb
+        .from('stores')
+        .select('custom_domain, slug, settings')
+        .eq('id', storeId)
+        .single();
+
+      if (storeError) {
+        console.warn('Could not fetch store for SEO settings:', storeError.message);
+        // Use fallback values
+      }
+
+      // Determine base URL for sitemap
+      let baseUrl;
+      const customDomain = store?.custom_domain || store?.settings?.custom_domain;
+      const slug = options.storeSlug || store?.slug || this.generateSlug(options.storeName);
+
+      if (customDomain) {
+        // Use custom domain if available
+        baseUrl = customDomain.startsWith('http') ? customDomain : `https://${customDomain}`;
+      } else {
+        // Fallback to public URL pattern: https://catalyst-pearl.vercel.app/public/{slug}
+        baseUrl = `https://catalyst-pearl.vercel.app/public/${slug}`;
+      }
+
+      // Generate default robots.txt content with dynamic sitemap
+      const robotsTxtContent = `User-agent: *
+Allow: /
+
+# Allow content directories (default behavior)
+Allow: /products/
+Allow: /categories/
+Allow: /cms-pages/
+
+# Block admin and system paths
+Disallow: /admin/
+Disallow: /api/
+Disallow: /checkout/
+Disallow: /cart/
+Disallow: /account/
+Disallow: /login
+
+Sitemap: ${baseUrl}/sitemap.xml`;
+
+      // Insert default SEO settings
+      const seoSettingsData = {
+        store_id: storeId,
+        robots_txt_content: robotsTxtContent,
+        sitemap_include_products: true,
+        sitemap_include_categories: true,
+        sitemap_include_pages: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await tenantDb
+        .from('seo_settings')
+        .insert(seoSettingsData)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to seed SEO settings: ${error.message}`);
+      }
+
+      console.log(`✅ Default SEO settings seeded with sitemap URL: ${baseUrl}/sitemap.xml`);
+      result.dataSeeded.push('Default SEO settings with robots.txt');
+
+      return data;
+    } catch (error) {
+      console.error('SEO settings seeding error:', error);
+      result.errors.push({
+        step: 'seed_seo_settings',
+        error: error.message
+      });
+      // Don't throw - SEO settings are optional
+      return null;
+    }
+  }
+
+  /**
+   * Seed default SEO settings via Management API SQL
+   * @private
+   */
+  async seedDefaultSeoSettingsViaAPI(oauthAccessToken, projectId, storeId, options, result) {
+    try {
+      const axios = require('axios');
+
+      // Determine base URL for sitemap
+      const slug = options.storeSlug || this.generateSlug(options.storeName);
+      let baseUrl;
+
+      if (options.customDomain) {
+        baseUrl = options.customDomain.startsWith('http') ? options.customDomain : `https://${options.customDomain}`;
+      } else {
+        baseUrl = `https://catalyst-pearl.vercel.app/public/${slug}`;
+      }
+
+      // Generate default robots.txt content
+      const robotsTxtContent = `User-agent: *
+Allow: /
+
+# Allow content directories (default behavior)
+Allow: /products/
+Allow: /categories/
+Allow: /cms-pages/
+
+# Block admin and system paths
+Disallow: /admin/
+Disallow: /api/
+Disallow: /checkout/
+Disallow: /cart/
+Disallow: /account/
+Disallow: /login
+
+Sitemap: ${baseUrl}/sitemap.xml`;
+
+      // Escape single quotes for SQL
+      const escapedRobotsTxt = robotsTxtContent.replace(/'/g, "''");
+
+      const insertSQL = `
+INSERT INTO seo_settings (store_id, robots_txt_content, sitemap_include_products, sitemap_include_categories, sitemap_include_pages, created_at, updated_at)
+VALUES (
+  '${storeId}',
+  '${escapedRobotsTxt}',
+  true,
+  true,
+  true,
+  NOW(),
+  NOW()
+) ON CONFLICT (store_id) DO NOTHING;
+      `;
+
+      await axios.post(
+        `https://api.supabase.com/v1/projects/${projectId}/database/query`,
+        { query: insertSQL },
+        {
+          headers: {
+            'Authorization': `Bearer ${oauthAccessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log(`✅ Default SEO settings seeded via API with sitemap URL: ${baseUrl}/sitemap.xml`);
+      result.dataSeeded.push('Default SEO settings with robots.txt (via API)');
+      return true;
+    } catch (error) {
+      console.error('SEO settings seeding via API error:', error.response?.data || error.message);
+      result.errors.push({
+        step: 'seed_seo_settings',
         error: error.message
       });
       // Don't throw - non-blocking
