@@ -1,4 +1,4 @@
-const { masterDbClient, masterSequelize } = require('../database/masterConnection');
+const { masterDbClient } = require('../database/masterConnection');
 const CreditTransaction = require('../models/CreditTransaction');
 const CreditUsage = require('../models/CreditUsage');
 const AkeneoSchedule = require('../models/AkeneoSchedule');
@@ -155,19 +155,24 @@ class CreditService {
     const recentUsage = await CreditUsage.getUsageHistory(userId, storeId, 20);
 
     // Calculate totals from transaction/usage history (master DB)
-    const [totals] = await masterSequelize.query(`
-      SELECT
-        COALESCE(SUM(ct.credits_amount), 0) as total_purchased,
-        COALESCE(SUM(cu.credits_used), 0) as total_used
-      FROM users u
-      LEFT JOIN credit_transactions ct ON u.id = ct.user_id
-      LEFT JOIN credit_usage cu ON u.id = cu.user_id
-      WHERE u.id = $1
-      GROUP BY u.id
-    `, {
-      bind: [userId],
-      type: masterSequelize.QueryTypes.SELECT
-    });
+    const { data: transactions } = await masterDbClient
+      .from('credit_transactions')
+      .select('credits_amount')
+      .eq('user_id', userId)
+      .eq('status', 'completed');
+
+    const { data: usages } = await masterDbClient
+      .from('credit_usage')
+      .select('credits_used')
+      .eq('user_id', userId);
+
+    const totalPurchased = (transactions || []).reduce((sum, t) => sum + parseFloat(t.credits_amount || 0), 0);
+    const totalUsed = (usages || []).reduce((sum, u) => sum + parseFloat(u.credits_used || 0), 0);
+
+    const totals = {
+      total_purchased: totalPurchased,
+      total_used: totalUsed
+    };
 
     // Get usage stats for current month
     const startOfMonth = new Date();
@@ -477,12 +482,15 @@ class CreditService {
     });
 
     // Get user's current balance before update (master DB)
-    const [userBefore] = await masterSequelize.query(`
-      SELECT id, email, credits FROM users WHERE id = $1
-    `, {
-      bind: [transaction.user_id],
-      type: masterSequelize.QueryTypes.SELECT
-    });
+    const { data: userBefore, error: userBeforeError } = await masterDbClient
+      .from('users')
+      .select('id, email, credits')
+      .eq('id', transaction.user_id)
+      .single();
+
+    if (userBeforeError) {
+      console.error('Error fetching user before update:', userBeforeError);
+    }
 
     // Parse credits_amount as decimal (users.credits is NUMERIC type)
     const creditsToAdd = parseFloat(transaction.credits_amount);
@@ -499,29 +507,34 @@ class CreditService {
 
     // Add credits to users.credits (single source of truth, master DB)
     console.log(`🔄 [CreditService] Updating user credits with ${creditsToAdd} credits...`);
-    const updateResult = await masterSequelize.query(`
-      UPDATE users
-      SET credits = COALESCE(credits, 0) + $1,
-          updated_at = NOW()
-      WHERE id = $2
-      RETURNING id, email, credits
-    `, {
-      bind: [creditsToAdd, transaction.user_id],
-      type: masterSequelize.QueryTypes.UPDATE
-    });
+    const newBalance = parseFloat(userBefore?.credits || 0) + creditsToAdd;
+
+    const { data: updatedUser, error: updateError } = await masterDbClient
+      .from('users')
+      .update({
+        credits: newBalance,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', transaction.user_id)
+      .select('id, email, credits')
+      .single();
+
+    if (updateError) {
+      console.error('Error updating user credits:', updateError);
+      throw new Error(`Failed to update user credits: ${updateError.message}`);
+    }
 
     console.log(`✅ [CreditService] Credits updated in database:`, {
-      updateResult,
-      affectedRows: updateResult?.[1] || 'unknown'
+      updatedUser,
+      newBalance
     });
 
     // Verify the update (master DB)
-    const [userAfter] = await masterSequelize.query(`
-      SELECT id, email, credits FROM users WHERE id = $1
-    `, {
-      bind: [transaction.user_id],
-      type: masterSequelize.QueryTypes.SELECT
-    });
+    const { data: userAfter } = await masterDbClient
+      .from('users')
+      .select('id, email, credits')
+      .eq('id', transaction.user_id)
+      .single();
 
     const creditDifference = (parseFloat(userAfter?.credits || 0) - parseFloat(userBefore?.credits || 0));
 
@@ -559,16 +572,27 @@ class CreditService {
    * Award bonus credits to a user
    */
   async awardBonusCredits(userId, storeId, creditsAmount, description = null) {
+    // Get current balance
+    const { data: user } = await masterDbClient
+      .from('users')
+      .select('credits')
+      .eq('id', userId)
+      .single();
+
+    const newBalance = parseFloat(user?.credits || 0) + parseFloat(creditsAmount);
+
     // Add credits to users.credits (single source of truth, master DB)
-    await masterSequelize.query(`
-      UPDATE users
-      SET credits = COALESCE(credits, 0) + $1,
-          updated_at = NOW()
-      WHERE id = $2
-    `, {
-      bind: [creditsAmount, userId],
-      type: masterSequelize.QueryTypes.UPDATE
-    });
+    const { error } = await masterDbClient
+      .from('users')
+      .update({
+        credits: newBalance,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (error) {
+      throw new Error(`Failed to award bonus credits: ${error.message}`);
+    }
 
     // Create bonus transaction record
     return await CreditTransaction.createBonus(userId, storeId, creditsAmount, description);
