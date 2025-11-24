@@ -44,20 +44,33 @@ export default function Stores() {
       // No need to pass filter parameters - the backend handles this
       const userStores = await Store.findAll();
 
-      // Fetch uptime data for all stores
+      // Fetch uptime data for each store
       try {
-        const uptimeResponse = await apiClient.get('credits/uptime-report?days=365');
-        if (uptimeResponse && uptimeResponse.store_breakdown) {
-          // Create a map of store_id -> uptime days
-          const uptimeMap = {};
-          uptimeResponse.store_breakdown.forEach(breakdown => {
-            uptimeMap[breakdown.store_id] = {
-              days_running: breakdown.days_running,
-              total_credits: breakdown.total_credits
-            };
-          });
-          setStoreUptimes(uptimeMap);
-        }
+        const uptimeMap = {};
+
+        // Fetch uptime for each store individually (tenant DB per store)
+        await Promise.all(
+          userStores.map(async (store) => {
+            try {
+              const uptimeResponse = await apiClient.get(
+                `credits/uptime-report?days=365&store_id=${store.id}`
+              );
+
+              if (uptimeResponse && uptimeResponse.store_breakdown && uptimeResponse.store_breakdown[0]) {
+                const breakdown = uptimeResponse.store_breakdown[0];
+                uptimeMap[store.id] = {
+                  days_running: breakdown.days_running,
+                  total_credits: breakdown.total_credits
+                };
+              }
+            } catch (storeUptimeError) {
+              console.error(`Error loading uptime for store ${store.id}:`, storeUptimeError);
+              // Continue with other stores
+            }
+          })
+        );
+
+        setStoreUptimes(uptimeMap);
       } catch (uptimeError) {
         console.error('Error loading uptime data:', uptimeError);
         // Continue without uptime data

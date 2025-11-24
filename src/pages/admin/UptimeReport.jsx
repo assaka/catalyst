@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Activity, Calendar, DollarSign, TrendingUp, Download } from 'lucide-react';
 import apiClient from '@/api/client';
+import { Store } from '@/api';
 
 export default function UptimeReport() {
   const [loading, setLoading] = useState(true);
@@ -31,8 +32,65 @@ export default function UptimeReport() {
   const loadUptimeReport = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get(`credits/uptime-report?days=${selectedDays}`);
-      setData(response);
+      // Get all user's stores
+      const stores = await Store.findAll();
+
+      if (!stores || stores.length === 0) {
+        setData({
+          summary: { total_stores: 0, total_days: 0, total_credits_charged: 0 },
+          store_breakdown: [],
+          records: []
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Fetch uptime data for each store in parallel
+      const uptimePromises = stores.map(store =>
+        apiClient.get(`credits/uptime-report?days=${selectedDays}&store_id=${store.id}`)
+          .catch(error => {
+            console.error(`Error loading uptime for store ${store.id}:`, error);
+            return null; // Return null for failed requests
+          })
+      );
+
+      const uptimeResponses = await Promise.all(uptimePromises);
+
+      // Aggregate data from all stores
+      const allRecords = [];
+      const allBreakdowns = [];
+      let totalStores = 0;
+      let totalDays = 0;
+      let totalCredits = 0;
+
+      uptimeResponses.forEach((response, index) => {
+        if (response && response.records) {
+          allRecords.push(...response.records);
+
+          if (response.store_breakdown && response.store_breakdown.length > 0) {
+            allBreakdowns.push(...response.store_breakdown);
+            totalStores++;
+            totalDays += response.summary?.total_days || 0;
+            totalCredits += response.summary?.total_credits_charged || 0;
+          }
+        }
+      });
+
+      // Sort records by date (newest first)
+      allRecords.sort((a, b) => new Date(b.charged_date) - new Date(a.charged_date));
+
+      // Sort breakdowns by total credits (highest first)
+      allBreakdowns.sort((a, b) => b.total_credits - a.total_credits);
+
+      setData({
+        summary: {
+          total_stores: totalStores,
+          total_days: totalDays,
+          total_credits_charged: totalCredits
+        },
+        store_breakdown: allBreakdowns,
+        records: allRecords
+      });
     } catch (error) {
       console.error('Error loading uptime report:', error);
     } finally {
