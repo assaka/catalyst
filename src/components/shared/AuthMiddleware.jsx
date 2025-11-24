@@ -1161,9 +1161,11 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                       selectedStoreName: localStorage.getItem('selectedStoreName')
                     });
 
+                    // IMPORTANT: Use window.location.href instead of navigate() to force a full page reload
+                    // This ensures localStorage is properly read by dashboard components
                     const dashboardUrl = createAdminUrl("DASHBOARD");
-                    console.log('🔍 Redirecting to dashboard:', dashboardUrl);
-                    navigate(dashboardUrl);
+                    console.log('🔍 Redirecting to dashboard with full page reload:', dashboardUrl);
+                    window.location.href = dashboardUrl;
                   } catch (storeError) {
                     console.error('❌ Error fetching store details:', storeError);
                     console.error('Error response:', storeError.response?.data);
@@ -1188,7 +1190,8 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                       localStorage.setItem('selectedStoreId', storeId);
                     }
 
-                    navigate(createAdminUrl("DASHBOARD"));
+                    // Force full page reload to ensure localStorage is read
+                    window.location.href = createAdminUrl("DASHBOARD");
                   }
                 } else {
                   // No active stores found - redirect to onboarding
