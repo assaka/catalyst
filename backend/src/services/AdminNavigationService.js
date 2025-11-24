@@ -122,23 +122,8 @@ class AdminNavigationService {
       // 4. Merge ALL plugin nav items with registry
       const allNavItems = [...(navItems || []), ...fileBasedNavItems, ...registryNavItems];
 
-      // 5. Get tenant's customizations
-      const { data: tenantConfig, error: configError } = await tenantDb
-        .from('admin_navigation_config')
-        .select('*');
-
-      if (configError) {
-        console.error('Error fetching navigation config:', configError.message);
-      }
-
-      // 6. Merge and apply customizations
-      const merged = this.mergeNavigation(
-        allNavItems,
-        tenantConfig
-      );
-
-      // 7. Build hierarchical tree
-      const tree = this.buildNavigationTree(merged);
+      // 5. Build hierarchical tree
+      const tree = this.buildNavigationTree(allNavItems);
 
       return tree;
 

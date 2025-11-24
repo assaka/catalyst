@@ -1,8 +1,9 @@
-const supabaseIntegration = require('./supabase-integration');
+const supabaseMediaStorageOAuth = require('./supabase-media-storage-oauth');
 const StorageInterface = require('./storage-interface');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
+const { createClient } = require('@supabase/supabase-js');
 
 class SupabaseStorageService extends StorageInterface {
   constructor() {
@@ -11,78 +12,73 @@ class SupabaseStorageService extends StorageInterface {
   }
 
   /**
-   * Get Supabase client with environment variable fallback
+   * Get Supabase client using store_media_storages credentials
    */
   async getSupabaseClient(storeId) {
-    // First try OAuth integration
+    // Get credentials from store_media_storages table
     try {
-      const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
-      if (tokenInfo && tokenInfo.project_url && (tokenInfo.service_role_key || tokenInfo.anon_key)) {
-        console.log('Found OAuth integration, attempting to use it...');
+      const credentials = await supabaseMediaStorageOAuth.getStorageCredentials(storeId);
 
-        // Validate service role key format if present
-        if (tokenInfo.service_role_key) {
-          console.log('Validating service role key format...');
-          const serviceRoleKey = tokenInfo.service_role_key.trim();
+      if (!credentials || !credentials.project_url || !credentials.service_role_key) {
+        throw new Error('No Supabase storage configured for this store');
+      }
 
-          // Check if it's a valid JWT format
-          if (!serviceRoleKey.startsWith('eyJ') || serviceRoleKey.split('.').length !== 3) {
-            throw new Error('Invalid service role key: The service role key must be a valid JWT token starting with "eyJ" and containing 3 parts separated by dots.');
-          }
+      console.log('📦 [Supabase Client] Using credentials from store_media_storages');
 
-          // Try to decode the JWT header to validate structure
-          try {
-            const parts = serviceRoleKey.split('.');
-            const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
-            if (!header.alg || !header.typ) {
-              throw new Error('Invalid service role key: JWT header is malformed.');
-            }
-          } catch (decodeError) {
-            throw new Error('Invalid service role key: Unable to decode JWT token. Please check the key format.');
-          }
+      // Validate service role key format
+      const serviceRoleKey = credentials.service_role_key.trim();
+      console.log('Validating service role key format...');
+
+      if (!serviceRoleKey.startsWith('eyJ') || serviceRoleKey.split('.').length !== 3) {
+        throw new Error('Invalid service role key: The service role key must be a valid JWT token starting with "eyJ" and containing 3 parts separated by dots.');
+      }
+
+      // Try to decode the JWT header to validate structure
+      try {
+        const parts = serviceRoleKey.split('.');
+        const header = JSON.parse(Buffer.from(parts[0], 'base64').toString());
+        if (!header.alg || !header.typ) {
+          throw new Error('Invalid service role key: JWT header is malformed.');
+        }
+      } catch (decodeError) {
+        throw new Error('Invalid service role key: Unable to decode JWT token. Please check the key format.');
+      }
+
+      // Create Supabase client
+      const client = createClient(credentials.project_url, serviceRoleKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      });
+
+      // Test the client with a quick validation
+      try {
+        const validationPromise = client.storage.listBuckets();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Service role key validation timeout')), 5000)
+        );
+
+        await Promise.race([validationPromise, timeoutPromise]);
+        console.log('✅ [Supabase Client] Validation successful');
+        return client;
+      } catch (validationError) {
+        console.error('❌ [Supabase Client] Validation failed:', validationError.message);
+
+        if (validationError.message && validationError.message.includes('timeout')) {
+          throw new Error('Invalid service role key: Service role key validation timed out. The key may be invalid or there may be network issues.');
         }
 
-        const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
-
-        // Test the client with a quick validation - use a timeout to prevent hanging
-        try {
-          const validationPromise = client.storage.listBuckets();
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Service role key validation timeout')), 5000)
-          );
-
-          await Promise.race([validationPromise, timeoutPromise]);
-          console.log('OAuth Supabase client validation successful');
-          return client;
-        } catch (validationError) {
-          console.error('OAuth Supabase client validation failed:', validationError.message);
-
-          // Check if it's a timeout
-          if (validationError.message && validationError.message.includes('timeout')) {
-            throw new Error('Invalid service role key: Service role key validation timed out. The key may be invalid or there may be network issues.');
-          }
-
-          // Check if it's a JWT/authentication error
-          if (validationError.message && (validationError.message.includes('JWT') || validationError.message.includes('JWS') || validationError.message.includes('invalid') || validationError.message.includes('malformed') || validationError.message.includes('unauthorized') || validationError.message.includes('forbidden'))) {
-            throw new Error('Invalid service role key: The provided service role key appears to be invalid or malformed. Please check your Supabase integration settings.');
-          }
-
-          throw validationError;
+        if (validationError.message && (validationError.message.includes('JWT') || validationError.message.includes('JWS') || validationError.message.includes('invalid') || validationError.message.includes('malformed') || validationError.message.includes('unauthorized') || validationError.message.includes('forbidden'))) {
+          throw new Error('Invalid service role key: The provided service role key appears to be invalid or malformed. Please reconnect your Supabase storage.');
         }
+
+        throw validationError;
       }
     } catch (error) {
-      console.log('OAuth Supabase client failed:', error.message);
-      // If the error is about invalid service role key, don't fall back to env vars
-      if (error.message && error.message.includes('Invalid service role key')) {
-        throw error;
-      }
+      console.error('❌ [Supabase Client] Error:', error.message);
+      throw new Error(`No Supabase storage configured: ${error.message}`);
     }
-
-    // DEPRECATED: No global fallback in master-tenant architecture
-    // Each tenant must have their own Supabase storage configuration
-    console.error('❌ No Supabase storage configured for store:', storeId);
-    console.error('⚠️ DEPRECATED: Global SUPABASE_URL/SUPABASE_ANON_KEY not supported');
-    throw new Error('No Supabase storage configured. Please connect a database for this store.');
   }
 
   /**
@@ -90,15 +86,15 @@ class SupabaseStorageService extends StorageInterface {
    */
   async ensureBucketsExist(storeId) {
     try {
-      // First check if we have the necessary keys
-      const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
-      
-      if (!tokenInfo || !tokenInfo.service_role_key) {
+      // Check if we have valid credentials
+      const credentials = await supabaseMediaStorageOAuth.getStorageCredentials(storeId);
+
+      if (!credentials || !credentials.service_role_key) {
         console.log('Service role key not available, skipping bucket auto-creation');
         return { success: false, message: 'Service role key required for bucket creation' };
       }
-      
-      const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
+
+      const client = await this.getSupabaseClient(storeId);
       
       // Check if buckets exist
       const { data: buckets, error: listError } = await client.storage.listBuckets();

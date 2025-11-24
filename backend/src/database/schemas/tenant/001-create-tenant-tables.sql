@@ -837,18 +837,6 @@ CREATE TABLE IF NOT EXISTS ab_tests (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS admin_navigation_config (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  nav_key VARCHAR(100) NOT NULL,
-  is_hidden BOOLEAN DEFAULT false,
-  custom_label VARCHAR(255),
-  custom_icon VARCHAR(50),
-  custom_order INTEGER,
-  custom_badge JSONB,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
 CREATE TABLE IF NOT EXISTS admin_navigation_registry (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   key VARCHAR(100) NOT NULL,
@@ -2894,31 +2882,11 @@ CREATE TABLE IF NOT EXISTS store_uptime (
 --   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 -- );
 
-CREATE TABLE IF NOT EXISTS supabase_oauth_tokens (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL,
-  access_token TEXT NOT NULL,
-  refresh_token TEXT NOT NULL,
-  expires_at TIMESTAMP NOT NULL,
-  project_url TEXT NOT NULL,
-  service_role_key TEXT,
-  database_url TEXT,
-  storage_url TEXT,
-  auth_url TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS supabase_project_keys (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL,
-  project_id VARCHAR(255) NOT NULL,
-  project_url TEXT NOT NULL,
-  anon_key TEXT,
-  service_role_key TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
+-- ============================================
+-- DEPRECATED: supabase_oauth_tokens and supabase_project_keys tables
+-- Replaced by store_media_storages table for media storage credentials
+-- OAuth tokens for Supabase API management now stored differently
+-- ============================================
 
 CREATE TABLE IF NOT EXISTS taxes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3457,10 +3425,6 @@ CREATE INDEX IF NOT EXISTS idx_migrations_executed_at ON _migrations USING btree
 
 CREATE INDEX IF NOT EXISTS idx_migrations_filename ON _migrations USING btree (filename);
 
-CREATE INDEX IF NOT EXISTS idx_navigation_config_hidden ON admin_navigation_config USING btree (is_hidden);
-
-CREATE INDEX IF NOT EXISTS idx_navigation_config_key ON admin_navigation_config USING btree (nav_key);
-
 CREATE INDEX IF NOT EXISTS idx_navigation_registry_core ON admin_navigation_registry USING btree (is_core);
 
 CREATE INDEX IF NOT EXISTS idx_navigation_registry_key ON admin_navigation_registry USING btree (key);
@@ -3709,9 +3673,7 @@ CREATE INDEX IF NOT EXISTS idx_stores_published_at ON stores USING btree (publis
 
 CREATE INDEX IF NOT EXISTS idx_stores_slug ON stores USING btree (slug);
 
-CREATE INDEX IF NOT EXISTS idx_supabase_oauth_tokens_store_id ON supabase_oauth_tokens USING btree (store_id);
-
-CREATE INDEX IF NOT EXISTS idx_supabase_project_keys_store_project ON supabase_project_keys USING btree (store_id, project_id);
+-- REMOVED: Indexes for deprecated supabase_oauth_tokens and supabase_project_keys tables
 
 CREATE INDEX IF NOT EXISTS idx_taxes_is_active ON taxes USING btree (is_active);
 
@@ -3847,7 +3809,7 @@ CREATE INDEX IF NOT EXISTS store_teams_store_id ON store_teams USING btree (stor
 
 CREATE INDEX IF NOT EXISTS store_teams_user_id ON store_teams USING btree (user_id);
 
-CREATE UNIQUE INDEX supabase_project_keys_store_id_project_id ON supabase_project_keys USING btree (store_id, project_id);
+-- REMOVED: Unique index for deprecated supabase_project_keys table
 
 CREATE INDEX IF NOT EXISTS translations_category_index ON translations USING btree (category);
 
@@ -4008,11 +3970,6 @@ CREATE TRIGGER update_jobs_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_navigation_config_updated_at
-  BEFORE UPDATE ON admin_navigation_config
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_pdf_template_translations_updated_at
   BEFORE UPDATE ON pdf_template_translations
   FOR EACH ROW
@@ -4063,10 +4020,7 @@ CREATE TRIGGER update_stores_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_supabase_oauth_tokens_updated_at
-  BEFORE UPDATE ON supabase_oauth_tokens
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+-- REMOVED: Trigger for deprecated supabase_oauth_tokens table
 
 CREATE TRIGGER update_taxes_updated_at
   BEFORE UPDATE ON taxes
