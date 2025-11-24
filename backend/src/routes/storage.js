@@ -365,33 +365,81 @@ router.get('/status', async (req, res) => {
 
     console.log('📊 Checking storage status for store:', storeId);
 
+    // Check store settings first
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const { masterDbClient } = require('../database/masterConnection');
+
+    let storeSettings = null;
+    try {
+      const { data: store } = await masterDbClient
+        .from('stores')
+        .select('settings')
+        .eq('id', storeId)
+        .maybeSingle();
+
+      storeSettings = store?.settings;
+      console.log('📋 Store settings:', storeSettings);
+    } catch (err) {
+      console.warn('Could not fetch store settings:', err.message);
+    }
+
     // Get current provider with timeout
     let currentProvider = null;
     let configured = false;
     let provider = 'External URLs';
+    let errorDetails = null;
 
     try {
       const providerPromise = storageManager.getStorageProvider(storeId);
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout getting storage provider')), 3000);
+        setTimeout(() => reject(new Error('Timeout getting storage provider')), 5000);
       });
       currentProvider = await Promise.race([providerPromise, timeoutPromise]);
+
+      console.log('✅ Got storage provider:', currentProvider);
 
       if (currentProvider && currentProvider.type) {
         configured = true;
         provider = currentProvider.type;
       }
     } catch (error) {
-      console.log('Could not get current provider:', error.message);
+      console.error('❌ Could not get current provider:', error.message);
+      errorDetails = error.message;
+
+      // Check if it's because no provider is configured vs other errors
+      if (!error.message.includes('No storage provider')) {
+        console.error('Unexpected error getting provider:', error);
+      }
       configured = false;
     }
+
+    // Override with store settings if available
+    const defaultProvider = storeSettings?.default_mediastorage_provider ||
+                           storeSettings?.default_database_provider;
+
+    if (defaultProvider) {
+      console.log(`✅ Store has default provider in settings: ${defaultProvider}`);
+      provider = defaultProvider;
+      // If provider is set in settings, consider it configured
+      // even if the connection check failed (could be temp network issue)
+      configured = true;
+    } else if (!configured) {
+      console.log(`⚠️ No provider configured in settings and connection check failed`);
+    }
+
+    console.log('📤 Returning status:', { configured, provider, fromSettings: !!defaultProvider });
 
     res.json({
       success: true,
       configured: configured,
       hasProvider: configured,
       provider: provider,
-      integrationType: provider
+      integrationType: provider,
+      debug: {
+        storeSettings: defaultProvider || 'none',
+        errorDetails: errorDetails,
+        connectionCheckPassed: !!currentProvider
+      }
     });
 
   } catch (error) {
