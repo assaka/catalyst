@@ -358,9 +358,19 @@ export default function StorefrontLayout({ children }) {
                             <p className="text-gray-600 mb-4">
                                 This store is temporarily unavailable. Please check back later.
                             </p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-gray-500 mb-4">
                                 If you're the store owner, please publish your store from the admin dashboard.
                             </p>
+                            <div className="pt-4 border-t border-gray-200">
+                                <a
+                                    href="/Landing"
+                                    className="text-sm text-gray-400 hover:text-gray-600 transition-colors inline-flex items-center"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    Powered by <span className="font-semibold ml-1">DAINO</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 )}
