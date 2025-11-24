@@ -74,7 +74,6 @@ export const URL_CONFIG = {
     SHIPPING_METHODS: 'shipping-methods',
     DELIVERY_SETTINGS: 'delivery-settings',
     THEME_LAYOUT: 'theme-layout',
-    MARKETPLACE_EXPORT: 'marketplace-export',
     IMAGE_MANAGER: 'image-manager',
     STOCK_SETTINGS: 'stock-settings',
     PAYMENT_METHODS: 'payment-methods',

@@ -31,7 +31,6 @@ All admin/management URLs are prefixed with `/admin/`:
 /admin/google-tag-manager      - GTM settings
 /admin/delivery-settings       - Delivery configuration
 /admin/theme-layout            - Theme customization
-/admin/marketplace-export      - Marketplace integration
 /admin/image-manager           - Image management
 /admin/stock-settings          - Inventory settings
 /admin/payment-methods         - Payment configuration

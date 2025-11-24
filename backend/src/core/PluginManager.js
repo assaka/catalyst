@@ -445,7 +445,7 @@ class PluginManager {
       await this.discoverPlugins();
       
       // Define built-in plugins that should be marked as installed
-      const builtInPlugins = ['akeneo', 'marketplace-export'];
+      const builtInPlugins = ['akeneo'];
       
       // Sync each discovered plugin with database
       for (const [name, plugin] of this.plugins.entries()) {

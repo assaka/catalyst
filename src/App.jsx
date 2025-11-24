@@ -463,7 +463,6 @@ function App() {
           <Route path="/admin/robots-txt" element={<PageWrapper Component={Pages.RobotsTxt} pageName="RobotsTxt" />} />
           <Route path="/admin/html-sitemap" element={<PageWrapper Component={Pages.HtmlSitemap} pageName="HtmlSitemap" />} />
           <Route path="/admin/akeneo-integration" element={<PageWrapper Component={Pages.AkeneoIntegration} pageName="akeneo-integration" />} />
-          <Route path="/admin/marketplace-export" element={<PageWrapper Component={Pages.MarketplaceExport} pageName="MARKETPLACE_EXPORT" />} />
           <Route path="/admin/marketplace-hub" element={<PageWrapper Component={Pages.MarketplaceHub} pageName="MARKETPLACE_HUB" />} />
           <Route path="/admin/background-jobs" element={<PageWrapper Component={Pages.BackgroundJobs} pageName="BACKGROUND_JOBS" />} />
           <Route path="/admin/job-scheduler" element={<PageWrapper Component={Pages.JobScheduler} pageName="JOB_SCHEDULER" />} />

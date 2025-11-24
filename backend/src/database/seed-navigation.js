@@ -55,7 +55,6 @@ const allNavItems = [
 
   // Import/Export
   { key: 'akeneo_integration', label: 'Akeneo', icon: 'Database', route: '/admin/akeneo-integration', order: 60, category: 'import_export' },
-  { key: 'marketplace_export', label: 'Marketplace Export', icon: 'Upload', route: '/admin/marketplace-export', order: 61, category: 'import_export' },
   { key: 'ecommerce_integrations', label: 'E-commerce', icon: 'ShoppingBag', route: '/admin/ecommerce-integrations', order: 62, category: 'import_export' },
   { key: 'crm_integrations', label: 'CRM', icon: 'Users', route: '/admin/crm-integrations', order: 63, category: 'import_export' },
   { key: 'shopify_integration', label: 'Shopify', icon: 'ShoppingBag', route: '/admin/shopify-integration', order: 64, category: 'import_export' },

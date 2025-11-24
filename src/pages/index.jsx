@@ -36,7 +36,6 @@ export { default as AkeneoIntegration } from './admin/AkeneoIntegration';
 export { default as ProductTabs } from './admin/ProductTabs';
 export { default as ProductLabels } from './admin/ProductLabels';
 export { default as CustomOptionRules } from './admin/CustomOptionRules';
-export { default as MarketplaceExport } from './admin/MarketplaceExport';
 export { default as MarketplaceHub } from './admin/MarketplaceHub';
 export { default as BackgroundJobs } from './admin/BackgroundJobs';
 export { default as JobScheduler } from './admin/JobScheduler';
