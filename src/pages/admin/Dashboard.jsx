@@ -251,11 +251,18 @@ export default function Dashboard() {
       color: "bg-green-500"
     },
     {
-      title: "Store Settings",
-      description: "Configure payments and domain",
-      icon: Settings,
-      link: "Settings",
+      title: "Customers",
+      description: "View and manage your customers",
+      icon: Users,
+      link: "Customers",
       color: "bg-purple-500"
+    },
+    {
+      title: "Orders",
+      description: "View and manage orders",
+      icon: ShoppingBag,
+      link: "Orders",
+      color: "bg-orange-500"
     },
   ];
 
