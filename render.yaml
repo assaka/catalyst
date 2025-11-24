@@ -166,6 +166,13 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Master Database Configuration (required for credit deduction)
+      - key: MASTER_DB_URL
+        sync: false
+      - key: MASTER_SUPABASE_URL
+        sync: false
+      - key: MASTER_SUPABASE_SERVICE_KEY
+        sync: false
       # Database Configuration
       - key: SUPABASE_URL
         sync: false
