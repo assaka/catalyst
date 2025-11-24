@@ -1,5 +1,5 @@
 const BaseJobHandler = require('./BaseJobHandler');
-const { Store, User, CustomDomain } = require('../../models');
+const { masterSequelize } = require('../../database/masterConnection');
 const creditService = require('../../services/credit-service');
 
 /**
@@ -15,7 +15,15 @@ class DailyCreditDeductionJob extends BaseJobHandler {
 
   async execute() {
     try {
-      const publishedStores = await Store.findPublishedStores();
+      // Query published stores from master DB
+      const publishedStores = await masterSequelize.query(`
+        SELECT id, user_id, name, slug, published
+        FROM stores
+        WHERE published = true
+        ORDER BY created_at DESC
+      `, {
+        type: masterSequelize.QueryTypes.SELECT
+      });
 
       if (publishedStores.length === 0) {
         return {
@@ -27,7 +35,7 @@ class DailyCreditDeductionJob extends BaseJobHandler {
           timestamp: new Date().toISOString()
         };
       }
-      
+
       const results = {
         processed: 0,
         successful: 0,
@@ -40,7 +48,16 @@ class DailyCreditDeductionJob extends BaseJobHandler {
         results.processed++;
 
         try {
-          const owner = await User.findByPk(store.user_id);
+          // Query user from master DB
+          const [owner] = await masterSequelize.query(`
+            SELECT id, email
+            FROM users
+            WHERE id = $1
+          `, {
+            bind: [store.user_id],
+            type: masterSequelize.QueryTypes.SELECT
+          });
+
           if (!owner) {
             results.failed++;
             results.errors.push({
@@ -81,12 +98,15 @@ class DailyCreditDeductionJob extends BaseJobHandler {
         }
       }
 
-      // Process custom domains
-      const activeCustomDomains = await CustomDomain.findAll({
-        where: {
-          is_active: true,
-          verification_status: 'verified'
-        }
+      // Process custom domains - query from master DB
+      const activeCustomDomains = await masterSequelize.query(`
+        SELECT id, store_id, domain, is_active, verification_status
+        FROM custom_domains
+        WHERE is_active = true
+          AND verification_status = 'verified'
+        ORDER BY created_at DESC
+      `, {
+        type: masterSequelize.QueryTypes.SELECT
       });
 
       const domainResults = {
@@ -101,8 +121,14 @@ class DailyCreditDeductionJob extends BaseJobHandler {
         domainResults.processed++;
 
         try {
-          const store = await Store.findByPk(domain.store_id, {
-            attributes: ['id', 'name', 'slug', 'user_id']
+          // Query store from master DB
+          const [store] = await masterSequelize.query(`
+            SELECT id, name, slug, user_id
+            FROM stores
+            WHERE id = $1
+          `, {
+            bind: [domain.store_id],
+            type: masterSequelize.QueryTypes.SELECT
           });
 
           if (!store) {
