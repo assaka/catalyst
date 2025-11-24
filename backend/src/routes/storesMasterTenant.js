@@ -168,6 +168,14 @@ router.post('/', authMiddleware, async (req, res) => {
         .single();
 
       if (storeError) {
+        // Check for duplicate slug constraint violation
+        if (storeError.code === '23505' && storeError.message.includes('idx_stores_slug')) {
+          return res.status(409).json({
+            success: false,
+            error: 'A store with this name already exists. Please choose a different name.',
+            code: 'DUPLICATE_STORE_NAME'
+          });
+        }
         throw new Error(`Failed to create store: ${storeError.message}`);
       }
 
@@ -888,10 +896,10 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const { masterDbClient } = require('../database/masterConnection');
 
-    // Get stores from master DB (master only has: id, slug, user_id, status, is_active)
+    // Get stores from master DB with all relevant fields for the admin UI
     const { data: stores, error } = await masterDbClient
       .from('stores')
-      .select('id, slug, status, is_active, created_at')
+      .select('id, user_id, slug, status, is_active, published, published_at, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -942,10 +950,15 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
 
         return {
           id: store.id,
+          user_id: store.user_id,  // For ownership checking
           name: storeName,
           slug: store.slug,
           status: store.status,
           is_active: store.is_active,
+          published: store.published,  // Publishing status from master DB
+          published_at: store.published_at,
+          created_at: store.created_at,
+          updated_at: store.updated_at,
           settings: storeSettings,
           admin_navigation: adminNavigation
         };
