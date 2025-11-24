@@ -1095,11 +1095,14 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                 console.log('🔍 User data from login response:', {
                   hasStoreId: !!userData.store_id,
                   store_id: userData.store_id,
-                  userKeys: Object.keys(userData)
+                  userKeys: Object.keys(userData),
+                  fullUserData: userData
                 });
 
                 // Try to get store_id from user data, or decode from JWT token
                 let storeId = userData.store_id;
+
+                console.log('🔍 Token received:', token ? token.substring(0, 50) + '...' : 'NO TOKEN');
 
                 if (!storeId && token) {
                   // Decode JWT to get store_id
@@ -1111,11 +1114,20 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                     }).join(''));
                     const tokenData = JSON.parse(jsonPayload);
                     storeId = tokenData.store_id;
-                    console.log('🔍 Decoded store_id from JWT:', storeId);
+                    console.log('🔍 Decoded JWT payload:', {
+                      id: tokenData.id,
+                      email: tokenData.email,
+                      role: tokenData.role,
+                      has_store_id: !!tokenData.store_id,
+                      store_id: tokenData.store_id,
+                      allKeys: Object.keys(tokenData)
+                    });
                   } catch (decodeError) {
                     console.error('❌ Error decoding JWT:', decodeError);
                   }
                 }
+
+                console.log('🔍 Final storeId to use:', storeId);
 
                 if (storeId) {
                   // Backend found first active store - fetch details and redirect to dashboard
