@@ -24,9 +24,10 @@ export default function AcceptInvitation() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in
+    // Check if user is logged in (check token exists and user not marked as logged out)
     const authToken = localStorage.getItem('store_owner_auth_token');
-    setIsLoggedIn(!!authToken);
+    const isLoggedOut = localStorage.getItem('user_logged_out') === 'true';
+    setIsLoggedIn(!!authToken && !isLoggedOut);
 
     if (token) {
       fetchInvitation();
@@ -87,6 +88,20 @@ export default function AcceptInvitation() {
       }
     } catch (err) {
       console.error('Error accepting invitation:', err);
+
+      // If session expired or invalid token, redirect to login
+      if (err.message?.includes('Session has been terminated') ||
+          err.message?.includes('token') ||
+          err.message?.includes('Unauthorized') ||
+          err.message?.includes('Authentication')) {
+        toast.error('Please log in to accept this invitation');
+        localStorage.removeItem('store_owner_auth_token');
+        setIsLoggedIn(false);
+        localStorage.setItem('invitation_return_url', window.location.pathname);
+        navigate('/admin/auth?redirect=' + encodeURIComponent(window.location.pathname));
+        return;
+      }
+
       toast.error(err.message || 'Failed to accept invitation');
       setError(err.message);
     } finally {
