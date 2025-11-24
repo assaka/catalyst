@@ -155,6 +155,8 @@ const CreditTransaction = {
   },
 
   async getUserTransactions(userId, storeId = null, limit = 50) {
+    console.log('📋 [CreditTransaction.getUserTransactions] Query params:', { userId, storeId, limit });
+
     let query = masterDbClient
       .from(this.tableName)
       .select('*')
@@ -167,6 +169,12 @@ const CreditTransaction = {
     }
 
     const { data, error } = await query;
+
+    console.log('📋 [CreditTransaction.getUserTransactions] Result:', {
+      recordCount: data?.length || 0,
+      error: error?.message || null,
+      firstRecord: data?.[0] || null
+    });
 
     if (error) {
       console.error('Error getting user transactions:', error);
