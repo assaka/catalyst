@@ -1,7 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 const ConnectionManager = require('./database/ConnectionManager');
-const SupabaseProjectKeys = require('../models/SupabaseProjectKeys');
 const supabaseStorage = require('./supabase-storage');
 const { encrypt, decrypt } = require('../utils/encryption');
 const { v4: uuidv4 } = require('uuid');
@@ -886,7 +885,7 @@ class SupabaseIntegration {
       }
 
       // Delete all stored project keys for this store
-      const deletedKeysCount = await SupabaseProjectKeys.deleteAllForStore(storeId);
+      const deletedKeysCount = await this.deleteAllProjectKeys(storeId);
       if (deletedKeysCount > 0) {
         console.log(`Deleted ${deletedKeysCount} stored project key(s) from database`);
       } else {
@@ -961,7 +960,7 @@ class SupabaseIntegration {
       // Format projects for frontend and check which have keys configured
       const formattedProjects = await Promise.all(projects.map(async project => {
         // Check if we have keys stored for this project
-        const storedKeys = await SupabaseProjectKeys.getKeysForProject(storeId, project.id);
+        const storedKeys = await this.getProjectKeys(storeId, project.id);
         const hasKeys = storedKeys && storedKeys.anonKey && storedKeys.anonKey !== 'pending_configuration';
         
         return {
@@ -1082,7 +1081,7 @@ class SupabaseIntegration {
       }
 
       // First check if we have stored keys for this project
-      const storedKeys = await SupabaseProjectKeys.getKeysForProject(storeId, projectId);
+      const storedKeys = await this.getProjectKeys(storeId, projectId);
       if (storedKeys && storedKeys.anonKey) {
         console.log('Using stored keys for project:', projectId);
         anonKey = storedKeys.anonKey;
@@ -1113,7 +1112,7 @@ class SupabaseIntegration {
 
       // Store the keys for this project if we have them (use preserved key)
       if (anonKey && anonKey !== 'pending_configuration') {
-        await SupabaseProjectKeys.upsertKeys(storeId, projectId, projectUrl, {
+        await this.upsertProjectKeys(storeId, projectId, projectUrl, {
           anonKey: anonKey,
           serviceRoleKey: preservedServiceRoleKey
         });
@@ -1778,7 +1777,7 @@ class SupabaseIntegration {
 
       // Store keys for this specific project
       if (projectId && (config.anonKey || config.serviceRoleKey)) {
-        await SupabaseProjectKeys.upsertKeys(storeId, projectId, 
+        await this.upsertProjectKeys(storeId, projectId,
           config.projectUrl || token.project_url, {
           anonKey: config.anonKey,
           serviceRoleKey: config.serviceRoleKey
@@ -1814,6 +1813,108 @@ class SupabaseIntegration {
     } catch (error) {
       console.error('Error updating project config:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Helper: Upsert project keys in tenant DB (replaces SupabaseProjectKeys.upsertKeys)
+   */
+  async upsertProjectKeys(storeId, projectId, projectUrl, keys) {
+    try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      // Check if exists
+      const { data: existing } = await tenantDb
+        .from('supabase_project_keys')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('project_id', projectId)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing
+        const updates = {};
+        if (keys.anonKey !== undefined) updates.anon_key = keys.anonKey;
+        if (keys.serviceRoleKey !== undefined) updates.service_role_key = keys.serviceRoleKey;
+        if (projectUrl) updates.project_url = projectUrl;
+        updates.updated_at = new Date();
+
+        const { error } = await tenantDb
+          .from('supabase_project_keys')
+          .update(updates)
+          .eq('store_id', storeId)
+          .eq('project_id', projectId);
+
+        if (error) throw error;
+        return { ...existing, ...updates };
+      } else {
+        // Insert new
+        const { data, error } = await tenantDb
+          .from('supabase_project_keys')
+          .insert({
+            store_id: storeId,
+            project_id: projectId,
+            project_url: projectUrl,
+            anon_key: keys.anonKey || null,
+            service_role_key: keys.serviceRoleKey || null
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      }
+    } catch (error) {
+      console.error('[upsertProjectKeys] Error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Helper: Get project keys from tenant DB (replaces SupabaseProjectKeys.getKeysForProject)
+   */
+  async getProjectKeys(storeId, projectId) {
+    try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      const { data: keys } = await tenantDb
+        .from('supabase_project_keys')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('project_id', projectId)
+        .maybeSingle();
+
+      if (!keys) return null;
+
+      return {
+        anonKey: keys.anon_key,
+        serviceRoleKey: keys.service_role_key,
+        projectUrl: keys.project_url
+      };
+    } catch (error) {
+      console.error('[getProjectKeys] Error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Helper: Delete all project keys for a store (replaces SupabaseProjectKeys.deleteAllForStore)
+   */
+  async deleteAllProjectKeys(storeId) {
+    try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      const { data, error } = await tenantDb
+        .from('supabase_project_keys')
+        .delete()
+        .eq('store_id', storeId)
+        .select();
+
+      if (error) throw error;
+      return data?.length || 0;
+    } catch (error) {
+      console.error('[deleteAllProjectKeys] Error:', error);
+      return 0;
     }
   }
 }
