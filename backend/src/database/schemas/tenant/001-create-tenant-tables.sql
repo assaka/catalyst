@@ -2829,7 +2829,7 @@ CREATE TABLE IF NOT EXISTS store_uptime (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS subscriptions (
+-- CREATE TABLE IF NOT EXISTS subscriptions (
 --   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 --   store_id UUID NOT NULL,
 --   plan_name VARCHAR(50) NOT NULL,
