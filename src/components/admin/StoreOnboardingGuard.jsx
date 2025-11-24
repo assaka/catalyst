@@ -33,15 +33,17 @@ export default function StoreOnboardingGuard({ children }) {
       const response = await api.get('/api/stores/mt/dropdown');
 
       if (response.success && response.data) {
-        const storeCount = response.data.length;
+        // Filter for active stores only
+        const activeStores = response.data.filter(store => store.status === 'active');
+        const activeStoreCount = activeStores.length;
 
-        if (storeCount === 0) {
-          // No stores - redirect to onboarding
-          console.log('No stores found, redirecting to onboarding...');
+        if (activeStoreCount === 0) {
+          // No active stores - redirect to onboarding
+          console.log('No active stores found, redirecting to onboarding...');
           navigate('/admin/store-onboarding', { replace: true });
           return;
         } else {
-          // Has stores - allow access
+          // Has active stores - allow access
           setHasStores(true);
         }
       } else {

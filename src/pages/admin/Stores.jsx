@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar, Filter } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
@@ -26,6 +27,7 @@ export default function Stores() {
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [storeToPublish, setStoreToPublish] = useState(null);
   const [storeUptimes, setStoreUptimes] = useState({});
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', 'pending_database', 'provisioning', 'suspended', 'inactive'
 
   useEffect(() => {
     loadData();
@@ -153,6 +155,11 @@ export default function Stores() {
     );
   }
 
+  // Filter stores based on status
+  const filteredStores = statusFilter === 'all'
+    ? stores
+    : stores.filter(store => store.status === statusFilter);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-8">
@@ -179,6 +186,37 @@ export default function Stores() {
         </Button>
       </div>
 
+      {/* Status Filter */}
+      <div className="mb-6 flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-gray-600" />
+          <Label className="text-sm font-medium text-gray-700">Filter by Status:</Label>
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="All Stores" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Stores</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="pending_database">Pending Database</SelectItem>
+            <SelectItem value="provisioning">Provisioning</SelectItem>
+            <SelectItem value="suspended">Suspended</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+        {statusFilter !== 'all' && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setStatusFilter('all')}
+            className="text-gray-600"
+          >
+            Clear Filter
+          </Button>
+        )}
+      </div>
+
       {stores.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
@@ -198,9 +236,22 @@ export default function Stores() {
             </Button>
           </CardContent>
         </Card>
+      ) : filteredStores.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-12">
+            <Filter className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No stores found</h3>
+            <p className="text-gray-600 mb-6">
+              No stores match the selected status filter.
+            </p>
+            <Button variant="outline" onClick={() => setStatusFilter('all')}>
+              Clear Filter
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {stores.map((store) => (
+          {filteredStores.map((store) => (
             <Card key={store.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -213,7 +264,7 @@ export default function Stores() {
                       }
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     {/* Check multiple ways to determine ownership */}
                     {(store.user_id === user?.id || store.is_direct_owner || store.access_role === 'owner') ? (
                       <Badge className="bg-purple-100 text-purple-800 border-purple-200" variant="outline">
@@ -229,6 +280,24 @@ export default function Stores() {
                     <Badge className={store.published ? 'bg-green-100 text-green-800 border-green-200' : 'bg-orange-100 text-orange-800 border-orange-200'}>
                       {store.published ? 'Running' : 'Paused'}
                     </Badge>
+                    {/* Status Badge */}
+                    {store.status && (
+                      <Badge className={
+                        store.status === 'active' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                        store.status === 'pending_database' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                        store.status === 'provisioning' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                        store.status === 'suspended' ? 'bg-red-100 text-red-800 border-red-200' :
+                        store.status === 'inactive' ? 'bg-gray-100 text-gray-800 border-gray-200' :
+                        'bg-gray-100 text-gray-800 border-gray-200'
+                      } variant="outline">
+                        {store.status === 'pending_database' ? 'Pending DB' :
+                         store.status === 'provisioning' ? 'Provisioning' :
+                         store.status === 'active' ? 'Active' :
+                         store.status === 'suspended' ? 'Suspended' :
+                         store.status === 'inactive' ? 'Inactive' :
+                         store.status}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </CardHeader>
