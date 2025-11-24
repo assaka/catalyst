@@ -1138,20 +1138,56 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                   console.log('🔍 First active store found:', storeId);
 
                   try {
+                    console.log('🔍 Fetching store details from /stores/' + storeId);
                     const storeResponse = await apiClient.get(`/stores/${storeId}`);
                     const store = storeResponse.data || storeResponse;
 
-                    console.log('✅ Setting active store:', store.name, '(slug:', store.slug + ')');
+                    console.log('✅ Store fetched successfully:', {
+                      id: store.id,
+                      name: store.name,
+                      slug: store.slug,
+                      code: store.code,
+                      is_active: store.is_active
+                    });
+
+                    // Set all store context in localStorage
                     localStorage.setItem('selectedStoreId', store.id);
                     localStorage.setItem('selectedStoreSlug', store.slug || store.code);
+                    localStorage.setItem('selectedStoreName', store.name);
+
+                    console.log('✅ Store context set in localStorage:', {
+                      selectedStoreId: localStorage.getItem('selectedStoreId'),
+                      selectedStoreSlug: localStorage.getItem('selectedStoreSlug'),
+                      selectedStoreName: localStorage.getItem('selectedStoreName')
+                    });
 
                     const dashboardUrl = createAdminUrl("DASHBOARD");
                     console.log('🔍 Redirecting to dashboard:', dashboardUrl);
                     navigate(dashboardUrl);
                   } catch (storeError) {
                     console.error('❌ Error fetching store details:', storeError);
-                    // Fallback: set store_id without slug and go to dashboard
-                    localStorage.setItem('selectedStoreId', storeId);
+                    console.error('Error response:', storeError.response?.data);
+                    console.error('Error status:', storeError.response?.status);
+
+                    // Fallback: Try to get store from dropdown
+                    try {
+                      console.log('🔄 Fallback: Fetching from /stores/dropdown');
+                      const dropdownResponse = await apiClient.get('/stores/dropdown');
+                      const stores = dropdownResponse.data || dropdownResponse;
+                      const store = stores.find(s => s.id === storeId) || stores[0];
+
+                      if (store) {
+                        console.log('✅ Store found in dropdown:', store.name);
+                        localStorage.setItem('selectedStoreId', store.id);
+                        localStorage.setItem('selectedStoreSlug', store.slug || store.code);
+                        localStorage.setItem('selectedStoreName', store.name);
+                      }
+                    } catch (fallbackError) {
+                      console.error('❌ Fallback also failed:', fallbackError);
+                      // Last resort: just set the ID
+                      localStorage.setItem('selectedStoreId', storeId);
+                    }
+
                     navigate(createAdminUrl("DASHBOARD"));
                   }
                 } else {
