@@ -20,11 +20,12 @@ class DailyCreditDeductionJob extends BaseJobHandler {
         throw new Error('masterDbClient not initialized - check MASTER_SUPABASE_URL and MASTER_SUPABASE_SERVICE_KEY');
       }
 
-      // Query published stores from master DB
+      // Query active stores from master DB
+      // Master stores table has: id, user_id, slug, status, is_active
       const { data: publishedStores, error: storesError } = await masterDbClient
         .from('stores')
-        .select('id, user_id, name, slug, published')
-        .eq('published', true)
+        .select('id, user_id, slug, status, is_active')
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (storesError) {
@@ -65,7 +66,7 @@ class DailyCreditDeductionJob extends BaseJobHandler {
             results.failed++;
             results.errors.push({
               store_id: store.id,
-              store_name: store.name,
+              store_slug: store.slug,
               error: `Failed to fetch owner: ${ownerError.message}`
             });
             continue;
@@ -75,7 +76,7 @@ class DailyCreditDeductionJob extends BaseJobHandler {
             results.failed++;
             results.errors.push({
               store_id: store.id,
-              store_name: store.name,
+              store_slug: store.slug,
               error: 'Store owner not found'
             });
             continue;
@@ -87,7 +88,7 @@ class DailyCreditDeductionJob extends BaseJobHandler {
             results.successful++;
             results.stores.push({
               store_id: store.id,
-              store_name: store.name,
+              store_slug: store.slug,
               owner_id: store.user_id,
               credits_deducted: chargeResult.credits_deducted || 1,
               remaining_balance: chargeResult.remaining_balance,
@@ -97,7 +98,7 @@ class DailyCreditDeductionJob extends BaseJobHandler {
             results.failed++;
             results.errors.push({
               store_id: store.id,
-              store_name: store.name,
+              store_slug: store.slug,
               error: chargeResult.message || 'Unknown error'
             });
           }
@@ -105,7 +106,7 @@ class DailyCreditDeductionJob extends BaseJobHandler {
           results.failed++;
           results.errors.push({
             store_id: store.id,
-            store_name: store.name,
+            store_slug: store.slug,
             error: storeError.message
           });
         }
@@ -141,7 +142,7 @@ class DailyCreditDeductionJob extends BaseJobHandler {
           // Query store from master DB
           const { data: store, error: storeError } = await masterDbClient
             .from('stores')
-            .select('id, name, slug, user_id')
+            .select('id, slug, user_id')
             .eq('id', domain.store_id)
             .maybeSingle();
 
@@ -177,7 +178,6 @@ class DailyCreditDeductionJob extends BaseJobHandler {
               domain_id: domain.id,
               domain_name: domain.domain,
               store_id: domain.store_id,
-              store_name: store.name,
               store_slug: store.slug,
               owner_id: store.user_id,
               credits_deducted: chargeResult.credits_deducted,
@@ -189,7 +189,7 @@ class DailyCreditDeductionJob extends BaseJobHandler {
             domainResults.errors.push({
               domain_id: domain.id,
               domain_name: domain.domain,
-              store_name: store.name,
+              store_slug: store.slug,
               error: chargeResult.message,
               domain_deactivated: chargeResult.domain_deactivated || false
             });
