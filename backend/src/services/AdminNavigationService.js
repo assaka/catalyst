@@ -4,7 +4,7 @@ class AdminNavigationService {
 
   /**
    * Get complete navigation for a tenant
-   * Merges: Master registry + Tenant config + Installed plugins
+   * Merges: Navigation registry + Installed plugins
    * @param {string} storeId - Store ID
    * @param {Object} tenantDb - Supabase client connection to tenant DB
    */
@@ -133,39 +133,6 @@ class AdminNavigationService {
   }
 
   /**
-   * Apply tenant customizations to navigation items
-   * Uses snake_case throughout for consistency with database
-   */
-  mergeNavigation(masterItems, tenantConfig) {
-    const configMap = new Map(
-      tenantConfig.map(c => [c.nav_item_key, c])
-    );
-
-    return masterItems.map(item => {
-      const config = configMap.get(item.key);
-
-      if (!config) {
-        // No customization - return item as-is
-        return item;
-      }
-
-      // Apply tenant overrides
-      return {
-        ...item,
-        label: config.custom_label || item.label,
-        order_position: config.custom_order ?? item.order_position,
-        icon: config.custom_icon || item.icon,
-        parent_key: config.parent_key || item.parent_key,
-        is_visible: config.is_enabled ?? item.is_visible,
-        badge: config.badge_text ? {
-          text: config.badge_text,
-          color: config.badge_color
-        } : null
-      };
-    }).filter(item => item.is_visible !== false);
-  }
-
-  /**
    * Build hierarchical navigation tree
    * Uses snake_case throughout for consistency
    */
@@ -250,28 +217,6 @@ class AdminNavigationService {
         }, {
           onConflict: 'key'
         });
-    }
-  }
-
-  /**
-   * Enable plugin navigation for tenant
-   * Called during plugin installation
-   */
-  async enablePluginNavigationForTenant(tenantDb, navKeys) {
-    for (const key of navKeys) {
-      const { error } = await tenantDb
-        .from('admin_navigation_config')
-        .upsert({
-          nav_key: key,
-          is_hidden: false
-        }, {
-          onConflict: 'nav_key',
-          ignoreDuplicates: true
-        });
-
-      if (error) {
-        console.error(`Error enabling navigation for key ${key}:`, error.message);
-      }
     }
   }
 

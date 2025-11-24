@@ -294,27 +294,6 @@ CREATE INDEX idx_plugin_scripts_plugin ON plugin_scripts(plugin_id);
 CREATE INDEX idx_plugin_scripts_type_scope ON plugin_scripts(script_type, scope);
 CREATE INDEX idx_plugin_scripts_enabled ON plugin_scripts(is_enabled) WHERE is_enabled = true;
 
--- Admin Navigation Config: Tenant-specific navigation customizations
-CREATE TABLE IF NOT EXISTS admin_navigation_config (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  nav_key VARCHAR(100) NOT NULL, -- References admin_navigation_registry.key
-
-  -- Customizations
-  is_hidden BOOLEAN DEFAULT false,
-  custom_label VARCHAR(255), -- Override default label
-  custom_icon VARCHAR(50), -- Override default icon
-  custom_order INTEGER, -- Override default order
-  custom_badge JSONB, -- Override badge config
-
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-
-  CONSTRAINT uq_navigation_config_key UNIQUE (nav_key)
-);
-
-CREATE INDEX idx_navigation_config_key ON admin_navigation_config(nav_key);
-CREATE INDEX idx_navigation_config_hidden ON admin_navigation_config(is_hidden);
-
 -- Plugin Data: Key-value storage for plugin data
 CREATE TABLE IF NOT EXISTS plugin_data (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -365,9 +344,6 @@ CREATE TRIGGER update_plugin_widgets_updated_at BEFORE UPDATE ON plugin_widgets
 CREATE TRIGGER update_plugin_scripts_updated_at BEFORE UPDATE ON plugin_scripts
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_navigation_config_updated_at BEFORE UPDATE ON admin_navigation_config
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_plugin_data_updated_at BEFORE UPDATE ON plugin_data
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -387,5 +363,4 @@ COMMENT ON TABLE plugin_hooks IS 'Hook registrations for plugin functionality';
 COMMENT ON TABLE plugin_events IS 'Event listener registrations for plugins';
 COMMENT ON TABLE plugin_widgets IS 'Widget definitions available in slot editor';
 COMMENT ON TABLE plugin_scripts IS 'JavaScript and CSS files for plugin frontend/backend';
-COMMENT ON TABLE admin_navigation_config IS 'Tenant-specific navigation customizations';
 COMMENT ON TABLE plugin_data IS 'Key-value storage for plugin configuration and data';
