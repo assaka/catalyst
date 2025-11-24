@@ -85,7 +85,8 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 
     // Get tenant connection
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(store_id);
+    const adapter = await ConnectionManager.getStoreConnection(store_id);
+    const supabaseClient = adapter.client || adapter.getClient();
 
     const { data: addresses, error } = await supabaseClient
       .from('addresses')
@@ -127,7 +128,8 @@ router.get('/:id', async (req, res) => {
     }
 
     // Get tenant connection
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(store_id);
+    const adapter = await ConnectionManager.getStoreConnection(store_id);
+    const supabaseClient = adapter.client || adapter.getClient();
 
     const { data: address, error } = await supabaseClient
       .from('addresses')
@@ -203,7 +205,8 @@ router.post('/', optionalAuth, async (req, res) => {
     }
 
     // Get tenant connection
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(store_id);
+    const adapter = await ConnectionManager.getStoreConnection(store_id);
+    const supabaseClient = adapter.client || adapter.getClient();
 
     // Verify user exists before creating address
     const isCustomer = req.user.role === 'customer';
@@ -289,7 +292,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
     const userField = isCustomer ? 'customer_id' : 'user_id';
 
     // Get tenant connection
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(store_id);
+    const adapter = await ConnectionManager.getStoreConnection(store_id);
+    const supabaseClient = adapter.client || adapter.getClient();
 
     // Check if address exists and belongs to user
     const { data: existingAddress, error: fetchError } = await supabaseClient
@@ -349,7 +353,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     const userField = isCustomer ? 'customer_id' : 'user_id';
 
     // Get tenant connection
-    const { supabaseClient } = await ConnectionManager.getStoreConnection(store_id);
+    const adapter = await ConnectionManager.getStoreConnection(store_id);
+    const supabaseClient = adapter.client || adapter.getClient();
 
     // Check if address exists and belongs to user
     const { data: existingAddress, error: fetchError } = await supabaseClient

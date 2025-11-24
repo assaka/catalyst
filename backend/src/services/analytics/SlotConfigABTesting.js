@@ -135,8 +135,9 @@ class SlotConfigABTesting {
    */
   async getActiveTestsForPage(pageType, storeId) {
     try {
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-      const { data: tests, error } = await tenantDb
+      const adapter = await ConnectionManager.getStoreConnection(storeId);
+      const supabaseClient = adapter.client || adapter.getClient();
+      const { data: tests, error } = await supabaseClient
         .from('ab_tests')
         .select('*')
         .eq('store_id', storeId)
@@ -369,8 +370,9 @@ class SlotConfigABTesting {
     ];
 
     // Create test
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-    const { data: test, error } = await tenantDb
+    const adapter = await ConnectionManager.getStoreConnection(storeId);
+    const supabaseClient = adapter.client || adapter.getClient();
+    const { data: test, error } = await supabaseClient
       .from('ab_tests')
       .insert({
         store_id: storeId,

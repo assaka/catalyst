@@ -37,7 +37,8 @@ class ABTestingServiceSupabase {
    */
   async findActiveForPage(storeId, pageType) {
     try {
-      const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+      const adapter = await ConnectionManager.getStoreConnection(storeId);
+      const supabaseClient = adapter.client || adapter.getClient();
 
       const now = new Date().toISOString();
 
@@ -94,7 +95,8 @@ class ABTestingServiceSupabase {
         throw new Error('storeId is required in options for getVariant');
       }
 
-      const { supabaseClient } = await ConnectionManager.getStoreConnection(options.storeId);
+      const adapter = await ConnectionManager.getStoreConnection(options.storeId);
+      const supabaseClient = adapter.client || adapter.getClient();
 
       // Get test
       const { data: test, error: testError } = await supabaseClient
@@ -281,7 +283,8 @@ class ABTestingServiceSupabase {
    */
   async trackConversion(testId, sessionId, storeId, value = null, metrics = {}) {
     try {
-      const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+      const adapter = await ConnectionManager.getStoreConnection(storeId);
+      const supabaseClient = adapter.client || adapter.getClient();
 
       // Find assignment
       const { data: assignment, error: findError } = await supabaseClient
@@ -343,7 +346,8 @@ class ABTestingServiceSupabase {
    */
   async trackMetric(testId, sessionId, storeId, metricName, metricValue) {
     try {
-      const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+      const adapter = await ConnectionManager.getStoreConnection(storeId);
+      const supabaseClient = adapter.client || adapter.getClient();
 
       const { data: assignment, error: findError } = await supabaseClient
         .from('ab_test_assignments')
@@ -380,7 +384,8 @@ class ABTestingServiceSupabase {
    */
   async getTestResults(testId, storeId) {
     try {
-      const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+      const adapter = await ConnectionManager.getStoreConnection(storeId);
+      const supabaseClient = adapter.client || adapter.getClient();
 
       // Get test
       const { data: test, error: testError } = await supabaseClient
@@ -489,7 +494,8 @@ class ABTestingServiceSupabase {
       const storeId = event.data.store_id;
 
       try {
-        const { supabaseClient } = await ConnectionManager.getStoreConnection(storeId);
+        const adapter = await ConnectionManager.getStoreConnection(storeId);
+      const supabaseClient = adapter.client || adapter.getClient();
 
         // Find active tests for this store
         const { data: activeTests, error } = await supabaseClient
