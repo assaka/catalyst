@@ -290,7 +290,7 @@ export default function Stores() {
                         Invited
                       </Badge>
                     )}
-                    <Badge className={store.published ? 'bg-green-100 text-green-800 border-green-200' : 'bg-orange-100 text-orange-800 border-orange-200'}>
+                    <Badge className={store.published ? 'bg-green-100 text-green-800 border-green-200' : 'bg-orange-100 text-orange-800 border-orange-200'}  variant="outline">
                       {store.published ? 'Running' : 'Paused'}
                     </Badge>
                     {/* Status Badge */}
