@@ -412,18 +412,28 @@ class SupabaseIntegration {
 
           if (!checkError && existingDb && existingDb.store_id !== storeId) {
             console.error('❌ Database already in use by another store:', existingDb.store_id);
-            throw new Error('This Supabase database is already connected to another store. Please use a different Supabase project.');
+            const duplicateError = new Error('This Supabase database is already connected to another store. Please use a different Supabase project.');
+            duplicateError.isDuplicateDatabase = true;
+            throw duplicateError;
           }
 
           console.log('✅ Database URL is available');
         } catch (checkErr) {
+          console.log('🔍 Caught error in duplicate check:');
+          console.log('   Error message:', checkErr.message);
+          console.log('   Has isDuplicateDatabase flag:', !!checkErr.isDuplicateDatabase);
+          console.log('   Message includes "already connected":', checkErr.message?.includes('already connected'));
+
           // If it's our duplicate error, re-throw it
-          if (checkErr.message.includes('already connected') || checkErr.message.includes('already being used')) {
+          if (checkErr.isDuplicateDatabase || checkErr.message?.includes('already connected') || checkErr.message?.includes('already being used')) {
+            console.error('🚫 RE-THROWING DUPLICATE DATABASE ERROR TO CALLER');
             throw checkErr;
           }
           // Otherwise log and continue (don't block OAuth on check errors)
-          console.error('⚠️ Error checking for duplicate database:', checkErr.message);
+          console.error('⚠️ Non-duplicate error - continuing with OAuth:', checkErr.message);
         }
+      } else {
+        console.log('⏭️ Skipping duplicate check - isPlaceholder or no project_url');
       }
 
       // STEP 1: ALWAYS store in Redis (persists across server restarts)
