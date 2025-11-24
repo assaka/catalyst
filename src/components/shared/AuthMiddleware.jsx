@@ -1085,47 +1085,47 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
               return;
             }
             
-            // For store owners, check if they have stores before redirecting
-            console.log('✅ Store owner login successful, checking store status...');
+            // For store owners, use the store_id from JWT token (set by backend to first active store)
+            console.log('✅ Store owner login successful, setting up store context...');
             setTimeout(async () => {
               try {
-                // Debug: Check auth state before dropdown call
-                console.log('🔍 PRE-DROPDOWN CHECK:', {
-                  hasToken: !!apiClient.getToken(),
-                  tokenLength: apiClient.getToken()?.length || 0,
-                  isLoggedOut: apiClient.isLoggedOut,
-                  localStorageFlag: localStorage.getItem('user_logged_out'),
-                  localStorageToken: localStorage.getItem('store_owner_auth_token')?.substring(0, 20) + '...'
-                });
+                // Get user data which includes store_id from JWT token
+                const userData = actualResponse.data?.user || actualResponse.user || actualResponse;
 
-                // Check if user has any stores
-                const storesResponse = await apiClient.get('/stores/dropdown');
+                if (userData.store_id) {
+                  // Backend provided store_id in token - use it directly
+                  console.log('🔍 Using store_id from token:', userData.store_id);
 
-                if (storesResponse?.data && storesResponse.data.length === 0) {
-                  // No stores - redirect to onboarding
-                  console.log('🔍 No stores found, redirecting to onboarding...');
+                  // Fetch store details to get slug
+                  try {
+                    const storeResponse = await apiClient.get(`/stores/${userData.store_id}`);
+                    const store = storeResponse.data || storeResponse;
+
+                    console.log('🔍 Setting store from token:', store.name, store.slug);
+                    localStorage.setItem('selectedStoreId', store.id);
+                    localStorage.setItem('selectedStoreSlug', store.slug || store.code);
+
+                    const dashboardUrl = createAdminUrl("DASHBOARD");
+                    console.log('🔍 Redirecting to dashboard:', dashboardUrl);
+                    navigate(dashboardUrl);
+                  } catch (storeError) {
+                    console.error('❌ Error fetching store details:', storeError);
+                    // Fallback: set store_id without slug
+                    localStorage.setItem('selectedStoreId', userData.store_id);
+                    navigate(createAdminUrl("DASHBOARD"));
+                  }
+                } else {
+                  // No store_id in token - user has no stores, redirect to onboarding
+                  console.log('🔍 No store_id in token, redirecting to onboarding...');
                   const onboardingUrl = createAdminUrl("StoreOnboarding");
                   navigate(onboardingUrl || '/admin/store-onboarding');
-                } else {
-                  // Has stores - set first store as selected and redirect to dashboard
-                  const stores = storesResponse.data;
-                  const firstStore = stores[0];
-
-                  console.log('🔍 Setting first store as selected:', firstStore.id, firstStore.name);
-                  localStorage.setItem('selectedStoreId', firstStore.id);
-                  localStorage.setItem('selectedStoreSlug', firstStore.slug || firstStore.code);
-
-                  const dashboardUrl = createAdminUrl("DASHBOARD");
-                  console.log('🔍 Redirecting to dashboard:', dashboardUrl);
-                  navigate(dashboardUrl);
                 }
               } catch (error) {
-                console.error('❌ Error checking stores:', error);
+                console.error('❌ Error setting up store context:', error);
                 console.error('Error details:', error.message, error.status);
 
-                // If stores dropdown failed, redirect to onboarding
-                // (safer than dashboard without store context)
-                console.log('🔍 Stores fetch failed, redirecting to onboarding...');
+                // If setup failed, redirect to onboarding
+                console.log('🔍 Store setup failed, redirecting to onboarding...');
                 const onboardingUrl = createAdminUrl("StoreOnboarding");
                 navigate(onboardingUrl || '/admin/store-onboarding');
               }
