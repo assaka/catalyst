@@ -1,4 +1,8 @@
 const { masterDbClient, masterSequelize } = require('../database/masterConnection');
+const CreditTransaction = require('../models/CreditTransaction');
+const CreditUsage = require('../models/CreditUsage');
+const AkeneoSchedule = require('../models/AkeneoSchedule');
+const ServiceCreditCost = require('../models/ServiceCreditCost');
 
 class CreditService {
   constructor() {
