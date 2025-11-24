@@ -1,6 +1,10 @@
 /**
  * CreditTransaction Model
  * Uses masterDbClient (Supabase) for database operations
+ *
+ * Table schema:
+ * - id, store_id, amount, transaction_type, payment_method, payment_provider_id,
+ * - payment_status, description, reference_id, processed_by, notes, created_at
  */
 
 const { masterDbClient } = require('../database/masterConnection');
@@ -15,18 +19,17 @@ const CreditTransaction = {
   async create(data) {
     const record = {
       id: data.id || uuidv4(),
-      user_id: data.user_id,
       store_id: data.store_id,
+      amount: data.amount || data.amount_usd || data.credits_purchased || 0,
       transaction_type: data.transaction_type,
-      amount: data.amount_usd || data.amount, // Support both field names
-      credits_purchased: data.credits_purchased,
-      currency: data.currency || 'usd',
-      stripe_payment_intent_id: data.stripe_payment_intent_id || null,
-      stripe_charge_id: data.stripe_charge_id || null,
-      status: data.status || 'pending',
-      metadata: data.metadata || {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      payment_method: data.payment_method || 'stripe',
+      payment_provider_id: data.payment_provider_id || data.stripe_payment_intent_id || null,
+      payment_status: data.payment_status || data.status || 'pending',
+      description: data.description || null,
+      reference_id: data.reference_id || null,
+      processed_by: data.processed_by || data.user_id || null,
+      notes: data.notes || null,
+      created_at: new Date().toISOString()
     };
 
     const { data: result, error } = await masterDbClient
@@ -40,7 +43,14 @@ const CreditTransaction = {
       throw new Error(`Failed to create credit transaction: ${error.message}`);
     }
 
-    return result;
+    // Return with aliased fields for backwards compatibility
+    return {
+      ...result,
+      user_id: result.processed_by,
+      credits_purchased: result.amount,
+      status: result.payment_status,
+      stripe_payment_intent_id: result.payment_provider_id
+    };
   },
 
   /**
@@ -58,7 +68,16 @@ const CreditTransaction = {
       throw new Error(`Failed to find credit transaction: ${error.message}`);
     }
 
-    return data;
+    if (!data) return null;
+
+    // Return with aliased fields for backwards compatibility
+    return {
+      ...data,
+      user_id: data.processed_by,
+      credits_purchased: data.amount,
+      status: data.payment_status,
+      stripe_payment_intent_id: data.payment_provider_id
+    };
   },
 
   /**
@@ -67,12 +86,18 @@ const CreditTransaction = {
   async update(updateData, options) {
     const { where } = options;
 
+    // Map aliased fields to actual column names
+    const mappedData = {};
+    if (updateData.status !== undefined) mappedData.payment_status = updateData.status;
+    if (updateData.payment_status !== undefined) mappedData.payment_status = updateData.payment_status;
+    if (updateData.stripe_charge_id !== undefined) mappedData.notes = `Stripe charge: ${updateData.stripe_charge_id}`;
+    if (updateData.metadata !== undefined) mappedData.notes = JSON.stringify(updateData.metadata);
+    if (updateData.description !== undefined) mappedData.description = updateData.description;
+    if (updateData.payment_provider_id !== undefined) mappedData.payment_provider_id = updateData.payment_provider_id;
+
     const { data, error } = await masterDbClient
       .from(this.tableName)
-      .update({
-        ...updateData,
-        updated_at: new Date().toISOString()
-      })
+      .update(mappedData)
       .eq('id', where.id)
       .select()
       .single();
@@ -90,14 +115,14 @@ const CreditTransaction = {
    */
   async createPurchase(userId, storeId, amountUsd, creditsAmount, paymentIntentId = null) {
     return await this.create({
-      user_id: userId,
       store_id: storeId,
+      amount: creditsAmount, // Store credits amount
       transaction_type: 'purchase',
-      amount: amountUsd,
-      currency: 'usd',
-      credits_purchased: creditsAmount,
-      stripe_payment_intent_id: paymentIntentId,
-      status: 'pending'
+      payment_method: 'stripe',
+      payment_provider_id: paymentIntentId,
+      payment_status: 'pending',
+      description: `Credit purchase: ${creditsAmount} credits for $${amountUsd}`,
+      processed_by: userId
     });
   },
 
@@ -106,14 +131,13 @@ const CreditTransaction = {
    */
   async createBonus(userId, storeId, creditsAmount, description = null) {
     return await this.create({
-      user_id: userId,
       store_id: storeId,
+      amount: creditsAmount,
       transaction_type: 'bonus',
-      amount: 0.00,
-      currency: 'usd',
-      credits_purchased: creditsAmount,
-      status: 'completed',
-      metadata: { description: description || 'Bonus credits' }
+      payment_method: null,
+      payment_status: 'completed',
+      description: description || `Bonus credits: ${creditsAmount}`,
+      processed_by: userId
     });
   },
 
@@ -127,11 +151,10 @@ const CreditTransaction = {
     }
 
     const updateData = {
-      status: 'completed',
-      updated_at: new Date().toISOString()
+      payment_status: 'completed'
     };
     if (stripeChargeId) {
-      updateData.stripe_charge_id = stripeChargeId;
+      updateData.notes = `Stripe charge ID: ${stripeChargeId}`;
     }
 
     const { data, error } = await masterDbClient
@@ -145,7 +168,13 @@ const CreditTransaction = {
       throw new Error(`Failed to mark transaction completed: ${error.message}`);
     }
 
-    return data;
+    return {
+      ...data,
+      user_id: data.processed_by,
+      credits_purchased: data.amount,
+      status: data.payment_status,
+      stripe_charge_id: stripeChargeId
+    };
   },
 
   /**
@@ -160,12 +189,8 @@ const CreditTransaction = {
     const { data, error } = await masterDbClient
       .from(this.tableName)
       .update({
-        status: 'failed',
-        metadata: {
-          ...transaction.metadata,
-          failure_reason: reason
-        },
-        updated_at: new Date().toISOString()
+        payment_status: 'failed',
+        notes: reason ? `Failure reason: ${reason}` : null
       })
       .eq('id', transactionId)
       .select()
@@ -175,22 +200,31 @@ const CreditTransaction = {
       throw new Error(`Failed to mark transaction failed: ${error.message}`);
     }
 
-    return data;
+    return {
+      ...data,
+      user_id: data.processed_by,
+      credits_purchased: data.amount,
+      status: data.payment_status
+    };
   },
 
   /**
-   * Get user transactions
+   * Get user transactions (by store)
    */
   async getUserTransactions(userId, storeId = null, limit = 50) {
     let query = masterDbClient
       .from(this.tableName)
       .select('*')
-      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (storeId) {
       query = query.eq('store_id', storeId);
+    }
+
+    // If userId provided, filter by processed_by
+    if (userId) {
+      query = query.eq('processed_by', userId);
     }
 
     const { data, error } = await query;
@@ -200,7 +234,14 @@ const CreditTransaction = {
       throw new Error(`Failed to get user transactions: ${error.message}`);
     }
 
-    return data || [];
+    // Map to backwards-compatible format
+    return (data || []).map(tx => ({
+      ...tx,
+      user_id: tx.processed_by,
+      credits_purchased: tx.amount,
+      status: tx.payment_status,
+      stripe_payment_intent_id: tx.payment_provider_id
+    }));
   }
 };
 
