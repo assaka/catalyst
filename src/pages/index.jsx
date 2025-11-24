@@ -27,8 +27,6 @@ export { default as MediaStorage } from './admin/MediaStorage';
 export { default as CustomDomains } from './admin/CustomDomains';
 export { default as Stores } from './admin/Stores';
 export { default as Settings } from './admin/Settings';
-export { default as EcommerceIntegrations } from './admin/EcommerceIntegrations';
-export { default as CRMIntegrations } from './admin/CRMIntegrations';
 export { default as DatabaseIntegrations } from './admin/DatabaseIntegrations';
 export { default as ShopifyIntegration } from './admin/ShopifyIntegration';
 export { default as AkeneoIntegration } from './admin/AkeneoIntegration';
