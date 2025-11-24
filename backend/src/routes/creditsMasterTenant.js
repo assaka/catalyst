@@ -4,6 +4,7 @@
  * GET /api/credits/balance - Get current credit balance
  * GET /api/credits/balance/cached - Get cached balance (fast)
  * GET /api/credits/transactions - Get transaction history
+ * GET /api/credits/uptime-report - Get store uptime report with daily charges
  * POST /api/credits/purchase - Purchase credits
  * POST /api/credits/spend - Spend credits (internal use)
  * POST /api/credits/sync - Sync balance to tenant cache
@@ -14,6 +15,7 @@ const router = express.Router();
 const { CreditBalance, CreditTransaction } = require('../models/master');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const creditService = require('../services/credit-service');
 
 /**
  * GET /api/credits/balance
@@ -167,6 +169,31 @@ router.get('/transactions', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to get transactions'
+    });
+  }
+});
+
+/**
+ * GET /api/credits/uptime-report
+ * Get store uptime report showing daily charges for published stores
+ */
+router.get('/uptime-report', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { days = 30, store_id } = req.query;
+
+    const report = await creditService.getUptimeReport(userId, days, store_id);
+
+    res.json({
+      success: true,
+      ...report
+    });
+  } catch (error) {
+    console.error('Error getting uptime report:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get uptime report',
+      error: error.message
     });
   }
 });
