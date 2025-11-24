@@ -67,6 +67,11 @@ class SupabaseQueryBuilder {
     return this;
   }
 
+  not(column, operator, value) {
+    this.query = this.query.not(column, operator, value);
+    return this;
+  }
+
   or(filters) {
     this.query = this.query.or(filters);
     return this;
