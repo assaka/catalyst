@@ -357,6 +357,13 @@ const ProductGallery = createSlotComponent({
 
     const images = product.images || [];
 
+    // Debug logging
+    console.log('ProductImageGallery render:', {
+      activeImageIndex,
+      imagesCount: images.length,
+      hasSetActiveImageIndex: !!setActiveImageIndex
+    });
+
     // Handle both string URLs and object structures
     const getImageUrl = (img) => {
       if (!img) return 'https://placehold.co/600x600?text=No+Image';
@@ -389,7 +396,12 @@ const ProductGallery = createSlotComponent({
               return (
                 <button
                   key={index}
-                  onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
+                  onClick={() => {
+                    console.log('Thumbnail clicked:', index, 'Current active:', activeImageIndex);
+                    if (setActiveImageIndex) {
+                      setActiveImageIndex(index);
+                    }
+                  }}
                   className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
                     activeImageIndex === index
                       ? 'border-blue-500 ring-2 ring-blue-200'
@@ -467,7 +479,12 @@ const ProductGallery = createSlotComponent({
               return (
                 <button
                   key={index}
-                  onClick={() => setActiveImageIndex && setActiveImageIndex(index)}
+                  onClick={() => {
+                    console.log('Thumbnail clicked:', index, 'Current active:', activeImageIndex);
+                    if (setActiveImageIndex) {
+                      setActiveImageIndex(index);
+                    }
+                  }}
                   className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
                     activeImageIndex === index
                       ? 'border-blue-500 ring-2 ring-blue-200'
