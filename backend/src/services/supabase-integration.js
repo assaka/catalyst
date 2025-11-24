@@ -378,7 +378,12 @@ class SupabaseIntegration {
       });
 
       // Check if this database is already being used by another store
-      console.log('🔍 Checking for duplicate database before storing OAuth tokens...');
+      console.log('========================================');
+      console.log('🔍 DUPLICATE DATABASE CHECK IN OAUTH');
+      console.log('========================================');
+      console.log('   project_url:', tokenData.project_url);
+      console.log('   storeId:', storeId);
+
       const { masterDbClient } = require('../database/masterConnection');
 
       // Skip check for placeholder URLs
@@ -387,17 +392,24 @@ class SupabaseIntegration {
         tokenData.project_url === 'Configuration pending'
       );
 
+      console.log('   isPlaceholder:', isPlaceholder);
+
       if (!isPlaceholder && tokenData.project_url) {
         try {
           const projectUrl = new URL(tokenData.project_url);
           const host = projectUrl.hostname;
 
+          console.log('   Checking host:', host);
+
           const { data: existingDb, error: checkError } = await masterDbClient
             .from('store_databases')
-            .select('store_id, host')
+            .select('store_id, host, is_active')
             .eq('host', host)
             .eq('is_active', true)
             .maybeSingle();
+
+          console.log('   Query result:', existingDb);
+          console.log('   Query error:', checkError);
 
           if (!checkError && existingDb && existingDb.store_id !== storeId) {
             console.error('❌ Database already in use by another store:', existingDb.store_id);
@@ -407,7 +419,7 @@ class SupabaseIntegration {
           console.log('✅ Database URL is available');
         } catch (checkErr) {
           // If it's our duplicate error, re-throw it
-          if (checkErr.message.includes('already being used')) {
+          if (checkErr.message.includes('already connected') || checkErr.message.includes('already being used')) {
             throw checkErr;
           }
           // Otherwise log and continue (don't block OAuth on check errors)
