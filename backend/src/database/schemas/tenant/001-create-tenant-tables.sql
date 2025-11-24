@@ -730,6 +730,45 @@ CREATE TABLE IF NOT EXISTS stores (
   published_at TIMESTAMP WITH TIME ZONE
 );
 
+CREATE TABLE IF NOT EXISTS store_media_storages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL,
+  storage_type VARCHAR(50) NOT NULL CHECK (storage_type IN (
+    'supabase',
+    'aws-s3',
+    's3',
+    'google-storage',
+    'gcs',
+    'azure-blob',
+    'cloudflare-r2',
+    'local'
+  )),
+  storage_name VARCHAR(255),
+  credentials_encrypted TEXT,
+  config_data JSONB DEFAULT '{}'::jsonb,
+  bucket_name VARCHAR(255),
+  region VARCHAR(100),
+  endpoint_url TEXT,
+  is_primary BOOLEAN DEFAULT false,
+  is_active BOOLEAN DEFAULT true,
+  last_connection_test TIMESTAMP WITH TIME ZONE,
+  connection_status VARCHAR(50) DEFAULT 'pending' CHECK (connection_status IN (
+    'pending',
+    'connected',
+    'failed',
+    'timeout'
+  )),
+  total_files INTEGER DEFAULT 0,
+  total_size_bytes BIGINT DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_store_media_storages_store_id ON store_media_storages(store_id);
+CREATE INDEX IF NOT EXISTS idx_store_media_storages_active ON store_media_storages(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_store_media_storages_primary ON store_media_storages(store_id, is_primary) WHERE is_primary = true;
+CREATE UNIQUE INDEX IF NOT EXISTS unique_primary_media_storage_per_store ON store_media_storages(store_id, is_primary) WHERE is_primary = true;
+
 CREATE TABLE IF NOT EXISTS _migrations (
   name VARCHAR(255) PRIMARY KEY,
   run_at TIMESTAMP DEFAULT NOW(),
@@ -4396,6 +4435,8 @@ ALTER TABLE store_uptime ADD CONSTRAINT store_uptime_store_id_fkey FOREIGN KEY (
 ALTER TABLE store_uptime ADD CONSTRAINT store_uptime_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 ALTER TABLE stores ADD CONSTRAINT stores_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE store_media_storages ADD CONSTRAINT store_media_storages_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
 ALTER TABLE subscriptions ADD CONSTRAINT subscriptions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 

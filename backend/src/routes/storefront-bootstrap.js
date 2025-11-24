@@ -322,13 +322,39 @@ router.get('/', cacheMiddleware({
           const productIds = wishlistItems.map(w => w.product_id);
           const { data: products, error: productsError } = await tenantDb
             .from('products')
-            .select('id, price, images, slug, name')
+            .select('id, price, slug, name')
             .in('id', productIds);
 
           if (productsError) {
             console.warn('⚠️ Failed to fetch wishlist products:', productsError.message);
             return wishlistItems.map(w => ({ ...w, Product: null }));
           }
+
+          // Fetch images from product_files table
+          const { data: productFiles, error: filesError } = await tenantDb
+            .from('product_files')
+            .select('*')
+            .in('product_id', productIds)
+            .eq('file_type', 'image')
+            .order('position', { ascending: true });
+
+          if (filesError) {
+            console.warn('⚠️ Failed to fetch product images:', filesError.message);
+          }
+
+          // Group images by product_id
+          const imagesByProduct = {};
+          (productFiles || []).forEach(file => {
+            if (!imagesByProduct[file.product_id]) {
+              imagesByProduct[file.product_id] = [];
+            }
+            imagesByProduct[file.product_id].push({
+              url: file.file_url,
+              alt: file.alt_text || '',
+              isPrimary: file.is_primary || file.position === 0,
+              position: file.position || 0
+            });
+          });
 
           // Get product translations
           const { data: productTranslations, error: transError } = await tenantDb
@@ -350,7 +376,7 @@ router.get('/', cacheMiddleware({
             transMap[t.product_id][t.language_code] = t;
           });
 
-          // Apply translations to products
+          // Apply translations and images to products
           const productsWithTrans = products.map(p => {
             const trans = transMap[p.id];
             const requestedLang = trans?.[language];
@@ -360,7 +386,8 @@ router.get('/', cacheMiddleware({
               ...p,
               name: requestedLang?.name || englishLang?.name || '',
               description: requestedLang?.description || englishLang?.description || '',
-              short_description: requestedLang?.short_description || englishLang?.short_description || ''
+              short_description: requestedLang?.short_description || englishLang?.short_description || '',
+              images: imagesByProduct[p.id] || []
             };
           });
 

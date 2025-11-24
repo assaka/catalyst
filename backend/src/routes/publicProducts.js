@@ -1,7 +1,7 @@
 const express = require('express');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { getLanguageFromRequest } = require('../utils/languageUtils');
-const { applyProductTranslationsToMany, applyProductTranslations } = require('../utils/productHelpers');
+const { applyProductTranslationsToMany, applyProductTranslations, fetchProductImages } = require('../utils/productHelpers');
 const { getAttributesWithTranslations, getAttributeValuesWithTranslations } = require('../utils/attributeHelpers');
 const { applyCacheHeaders } = require('../utils/cacheUtils');
 const { getStoreSettings } = require('../utils/storeCache');
@@ -180,6 +180,9 @@ router.get('/', cacheProducts(180), async (req, res) => {
     const attrTransMap = new Map(attributeTranslations.map(a => [a.id, a.translations]));
     const valTransMap = new Map(valueTranslations.map(v => [v.id, v.translations]));
 
+    // Fetch images from product_files table
+    const imagesByProduct = await fetchProductImages(productIds, tenantDb);
+
     // Group attribute values by product
     const pavByProduct = {};
     attributeValuesData.forEach(pav => {
@@ -189,14 +192,8 @@ router.get('/', cacheProducts(180), async (req, res) => {
 
     // Transform products with full attribute data
     const productsWithAttributes = productsWithTranslations.map(productData => {
-      // Parse images
-      if (productData.images && typeof productData.images === 'string') {
-        try {
-          productData.images = JSON.parse(productData.images);
-        } catch (e) {
-          productData.images = [];
-        }
-      }
+      // Apply images from product_files table
+      productData.images = imagesByProduct[productData.id] || [];
 
       // Add formatted attributes
       const productPavs = pavByProduct[productData.id] || [];
@@ -293,15 +290,9 @@ router.get('/:id', cacheProduct(300), async (req, res) => {
     // Apply product translations from normalized table
     const productData = await applyProductTranslations(store_id, product, lang);
 
-    // Ensure images is properly parsed as JSON array
-    if (productData.images && typeof productData.images === 'string') {
-      try {
-        productData.images = JSON.parse(productData.images);
-      } catch (e) {
-        console.error('Failed to parse product images:', e);
-        productData.images = [];
-      }
-    }
+    // Fetch images from product_files table
+    const imagesByProduct = await fetchProductImages(product.id, tenantDb);
+    productData.images = imagesByProduct[product.id] || [];
 
     // Load product attribute values
     const { data: pavs, error: pavError } = await tenantDb

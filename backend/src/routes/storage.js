@@ -365,37 +365,32 @@ router.get('/status', async (req, res) => {
 
     console.log('📊 Checking storage status for store:', storeId);
 
-    // Check store settings and primary database configuration
+    // Check primary media storage from tenant database
     const ConnectionManager = require('../services/database/ConnectionManager');
-    const { masterDbClient } = require('../database/masterConnection');
 
-    let storeSettings = null;
-    let primaryDatabase = null;
+    let primaryMediaStorage = null;
 
     try {
-      // Get store settings
-      const { data: store } = await masterDbClient
-        .from('stores')
-        .select('settings')
-        .eq('id', storeId)
-        .maybeSingle();
+      // Get tenant database connection
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      storeSettings = store?.settings;
-      console.log('📋 Store settings:', storeSettings);
-
-      // Get primary database configuration for media storage
-      const { data: primaryDb } = await masterDbClient
-        .from('store_databases')
-        .select('database_type, is_primary, is_active')
+      // Query store_media_storages table for primary storage
+      const { data: primaryStorage, error } = await tenantDb
+        .from('store_media_storages')
+        .select('storage_type, is_primary, is_active, storage_name, connection_status')
         .eq('store_id', storeId)
         .eq('is_primary', true)
         .eq('is_active', true)
         .maybeSingle();
 
-      primaryDatabase = primaryDb;
-      console.log('💾 Primary database:', primaryDatabase);
+      if (error) {
+        console.warn('Error querying store_media_storages:', error.message);
+      } else {
+        primaryMediaStorage = primaryStorage;
+        console.log('💾 Primary media storage:', primaryMediaStorage);
+      }
     } catch (err) {
-      console.warn('Could not fetch store configuration:', err.message);
+      console.warn('Could not fetch media storage configuration:', err.message);
     }
 
     // Get current provider with timeout
@@ -429,48 +424,34 @@ router.get('/status', async (req, res) => {
     }
 
     // Determine provider from multiple sources (priority order)
-    // 1. Primary database (store_databases where is_primary=true)
-    // 2. Store settings (default_mediastorage_provider)
-    // 3. Store settings (default_database_provider as fallback)
-    // 4. Connection check result
+    // 1. Primary media storage (store_media_storages where is_primary=true) - TENANT TABLE
+    // 2. Connection check result (dynamic detection)
 
     let providerSource = 'none';
 
-    // Priority 1: Primary database
-    if (primaryDatabase?.database_type) {
-      console.log(`✅ Using primary database: ${primaryDatabase.database_type}`);
-      provider = primaryDatabase.database_type;
-      configured = true;
-      providerSource = 'primary_database';
+    // Priority 1: Primary media storage from tenant database
+    if (primaryMediaStorage?.storage_type) {
+      console.log(`✅ Using primary media storage: ${primaryMediaStorage.storage_type}`);
+      provider = primaryMediaStorage.storage_type;
+      configured = primaryMediaStorage.connection_status === 'connected' || primaryMediaStorage.is_active;
+      providerSource = 'primary_media_storage';
     }
-    // Priority 2 & 3: Store settings
+    // Priority 2: Connection check
+    else if (currentProvider) {
+      console.log(`✅ Provider detected from connection check: ${currentProvider.type}`);
+      provider = currentProvider.type;
+      configured = true;
+      providerSource = 'connection_check';
+    }
     else {
-      const defaultProvider = storeSettings?.default_mediastorage_provider ||
-                             storeSettings?.default_database_provider;
-
-      if (defaultProvider) {
-        console.log(`✅ Store has default provider in settings: ${defaultProvider}`);
-        provider = defaultProvider;
-        configured = true;
-        providerSource = 'store_settings';
-      }
-      // Priority 4: Connection check
-      else if (currentProvider) {
-        console.log(`✅ Provider detected from connection check: ${currentProvider.type}`);
-        provider = currentProvider.type;
-        configured = true;
-        providerSource = 'connection_check';
-      }
-      else {
-        console.log(`⚠️ No provider configured`);
-      }
+      console.log(`⚠️ No provider configured`);
     }
 
     console.log('📤 Returning status:', {
       configured,
       provider,
       providerSource,
-      hasPrimaryDb: !!primaryDatabase
+      hasPrimaryMediaStorage: !!primaryMediaStorage
     });
 
     res.json({
@@ -481,9 +462,8 @@ router.get('/status', async (req, res) => {
       integrationType: provider,
       debug: {
         providerSource: providerSource,
-        primaryDatabase: primaryDatabase?.database_type || 'none',
-        storeSettings: storeSettings?.default_mediastorage_provider ||
-                      storeSettings?.default_database_provider || 'none',
+        primaryMediaStorage: primaryMediaStorage?.storage_type || 'none',
+        storageConnectionStatus: primaryMediaStorage?.connection_status || 'none',
         errorDetails: errorDetails,
         connectionCheckPassed: !!currentProvider
       }

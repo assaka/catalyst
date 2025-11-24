@@ -4,7 +4,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 
 const translationService = require('../services/translation-service');
 const creditService = require('../services/credit-service');
-const { applyAllProductTranslations, updateProductTranslations } = require('../utils/productHelpers');
+const { applyAllProductTranslations, updateProductTranslations, applyProductImages } = require('../utils/productHelpers');
 const router = express.Router();
 
 // Import the new store auth middleware
@@ -60,11 +60,15 @@ router.get('/', authAdmin, async (req, res) => {
     // Get products from tenant database
     const { rows, count } = await getProducts(store_id, filters, { limit: parseInt(limit), offset });
 
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Apply images from product_files table
+    let products = await applyProductImages(rows, tenantDb);
+
     // Apply all translations if requested (for admin translation management)
-    let products = rows;
     if (include_all_translations === 'true') {
-      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-      products = await applyAllProductTranslations(rows, tenantDb);
+      products = await applyAllProductTranslations(products, tenantDb);
     }
 
     res.json({
@@ -124,9 +128,13 @@ router.get('/:id', authAdmin, async (req, res) => {
       });
     }
 
+    // Get tenant connection and apply images from product_files table
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    const productsWithImages = await applyProductImages([product], tenantDb);
+
     res.json({
       success: true,
-      data: product
+      data: productsWithImages[0]
     });
   } catch (error) {
     console.error('Get product error:', error);

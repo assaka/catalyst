@@ -335,11 +335,86 @@ async function getProductsOptimized(storeId, where = {}, lang = 'en', options = 
   return { rows, count: count || rows.length };
 }
 
+/**
+ * Fetch and format product images from product_files table
+ *
+ * @param {string|Array} productIds - Single product ID or array of product IDs
+ * @param {Object} tenantDb - Tenant database connection
+ * @returns {Promise<Object>} Map of product_id => images array
+ */
+async function fetchProductImages(productIds, tenantDb) {
+  if (!tenantDb) {
+    console.error('❌ fetchProductImages: tenantDb connection required');
+    return {};
+  }
+
+  const idsArray = Array.isArray(productIds) ? productIds : [productIds];
+
+  if (idsArray.length === 0) return {};
+
+  try {
+    const { data: files, error } = await tenantDb
+      .from('product_files')
+      .select('*')
+      .in('product_id', idsArray)
+      .eq('file_type', 'image')
+      .order('position', { ascending: true });
+
+    if (error) {
+      console.error('❌ Error fetching product images:', error);
+      return {};
+    }
+
+    // Group images by product_id
+    const imagesByProduct = {};
+    (files || []).forEach(file => {
+      if (!imagesByProduct[file.product_id]) {
+        imagesByProduct[file.product_id] = [];
+      }
+
+      imagesByProduct[file.product_id].push({
+        url: file.file_url,
+        alt: file.alt_text || '',
+        isPrimary: file.is_primary || file.position === 0,
+        position: file.position || 0
+      });
+    });
+
+    return imagesByProduct;
+  } catch (error) {
+    console.error('❌ fetchProductImages error:', error);
+    return {};
+  }
+}
+
+/**
+ * Apply product images to product data from product_files table
+ *
+ * @param {Array} products - Array of product objects
+ * @param {Object} tenantDb - Tenant database connection
+ * @returns {Promise<Array>} Products with images array
+ */
+async function applyProductImages(products, tenantDb) {
+  if (!products || products.length === 0) return products;
+
+  const productIds = products.map(p => p.id).filter(Boolean);
+  if (productIds.length === 0) return products;
+
+  const imagesByProduct = await fetchProductImages(productIds, tenantDb);
+
+  return products.map(product => ({
+    ...product,
+    images: imagesByProduct[product.id] || []
+  }));
+}
+
 module.exports = {
   getProductTranslation,
   applyProductTranslations,
   applyProductTranslationsToMany,
   applyAllProductTranslations,
   updateProductTranslations,
-  getProductsOptimized
+  getProductsOptimized,
+  fetchProductImages,
+  applyProductImages
 };
