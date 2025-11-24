@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../database/connection');
+const { masterSequelize } = require('../database/masterConnection');
 
-const CreditTransaction = sequelize.define('CreditTransaction', {
+const CreditTransaction = masterSequelize.define('CreditTransaction', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
@@ -60,6 +60,9 @@ const CreditTransaction = sequelize.define('CreditTransaction', {
   }
 }, {
   tableName: 'credit_transactions',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [
     {
       fields: ['user_id']
@@ -71,8 +74,6 @@ const CreditTransaction = sequelize.define('CreditTransaction', {
       fields: ['stripe_payment_intent_id']
     }
   ]
-  // Note: Hooks removed - credit balance updates now handled by credit-service.js
-  // which updates users.credits (single source of truth) when transactions are completed
 });
 
 // Class methods for credit transaction management
@@ -140,7 +141,7 @@ CreditTransaction.getUserTransactions = async function(userId, storeId = null, l
 
   return await this.findAll({
     where,
-    order: [['createdAt', 'DESC']],
+    order: [['created_at', 'DESC']],
     limit
   });
 };

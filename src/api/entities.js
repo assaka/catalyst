@@ -1307,6 +1307,28 @@ class StoreTeamService extends BaseEntity {
     }
   }
 
+  // Resend invitation email
+  async resendInvitation(storeId, invitationId) {
+    try {
+      const response = await apiClient.post(`${this.endpoint}/${storeId}/invitations/${invitationId}/resend`);
+      return response;
+    } catch (error) {
+      console.error(`StoreTeamService.resendInvitation() error:`, error.message);
+      throw error;
+    }
+  }
+
+  // Delete/cancel invitation
+  async deleteInvitation(storeId, invitationId) {
+    try {
+      const response = await apiClient.delete(`${this.endpoint}/${storeId}/invitations/${invitationId}`);
+      return response;
+    } catch (error) {
+      console.error(`StoreTeamService.deleteInvitation() error:`, error.message);
+      throw error;
+    }
+  }
+
   // Update team member
   async updateMember(storeId, memberId, updateData) {
     try {

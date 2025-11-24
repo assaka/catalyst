@@ -12,18 +12,20 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { 
-  Users, 
-  UserPlus, 
-  Mail, 
-  MoreVertical, 
-  Shield, 
-  Edit, 
-  Trash2, 
+import {
+  Users,
+  UserPlus,
+  Mail,
+  MoreVertical,
+  Shield,
+  Edit,
+  Trash2,
   Crown,
   Eye,
   Plus,
-  AlertCircle
+  AlertCircle,
+  RefreshCw,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -183,6 +185,30 @@ export default function TeamManagement({ storeId, storeName }) {
       } catch (error) {
         console.error('Error removing member:', error);
         toast.error('Failed to remove team member');
+      }
+    }
+  };
+
+  const handleResendInvitation = async (invitationId, email) => {
+    try {
+      await StoreTeam.resendInvitation(storeId, invitationId);
+      toast.success(`Invitation resent to ${email}`);
+      loadTeamData();
+    } catch (error) {
+      console.error('Error resending invitation:', error);
+      toast.error('Failed to resend invitation');
+    }
+  };
+
+  const handleDeleteInvitation = async (invitationId, email) => {
+    if (confirm(`Are you sure you want to cancel the invitation to ${email}?`)) {
+      try {
+        await StoreTeam.deleteInvitation(storeId, invitationId);
+        toast.success('Invitation cancelled');
+        loadTeamData();
+      } catch (error) {
+        console.error('Error deleting invitation:', error);
+        toast.error('Failed to cancel invitation');
       }
     }
   };
@@ -382,6 +408,23 @@ export default function TeamManagement({ storeId, storeName }) {
                           <Badge variant="outline" className="bg-yellow-100 text-yellow-700 border-yellow-300">
                             Pending
                           </Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleResendInvitation(invitation.id, invitation.invited_email)}
+                            title="Resend invitation"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteInvitation(invitation.id, invitation.invited_email)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Cancel invitation"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     );

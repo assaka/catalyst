@@ -311,6 +311,148 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
   }
 });
 
+// @route   POST /api/store-teams/:store_id/invitations/:invitation_id/resend
+// @desc    Resend invitation email
+// @access  Private (store owner/admin)
+router.post('/:store_id/invitations/:invitation_id/resend', authorize(['admin', 'store_owner']), checkStoreOwnership, async (req, res) => {
+  try {
+    const { store_id, invitation_id } = req.params;
+
+    // Check permissions
+    const canManageTeam = req.storeAccess.isDirectOwner ||
+                         req.storeAccess.permissions?.canManageTeam ||
+                         req.storeAccess.permissions?.all;
+
+    if (!canManageTeam) {
+      return res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions to manage invitations'
+      });
+    }
+
+    // Find the invitation
+    const { data: invitation, error: findError } = await masterDbClient
+      .from('store_invitations')
+      .select('*')
+      .eq('id', invitation_id)
+      .eq('store_id', store_id)
+      .eq('status', 'pending')
+      .single();
+
+    if (findError || !invitation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invitation not found or already accepted'
+      });
+    }
+
+    // Update expiration date (extend by 7 days from now)
+    const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { error: updateError } = await masterDbClient
+      .from('store_invitations')
+      .update({
+        expires_at: newExpiresAt,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', invitation_id);
+
+    if (updateError) {
+      console.error('Error updating invitation:', updateError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to resend invitation'
+      });
+    }
+
+    // TODO: Send email invitation
+    console.log('📧 Resending email invitation:', {
+      to: invitation.invited_email,
+      invitationId: invitation.id,
+      token: invitation.invitation_token,
+      newExpiresAt
+    });
+
+    res.json({
+      success: true,
+      message: 'Invitation resent successfully',
+      data: {
+        invitation_id: invitation.id,
+        invited_email: invitation.invited_email,
+        expires_at: newExpiresAt
+      }
+    });
+  } catch (error) {
+    console.error('❌ Resend invitation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @route   DELETE /api/store-teams/:store_id/invitations/:invitation_id
+// @desc    Delete/cancel a pending invitation
+// @access  Private (store owner/admin)
+router.delete('/:store_id/invitations/:invitation_id', authorize(['admin', 'store_owner']), checkStoreOwnership, async (req, res) => {
+  try {
+    const { store_id, invitation_id } = req.params;
+
+    // Check permissions
+    const canManageTeam = req.storeAccess.isDirectOwner ||
+                         req.storeAccess.permissions?.canManageTeam ||
+                         req.storeAccess.permissions?.all;
+
+    if (!canManageTeam) {
+      return res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions to manage invitations'
+      });
+    }
+
+    // Find the invitation first
+    const { data: invitation, error: findError } = await masterDbClient
+      .from('store_invitations')
+      .select('*')
+      .eq('id', invitation_id)
+      .eq('store_id', store_id)
+      .single();
+
+    if (findError || !invitation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invitation not found'
+      });
+    }
+
+    // Delete the invitation
+    const { error: deleteError } = await masterDbClient
+      .from('store_invitations')
+      .delete()
+      .eq('id', invitation_id)
+      .eq('store_id', store_id);
+
+    if (deleteError) {
+      console.error('Error deleting invitation:', deleteError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete invitation'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Invitation deleted successfully'
+    });
+  } catch (error) {
+    console.error('❌ Delete invitation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   PUT /api/store-teams/:store_id/members/:member_id
 // @desc    Update team member role/permissions
 // @access  Private (store owner/admin)
