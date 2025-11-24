@@ -1113,7 +1113,9 @@ router.get('/:id', authMiddleware, async (req, res) => {
 
 /**
  * PATCH /api/stores/:id
- * Update store settings (in tenant DB)
+ * Update store settings
+ * - Master DB fields (published, status, etc.) update in master DB
+ * - Other fields update in tenant DB
  */
 router.patch('/:id', authMiddleware, async (req, res) => {
   try {
@@ -1127,45 +1129,97 @@ router.patch('/:id', authMiddleware, async (req, res) => {
       .eq('id', storeId)
       .maybeSingle();
 
-    // Check if store is operational (status='active' and is_active=true)
-    if (storeError || !store || store.status !== 'active' || !store.is_active) {
-      return res.status(400).json({
+    if (storeError || !store) {
+      return res.status(404).json({
         success: false,
-        error: 'Store is not operational'
+        error: 'Store not found'
       });
     }
 
-    // Update in tenant DB
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    // Separate master DB updates from tenant DB updates
+    const masterDbFields = ['published', 'published_at', 'status', 'is_active', 'slug'];
+    const masterUpdates = {};
+    const tenantUpdates = {};
 
-    const { data, error } = await tenantDb
-      .from('stores')
-      .update(updates)
-      .eq('id', storeId)
-      .select()
-      .single();
+    for (const [key, value] of Object.entries(updates)) {
+      if (masterDbFields.includes(key)) {
+        masterUpdates[key] = value;
+      } else {
+        tenantUpdates[key] = value;
+      }
+    }
 
-    if (error) {
-      throw new Error(error.message);
+    let masterResult = null;
+    let tenantResult = null;
+
+    // Update master DB if there are master fields
+    if (Object.keys(masterUpdates).length > 0) {
+      masterUpdates.updated_at = new Date().toISOString();
+
+      const { data: masterData, error: masterError } = await masterDbClient
+        .from('stores')
+        .update(masterUpdates)
+        .eq('id', storeId)
+        .select()
+        .single();
+
+      if (masterError) {
+        throw new Error(`Master DB update failed: ${masterError.message}`);
+      }
+
+      masterResult = masterData;
+      console.log('✅ Master DB updated:', Object.keys(masterUpdates));
+    }
+
+    // Update tenant DB if there are tenant fields AND store is operational
+    if (Object.keys(tenantUpdates).length > 0) {
+      if (store.status !== 'active' || !store.is_active) {
+        return res.status(400).json({
+          success: false,
+          error: 'Store is not operational - cannot update tenant settings'
+        });
+      }
+
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      const { data: tenantData, error: tenantError } = await tenantDb
+        .from('stores')
+        .update(tenantUpdates)
+        .eq('id', storeId)
+        .select()
+        .single();
+
+      if (tenantError) {
+        throw new Error(`Tenant DB update failed: ${tenantError.message}`);
+      }
+
+      tenantResult = tenantData;
+      console.log('✅ Tenant DB updated:', Object.keys(tenantUpdates));
     }
 
     res.json({
       success: true,
       message: 'Store updated successfully',
-      data: { store: data }
+      data: {
+        master: masterResult,
+        tenant: tenantResult
+      }
     });
   } catch (error) {
     console.error('Update store error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to update store'
+      error: 'Failed to update store',
+      details: error.message
     });
   }
 });
 
 /**
  * PUT /api/stores/:id
- * Update store settings (in tenant DB) - alias for PATCH
+ * Update store settings - alias for PATCH
+ * - Master DB fields (published, status, etc.) update in master DB
+ * - Other fields update in tenant DB
  */
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
@@ -1179,38 +1233,88 @@ router.put('/:id', authMiddleware, async (req, res) => {
       .eq('id', storeId)
       .maybeSingle();
 
-    // Check if store is operational (status='active' and is_active=true)
-    if (storeError || !store || store.status !== 'active' || !store.is_active) {
-      return res.status(400).json({
+    if (storeError || !store) {
+      return res.status(404).json({
         success: false,
-        error: 'Store is not operational'
+        error: 'Store not found'
       });
     }
 
-    // Update in tenant DB
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    // Separate master DB updates from tenant DB updates
+    const masterDbFields = ['published', 'published_at', 'status', 'is_active', 'slug'];
+    const masterUpdates = {};
+    const tenantUpdates = {};
 
-    const { data, error } = await tenantDb
-      .from('stores')
-      .update(updates)
-      .eq('id', storeId)
-      .select()
-      .single();
+    for (const [key, value] of Object.entries(updates)) {
+      if (masterDbFields.includes(key)) {
+        masterUpdates[key] = value;
+      } else {
+        tenantUpdates[key] = value;
+      }
+    }
 
-    if (error) {
-      throw new Error(error.message);
+    let masterResult = null;
+    let tenantResult = null;
+
+    // Update master DB if there are master fields
+    if (Object.keys(masterUpdates).length > 0) {
+      masterUpdates.updated_at = new Date().toISOString();
+
+      const { data: masterData, error: masterError } = await masterDbClient
+        .from('stores')
+        .update(masterUpdates)
+        .eq('id', storeId)
+        .select()
+        .single();
+
+      if (masterError) {
+        throw new Error(`Master DB update failed: ${masterError.message}`);
+      }
+
+      masterResult = masterData;
+      console.log('✅ Master DB updated:', Object.keys(masterUpdates));
+    }
+
+    // Update tenant DB if there are tenant fields AND store is operational
+    if (Object.keys(tenantUpdates).length > 0) {
+      if (store.status !== 'active' || !store.is_active) {
+        return res.status(400).json({
+          success: false,
+          error: 'Store is not operational - cannot update tenant settings'
+        });
+      }
+
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+      const { data: tenantData, error: tenantError } = await tenantDb
+        .from('stores')
+        .update(tenantUpdates)
+        .eq('id', storeId)
+        .select()
+        .single();
+
+      if (tenantError) {
+        throw new Error(`Tenant DB update failed: ${tenantError.message}`);
+      }
+
+      tenantResult = tenantData;
+      console.log('✅ Tenant DB updated:', Object.keys(tenantUpdates));
     }
 
     res.json({
       success: true,
       message: 'Store updated successfully',
-      data: { store: data }
+      data: {
+        master: masterResult,
+        tenant: tenantResult
+      }
     });
   } catch (error) {
     console.error('Update store error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to update store'
+      error: 'Failed to update store',
+      details: error.message
     });
   }
 });
