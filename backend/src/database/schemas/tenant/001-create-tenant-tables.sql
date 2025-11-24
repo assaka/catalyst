@@ -4045,593 +4045,387 @@ CREATE TRIGGER update_users_updated_at
 
 -- ============================================
 -- SECTION 6: FOREIGN KEY CONSTRAINTS
--- All foreign keys added at the end
+-- All foreign keys added after tables are created
 -- ============================================
 
-ALTER TABLE integration_attribute_mappings ADD CONSTRAINT fk_integration_attribute_mappings_internal_attribute_id
-    FOREIGN KEY (internal_attribute_id) REFERENCES attributes(id) ON DELETE CASCADE;
+ALTER TABLE auth.mfa_amr_claims ADD CONSTRAINT mfa_amr_claims_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
 
-ALTER TABLE integration_attribute_mappings ADD CONSTRAINT fk_integration_attribute_mappings_store_id
-    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE auth.mfa_challenges ADD CONSTRAINT mfa_challenges_auth_factor_id_fkey FOREIGN KEY (factor_id) REFERENCES auth.mfa_factors(id) ON DELETE CASCADE;
 
-ALTER TABLE product_translations ADD CONSTRAINT fk_product_translations_product_id
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
+ALTER TABLE auth.mfa_factors ADD CONSTRAINT mfa_factors_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
-ALTER TABLE product_files ADD CONSTRAINT fk_product_files_product_id
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
+ALTER TABLE auth.oauth_authorizations ADD CONSTRAINT oauth_authorizations_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
 
-ALTER TABLE product_files ADD CONSTRAINT fk_product_files_store_id
-    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE auth.oauth_authorizations ADD CONSTRAINT oauth_authorizations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY auth.mfa_amr_claims
---     ADD CONSTRAINT mfa_amr_claims_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
+ALTER TABLE auth.oauth_consents ADD CONSTRAINT oauth_consents_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY auth.mfa_challenges
---     ADD CONSTRAINT mfa_challenges_auth_factor_id_fkey FOREIGN KEY (factor_id) REFERENCES auth.mfa_factors(id) ON DELETE CASCADE;
+ALTER TABLE auth.oauth_consents ADD CONSTRAINT oauth_consents_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY auth.mfa_factors
---     ADD CONSTRAINT mfa_factors_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE auth.one_time_tokens ADD CONSTRAINT one_time_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY auth.oauth_authorizations
---     ADD CONSTRAINT oauth_authorizations_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
+ALTER TABLE auth.refresh_tokens ADD CONSTRAINT refresh_tokens_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY auth.oauth_authorizations
---     ADD CONSTRAINT oauth_authorizations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE auth.saml_providers ADD CONSTRAINT saml_providers_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY auth.oauth_consents
---     ADD CONSTRAINT oauth_consents_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
+ALTER TABLE auth.saml_relay_states ADD CONSTRAINT saml_relay_states_flow_state_id_fkey FOREIGN KEY (flow_state_id) REFERENCES auth.flow_state(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY auth.oauth_consents
---     ADD CONSTRAINT oauth_consents_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE auth.saml_relay_states ADD CONSTRAINT saml_relay_states_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY auth.one_time_tokens
---     ADD CONSTRAINT one_time_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE auth.sessions ADD CONSTRAINT sessions_oauth_client_id_fkey FOREIGN KEY (oauth_client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY auth.refresh_tokens
---     ADD CONSTRAINT refresh_tokens_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
+ALTER TABLE auth.sessions ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY auth.saml_providers
---     ADD CONSTRAINT saml_providers_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
+ALTER TABLE auth.sso_domains ADD CONSTRAINT sso_domains_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY auth.saml_relay_states
---     ADD CONSTRAINT saml_relay_states_flow_state_id_fkey FOREIGN KEY (flow_state_id) REFERENCES auth.flow_state(id) ON DELETE CASCADE;
+ALTER TABLE ab_test_assignments ADD CONSTRAINT ab_test_assignments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY auth.saml_relay_states
---     ADD CONSTRAINT saml_relay_states_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
+ALTER TABLE ab_test_assignments ADD CONSTRAINT ab_test_assignments_test_id_fkey FOREIGN KEY (test_id) REFERENCES ab_tests(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY auth.sessions
---     ADD CONSTRAINT sessions_oauth_client_id_fkey FOREIGN KEY (oauth_client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
+ALTER TABLE ab_test_assignments ADD CONSTRAINT ab_test_assignments_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY auth.sessions
---     ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE ab_test_variants ADD CONSTRAINT ab_test_variants_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY auth.sso_domains
---     ADD CONSTRAINT sso_domains_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
+ALTER TABLE ab_tests ADD CONSTRAINT ab_tests_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY ab_test_assignments
---     ADD CONSTRAINT ab_test_assignments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE ai_usage_logs ADD CONSTRAINT ai_usage_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY ab_test_assignments
---     ADD CONSTRAINT ab_test_assignments_test_id_fkey FOREIGN KEY (test_id) REFERENCES ab_tests(id) ON UPDATE CASCADE;
+ALTER TABLE akeneo_custom_mappings ADD CONSTRAINT akeneo_custom_mappings_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
 
-ALTER TABLE ONLY ab_test_assignments
---     ADD CONSTRAINT ab_test_assignments_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE akeneo_custom_mappings ADD CONSTRAINT akeneo_custom_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY ab_test_variants
---     ADD CONSTRAINT ab_test_variants_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE akeneo_custom_mappings ADD CONSTRAINT akeneo_custom_mappings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL;
 
-ALTER TABLE ONLY ab_tests
---     ADD CONSTRAINT ab_tests_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE akeneo_import_statistics ADD CONSTRAINT akeneo_import_statistics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY ai_usage_logs
---     ADD CONSTRAINT ai_usage_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE akeneo_mappings ADD CONSTRAINT akeneo_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY akeneo_custom_mappings
---     ADD CONSTRAINT akeneo_custom_mappings_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE akeneo_schedules ADD CONSTRAINT akeneo_schedules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY akeneo_custom_mappings
---     ADD CONSTRAINT akeneo_custom_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE attribute_sets ADD CONSTRAINT attribute_sets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY akeneo_custom_mappings
---     ADD CONSTRAINT akeneo_custom_mappings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE attribute_translations ADD CONSTRAINT attribute_translations_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY akeneo_import_statistics
---     ADD CONSTRAINT akeneo_import_statistics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE attribute_translations ADD CONSTRAINT attribute_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY akeneo_mappings
---     ADD CONSTRAINT akeneo_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE attribute_value_translations ADD CONSTRAINT attribute_value_translations_attribute_value_id_fkey FOREIGN KEY (attribute_value_id) REFERENCES attribute_values(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY akeneo_schedules
---     ADD CONSTRAINT akeneo_schedules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE attribute_value_translations ADD CONSTRAINT attribute_value_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY attribute_sets
---     ADD CONSTRAINT attribute_sets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE attribute_values ADD CONSTRAINT attribute_values_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY attribute_translations
---     ADD CONSTRAINT attribute_translations_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE attributes ADD CONSTRAINT attributes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY attribute_translations
---     ADD CONSTRAINT attribute_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE blacklist_countries ADD CONSTRAINT blacklist_countries_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY attribute_value_translations
---     ADD CONSTRAINT attribute_value_translations_attribute_value_id_fkey FOREIGN KEY (attribute_value_id) REFERENCES attribute_values(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE blacklist_emails ADD CONSTRAINT blacklist_emails_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY attribute_value_translations
---     ADD CONSTRAINT attribute_value_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE blacklist_ips ADD CONSTRAINT blacklist_ips_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY attribute_values
---     ADD CONSTRAINT attribute_values_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE blacklist_settings ADD CONSTRAINT blacklist_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY attributes
---     ADD CONSTRAINT attributes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE brevo_configurations ADD CONSTRAINT brevo_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY blacklist_countries
---     ADD CONSTRAINT blacklist_countries_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE canonical_urls ADD CONSTRAINT canonical_urls_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY blacklist_emails
---     ADD CONSTRAINT blacklist_emails_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE canonical_urls ADD CONSTRAINT canonical_urls_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY blacklist_ips
---     ADD CONSTRAINT blacklist_ips_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE carts ADD CONSTRAINT carts_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY blacklist_settings
---     ADD CONSTRAINT blacklist_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE carts ADD CONSTRAINT carts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY brevo_configurations
---     ADD CONSTRAINT brevo_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE categories ADD CONSTRAINT categories_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY canonical_urls
---     ADD CONSTRAINT canonical_urls_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE categories ADD CONSTRAINT categories_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY canonical_urls
---     ADD CONSTRAINT canonical_urls_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE category_seo ADD CONSTRAINT category_seo_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY carts
---     ADD CONSTRAINT carts_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE category_seo ADD CONSTRAINT category_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY carts
---     ADD CONSTRAINT carts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE category_translations ADD CONSTRAINT category_translations_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY categories
---     ADD CONSTRAINT categories_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE;
+ALTER TABLE category_translations ADD CONSTRAINT category_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY categories
---     ADD CONSTRAINT categories_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY category_seo
---     ADD CONSTRAINT category_seo_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE chat_typing_indicators ADD CONSTRAINT chat_typing_indicators_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY category_seo
---     ADD CONSTRAINT category_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE cms_block_translations ADD CONSTRAINT cms_block_translations_cms_block_id_fkey FOREIGN KEY (cms_block_id) REFERENCES cms_blocks(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY category_translations
---     ADD CONSTRAINT category_translations_category_id_fkey FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE cms_block_translations ADD CONSTRAINT cms_block_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY category_translations
---     ADD CONSTRAINT category_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE cms_blocks ADD CONSTRAINT cms_blocks_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY chat_messages
---     ADD CONSTRAINT chat_messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
+ALTER TABLE cms_page_seo ADD CONSTRAINT cms_page_seo_cms_page_id_fkey FOREIGN KEY (cms_page_id) REFERENCES cms_pages(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY chat_typing_indicators
---     ADD CONSTRAINT chat_typing_indicators_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE;
+ALTER TABLE cms_page_seo ADD CONSTRAINT cms_page_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY cms_block_translations
---     ADD CONSTRAINT cms_block_translations_cms_block_id_fkey FOREIGN KEY (cms_block_id) REFERENCES cms_blocks(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE cms_page_translations ADD CONSTRAINT cms_page_translations_cms_page_id_fkey FOREIGN KEY (cms_page_id) REFERENCES cms_pages(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY cms_block_translations
---     ADD CONSTRAINT cms_block_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE cms_page_translations ADD CONSTRAINT cms_page_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY cms_blocks
---     ADD CONSTRAINT cms_blocks_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE cms_pages ADD CONSTRAINT cms_pages_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY cms_page_seo
---     ADD CONSTRAINT cms_page_seo_cms_page_id_fkey FOREIGN KEY (cms_page_id) REFERENCES cms_pages(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE consent_logs ADD CONSTRAINT consent_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY cms_page_seo
---     ADD CONSTRAINT cms_page_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE consent_logs ADD CONSTRAINT consent_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY cms_page_translations
---     ADD CONSTRAINT cms_page_translations_cms_page_id_fkey FOREIGN KEY (cms_page_id) REFERENCES cms_pages(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE cookie_consent_settings ADD CONSTRAINT cookie_consent_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY cms_page_translations
---     ADD CONSTRAINT cms_page_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE coupon_translations ADD CONSTRAINT coupon_translations_coupon_id_fkey FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY cms_pages
---     ADD CONSTRAINT cms_pages_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE coupon_translations ADD CONSTRAINT coupon_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY consent_logs
---     ADD CONSTRAINT consent_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE coupons ADD CONSTRAINT coupons_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY consent_logs
---     ADD CONSTRAINT consent_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE credit_transactions ADD CONSTRAINT credit_transactions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY cookie_consent_settings
---     ADD CONSTRAINT cookie_consent_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE credit_transactions ADD CONSTRAINT credit_transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY coupon_translations
---     ADD CONSTRAINT coupon_translations_coupon_id_fkey FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE credit_usage ADD CONSTRAINT credit_usage_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY coupon_translations
---     ADD CONSTRAINT coupon_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE credit_usage ADD CONSTRAINT credit_usage_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY coupons
---     ADD CONSTRAINT coupons_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE credits ADD CONSTRAINT credits_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY credit_transactions
---     ADD CONSTRAINT credit_transactions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE credits ADD CONSTRAINT credits_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY credit_transactions
---     ADD CONSTRAINT credit_transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE cron_job_executions ADD CONSTRAINT cron_job_executions_cron_job_id_fkey FOREIGN KEY (cron_job_id) REFERENCES cron_jobs(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY credit_usage
---     ADD CONSTRAINT credit_usage_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE cron_job_executions ADD CONSTRAINT cron_job_executions_triggered_by_user_fkey FOREIGN KEY (triggered_by_user) REFERENCES users(id);
 
-ALTER TABLE ONLY credit_usage
---     ADD CONSTRAINT credit_usage_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE cron_jobs ADD CONSTRAINT cron_jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY credits
---     ADD CONSTRAINT credits_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE cron_jobs ADD CONSTRAINT cron_jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY credits
---     ADD CONSTRAINT credits_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
+ALTER TABLE custom_analytics_events ADD CONSTRAINT custom_analytics_events_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY cron_job_executions
---     ADD CONSTRAINT cron_job_executions_cron_job_id_fkey FOREIGN KEY (cron_job_id) REFERENCES cron_jobs(id) ON DELETE CASCADE;
+ALTER TABLE custom_domains ADD CONSTRAINT custom_domains_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY cron_job_executions
---     ADD CONSTRAINT cron_job_executions_triggered_by_user_fkey FOREIGN KEY (triggered_by_user) REFERENCES users(id);
+ALTER TABLE custom_option_rules ADD CONSTRAINT custom_option_rules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY cron_jobs
---     ADD CONSTRAINT cron_jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE custom_pricing_discounts ADD CONSTRAINT custom_pricing_discounts_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES custom_pricing_rules(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY cron_jobs
---     ADD CONSTRAINT cron_jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE custom_pricing_logs ADD CONSTRAINT custom_pricing_logs_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES custom_pricing_rules(id);
 
-ALTER TABLE ONLY custom_analytics_events
---     ADD CONSTRAINT custom_analytics_events_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE customer_activities ADD CONSTRAINT customer_activities_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY custom_domains
---     ADD CONSTRAINT custom_domains_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE customer_activities ADD CONSTRAINT customer_activities_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY custom_option_rules
---     ADD CONSTRAINT custom_option_rules_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE customer_activities ADD CONSTRAINT customer_activities_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY custom_pricing_discounts
---     ADD CONSTRAINT custom_pricing_discounts_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES custom_pricing_rules(id) ON DELETE CASCADE;
+ALTER TABLE customer_addresses ADD CONSTRAINT customer_addresses_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY custom_pricing_logs
---     ADD CONSTRAINT custom_pricing_logs_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES custom_pricing_rules(id);
+ALTER TABLE customer_addresses ADD CONSTRAINT customer_addresses_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY customer_activities
---     ADD CONSTRAINT customer_activities_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE customers ADD CONSTRAINT customers_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY customer_activities
---     ADD CONSTRAINT customer_activities_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE delivery_settings ADD CONSTRAINT delivery_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY customer_activities
---     ADD CONSTRAINT customer_activities_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE email_send_logs ADD CONSTRAINT email_send_logs_email_template_id_fkey FOREIGN KEY (email_template_id) REFERENCES email_templates(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY customer_addresses
---     ADD CONSTRAINT customer_addresses_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE email_send_logs ADD CONSTRAINT email_send_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY customer_addresses
---     ADD CONSTRAINT customer_addresses_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE email_template_translations ADD CONSTRAINT email_template_translations_email_template_id_fkey FOREIGN KEY (email_template_id) REFERENCES email_templates(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY customers
---     ADD CONSTRAINT customers_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE email_templates ADD CONSTRAINT email_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY delivery_settings
---     ADD CONSTRAINT delivery_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE cookie_consent_settings_translations ADD CONSTRAINT fk_cookie_consent_settings FOREIGN KEY (cookie_consent_settings_id) REFERENCES cookie_consent_settings(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY email_send_logs
---     ADD CONSTRAINT email_send_logs_email_template_id_fkey FOREIGN KEY (email_template_id) REFERENCES email_templates(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE admin_navigation_registry ADD CONSTRAINT fk_navigation_parent FOREIGN KEY (parent_key) REFERENCES admin_navigation_registry(key) ON DELETE CASCADE;
 
-ALTER TABLE ONLY email_send_logs
---     ADD CONSTRAINT email_send_logs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE plugin_version_comparisons ADD CONSTRAINT fk_plugin_comparison_from FOREIGN KEY (from_version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY email_template_translations
---     ADD CONSTRAINT email_template_translations_email_template_id_fkey FOREIGN KEY (email_template_id) REFERENCES email_templates(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE plugin_version_comparisons ADD CONSTRAINT fk_plugin_comparison_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY email_templates
---     ADD CONSTRAINT email_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE plugin_version_comparisons ADD CONSTRAINT fk_plugin_comparison_to FOREIGN KEY (to_version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY cookie_consent_settings_translations
---     ADD CONSTRAINT fk_cookie_consent_settings FOREIGN KEY (cookie_consent_settings_id) REFERENCES cookie_consent_settings(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE plugin_controllers ADD CONSTRAINT fk_plugin_controllers_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY admin_navigation_registry
---     ADD CONSTRAINT fk_navigation_parent FOREIGN KEY (parent_key) REFERENCES admin_navigation_registry(key) ON DELETE CASCADE;
+ALTER TABLE plugin_docs ADD CONSTRAINT fk_plugin_docs_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_version_comparisons
---     ADD CONSTRAINT fk_plugin_comparison_from FOREIGN KEY (from_version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
+ALTER TABLE plugin_entities ADD CONSTRAINT fk_plugin_entities_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_version_comparisons
---     ADD CONSTRAINT fk_plugin_comparison_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+ALTER TABLE plugin_migrations ADD CONSTRAINT fk_plugin_migrations_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_version_comparisons
---     ADD CONSTRAINT fk_plugin_comparison_to FOREIGN KEY (to_version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
+ALTER TABLE plugin_version_patches ADD CONSTRAINT fk_plugin_patch_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_controllers
---     ADD CONSTRAINT fk_plugin_controllers_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+ALTER TABLE plugin_version_patches ADD CONSTRAINT fk_plugin_patch_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_docs
---     ADD CONSTRAINT fk_plugin_docs_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+ALTER TABLE plugin_version_snapshots ADD CONSTRAINT fk_plugin_snapshot_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_entities
---     ADD CONSTRAINT fk_plugin_entities_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+ALTER TABLE plugin_version_snapshots ADD CONSTRAINT fk_plugin_snapshot_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_migrations
---     ADD CONSTRAINT fk_plugin_migrations_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+ALTER TABLE plugin_version_tags ADD CONSTRAINT fk_plugin_tag_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_version_patches
---     ADD CONSTRAINT fk_plugin_patch_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+ALTER TABLE plugin_version_tags ADD CONSTRAINT fk_plugin_tag_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_version_patches
---     ADD CONSTRAINT fk_plugin_patch_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
+ALTER TABLE plugin_version_history ADD CONSTRAINT fk_plugin_version_parent FOREIGN KEY (parent_version_id) REFERENCES plugin_version_history(id) ON DELETE SET NULL;
 
-ALTER TABLE ONLY plugin_version_snapshots
---     ADD CONSTRAINT fk_plugin_snapshot_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+ALTER TABLE plugin_version_history ADD CONSTRAINT fk_plugin_version_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_version_snapshots
---     ADD CONSTRAINT fk_plugin_snapshot_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
+ALTER TABLE heatmap_aggregations ADD CONSTRAINT heatmap_aggregations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_version_tags
---     ADD CONSTRAINT fk_plugin_tag_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+ALTER TABLE heatmap_interactions ADD CONSTRAINT heatmap_interactions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_version_tags
---     ADD CONSTRAINT fk_plugin_tag_version FOREIGN KEY (version_id) REFERENCES plugin_version_history(id) ON DELETE CASCADE;
+ALTER TABLE heatmap_interactions ADD CONSTRAINT heatmap_interactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 
-ALTER TABLE ONLY plugin_version_history
---     ADD CONSTRAINT fk_plugin_version_parent FOREIGN KEY (parent_version_id) REFERENCES plugin_version_history(id) ON DELETE SET NULL;
+ALTER TABLE heatmap_sessions ADD CONSTRAINT heatmap_sessions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_version_history
---     ADD CONSTRAINT fk_plugin_version_plugin FOREIGN KEY (plugin_id) REFERENCES plugin_registry(id) ON DELETE CASCADE;
+ALTER TABLE heatmap_sessions ADD CONSTRAINT heatmap_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 
-ALTER TABLE ONLY heatmap_aggregations
---     ADD CONSTRAINT heatmap_aggregations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE integration_configs ADD CONSTRAINT integration_configs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
 
-ALTER TABLE ONLY heatmap_interactions
---     ADD CONSTRAINT heatmap_interactions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE job_history ADD CONSTRAINT job_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY heatmap_interactions
---     ADD CONSTRAINT heatmap_interactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE jobs ADD CONSTRAINT jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY heatmap_sessions
---     ADD CONSTRAINT heatmap_sessions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE jobs ADD CONSTRAINT jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 
-ALTER TABLE ONLY heatmap_sessions
---     ADD CONSTRAINT heatmap_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE media_assets ADD CONSTRAINT media_assets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY integration_configs
---     ADD CONSTRAINT integration_configs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
+ALTER TABLE media_assets ADD CONSTRAINT media_assets_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES users(id);
 
-ALTER TABLE ONLY job_history
---     ADD CONSTRAINT job_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE;
+ALTER TABLE payment_method_translations ADD CONSTRAINT payment_method_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY jobs
---     ADD CONSTRAINT jobs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE payment_method_translations ADD CONSTRAINT payment_method_translations_payment_method_id_fkey FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY jobs
---     ADD CONSTRAINT jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE payment_methods ADD CONSTRAINT payment_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY media_assets
---     ADD CONSTRAINT media_assets_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE pdf_template_translations ADD CONSTRAINT pdf_template_translations_pdf_template_id_fkey FOREIGN KEY (pdf_template_id) REFERENCES pdf_templates(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY media_assets
---     ADD CONSTRAINT media_assets_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES users(id);
+ALTER TABLE pdf_templates ADD CONSTRAINT pdf_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY payment_method_translations
---     ADD CONSTRAINT payment_method_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE platform_admins ADD CONSTRAINT platform_admins_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY payment_method_translations
---     ADD CONSTRAINT payment_method_translations_payment_method_id_fkey FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE plugin_configurations ADD CONSTRAINT plugin_configurations_last_configured_by_fkey FOREIGN KEY (last_configured_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY payment_methods
---     ADD CONSTRAINT payment_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE plugin_configurations ADD CONSTRAINT plugin_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY pdf_template_translations
---     ADD CONSTRAINT pdf_template_translations_pdf_template_id_fkey FOREIGN KEY (pdf_template_id) REFERENCES pdf_templates(id) ON DELETE CASCADE;
+ALTER TABLE plugin_marketplace ADD CONSTRAINT plugin_marketplace_author_id_fkey FOREIGN KEY (author_id) REFERENCES users(id);
 
-ALTER TABLE ONLY pdf_templates
---     ADD CONSTRAINT pdf_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE plugin_registry ADD CONSTRAINT plugin_registry_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id);
 
-ALTER TABLE ONLY platform_admins
---     ADD CONSTRAINT platform_admins_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
+ALTER TABLE product_attribute_values ADD CONSTRAINT product_attribute_values_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY plugin_configurations
---     ADD CONSTRAINT plugin_configurations_last_configured_by_fkey FOREIGN KEY (last_configured_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE product_attribute_values ADD CONSTRAINT product_attribute_values_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY plugin_configurations
---     ADD CONSTRAINT plugin_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE product_attribute_values ADD CONSTRAINT product_attribute_values_value_id_fkey FOREIGN KEY (value_id) REFERENCES attribute_values(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY plugin_marketplace
---     ADD CONSTRAINT plugin_marketplace_author_id_fkey FOREIGN KEY (author_id) REFERENCES users(id);
+ALTER TABLE product_label_translations ADD CONSTRAINT product_label_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY plugin_registry
---     ADD CONSTRAINT plugin_registry_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id);
+ALTER TABLE product_label_translations ADD CONSTRAINT product_label_translations_product_label_id_fkey FOREIGN KEY (product_label_id) REFERENCES product_labels(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY product_attribute_values
---     ADD CONSTRAINT product_attribute_values_attribute_id_fkey FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON UPDATE CASCADE;
+ALTER TABLE product_labels ADD CONSTRAINT product_labels_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY product_attribute_values
---     ADD CONSTRAINT product_attribute_values_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE;
+ALTER TABLE product_seo ADD CONSTRAINT product_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY product_attribute_values
---     ADD CONSTRAINT product_attribute_values_value_id_fkey FOREIGN KEY (value_id) REFERENCES attribute_values(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE product_seo ADD CONSTRAINT product_seo_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY product_label_translations
---     ADD CONSTRAINT product_label_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE product_tab_translations ADD CONSTRAINT product_tab_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY product_label_translations
---     ADD CONSTRAINT product_label_translations_product_label_id_fkey FOREIGN KEY (product_label_id) REFERENCES product_labels(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE product_tab_translations ADD CONSTRAINT product_tab_translations_product_tab_id_fkey FOREIGN KEY (product_tab_id) REFERENCES product_tabs(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY product_labels
---     ADD CONSTRAINT product_labels_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE product_tabs ADD CONSTRAINT product_tabs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY product_seo
---     ADD CONSTRAINT product_seo_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE product_translations ADD CONSTRAINT product_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY product_seo
---     ADD CONSTRAINT product_seo_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE product_translations ADD CONSTRAINT product_translations_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY product_tab_translations
---     ADD CONSTRAINT product_tab_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE product_variants ADD CONSTRAINT product_variants_parent_product_id_fkey FOREIGN KEY (parent_product_id) REFERENCES products(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY product_tab_translations
---     ADD CONSTRAINT product_tab_translations_product_tab_id_fkey FOREIGN KEY (product_tab_id) REFERENCES product_tabs(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE product_variants ADD CONSTRAINT product_variants_variant_product_id_fkey FOREIGN KEY (variant_product_id) REFERENCES products(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY product_tabs
---     ADD CONSTRAINT product_tabs_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE products ADD CONSTRAINT products_attribute_set_id_fkey FOREIGN KEY (attribute_set_id) REFERENCES attribute_sets(id) ON DELETE SET NULL;
 
-ALTER TABLE ONLY product_translations
---     ADD CONSTRAINT product_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE products ADD CONSTRAINT products_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES products(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY product_translations
---     ADD CONSTRAINT product_translations_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE products ADD CONSTRAINT products_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY product_variants
---     ADD CONSTRAINT product_variants_parent_product_id_fkey FOREIGN KEY (parent_product_id) REFERENCES products(id) ON DELETE CASCADE;
+ALTER TABLE redirects ADD CONSTRAINT redirects_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY product_variants
---     ADD CONSTRAINT product_variants_variant_product_id_fkey FOREIGN KEY (variant_product_id) REFERENCES products(id) ON DELETE CASCADE;
+ALTER TABLE sales_invoices ADD CONSTRAINT sales_invoices_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id);
 
-ALTER TABLE ONLY products
---     ADD CONSTRAINT products_attribute_set_id_fkey FOREIGN KEY (attribute_set_id) REFERENCES attribute_sets(id) ON DELETE SET NULL;
+ALTER TABLE sales_invoices ADD CONSTRAINT sales_invoices_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
 
-ALTER TABLE ONLY products
---     ADD CONSTRAINT products_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES products(id) ON DELETE CASCADE;
+ALTER TABLE sales_order_items ADD CONSTRAINT sales_order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY products
---     ADD CONSTRAINT products_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE sales_order_items ADD CONSTRAINT sales_order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY redirects
---     ADD CONSTRAINT redirects_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE sales_orders ADD CONSTRAINT sales_orders_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY sales_invoices
---     ADD CONSTRAINT sales_invoices_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id);
+ALTER TABLE sales_orders ADD CONSTRAINT sales_orders_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY sales_invoices
---     ADD CONSTRAINT sales_invoices_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
+ALTER TABLE sales_shipments ADD CONSTRAINT sales_shipments_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id);
 
-ALTER TABLE ONLY sales_order_items
---     ADD CONSTRAINT sales_order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE sales_shipments ADD CONSTRAINT sales_shipments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
 
-ALTER TABLE ONLY sales_order_items
---     ADD CONSTRAINT sales_order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE seo_settings ADD CONSTRAINT seo_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY sales_orders
---     ADD CONSTRAINT sales_orders_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE seo_templates ADD CONSTRAINT seo_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY sales_orders
---     ADD CONSTRAINT sales_orders_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE shipping_method_translations ADD CONSTRAINT shipping_method_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY sales_shipments
---     ADD CONSTRAINT sales_shipments_order_id_fkey FOREIGN KEY (order_id) REFERENCES sales_orders(id);
+ALTER TABLE shipping_method_translations ADD CONSTRAINT shipping_method_translations_shipping_method_id_fkey FOREIGN KEY (shipping_method_id) REFERENCES shipping_methods(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY sales_shipments
---     ADD CONSTRAINT sales_shipments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
+ALTER TABLE shipping_methods ADD CONSTRAINT shipping_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY seo_settings
---     ADD CONSTRAINT seo_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE shopify_oauth_tokens ADD CONSTRAINT shopify_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY seo_templates
---     ADD CONSTRAINT seo_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_acceptance_published_by_fkey FOREIGN KEY (acceptance_published_by) REFERENCES users(id);
 
-ALTER TABLE ONLY shipping_method_translations
---     ADD CONSTRAINT shipping_method_translations_language_code_fkey FOREIGN KEY (language_code) REFERENCES languages(code) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_current_edit_id_fkey FOREIGN KEY (current_edit_id) REFERENCES slot_configurations(id);
 
-ALTER TABLE ONLY shipping_method_translations
---     ADD CONSTRAINT shipping_method_translations_shipping_method_id_fkey FOREIGN KEY (shipping_method_id) REFERENCES shipping_methods(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_parent_version_id_fkey FOREIGN KEY (parent_version_id) REFERENCES slot_configurations(id);
 
-ALTER TABLE ONLY shipping_methods
---     ADD CONSTRAINT shipping_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_published_by_fkey FOREIGN KEY (published_by) REFERENCES users(id);
 
-ALTER TABLE ONLY shopify_oauth_tokens
---     ADD CONSTRAINT shopify_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY slot_configurations
---     ADD CONSTRAINT slot_configurations_acceptance_published_by_fkey FOREIGN KEY (acceptance_published_by) REFERENCES users(id);
+ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY slot_configurations
---     ADD CONSTRAINT slot_configurations_current_edit_id_fkey FOREIGN KEY (current_edit_id) REFERENCES slot_configurations(id);
+ALTER TABLE store_invitations ADD CONSTRAINT store_invitations_accepted_by_fkey FOREIGN KEY (accepted_by) REFERENCES users(id);
 
-ALTER TABLE ONLY slot_configurations
---     ADD CONSTRAINT slot_configurations_parent_version_id_fkey FOREIGN KEY (parent_version_id) REFERENCES slot_configurations(id);
+ALTER TABLE store_invitations ADD CONSTRAINT store_invitations_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
 
-ALTER TABLE ONLY slot_configurations
---     ADD CONSTRAINT slot_configurations_published_by_fkey FOREIGN KEY (published_by) REFERENCES users(id);
+ALTER TABLE store_invitations ADD CONSTRAINT store_invitations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY slot_configurations
---     ADD CONSTRAINT slot_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE store_teams ADD CONSTRAINT store_teams_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
 
-ALTER TABLE ONLY slot_configurations
---     ADD CONSTRAINT slot_configurations_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE store_teams ADD CONSTRAINT store_teams_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY store_invitations
---     ADD CONSTRAINT store_invitations_accepted_by_fkey FOREIGN KEY (accepted_by) REFERENCES users(id);
+ALTER TABLE store_teams ADD CONSTRAINT store_teams_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY store_invitations
---     ADD CONSTRAINT store_invitations_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
+ALTER TABLE store_uptime ADD CONSTRAINT store_uptime_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY store_invitations
---     ADD CONSTRAINT store_invitations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE store_uptime ADD CONSTRAINT store_uptime_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY store_teams
---     ADD CONSTRAINT store_teams_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
+ALTER TABLE stores ADD CONSTRAINT stores_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE ONLY store_teams
---     ADD CONSTRAINT store_teams_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE subscriptions ADD CONSTRAINT subscriptions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY store_teams
---     ADD CONSTRAINT store_teams_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE supabase_oauth_tokens ADD CONSTRAINT supabase_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY store_uptime
---     ADD CONSTRAINT store_uptime_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE supabase_project_keys ADD CONSTRAINT supabase_project_keys_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY store_uptime
---     ADD CONSTRAINT store_uptime_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE taxes ADD CONSTRAINT taxes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY stores
---     ADD CONSTRAINT stores_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE translations ADD CONSTRAINT translations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
 
-ALTER TABLE ONLY subscriptions
---     ADD CONSTRAINT subscriptions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE usage_metrics ADD CONSTRAINT usage_metrics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY supabase_oauth_tokens
---     ADD CONSTRAINT supabase_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE wishlists ADD CONSTRAINT wishlists_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY supabase_project_keys
---     ADD CONSTRAINT supabase_project_keys_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE wishlists ADD CONSTRAINT wishlists_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE ONLY taxes
---     ADD CONSTRAINT taxes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE wishlists ADD CONSTRAINT wishlists_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
-ALTER TABLE ONLY translations
---     ADD CONSTRAINT translations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id);
+ALTER TABLE storage.objects ADD CONSTRAINT "objects_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
 
-ALTER TABLE ONLY usage_metrics
---     ADD CONSTRAINT usage_metrics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE storage.prefixes ADD CONSTRAINT "prefixes_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
 
-ALTER TABLE ONLY wishlists
---     ADD CONSTRAINT wishlists_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE;
+ALTER TABLE storage.s3_multipart_uploads ADD CONSTRAINT s3_multipart_uploads_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
 
-ALTER TABLE ONLY wishlists
---     ADD CONSTRAINT wishlists_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+ALTER TABLE storage.s3_multipart_uploads_parts ADD CONSTRAINT s3_multipart_uploads_parts_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
 
-ALTER TABLE ONLY wishlists
---     ADD CONSTRAINT wishlists_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-ALTER TABLE ONLY storage.objects
---     ADD CONSTRAINT "objects_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
-
-ALTER TABLE ONLY storage.prefixes
---     ADD CONSTRAINT "prefixes_bucketId_fkey" FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
-
-ALTER TABLE ONLY storage.s3_multipart_uploads
---     ADD CONSTRAINT s3_multipart_uploads_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
-
-ALTER TABLE ONLY storage.s3_multipart_uploads_parts
---     ADD CONSTRAINT s3_multipart_uploads_parts_bucket_id_fkey FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id);
-
-ALTER TABLE ONLY storage.s3_multipart_uploads_parts
---     ADD CONSTRAINT s3_multipart_uploads_parts_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES storage.s3_multipart_uploads(id) ON DELETE CASCADE;
+ALTER TABLE storage.s3_multipart_uploads_parts ADD CONSTRAINT s3_multipart_uploads_parts_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES storage.s3_multipart_uploads(id) ON DELETE CASCADE;
