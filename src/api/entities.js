@@ -243,20 +243,16 @@ class BaseEntity {
 class AuthService {
   async login(email, password, rememberMe = false, role = 'store_owner', store_id = null) {
 
-    // Use appropriate endpoint based on role:
-    // - Customer login: uses tenant-specific endpoint with store_id
-    // - Store owner/admin: uses master-tenant endpoint (queries master DB)
-    const endpoint = role === 'customer' ? 'auth/customer/login' : 'auth-master-tenant/login';
+    // Use customer-specific endpoint for customer login
+    // For store owners/admins, use the refactored /auth/login that queries master DB
+    const endpoint = role === 'customer' ? 'auth/customer/login' : 'auth/login';
 
-    // Build request payload - include store_id for customer login
-    const payload = { email, password, rememberMe };
-    if (role === 'customer') {
-      payload.role = role;
-      if (store_id) {
-        payload.store_id = store_id;
-      }
+    // Build request payload - include role and store_id based on user type
+    const payload = { email, password, rememberMe, role };
+    if (role === 'customer' && store_id) {
+      payload.store_id = store_id;
     }
-    // Note: master-tenant endpoint doesn't need role parameter
+    // Note: store_id is optional for store owners (not used in backend)
 
     const response = await apiClient.post(endpoint, payload);
 
@@ -285,7 +281,7 @@ class AuthService {
     } else if (token) {
       // If we have token but no user data, fetch it immediately
       try {
-        const userResponse = await apiClient.get('auth-master-tenant/me');
+        const userResponse = await apiClient.get('auth/me');
         const userData = userResponse.data || userResponse;
         if (userData && userData.id) {
           setRoleBasedAuthData(userData, token, currentStoreSlug);
@@ -404,7 +400,7 @@ class AuthService {
   }
 
   async me() {
-    const response = await apiClient.get('auth-master-tenant/me');
+    const response = await apiClient.get('auth/me');
     const data = response.data || response;
     // Handle case where data is returned as an array
     return Array.isArray(data) ? data[0] : data;
@@ -428,7 +424,7 @@ class UserService extends BaseEntity {
   // Get current user (alias for auth/me) - fetches user based on current token
   async me() {
     try {
-      const response = await apiClient.get('auth-master-tenant/me');
+      const response = await apiClient.get('auth/me');
       const data = response.data || response;
       // Handle case where data is returned as an array
       const user = Array.isArray(data) ? data[0] : data;
