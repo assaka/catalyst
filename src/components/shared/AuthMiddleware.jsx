@@ -926,9 +926,16 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
           console.log('🔍 Customer on store owner auth page, redirecting to customer auth');
           navigate(createPublicUrl(currentStoreSlug, "CUSTOMER_AUTH"));
         } else if (user.role === 'store_owner' || user.role === 'admin') {
-          const dashboardUrl = createAdminUrl("DASHBOARD");
-          console.log('🔍 Store owner/admin authenticated, redirecting to dashboard:', dashboardUrl);
-          navigate(dashboardUrl);
+          // Check for redirect parameter first (e.g., from invitation acceptance flow)
+          const redirectUrl = searchParams.get('redirect');
+          if (redirectUrl) {
+            console.log('🔍 Store owner/admin authenticated, redirecting to:', redirectUrl);
+            navigate(decodeURIComponent(redirectUrl));
+          } else {
+            const dashboardUrl = createAdminUrl("DASHBOARD");
+            console.log('🔍 Store owner/admin authenticated, redirecting to dashboard:', dashboardUrl);
+            navigate(dashboardUrl);
+          }
         }
       }
     } catch (error) {
@@ -1200,9 +1207,16 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                       // CRITICAL: Wait a tick to ensure localStorage is fully written
                       await new Promise(resolve => setTimeout(resolve, 50));
 
-                      const dashboardUrl = createAdminUrl("DASHBOARD");
-                      console.log('🔍 Redirecting to dashboard with full page reload:', dashboardUrl);
-                      window.location.href = dashboardUrl;
+                      // Check for redirect parameter (e.g., from invitation acceptance flow)
+                      const redirectUrl = searchParams.get('redirect');
+                      if (redirectUrl) {
+                        console.log('🔍 Redirecting to specified URL:', redirectUrl);
+                        window.location.href = decodeURIComponent(redirectUrl);
+                      } else {
+                        const dashboardUrl = createAdminUrl("DASHBOARD");
+                        console.log('🔍 Redirecting to dashboard with full page reload:', dashboardUrl);
+                        window.location.href = dashboardUrl;
+                      }
                     } else {
                       // FALLBACK: No active store found - clear auth and redirect to login
                       console.error('❌ No valid active store found! Clearing auth and redirecting to login...');
@@ -1228,19 +1242,34 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                     window.location.href = createAdminUrl("DASHBOARD");
                   }
                 } else {
-                  // No active stores found - redirect to onboarding
-                  console.log('⚠️ No active stores found, redirecting to onboarding...');
-                  const onboardingUrl = createAdminUrl("StoreOnboarding");
-                  navigate(onboardingUrl || '/admin/store-onboarding');
+                  // No active stores found - check for redirect parameter first (invitation flow)
+                  const redirectUrl = searchParams.get('redirect');
+                  if (redirectUrl) {
+                    // User is likely accepting an invitation - redirect there to complete
+                    console.log('🔍 No stores but redirect URL exists, navigating to:', redirectUrl);
+                    window.location.href = decodeURIComponent(redirectUrl);
+                  } else {
+                    // No redirect, go to onboarding
+                    console.log('⚠️ No active stores found, redirecting to onboarding...');
+                    const onboardingUrl = createAdminUrl("StoreOnboarding");
+                    navigate(onboardingUrl || '/admin/store-onboarding');
+                  }
                 }
               } catch (error) {
                 console.error('❌ Error during post-login setup:', error);
                 console.error('Error details:', error.message, error.stack);
 
-                // On error, redirect to onboarding (safer fallback)
-                console.log('🔍 Error occurred, redirecting to onboarding...');
-                const onboardingUrl = createAdminUrl("StoreOnboarding");
-                navigate(onboardingUrl || '/admin/store-onboarding');
+                // On error, check for redirect parameter first
+                const redirectUrl = searchParams.get('redirect');
+                if (redirectUrl) {
+                  console.log('🔍 Error occurred but redirect URL exists, navigating to:', redirectUrl);
+                  window.location.href = decodeURIComponent(redirectUrl);
+                } else {
+                  // On error with no redirect, redirect to onboarding (safer fallback)
+                  console.log('🔍 Error occurred, redirecting to onboarding...');
+                  const onboardingUrl = createAdminUrl("StoreOnboarding");
+                  navigate(onboardingUrl || '/admin/store-onboarding');
+                }
               }
             }, 100); // Small delay to ensure token is set
           }
@@ -1295,7 +1324,13 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             } else {
               setSuccess(t('auth.success.user_created'));
               setTimeout(() => {
-                navigate(createAdminUrl("DASHBOARD"));
+                // Check for redirect parameter (e.g., from invitation acceptance flow)
+                const redirectUrl = searchParams.get('redirect');
+                if (redirectUrl) {
+                  navigate(decodeURIComponent(redirectUrl));
+                } else {
+                  navigate(createAdminUrl("DASHBOARD"));
+                }
               }, 1500);
             }
           }
