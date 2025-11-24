@@ -489,19 +489,6 @@ CREATE TYPE IF NOT EXISTS enum_store_data_migrations_migration_status AS ENUM (
     'paused'
 );
 
-CREATE TYPE IF NOT EXISTS enum_store_invitations_role AS ENUM (
-    'admin',
-    'editor',
-    'viewer'
-);
-
-CREATE TYPE IF NOT EXISTS enum_store_invitations_status AS ENUM (
-    'pending',
-    'accepted',
-    'expired',
-    'cancelled'
-);
-
 CREATE TYPE IF NOT EXISTS enum_store_routes_route_type AS ENUM (
     'core',
     'custom',
@@ -2811,23 +2798,6 @@ CREATE TABLE IF NOT EXISTS slot_configurations (
   has_unpublished_changes BOOLEAN DEFAULT false NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS store_invitations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL,
-  invited_email VARCHAR(255) NOT NULL,
-  invited_by UUID NOT NULL,
-  role VARCHAR(20) DEFAULT 'viewer'::character varying NOT NULL,
-  permissions JSONB DEFAULT '{}'::jsonb,
-  invitation_token VARCHAR(255) NOT NULL,
-  expires_at TIMESTAMP NOT NULL,
-  accepted_at TIMESTAMP,
-  accepted_by UUID,
-  status VARCHAR(20) DEFAULT 'pending'::character varying NOT NULL,
-  message TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
 CREATE TABLE IF NOT EXISTS store_teams (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL,
@@ -3637,14 +3607,6 @@ CREATE INDEX IF NOT EXISTS idx_slot_configurations_is_active ON slot_configurati
 
 CREATE INDEX IF NOT EXISTS idx_slot_configurations_store_id ON slot_configurations USING btree (store_id);
 
-CREATE INDEX IF NOT EXISTS idx_store_invitations_email ON store_invitations USING btree (invited_email);
-
-CREATE INDEX IF NOT EXISTS idx_store_invitations_status ON store_invitations USING btree (status);
-
-CREATE INDEX IF NOT EXISTS idx_store_invitations_store_id ON store_invitations USING btree (store_id);
-
-CREATE INDEX IF NOT EXISTS idx_store_invitations_token ON store_invitations USING btree (invitation_token);
-
 CREATE INDEX IF NOT EXISTS idx_store_status_page_version ON slot_configurations USING btree (store_id, status, page_type, version_number);
 
 CREATE INDEX IF NOT EXISTS idx_store_teams_status ON store_teams USING btree (status);
@@ -3792,16 +3754,6 @@ CREATE UNIQUE INDEX shopify_oauth_tokens_store_id ON shopify_oauth_tokens USING 
 CREATE INDEX IF NOT EXISTS slot_configurations_is_active ON slot_configurations USING btree (is_active);
 
 CREATE INDEX IF NOT EXISTS slot_configurations_store_id ON slot_configurations USING btree (store_id);
-
-CREATE INDEX IF NOT EXISTS store_invitations_expires_at ON store_invitations USING btree (expires_at);
-
-CREATE INDEX IF NOT EXISTS store_invitations_invitation_token ON store_invitations USING btree (invitation_token);
-
-CREATE INDEX IF NOT EXISTS store_invitations_invited_email ON store_invitations USING btree (invited_email);
-
-CREATE INDEX IF NOT EXISTS store_invitations_status ON store_invitations USING btree (status);
-
-CREATE INDEX IF NOT EXISTS store_invitations_store_id ON store_invitations USING btree (store_id);
 
 CREATE INDEX IF NOT EXISTS store_teams_status ON store_teams USING btree (status);
 
@@ -4372,12 +4324,6 @@ ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_published_by_
 ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-ALTER TABLE store_invitations ADD CONSTRAINT store_invitations_accepted_by_fkey FOREIGN KEY (accepted_by) REFERENCES users(id);
-
-ALTER TABLE store_invitations ADD CONSTRAINT store_invitations_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
-
-ALTER TABLE store_invitations ADD CONSTRAINT store_invitations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 ALTER TABLE store_teams ADD CONSTRAINT store_teams_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
 
