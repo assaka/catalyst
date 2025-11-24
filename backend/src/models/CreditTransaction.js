@@ -18,8 +18,9 @@ const CreditTransaction = {
       user_id: data.user_id,
       store_id: data.store_id,
       transaction_type: data.transaction_type,
-      amount_usd: data.amount_usd,
+      amount: data.amount_usd || data.amount, // Support both field names
       credits_purchased: data.credits_purchased,
+      currency: data.currency || 'usd',
       stripe_payment_intent_id: data.stripe_payment_intent_id || null,
       stripe_charge_id: data.stripe_charge_id || null,
       status: data.status || 'pending',
@@ -92,7 +93,8 @@ const CreditTransaction = {
       user_id: userId,
       store_id: storeId,
       transaction_type: 'purchase',
-      amount_usd: amountUsd,
+      amount: amountUsd,
+      currency: 'usd',
       credits_purchased: creditsAmount,
       stripe_payment_intent_id: paymentIntentId,
       status: 'pending'
@@ -107,7 +109,8 @@ const CreditTransaction = {
       user_id: userId,
       store_id: storeId,
       transaction_type: 'bonus',
-      amount_usd: 0.00,
+      amount: 0.00,
+      currency: 'usd',
       credits_purchased: creditsAmount,
       status: 'completed',
       metadata: { description: description || 'Bonus credits' }
