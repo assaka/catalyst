@@ -357,13 +357,6 @@ const ProductGallery = createSlotComponent({
 
     const images = product.images || [];
 
-    // Debug logging
-    console.log('ProductImageGallery render:', {
-      activeImageIndex,
-      imagesCount: images.length,
-      hasSetActiveImageIndex: !!setActiveImageIndex
-    });
-
     // Handle both string URLs and object structures
     const getImageUrl = (img) => {
       if (!img) return 'https://placehold.co/600x600?text=No+Image';
