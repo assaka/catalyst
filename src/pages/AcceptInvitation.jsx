@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle, XCircle, UserPlus, Building2, Shield, AlertCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, CheckCircle, XCircle, UserPlus, Building2, Shield, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import apiClient from '@/api/client';
 import { toast } from 'sonner';
 
@@ -22,6 +24,14 @@ export default function AcceptInvitation() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Form state for account creation/login
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     // Check if user is logged in (check token exists and user not marked as logged out)
@@ -63,47 +73,127 @@ export default function AcceptInvitation() {
     }
   };
 
-  const handleAccept = async () => {
-    if (!isLoggedIn) {
-      // Redirect to login with return URL
-      localStorage.setItem('invitation_return_url', window.location.pathname);
-      navigate('/admin/auth?redirect=' + encodeURIComponent(window.location.pathname));
+  const validatePassword = (pwd) => {
+    if (pwd.length < 8) return 'Password must be at least 8 characters';
+    if (!/[A-Z]/.test(pwd)) return 'Password must contain an uppercase letter';
+    if (!/[a-z]/.test(pwd)) return 'Password must contain a lowercase letter';
+    if (!/\d/.test(pwd)) return 'Password must contain a number';
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) return 'Password must contain a special character';
+    return null;
+  };
+
+  const handleAccept = async (e) => {
+    e?.preventDefault();
+    setFormError('');
+
+    // If logged in, just accept the invitation
+    if (isLoggedIn) {
+      try {
+        setAccepting(true);
+        const response = await apiClient.post(`store-teams/accept-invitation/${token}`);
+
+        if (response.success) {
+          setSuccess(true);
+          toast.success('Invitation accepted! You are now part of the team.');
+
+          // Redirect to the store dashboard after a short delay
+          setTimeout(() => {
+            navigate('/admin/dashboard');
+          }, 2000);
+        } else {
+          throw new Error(response.message || 'Failed to accept invitation');
+        }
+      } catch (err) {
+        console.error('Error accepting invitation:', err);
+
+        // If session expired or invalid token, mark as logged out
+        if (err.message?.includes('Session has been terminated') ||
+            err.message?.includes('token') ||
+            err.message?.includes('Unauthorized') ||
+            err.message?.includes('Authentication')) {
+          toast.error('Session expired. Please enter your password to continue.');
+          localStorage.removeItem('store_owner_auth_token');
+          setIsLoggedIn(false);
+          return;
+        }
+
+        toast.error(err.message || 'Failed to accept invitation');
+        setFormError(err.message);
+      } finally {
+        setAccepting(false);
+      }
       return;
+    }
+
+    // Not logged in - need to create account or login
+    if (!password) {
+      setFormError('Please enter a password');
+      return;
+    }
+
+    // For new users, validate password and check confirm
+    if (!invitation?.userExists) {
+      const pwdError = validatePassword(password);
+      if (pwdError) {
+        setFormError(pwdError);
+        return;
+      }
+      if (password !== confirmPassword) {
+        setFormError('Passwords do not match');
+        return;
+      }
+      if (!firstName.trim()) {
+        setFormError('Please enter your first name');
+        return;
+      }
     }
 
     try {
       setAccepting(true);
-      const response = await apiClient.post(`store-teams/accept-invitation/${token}`);
 
-      if (response.success) {
+      // Call the combined endpoint that handles signup/login + accept invitation
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://catalyst-backend-fzhu.onrender.com';
+      const response = await fetch(`${apiUrl}/api/invitations/${token}/accept-with-auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          password,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Store the auth token
+        if (data.data?.token) {
+          localStorage.removeItem('user_logged_out');
+          localStorage.setItem('store_owner_auth_token', data.data.token);
+          apiClient.setToken(data.data.token);
+
+          // Store user data
+          if (data.data.user) {
+            localStorage.setItem('store_owner_user_data', JSON.stringify(data.data.user));
+          }
+        }
+
         setSuccess(true);
-        toast.success('Invitation accepted! You are now part of the team.');
+        toast.success('Welcome to the team!');
 
         // Redirect to the store dashboard after a short delay
         setTimeout(() => {
           navigate('/admin/dashboard');
         }, 2000);
       } else {
-        throw new Error(response.message || 'Failed to accept invitation');
+        throw new Error(data.message || 'Failed to accept invitation');
       }
     } catch (err) {
       console.error('Error accepting invitation:', err);
-
-      // If session expired or invalid token, redirect to login
-      if (err.message?.includes('Session has been terminated') ||
-          err.message?.includes('token') ||
-          err.message?.includes('Unauthorized') ||
-          err.message?.includes('Authentication')) {
-        toast.error('Please log in to accept this invitation');
-        localStorage.removeItem('store_owner_auth_token');
-        setIsLoggedIn(false);
-        localStorage.setItem('invitation_return_url', window.location.pathname);
-        navigate('/admin/auth?redirect=' + encodeURIComponent(window.location.pathname));
-        return;
-      }
-
+      setFormError(err.message || 'Failed to accept invitation');
       toast.error(err.message || 'Failed to accept invitation');
-      setError(err.message);
     } finally {
       setAccepting(false);
     }
@@ -230,13 +320,91 @@ export default function AcceptInvitation() {
             </div>
           )}
 
-          {/* Login Notice */}
+          {/* Account Creation/Login Form for non-logged-in users */}
           {!isLoggedIn && (
-            <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm text-amber-800">
-                You'll need to log in or create an account to accept this invitation.
-              </p>
-            </div>
+            <form onSubmit={handleAccept} className="mb-6 space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg border">
+                <p className="text-sm font-medium text-gray-700 mb-3">
+                  {invitation?.userExists
+                    ? `Enter your password for ${invitation?.email}`
+                    : `Create your account for ${invitation?.email}`
+                  }
+                </p>
+
+                {/* Name fields for new users */}
+                {!invitation?.userExists && (
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <Label htmlFor="firstName" className="text-xs">First Name</Label>
+                      <Input
+                        id="firstName"
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="John"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lastName" className="text-xs">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Doe"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Password field */}
+                <div className="mb-3">
+                  <Label htmlFor="password" className="text-xs">Password</Label>
+                  <div className="relative mt-1">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder={invitation?.userExists ? 'Enter your password' : 'Create a password'}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm password for new users */}
+                {!invitation?.userExists && (
+                  <div className="mb-3">
+                    <Label htmlFor="confirmPassword" className="text-xs">Confirm Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm your password"
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Min 8 chars with uppercase, lowercase, number, and special character
+                    </p>
+                  </div>
+                )}
+
+                {/* Form error */}
+                {formError && (
+                  <p className="text-sm text-red-600 mt-2">{formError}</p>
+                )}
+              </div>
+            </form>
           )}
 
           {/* Actions */}
@@ -256,12 +424,10 @@ export default function AcceptInvitation() {
               {accepting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Accepting...
+                  {isLoggedIn ? 'Accepting...' : (invitation?.userExists ? 'Signing in...' : 'Creating account...')}
                 </>
-              ) : isLoggedIn ? (
-                'Accept Invitation'
               ) : (
-                'Login to Accept'
+                'Accept Invitation'
               )}
             </Button>
           </div>

@@ -425,8 +425,8 @@ export default function Billing() {
                         <Clock className="w-5 h-5 text-yellow-500" />
                       }
                       <div>
-                        <p className="font-medium">Purchased {tx.credits_purchased} credits</p>
-                        <p className="text-sm text-gray-500">{new Date(tx.created_date).toLocaleDateString()}</p>
+                        <p className="font-medium">Purchased {tx.credits_amount} credits</p>
+                        <p className="text-sm text-gray-500">{new Date(tx.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
                     <p className="font-medium">${tx.amount_usd}</p>

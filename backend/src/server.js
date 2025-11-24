@@ -1104,19 +1104,193 @@ app.get('/api/invitations/:token', async (req, res) => {
       inviter = inviterInfo;
     }
 
+    // Check if user already exists with this email
+    const { data: existingUser } = await masterDbClient
+      .from('users')
+      .select('id')
+      .eq('email', invitation.invited_email)
+      .maybeSingle();
+
     res.json({
       success: true,
       data: {
         id: invitation.id,
+        email: invitation.invited_email,
         role: invitation.role,
         message: invitation.message,
         expires_at: invitation.expires_at,
         store: store || { name: 'Store' },
-        inviter
+        inviter,
+        userExists: !!existingUser
       }
     });
   } catch (error) {
     console.error('Get invitation error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Public invitation accept with auth (signup/login + accept in one step)
+app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password, firstName, lastName } = req.body;
+    const { masterDbClient } = require('./database/masterConnection');
+    const bcrypt = require('bcrypt');
+    const jwt = require('jsonwebtoken');
+    const ConnectionManager = require('./services/database/ConnectionManager');
+
+    if (!password) {
+      return res.status(400).json({ success: false, message: 'Password is required' });
+    }
+
+    // Find invitation
+    const { data: invitation, error: inviteError } = await masterDbClient
+      .from('store_invitations')
+      .select('*')
+      .eq('invitation_token', token)
+      .maybeSingle();
+
+    if (inviteError || !invitation) {
+      return res.status(404).json({ success: false, message: 'Invitation not found' });
+    }
+
+    if (new Date(invitation.expires_at) < new Date()) {
+      return res.status(410).json({ success: false, message: 'This invitation has expired' });
+    }
+
+    if (invitation.status !== 'pending') {
+      return res.status(410).json({ success: false, message: 'This invitation has already been used' });
+    }
+
+    // Check if user exists
+    const { data: existingUser } = await masterDbClient
+      .from('users')
+      .select('*')
+      .eq('email', invitation.invited_email)
+      .maybeSingle();
+
+    let user;
+
+    if (existingUser) {
+      // Login flow - verify password
+      const validPassword = await bcrypt.compare(password, existingUser.password_hash);
+      if (!validPassword) {
+        return res.status(401).json({ success: false, message: 'Invalid password' });
+      }
+      user = existingUser;
+    } else {
+      // Signup flow - create new account
+      if (!firstName) {
+        return res.status(400).json({ success: false, message: 'First name is required for new accounts' });
+      }
+
+      // Hash password
+      const saltRounds = 10;
+      const password_hash = await bcrypt.hash(password, saltRounds);
+
+      // Create user
+      const { data: newUser, error: createError } = await masterDbClient
+        .from('users')
+        .insert({
+          email: invitation.invited_email,
+          password_hash,
+          first_name: firstName,
+          last_name: lastName || '',
+          role: 'store_owner',
+          account_type: 'individual',
+          is_active: true,
+          email_verified: true, // Auto-verify since they're accepting invitation
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Error creating user:', createError);
+        return res.status(500).json({ success: false, message: 'Failed to create account' });
+      }
+
+      user = newUser;
+    }
+
+    // Now accept the invitation - add to store_team_members
+    const tenantDb = await ConnectionManager.getStoreConnection(invitation.store_id);
+
+    // Check if already a member
+    const { data: existingMember } = await tenantDb
+      .from('store_team_members')
+      .select('id')
+      .eq('store_id', invitation.store_id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (existingMember) {
+      // Already a member, just update invitation status
+      await masterDbClient
+        .from('store_invitations')
+        .update({ status: 'accepted', updated_at: new Date().toISOString() })
+        .eq('id', invitation.id);
+    } else {
+      // Add as team member
+      const { error: memberError } = await tenantDb
+        .from('store_team_members')
+        .insert({
+          store_id: invitation.store_id,
+          user_id: user.id,
+          role: invitation.role,
+          invited_by: invitation.invited_by,
+          joined_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (memberError) {
+        console.error('Error adding team member:', memberError);
+        return res.status(500).json({ success: false, message: 'Failed to add to team' });
+      }
+
+      // Update invitation status
+      await masterDbClient
+        .from('store_invitations')
+        .update({ status: 'accepted', updated_at: new Date().toISOString() })
+        .eq('id', invitation.id);
+    }
+
+    // Generate JWT token
+    const jwtToken = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        account_type: user.account_type,
+        store_id: invitation.store_id
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    // Return success with token
+    res.json({
+      success: true,
+      message: 'Invitation accepted successfully',
+      data: {
+        token: jwtToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          role: user.role,
+          account_type: user.account_type
+        },
+        store_id: invitation.store_id
+      }
+    });
+
+  } catch (error) {
+    console.error('Accept invitation with auth error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
