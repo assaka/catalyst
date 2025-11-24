@@ -25,6 +25,56 @@ const StoreHostname = require('../models/master/StoreHostname');
 const CreditBalance = require('../models/master/CreditBalance');
 
 /**
+ * Check if a database URL is already being used by another store
+ * @param {string} projectUrl - Supabase project URL
+ * @param {string} currentStoreId - Current store ID (to exclude from check)
+ * @returns {Promise<{isDuplicate: boolean, existingStoreId?: string}>}
+ */
+async function checkDatabaseUrlDuplicate(projectUrl, currentStoreId = null) {
+  try {
+    if (!projectUrl) {
+      return { isDuplicate: false };
+    }
+
+    // Extract hostname from project URL
+    const url = new URL(projectUrl);
+    const host = url.hostname;
+
+    console.log('🔍 Checking for duplicate database URL:', { host, currentStoreId });
+
+    // Query store_databases table to check if this host is already in use
+    const { data: existingDb, error } = await masterDbClient
+      .from('store_databases')
+      .select('store_id, host')
+      .eq('host', host)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error checking for duplicate database:', error);
+      // Don't block on query error - log and continue
+      return { isDuplicate: false };
+    }
+
+    // If found and it's not the current store, it's a duplicate
+    if (existingDb && existingDb.store_id !== currentStoreId) {
+      console.log('❌ Database URL already in use by store:', existingDb.store_id);
+      return {
+        isDuplicate: true,
+        existingStoreId: existingDb.store_id
+      };
+    }
+
+    console.log('✅ Database URL is available');
+    return { isDuplicate: false };
+  } catch (error) {
+    console.error('Error in checkDatabaseUrlDuplicate:', error);
+    // Don't block on error - log and continue
+    return { isDuplicate: false };
+  }
+}
+
+/**
  * POST /api/stores
  * Create a new store in master DB
  */
@@ -380,6 +430,28 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
         code: 'ALREADY_CONNECTED'
       });
     }
+
+    // Check if this database URL is already being used by another store
+    console.log('🔍 Checking for duplicate database URL...');
+    const duplicateCheck = await checkDatabaseUrlDuplicate(projectUrl, storeId);
+
+    if (duplicateCheck.isDuplicate) {
+      console.error('❌ Database URL is already in use by another store:', duplicateCheck.existingStoreId);
+
+      // Revert store status back to pending_database
+      await masterDbClient
+        .from('stores')
+        .update({ status: 'pending_database', updated_at: new Date().toISOString() })
+        .eq('id', storeId);
+
+      return res.status(409).json({
+        success: false,
+        error: 'This Supabase database is already being used by another store. Please select a different database or create a new Supabase project.',
+        code: 'DATABASE_ALREADY_IN_USE'
+      });
+    }
+
+    console.log('✅ Database URL is available for use');
 
     // Update store status to provisioning (use Supabase client)
     console.log('🔄 Updating store status to provisioning...');
