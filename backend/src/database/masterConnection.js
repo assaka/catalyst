@@ -51,9 +51,38 @@ if (!masterDbUrl) {
   }
 }
 
-const masterSequelize = useMasterDbUrl
-  ? new Sequelize(masterDbUrl, {
+// Parse MASTER_DB_URL manually to handle Supabase pooler URLs correctly
+// Supabase URLs use format: postgresql://postgres.PROJECT_REF:PASSWORD@host:port/database
+let parsedDbConfig = null;
+if (useMasterDbUrl) {
+  try {
+    const dbUrl = new URL(masterDbUrl);
+    parsedDbConfig = {
+      host: dbUrl.hostname,
+      port: parseInt(dbUrl.port) || 5432,
+      database: dbUrl.pathname.substring(1) || 'postgres',
+      username: decodeURIComponent(dbUrl.username), // Handle URL-encoded characters
+      password: decodeURIComponent(dbUrl.password)  // Handle URL-encoded characters
+    };
+    console.log('🔧 [MASTER CONNECTION] Parsed DB config:');
+    console.log('   - Host:', parsedDbConfig.host);
+    console.log('   - Port:', parsedDbConfig.port);
+    console.log('   - Database:', parsedDbConfig.database);
+    console.log('   - Username:', parsedDbConfig.username);
+    console.log('   - Password length:', parsedDbConfig.password?.length || 0);
+  } catch (parseError) {
+    console.error('❌ Failed to parse MASTER_DB_URL for Sequelize:', parseError.message);
+  }
+}
+
+const masterSequelize = parsedDbConfig
+  ? new Sequelize({
       dialect: 'postgres',
+      host: parsedDbConfig.host,
+      port: parsedDbConfig.port,
+      database: parsedDbConfig.database,
+      username: parsedDbConfig.username,
+      password: parsedDbConfig.password,
       logging: process.env.NODE_ENV === 'development' ? console.log : false,
       timezone: '+00:00',
       define: {
