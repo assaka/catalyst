@@ -38,12 +38,15 @@ export default function AcceptInvitation() {
       setLoading(true);
       setError(null);
 
-      const response = await apiClient.get(`store-teams/invitation/${token}`);
+      // Use direct fetch for public endpoint (no auth required)
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://catalyst-backend-fzhu.onrender.com';
+      const response = await fetch(`${apiUrl}/api/store-teams/invitation/${token}`);
+      const data = await response.json();
 
-      if (response.success) {
-        setInvitation(response.data);
+      if (response.ok && data.success) {
+        setInvitation(data.data);
       } else {
-        setError(response.message || 'Invalid or expired invitation');
+        setError(data.message || 'Invalid or expired invitation');
       }
     } catch (err) {
       console.error('Error fetching invitation:', err);
