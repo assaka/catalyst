@@ -25,14 +25,15 @@ router.get('/test', cacheMiddleware({
 router.get('/clear-bootstrap/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
-    const { invalidateCache } = require('../utils/cacheManager');
+    const { deletePattern } = require('../utils/cacheManager');
 
-    await invalidateCache(`bootstrap:${slug}:*`);
+    const deletedCount = await deletePattern(`bootstrap:${slug}:*`);
 
     res.json({
       success: true,
       message: `Bootstrap cache cleared for store: ${slug}`,
-      slug: slug
+      slug: slug,
+      deletedKeys: deletedCount
     });
   } catch (error) {
     console.error('Cache clear error:', error);

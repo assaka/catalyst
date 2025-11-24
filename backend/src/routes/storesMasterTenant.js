@@ -1231,9 +1231,9 @@ router.patch('/:id', authMiddleware, async (req, res) => {
       // Clear storefront bootstrap cache if published status changed
       if ('published' in masterUpdates) {
         try {
-          const { invalidateCache } = require('../utils/cacheManager');
-          await invalidateCache(`bootstrap:${store.slug}:*`);
-          console.log('✅ Cleared bootstrap cache for store:', store.slug);
+          const { deletePattern } = require('../utils/cacheManager');
+          const deletedCount = await deletePattern(`bootstrap:${store.slug}:*`);
+          console.log(`✅ Cleared ${deletedCount} bootstrap cache keys for store:`, store.slug);
         } catch (cacheError) {
           console.warn('⚠️ Failed to clear cache:', cacheError.message);
         }
@@ -1346,9 +1346,9 @@ router.put('/:id', authMiddleware, async (req, res) => {
       // Clear storefront bootstrap cache if published status changed
       if ('published' in masterUpdates) {
         try {
-          const { invalidateCache } = require('../utils/cacheManager');
-          await invalidateCache(`bootstrap:${store.slug}:*`);
-          console.log('✅ Cleared bootstrap cache for store:', store.slug);
+          const { deletePattern } = require('../utils/cacheManager');
+          const deletedCount = await deletePattern(`bootstrap:${store.slug}:*`);
+          console.log(`✅ Cleared ${deletedCount} bootstrap cache keys for store:`, store.slug);
         } catch (cacheError) {
           console.warn('⚠️ Failed to clear cache:', cacheError.message);
         }
