@@ -160,6 +160,14 @@ export default function StoreOnboarding() {
             const statusResponse = await apiClient.get(`/supabase/oauth-status?storeId=${storeId}`);
             console.log('OAuth status response:', statusResponse);
 
+            // Check if there's an error in the response
+            if (statusResponse.error) {
+              console.error('❌ OAuth error from API:', statusResponse.error);
+              setError(statusResponse.error);
+              setLoading(false);
+              return;
+            }
+
             if (statusResponse.success && statusResponse.connected) {
               console.log('✅ OAuth verified via API - tokens found');
               setOauthCompleted(true);

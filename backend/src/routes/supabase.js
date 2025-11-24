@@ -51,6 +51,39 @@ router.get('/oauth-status', authMiddleware, async (req, res) => {
 
     console.log('Checking OAuth status for store:', storeId);
 
+    // Check for OAuth errors first
+    try {
+      const { getRedisClient } = require('../config/redis');
+      const redisClient = getRedisClient();
+
+      let oauthError = null;
+
+      if (redisClient) {
+        oauthError = await redisClient.get(`oauth:error:${storeId}`);
+        if (oauthError) {
+          console.log('❌ Found OAuth error in Redis:', oauthError);
+          await redisClient.del(`oauth:error:${storeId}`); // Clean up
+        }
+      }
+
+      if (!oauthError && global.oauthErrors && global.oauthErrors.has(storeId)) {
+        const errorData = global.oauthErrors.get(storeId);
+        oauthError = errorData.message;
+        console.log('❌ Found OAuth error in memory:', oauthError);
+        global.oauthErrors.delete(storeId); // Clean up
+      }
+
+      if (oauthError) {
+        return res.json({
+          success: false,
+          connected: false,
+          error: oauthError
+        });
+      }
+    } catch (errorCheckErr) {
+      console.error('⚠️ Error checking for OAuth errors:', errorCheckErr.message);
+    }
+
     // Check Redis first (primary storage)
     try {
       const { getRedisClient } = require('../config/redis');

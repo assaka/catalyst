@@ -494,9 +494,29 @@ class SupabaseIntegration {
         stack: error.stack
       });
       
-      // If it's our duplicate database error, re-throw as-is
+      // If it's our duplicate database error, store it and re-throw
       if (error.isDuplicateDatabase || error.message?.includes('already connected')) {
         console.error('🚫 Re-throwing duplicate database error from outer catch');
+
+        // Store error in Redis/memory for frontend to retrieve
+        try {
+          const { getRedisClient } = require('../config/redis');
+          const redisClient = getRedisClient();
+
+          if (redisClient) {
+            await redisClient.setEx(`oauth:error:${storeId}`, 60, error.message);
+            console.log('✅ Stored OAuth error in Redis');
+          } else {
+            if (!global.oauthErrors) {
+              global.oauthErrors = new Map();
+            }
+            global.oauthErrors.set(storeId, { message: error.message, timestamp: Date.now() });
+            console.log('✅ Stored OAuth error in memory');
+          }
+        } catch (storeErr) {
+          console.error('⚠️ Failed to store OAuth error:', storeErr.message);
+        }
+
         throw error;
       }
 
