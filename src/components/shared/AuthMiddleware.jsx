@@ -1137,62 +1137,62 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                   // Backend found first active store - fetch details and redirect to dashboard
                   console.log('🔍 First active store found:', storeId);
 
+                  // BETTER APPROACH: Fetch from /stores/dropdown directly
+                  // The /stores/{id} endpoint seems to return malformed data
                   try {
-                    console.log('🔍 Fetching store details from /stores/' + storeId);
-                    const storeResponse = await apiClient.get(`/stores/${storeId}`);
-                    const store = storeResponse.data || storeResponse;
+                    console.log('🔍 Fetching stores from /stores/dropdown to find storeId:', storeId);
+                    const dropdownResponse = await apiClient.get('/stores/dropdown');
+                    const stores = dropdownResponse.data || dropdownResponse;
 
-                    console.log('✅ Store fetched successfully:', {
-                      id: store.id,
-                      name: store.name,
-                      slug: store.slug,
-                      code: store.code,
-                      is_active: store.is_active
+                    console.log('🔍 Dropdown response:', {
+                      hasData: !!stores,
+                      isArray: Array.isArray(stores),
+                      count: stores?.length || 0,
+                      stores: stores
                     });
 
-                    // Set all store context in localStorage
-                    localStorage.setItem('selectedStoreId', store.id);
-                    localStorage.setItem('selectedStoreSlug', store.slug || store.code);
-                    localStorage.setItem('selectedStoreName', store.name);
+                    // Find the store that matches our storeId from JWT
+                    const store = stores.find(s => s.id === storeId);
 
-                    console.log('✅ Store context set in localStorage:', {
-                      selectedStoreId: localStorage.getItem('selectedStoreId'),
-                      selectedStoreSlug: localStorage.getItem('selectedStoreSlug'),
-                      selectedStoreName: localStorage.getItem('selectedStoreName')
-                    });
+                    if (store) {
+                      console.log('✅ Found store in dropdown:', {
+                        id: store.id,
+                        name: store.name,
+                        slug: store.slug,
+                        code: store.code,
+                        is_active: store.is_active
+                      });
+
+                      // Set all store context in localStorage
+                      localStorage.setItem('selectedStoreId', store.id);
+                      localStorage.setItem('selectedStoreSlug', store.slug || store.code);
+                      localStorage.setItem('selectedStoreName', store.name);
+
+                      console.log('✅ Store context set in localStorage:', {
+                        selectedStoreId: localStorage.getItem('selectedStoreId'),
+                        selectedStoreSlug: localStorage.getItem('selectedStoreSlug'),
+                        selectedStoreName: localStorage.getItem('selectedStoreName')
+                      });
+                    } else {
+                      console.warn('⚠️ storeId from JWT not found in dropdown, using first active store');
+                      const firstActiveStore = stores.find(s => s.is_active) || stores[0];
+                      if (firstActiveStore) {
+                        localStorage.setItem('selectedStoreId', firstActiveStore.id);
+                        localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);
+                        localStorage.setItem('selectedStoreName', firstActiveStore.name);
+                      }
+                    }
 
                     // CRITICAL: Wait a tick to ensure localStorage is fully written
-                    // Then use window.location.href to force a full page reload
                     await new Promise(resolve => setTimeout(resolve, 50));
 
                     const dashboardUrl = createAdminUrl("DASHBOARD");
                     console.log('🔍 Redirecting to dashboard with full page reload:', dashboardUrl);
                     window.location.href = dashboardUrl;
-                  } catch (storeError) {
-                    console.error('❌ Error fetching store details:', storeError);
-                    console.error('Error response:', storeError.response?.data);
-                    console.error('Error status:', storeError.response?.status);
-
-                    // Fallback: Try to get store from dropdown
-                    try {
-                      console.log('🔄 Fallback: Fetching from /stores/dropdown');
-                      const dropdownResponse = await apiClient.get('/stores/dropdown');
-                      const stores = dropdownResponse.data || dropdownResponse;
-                      const store = stores.find(s => s.id === storeId) || stores[0];
-
-                      if (store) {
-                        console.log('✅ Store found in dropdown:', store.name);
-                        localStorage.setItem('selectedStoreId', store.id);
-                        localStorage.setItem('selectedStoreSlug', store.slug || store.code);
-                        localStorage.setItem('selectedStoreName', store.name);
-                      }
-                    } catch (fallbackError) {
-                      console.error('❌ Fallback also failed:', fallbackError);
-                      // Last resort: just set the ID
-                      localStorage.setItem('selectedStoreId', storeId);
-                    }
-
-                    // Force full page reload to ensure localStorage is read
+                  } catch (dropdownError) {
+                    console.error('❌ Error fetching dropdown:', dropdownError);
+                    // Last resort: just set the storeId and navigate
+                    localStorage.setItem('selectedStoreId', storeId);
                     window.location.href = createAdminUrl("DASHBOARD");
                   }
                 } else {
