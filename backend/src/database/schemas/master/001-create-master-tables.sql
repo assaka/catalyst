@@ -328,36 +328,7 @@ CREATE TABLE IF NOT EXISTS usage_metrics (
 CREATE INDEX IF NOT EXISTS idx_usage_metrics_store_date ON usage_metrics(store_id, metric_date DESC);
 
 -- ============================================
--- 10. API_USAGE_LOGS TABLE
--- API call logging for monitoring
--- ============================================
-CREATE TABLE IF NOT EXISTS api_usage_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
-
-  -- Request details
-  endpoint VARCHAR(255) NOT NULL,
-  method VARCHAR(10) NOT NULL,
-  status_code INTEGER,
-  response_time_ms INTEGER,
-
-  -- Client info
-  ip_address VARCHAR(45),
-  user_agent TEXT,
-
-  -- Error tracking
-  error_message TEXT,
-
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Partitioned by date for performance (implement partitioning separately if needed)
-CREATE INDEX IF NOT EXISTS idx_api_usage_logs_store_id ON api_usage_logs(store_id);
-CREATE INDEX IF NOT EXISTS idx_api_usage_logs_created ON api_usage_logs(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_api_usage_logs_endpoint ON api_usage_logs(endpoint);
-
--- ============================================
--- 11. BILLING_TRANSACTIONS TABLE
+-- 10. BILLING_TRANSACTIONS TABLE
 -- Payment history for subscriptions
 -- ============================================
 CREATE TABLE IF NOT EXISTS billing_transactions (
@@ -444,7 +415,6 @@ COMMENT ON TABLE credit_transactions IS 'Credit purchase history and adjustments
 COMMENT ON TABLE service_credit_costs IS 'Pricing for all services that consume credits';
 COMMENT ON TABLE job_queue IS 'Centralized job queue for processing tenant jobs';
 COMMENT ON TABLE usage_metrics IS 'Daily usage metrics per store for analytics';
-COMMENT ON TABLE api_usage_logs IS 'API call logs for monitoring and rate limiting';
 COMMENT ON TABLE billing_transactions IS 'Subscription payment history';
 
 -- ============================================

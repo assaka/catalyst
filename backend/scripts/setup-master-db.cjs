@@ -62,7 +62,6 @@ async function setupMasterDb() {
       console.log('  - service_credit_costs');
       console.log('  - job_queue');
       console.log('  - usage_metrics');
-      console.log('  - api_usage_logs');
       console.log('  - billing_transactions');
     }
 
