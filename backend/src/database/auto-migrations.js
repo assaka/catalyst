@@ -141,48 +141,12 @@ const migrations = [
         await sequelize.query(`
           CREATE INDEX IF NOT EXISTS idx_store_teams_status ON store_teams(status)
         `);
-        
+
         console.log('✅ Created store_teams table');
-        
-        // Create store_invitations table
-        await sequelize.query(`
-          CREATE TABLE IF NOT EXISTS store_invitations (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            store_id UUID NOT NULL REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE,
-            invited_email VARCHAR(255) NOT NULL,
-            invited_by UUID NOT NULL REFERENCES users(id),
-            role VARCHAR(20) NOT NULL DEFAULT 'viewer' CHECK (role IN ('admin', 'editor', 'viewer')),
-            permissions JSONB DEFAULT '{}',
-            invitation_token VARCHAR(255) NOT NULL UNIQUE,
-            expires_at TIMESTAMP NOT NULL,
-            accepted_at TIMESTAMP,
-            accepted_by UUID REFERENCES users(id),
-            status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'expired', 'cancelled')),
-            message TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-        
-        // Create indexes for store_invitations
-        await sequelize.query(`
-          CREATE INDEX IF NOT EXISTS idx_store_invitations_store_id ON store_invitations(store_id)
-        `);
-        
-        await sequelize.query(`
-          CREATE INDEX IF NOT EXISTS idx_store_invitations_email ON store_invitations(invited_email)
-        `);
-        
-        await sequelize.query(`
-          CREATE INDEX IF NOT EXISTS idx_store_invitations_token ON store_invitations(invitation_token)
-        `);
-        
-        await sequelize.query(`
-          CREATE INDEX IF NOT EXISTS idx_store_invitations_status ON store_invitations(status)
-        `);
-        
-        console.log('✅ Created store_invitations table');
-        
+
+        // NOTE: store_invitations table is now in MASTER database for cross-tenant invitation discovery
+        // It is auto-created by Sequelize StoreInvitation model
+
         return true;
       } catch (error) {
         console.error('❌ Migration failed:', error.message);

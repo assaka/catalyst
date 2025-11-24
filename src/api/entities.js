@@ -1292,6 +1292,17 @@ class StoreTeamService extends BaseEntity {
     }
   }
 
+  // Get pending invitations for a store
+  async getInvitations(storeId) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/${storeId}/invitations`);
+      return response?.data?.invitations || response?.invitations || [];
+    } catch (error) {
+      console.error(`StoreTeamService.getInvitations() error:`, error.message);
+      return [];
+    }
+  }
+
   // Update team member
   async updateMember(storeId, memberId, updateData) {
     try {

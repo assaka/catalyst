@@ -108,6 +108,76 @@ router.get('/:store_id', authorize(['admin', 'store_owner']), checkStoreOwnershi
   }
 });
 
+// @route   GET /api/store-teams/:store_id/invitations
+// @desc    Get pending invitations for a store
+// @access  Private (store owner/admin)
+router.get('/:store_id/invitations', authorize(['admin', 'store_owner']), checkStoreOwnership, async (req, res) => {
+  try {
+    const { store_id } = req.params;
+
+    // Check if user has permission to view invitations
+    const canManageTeam = req.storeAccess.isDirectOwner ||
+                         req.storeAccess.permissions?.canManageTeam ||
+                         req.storeAccess.permissions?.all;
+
+    if (!canManageTeam) {
+      return res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions to view invitations'
+      });
+    }
+
+    // Get invitations from master DB
+    const { data: invitations, error } = await masterDbClient
+      .from('store_invitations')
+      .select('*')
+      .eq('store_id', store_id)
+      .eq('status', 'pending')
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching store invitations:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch invitations'
+      });
+    }
+
+    // Fetch inviter info from master DB
+    const inviterIds = [...new Set(invitations.map(i => i.invited_by).filter(Boolean))];
+    let inviterMap = {};
+
+    if (inviterIds.length > 0) {
+      const { data: inviters } = await masterDbClient
+        .from('users')
+        .select('id, email, first_name, last_name')
+        .in('id', inviterIds);
+
+      (inviters || []).forEach(u => { inviterMap[u.id] = u; });
+    }
+
+    // Merge inviter data
+    const invitationsWithInviter = invitations.map(inv => ({
+      ...inv,
+      inviter: inviterMap[inv.invited_by] || null
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        invitations: invitationsWithInviter
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get store invitations error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   POST /api/store-teams/:store_id/invite
 // @desc    Invite a user to join store team
 // @access  Private (store owner/admin)

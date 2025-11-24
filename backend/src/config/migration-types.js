@@ -102,17 +102,17 @@ const MIGRATION_TYPES = {
 
   operations: {
     name: 'Operations & Management',
-    description: 'Background jobs, credits, invitations, and operational data',
+    description: 'Background jobs, credits, and operational data',
     priority: 6,
     tables: [
       'jobs',
       'credits',
-      'credit_transactions', 
+      'credit_transactions',
       'credit_usage',
-      'store_invitations',
       'store_teams',
       'store_data_migrations',
       'store_supabase_connections'
+      // NOTE: store_invitations is in MASTER database for cross-tenant discovery
     ],
     dependencies: [],
     estimated_size_mb: 10,

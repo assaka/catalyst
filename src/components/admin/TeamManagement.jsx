@@ -86,6 +86,7 @@ const DEFAULT_PERMISSIONS = {
 
 export default function TeamManagement({ storeId, storeName }) {
   const [teamMembers, setTeamMembers] = useState([]);
+  const [pendingInvitations, setPendingInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -107,33 +108,36 @@ export default function TeamManagement({ storeId, storeName }) {
 
   useEffect(() => {
     if (storeId) {
-      loadTeamMembers();
+      loadTeamData();
     }
   }, [storeId]);
 
-  const loadTeamMembers = async () => {
+  const loadTeamData = async () => {
     try {
       setLoading(true);
-      const response = await StoreTeam.getTeamMembers(storeId);
-      
-      // Handle response structure: API returns direct array or nested structure
+
+      // Fetch team members and pending invitations in parallel
+      const [membersResponse, invitationsResponse] = await Promise.all([
+        StoreTeam.getTeamMembers(storeId),
+        StoreTeam.getInvitations(storeId)
+      ]);
+
+      // Handle team members response structure
       let teamMembers = [];
-      if (Array.isArray(response)) {
-        // Direct array response
-        teamMembers = response;
-      } else if (response?.data?.team_members) {
-        // Nested structure: response.data.team_members
-        teamMembers = response.data.team_members;
-      } else if (response?.team_members) {
-        // Alternative nested: response.team_members
-        teamMembers = response.team_members;
+      if (Array.isArray(membersResponse)) {
+        teamMembers = membersResponse;
+      } else if (membersResponse?.data?.team_members) {
+        teamMembers = membersResponse.data.team_members;
+      } else if (membersResponse?.team_members) {
+        teamMembers = membersResponse.team_members;
       }
-      
+
       setTeamMembers(teamMembers);
+      setPendingInvitations(invitationsResponse || []);
     } catch (error) {
-      console.error('❌ TeamManagement: Error loading team members:', error);
+      console.error('❌ TeamManagement: Error loading team data:', error);
       console.error('❌ TeamManagement: Error details:', error.message);
-      toast.error('Failed to load team members');
+      toast.error('Failed to load team data');
     } finally {
       setLoading(false);
     }
@@ -150,7 +154,7 @@ export default function TeamManagement({ storeId, storeName }) {
         message: '',
         permissions: DEFAULT_PERMISSIONS.editor
       });
-      loadTeamMembers();
+      loadTeamData();
     } catch (error) {
       console.error('Error inviting member:', error);
       toast.error('Failed to send invitation');
@@ -163,7 +167,7 @@ export default function TeamManagement({ storeId, storeName }) {
       toast.success('Team member updated successfully');
       setEditDialogOpen(false);
       setSelectedMember(null);
-      loadTeamMembers();
+      loadTeamData();
     } catch (error) {
       console.error('Error updating member:', error);
       toast.error('Failed to update team member');
@@ -175,7 +179,7 @@ export default function TeamManagement({ storeId, storeName }) {
       try {
         await StoreTeam.removeMember(storeId, memberId);
         toast.success('Team member removed successfully');
-        loadTeamMembers();
+        loadTeamData();
       } catch (error) {
         console.error('Error removing member:', error);
         toast.error('Failed to remove team member');
@@ -333,17 +337,78 @@ export default function TeamManagement({ storeId, storeName }) {
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
-        ) : teamMembers.length === 0 ? (
-          <div className="text-center py-8">
-            <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 mb-4">No team members yet</p>
-            <Button onClick={() => setInviteDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Invite your first team member
-            </Button>
-          </div>
         ) : (
-          <Table>
+          <div className="space-y-6">
+            {/* Pending Invitations Section */}
+            {pendingInvitations.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  Pending Invitations ({pendingInvitations.length})
+                </h3>
+                <div className="space-y-2">
+                  {pendingInvitations.map((invitation) => {
+                    const RoleIcon = ROLE_ICONS[invitation.role] || Shield;
+                    const expiresAt = new Date(invitation.expires_at);
+                    const isExpiringSoon = expiresAt - new Date() < 2 * 24 * 60 * 60 * 1000; // 2 days
+
+                    return (
+                      <div
+                        key={invitation.id}
+                        className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback className="bg-yellow-100 text-yellow-700">
+                              {invitation.invited_email?.charAt(0).toUpperCase() || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{invitation.invited_email}</div>
+                            <div className="text-sm text-gray-500">
+                              Invited {new Date(invitation.created_at).toLocaleDateString()}
+                              {' • '}
+                              <span className={isExpiringSoon ? 'text-orange-600' : ''}>
+                                Expires {expiresAt.toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className={ROLE_COLORS[invitation.role]}>
+                            <RoleIcon className="w-3 h-3 mr-1" />
+                            {invitation.role?.charAt(0).toUpperCase() + invitation.role?.slice(1)}
+                          </Badge>
+                          <Badge variant="outline" className="bg-yellow-100 text-yellow-700 border-yellow-300">
+                            Pending
+                          </Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Team Members Section */}
+            {teamMembers.length === 0 && pendingInvitations.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-4">No team members yet</p>
+                <Button onClick={() => setInviteDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Invite your first team member
+                </Button>
+              </div>
+            ) : teamMembers.length > 0 && (
+              <>
+                {pendingInvitations.length > 0 && (
+                  <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Active Members ({teamMembers.length})
+                  </h3>
+                )}
+                <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Member</TableHead>
@@ -417,6 +482,9 @@ export default function TeamManagement({ storeId, storeName }) {
               })}
             </TableBody>
           </Table>
+              </>
+            )}
+          </div>
         )}
 
         {/* Edit Member Dialog */}
