@@ -12,12 +12,7 @@ require('dotenv').config();
 const DailyCreditDeductionJob = require('../src/core/jobs/DailyCreditDeductionJob');
 
 async function runDailyDeduction() {
-  console.log('\n💰 Running Daily Credit Deduction...');
-  console.log('='.repeat(60));
-  console.log(`Started at: ${new Date().toISOString()}\n`);
-
   try {
-    // Create a mock job object (required by DailyCreditDeductionJob)
     const mockJob = {
       id: `manual-${Date.now()}`,
       type: 'system:daily_credit_deduction',
@@ -28,44 +23,14 @@ async function runDailyDeduction() {
       created_at: new Date()
     };
 
-    // Execute the job
     const job = new DailyCreditDeductionJob(mockJob);
     const result = await job.execute();
 
-    // Display results
-    console.log('\n' + '='.repeat(60));
-    console.log('\n✅ Daily Credit Deduction Completed Successfully\n');
-    console.log('Results:');
-    console.log(`  Stores processed: ${result.processed}`);
-    console.log(`  Successful: ${result.successful}`);
-    console.log(`  Failed: ${result.failed}`);
-
-    if (result.stores && result.stores.length > 0) {
-      console.log('\nStores charged:');
-      result.stores.forEach(store => {
-        console.log(`  - ${store.store_name}: ${store.credits_deducted} credit(s) deducted (Balance: ${store.remaining_balance})`);
-      });
-    }
-
-    if (result.errors && result.errors.length > 0) {
-      console.log('\n⚠️  Errors encountered:');
-      result.errors.forEach(error => {
-        console.log(`  - ${error.store_name}: ${error.error}`);
-      });
-    }
-
-    console.log(`\nCompleted at: ${new Date().toISOString()}`);
-    console.log('='.repeat(60) + '\n');
-
+    console.log(`Daily Credit Deduction: ${result.stores?.successful || 0}/${result.stores?.processed || 0} stores, ${result.custom_domains?.successful || 0}/${result.custom_domains?.processed || 0} domains`);
     process.exit(0);
 
   } catch (error) {
-    console.error('\n❌ Daily Credit Deduction Failed\n');
-    console.error('Error:', error.message);
-    console.error('\nStack trace:');
-    console.error(error.stack);
-    console.log('\n' + '='.repeat(60) + '\n');
-
+    console.error('Daily Credit Deduction Failed:', error.message);
     process.exit(1);
   }
 }

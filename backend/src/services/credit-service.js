@@ -48,36 +48,16 @@ class CreditService {
    * @returns {object} - Deduction result with remaining balance
    */
   async deduct(userId, storeId, amount, description, metadata = {}, referenceId = null, referenceType = null) {
-    console.log(`\n💳 ============ CREDIT DEDUCTION START ============`);
-    console.log(`💳 Input parameters:`, {
-      userId,
-      storeId,
-      amount,
-      description,
-      referenceType
-    });
-
-    // Ensure amount is a number
     const creditAmount = parseFloat(amount);
-    console.log(`💳 Parsed amount: ${creditAmount} (type: ${typeof creditAmount})`);
-
-    // Check if user has enough credits
-    console.log(`💳 Checking if user has enough credits...`);
     const balance = await this.getBalance(userId);
-    console.log(`💳 Current balance: ${balance} credits`);
-
     const hasCredits = await this.hasEnoughCredits(userId, storeId, creditAmount);
-    console.log(`💳 Has enough credits: ${hasCredits}`);
 
     if (!hasCredits) {
-      console.log(`❌ INSUFFICIENT CREDITS: Required ${creditAmount}, Available ${balance}`);
       throw new Error(`Insufficient credits. Required: ${creditAmount}, Available: ${balance}`);
     }
 
-    // Deduct from users.credits using Supabase
-    console.log(`💳 Updating users.credits: ${balance} - ${creditAmount} = ${balance - creditAmount}`);
     const newBalance = balance - creditAmount;
-    const { data: updatedUser, error: updateError } = await masterDbClient
+    const { error: updateError } = await masterDbClient
       .from('users')
       .update({
         credits: newBalance,
@@ -88,23 +68,15 @@ class CreditService {
       .single();
 
     if (updateError) {
-      console.error('Error updating user credits:', updateError);
       throw new Error('Failed to deduct credits');
     }
 
-    console.log(`💳 New balance after deduction: ${newBalance} credits`);
-
-    const result = {
+    return {
       success: true,
       credits_deducted: creditAmount,
       remaining_balance: newBalance,
       description: description
     };
-
-    console.log(`✅ CREDIT DEDUCTION SUCCESS:`, result);
-    console.log(`💳 ============ CREDIT DEDUCTION END ============\n`);
-
-    return result;
   }
 
   /**
@@ -367,103 +339,37 @@ class CreditService {
    * Mark a purchase transaction as completed and add credits to user
    */
   async completePurchaseTransaction(transactionId, stripeChargeId = null) {
-    console.log(`💳 [CreditService] completePurchaseTransaction called for transaction: ${transactionId}`);
-    console.log(`💳 [CreditService] Stripe charge ID: ${stripeChargeId || 'NONE'}`);
-
     const transaction = await CreditTransaction.findByPk(transactionId);
 
     if (!transaction) {
-      console.error(`❌ [CreditService] Transaction not found: ${transactionId}`);
       throw new Error('Transaction not found');
     }
 
-    console.log(`✅ [CreditService] Transaction found:`, {
-      id: transaction.id,
-      user_id: transaction.user_id,
-      credits_amount: transaction.credits_amount,
-      amount_usd: transaction.amount_usd,
-      status: transaction.status,
-      current_status: transaction.status
-    });
-
     // Get user's current balance before update (master DB)
-    const { data: userBefore, error: userBeforeError } = await masterDbClient
+    const { data: userBefore } = await masterDbClient
       .from('users')
-      .select('id, email, credits')
+      .select('id, credits')
       .eq('id', transaction.user_id)
       .single();
 
-    if (userBeforeError) {
-      console.error('Error fetching user before update:', userBeforeError);
-    }
-
-    // Parse credits_amount as decimal (users.credits is NUMERIC type)
     const creditsToAdd = parseFloat(transaction.credits_amount);
-
-    console.log(`💰 [CreditService] User balance BEFORE adding credits:`, {
-      userId: userBefore?.id,
-      email: userBefore?.email,
-      currentCredits: userBefore?.credits || 0,
-      rawCreditsValue: transaction.credits_amount,
-      rawCreditsType: typeof transaction.credits_amount,
-      parsedCreditsValue: creditsToAdd,
-      parsedCreditsType: typeof creditsToAdd
-    });
-
-    // Add credits to users.credits (single source of truth, master DB)
-    console.log(`🔄 [CreditService] Updating user credits with ${creditsToAdd} credits...`);
     const newBalance = parseFloat(userBefore?.credits || 0) + creditsToAdd;
 
-    const { data: updatedUser, error: updateError } = await masterDbClient
+    const { error: updateError } = await masterDbClient
       .from('users')
       .update({
         credits: newBalance,
         updated_at: new Date().toISOString()
       })
       .eq('id', transaction.user_id)
-      .select('id, email, credits')
+      .select('id, credits')
       .single();
 
     if (updateError) {
-      console.error('Error updating user credits:', updateError);
       throw new Error(`Failed to update user credits: ${updateError.message}`);
     }
 
-    console.log(`✅ [CreditService] Credits updated in database:`, {
-      updatedUser,
-      newBalance
-    });
-
-    // Verify the update (master DB)
-    const { data: userAfter } = await masterDbClient
-      .from('users')
-      .select('id, email, credits')
-      .eq('id', transaction.user_id)
-      .single();
-
-    const creditDifference = (parseFloat(userAfter?.credits || 0) - parseFloat(userBefore?.credits || 0));
-
-    console.log(`✅ [CreditService] User balance AFTER adding credits:`, {
-      userId: userAfter?.id,
-      email: userAfter?.email,
-      previousCredits: parseFloat(userBefore?.credits || 0),
-      newCredits: parseFloat(userAfter?.credits || 0),
-      creditsAdded: creditDifference,
-      expectedCreditsAdded: creditsToAdd,
-      matchesExpected: creditDifference === creditsToAdd
-    });
-
-    // Mark transaction as completed
-    console.log(`🔄 [CreditService] Marking transaction as completed...`);
-    const completedTransaction = await CreditTransaction.markCompleted(transactionId, stripeChargeId);
-
-    console.log(`✅ [CreditService] Transaction marked as completed:`, {
-      id: completedTransaction.id,
-      status: completedTransaction.status,
-      stripe_charge_id: completedTransaction.stripe_charge_id
-    });
-
-    return completedTransaction;
+    return await CreditTransaction.markCompleted(transactionId, stripeChargeId);
   }
 
   /**
