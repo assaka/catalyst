@@ -1600,9 +1600,26 @@ class SupabaseIntegration {
       }
 
       // Check if service role key is properly configured
-      const hasValidServiceKey = token.service_role_key &&
+      let hasValidServiceKey = token.service_role_key &&
                                   token.service_role_key !== 'pending_configuration' &&
                                   token.service_role_key !== '';
+
+      // If no service key in token, check store_databases (entered during store creation)
+      if (!hasValidServiceKey) {
+        try {
+          const StoreDatabase = require('../models/master/StoreDatabase');
+          const storeDb = await StoreDatabase.findByStoreId(storeId);
+          if (storeDb && storeDb.database_type === 'supabase') {
+            const dbCredentials = storeDb.getCredentials();
+            if (dbCredentials && dbCredentials.serviceRoleKey) {
+              hasValidServiceKey = true;
+              console.log('[getConnectionStatus] Found service role key in store_databases');
+            }
+          }
+        } catch (dbError) {
+          console.log('[getConnectionStatus] Could not check store_databases:', dbError.message);
+        }
+      }
 
       return {
         connected: true,
