@@ -592,25 +592,37 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
         return false;
       }
 
+      // Check if rule has any conditions at all
+      const hasCategories = conditions?.categories?.length > 0;
+      const hasAttributeSets = conditions?.attribute_sets?.length > 0;
+      const hasSkus = conditions?.skus?.length > 0;
+      const hasAttributeConditions = conditions?.attribute_conditions?.length > 0;
+      const hasAnyConditions = hasCategories || hasAttributeSets || hasSkus || hasAttributeConditions;
+
+      // If no conditions are set, rule applies to ALL products
+      if (!hasAnyConditions) {
+        return true;
+      }
+
       // Check SKU conditions
-      if (conditions?.skus?.includes(productData.sku)) return true;
+      if (hasSkus && conditions.skus.includes(productData.sku)) return true;
 
       // Check category conditions
-      if (conditions?.categories?.length > 0 && productData.category_ids?.length > 0) {
+      if (hasCategories && productData.category_ids?.length > 0) {
         if (conditions.categories.some(catId => productData.category_ids.includes(catId))) {
           return true;
         }
       }
 
       // Check attribute set conditions
-      if (conditions?.attribute_sets?.length > 0 && productData.attribute_set_id) {
+      if (hasAttributeSets && productData.attribute_set_id) {
         if (conditions.attribute_sets.includes(productData.attribute_set_id)) {
           return true;
         }
       }
 
       // Check attribute conditions
-      if (conditions?.attribute_conditions?.length > 0) {
+      if (hasAttributeConditions) {
         for (const condition of conditions.attribute_conditions) {
           const productAttr = productData.attributes?.find(
             attr => attr.code === condition.attribute_code

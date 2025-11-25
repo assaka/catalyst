@@ -162,27 +162,21 @@ export default function CustomOptions({
             return false;
         }
 
-        // Check if rule has valid conditions
-        if (!conditions || Object.keys(conditions).length === 0) {
-            return false;
+        // Check if rule has any conditions at all
+        const { categories, attribute_sets, skus, attribute_conditions } = conditions || {};
+        const hasCategories = categories && Array.isArray(categories) && categories.length > 0;
+        const hasAttributeSets = attribute_sets && Array.isArray(attribute_sets) && attribute_sets.length > 0;
+        const hasSkus = skus && Array.isArray(skus) && skus.length > 0;
+        const hasAttributeConditions = attribute_conditions && Array.isArray(attribute_conditions) && attribute_conditions.length > 0;
+        const hasAnyConditions = hasCategories || hasAttributeSets || hasSkus || hasAttributeConditions;
+
+        // If no conditions are set, rule applies to ALL products
+        if (!hasAnyConditions) {
+            return true;
         }
-
-        // Additional check: ensure at least one condition has actual values
-        const { categories, attribute_sets, skus, attribute_conditions } = conditions;
-        const hasValidCategories = categories && Array.isArray(categories) && categories.length > 0;
-        const hasValidAttributeSets = attribute_sets && Array.isArray(attribute_sets) && attribute_sets.length > 0;
-        const hasValidSkus = skus && Array.isArray(skus) && skus.length > 0;
-        const hasValidAttributeConditions = attribute_conditions && Array.isArray(attribute_conditions) && attribute_conditions.length > 0;
-
-        if (!hasValidCategories && !hasValidAttributeSets && !hasValidSkus && !hasValidAttributeConditions) {
-            return false;
-        }
-
-        let hasAnyCondition = false;
 
         // Check category conditions
-        if (categories && Array.isArray(categories) && categories.length > 0) {
-            hasAnyCondition = true;
+        if (hasCategories) {
             const productCategories = product.category_ids || [];
             const hasMatchingCategory = categories.some(catId => productCategories.includes(catId));
             if (hasMatchingCategory) {
@@ -191,26 +185,21 @@ export default function CustomOptions({
         }
 
         // Check attribute set conditions
-        if (attribute_sets && Array.isArray(attribute_sets) && attribute_sets.length > 0) {
-            hasAnyCondition = true;
-            const match = attribute_sets.includes(product.attribute_set_id);
-            if (match) {
+        if (hasAttributeSets) {
+            if (attribute_sets.includes(product.attribute_set_id)) {
                 return true;
             }
         }
 
         // Check SKU conditions
-        if (skus && Array.isArray(skus) && skus.length > 0) {
-            hasAnyCondition = true;
-            const match = skus.includes(product.sku);
-            if (match) {
+        if (hasSkus) {
+            if (skus.includes(product.sku)) {
                 return true;
             }
         }
 
         // Check attribute conditions
-        if (attribute_conditions && Array.isArray(attribute_conditions) && attribute_conditions.length > 0) {
-            hasAnyCondition = true;
+        if (hasAttributeConditions) {
             for (const condition of attribute_conditions) {
                 const productValue = product[condition.attribute_code];
                 const match = productValue && productValue.toString() === condition.attribute_value.toString();
@@ -218,11 +207,6 @@ export default function CustomOptions({
                     return true;
                 }
             }
-        }
-
-        // If no valid conditions were found, rule does not apply
-        if (!hasAnyCondition) {
-            return false;
         }
 
         return false;

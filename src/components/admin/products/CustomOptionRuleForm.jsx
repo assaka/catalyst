@@ -264,7 +264,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     e.preventDefault();
 
     if (!isFormValid) {
-      showWarning('Please fill in all required fields and add at least one condition (category, attribute set, SKU, or attribute condition).');
+      showWarning('Please fill in all required fields: Rule Name and at least one Custom Option product.');
       return;
     }
 
@@ -385,8 +385,8 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     );
   };
 
-  // Validate that rule has meaningful conditions to prevent it from applying to all products
-  const hasValidConditions = () => {
+  // Check if rule has any conditions set (for UI display purposes)
+  const hasAnyConditions = () => {
     const { categories, attribute_sets, skus, attribute_conditions } = formData.conditions || {};
     return (
       (categories && categories.length > 0) ||
@@ -396,10 +396,9 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     );
   };
 
-  const isFormValid = formData.name && 
-                     formData.optional_product_ids?.length > 0 && 
-                     formData.store_id &&
-                     hasValidConditions();
+  const isFormValid = formData.name &&
+                     formData.optional_product_ids?.length > 0 &&
+                     formData.store_id;
 
 
   return (
@@ -537,12 +536,12 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
 
             {/* Conditions */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Conditions (Required)</h3>
+              <h3 className="text-lg font-medium">Conditions (Optional)</h3>
               <p className="text-sm text-gray-600">
-                At least one condition must be specified to define which products should show these custom options.
-                {!hasValidConditions() && (
-                  <span className="text-red-600 font-medium"> Please add at least one condition below.</span>
-                )}
+                {hasAnyConditions()
+                  ? "Custom options will appear on products matching these conditions."
+                  : "No conditions set - custom options will appear on ALL products."
+                }
               </p>
 
               {/* Categories */}
