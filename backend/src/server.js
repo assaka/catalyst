@@ -1229,6 +1229,37 @@ app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
         .update({ status: 'accepted', updated_at: new Date().toISOString() })
         .eq('id', invitation.id);
     } else {
+      // Define default permissions based on role
+      const getDefaultPermissions = (role) => {
+        switch (role) {
+          case 'admin':
+            return {
+              all: true,
+              canManageTeam: true,
+              canManageProducts: true,
+              canManageOrders: true,
+              canManageSettings: true,
+              canManageContent: true
+            };
+          case 'editor':
+            return {
+              canManageProducts: true,
+              canManageOrders: true,
+              canManageContent: true
+            };
+          case 'viewer':
+            return {
+              canView: true
+            };
+          default:
+            return {};
+        }
+      };
+
+      const permissions = invitation.permissions && Object.keys(invitation.permissions).length > 0
+        ? invitation.permissions
+        : getDefaultPermissions(invitation.role);
+
       // Add as team member to master DB
       const { error: memberError } = await masterDbClient
         .from('store_teams')
@@ -1236,6 +1267,7 @@ app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
           store_id: invitation.store_id,
           user_id: user.id,
           role: invitation.role,
+          permissions: permissions,
           invited_by: invitation.invited_by,
           invited_at: invitation.created_at,
           accepted_at: new Date().toISOString(),

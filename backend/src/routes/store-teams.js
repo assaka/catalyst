@@ -816,6 +816,37 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
       });
     }
 
+    // Define default permissions based on role
+    const getDefaultPermissions = (role) => {
+      switch (role) {
+        case 'admin':
+          return {
+            all: true,
+            canManageTeam: true,
+            canManageProducts: true,
+            canManageOrders: true,
+            canManageSettings: true,
+            canManageContent: true
+          };
+        case 'editor':
+          return {
+            canManageProducts: true,
+            canManageOrders: true,
+            canManageContent: true
+          };
+        case 'viewer':
+          return {
+            canView: true
+          };
+        default:
+          return {};
+      }
+    };
+
+    const permissions = invitation.permissions && Object.keys(invitation.permissions).length > 0
+      ? invitation.permissions
+      : getDefaultPermissions(invitation.role);
+
     // Create team membership in master DB
     const { data: teamMember, error: createError } = await masterDbClient
       .from('store_teams')
@@ -823,7 +854,7 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
         store_id: invitation.store_id,
         user_id: req.user.id,
         role: invitation.role,
-        permissions: invitation.permissions,
+        permissions: permissions,
         invited_by: invitation.invited_by,
         invited_at: invitation.created_at,
         accepted_at: new Date().toISOString(),
