@@ -301,7 +301,7 @@ export const SetupGuide = ({ store }) => {
                                     ) : (
                                         <>
                                             <CreditCard className="w-4 h-4 mr-2" />
-                                            Connect Stripe
+                                            Connect
                                         </>
                                     )}
                                 </Button>
