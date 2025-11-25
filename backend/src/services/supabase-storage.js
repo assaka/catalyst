@@ -1,4 +1,5 @@
 const supabaseMediaStorageOAuth = require('./supabase-media-storage-oauth');
+const supabaseIntegration = require('./supabase-integration');
 const StorageInterface = require('./storage-interface');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
