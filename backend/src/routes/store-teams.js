@@ -9,8 +9,8 @@ const ConnectionManager = require('../services/database/ConnectionManager');
 const emailService = require('../services/email-service');
 const router = express.Router();
 
-// NOTE: HYBRID ARCHITECTURE
-// - StoreTeam: TENANT database (per-store team members)
+// NOTE: MASTER DB ARCHITECTURE
+// - StoreTeam: MASTER database (so users can discover their stores on login)
 // - StoreInvitation: MASTER database (for cross-tenant invitation discovery)
 // - Store: MASTER database (for store lookup and metadata)
 // - User: MASTER database (for cross-tenant user authentication)
@@ -36,11 +36,8 @@ router.get('/:store_id', authorize(['admin', 'store_owner']), checkStoreOwnershi
       });
     }
 
-    // Get tenant connection
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-
-    // Build query for store team members
-    let teamQuery = tenantDb.from('store_teams').select('*', { count: 'exact' });
+    // Build query for store team members (from master DB)
+    let teamQuery = masterDbClient.from('store_teams').select('*', { count: 'exact' });
     teamQuery = teamQuery.eq('store_id', store_id);
 
     if (status !== 'all') {
@@ -58,8 +55,6 @@ router.get('/:store_id', authorize(['admin', 'store_owner']), checkStoreOwnershi
     }
 
     // Fetch related user and store data from master DB
-    const { masterDbClient } = require('../database/masterConnection');
-
     const userIds = [...new Set([
       ...teamMembers.map(m => m.user_id),
       ...teamMembers.map(m => m.invited_by).filter(Boolean)
@@ -212,10 +207,6 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
       });
     }
 
-    // Get tenant connection for StoreTeam (tenant DB)
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    const { masterDbClient } = require('../database/masterConnection');
-
     // Check if email is already invited or is a team member
     // First get user by email from master DB
     const { data: userByEmail } = await masterDbClient
@@ -225,8 +216,8 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
       .maybeSingle();
 
     if (userByEmail) {
-      // Check if this user is already a team member
-      const { data: existingTeamMember } = await tenantDb
+      // Check if this user is already a team member (in master DB)
+      const { data: existingTeamMember } = await masterDbClient
         .from('store_teams')
         .select('*')
         .eq('store_id', store_id)
@@ -537,11 +528,8 @@ router.put('/:store_id/members/:member_id', authorize(['admin', 'store_owner']),
       });
     }
 
-    // Get tenant connection
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    const { masterDbClient } = require('../database/masterConnection');
-
-    const { data: teamMember, error: memberError } = await tenantDb
+    // Get team member from master DB
+    const { data: teamMember, error: memberError } = await masterDbClient
       .from('store_teams')
       .select('*')
       .eq('id', member_id)
@@ -581,7 +569,7 @@ router.put('/:store_id/members/:member_id', authorize(['admin', 'store_owner']),
     if (Object.keys(updateData).length > 0) {
       updateData.updated_at = new Date().toISOString();
 
-      const { error: updateError } = await tenantDb
+      const { error: updateError } = await masterDbClient
         .from('store_teams')
         .update(updateData)
         .eq('id', member_id);
@@ -591,7 +579,7 @@ router.put('/:store_id/members/:member_id', authorize(['admin', 'store_owner']),
       }
 
       // Refresh team member data
-      const { data: updatedMember } = await tenantDb
+      const { data: updatedMember } = await masterDbClient
         .from('store_teams')
         .select('*')
         .eq('id', member_id)
@@ -639,10 +627,8 @@ router.delete('/:store_id/members/:member_id', authorize(['admin', 'store_owner'
       });
     }
 
-    // Get tenant connection
-    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-
-    const { data: teamMember, error: memberError } = await tenantDb
+    // Get team member from master DB
+    const { data: teamMember, error: memberError } = await masterDbClient
       .from('store_teams')
       .select('*')
       .eq('id', member_id)
@@ -665,7 +651,7 @@ router.delete('/:store_id/members/:member_id', authorize(['admin', 'store_owner'
     }
 
     // Soft delete by setting status to 'removed'
-    const { error: updateError } = await tenantDb
+    const { error: updateError } = await masterDbClient
       .from('store_teams')
       .update({
         status: 'removed',
@@ -815,11 +801,8 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
       });
     }
 
-    // Get tenant connection for StoreTeam
-    const tenantDb = await ConnectionManager.getStoreConnection(invitation.store_id);
-
-    // Check if user is already a team member (in tenant DB)
-    const { data: existingMember } = await tenantDb
+    // Check if user is already a team member (in master DB)
+    const { data: existingMember } = await masterDbClient
       .from('store_teams')
       .select('*')
       .eq('store_id', invitation.store_id)
@@ -833,8 +816,8 @@ router.post('/accept-invitation/:token', authorize(['admin', 'store_owner']), as
       });
     }
 
-    // Create team membership in tenant DB
-    const { data: teamMember, error: createError } = await tenantDb
+    // Create team membership in master DB
+    const { data: teamMember, error: createError } = await masterDbClient
       .from('store_teams')
       .insert({
         store_id: invitation.store_id,

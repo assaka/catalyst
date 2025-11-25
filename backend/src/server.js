@@ -1138,7 +1138,6 @@ app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
     const { masterDbClient } = require('./database/masterConnection');
     const bcrypt = require('bcryptjs');
     const jwt = require('jsonwebtoken');
-    const ConnectionManager = require('./services/database/ConnectionManager');
 
     if (!password) {
       return res.status(400).json({ success: false, message: 'Password is required' });
@@ -1214,11 +1213,9 @@ app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
       user = newUser;
     }
 
-    // Now accept the invitation - add to store_teams
-    const tenantDb = await ConnectionManager.getStoreConnection(invitation.store_id);
-
+    // Now accept the invitation - add to store_teams (in master DB)
     // Check if already a member
-    const { data: existingMember } = await tenantDb
+    const { data: existingMember } = await masterDbClient
       .from('store_teams')
       .select('id')
       .eq('store_id', invitation.store_id)
@@ -1232,8 +1229,8 @@ app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
         .update({ status: 'accepted', updated_at: new Date().toISOString() })
         .eq('id', invitation.id);
     } else {
-      // Add as team member
-      const { error: memberError } = await tenantDb
+      // Add as team member to master DB
+      const { error: memberError } = await masterDbClient
         .from('store_teams')
         .insert({
           store_id: invitation.store_id,
