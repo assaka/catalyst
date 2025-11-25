@@ -821,7 +821,7 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
     }
 
     // Use ConnectionManager for tenant database
-    const ConnectionManager = require('./core/ConnectionManager');
+    const ConnectionManager = require('./services/database/ConnectionManager');
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Find order by payment reference
@@ -867,7 +867,7 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
     }
 
     // Get store info from master DB
-    const { getMasterStore } = require('./core/masterConnection');
+    const { getMasterStore } = require('./utils/dbHelpers');
     const store = await getMasterStore(store_id);
 
     const orderWithDetails = {
