@@ -1817,77 +1817,47 @@ router.post('/webhook', async (req, res) => {
             console.warn(`⚠️ [${piRequestId}] Could not verify user balance:`, verifyError.message);
           }
 
-          // Send credit purchase confirmation email
+          // Send credit purchase confirmation email using master email service
           try {
             console.log(`📧 [${piRequestId}] Sending credit purchase confirmation email...`);
 
-            const emailService = require('../services/email-service');
+            const masterEmailService = require('../services/master-email-service');
 
             const user = await getMasterUser(result.user_id);
-            const store = await getMasterStore(result.store_id);
 
-            if (user && store) {
-              console.log(`📧 [${piRequestId}] Email recipients:`, {
+            if (user) {
+              console.log(`📧 [${piRequestId}] Email recipient:`, {
                 userEmail: user.email,
-                storeName: store.name
+                userName: user.first_name
               });
 
-              // Send simple credit purchase confirmation email
               const creditsAmount = result.credits_amount || paymentIntent.metadata?.credits_amount || 0;
               const amountUsd = result.amount_usd || (paymentIntent.amount / 100) || 0;
               const newBalance = finalUserBalance || user.credits || 0;
-              const transactionDate = new Date(result.created_at || Date.now()).toLocaleString();
 
-              const emailSubject = `Credit Purchase Confirmed - ${creditsAmount} Credits`;
-              const emailHtml = `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <h2 style="color: #333;">Credit Purchase Confirmed</h2>
-                  <p>Hi ${user.first_name || 'there'},</p>
-                  <p>Your credit purchase has been completed successfully!</p>
-
-                  <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                    <h3 style="margin-top: 0; color: #333;">Transaction Details</h3>
-                    <table style="width: 100%; border-collapse: collapse;">
-                      <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Transaction ID:</strong></td>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">${result.id}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Credits Purchased:</strong></td>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">${creditsAmount} credits</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Amount Paid:</strong></td>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">$${parseFloat(amountUsd).toFixed(2)} USD</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;"><strong>Date:</strong></td>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">${transactionDate}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0;"><strong>New Balance:</strong></td>
-                        <td style="padding: 8px 0; color: #28a745; font-weight: bold;">${parseFloat(newBalance).toFixed(2)} credits</td>
-                      </tr>
-                    </table>
-                  </div>
-
-                  <p>Thank you for your purchase!</p>
-                  <p style="color: #666; font-size: 12px;">This is an automated message from ${store.name}.</p>
-                </div>
-              `;
-
-              emailService.sendViaBrevo(result.store_id, user.email, emailSubject, emailHtml)
-                .then(() => {
+              // Use master email service with uniform template
+              masterEmailService.sendCreditsPurchaseEmail({
+                recipientEmail: user.email,
+                customerName: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Valued Customer',
+                customerFirstName: user.first_name || 'there',
+                creditsPurchased: creditsAmount,
+                amountPaid: parseFloat(amountUsd),
+                currency: 'USD',
+                transactionId: result.id,
+                currentBalance: parseFloat(newBalance),
+                paymentMethod: 'Credit Card'
+              }).then(emailResult => {
+                if (emailResult.success) {
                   console.log(`✅ [${piRequestId}] Credit purchase email sent successfully to: ${user.email}`);
-                }).catch(emailError => {
-                  console.error(`❌ [${piRequestId}] Failed to send credit purchase email:`, emailError.message);
-                  // Don't fail the webhook if email fails
-                });
-            } else {
-              console.warn(`⚠️ [${piRequestId}] Cannot send email - user or store not found:`, {
-                hasUser: !!user,
-                hasStore: !!store
+                } else {
+                  console.warn(`⚠️ [${piRequestId}] Credit purchase email not sent: ${emailResult.message}`);
+                }
+              }).catch(emailError => {
+                console.error(`❌ [${piRequestId}] Failed to send credit purchase email:`, emailError.message);
+                // Don't fail the webhook if email fails
               });
+            } else {
+              console.warn(`⚠️ [${piRequestId}] Cannot send email - user not found for ID: ${result.user_id}`);
             }
           } catch (emailError) {
             console.error(`❌ [${piRequestId}] Error preparing credit purchase email:`, emailError.message);
