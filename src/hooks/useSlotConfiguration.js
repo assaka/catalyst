@@ -847,7 +847,7 @@ export function useSlotConfiguration({
       const draftConfig = draftResponse.data;
 
       // Publish the draft configuration
-      const publishResponse = await slotConfigurationService.publishDraft(draftConfig.id);
+      const publishResponse = await slotConfigurationService.publishDraft(draftConfig.id, storeId);
 
       if (publishResponse.success) {
 
@@ -947,6 +947,7 @@ export function useSlotConfiguration({
             await slotConfigurationService.updateDraftConfiguration(
               savedConfig.data.id,
               populatedConfig,
+              storeId,
               false // not a reset
             );
           } catch (saveError) {

@@ -40,10 +40,11 @@ class SlotConfigurationService {
   }
 
   // Update draft configuration
-  async updateDraftConfiguration(configId, configuration, isReset = false) {
+  async updateDraftConfiguration(configId, configuration, storeId, isReset = false) {
     try {
       const response = await apiClient.put(`${API_BASE}/draft/${configId}`, {
         configuration,
+        storeId,
         isReset
       });
       return response;
@@ -65,9 +66,11 @@ class SlotConfigurationService {
   }
 
   // Publish a draft to acceptance (preview environment)
-  async publishToAcceptance(configId) {
+  async publishToAcceptance(configId, storeId) {
     try {
-      const response = await apiClient.post(`${API_BASE}/publish-to-acceptance/${configId}`);
+      const response = await apiClient.post(`${API_BASE}/publish-to-acceptance/${configId}`, {
+        storeId
+      });
       return response;
     } catch (error) {
       console.error('Error publishing to acceptance:', error);
@@ -76,9 +79,11 @@ class SlotConfigurationService {
   }
 
   // Publish acceptance to production
-  async publishToProduction(configId) {
+  async publishToProduction(configId, storeId) {
     try {
-      const response = await apiClient.post(`${API_BASE}/publish-to-production/${configId}`);
+      const response = await apiClient.post(`${API_BASE}/publish-to-production/${configId}`, {
+        storeId
+      });
       return response;
     } catch (error) {
       console.error('Error publishing to production:', error);
@@ -87,9 +92,11 @@ class SlotConfigurationService {
   }
 
   // Publish a draft configuration directly to production (legacy method)
-  async publishDraft(configId) {
+  async publishDraft(configId, storeId) {
     try {
-      const response = await apiClient.post(`${API_BASE}/publish/${configId}`);
+      const response = await apiClient.post(`${API_BASE}/publish/${configId}`, {
+        storeId
+      });
       return response;
     } catch (error) {
       console.error('Error publishing draft:', error);
@@ -109,9 +116,11 @@ class SlotConfigurationService {
   }
 
   // Create a revert draft (new approach - creates draft instead of publishing)
-  async createRevertDraft(versionId) {
+  async createRevertDraft(versionId, storeId) {
     try {
-      const response = await apiClient.post(`${API_BASE}/revert-draft/${versionId}`);
+      const response = await apiClient.post(`${API_BASE}/revert-draft/${versionId}`, {
+        storeId
+      });
       return response;
     } catch (error) {
       console.error('Error creating revert draft:', error);
@@ -120,9 +129,11 @@ class SlotConfigurationService {
   }
 
   // Revert to a specific version (DEPRECATED - use createRevertDraft instead)
-  async revertToVersion(versionId) {
+  async revertToVersion(versionId, storeId) {
     try {
-      const response = await apiClient.post(`${API_BASE}/revert/${versionId}`);
+      const response = await apiClient.post(`${API_BASE}/revert/${versionId}`, {
+        storeId
+      });
       return response;
     } catch (error) {
       console.error('Error reverting to version:', error);
@@ -131,9 +142,11 @@ class SlotConfigurationService {
   }
 
   // Undo revert with smart restoration of previous draft state
-  async undoRevert(draftId) {
+  async undoRevert(draftId, storeId) {
     try {
-      const response = await apiClient.post(`${API_BASE}/undo-revert/${draftId}`);
+      const response = await apiClient.post(`${API_BASE}/undo-revert/${draftId}`, {
+        storeId
+      });
       return response;
     } catch (error) {
       console.error('Error undoing revert:', error);
@@ -142,9 +155,9 @@ class SlotConfigurationService {
   }
 
   // Delete a draft
-  async deleteDraft(configId) {
+  async deleteDraft(configId, storeId) {
     try {
-      const response = await apiClient.delete(`${API_BASE}/draft/${configId}`);
+      const response = await apiClient.delete(`${API_BASE}/draft/${configId}?store_id=${storeId}`);
       return response;
     } catch (error) {
       console.error('Error deleting draft:', error);
@@ -198,8 +211,8 @@ class SlotConfigurationService {
       // Transform CartSlotsEditor format to SlotConfiguration API format
       const apiConfiguration = this.transformToSlotConfigFormat(configuration);
 
-      // Update the draft with new configuration
-      const updateResponse = await this.updateDraftConfiguration(draftConfig.id, apiConfiguration, isReset);
+      // Update the draft with new configuration (now includes storeId)
+      const updateResponse = await this.updateDraftConfiguration(draftConfig.id, apiConfiguration, storeId, isReset);
       return updateResponse;
     } catch (error) {
       console.error('❌ Error saving configuration:', error);

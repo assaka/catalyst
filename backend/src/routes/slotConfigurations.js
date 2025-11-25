@@ -112,8 +112,11 @@ async function findLatestDraft(userId, storeId, pageType) {
 }
 
 // Helper: Find configuration by ID
-async function findById(configId) {
-  const tenantDb = await ConnectionManager.getStoreConnection(configId); // Note: Will need storeId instead
+async function findById(configId, storeId) {
+  if (!storeId) {
+    throw new Error('storeId is required for findById');
+  }
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
   const { data, error } = await tenantDb
     .from('slot_configurations')
     .select('*')
@@ -253,8 +256,9 @@ async function upsertDraft(userId, storeId, pageType, configuration = null, isNe
 }
 
 // Helper: Publish a draft to acceptance (preview environment)
-async function publishToAcceptance(draftId, publishedByUserId) {
-  const draft = await findById(draftId);
+async function publishToAcceptance(draftId, publishedByUserId, storeId) {
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+  const draft = await findById(draftId, storeId);
   if (!draft || draft.status !== 'draft') {
     throw new Error('Draft not found or not in draft status');
   }
@@ -275,8 +279,9 @@ async function publishToAcceptance(draftId, publishedByUserId) {
 }
 
 // Helper: Publish acceptance to production
-async function publishToProduction(acceptanceId, publishedByUserId) {
-  const acceptance = await findById(acceptanceId);
+async function publishToProduction(acceptanceId, publishedByUserId, storeId) {
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+  const acceptance = await findById(acceptanceId, storeId);
   if (!acceptance || acceptance.status !== 'acceptance') {
     throw new Error('Configuration not found or not in acceptance status');
   }
@@ -297,8 +302,9 @@ async function publishToProduction(acceptanceId, publishedByUserId) {
 }
 
 // Helper: Publish a draft directly to production (legacy method)
-async function publishDraft(draftId, publishedByUserId) {
-  const draft = await findById(draftId);
+async function publishDraft(draftId, publishedByUserId, storeId) {
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+  const draft = await findById(draftId, storeId);
   if (!draft || draft.status !== 'draft') {
     throw new Error('Draft not found or already published');
   }
@@ -321,6 +327,7 @@ async function publishDraft(draftId, publishedByUserId) {
 
 // Helper: Get version history
 async function getVersionHistory(storeId, pageType, limit = 20) {
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
   const { data, error } = await tenantDb
     .from('slot_configurations')
     .select('*')
@@ -336,7 +343,8 @@ async function getVersionHistory(storeId, pageType, limit = 20) {
 
 // Helper: Create a draft from a specific version (for revert functionality)
 async function createRevertDraft(versionId, userId, storeId) {
-  const targetVersion = await findById(versionId);
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+  const targetVersion = await findById(versionId, storeId);
   if (!targetVersion || !['published', 'acceptance'].includes(targetVersion.status)) {
     throw new Error('Version not found or not in a revertible status');
   }
@@ -419,7 +427,8 @@ async function createRevertDraft(versionId, userId, storeId) {
 
 // Helper: Revert to a specific version (DEPRECATED - use createRevertDraft instead)
 async function revertToVersion(versionId, userId, storeId) {
-  const targetVersion = await findById(versionId);
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+  const targetVersion = await findById(versionId, storeId);
   if (!targetVersion || !['published', 'acceptance'].includes(targetVersion.status)) {
     throw new Error('Version not found or not in a revertible status');
   }
@@ -476,7 +485,8 @@ async function revertToVersion(versionId, userId, storeId) {
 
 // Helper: Undo revert by either deleting draft or restoring previous draft state
 async function undoRevert(draftId, userId, storeId) {
-  const revertDraft = await findById(draftId);
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+  const revertDraft = await findById(draftId, storeId);
   if (!revertDraft || revertDraft.status !== 'draft' || !revertDraft.current_edit_id) {
     throw new Error('No revert draft found or draft is not a revert');
   }
@@ -527,6 +537,7 @@ async function undoRevert(draftId, userId, storeId) {
 
 // Helper: Set current editing configuration
 async function setCurrentEdit(configId, userId, storeId, pageType) {
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
   // Clear any existing current_edit_id for this user/store/page
   await tenantDb
     .from('slot_configurations')
@@ -549,6 +560,7 @@ async function setCurrentEdit(configId, userId, storeId, pageType) {
 
 // Helper: Get current editing configuration
 async function getCurrentEdit(userId, storeId, pageType) {
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
   const { data, error } = await tenantDb
     .from('slot_configurations')
     .select('*')
@@ -617,6 +629,8 @@ router.get('/public/slot-configurations', async (req, res) => {
     if (!store_id) {
       return res.status(400).json({ success: false, error: 'store_id is required' });
     }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // First try to find published version
     let configuration = await findLatestPublished(store_id, page_type);
@@ -848,9 +862,17 @@ router.get('/acceptance/:storeId/:pageType?', async (req, res) => {
 router.put('/draft/:configId', authMiddleware, async (req, res) => {
   try {
     const { configId } = req.params;
-    const { configuration, isReset = false } = req.body;
+    const { configuration, isReset = false, storeId } = req.body;
 
-    const draft = await findById(configId);
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'storeId is required in request body'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    const draft = await findById(configId, storeId);
 
     if (!draft) {
       return res.status(404).json({
@@ -913,9 +935,17 @@ router.put('/draft/:configId', authMiddleware, async (req, res) => {
 router.post('/publish-to-acceptance/:configId', authMiddleware, async (req, res) => {
   try {
     const { configId } = req.params;
+    const { storeId } = req.body;
     const userId = req.user.id;
 
-    const acceptance = await publishToAcceptance(configId, userId);
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'storeId is required in request body'
+      });
+    }
+
+    const acceptance = await publishToAcceptance(configId, userId, storeId);
 
     res.json({
       success: true,
@@ -935,9 +965,17 @@ router.post('/publish-to-acceptance/:configId', authMiddleware, async (req, res)
 router.post('/publish-to-production/:configId', authMiddleware, async (req, res) => {
   try {
     const { configId } = req.params;
+    const { storeId } = req.body;
     const userId = req.user.id;
 
-    const published = await publishToProduction(configId, userId);
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'storeId is required in request body'
+      });
+    }
+
+    const published = await publishToProduction(configId, userId, storeId);
 
     res.json({
       success: true,
@@ -957,9 +995,17 @@ router.post('/publish-to-production/:configId', authMiddleware, async (req, res)
 router.post('/publish/:configId', authMiddleware, async (req, res) => {
   try {
     const { configId } = req.params;
+    const { storeId } = req.body;
     const userId = req.user.id;
 
-    const published = await publishDraft(configId, userId);
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'storeId is required in request body'
+      });
+    }
+
+    const published = await publishDraft(configId, userId, storeId);
 
     res.json({
       success: true,
@@ -1004,10 +1050,18 @@ router.get('/history/:storeId/:pageType?', authMiddleware, async (req, res) => {
 router.post('/revert-draft/:versionId', authMiddleware, async (req, res) => {
   try {
     const { versionId } = req.params;
+    const { storeId } = req.body;
     const userId = req.user.id;
 
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'storeId is required in request body'
+      });
+    }
+
     // Get the version to revert to
-    const targetVersion = await findById(versionId);
+    const targetVersion = await findById(versionId, storeId);
 
     if (!targetVersion) {
       return res.status(404).json({
@@ -1044,10 +1098,18 @@ router.post('/revert-draft/:versionId', authMiddleware, async (req, res) => {
 router.post('/revert/:versionId', authMiddleware, async (req, res) => {
   try {
     const { versionId } = req.params;
+    const { storeId } = req.body;
     const userId = req.user.id;
 
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'storeId is required in request body'
+      });
+    }
+
     // Get the version to revert to
-    const targetVersion = await findById(versionId);
+    const targetVersion = await findById(versionId, storeId);
 
     if (!targetVersion) {
       return res.status(404).json({
@@ -1124,10 +1186,18 @@ router.get('/current-edit/:storeId/:pageType?', authMiddleware, async (req, res)
 router.post('/undo-revert/:draftId', authMiddleware, async (req, res) => {
   try {
     const { draftId } = req.params;
+    const { storeId } = req.body;
     const userId = req.user.id;
 
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'storeId is required in request body'
+      });
+    }
+
     // Get the draft to check ownership
-    const draft = await findById(draftId);
+    const draft = await findById(draftId, storeId);
 
     if (!draft) {
       return res.status(404).json({
@@ -1186,8 +1256,17 @@ router.post('/create-draft-from-published', authMiddleware, async (req, res) => 
 router.delete('/draft/:configId', authMiddleware, async (req, res) => {
   try {
     const { configId } = req.params;
+    const { store_id: storeId } = req.query;
 
-    const draft = await findById(configId);
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'store_id query parameter is required'
+      });
+    }
+
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    const draft = await findById(configId, storeId);
 
     if (!draft) {
       return res.status(404).json({
@@ -1237,6 +1316,8 @@ router.post('/destroy/:storeId/:pageType?', authMiddleware, async (req, res) => 
     const userId = req.user.id;
 
     console.log(`🗑️ Destroying layout for store ${storeId}, page ${pageType}`);
+
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Get count of configurations before deleting
     const { data: configsToDelete, error: countError } = await tenantDb

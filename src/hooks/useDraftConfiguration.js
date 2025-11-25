@@ -62,7 +62,8 @@ const useDraftConfiguration = (storeId, pageType = 'cart') => {
       try {
         const response = await slotConfigurationService.updateDraftConfiguration(
           draftConfig.id,
-          configuration
+          configuration,
+          storeId
         );
         
         if (response.success) {

@@ -76,7 +76,7 @@ const PublishPanel = ({
 
     setIsPublishing(true);
     try {
-      const response = await slotConfigurationService.publishDraft(draftConfig.id);
+      const response = await slotConfigurationService.publishDraft(draftConfig.id, storeId);
       if (response.success) {
         toast.success('Configuration published successfully!');
 
@@ -104,7 +104,7 @@ const PublishPanel = ({
 
     setRevertingVersionId(versionId);
     try {
-      const response = await slotConfigurationService.createRevertDraft(versionId);
+      const response = await slotConfigurationService.createRevertDraft(versionId, storeId);
       if (response.success) {
         toast.success(`Created revert draft from version ${versionNumber}. Publish to apply changes.`);
 
@@ -138,7 +138,7 @@ const PublishPanel = ({
 
     setUndoingRevert(true);
     try {
-      const response = await slotConfigurationService.undoRevert(draftConfig.id);
+      const response = await slotConfigurationService.undoRevert(draftConfig.id, storeId);
       if (response.success) {
         if (response.restored) {
           toast.success('Previous draft state restored');
