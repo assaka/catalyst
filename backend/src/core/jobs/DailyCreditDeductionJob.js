@@ -112,12 +112,12 @@ class DailyCreditDeductionJob extends BaseJobHandler {
         }
       }
 
-      // Process custom domains - query from master DB
+      // Process custom domains - query from master DB lookup table
       const { data: activeCustomDomains, error: domainsError } = await masterDbClient
-        .from('custom_domains')
-        .select('id, store_id, domain, is_active, verification_status')
+        .from('custom_domains_lookup')
+        .select('id, store_id, domain, is_active, is_verified')
         .eq('is_active', true)
-        .eq('verification_status', 'verified')
+        .eq('is_verified', true)
         .order('created_at', { ascending: false });
 
       if (domainsError) {
