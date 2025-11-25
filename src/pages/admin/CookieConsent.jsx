@@ -244,35 +244,19 @@ export default function CookieConsent() {
       }
 
       const currentStoreId = selectedStore.id;
-      console.log('Loading data for store:', currentStoreId);
 
       setStore(selectedStore);
 
       // Load cookie consent settings
       const cookieSettings = await retryApiCall(() => CookieConsentSettings.filter({ store_id: currentStoreId }));
 
-      console.log('API Response - cookie settings:', cookieSettings);
-
       if (cookieSettings && cookieSettings.length > 0) {
         // Map backend fields to frontend fields
         const backendData = cookieSettings[0];
-        console.log('Backend data before mapping:', {
-          id: backendData.id,
-          store_id: backendData.store_id,
-          banner_text: backendData.banner_text?.substring(0, 50)
-        });
 
         const mappedSettings = mapBackendToFrontend(backendData);
-        console.log('Mapped settings after mapBackendToFrontend:', {
-          id: mappedSettings.id,
-          store_id: mappedSettings.store_id,
-          hasTranslations: !!mappedSettings.translations,
-          translationKeys: Object.keys(mappedSettings.translations || {}),
-          banner_message: mappedSettings.banner_message?.substring(0, 50)
-        });
         setSettings(mappedSettings);
       } else {
-        console.log('No existing settings found, creating defaults for store:', currentStoreId);
         // Create default settings with valid store_id - use the same structure as mapBackendToFrontend
         const defaultSettings = mapBackendToFrontend({
           store_id: currentStoreId,
@@ -283,7 +267,6 @@ export default function CookieConsent() {
           marketing_cookies: false,
           functional_cookies: false
         });
-        console.log('Created default settings with store_id:', defaultSettings.store_id);
         setSettings(defaultSettings);
       }
       
@@ -326,12 +309,6 @@ export default function CookieConsent() {
     // CRITICAL: Capture the current store ID at save time to prevent stale reference
     const currentStoreId = selectedStore.id;
 
-    console.log('handleSave - Current store from context:', {
-      storeId: currentStoreId,
-      storeName: selectedStore.name,
-      settingsCurrentStoreId: settings.store_id
-    });
-
     if (!currentStoreId) {
       setFlashMessage({ type: 'error', message: 'No store ID available. Cannot save.' });
       return;
@@ -350,28 +327,11 @@ export default function CookieConsent() {
       // Map frontend settings to backend format
       const backendSettings = mapFrontendToBackend(settingsToSave);
 
-      console.log('Saving cookie consent settings:', {
-        currentStoreId: currentStoreId,
-        selectedStoreName: selectedStore.name,
-        settingsStoreId: settings.store_id,
-        forcedStoreId: settingsToSave.store_id,
-        backendStoreId: backendSettings.store_id,
-        allMatch: currentStoreId === settingsToSave.store_id && settingsToSave.store_id === backendSettings.store_id
-      });
-
       // Always use create endpoint - backend automatically handles upsert based on store_id
       // This prevents duplicate rows without needing separate create/update logic
       const result = await retryApiCall(() =>
         CookieConsentSettings.create(backendSettings)
       );
-
-      console.log('Cookie consent save response:', {
-        isArray: Array.isArray(result),
-        hasSuccess: !!result?.success,
-        hasData: !!result?.data,
-        isNew: result?.isNew,
-        firstItemId: Array.isArray(result) ? result[0]?.id : result?.data?.id
-      });
 
       // Handle response (could be array or wrapped object)
       let settingsData;
@@ -384,23 +344,15 @@ export default function CookieConsent() {
       }
 
       if (settingsData && settingsData.id) {
-        console.log(`✅ Save successful (${result.isNew ? 'created' : 'updated'}), mapping to frontend format`);
         const updatedSettings = mapBackendToFrontend(settingsData);
-        console.log('Updated settings after mapping:', {
-          id: updatedSettings.id,
-          store_id: updatedSettings.store_id
-        });
         setSettings(updatedSettings);
       } else {
-        console.error('❌ Unexpected save response structure, falling back to reload');
-        console.error('Response:', result);
         // Fallback to reload if response structure is unexpected
         await refreshStores();
         await loadData();
       }
 
       // Clear storefront cache so changes appear immediately
-      console.log('🗑️ Clearing storefront cache for immediate updates...');
       clearCookieConsentCache(currentStoreId);
 
       setFlashMessage({
@@ -411,8 +363,6 @@ export default function CookieConsent() {
       setTimeout(() => setSaveSuccess(false), 2000);
 
     } catch (error) {
-      console.error('Error saving cookie consent settings:', error);
-      console.error('Error response:', error.response?.data);
       setFlashMessage({
         type: 'error',
         message: error.response?.data?.message || `Failed to save settings: ${error.message}`
