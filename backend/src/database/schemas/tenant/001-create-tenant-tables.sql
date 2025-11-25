@@ -601,13 +601,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION update_shopify_oauth_tokens_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- update_shopify_oauth_tokens_updated_at function REMOVED - table no longer exists
 
 CREATE OR REPLACE FUNCTION update_plugin_admin_pages_timestamp()
 RETURNS TRIGGER AS $$
@@ -705,44 +699,7 @@ CREATE TABLE IF NOT EXISTS stores (
   published_at TIMESTAMP WITH TIME ZONE
 );
 
-CREATE TABLE IF NOT EXISTS store_media_storages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL,
-  storage_type VARCHAR(50) NOT NULL CHECK (storage_type IN (
-    'supabase',
-    'aws-s3',
-    's3',
-    'google-storage',
-    'gcs',
-    'azure-blob',
-    'cloudflare-r2',
-    'local'
-  )),
-  storage_name VARCHAR(255),
-  credentials_encrypted TEXT,
-  config_data JSONB DEFAULT '{}'::jsonb,
-  bucket_name VARCHAR(255),
-  region VARCHAR(100),
-  endpoint_url TEXT,
-  is_primary BOOLEAN DEFAULT false,
-  is_active BOOLEAN DEFAULT true,
-  last_connection_test TIMESTAMP WITH TIME ZONE,
-  connection_status VARCHAR(50) DEFAULT 'pending' CHECK (connection_status IN (
-    'pending',
-    'connected',
-    'failed',
-    'timeout'
-  )),
-  total_files INTEGER DEFAULT 0,
-  total_size_bytes BIGINT DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_store_media_storages_store_id ON store_media_storages(store_id);
-CREATE INDEX IF NOT EXISTS idx_store_media_storages_active ON store_media_storages(is_active) WHERE is_active = true;
-CREATE INDEX IF NOT EXISTS idx_store_media_storages_primary ON store_media_storages(store_id, is_primary) WHERE is_primary = true;
-CREATE UNIQUE INDEX IF NOT EXISTS unique_primary_media_storage_per_store ON store_media_storages(store_id, is_primary) WHERE is_primary = true;
+-- store_media_storages table REMOVED - use integration_configs with integration_type like '%storage' (e.g., 'supabase-storage', 'aws-s3', 'cloudflare-r2')
 
 CREATE TABLE IF NOT EXISTS _migrations (
   name VARCHAR(255) PRIMARY KEY,
@@ -1128,18 +1085,7 @@ CREATE TABLE IF NOT EXISTS blacklist_settings (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS brevo_configurations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL,
-  access_token TEXT NOT NULL,
-  refresh_token TEXT,
-  token_expires_at TIMESTAMP WITH TIME ZONE,
-  sender_name VARCHAR(255) NOT NULL,
-  sender_email VARCHAR(255) NOT NULL,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- brevo_configurations table REMOVED - use integration_configs with integration_type='brevo'
 
 CREATE TABLE IF NOT EXISTS canonical_urls (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1872,20 +1818,31 @@ CREATE TABLE IF NOT EXISTS heatmap_sessions (
 
 CREATE TABLE IF NOT EXISTS integration_configs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID,
-  integration_type VARCHAR(50),
-  config_data JSONB,
+  store_id UUID NOT NULL,
+  integration_type VARCHAR(50) NOT NULL,
+  config_key VARCHAR(100) DEFAULT 'default',
+  config_data JSONB DEFAULT '{}'::jsonb,
   is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP,
-  last_sync_at TIMESTAMP,
+  is_primary BOOLEAN DEFAULT false,
+  display_name VARCHAR(255),
+  -- OAuth token management
+  token_expires_at TIMESTAMP WITH TIME ZONE,
+  last_token_refresh_at TIMESTAMP WITH TIME ZONE,
+  oauth_scopes TEXT,
+  -- Sync tracking
+  last_sync_at TIMESTAMP WITH TIME ZONE,
   sync_status enum_integration_configs_sync_status DEFAULT 'idle'::enum_integration_configs_sync_status,
   sync_error TEXT,
-  createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updatedAt TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  -- Connection tracking
   connection_status VARCHAR(20) DEFAULT 'untested'::character varying,
-  connection_tested_at TIMESTAMP,
-  connection_error TEXT
+  connection_tested_at TIMESTAMP WITH TIME ZONE,
+  connection_error TEXT,
+  -- Usage tracking (for storage integrations)
+  total_files INTEGER DEFAULT 0,
+  total_size_bytes BIGINT DEFAULT 0,
+  -- Timestamps
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS job_history (
@@ -2744,26 +2701,7 @@ CREATE TABLE IF NOT EXISTS shipping_methods (
   conditions JSONB DEFAULT '{}'::jsonb
 );
 
-CREATE TABLE IF NOT EXISTS shopify_oauth_tokens (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL,
-  shop_domain VARCHAR(255) NOT NULL,
-  access_token TEXT NOT NULL,
-  scope TEXT NOT NULL,
-  shop_id BIGINT,
-  shop_name VARCHAR(255),
-  shop_email VARCHAR(255),
-  shop_country VARCHAR(2),
-  shop_currency VARCHAR(3),
-  shop_timezone VARCHAR(100),
-  plan_name VARCHAR(100),
-  webhook_endpoint_secret VARCHAR(255),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  client_id VARCHAR(255),
-  client_secret TEXT,
-  redirect_uri TEXT
-);
+-- shopify_oauth_tokens table REMOVED - use integration_configs with integration_type='shopify'
 
 CREATE TABLE IF NOT EXISTS slot_configurations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2828,9 +2766,9 @@ CREATE TABLE IF NOT EXISTS store_uptime (
 -- );
 
 -- ============================================
--- DEPRECATED: supabase_oauth_tokens and supabase_project_keys tables
--- Replaced by store_media_storages table for media storage credentials
--- OAuth tokens for Supabase API management now stored differently
+-- REMOVED: supabase_oauth_tokens, supabase_project_keys, and store_media_storages tables
+-- All integration configs (including storage) now use integration_configs table
+-- Use integration_type: 'supabase-oauth', 'supabase-keys', 'supabase-storage', 'aws-s3', etc.
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS taxes (
@@ -2994,9 +2932,7 @@ CREATE INDEX IF NOT EXISTS attribute_values_attribute_id ON attribute_values USI
 
 CREATE UNIQUE INDEX attribute_values_attribute_id_code ON attribute_values USING btree (attribute_id, code);
 
-CREATE INDEX IF NOT EXISTS brevo_configurations_is_active ON brevo_configurations USING btree (is_active);
-
-CREATE UNIQUE INDEX brevo_configurations_store_id ON brevo_configurations USING btree (store_id);
+-- brevo_configurations indexes REMOVED - table no longer exists
 
 CREATE UNIQUE INDEX canonical_urls_store_id_page_url ON canonical_urls USING btree (store_id, page_url);
 
@@ -3168,9 +3104,7 @@ CREATE INDEX IF NOT EXISTS idx_blacklist_ips_store_ip ON blacklist_ips USING btr
 
 CREATE INDEX IF NOT EXISTS idx_blacklist_settings_store ON blacklist_settings USING btree (store_id);
 
-CREATE INDEX IF NOT EXISTS idx_brevo_configurations_active ON brevo_configurations USING btree (is_active);
-
-CREATE INDEX IF NOT EXISTS idx_brevo_configurations_store_id ON brevo_configurations USING btree (store_id);
+-- idx_brevo_configurations indexes REMOVED - table no longer exists
 
 CREATE INDEX IF NOT EXISTS idx_categories_active_menu ON categories USING btree (store_id, is_active, hide_in_menu, sort_order) WHERE ((is_active = true) AND (hide_in_menu = false));
 
@@ -3572,11 +3506,7 @@ CREATE INDEX IF NOT EXISTS idx_shipping_methods_is_active ON shipping_methods US
 
 CREATE INDEX IF NOT EXISTS idx_shipping_methods_store_id ON shipping_methods USING btree (store_id);
 
-CREATE INDEX IF NOT EXISTS idx_shopify_oauth_tokens_client_id ON shopify_oauth_tokens USING btree (client_id);
-
-CREATE INDEX IF NOT EXISTS idx_shopify_oauth_tokens_shop_domain ON shopify_oauth_tokens USING btree (shop_domain);
-
-CREATE INDEX IF NOT EXISTS idx_shopify_oauth_tokens_store_id ON shopify_oauth_tokens USING btree (store_id);
+-- idx_shopify_oauth_tokens indexes REMOVED - table no longer exists
 
 CREATE INDEX IF NOT EXISTS idx_slot_configurations_is_active ON slot_configurations USING btree (is_active);
 
@@ -3626,7 +3556,11 @@ CREATE INDEX IF NOT EXISTS idx_users_is_active ON users USING btree (is_active);
 
 CREATE INDEX IF NOT EXISTS idx_users_role ON users USING btree (role);
 
-CREATE UNIQUE INDEX integration_configs_store_id_integration_type ON integration_configs USING btree (store_id, integration_type);
+CREATE UNIQUE INDEX integration_configs_store_id_integration_type_key ON integration_configs USING btree (store_id, integration_type, config_key);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_primary_integration_per_store_type ON integration_configs (store_id, integration_type) WHERE is_primary = true;
+CREATE INDEX IF NOT EXISTS idx_integration_configs_store_id ON integration_configs (store_id);
+CREATE INDEX IF NOT EXISTS idx_integration_configs_type ON integration_configs (integration_type);
+CREATE INDEX IF NOT EXISTS idx_integration_configs_active ON integration_configs (is_active) WHERE is_active = true;
 
 CREATE INDEX IF NOT EXISTS job_history_executed_at ON job_history USING btree (executed_at);
 
@@ -3718,9 +3652,7 @@ CREATE UNIQUE INDEX redirects_store_id_from_url ON redirects USING btree (store_
 
 CREATE UNIQUE INDEX seo_templates_store_id_name ON seo_templates USING btree (store_id, name);
 
-CREATE UNIQUE INDEX shopify_oauth_tokens_shop_domain ON shopify_oauth_tokens USING btree (shop_domain);
-
-CREATE UNIQUE INDEX shopify_oauth_tokens_store_id ON shopify_oauth_tokens USING btree (store_id);
+-- shopify_oauth_tokens unique indexes REMOVED - table no longer exists
 
 CREATE INDEX IF NOT EXISTS slot_configurations_is_active ON slot_configurations USING btree (is_active);
 
@@ -3748,7 +3680,7 @@ CREATE UNIQUE INDEX unique_session_store_cart ON carts USING btree (session_id, 
 
 CREATE UNIQUE INDEX unique_store_session ON heatmap_sessions USING btree (store_id, session_id);
 
-CREATE UNIQUE INDEX unique_store_user ON store_teams USING btree (store_id, user_id);
+-- REMOVED: unique_store_user index (store_teams moved to MASTER database)
 
 CREATE UNIQUE INDEX unique_test_session ON ab_test_assignments USING btree (test_id, session_id);
 
@@ -3814,10 +3746,7 @@ CREATE TRIGGER update_attributes_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_brevo_configurations_updated_at
-  BEFORE UPDATE ON brevo_configurations
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+-- update_brevo_configurations_updated_at trigger REMOVED - table no longer exists
 
 CREATE TRIGGER update_cms_pages_updated_at
   BEFORE UPDATE ON cms_pages
@@ -3929,10 +3858,7 @@ CREATE TRIGGER update_shipping_methods_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_shopify_oauth_tokens_updated_at
-  BEFORE UPDATE ON shopify_oauth_tokens
-  FOR EACH ROW
-  EXECUTE FUNCTION update_shopify_oauth_tokens_updated_at();
+-- update_shopify_oauth_tokens_updated_at trigger REMOVED - table no longer exists
 
 CREATE TRIGGER update_stores_updated_at
   BEFORE UPDATE ON stores
@@ -4032,7 +3958,7 @@ ALTER TABLE blacklist_ips ADD CONSTRAINT blacklist_ips_store_id_fkey FOREIGN KEY
 
 ALTER TABLE blacklist_settings ADD CONSTRAINT blacklist_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE brevo_configurations ADD CONSTRAINT brevo_configurations_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
+-- brevo_configurations foreign key REMOVED - table no longer exists
 
 ALTER TABLE canonical_urls ADD CONSTRAINT canonical_urls_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
@@ -4278,7 +4204,7 @@ ALTER TABLE shipping_method_translations ADD CONSTRAINT shipping_method_translat
 
 ALTER TABLE shipping_methods ADD CONSTRAINT shipping_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
-ALTER TABLE shopify_oauth_tokens ADD CONSTRAINT shopify_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+-- shopify_oauth_tokens foreign key REMOVED - table no longer exists
 
 ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_acceptance_published_by_fkey FOREIGN KEY (acceptance_published_by) REFERENCES users(id);
 
@@ -4292,11 +4218,7 @@ ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_store_id_fkey
 
 ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE store_teams ADD CONSTRAINT store_teams_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id);
-
-ALTER TABLE store_teams ADD CONSTRAINT store_teams_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-ALTER TABLE store_teams ADD CONSTRAINT store_teams_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+-- REMOVED: store_teams foreign keys (table moved to MASTER database)
 
 ALTER TABLE store_uptime ADD CONSTRAINT store_uptime_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
@@ -4304,13 +4226,13 @@ ALTER TABLE store_uptime ADD CONSTRAINT store_uptime_user_id_fkey FOREIGN KEY (u
 
 ALTER TABLE stores ADD CONSTRAINT stores_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE store_media_storages ADD CONSTRAINT store_media_storages_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+-- store_media_storages foreign key REMOVED - table no longer exists
 
 ALTER TABLE subscriptions ADD CONSTRAINT subscriptions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
-ALTER TABLE supabase_oauth_tokens ADD CONSTRAINT supabase_oauth_tokens_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+-- supabase_oauth_tokens foreign key REMOVED - use integration_configs instead
 
-ALTER TABLE supabase_project_keys ADD CONSTRAINT supabase_project_keys_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+-- supabase_project_keys foreign key REMOVED - use integration_configs instead
 
 ALTER TABLE taxes ADD CONSTRAINT taxes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 

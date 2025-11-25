@@ -1,19 +1,24 @@
 const axios = require('axios');
 const crypto = require('crypto');
-const ConnectionManager = require('./database/ConnectionManager');
-const { getMasterStore } = require('../utils/dbHelpers');
+const IntegrationConfig = require('../models/IntegrationConfig');
 
+/**
+ * Shopify Integration Service
+ * Handles Shopify OAuth authentication and API integration
+ *
+ * Configuration stored in integration_configs table with integration_type='shopify'
+ */
 class ShopifyIntegration {
   constructor() {
     this.clientId = process.env.SHOPIFY_CLIENT_ID;
     this.clientSecret = process.env.SHOPIFY_CLIENT_SECRET;
-    this.redirectUri = process.env.SHOPIFY_REDIRECT_URI || 
+    this.redirectUri = process.env.SHOPIFY_REDIRECT_URI ||
                       `${process.env.BACKEND_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/shopify/callback`;
-    
+
     // Direct access token support (for custom/private apps)
     this.directAccessToken = process.env.SHOPIFY_ACCESS_TOKEN;
     this.directShopDomain = process.env.SHOPIFY_SHOP_DOMAIN;
-    
+
     // Required scopes for data import
     this.scopes = [
       'read_products',
@@ -33,10 +38,12 @@ class ShopifyIntegration {
       'read_resource_feedbacks',
       'read_shopify_payments_payouts'
     ].join(',');
-    
+
     // Check if OAuth is properly configured OR direct access token is available
     this.oauthConfigured = !!(this.clientId && this.clientSecret);
     this.directAccessConfigured = !!(this.directAccessToken && this.directShopDomain);
+
+    this.integrationType = 'shopify';
   }
 
   /**
@@ -44,73 +51,15 @@ class ShopifyIntegration {
    */
   async saveAppCredentials(storeId, clientId, clientSecret, redirectUri) {
     try {
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-      // Check if a record exists
-      const { data: existingToken } = await tenantDb
-        .from('shopify_oauth_tokens')
-        .select('*')
-        .eq('store_id', storeId)
-        .maybeSingle();
-
-      if (existingToken) {
-        // Update existing record with credentials
-        await tenantDb
-          .from('shopify_oauth_tokens')
-          .update({
-            client_id: clientId,
-            client_secret: clientSecret,
-            redirect_uri: redirectUri,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingToken.id);
-      } else {
-        // Create new record with just credentials (no token yet)
-        await tenantDb
-          .from('shopify_oauth_tokens')
-          .insert({
-            store_id: storeId,
-            client_id: clientId,
-            client_secret: clientSecret,
-            redirect_uri: redirectUri,
-            shop_domain: 'pending', // Will be updated during OAuth
-            access_token: 'pending', // Will be updated during OAuth
-            scope: 'pending' // Will be updated during OAuth
-          });
-      }
-
-      // Also save to integration config
-      const { data: existingConfig } = await tenantDb
-        .from('integration_configs')
-        .select('*')
-        .eq('store_id', storeId)
-        .eq('integration_type', 'shopify')
-        .maybeSingle();
-
       const configData = {
-        app_configured: true,
-        client_id: clientId,
-        redirect_uri: redirectUri
+        clientId: clientId,
+        clientSecret: clientSecret,
+        redirectUri: redirectUri,
+        appConfigured: true,
+        connected: false
       };
 
-      if (existingConfig) {
-        await tenantDb
-          .from('integration_configs')
-          .update({
-            config_data: configData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingConfig.id);
-      } else {
-        await tenantDb
-          .from('integration_configs')
-          .insert({
-            store_id: storeId,
-            integration_type: 'shopify',
-            config_data: configData,
-            is_active: true
-          });
-      }
+      await IntegrationConfig.createOrUpdate(storeId, this.integrationType, configData);
 
       return { success: true, message: 'App credentials saved successfully' };
     } catch (error) {
@@ -124,24 +73,13 @@ class ShopifyIntegration {
    */
   async getAppCredentials(storeId) {
     try {
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+      const config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
 
-      const { data: tokenRecord, error } = await tenantDb
-        .from('shopify_oauth_tokens')
-        .select('*')
-        .eq('store_id', storeId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching Shopify token:', error);
-        return null;
-      }
-
-      if (tokenRecord && tokenRecord.client_id) {
+      if (config && config.config_data && config.config_data.clientId) {
         return {
-          client_id: tokenRecord.client_id,
-          client_secret: tokenRecord.client_secret,
-          redirect_uri: tokenRecord.redirect_uri
+          client_id: config.config_data.clientId,
+          client_secret: config.config_data.clientSecret,
+          redirect_uri: config.config_data.redirectUri
         };
       }
       return null;
@@ -157,9 +95,9 @@ class ShopifyIntegration {
   async getAuthorizationUrl(storeId, shopDomain) {
     // First try to get store-specific credentials
     const credentials = await this.getAppCredentials(storeId);
-    
+
     let clientId, redirectUri;
-    
+
     if (credentials && credentials.client_id) {
       // Use store-specific credentials
       clientId = credentials.client_id;
@@ -205,13 +143,13 @@ class ShopifyIntegration {
     try {
       const decoded = Buffer.from(state, 'base64').toString('utf8');
       const data = JSON.parse(decoded);
-      
+
       // Check if state is not too old (1 hour)
       const age = Date.now() - parseInt(data.timestamp);
       if (age > 3600000) { // 1 hour in milliseconds
         throw new Error('State parameter has expired');
       }
-      
+
       return data;
     } catch (error) {
       throw new Error('Invalid state parameter');
@@ -229,7 +167,7 @@ class ShopifyIntegration {
       .join('&');
 
     let clientSecret = this.clientSecret;
-    
+
     // If storeId is provided, try to get store-specific secret
     if (storeId) {
       const credentials = await this.getAppCredentials(storeId);
@@ -265,9 +203,9 @@ class ShopifyIntegration {
 
       // Get store-specific credentials
       const credentials = await this.getAppCredentials(storeId);
-      
+
       let clientId, clientSecret;
-      
+
       if (credentials && credentials.client_id) {
         // Use store-specific credentials
         clientId = credentials.client_id;
@@ -303,74 +241,41 @@ class ShopifyIntegration {
       // Get shop information
       const shopInfo = await this.getShopInfo(shopDomain, access_token);
 
-      // Create or update OAuth token record
-      const tokenData = {
-        store_id: storeId,
-        shop_domain: shopDomain,
-        access_token: access_token,
-        scope: scope,
-        shop_id: shopInfo.id,
-        shop_name: shopInfo.name,
-        shop_email: shopInfo.email,
-        shop_country: shopInfo.country_code,
-        shop_currency: shopInfo.currency,
-        shop_timezone: shopInfo.timezone,
-        plan_name: shopInfo.plan_name,
-        updated_at: new Date().toISOString()
-      };
-
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-      // Check if token exists
-      const { data: existingToken } = await tenantDb
-        .from('shopify_oauth_tokens')
-        .select('*')
-        .eq('store_id', storeId)
-        .maybeSingle();
-
-      if (existingToken) {
-        await tenantDb
-          .from('shopify_oauth_tokens')
-          .update(tokenData)
-          .eq('id', existingToken.id);
-      } else {
-        await tenantDb
-          .from('shopify_oauth_tokens')
-          .insert(tokenData);
-      }
-
-      // Create or update integration config
-      const integrationData = {
-        shopDomain: shopDomain,
+      // Store configuration using IntegrationConfig
+      const configData = {
         accessToken: access_token,
-        scope: scope,
-        shopInfo: shopInfo
+        shopDomain: shopDomain,
+        clientId: clientId,
+        clientSecret: clientSecret,
+        redirectUri: credentials?.redirect_uri || this.redirectUri,
+        webhookSecret: null,
+        shopInfo: {
+          shopId: shopInfo.id,
+          shopName: shopInfo.name,
+          shopEmail: shopInfo.email,
+          shopCountry: shopInfo.country_code,
+          shopCurrency: shopInfo.currency,
+          shopTimezone: shopInfo.timezone,
+          planName: shopInfo.plan_name
+        },
+        connected: true,
+        connectionType: 'oauth'
       };
 
-      const { data: existingConfig } = await tenantDb
-        .from('integration_configs')
-        .select('*')
-        .eq('store_id', storeId)
-        .eq('integration_type', 'shopify')
-        .maybeSingle();
+      const config = await IntegrationConfig.createOrUpdateWithKey(
+        storeId,
+        this.integrationType,
+        configData,
+        'default',
+        {
+          displayName: shopInfo.name,
+          oauthScopes: scope
+        }
+      );
 
-      if (existingConfig) {
-        await tenantDb
-          .from('integration_configs')
-          .update({
-            config_data: integrationData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingConfig.id);
-      } else {
-        await tenantDb
-          .from('integration_configs')
-          .insert({
-            store_id: storeId,
-            integration_type: 'shopify',
-            config_data: integrationData,
-            is_active: true
-          });
+      // Update connection status
+      if (config && config.id) {
+        await IntegrationConfig.updateConnectionStatus(config.id, storeId, 'success');
       }
 
       console.log('Shopify OAuth completed successfully:', {
@@ -391,7 +296,7 @@ class ShopifyIntegration {
 
     } catch (error) {
       console.error('Error exchanging Shopify code for token:', error);
-      
+
       return {
         success: false,
         error: error.message,
@@ -445,73 +350,37 @@ class ShopifyIntegration {
       // Test the token by fetching shop info
       const shopInfo = await this.getShopInfo(shopDomain, accessToken);
 
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-      // Save the token to database
-      const tokenData = {
-        store_id: storeId,
-        shop_domain: shopDomain,
-        access_token: accessToken,
-        scope: 'custom_app_full_access', // Custom apps have full access based on configuration
-        shop_id: shopInfo.id,
-        shop_name: shopInfo.name,
-        shop_email: shopInfo.email,
-        shop_country: shopInfo.country_code,
-        shop_currency: shopInfo.currency,
-        shop_timezone: shopInfo.timezone,
-        plan_name: shopInfo.plan_name,
-        updated_at: new Date().toISOString()
-      };
-
-      const { data: existingToken } = await tenantDb
-        .from('shopify_oauth_tokens')
-        .select('*')
-        .eq('store_id', storeId)
-        .maybeSingle();
-
-      if (existingToken) {
-        await tenantDb
-          .from('shopify_oauth_tokens')
-          .update(tokenData)
-          .eq('id', existingToken.id);
-      } else {
-        await tenantDb
-          .from('shopify_oauth_tokens')
-          .insert(tokenData);
-      }
-
-      // Also save to integration config
+      // Store configuration using IntegrationConfig
       const configData = {
-        shop_domain: shopDomain,
-        shop_name: shopInfo.name,
+        accessToken: accessToken,
+        shopDomain: shopDomain,
+        shopInfo: {
+          shopId: shopInfo.id,
+          shopName: shopInfo.name,
+          shopEmail: shopInfo.email,
+          shopCountry: shopInfo.country_code,
+          shopCurrency: shopInfo.currency,
+          shopTimezone: shopInfo.timezone,
+          planName: shopInfo.plan_name
+        },
         connected: true,
-        connection_type: 'direct_access'
+        connectionType: 'direct_access'
       };
 
-      const { data: existingConfig } = await tenantDb
-        .from('integration_configs')
-        .select('*')
-        .eq('store_id', storeId)
-        .eq('integration_type', 'shopify')
-        .maybeSingle();
+      const config = await IntegrationConfig.createOrUpdateWithKey(
+        storeId,
+        this.integrationType,
+        configData,
+        'default',
+        {
+          displayName: shopInfo.name,
+          oauthScopes: 'custom_app_full_access'
+        }
+      );
 
-      if (existingConfig) {
-        await tenantDb
-          .from('integration_configs')
-          .update({
-            config_data: configData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingConfig.id);
-      } else {
-        await tenantDb
-          .from('integration_configs')
-          .insert({
-            store_id: storeId,
-            integration_type: 'shopify',
-            config_data: configData,
-            is_active: true
-          });
+      // Update connection status
+      if (config && config.id) {
+        await IntegrationConfig.updateConnectionStatus(config.id, storeId, 'success');
       }
 
       return {
@@ -535,35 +404,47 @@ class ShopifyIntegration {
    */
   async testConnection(storeId) {
     try {
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+      const config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
 
-      const { data: tokenRecord, error } = await tenantDb
-        .from('shopify_oauth_tokens')
-        .select('*')
-        .eq('store_id', storeId)
-        .maybeSingle();
-
-      if (error || !tokenRecord) {
+      if (!config || !config.config_data || !config.config_data.accessToken) {
         return {
           success: false,
           message: 'No Shopify connection found for this store. Please connect your Shopify account first.'
         };
       }
 
-      const shopInfo = await this.getShopInfo(tokenRecord.shop_domain, tokenRecord.access_token);
+      const shopDomain = config.config_data.shopDomain;
+      const accessToken = config.config_data.accessToken;
+
+      const shopInfo = await this.getShopInfo(shopDomain, accessToken);
+
+      // Update connection status
+      if (config.id) {
+        await IntegrationConfig.updateConnectionStatus(config.id, storeId, 'success');
+      }
 
       return {
         success: true,
         message: 'Successfully connected to Shopify',
         data: {
           shop_name: shopInfo.name,
-          shop_domain: tokenRecord.shop_domain,
+          shop_domain: shopDomain,
           plan_name: shopInfo.plan_name,
           currency: shopInfo.currency
         }
       };
 
     } catch (error) {
+      // Update connection status to failed
+      try {
+        const config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
+        if (config && config.id) {
+          await IntegrationConfig.updateConnectionStatus(config.id, storeId, 'failed', error.message);
+        }
+      } catch (updateError) {
+        // Ignore update errors
+      }
+
       return {
         success: false,
         message: `Connection failed: ${error.message}`
@@ -576,19 +457,23 @@ class ShopifyIntegration {
    */
   async getConnectionStatus(storeId) {
     try {
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+      const config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
 
-      const { data: tokenRecord, error } = await tenantDb
-        .from('shopify_oauth_tokens')
-        .select('*')
-        .eq('store_id', storeId)
-        .maybeSingle();
-
-      if (error || !tokenRecord) {
+      if (!config || !config.config_data) {
         return {
           connected: false,
           configured: this.oauthConfigured,
           message: 'No Shopify connection configured'
+        };
+      }
+
+      // Check if connected
+      if (!config.config_data.accessToken || !config.config_data.connected) {
+        return {
+          connected: false,
+          configured: this.oauthConfigured || !!config.config_data.clientId,
+          app_configured: !!config.config_data.clientId,
+          message: 'Shopify app configured but not connected'
         };
       }
 
@@ -597,10 +482,11 @@ class ShopifyIntegration {
 
       return {
         connected: testResult.success,
-        configured: this.oauthConfigured,
-        shop_domain: tokenRecord.shop_domain,
-        shop_name: tokenRecord.shop_name,
-        last_connected: tokenRecord.updated_at,
+        configured: true,
+        shop_domain: config.config_data.shopDomain,
+        shop_name: config.config_data.shopInfo?.shopName,
+        connection_status: config.connection_status,
+        last_connected: config.updated_at,
         message: testResult.message,
         data: testResult.data
       };
@@ -619,20 +505,29 @@ class ShopifyIntegration {
    */
   async getTokenInfo(storeId) {
     try {
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+      const config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
 
-      const { data: tokenRecord, error } = await tenantDb
-        .from('shopify_oauth_tokens')
-        .select('*')
-        .eq('store_id', storeId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching token info:', error);
+      if (!config || !config.config_data) {
         return null;
       }
 
-      return tokenRecord;
+      // Return a compatible format with the old shopify_oauth_tokens table
+      return {
+        id: config.id,
+        store_id: storeId,
+        shop_domain: config.config_data.shopDomain,
+        access_token: config.config_data.accessToken,
+        scope: config.oauth_scopes,
+        shop_id: config.config_data.shopInfo?.shopId,
+        shop_name: config.config_data.shopInfo?.shopName,
+        shop_email: config.config_data.shopInfo?.shopEmail,
+        shop_country: config.config_data.shopInfo?.shopCountry,
+        shop_currency: config.config_data.shopInfo?.shopCurrency,
+        shop_timezone: config.config_data.shopInfo?.shopTimezone,
+        plan_name: config.config_data.shopInfo?.planName,
+        created_at: config.created_at,
+        updated_at: config.updated_at
+      };
     } catch (error) {
       console.error('Error getting token info:', error);
       return null;
@@ -644,20 +539,7 @@ class ShopifyIntegration {
    */
   async disconnect(storeId) {
     try {
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-      // Remove shopify_oauth_tokens
-      await tenantDb
-        .from('shopify_oauth_tokens')
-        .delete()
-        .eq('store_id', storeId);
-
-      // Also remove from integration_configs
-      await tenantDb
-        .from('integration_configs')
-        .delete()
-        .eq('store_id', storeId)
-        .eq('integration_type', 'shopify');
+      await IntegrationConfig.deactivate(storeId, this.integrationType);
 
       return {
         success: true,
@@ -670,6 +552,32 @@ class ShopifyIntegration {
         message: `Failed to disconnect: ${error.message}`
       };
     }
+  }
+
+  /**
+   * Get access token for API calls
+   */
+  async getAccessToken(storeId) {
+    const config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
+
+    if (!config || !config.config_data || !config.config_data.accessToken) {
+      throw new Error('Shopify not configured for this store');
+    }
+
+    return config.config_data.accessToken;
+  }
+
+  /**
+   * Get shop domain for API calls
+   */
+  async getShopDomain(storeId) {
+    const config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
+
+    if (!config || !config.config_data || !config.config_data.shopDomain) {
+      throw new Error('Shopify not configured for this store');
+    }
+
+    return config.config_data.shopDomain;
   }
 }
 
