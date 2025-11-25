@@ -622,6 +622,10 @@ class SupabaseIntegration {
       throw new Error('Supabase not connected for this store');
     }
 
+    if (!token.project_url || token.project_url === 'pending_configuration' || token.project_url === 'https://pending-configuration.supabase.co') {
+      throw new Error('Supabase project URL not configured. Please complete the Supabase setup.');
+    }
+
     if (!token.service_role_key) {
       throw new Error('Service role key not available. Please reconnect with admin permissions.');
     }

@@ -867,70 +867,53 @@ class SupabaseStorageService extends StorageInterface {
    */
   async listBuckets(storeId) {
     try {
-      const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
-      
-      // Check if we have service role key for full access
+      // Check credentials first before trying to create client
       const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
-      const hasServiceRoleKey = tokenInfo?.service_role_key && 
+
+      // Check if project URL is configured
+      if (!tokenInfo?.project_url ||
+          tokenInfo.project_url === 'pending_configuration' ||
+          tokenInfo.project_url === 'https://pending-configuration.supabase.co') {
+        return {
+          success: false,
+          buckets: [],
+          message: 'Supabase project URL not configured. Please complete Supabase setup.',
+          requiresConfiguration: true
+        };
+      }
+
+      const hasServiceRoleKey = tokenInfo?.service_role_key &&
                                 tokenInfo.service_role_key !== 'pending_configuration' &&
                                 tokenInfo.service_role_key !== '';
-      
+
       if (!hasServiceRoleKey) {
-        // Try with regular client if no service role key
-        const regularClient = await supabaseIntegration.getSupabaseClient(storeId);
-        
-        // For non-admin clients, we can still try to list buckets
-        // but may get limited results
-        try {
-          const { data: buckets, error } = await regularClient.storage.listBuckets();
-          
-          if (error) {
-            console.log('Could not list buckets with regular client:', error);
-            // Return default bucket that should exist
-            return {
-              success: true,
-              buckets: [
-                {
-                  id: this.assetsBucketName,
-                  name: this.assetsBucketName,
-                  public: true,
-                  created_at: null,
-                  updated_at: null
-                }
-              ],
-              limited: true,
-              message: 'Showing default bucket. Service role key required for full bucket list.'
-            };
-          }
-          
-          return {
-            success: true,
-            buckets: buckets || []
-          };
-        } catch (err) {
-          console.log('Error listing buckets:', err);
-          // Return default bucket
-          return {
-            success: true,
-            buckets: [
-              {
-                id: this.assetsBucketName,
-                name: this.assetsBucketName,
-                public: true
-              }
-            ],
-            limited: true
-          };
-        }
+        // Return default bucket without trying to create client
+        return {
+          success: true,
+          buckets: [
+            {
+              id: this.assetsBucketName,
+              name: this.assetsBucketName,
+              public: true,
+              created_at: null,
+              updated_at: null
+            }
+          ],
+          limited: true,
+          message: 'Showing default bucket. Service role key required for full bucket list.'
+        };
       }
-      
-      // Use admin client if we have service role key
+
+      // Now safe to create admin client
+      const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
+
+      // Use admin client to list buckets
       const { data: buckets, error } = await client.storage.listBuckets();
-      
+
       if (error) {
         throw error;
       }
-      
+
       return {
         success: true,
         buckets: buckets || []
