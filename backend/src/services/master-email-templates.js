@@ -611,11 +611,24 @@ const teamInvitationEmail = (data) => {
     expiresDate
   } = data;
 
-  // Clean store name - remove "store" prefix if present (case insensitive)
-  const cleanStoreName = storeName.replace(/^store\s+/i, '').trim();
+  // Clean store name - remove "store" prefix if present, handle edge cases
+  let cleanStoreName = storeName.replace(/^store\s+/i, '').trim();
+  // If store name is literally just "Store" or empty, use a better fallback
+  if (!cleanStoreName || cleanStoreName.toLowerCase() === 'store') {
+    cleanStoreName = 'the store';
+  }
 
   // Determine article based on role (a/an) - vowels need "an"
   const roleArticle = ['admin', 'editor'].includes(role) ? 'an' : 'a';
+
+  // Get solid background color for role badge (email clients don't support gradients well)
+  const getRoleBgColor = (r) => {
+    switch(r) {
+      case 'admin': return '#3b82f6';
+      case 'editor': return '#10b981';
+      default: return '#6b7280';
+    }
+  };
 
   const header = masterEmailHeader({
     title: "You're Invited!",
@@ -642,15 +655,19 @@ const teamInvitationEmail = (data) => {
           </p>
 
           <!-- Store Card -->
-          <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #f0f9ff 0%, #f5f3ff 100%); border: 1px solid #e0e7ff; border-radius: 12px; margin-bottom: 25px;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f0f9ff; border: 1px solid #e0e7ff; border-radius: 12px; margin-bottom: 25px;">
             <tr>
               <td style="padding: 24px;">
                 <table role="presentation" style="width: 100%; border-collapse: collapse;">
                   <tr>
                     <td style="vertical-align: middle; width: 60px;">
-                      <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); border-radius: 12px; text-align: center; line-height: 50px;">
-                        <span style="color: white; font-size: 24px; font-weight: 700;">${cleanStoreName.charAt(0).toUpperCase()}</span>
-                      </div>
+                      <table role="presentation" style="width: 50px; height: 50px; background-color: #6366f1; border-radius: 12px;">
+                        <tr>
+                          <td align="center" valign="middle" style="color: #ffffff; font-size: 24px; font-weight: 700;">
+                            ${cleanStoreName.charAt(0).toUpperCase()}
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                     <td style="vertical-align: middle; padding-left: 16px;">
                       <p style="margin: 0; color: #111827; font-size: 18px; font-weight: 700;">${cleanStoreName}</p>
@@ -669,9 +686,13 @@ const teamInvitationEmail = (data) => {
                 <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
                   Your Role
                 </p>
-                <span style="display: inline-block; padding: 8px 20px; background: ${role === 'admin' ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : role === 'editor' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)'}; color: #ffffff; font-weight: 600; font-size: 14px; border-radius: 6px; text-transform: capitalize;">
-                  ${role}
-                </span>
+                <table role="presentation" style="margin: 0 auto;">
+                  <tr>
+                    <td style="padding: 8px 20px; background-color: ${getRoleBgColor(role)}; color: #ffffff; font-weight: 600; font-size: 14px; border-radius: 6px; text-transform: capitalize;">
+                      ${role}
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
           </table>
@@ -696,9 +717,17 @@ const teamInvitationEmail = (data) => {
           <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
             <tr>
               <td align="center">
-                <a href="${inviteUrl}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);">
+                <!--[if mso]>
+                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${inviteUrl}" style="height:50px;v-text-anchor:middle;width:200px;" arcsize="16%" strokecolor="#6366f1" fillcolor="#6366f1">
+                <w:anchorlock/>
+                <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:bold;">Accept Invitation</center>
+                </v:roundrect>
+                <![endif]-->
+                <!--[if !mso]><!-->
+                <a href="${inviteUrl}" style="display: inline-block; padding: 16px 40px; background-color: #6366f1; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
                   Accept Invitation
                 </a>
+                <!--<![endif]-->
               </td>
             </tr>
           </table>
