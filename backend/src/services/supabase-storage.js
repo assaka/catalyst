@@ -1,5 +1,4 @@
 const supabaseMediaStorageOAuth = require('./supabase-media-storage-oauth');
-const supabaseIntegration = require('./supabase-integration');
 const StorageInterface = require('./storage-interface');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -207,56 +206,25 @@ class SupabaseStorageService extends StorageInterface {
 
   /**
    * Upload image using direct API call with OAuth token
-   * Note: This requires anon key or service role key. OAuth token alone is not sufficient for Storage API.
+   * Note: This requires service role key. OAuth token alone is not sufficient for Storage API.
    */
   async uploadImageDirect(storeId, file, options = {}) {
     try {
-      const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
-      
-      if (!tokenInfo || !tokenInfo.project_url || tokenInfo.project_url === 'pending_configuration') {
-        throw new Error('Project URL not configured. Please select a project.');
+      // Use media storage credentials (from supabase-storage integration)
+      const credentials = await supabaseMediaStorageOAuth.getStorageCredentials(storeId);
+
+      if (!credentials || !credentials.project_url) {
+        throw new Error('Project URL not configured. Please connect Supabase storage.');
       }
 
       // Check if we have valid service role key
-      const hasValidServiceKey = tokenInfo.service_role_key && 
-                                 tokenInfo.service_role_key !== 'pending_configuration' &&
-                                 tokenInfo.service_role_key !== '';
-
-      if (!hasValidServiceKey) {
-        // Try to fetch API keys if we have OAuth token
-        console.log('No valid API keys found, attempting to fetch from Supabase...');
-        
-        try {
-          const fetchResult = await supabaseIntegration.fetchAndUpdateApiKeys(storeId);
-          
-          if (fetchResult.requiresProjectActivation) {
-            throw new Error('Your Supabase project is inactive. Please go to your Supabase dashboard and activate the project to enable storage operations.');
-          }
-          
-          if (fetchResult.success && fetchResult.hasServiceRoleKey) {
-            // Reload token info after fetching keys
-            const updatedTokenInfo = await supabaseIntegration.getTokenInfo(storeId);
-            if (updatedTokenInfo.service_role_key) {
-              tokenInfo.service_role_key = updatedTokenInfo.service_role_key;
-              hasValidServiceKey = true;
-            }
-          }
-        } catch (fetchError) {
-          console.log('Failed to fetch API keys:', fetchError.message);
-          // Re-throw if it's a project activation error
-          if (fetchError.message.includes('inactive')) {
-            throw fetchError;
-          }
-        }
-        
-        // If we still don't have service role key after trying to fetch it
-        if (!hasValidServiceKey) {
-          throw new Error('Storage operations require service role key. The Supabase API is not providing this key through the OAuth connection. Please manually configure the service role key in the Supabase integration settings.');
-        }
+      if (!credentials.service_role_key) {
+        throw new Error('Storage operations require service role key. Please reconnect Supabase storage.');
       }
 
-      // Use service role key (only key we use now)
-      const apiKey = tokenInfo.service_role_key;
+      // Use service role key
+      const apiKey = credentials.service_role_key;
+      const tokenInfo = credentials; // For compatibility with rest of function
       
       if (!apiKey) {
         throw new Error('No valid API key available for storage operations. Please reconnect with full permissions.');
@@ -584,12 +552,12 @@ class SupabaseStorageService extends StorageInterface {
    */
   async deleteImage(storeId, imagePath) {
     try {
-      // Try to get client - prefer OAuth client which works without anon key
+      // Get client using media storage credentials
       let client;
       try {
-        client = await supabaseIntegration.getSupabaseClient(storeId);
+        client = await this.getSupabaseClient(storeId);
       } catch (error) {
-        console.log('Regular client failed:', error.message);
+        console.log('Client creation failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
       const bucket = this.assetsBucketName;
@@ -758,9 +726,9 @@ class SupabaseStorageService extends StorageInterface {
       // Try to get client - prefer OAuth client which works without anon key
       let client;
       try {
-        client = await supabaseIntegration.getSupabaseClient(storeId);
+        client = await this.getSupabaseClient(storeId);
       } catch (error) {
-        console.log('Regular client failed:', error.message);
+        console.log('Client creation failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
       const bucket = this.assetsBucketName;
@@ -797,9 +765,9 @@ class SupabaseStorageService extends StorageInterface {
       // Try to get client - prefer OAuth client which works without anon key
       let client;
       try {
-        client = await supabaseIntegration.getSupabaseClient(storeId);
+        client = await this.getSupabaseClient(storeId);
       } catch (error) {
-        console.log('Regular client failed:', error.message);
+        console.log('Client creation failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
       const bucket = this.assetsBucketName;
@@ -836,9 +804,9 @@ class SupabaseStorageService extends StorageInterface {
       // Try to get client - prefer OAuth client which works without anon key
       let client;
       try {
-        client = await supabaseIntegration.getSupabaseClient(storeId);
+        client = await this.getSupabaseClient(storeId);
       } catch (error) {
-        console.log('Regular client failed:', error.message);
+        console.log('Client creation failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
       const bucket = this.assetsBucketName;
@@ -867,24 +835,22 @@ class SupabaseStorageService extends StorageInterface {
    */
   async listBuckets(storeId) {
     try {
-      // Check credentials first before trying to create client
-      const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
+      // Use media storage credentials (from supabase-storage integration)
+      const credentials = await supabaseMediaStorageOAuth.getStorageCredentials(storeId);
 
       // Check if project URL is configured
-      if (!tokenInfo?.project_url ||
-          tokenInfo.project_url === 'pending_configuration' ||
-          tokenInfo.project_url === 'https://pending-configuration.supabase.co') {
+      if (!credentials?.project_url) {
         return {
           success: false,
           buckets: [],
-          message: 'Supabase project URL not configured. Please complete Supabase setup.',
+          message: 'Supabase storage not configured. Please complete Supabase setup.',
           requiresConfiguration: true
         };
       }
 
-      const hasServiceRoleKey = tokenInfo?.service_role_key &&
-                                tokenInfo.service_role_key !== 'pending_configuration' &&
-                                tokenInfo.service_role_key !== '';
+      const hasServiceRoleKey = credentials?.service_role_key &&
+                                credentials.service_role_key !== 'pending_configuration' &&
+                                credentials.service_role_key !== '';
 
       if (!hasServiceRoleKey) {
         // Return default bucket without trying to create client
@@ -904,10 +870,10 @@ class SupabaseStorageService extends StorageInterface {
         };
       }
 
-      // Now safe to create admin client
-      const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
+      // Create client using media storage credentials
+      const client = await this.getSupabaseClient(storeId);
 
-      // Use admin client to list buckets
+      // Use client to list buckets
       const { data: buckets, error } = await client.storage.listBuckets();
 
       if (error) {
@@ -929,7 +895,7 @@ class SupabaseStorageService extends StorageInterface {
    */
   async createBucket(storeId, bucketName, options = {}) {
     try {
-      const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
+      const client = await this.getSupabaseClient(storeId);
       
       // Validate bucket name
       if (!bucketName || bucketName.length < 3) {
@@ -979,7 +945,7 @@ class SupabaseStorageService extends StorageInterface {
    */
   async deleteBucket(storeId, bucketId) {
     try {
-      const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
+      const client = await this.getSupabaseClient(storeId);
       
       // First, empty the bucket (Supabase requires buckets to be empty before deletion)
       const { data: files } = await client.storage.from(bucketId).list('', {
@@ -1026,13 +992,13 @@ class SupabaseStorageService extends StorageInterface {
    */
   async getStorageStats(storeId) {
     try {
-      // First check if we have proper credentials
-      const connectionStatus = await supabaseIntegration.getConnectionStatus(storeId);
-      
-      if (!connectionStatus.connected) {
+      // Use media storage credentials (from supabase-storage integration)
+      const credentials = await supabaseMediaStorageOAuth.getStorageCredentials(storeId);
+
+      if (!credentials || !credentials.project_url) {
         return {
           success: false,
-          message: 'Supabase not connected. Please connect your Supabase account.',
+          message: 'Supabase storage not connected. Please connect your Supabase account.',
           requiresConfiguration: true,
           stats: {
             totalFiles: 0,
@@ -1043,33 +1009,27 @@ class SupabaseStorageService extends StorageInterface {
           }
         };
       }
-      
-      // Try to get admin client first, fall back to regular/OAuth client
+
+      // Get client using media storage credentials
       let client;
       let canListBuckets = true;
-      
+
       try {
-        client = await supabaseIntegration.getSupabaseAdminClient(storeId);
-      } catch (adminError) {
-        console.log('Admin client not available, trying regular client for stats');
-        try {
-          client = await supabaseIntegration.getSupabaseClient(storeId);
-          canListBuckets = false; // Regular client might have limited permissions
-        } catch (clientError) {
-          console.error('Failed to create client:', clientError.message);
-          // If we can't get any client, return graceful error with empty stats
-          return {
-            success: true, // Return success with empty stats instead of error
-            message: 'Storage statistics require API keys. Stats will be available once keys are configured.',
-            stats: {
-              totalFiles: 0,
-              totalSize: 0,
-              totalSizeMB: '0.00',
-              totalSizeGB: '0.00',
-              buckets: []
-            }
-          };
-        }
+        client = await this.getSupabaseClient(storeId);
+      } catch (clientError) {
+        console.error('Failed to create client:', clientError.message);
+        // If we can't get any client, return graceful error with empty stats
+        return {
+          success: true, // Return success with empty stats instead of error
+          message: 'Storage statistics require API keys. Stats will be available once keys are configured.',
+          stats: {
+            totalFiles: 0,
+            totalSize: 0,
+            totalSizeMB: '0.00',
+            totalSizeGB: '0.00',
+            buckets: []
+          }
+        };
       }
       
       // Get bucket sizes
