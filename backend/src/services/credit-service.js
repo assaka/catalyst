@@ -371,17 +371,51 @@ class CreditService {
       // Use fallback
     }
 
-    // Check if store is still active (using masterDbClient instead of Sequelize)
-    const { data: store, error: storeError } = await masterDbClient
+    // Get store from master DB first
+    const { data: masterStore, error: masterError } = await masterDbClient
       .from('stores')
       .select('id, slug, status, is_active')
       .eq('id', storeId)
       .maybeSingle();
 
-    if (storeError || !store || store.status !== 'active') {
+    if (masterError || !masterStore || masterStore.status !== 'active') {
       return {
         success: false,
-        message: 'Store is not active, skipping daily charge'
+        message: 'Store is not active in master DB, skipping daily charge'
+      };
+    }
+
+    // Check if store is published in tenant DB
+    const ConnectionManager = require('./database/ConnectionManager');
+    let tenantDb;
+    let store;
+    try {
+      tenantDb = await ConnectionManager.getStoreConnection(storeId);
+      const { data: tenantStore, error: tenantError } = await tenantDb
+        .from('stores')
+        .select('id, name, slug, published')
+        .eq('id', storeId)
+        .maybeSingle();
+
+      if (tenantError || !tenantStore) {
+        return {
+          success: false,
+          message: 'Store not found in tenant DB, skipping daily charge'
+        };
+      }
+
+      if (!tenantStore.published) {
+        return {
+          success: false,
+          message: 'Store is not published, skipping daily charge'
+        };
+      }
+
+      store = tenantStore;
+    } catch (connError) {
+      return {
+        success: false,
+        message: `Failed to connect to tenant DB: ${connError.message}`
       };
     }
 
@@ -408,11 +442,8 @@ class CreditService {
     const balanceBeforeNum = parseFloat(balanceBefore);
     const balanceAfterNum = parseFloat(deductResult.remaining_balance);
 
-    // Log to store_uptime table (tenant DB)
+    // Log to store_uptime table (tenant DB) - reuse existing tenantDb connection
     try {
-      const ConnectionManager = require('./database/ConnectionManager');
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
       const uptimeData = {
         store_id: storeId,
         user_id: userId,
@@ -420,7 +451,7 @@ class CreditService {
         credits_charged: dailyCostNum,
         user_balance_before: balanceBeforeNum,
         user_balance_after: balanceAfterNum,
-        store_slug: store.slug,
+        store_name: store.name,
         metadata: {
           charge_type: 'daily',
           deduction_time: new Date().toISOString()
