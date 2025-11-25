@@ -1573,9 +1573,27 @@ class SupabaseIntegration {
         const hasValidProjectUrl = token.project_url &&
                                     token.project_url !== 'pending_configuration' &&
                                     token.project_url !== 'https://pending-configuration.supabase.co';
-        const hasValidServiceKey = token.service_role_key &&
+        let hasValidServiceKey = token.service_role_key &&
                                     token.service_role_key !== 'pending_configuration' &&
                                     token.service_role_key !== '';
+
+        // If no service key in token, check store_databases
+        if (!hasValidServiceKey && hasValidProjectUrl) {
+          console.log('[getConnectionStatus] No service key in token, checking store_databases...');
+          try {
+            const StoreDatabase = require('../models/master/StoreDatabase');
+            const storeDb = await StoreDatabase.findByStoreId(storeId);
+            if (storeDb && storeDb.database_type === 'supabase') {
+              const dbCredentials = storeDb.getCredentials();
+              if (dbCredentials && dbCredentials.serviceRoleKey) {
+                hasValidServiceKey = true;
+                console.log('[getConnectionStatus] Found service role key in store_databases');
+              }
+            }
+          } catch (dbError) {
+            console.log('[getConnectionStatus] Could not check store_databases:', dbError.message);
+          }
+        }
 
         // If we have valid credentials, update status to success and continue
         if (hasValidProjectUrl && hasValidServiceKey) {
