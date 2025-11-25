@@ -907,31 +907,82 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 /**
  * GET /api/stores/dropdown
  * Get stores for dropdown (simple format)
+ * Includes both owned stores AND stores user is a team member of
  */
 router.get('/dropdown', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
     const { masterDbClient } = require('../database/masterConnection');
 
-    // Get stores from master DB with all relevant fields for the admin UI
-    // Note: published field may not exist yet (migration pending), so we'll handle it gracefully
-    const { data: stores, error } = await masterDbClient
+    // 1. Get stores owned by user
+    const { data: ownedStores, error: ownedError } = await masterDbClient
       .from('stores')
       .select('id, user_id, slug, status, is_active, created_at, updated_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      throw new Error(error.message);
+    if (ownedError) {
+      throw new Error(ownedError.message);
+    }
+
+    // 2. Get stores where user is a team member (from store_teams in master DB)
+    const { data: teamMemberships, error: teamError } = await masterDbClient
+      .from('store_teams')
+      .select('store_id, role, status')
+      .eq('user_id', userId)
+      .eq('status', 'active');
+
+    if (teamError) {
+      console.warn('Error fetching team memberships:', teamError.message);
+    }
+
+    // Get the store IDs where user is a team member (excluding owned stores)
+    const ownedStoreIds = new Set((ownedStores || []).map(s => s.id));
+    const teamStoreIds = (teamMemberships || [])
+      .filter(m => !ownedStoreIds.has(m.store_id))
+      .map(m => m.store_id);
+
+    // 3. Fetch team member stores details
+    let teamStores = [];
+    if (teamStoreIds.length > 0) {
+      const { data: teamStoreData, error: teamStoreError } = await masterDbClient
+        .from('stores')
+        .select('id, user_id, slug, status, is_active, created_at, updated_at')
+        .in('id', teamStoreIds)
+        .eq('is_active', true);
+
+      if (!teamStoreError && teamStoreData) {
+        teamStores = teamStoreData;
+      }
+    }
+
+    // Create a map of team memberships for role lookup
+    const teamRoleMap = {};
+    (teamMemberships || []).forEach(m => {
+      teamRoleMap[m.store_id] = m.role;
+    });
+
+    // Combine owned and team stores
+    const stores = [
+      ...(ownedStores || []).map(s => ({ ...s, membership_type: 'owner' })),
+      ...teamStores.map(s => ({ ...s, membership_type: 'team_member', team_role: teamRoleMap[s.id] }))
+    ];
+
+    if (stores.length === 0) {
+      return res.json({
+        success: true,
+        data: []
+      });
     }
 
     // Try to fetch published status separately (in case column doesn't exist yet)
     let publishedMap = {};
     try {
+      const storeIds = stores.map(s => s.id);
       const { data: publishedData } = await masterDbClient
         .from('stores')
         .select('id, published, published_at')
-        .eq('user_id', userId);
+        .in('id', storeIds);
 
       if (publishedData) {
         publishedData.forEach(item => {
@@ -999,12 +1050,15 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
           created_at: store.created_at,
           updated_at: store.updated_at,
           settings: storeSettings,
-          admin_navigation: adminNavigation
+          admin_navigation: adminNavigation,
+          // Membership info
+          membership_type: store.membership_type || 'owner',  // 'owner' or 'team_member'
+          team_role: store.team_role || null  // 'admin', 'editor', 'viewer' for team members
         };
       })
     );
 
-    console.log(`[Dropdown] Returning ${enrichedStores.length} stores for user ${userId}`);
+    console.log(`[Dropdown] Returning ${enrichedStores.length} stores for user ${userId} (owned: ${(ownedStores || []).length}, team: ${teamStores.length})`);
 
     res.json({
       success: true,
@@ -1022,17 +1076,56 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/stores
- * Get all stores for current user
+ * Get all stores for current user (owned + team member)
  */
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const stores = await MasterStore.findByUser(userId);
+    // 1. Get owned stores
+    const ownedStores = await MasterStore.findByUser(userId);
+
+    // 2. Get stores where user is a team member (from master DB)
+    const { data: teamMemberships, error: teamError } = await masterDbClient
+      .from('store_teams')
+      .select('store_id, role, status')
+      .eq('user_id', userId)
+      .eq('status', 'active');
+
+    if (teamError) {
+      console.warn('Error fetching team memberships:', teamError.message);
+    }
+
+    // Get team member store IDs (excluding owned)
+    const ownedStoreIds = new Set(ownedStores.map(s => s.id));
+    const teamStoreIds = (teamMemberships || [])
+      .filter(m => !ownedStoreIds.has(m.store_id))
+      .map(m => m.store_id);
+
+    // 3. Fetch team member stores
+    let teamStores = [];
+    if (teamStoreIds.length > 0) {
+      const { data: teamStoreData } = await masterDbClient
+        .from('stores')
+        .select('id, status, is_active, created_at, slug')
+        .in('id', teamStoreIds)
+        .eq('is_active', true);
+
+      teamStores = teamStoreData || [];
+    }
+
+    // Create role lookup map
+    const teamRoleMap = {};
+    (teamMemberships || []).forEach(m => {
+      teamRoleMap[m.store_id] = m.role;
+    });
 
     // Enrich with hostname info
     const enrichedStores = await Promise.all(
-      stores.map(async (store) => {
+      [
+        ...ownedStores.map(s => ({ ...s, membership_type: 'owner' })),
+        ...teamStores.map(s => ({ ...s, membership_type: 'team_member', team_role: teamRoleMap[s.id] }))
+      ].map(async (store) => {
         const hostnames = await StoreHostname.findByStore(store.id);
         const primaryHostname = hostnames.find(h => h.is_primary);
 
@@ -1042,7 +1135,9 @@ router.get('/', authMiddleware, async (req, res) => {
           is_active: store.is_active,
           created_at: store.created_at,
           hostname: primaryHostname?.hostname || null,
-          slug: primaryHostname?.slug || null
+          slug: primaryHostname?.slug || store.slug || null,
+          membership_type: store.membership_type,
+          team_role: store.team_role || null
         };
       })
     );
@@ -1051,7 +1146,7 @@ router.get('/', authMiddleware, async (req, res) => {
       success: true,
       data: {
         stores: enrichedStores,
-        total: stores.length
+        total: enrichedStores.length
       }
     });
   } catch (error) {
