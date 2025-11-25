@@ -42,8 +42,9 @@ const IntegrationConfig = require('./IntegrationConfig');
 const ImportStatistic = require('./ImportStatistic');
 const Plugin = require('./Plugin');
 const PluginConfiguration = require('./PluginConfiguration');
-const SupabaseOAuthToken = require('./SupabaseOAuthToken');
-const ShopifyOAuthToken = require('./ShopifyOAuthToken');
+// Note: SupabaseOAuthToken and ShopifyOAuthToken are OBSOLETE
+// Use supabase-integration.js and shopify-integration.js services instead
+// These services read/write to the integration_configs table
 const MediaAsset = require('./MediaAsset');
 // Master database models (business management)
 const Subscription = require('./Subscription');
@@ -66,7 +67,7 @@ const EmailTemplate = require('./EmailTemplate');
 const EmailTemplateTranslation = require('./EmailTemplateTranslation');
 const PdfTemplate = require('./PdfTemplate');
 const PdfTemplateTranslation = require('./PdfTemplateTranslation');
-const BrevoConfiguration = require('./BrevoConfiguration');
+// Note: BrevoConfiguration is OBSOLETE - use brevo-service.js which reads from integration_configs
 const EmailSendLog = require('./EmailSendLog');
 // Blacklist models
 const BlacklistIP = require('./BlacklistIP');
@@ -285,11 +286,8 @@ const defineAssociations = () => {
   Store.hasMany(PluginConfiguration, { foreignKey: 'store_id', as: 'pluginConfigurations' });
   User.hasMany(PluginConfiguration, { foreignKey: 'last_configured_by', as: 'configuredPlugins' });
   
-  // SupabaseOAuthToken associations
-  SupabaseOAuthToken.belongsTo(Store, { foreignKey: 'store_id' });
-  Store.hasOne(SupabaseOAuthToken, { foreignKey: 'store_id' });
-  
-  // ShopifyOAuthToken associations - REMOVED (now a pure service class)
+  // Note: SupabaseOAuthToken and ShopifyOAuthToken associations removed
+  // These are now handled by integration_configs table via services
   
   // Master database associations
   // Subscription associations
@@ -353,8 +351,7 @@ const defineAssociations = () => {
 
   EmailTemplateTranslation.belongsTo(EmailTemplate, { foreignKey: 'email_template_id', as: 'emailTemplate' });
 
-  BrevoConfiguration.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
-  Store.hasOne(BrevoConfiguration, { foreignKey: 'store_id', as: 'brevoConfiguration' });
+  // Note: BrevoConfiguration associations removed - now handled by integration_configs via brevo-service.js
 
   EmailSendLog.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
   EmailSendLog.belongsTo(EmailTemplate, { foreignKey: 'email_template_id', as: 'emailTemplate' });
@@ -417,8 +414,8 @@ module.exports = {
   ImportStatistic,
   Plugin,
   PluginConfiguration,
-  SupabaseOAuthToken,
-  ShopifyOAuthToken,
+  // Note: SupabaseOAuthToken and ShopifyOAuthToken are OBSOLETE - removed from exports
+  // Use services: supabase-integration.js and shopify-integration.js
   MediaAsset,
   // Master database models
   Subscription,
@@ -441,7 +438,8 @@ module.exports = {
   EmailTemplateTranslation,
   PdfTemplate,
   PdfTemplateTranslation,
-  BrevoConfiguration,
+  // Note: BrevoConfiguration is OBSOLETE - removed from exports
+  // Use brevo-service.js which reads from integration_configs
   EmailSendLog,
   // Blacklist models
   BlacklistIP,

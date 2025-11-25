@@ -40,7 +40,7 @@ const ProductSeo = require('./ProductSeo');
 // Note: Other SEO models will be created similarly
 
 // Import email system models
-const BrevoConfiguration = require('./BrevoConfiguration');
+// Note: BrevoConfiguration is OBSOLETE - use brevo-service.js which reads from integration_configs
 const EmailSendLog = require('./EmailSendLog');
 
 /**
@@ -163,18 +163,10 @@ function setupAssociations() {
   });
 
   // ========================================
-  // BREVO CONFIGURATION ASSOCIATIONS
+  // BREVO CONFIGURATION ASSOCIATIONS (REMOVED)
   // ========================================
-
-  BrevoConfiguration.belongsTo(Store, {
-    foreignKey: 'store_id',
-    as: 'store'
-  });
-
-  Store.hasOne(BrevoConfiguration, {
-    foreignKey: 'store_id',
-    as: 'brevoConfiguration'
-  });
+  // Note: BrevoConfiguration model is OBSOLETE
+  // Brevo configuration is now handled by integration_configs table via brevo-service.js
 
   // ========================================
   // EMAIL SEND LOG ASSOCIATIONS
@@ -219,7 +211,7 @@ module.exports = {
   AttributeValueTranslation,
   EmailTemplate,
   EmailTemplateTranslation,
-  BrevoConfiguration,
+  // Note: BrevoConfiguration is OBSOLETE - removed from exports
   EmailSendLog,
   Store
 };

@@ -1,5 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
-const SupabaseOAuthToken = require('../models/SupabaseOAuthToken');
+const supabaseIntegration = require('./supabase-integration');
 
 class SupabaseSetupService {
   constructor() {
@@ -143,15 +143,12 @@ class SupabaseSetupService {
         };
       }
 
-      // Store credentials
-      const tokenData = {
+      // Store credentials using supabase-integration service (stores in integration_configs table)
+      await supabaseIntegration.storeManualCredentials(storeId, {
         project_url: projectUrl,
         anon_key: anonKey,
-        service_role_key: serviceRoleKey || null,
-        expires_at: null // Supabase keys don't expire
-      };
-
-      await SupabaseOAuthToken.createOrUpdate(storeId, tokenData);
+        service_role_key: serviceRoleKey || null
+      });
 
       return {
         success: true,
@@ -173,8 +170,9 @@ class SupabaseSetupService {
    */
   async getStoredCredentials(storeId) {
     try {
-      const token = await SupabaseOAuthToken.findByStore(storeId);
-      return token ? token.toJSON() : null;
+      // Use supabase-integration service which reads from integration_configs table
+      const token = await supabaseIntegration.getSupabaseToken(storeId);
+      return token;
     } catch (error) {
       console.error('Failed to get stored credentials:', error);
       return null;

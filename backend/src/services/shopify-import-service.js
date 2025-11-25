@@ -1,5 +1,5 @@
 const ShopifyClient = require('./shopify-client');
-const ShopifyOAuthToken = require('../models/ShopifyOAuthToken');
+const shopifyIntegration = require('./shopify-integration');
 const ImportStatistic = require('../models/ImportStatistic');
 const StorageManager = require('./storage/StorageManager');
 const ConnectionManager = require('./database/ConnectionManager');
@@ -27,15 +27,16 @@ class ShopifyImportService {
    */
   async initialize() {
     try {
-      const tokenRecord = await ShopifyOAuthToken.findByStore(this.storeId);
-      
+      // Use shopify-integration service which reads from integration_configs table
+      const tokenRecord = await shopifyIntegration.getTokenInfo(this.storeId);
+
       if (!tokenRecord) {
         throw new Error('No Shopify connection found for this store. Please connect your Shopify account first.');
       }
 
       this.client = new ShopifyClient(tokenRecord.shop_domain, tokenRecord.access_token);
       this.shopDomain = tokenRecord.shop_domain;
-      
+
       return { success: true };
     } catch (error) {
       console.error('Failed to initialize Shopify import service:', error);

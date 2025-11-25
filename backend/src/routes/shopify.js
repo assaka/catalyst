@@ -647,9 +647,9 @@ router.get('/import/stats', storeAuth, async (req, res) => {
  */
 router.get('/shop-info', storeAuth, async (req, res) => {
   try {
-    const ShopifyOAuthToken = require('../models/ShopifyOAuthToken');
-    const tokenRecord = await ShopifyOAuthToken.findByStore(req.storeId);
-    
+    // Use shopify-integration service which reads from integration_configs table
+    const tokenRecord = await shopifyIntegration.getTokenInfo(req.storeId);
+
     if (!tokenRecord) {
       return res.status(404).json({
         success: false,

@@ -1942,6 +1942,40 @@ class SupabaseIntegration {
       return 0;
     }
   }
+
+  /**
+   * Store manual Supabase credentials (used by supabase-setup service)
+   * This is for direct credential entry without OAuth
+   */
+  async storeManualCredentials(storeId, credentials) {
+    try {
+      const configData = {
+        projectUrl: credentials.project_url,
+        serviceRoleKey: credentials.service_role_key,
+        connected: true,
+        connectionType: 'manual'
+      };
+
+      await IntegrationConfig.createOrUpdateWithKey(
+        storeId,
+        this.integrationType,
+        configData,
+        'default',
+        { displayName: 'Supabase (Manual)' }
+      );
+
+      // Update connection status
+      const savedConfig = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
+      if (savedConfig) {
+        await IntegrationConfig.updateConnectionStatus(savedConfig.id, storeId, 'success');
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('[storeManualCredentials] Error:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new SupabaseIntegration();
