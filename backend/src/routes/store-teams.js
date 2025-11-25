@@ -347,19 +347,51 @@ router.post('/:store_id/invitations/:invitation_id/resend', authorize(['admin', 
       });
     }
 
-    // Find the invitation
+    // Find the invitation (without status filter to provide better error messages)
     const { data: invitation, error: findError } = await masterDbClient
       .from('store_invitations')
       .select('*')
       .eq('id', invitation_id)
       .eq('store_id', store_id)
-      .eq('status', 'pending')
       .single();
 
     if (findError || !invitation) {
       return res.status(404).json({
         success: false,
-        message: 'Invitation not found or already accepted'
+        message: 'Invitation not found'
+      });
+    }
+
+    // Check invitation status and provide specific error messages
+    if (invitation.status === 'accepted') {
+      return res.status(400).json({
+        success: false,
+        message: 'This invitation has already been accepted. The user is now a team member.',
+        code: 'INVITATION_ACCEPTED'
+      });
+    }
+
+    if (invitation.status === 'declined') {
+      return res.status(400).json({
+        success: false,
+        message: 'This invitation was declined by the recipient.',
+        code: 'INVITATION_DECLINED'
+      });
+    }
+
+    if (invitation.status === 'expired') {
+      return res.status(400).json({
+        success: false,
+        message: 'This invitation has expired. Please create a new invitation.',
+        code: 'INVITATION_EXPIRED'
+      });
+    }
+
+    if (invitation.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot resend invitation with status: ${invitation.status}`,
+        code: 'INVALID_STATUS'
       });
     }
 
