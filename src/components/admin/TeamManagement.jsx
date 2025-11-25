@@ -562,7 +562,7 @@ export default function TeamManagement({ storeId, storeName }) {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={ROLE_COLORS[member.role]}>
+                      <Badge variant="outline" className={ROLE_COLORS[member.role]}>
                         <RoleIcon className="w-3 h-3 mr-1" />
                         {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
                       </Badge>
