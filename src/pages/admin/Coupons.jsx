@@ -12,6 +12,7 @@ import {
   Edit,
   Trash2,
   Copy,
+  Check,
   Calendar,
   Package
 } from "lucide-react";
@@ -44,6 +45,7 @@ export default function CouponsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [couponToDelete, setCouponToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(null);
 
   useEffect(() => {
     if (selectedStore) {
@@ -158,7 +160,9 @@ export default function CouponsPage() {
 
   const handleCopyCode = (code) => {
     navigator.clipboard.writeText(code);
+    setCopiedCode(code);
     setFlashMessage({ type: 'success', message: 'Coupon code copied to clipboard!' });
+    setTimeout(() => setCopiedCode(null), 2000);
   };
 
   const getDiscountTypeLabel = (type) => {
@@ -270,7 +274,11 @@ export default function CouponsPage() {
                           onClick={() => handleCopyCode(coupon.code)}
                           className="h-6 w-6 p-0"
                         >
-                          <Copy className="w-3 h-3" />
+                          {copiedCode === coupon.code ? (
+                            <Check className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
                         </Button>
                       </div>
                     </div>

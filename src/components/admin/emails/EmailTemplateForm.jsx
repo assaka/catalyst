@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Send, Copy, Eye, RotateCcw } from 'lucide-react';
+import { Mail, Send, Copy, Check, Eye, RotateCcw } from 'lucide-react';
 import TranslationFields from '@/components/admin/TranslationFields';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showTranslations, setShowTranslations] = useState(false);
+  const [copiedVariable, setCopiedVariable] = useState(null);
 
   const [formData, setFormData] = useState({
     identifier: '',
@@ -153,7 +154,9 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
 
   const copyVariable = (variable) => {
     navigator.clipboard.writeText(variable);
+    setCopiedVariable(variable);
     toast.success('Variable copied to clipboard');
+    setTimeout(() => setCopiedVariable(null), 2000);
   };
 
   const handleRestoreDefault = async () => {
@@ -354,7 +357,11 @@ export default function EmailTemplateForm({ template, onSubmit, onCancel }) {
                   <code className="text-xs text-blue-600 font-mono">{variable.key}</code>
                   <p className="text-xs text-gray-500">{variable.desc}</p>
                 </div>
-                <Copy className="w-4 h-4 text-gray-400" />
+                {copiedVariable === variable.key ? (
+                  <Check className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Copy className="w-4 h-4 text-gray-400" />
+                )}
               </div>
             ))}
           </div>

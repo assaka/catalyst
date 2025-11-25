@@ -659,8 +659,12 @@ const FileLibrary = () => {
                   }}
                   className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
-                  <Copy className="w-4 h-4" />
-                  <span>Copy URL</span>
+                  {copiedUrl === previewFile.id ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                  <span>{copiedUrl === previewFile.id ? 'Copied!' : 'Copy URL'}</span>
                 </button>
                 <code className="flex-1 px-3 py-1 bg-gray-100 rounded text-sm truncate">
                   {previewFile.url}

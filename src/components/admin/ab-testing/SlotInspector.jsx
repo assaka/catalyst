@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Copy, Search, Eye, Code } from 'lucide-react';
+import { Copy, Check, Search, Eye, Code } from 'lucide-react';
 import { toast } from 'sonner';
 
 /**
@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 export default function SlotInspector({ storeId, onSelectSlot }) {
   const [selectedPageType, setSelectedPageType] = useState('product');
   const [searchTerm, setSearchTerm] = useState('');
+  const [copiedText, setCopiedText] = useState(null);
 
   const pageTypes = [
     { value: 'home', label: 'Homepage' },
@@ -74,7 +75,9 @@ export default function SlotInspector({ storeId, onSelectSlot }) {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
+    setCopiedText(text);
     toast.success('Copied to clipboard!');
+    setTimeout(() => setCopiedText(null), 2000);
   };
 
   const copySlotOverrideTemplate = (slot) => {
@@ -178,7 +181,11 @@ export default function SlotInspector({ storeId, onSelectSlot }) {
                             variant="ghost"
                             onClick={() => copyToClipboard(slot.id)}
                           >
-                            <Copy className="w-3 h-3" />
+                            {copiedText === slot.id ? (
+                              <Check className="w-3 h-3 text-green-600" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>
