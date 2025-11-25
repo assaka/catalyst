@@ -77,6 +77,7 @@ const EditorSidebar = ({
   slotId,        // Current slot ID
   slotConfig,    // Current slot configuration from database
   allSlots = {}, // All slots configuration to check for product_items
+  storeId,       // Store ID for API calls
   isVisible = true
 }) => {
   // Set up database save callback for SimpleStyleManager
@@ -752,7 +753,7 @@ const EditorSidebar = ({
       // Fetch translation cache if not already loaded
       let cache = translationCache;
       if (!cache) {
-        const response = await api.get(`/translations/ui-labels?lang=${currentLanguage}`);
+        const response = await api.get(`/translations/ui-labels?lang=${currentLanguage}&store_id=${storeId}`);
         if (response && response.success && response.data && response.data.labels) {
           cache = response.data.labels;
           setTranslationCache(cache);

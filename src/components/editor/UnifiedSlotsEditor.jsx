@@ -502,6 +502,7 @@ const UnifiedSlotsEditor = ({
             return config;
           })()}
           allSlots={layoutConfig?.slots || {}}
+          storeId={getSelectedStoreId()}
           onClearSelection={handleClearSelection}
           onClassChange={handleClassChange}
           onInlineClassChange={handleClassChange}
