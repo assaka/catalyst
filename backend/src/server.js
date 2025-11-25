@@ -1174,7 +1174,7 @@ app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
 
     if (existingUser) {
       // Login flow - verify password
-      const validPassword = await bcrypt.compare(password, existingUser.password_hash);
+      const validPassword = await bcrypt.compare(password, existingUser.password);
       if (!validPassword) {
         return res.status(401).json({ success: false, message: 'Invalid password' });
       }
@@ -1186,15 +1186,14 @@ app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
       }
 
       // Hash password
-      const saltRounds = 10;
-      const password_hash = await bcrypt.hash(password, saltRounds);
+      const hashedPassword = await bcrypt.hash(password, 10);
 
       // Create user
       const { data: newUser, error: createError } = await masterDbClient
         .from('users')
         .insert({
           email: invitation.invited_email,
-          password_hash,
+          password: hashedPassword,
           first_name: firstName,
           last_name: lastName || '',
           role: 'store_owner',
