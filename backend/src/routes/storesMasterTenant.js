@@ -926,6 +926,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
     }
 
     // 2. Get stores where user is a team member (from store_teams in master DB)
+    console.log('[Dropdown] Checking store_teams for user:', userId);
     const { data: teamMemberships, error: teamError } = await masterDbClient
       .from('store_teams')
       .select('store_id, role, status')
@@ -933,8 +934,9 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
       .eq('status', 'active');
 
     if (teamError) {
-      console.warn('Error fetching team memberships:', teamError.message);
+      console.warn('[Dropdown] Error fetching team memberships:', teamError.message);
     }
+    console.log('[Dropdown] Team memberships found:', teamMemberships?.length || 0, teamMemberships);
 
     // Get the store IDs where user is a team member (excluding owned stores)
     const ownedStoreIds = new Set((ownedStores || []).map(s => s.id));
@@ -942,17 +944,22 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
       .filter(m => !ownedStoreIds.has(m.store_id))
       .map(m => m.store_id);
 
+    console.log('[Dropdown] Team store IDs (excluding owned):', teamStoreIds);
+
     // 3. Fetch team member stores details
     let teamStores = [];
     if (teamStoreIds.length > 0) {
       const { data: teamStoreData, error: teamStoreError } = await masterDbClient
         .from('stores')
         .select('id, user_id, slug, status, is_active, created_at, updated_at')
-        .in('id', teamStoreIds)
-        .eq('is_active', true);
+        .in('id', teamStoreIds);
+
+      console.log('[Dropdown] Team stores query result:', teamStoreData, 'error:', teamStoreError);
 
       if (!teamStoreError && teamStoreData) {
-        teamStores = teamStoreData;
+        // Filter to only active stores
+        teamStores = teamStoreData.filter(s => s.is_active && s.status === 'active');
+        console.log('[Dropdown] Active team stores:', teamStores.length);
       }
     }
 
