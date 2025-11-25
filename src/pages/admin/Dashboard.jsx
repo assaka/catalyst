@@ -80,6 +80,7 @@ export default function Dashboard() {
     salesGrowth: 0,
     newCustomers: 0,
     pageViews: 0,
+    ordersThisMonth: 0,
     loadingPerformance: true
   });
   const [loading, setLoading] = useState(true);
@@ -265,6 +266,15 @@ export default function Dashboard() {
         }).length;
       }
 
+      // Calculate Orders this month
+      let ordersThisMonth = 0;
+      if (Array.isArray(allOrders) && allOrders.length > 0) {
+        ordersThisMonth = allOrders.filter(order => {
+          const orderDate = new Date(order.created_at || order.createdAt);
+          return orderDate >= currentMonthStart;
+        }).length;
+      }
+
       // Fetch Page Views from analytics-dashboard API
       let pageViews = 0;
       try {
@@ -285,6 +295,7 @@ export default function Dashboard() {
         salesGrowth,
         newCustomers,
         pageViews,
+        ordersThisMonth,
         loadingPerformance: false
       });
     } catch (error) {
@@ -557,7 +568,7 @@ export default function Dashboard() {
               <CardTitle className="text-xl font-bold text-gray-900">Store Performance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="text-center">
                   <div className={`w-16 h-16 ${performanceMetrics.salesGrowth >= 0 ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
                     <TrendingUp className={`w-8 h-8 ${performanceMetrics.salesGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`} />
@@ -571,6 +582,18 @@ export default function Dashboard() {
                     </p>
                   )}
                   <p className="text-sm text-gray-500">vs last month</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ShoppingBag className="w-8 h-8 text-orange-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Orders</h3>
+                  {performanceMetrics.loadingPerformance ? (
+                    <div className="animate-pulse h-8 bg-gray-200 rounded w-16 mx-auto"></div>
+                  ) : (
+                    <p className="text-2xl font-bold text-orange-600">{performanceMetrics.ordersThisMonth.toLocaleString()}</p>
+                  )}
+                  <p className="text-sm text-gray-500">this month</p>
                 </div>
                 <div className="text-center">
                   <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
