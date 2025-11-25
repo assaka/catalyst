@@ -108,14 +108,18 @@ export default function OrderSuccess() {
   // Load order data
   useEffect(() => {
     const loadOrder = async () => {
-      if (!sessionId) {
-        setLoading(false);
+      if (!sessionId || !store?.id) {
+        if (!sessionId) setLoading(false);
         return;
       }
 
       try {
         const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
-        const response = await fetch(`${apiUrl}/api/orders/by-payment-reference/${sessionId}`);
+        const response = await fetch(`${apiUrl}/api/orders/by-payment-reference/${sessionId}`, {
+          headers: {
+            'x-store-id': store?.id || ''
+          }
+        });
         const result = await response.json();
 
         if (response.ok && result.success && result.data) {
@@ -205,7 +209,11 @@ export default function OrderSuccess() {
             // This handles the case where order items might still be being created
             setTimeout(async () => {
               try {
-                const retryResponse = await fetch(`${apiUrl}/api/orders/by-payment-reference/${sessionId}`);
+                const retryResponse = await fetch(`${apiUrl}/api/orders/by-payment-reference/${sessionId}`, {
+                  headers: {
+                    'x-store-id': store?.id || ''
+                  }
+                });
                 const retryResult = await retryResponse.json();
 
                 if (retryResponse.ok && retryResult.success && retryResult.data) {
@@ -240,7 +248,7 @@ export default function OrderSuccess() {
     };
 
     loadOrder();
-  }, [sessionId]);
+  }, [sessionId, store?.id]);
 
   // Handle account creation
   const handleCreateAccount = async () => {
