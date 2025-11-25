@@ -247,7 +247,7 @@ INSERT INTO "public"."cms_page_translations" ("cms_page_id", "language_code", "t
       </div>
     </section>
   </div>
-</div>', null, '2025-10-24 16:42:18.032+00', '2025-10-26 01:20:11.289+00'), ('bbb26804-4ff2-4e8b-ba2b-e8c203704176', 'en', '404 - Page Not Foundd, wh', '
+</div>', null, '2025-10-24 16:42:18.032+00', '2025-10-26 01:20:11.289+00'), ('bbb26804-4ff2-4e8b-ba2b-e8c203704176', 'en', '404 - Page Not Found', '
 <div style="text-align: center; padding: 2rem; max-width: 600px; margin: 0 auto;">
   <div style="font-size: 6rem; font-weight: bold; color: #9CA3AF; margin-bottom: 1rem;">404</div>
 

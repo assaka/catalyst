@@ -161,9 +161,6 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card className="material-elevation-1 border-0">
-        <CardHeader>
-          <CardTitle>{tab ? 'Edit Product Tab' : 'Add Product Tab'}</CardTitle>
-        </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="name">Tab Name *</Label>

@@ -405,7 +405,6 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>{rule ? "Edit Custom Option Rule" : "Create Custom Option Rule"}</CardTitle>
           <p className="text-sm text-gray-600">
             Configure which custom options are available for products based on categories, attribute sets, or other conditions.
           </p>

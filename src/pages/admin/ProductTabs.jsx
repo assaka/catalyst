@@ -472,7 +472,7 @@ export default function ProductTabs() {
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {editingTab ? 'Edit Product Tab' : 'Add New Product Tab'}
+                {editingTab ? 'Edit Product Tab' : 'Add Product Tab'}
               </DialogTitle>
             </DialogHeader>
             <ProductTabForm
