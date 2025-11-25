@@ -826,7 +826,7 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
 
     // Find order by payment reference
     const { data: order, error: orderError } = await tenantDb
-      .from('orders')
+      .from('sales_orders')
       .select('*')
       .eq('payment_reference', payment_reference)
       .maybeSingle();
@@ -848,7 +848,7 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
 
     // Get order items with product info
     const { data: orderItems, error: itemsError } = await tenantDb
-      .from('order_items')
+      .from('sales_order_items')
       .select(`
         *,
         products (
