@@ -385,7 +385,7 @@ router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) 
       }
     }
 
-    // Update domain SSL status
+    // Update domain SSL status in tenant DB
     const { data: updatedDomain, error: updateError } = await tenantDb
       .from('custom_domains')
       .update({
@@ -399,6 +399,28 @@ router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) 
 
     if (updateError) {
       throw updateError;
+    }
+
+    // Also update SSL status in master DB custom_domains_lookup
+    const { masterDbClient } = require('../database/masterConnection');
+    if (masterDbClient) {
+      try {
+        const { error: masterUpdateError } = await masterDbClient
+          .from('custom_domains_lookup')
+          .update({
+            ssl_status: sslStatus,
+            updated_at: new Date().toISOString()
+          })
+          .eq('domain', domain.domain);
+
+        if (masterUpdateError) {
+          console.error('[SSL Check] Failed to update master DB ssl_status:', masterUpdateError.message);
+        } else {
+          console.log(`[SSL Check] Updated master DB ssl_status to '${sslStatus}' for domain: ${domain.domain}`);
+        }
+      } catch (masterErr) {
+        console.error('[SSL Check] Error updating master DB:', masterErr.message);
+      }
     }
 
     const message = sslStatus === 'active'

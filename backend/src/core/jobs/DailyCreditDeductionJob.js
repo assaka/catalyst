@@ -112,11 +112,13 @@ class DailyCreditDeductionJob extends BaseJobHandler {
       }
 
       // Process custom domains - query from master DB lookup table
+      // Only charge for domains that are active, verified, AND have active SSL
       const { data: activeCustomDomains, error: domainsError } = await masterDbClient
         .from('custom_domains_lookup')
-        .select('id, store_id, domain, is_active, is_verified')
+        .select('id, store_id, domain, is_active, is_verified, ssl_status')
         .eq('is_active', true)
         .eq('is_verified', true)
+        .eq('ssl_status', 'active')
         .order('created_at', { ascending: false });
 
       if (domainsError) {
