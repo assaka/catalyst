@@ -1367,7 +1367,7 @@ router.post('/webhook', async (req, res) => {
         const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
         const { data: existingOrder, error: orderError } = await tenantDb
-          .from('orders')
+          .from('sales_orders')
           .select('*')
           .eq('payment_reference', session.id)
           .maybeSingle();
@@ -1390,7 +1390,7 @@ router.post('/webhook', async (req, res) => {
             console.log('🔄 Online payment confirmed - updating order status to paid/processing...');
             // Update the existing preliminary order to mark as paid and processing
             await tenantDb
-              .from('orders')
+              .from('sales_orders')
               .update({
                 status: 'processing',
                 payment_status: 'paid',
@@ -1405,7 +1405,7 @@ router.post('/webhook', async (req, res) => {
 
           // Verify order items exist
           const { count: itemCount, error: countError } = await tenantDb
-            .from('order_items')
+            .from('sales_order_items')
             .select('*', { count: 'exact', head: true })
             .eq('order_id', existingOrder.id);
           console.log('✅ Verified:', itemCount, 'OrderItems already exist for order', existingOrder.id);
@@ -1425,7 +1425,7 @@ router.post('/webhook', async (req, res) => {
 
           // Verify order items were created
           const { count: itemCount } = await tenantDb
-            .from('order_items')
+            .from('sales_order_items')
             .select('*', { count: 'exact', head: true })
             .eq('order_id', order.id);
           console.log('✅ Verified:', itemCount, 'OrderItems created for order', order.id);
@@ -1449,14 +1449,14 @@ router.post('/webhook', async (req, res) => {
 
             // Get order with full details for email - fetch related data separately
             const { data: orderWithDetails } = await tenantDb
-              .from('orders')
+              .from('sales_orders')
               .select('*')
               .eq('id', finalOrder.id)
               .single();
 
             // Fetch order items with products
             const { data: orderItems } = await tenantDb
-              .from('order_items')
+              .from('sales_order_items')
               .select('*')
               .eq('order_id', finalOrder.id);
 
@@ -1967,7 +1967,7 @@ router.post('/webhook-connect', async (req, res) => {
         const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
         const { data: existingOrder, error: orderError } = await tenantDb
-          .from('orders')
+          .from('sales_orders')
           .select('*')
           .eq('payment_reference', session.id)
           .maybeSingle();
@@ -1992,7 +1992,7 @@ router.post('/webhook-connect', async (req, res) => {
           if (isOnlinePayment) {
             console.log('🔄 Online payment confirmed - updating order status to paid/processing...');
             await tenantDb
-              .from('orders')
+              .from('sales_orders')
               .update({
                 status: 'processing',
                 payment_status: 'paid',
@@ -2404,7 +2404,7 @@ async function createPreliminaryOrder(session, orderData) {
 
     // Create the preliminary order (using Supabase)
     const { data: order, error: orderError } = await tenantDb
-      .from('orders')
+      .from('sales_orders')
       .insert({
         order_number: order_number,
         status: orderStatus,
@@ -2478,7 +2478,7 @@ async function createPreliminaryOrder(session, orderData) {
 
     // Bulk insert order items
     const { error: itemsError } = await tenantDb
-      .from('order_items')
+      .from('sales_order_items')
       .insert(orderItemsData);
 
     if (itemsError) {
@@ -2498,14 +2498,14 @@ async function createPreliminaryOrder(session, orderData) {
 
         // Get order with full details for email - fetch related data separately
         const { data: orderWithDetails } = await tenantDb
-          .from('orders')
+          .from('sales_orders')
           .select('*')
           .eq('id', order.id)
           .single();
 
         // Fetch order items
         const { data: orderItems } = await tenantDb
-          .from('order_items')
+          .from('sales_order_items')
           .select('*')
           .eq('order_id', order.id);
 
@@ -2586,8 +2586,8 @@ async function createPreliminaryOrder(session, orderData) {
     // Cleanup on error - delete order if it was created
     if (orderId) {
       console.log('🧹 Cleaning up failed order:', orderId);
-      await tenantDb.from('order_items').delete().eq('order_id', orderId);
-      await tenantDb.from('orders').delete().eq('id', orderId);
+      await tenantDb.from('sales_order_items').delete().eq('order_id', orderId);
+      await tenantDb.from('sales_orders').delete().eq('id', orderId);
     }
     console.error('❌ Error creating preliminary order:', error);
     throw error;
@@ -2770,7 +2770,7 @@ async function createOrderFromCheckoutSession(session) {
 
     // Create the order (using Supabase)
     const { data: order, error: orderError } = await tenantDb
-      .from('orders')
+      .from('sales_orders')
       .insert({
         order_number: order_number,
         store_id: store_id,
@@ -2937,7 +2937,7 @@ async function createOrderFromCheckoutSession(session) {
       console.log('Creating order item:', JSON.stringify(orderItemData, null, 2));
       
       const { data: createdItem, error: itemError } = await tenantDb
-        .from('order_items')
+        .from('sales_order_items')
         .insert({
           ...orderItemData,
           created_at: new Date().toISOString(),
@@ -2961,8 +2961,8 @@ async function createOrderFromCheckoutSession(session) {
     // Cleanup on error - delete order if it was created
     if (orderId) {
       console.log('🧹 Cleaning up failed order:', orderId);
-      await tenantDb.from('order_items').delete().eq('order_id', orderId);
-      await tenantDb.from('orders').delete().eq('id', orderId);
+      await tenantDb.from('sales_order_items').delete().eq('order_id', orderId);
+      await tenantDb.from('sales_orders').delete().eq('id', orderId);
     }
     console.error('Error creating order from checkout session:', error);
     throw error;
