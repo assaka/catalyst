@@ -1255,6 +1255,90 @@ router.post('/update-config', authMiddleware, storeResolver(), async (req, res) 
   }
 });
 
+// Debug endpoint to check all credential sources
+router.get('/debug-credentials', authMiddleware, storeResolver(), async (req, res) => {
+  try {
+    const storeId = req.storeId;
+    const results = {
+      storeId,
+      sources: {}
+    };
+
+    // Check 1: supabase-storage integration
+    try {
+      const supabaseMediaStorageOAuth = require('../services/supabase-media-storage-oauth');
+      const storageCredentials = await supabaseMediaStorageOAuth.getStorageCredentials(storeId);
+      results.sources['supabase-storage'] = {
+        found: !!storageCredentials,
+        hasProjectUrl: !!storageCredentials?.project_url,
+        hasServiceRoleKey: !!storageCredentials?.service_role_key,
+        projectUrl: storageCredentials?.project_url || null
+      };
+    } catch (e) {
+      results.sources['supabase-storage'] = { error: e.message };
+    }
+
+    // Check 2: supabase-oauth integration
+    try {
+      const IntegrationConfig = require('../models/IntegrationConfig');
+      const oauthConfig = await IntegrationConfig.findByStoreAndType(storeId, 'supabase-oauth');
+      results.sources['supabase-oauth'] = {
+        found: !!oauthConfig,
+        hasProjectUrl: !!oauthConfig?.config_data?.projectUrl,
+        hasServiceRoleKey: !!oauthConfig?.config_data?.serviceRoleKey,
+        projectUrl: oauthConfig?.config_data?.projectUrl || null,
+        connectionStatus: oauthConfig?.connection_status || null
+      };
+    } catch (e) {
+      results.sources['supabase-oauth'] = { error: e.message };
+    }
+
+    // Check 3: store_databases
+    try {
+      const StoreDatabase = require('../models/master/StoreDatabase');
+      const storeDb = await StoreDatabase.findByStoreId(storeId);
+      if (storeDb) {
+        const credentials = storeDb.getCredentials();
+        results.sources['store_databases'] = {
+          found: true,
+          databaseType: storeDb.database_type,
+          hasProjectUrl: !!credentials?.projectUrl,
+          hasServiceRoleKey: !!credentials?.serviceRoleKey,
+          projectUrl: credentials?.projectUrl || null,
+          connectionStatus: storeDb.connection_status
+        };
+      } else {
+        results.sources['store_databases'] = { found: false };
+      }
+    } catch (e) {
+      results.sources['store_databases'] = { error: e.message };
+    }
+
+    // Check 4: supabaseIntegration token
+    try {
+      const token = await supabaseIntegration.getSupabaseToken(storeId);
+      results.sources['supabase-integration-token'] = {
+        found: !!token,
+        hasProjectUrl: !!token?.project_url,
+        hasServiceRoleKey: !!token?.service_role_key,
+        projectUrl: token?.project_url || null
+      };
+    } catch (e) {
+      results.sources['supabase-integration-token'] = { error: e.message };
+    }
+
+    res.json({
+      success: true,
+      ...results
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 // Ensure buckets exist - can be called anytime to create missing buckets
 router.post('/storage/ensure-buckets', authMiddleware, storeResolver(), async (req, res) => {
   try {
