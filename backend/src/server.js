@@ -846,20 +846,10 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
       });
     }
 
-    // Get order items with product info
+    // Get order items (product info is stored directly in the item)
     const { data: orderItems, error: itemsError } = await tenantDb
       .from('sales_order_items')
-      .select(`
-        *,
-        products (
-          id,
-          sku,
-          product_translations (
-            name,
-            language_code
-          )
-        )
-      `)
+      .select('*')
       .eq('order_id', order.id);
 
     if (itemsError) {
