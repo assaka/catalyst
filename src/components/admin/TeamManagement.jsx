@@ -37,7 +37,7 @@ import {
   Send,
   X
 } from 'lucide-react';
-import { toast } from 'sonner';
+import FlashMessage from '@/components/storefront/FlashMessage';
 
 const ROLE_COLORS = {
   owner: 'bg-purple-100 text-purple-800 border-purple-200',
@@ -111,6 +111,9 @@ export default function TeamManagement({ storeId, storeName }) {
     data: null
   });
 
+  // Flash message state
+  const [flashMessage, setFlashMessage] = useState(null);
+
   // Invite form state
   const [inviteForm, setInviteForm] = useState({
     email: '',
@@ -156,7 +159,7 @@ export default function TeamManagement({ storeId, storeName }) {
     } catch (error) {
       console.error('❌ TeamManagement: Error loading team data:', error);
       console.error('❌ TeamManagement: Error details:', error.message);
-      toast.error('Failed to load team data');
+      setFlashMessage({ type: 'error', message: 'Failed to load team data' });
     } finally {
       setLoading(false);
     }
@@ -165,7 +168,7 @@ export default function TeamManagement({ storeId, storeName }) {
   const handleInviteMember = async () => {
     try {
       await StoreTeam.inviteMember(storeId, inviteForm);
-      toast.success(`Invitation sent to ${inviteForm.email}`);
+      setFlashMessage({ type: 'success', message: `Invitation sent to ${inviteForm.email}` });
       setInviteDialogOpen(false);
       setInviteForm({
         email: '',
@@ -176,20 +179,20 @@ export default function TeamManagement({ storeId, storeName }) {
       loadTeamData();
     } catch (error) {
       console.error('Error inviting member:', error);
-      toast.error('Failed to send invitation');
+      setFlashMessage({ type: 'error', message: 'Failed to send invitation' });
     }
   };
 
   const handleUpdateMember = async () => {
     try {
       await StoreTeam.updateMember(storeId, selectedMember.id, editForm);
-      toast.success('Team member updated successfully');
+      setFlashMessage({ type: 'success', message: 'Team member updated successfully' });
       setEditDialogOpen(false);
       setSelectedMember(null);
       loadTeamData();
     } catch (error) {
       console.error('Error updating member:', error);
-      toast.error('Failed to update team member');
+      setFlashMessage({ type: 'error', message: 'Failed to update team member' });
     }
   };
 
@@ -229,23 +232,23 @@ export default function TeamManagement({ storeId, storeName }) {
     try {
       if (type === 'removeMember') {
         await StoreTeam.removeMember(storeId, data.memberId);
-        toast.success('Team member removed successfully');
+        setFlashMessage({ type: 'success', message: 'Team member removed successfully' });
       } else if (type === 'resend') {
         await StoreTeam.resendInvitation(storeId, data.invitationId);
-        toast.success(`Invitation resent to ${data.email}`);
+        setFlashMessage({ type: 'success', message: `Invitation resent to ${data.email}` });
       } else if (type === 'deleteInvitation') {
         await StoreTeam.deleteInvitation(storeId, data.invitationId);
-        toast.success('Invitation cancelled');
+        setFlashMessage({ type: 'success', message: 'Invitation cancelled' });
       }
       loadTeamData();
     } catch (error) {
       console.error(`Error performing ${type}:`, error);
       if (type === 'removeMember') {
-        toast.error('Failed to remove team member');
+        setFlashMessage({ type: 'error', message: 'Failed to remove team member' });
       } else if (type === 'resend') {
-        toast.error('Failed to resend invitation');
+        setFlashMessage({ type: 'error', message: 'Failed to resend invitation' });
       } else if (type === 'deleteInvitation') {
-        toast.error('Failed to cancel invitation');
+        setFlashMessage({ type: 'error', message: 'Failed to cancel invitation' });
       }
     } finally {
       closeConfirmDialog();
@@ -335,7 +338,9 @@ export default function TeamManagement({ storeId, storeName }) {
   }
 
   return (
-    <Card className="material-elevation-1 border-0">
+    <>
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+      <Card className="material-elevation-1 border-0">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -701,5 +706,6 @@ export default function TeamManagement({ storeId, storeName }) {
         </AlertDialog>
       </CardContent>
     </Card>
+    </>
   );
 }
