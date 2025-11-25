@@ -140,11 +140,31 @@ class CartService {
       if (result.success && result.data) {
         // Handle both direct data.items and data.dataValues.items structures
         const cartData = result.data.dataValues || result.data;
-        const items = Array.isArray(cartData.items) ? cartData.items : [];
+        let items = Array.isArray(cartData.items) ? cartData.items : [];
+
+        // Migrate existing items that don't have IDs
+        let needsUpdate = false;
+        items = items.map(item => {
+          if (!item.id) {
+            needsUpdate = true;
+            return {
+              ...item,
+              id: `item_${item.product_id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+            };
+          }
+          return item;
+        });
+
+        // If we added IDs, update the cart in the background
+        if (needsUpdate && storeId) {
+          this.updateCart(items, storeId).catch(err =>
+            console.warn('Failed to persist item IDs:', err)
+          );
+        }
 
         const cartResult = {
           success: true,
-          cart: cartData,
+          cart: { ...cartData, items },
           items: items
         };
 
@@ -281,10 +301,12 @@ class CartService {
           quantity: updatedItems[existingItemIndex].quantity + parseInt(quantity)
         };
       } else {
-        // Add new item to cart
+        // Add new item to cart with unique ID
+        const newItemId = `item_${productId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         updatedItems = [
           ...currentItems,
           {
+            id: newItemId,
             product_id: productId,
             quantity: parseInt(quantity),
             price: parseFloat(price),
