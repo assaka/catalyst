@@ -270,6 +270,68 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
     }
 
     console.log('✅ StoreDatabase record created successfully:', data.id);
+
+    // Also create integration_config for supabase-oauth so storage service can find it
+    if (databaseType === 'supabase' && credentials.projectUrl && credentials.serviceRoleKey) {
+      try {
+        console.log('🔧 Also creating integration_config for storage access...');
+        const ConnectionManager = require('../../services/database/ConnectionManager');
+        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+        // Check if integration_config already exists
+        const { data: existingConfig } = await tenantDb
+          .from('integration_configs')
+          .select('id')
+          .eq('store_id', storeId)
+          .eq('integration_type', 'supabase-oauth')
+          .maybeSingle();
+
+        if (!existingConfig) {
+          // Create new integration_config
+          await tenantDb
+            .from('integration_configs')
+            .insert({
+              id: uuidv4(),
+              store_id: storeId,
+              integration_type: 'supabase-oauth',
+              config_key: 'default',
+              display_name: 'Supabase (Store Database)',
+              config_data: {
+                projectUrl: credentials.projectUrl,
+                serviceRoleKey: credentials.serviceRoleKey,
+                connectionType: 'provisioning',
+                configuredAt: new Date().toISOString()
+              },
+              is_active: true,
+              is_primary: true,
+              connection_status: 'success',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          console.log('✅ Integration config created for storage access');
+        } else {
+          // Update existing config with service role key
+          await tenantDb
+            .from('integration_configs')
+            .update({
+              config_data: {
+                projectUrl: credentials.projectUrl,
+                serviceRoleKey: credentials.serviceRoleKey,
+                connectionType: 'provisioning',
+                configuredAt: new Date().toISOString()
+              },
+              connection_status: 'success',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingConfig.id);
+          console.log('✅ Integration config updated with service role key');
+        }
+      } catch (integrationError) {
+        // Don't fail the whole operation if integration_config fails
+        console.warn('⚠️ Could not create integration_config:', integrationError.message);
+      }
+    }
+
     return data;
   } catch (error) {
     console.error('❌ StoreDatabase.createWithCredentials error:', error);
