@@ -393,6 +393,173 @@ router.post('/refresh', async (req, res) => {
 });
 
 /**
+ * POST /api/auth/upgrade-guest
+ * Upgrade guest customer to registered account (for post-order account creation)
+ * Public route - requires store_id in body
+ */
+router.post('/upgrade-guest', async (req, res) => {
+  try {
+    const { email, password, store_id } = req.body;
+
+    // Validate input
+    if (!email || !password || !store_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email, password, and store_id are required'
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password must be at least 6 characters long'
+      });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Find existing guest customer (password is null)
+    const { data: guestCustomer, error: findError } = await tenantDb
+      .from('customers')
+      .select('*')
+      .eq('email', email)
+      .eq('store_id', store_id)
+      .is('password', null)
+      .maybeSingle();
+
+    if (findError) {
+      console.error('Error finding guest customer:', findError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to find customer'
+      });
+    }
+
+    if (!guestCustomer) {
+      return res.status(404).json({
+        success: false,
+        error: 'No guest account found with this email, or account is already registered'
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update the guest customer with password
+    const { data: updatedCustomer, error: updateError } = await tenantDb
+      .from('customers')
+      .update({
+        password: hashedPassword,
+        email_verified: false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', guestCustomer.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Upgrade guest error:', updateError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to upgrade account'
+      });
+    }
+
+    // Link all guest orders to this customer account
+    try {
+      await tenantDb
+        .from('orders')
+        .update({ customer_id: updatedCustomer.id })
+        .eq('customer_email', email)
+        .eq('store_id', store_id)
+        .is('customer_id', null);
+    } catch (orderLinkError) {
+      // Don't fail the account upgrade if order linking fails
+      console.error('Order linking error:', orderLinkError);
+    }
+
+    // Generate token for auto-login
+    const tokens = generateTokenPair({
+      id: updatedCustomer.id,
+      email: updatedCustomer.email,
+      role: 'customer',
+      account_type: 'individual',
+      first_name: updatedCustomer.first_name,
+      last_name: updatedCustomer.last_name
+    }, store_id);
+
+    // Remove password from response
+    const { password: _, ...customerWithoutPassword } = updatedCustomer;
+
+    res.status(200).json({
+      success: true,
+      message: 'Account upgraded successfully',
+      data: {
+        user: customerWithoutPassword,
+        customer: customerWithoutPassword,
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        sessionRole: 'customer',
+        sessionContext: 'storefront'
+      }
+    });
+  } catch (error) {
+    console.error('Upgrade guest error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/auth/check-customer-status/:email/:store_id
+ * Check if a customer has already registered (has password)
+ * Public route
+ */
+router.get('/check-customer-status/:email/:store_id', async (req, res) => {
+  try {
+    const { email, store_id } = req.params;
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    const { data: customer } = await tenantDb
+      .from('customers')
+      .select('id, email, password')
+      .eq('email', email)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
+    if (!customer) {
+      return res.json({
+        success: true,
+        data: {
+          exists: false,
+          hasPassword: false
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        exists: true,
+        hasPassword: customer.password !== null && customer.password !== undefined
+      }
+    });
+  } catch (error) {
+    console.error('Check customer status error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error'
+    });
+  }
+});
+
+/**
  * GET /api/auth/me
  * Get current authenticated user info (fresh from database)
  */
