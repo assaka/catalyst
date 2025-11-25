@@ -1,6 +1,5 @@
 const { masterDbClient } = require('../database/masterConnection');
 const CreditTransaction = require('../models/CreditTransaction');
-const CreditUsage = require('../models/CreditUsage');
 const AkeneoSchedule = require('../models/AkeneoSchedule');
 const ServiceCreditCost = require('../models/ServiceCreditCost');
 
@@ -92,43 +91,11 @@ class CreditService {
       console.error('Error updating user credits:', updateError);
       throw new Error('Failed to deduct credits');
     }
-    console.log(`💳 Update result:`, updatedUser);
-
-    // Record usage for tracking using Supabase
-    console.log(`💳 Creating credit_usage record...`);
-    const usageData = {
-      user_id: userId,
-      store_id: storeId,
-      credits_used: creditAmount,
-      usage_type: 'other',
-      reference_id: referenceId,
-      reference_type: referenceType,
-      description: description,
-      metadata: {
-        deduction_time: new Date().toISOString(),
-        ...metadata
-      },
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    const { data: usage, error: usageError } = await masterDbClient
-      .from('credit_usage')
-      .insert(usageData)
-      .select()
-      .single();
-
-    if (usageError) {
-      console.error('Error creating credit usage record:', usageError);
-      // Don't fail the deduction if usage tracking fails
-    }
-    console.log(`💳 Created credit_usage record:`, usage?.id);
 
     console.log(`💳 New balance after deduction: ${newBalance} credits`);
 
     const result = {
       success: true,
-      usage_id: usage.id,
       credits_deducted: creditAmount,
       remaining_balance: newBalance,
       description: description
@@ -151,46 +118,22 @@ class CreditService {
     // Get recent transactions (purchases)
     const recentTransactions = await CreditTransaction.getUserTransactions(userId, storeId, 10);
 
-    // Get recent usage
-    const recentUsage = await CreditUsage.getUsageHistory(userId, storeId, 20);
-
-    // Calculate totals from transaction/usage history (master DB)
+    // Calculate total purchased from transactions (master DB)
     const { data: transactions } = await masterDbClient
       .from('credit_transactions')
       .select('credits_amount')
       .eq('user_id', userId)
       .eq('status', 'completed');
 
-    const { data: usages } = await masterDbClient
-      .from('credit_usage')
-      .select('credits_used')
-      .eq('user_id', userId);
-
     const totalPurchased = (transactions || []).reduce((sum, t) => sum + parseFloat(t.credits_amount || 0), 0);
-    const totalUsed = (usages || []).reduce((sum, u) => sum + parseFloat(u.credits_used || 0), 0);
-
-    const totals = {
-      total_purchased: totalPurchased,
-      total_used: totalUsed
-    };
-
-    // Get usage stats for current month
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
-    const monthlyStats = await CreditUsage.getUsageStats(userId, storeId, startOfMonth);
 
     // Check schedules that need credits
     const scheduleInfo = await AkeneoSchedule.getSchedulesNeedingCredits(userId, storeId);
 
     return {
       balance: parseFloat(balance),
-      total_purchased: totals ? parseFloat(totals.total_purchased || 0) : 0,
-      total_used: totals ? parseFloat(totals.total_used || 0) : 0,
+      total_purchased: totalPurchased,
       recent_transactions: recentTransactions,
-      recent_usage: recentUsage,
-      monthly_stats: monthlyStats,
       schedule_info: scheduleInfo
     };
   }
@@ -597,41 +540,17 @@ class CreditService {
 
   /**
    * Get usage analytics for a user/store
+   * Note: Simplified - detailed usage tracking not implemented
    */
   async getUsageAnalytics(userId, storeId, days = 30) {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    const usageStats = await CreditUsage.getUsageStats(userId, storeId, startDate);
-    
-    // Get daily usage for charting using Supabase
-    const { data: usageRecords, error: usageError } = await masterDbClient
-      .from('credit_usage')
-      .select('created_at, credits_used')
-      .eq('user_id', userId)
-      .eq('store_id', storeId)
-      .gte('created_at', startDate.toISOString())
-      .order('created_at', { ascending: true });
-
-    // Aggregate by date in JavaScript (Supabase doesn't have GROUP BY)
-    const dailyUsage = {};
-    (usageRecords || []).forEach(record => {
-      const date = record.created_at.split('T')[0]; // Get YYYY-MM-DD
-      if (!dailyUsage[date]) {
-        dailyUsage[date] = { date, credits_used: 0, usage_count: 0 };
-      }
-      dailyUsage[date].credits_used += parseFloat(record.credits_used || 0);
-      dailyUsage[date].usage_count += 1;
-    });
-
-    const dailyUsageArray = Object.values(dailyUsage);
+    const balance = await this.getBalance(userId);
 
     return {
       period_days: days,
-      usage_stats: usageStats,
-      daily_usage: dailyUsageArray,
-      total_credits_used: Object.values(usageStats).reduce((sum, stat) => sum + stat.total_credits_used, 0),
-      total_operations: Object.values(usageStats).reduce((sum, stat) => sum + stat.usage_count, 0)
+      current_balance: balance,
+      daily_usage: [],
+      total_credits_used: 0,
+      total_operations: 0
     };
   }
 
