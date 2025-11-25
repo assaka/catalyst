@@ -4,6 +4,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { User } from '@/api/entities';
 import { CreditTransaction } from '@/api/entities';
+import apiClient from '@/api/client';
 import { createPaymentIntent } from '@/api/functions';
 import { getStripePublishableKey } from '@/api/functions';
 import { Button } from '@/components/ui/button';
@@ -180,14 +181,25 @@ export default function Billing() {
       const userData = await User.me();
       console.log('📊 [Billing] User data loaded:', { id: userData?.id, credits: userData?.credits });
       setUser(userData);
-      // Credit transactions are global - backend filters by authenticated user
-      const transactionData = await CreditTransaction.findAll();
-      console.log('📋 [Billing] Transactions loaded:', {
+
+      // Direct API call to bypass entity transformation and see raw response
+      console.log('📋 [Billing] Fetching transactions directly...');
+      const rawResponse = await apiClient.get('credits/transactions', { 'x-skip-transform': 'true' });
+      console.log('📋 [Billing] Raw API response:', rawResponse);
+
+      // Extract transactions from response
+      let transactionData = [];
+      if (rawResponse?.success && Array.isArray(rawResponse?.data)) {
+        transactionData = rawResponse.data;
+      } else if (Array.isArray(rawResponse)) {
+        transactionData = rawResponse;
+      }
+
+      console.log('📋 [Billing] Transactions processed:', {
         count: transactionData?.length || 0,
-        isArray: Array.isArray(transactionData),
         data: transactionData
       });
-      setTransactions(Array.isArray(transactionData) ? transactionData : []);
+      setTransactions(transactionData);
     } catch (error) {
       console.error("Error loading billing data:", error);
     } finally {
