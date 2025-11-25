@@ -628,7 +628,7 @@ export const productConfig = {
               {{#each tabs}}
                 <button
                   class="py-2 px-1 border-b-2 font-medium transition-colors duration-200 {{#if this.isActive}}{{else}}border-transparent hover:underline{{/if}}"
-                  style="font-size: {{settings.theme.product_tabs_title_size}}; {{#if this.isActive}}color: #2563eb; border-color: #2563eb;{{else}}color: #6b7280;{{/if}}"
+                  style="font-size: {{settings.theme.product_tabs_title_size}}; font-weight: {{settings.theme.product_tabs_font_weight}}; text-decoration: {{settings.theme.product_tabs_text_decoration}}; color: {{settings.theme.product_tabs_title_color}}; border-color: {{settings.theme.product_tabs_title_color}}; background-color: {{settings.theme.product_tabs_active_bg}};"                  
                   data-action="switch-tab"
                   data-tab-id="{{this.id}}">
                   {{this.name}}
