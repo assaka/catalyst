@@ -510,19 +510,7 @@ CREATE TYPE IF NOT EXISTS enum_store_supabase_connections_connection_status AS E
     'error'
 );
 
-CREATE TYPE IF NOT EXISTS enum_store_teams_role AS ENUM (
-    'owner',
-    'admin',
-    'editor',
-    'viewer'
-);
-
-CREATE TYPE IF NOT EXISTS enum_store_teams_status AS ENUM (
-    'pending',
-    'active',
-    'suspended',
-    'removed'
-);
+-- NOTE: store_teams is now in MASTER database (not tenant)
 
 CREATE TYPE IF NOT EXISTS enum_store_templates_type AS ENUM (
     'category',
@@ -2798,20 +2786,7 @@ CREATE TABLE IF NOT EXISTS slot_configurations (
   has_unpublished_changes BOOLEAN DEFAULT false NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS store_teams (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL,
-  user_id UUID NOT NULL,
-  role VARCHAR(20) DEFAULT 'viewer'::character varying NOT NULL,
-  permissions JSONB DEFAULT '{}'::jsonb,
-  invited_by UUID,
-  invited_at TIMESTAMP,
-  accepted_at TIMESTAMP,
-  status VARCHAR(20) DEFAULT 'pending'::character varying NOT NULL,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
+-- NOTE: store_teams table moved to MASTER database
 
 CREATE TABLE IF NOT EXISTS store_uptime (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3609,11 +3584,7 @@ CREATE INDEX IF NOT EXISTS idx_slot_configurations_store_id ON slot_configuratio
 
 CREATE INDEX IF NOT EXISTS idx_store_status_page_version ON slot_configurations USING btree (store_id, status, page_type, version_number);
 
-CREATE INDEX IF NOT EXISTS idx_store_teams_status ON store_teams USING btree (status);
-
-CREATE INDEX IF NOT EXISTS idx_store_teams_store_id ON store_teams USING btree (store_id);
-
-CREATE INDEX IF NOT EXISTS idx_store_teams_user_id ON store_teams USING btree (user_id);
+-- NOTE: store_teams indexes moved to MASTER database
 
 CREATE INDEX IF NOT EXISTS idx_store_uptime_charged_date ON store_uptime USING btree (charged_date);
 
@@ -3755,11 +3726,7 @@ CREATE INDEX IF NOT EXISTS slot_configurations_is_active ON slot_configurations 
 
 CREATE INDEX IF NOT EXISTS slot_configurations_store_id ON slot_configurations USING btree (store_id);
 
-CREATE INDEX IF NOT EXISTS store_teams_status ON store_teams USING btree (status);
-
-CREATE INDEX IF NOT EXISTS store_teams_store_id ON store_teams USING btree (store_id);
-
-CREATE INDEX IF NOT EXISTS store_teams_user_id ON store_teams USING btree (user_id);
+-- REMOVED: store_teams indexes (moved to MASTER database)
 
 -- REMOVED: Unique index for deprecated supabase_project_keys table
 
