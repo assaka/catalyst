@@ -193,9 +193,43 @@ StoreDatabase.prototype.deactivate = async function() {
  * @returns {Promise<StoreDatabase|null>}
  */
 StoreDatabase.findByStoreId = async function(storeId) {
-  return this.findOne({
-    where: { store_id: storeId, is_active: true }
-  });
+  try {
+    // Use Supabase client instead of Sequelize to avoid connection issues
+    const { masterDbClient } = require('../../database/masterConnection');
+
+    const { data, error } = await masterDbClient
+      .from('store_databases')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error querying store_databases:', error.message);
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    // Create a mock instance with getCredentials method
+    return {
+      ...data,
+      database_type: data.database_type,
+      connection_status: data.connection_status,
+      host: data.host,
+      getCredentials: function() {
+        return decryptDatabaseCredentials(data.connection_string_encrypted);
+      }
+    };
+  } catch (error) {
+    console.error('StoreDatabase.findByStoreId error:', error.message);
+    // Fallback to Sequelize
+    return this.findOne({
+      where: { store_id: storeId, is_active: true }
+    });
+  }
 };
 
 /**
