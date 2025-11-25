@@ -902,6 +902,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 publicOrderRouter.post('/finalize-order', async (req, res) => {
   try {
     const { session_id } = req.body;
+    const store_id = req.headers['x-store-id'] || req.body.store_id;
 
     if (!session_id) {
       return res.status(400).json({
@@ -910,14 +911,26 @@ publicOrderRouter.post('/finalize-order', async (req, res) => {
       });
     }
 
-    // Find the order by payment reference
-    const order = await Order.findOne({
-      where: {
-        payment_reference: session_id
-      }
-    });
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
 
-    if (!order) {
+    // Use ConnectionManager for tenant database
+    const ConnectionManager = require('./services/database/ConnectionManager');
+    const { getMasterStore } = require('./utils/dbHelpers');
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Find the order by payment reference
+    const { data: order, error: orderError } = await tenantDb
+      .from('sales_orders')
+      .select('*')
+      .or(`payment_reference.eq.${session_id},stripe_session_id.eq.${session_id}`)
+      .maybeSingle();
+
+    if (orderError || !order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
@@ -933,9 +946,8 @@ publicOrderRouter.post('/finalize-order', async (req, res) => {
       });
     }
 
-    // Get the store for the connected account
-    const { Store } = require('./models'); // Master/Tenant hybrid model
-    const store = await Store.findByPk(order.store_id);
+    // Get the store from master DB
+    const store = await getMasterStore(store_id);
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -943,130 +955,45 @@ publicOrderRouter.post('/finalize-order', async (req, res) => {
       });
     }
 
-    // Determine payment provider from order metadata or default to Stripe
-    const paymentProvider = order.payment_method || 'stripe';
+    // Verify payment with Stripe
+    const stripeOptions = store.stripe_account_id ? { stripeAccount: store.stripe_account_id } : undefined;
 
-    // Verify payment based on provider
-    let paymentVerified = false;
+    try {
+      const session = stripeOptions
+        ? await stripe.checkout.sessions.retrieve(session_id, stripeOptions)
+        : await stripe.checkout.sessions.retrieve(session_id);
 
-    if (paymentProvider === 'stripe' || paymentProvider.includes('card') || paymentProvider.includes('credit')) {
-      // Stripe payment verification
-      const stripeOptions = {};
-      if (store.stripe_account_id) {
-        stripeOptions.stripeAccount = store.stripe_account_id;
-      }
-
-      try {
-        const session = await stripe.checkout.sessions.retrieve(session_id, stripeOptions);
-
-        if (session.payment_status === 'paid') {
-          paymentVerified = true;
-        } else {
-          return res.json({
-            success: false,
-            message: 'Payment not yet completed',
-            data: { payment_status: session.payment_status, provider: 'stripe' }
-          });
-        }
-      } catch (stripeError) {
-        return res.status(400).json({
+      if (session.payment_status !== 'paid') {
+        return res.json({
           success: false,
-          message: 'Failed to verify payment with Stripe',
-          error: stripeError.message
+          message: 'Payment not yet completed',
+          data: { payment_status: session.payment_status }
         });
       }
-    } else if (paymentProvider === 'adyen') {
-      // TODO: Implement Adyen payment verification
-      return res.status(501).json({
+    } catch (stripeError) {
+      return res.status(400).json({
         success: false,
-        message: 'Adyen payment verification not yet implemented'
-      });
-    } else if (paymentProvider === 'mollie') {
-      // TODO: Implement Mollie payment verification
-      return res.status(501).json({
-        success: false,
-        message: 'Mollie payment verification not yet implemented'
-      });
-    } else {
-      // Unknown provider - assume verified for offline payments
-      paymentVerified = true;
-    }
-
-    if (!paymentVerified) {
-      return res.json({
-        success: false,
-        message: 'Payment verification failed'
+        message: 'Failed to verify payment with Stripe',
+        error: stripeError.message
       });
     }
 
     // Update order status
-    await order.update({
-      status: 'processing',
-      payment_status: 'paid',
-      updatedAt: new Date()
-    });
+    const { error: updateError } = await tenantDb
+      .from('sales_orders')
+      .update({
+        status: 'processing',
+        payment_status: 'paid',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', order.id);
 
-    // Send confirmation email (atomic check-and-set to prevent race condition)
-    // Use UPDATE with WHERE to atomically claim email sending rights
-    const [affectedRows] = await Order.update(
-      { confirmation_email_sent_at: new Date() },
-      {
-        where: {
-          id: order.id,
-          confirmation_email_sent_at: null // Only update if still null
-        }
-      }
-    );
-
-    if (affectedRows > 0) {
-      // We successfully claimed the email sending (atomic operation)
-      try {
-        const emailService = require('./services/email-service');
-
-        const orderWithDetails = await Order.findByPk(order.id, {
-          include: [{
-            model: OrderItem,
-            as: 'OrderItems',
-            include: [{
-              model: Product,
-              attributes: ['id', 'sku']
-            }]
-          }, {
-            model: Store,
-            as: 'Store'
-          }]
-        });
-
-        // Try to get customer details
-        let customer = null;
-        if (order.customer_id) {
-          customer = await Customer.findByPk(order.customer_id);
-        }
-
-        // Extract customer name
-        const customerName = customer
-          ? `${customer.first_name} ${customer.last_name}`
-          : (order.shipping_address?.full_name || order.shipping_address?.name || 'Customer');
-
-        const [firstName, ...lastNameParts] = customerName.split(' ');
-        const lastName = lastNameParts.join(' ') || '';
-
-        // Send email
-        await emailService.sendTransactionalEmail(order.store_id, 'order_success_email', {
-          recipientEmail: order.customer_email,
-          customer: customer || {
-            first_name: firstName,
-            last_name: lastName,
-            email: order.customer_email
-          },
-          order: orderWithDetails.toJSON(),
-          store: orderWithDetails.Store
-        });
-      } catch (emailError) {
-        // Rollback the flag if email failed
-        await order.update({ confirmation_email_sent_at: null });
-      }
+    if (updateError) {
+      throw new Error(updateError.message);
     }
+
+    // Email is handled by Stripe webhook
+    console.log('📧 Email sending disabled in finalize-order - Stripe webhook will handle emails');
 
     res.json({
       success: true,
@@ -1074,12 +1001,13 @@ publicOrderRouter.post('/finalize-order', async (req, res) => {
       data: {
         order_id: order.id,
         order_number: order.order_number,
-        status: order.status,
-        payment_status: order.payment_status
+        status: 'processing',
+        payment_status: 'paid'
       }
     });
 
   } catch (error) {
+    console.error('Finalize order error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to finalize order',

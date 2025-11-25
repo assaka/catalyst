@@ -137,10 +137,12 @@ export default function OrderSuccess() {
             const finalizeResponse = await fetch(finalizeUrl, {
               method: 'POST',
               headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'x-store-id': store?.id || orderData.store_id || ''
               },
               body: JSON.stringify({
-                session_id: sessionId
+                session_id: sessionId,
+                store_id: store?.id || orderData.store_id
               })
             });
 
