@@ -131,12 +131,14 @@ router.get('/status', async (req, res) => {
       success: true,
       data: {
         isConfigured,
+        connected: isConfigured && config?.connectionStatus === 'success',
+        connectionStatus: config?.connectionStatus || null,
         config: config ? {
-          sender_name: config.sender_name,
-          sender_email: config.sender_email,
-          is_active: config.is_active,
-          token_expires_at: config.token_expires_at,
-          connected_at: config.created_at
+          sender_name: config.senderName,
+          sender_email: config.senderEmail,
+          is_active: config.isActive,
+          connected_at: config.createdAt,
+          updated_at: config.updatedAt
         } : null
       }
     });
