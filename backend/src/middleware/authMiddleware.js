@@ -54,21 +54,62 @@ async function authMiddleware(req, res, next) {
       });
     }
 
-    // 4. Fetch FULL user object from master DB (matching old auth middleware)
-    const selectFields = 'id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, account_type, created_at, updated_at, credits';
+    // 4. Fetch user based on role - customers are in tenant DB, others in master DB
+    let user;
 
-    const { data: user, error: userError } = await masterDbClient
-      .from('users')
-      .select(selectFields)
-      .eq('id', decoded.userId)
-      .single();
+    if (decoded.role === 'customer' && decoded.storeId) {
+      // Customer token - look up in tenant DB's customers table
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(decoded.storeId);
+        const customerSelectFields = 'id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, created_at, updated_at';
 
-    if (userError || !user) {
-      return res.status(401).json({
-        success: false,
-        error: 'User not found',
-        code: 'USER_NOT_FOUND'
-      });
+        const { data: customer, error: customerError } = await tenantDb
+          .from('customers')
+          .select(customerSelectFields)
+          .eq('id', decoded.userId)
+          .single();
+
+        if (customerError || !customer) {
+          console.error('Customer not found in tenant DB:', decoded.userId, customerError?.message);
+          return res.status(401).json({
+            success: false,
+            error: 'Customer session expired. Please log in again.',
+            code: 'USER_NOT_FOUND'
+          });
+        }
+
+        user = {
+          ...customer,
+          account_type: 'individual',
+          role: 'customer'
+        };
+      } catch (tenantError) {
+        console.error('Failed to connect to tenant DB for customer auth:', tenantError.message);
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication failed',
+          code: 'TENANT_ERROR'
+        });
+      }
+    } else {
+      // Non-customer token - look up in master DB's users table
+      const selectFields = 'id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, account_type, created_at, updated_at, credits';
+
+      const { data: masterUser, error: userError } = await masterDbClient
+        .from('users')
+        .select(selectFields)
+        .eq('id', decoded.userId)
+        .single();
+
+      if (userError || !masterUser) {
+        return res.status(401).json({
+          success: false,
+          error: 'User not found',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+
+      user = masterUser;
     }
 
     if (!user.is_active) {
