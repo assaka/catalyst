@@ -371,14 +371,17 @@ class CreditService {
       // Use fallback
     }
 
-    // Check if store is still published
-    const Store = require('../models/Store');
-    const store = await Store.findByPk(storeId);
+    // Check if store is still active (using masterDbClient instead of Sequelize)
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('id, slug, status, is_active')
+      .eq('id', storeId)
+      .maybeSingle();
 
-    if (!store || !store.published) {
+    if (storeError || !store || store.status !== 'active') {
       return {
         success: false,
-        message: 'Store is not published, skipping daily charge'
+        message: 'Store is not active, skipping daily charge'
       };
     }
 
@@ -417,7 +420,7 @@ class CreditService {
         credits_charged: dailyCostNum,
         user_balance_before: balanceBeforeNum,
         user_balance_after: balanceAfterNum,
-        store_name: store.name,
+        store_slug: store.slug,
         metadata: {
           charge_type: 'daily',
           deduction_time: new Date().toISOString()
