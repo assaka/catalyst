@@ -127,20 +127,29 @@ router.get('/status', async (req, res) => {
     const isConfigured = await brevoService.isConfigured(store_id);
     const config = await brevoService.getConfiguration(store_id);
 
+    // Debug logging
+    console.log('📧 [Brevo Status] Store:', store_id);
+    console.log('📧 [Brevo Status] isConfigured:', isConfigured);
+    console.log('📧 [Brevo Status] config:', JSON.stringify(config, null, 2));
+
+    const responseData = {
+      isConfigured,
+      connected: isConfigured && config?.connectionStatus === 'success',
+      connectionStatus: config?.connectionStatus || null,
+      config: config ? {
+        sender_name: config.senderName,
+        sender_email: config.senderEmail,
+        is_active: config.isActive,
+        connected_at: config.createdAt,
+        updated_at: config.updatedAt
+      } : null
+    };
+
+    console.log('📧 [Brevo Status] Response:', JSON.stringify(responseData, null, 2));
+
     res.json({
       success: true,
-      data: {
-        isConfigured,
-        connected: isConfigured && config?.connectionStatus === 'success',
-        connectionStatus: config?.connectionStatus || null,
-        config: config ? {
-          sender_name: config.senderName,
-          sender_email: config.senderEmail,
-          is_active: config.isActive,
-          connected_at: config.createdAt,
-          updated_at: config.updatedAt
-        } : null
-      }
+      data: responseData
     });
   } catch (error) {
     console.error('Brevo status check error:', error);
