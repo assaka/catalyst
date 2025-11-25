@@ -201,7 +201,8 @@ app.options('/api/*', async (req, res, next) => {
       const { masterDbClient } = require('./database/masterConnection');
       const hostname = new URL(origin).hostname;
 
-      const { data: customDomain, error: domainError } = await masterDbClient
+      // Check custom_domains table first
+      let { data: customDomain, error: domainError } = await masterDbClient
         .from('custom_domains')
         .select('id')
         .eq('domain', hostname)
@@ -209,7 +210,22 @@ app.options('/api/*', async (req, res, next) => {
         .eq('verification_status', 'verified')
         .maybeSingle();
 
-      if (!domainError && customDomain) {
+      // If not found, check custom_domains_lookup table (used for verified domains)
+      if (!customDomain) {
+        const { data: lookupDomain, error: lookupError } = await masterDbClient
+          .from('custom_domains_lookup')
+          .select('store_id')
+          .eq('domain', hostname)
+          .eq('is_active', true)
+          .eq('is_verified', true)
+          .maybeSingle();
+
+        if (!lookupError && lookupDomain) {
+          customDomain = lookupDomain;
+        }
+      }
+
+      if (customDomain) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,x-store-id,X-Store-Id,X-Language,x-session-id,X-Session-Id,Cache-Control,cache-control,Pragma,pragma,Expires,expires,params,headers');
@@ -266,7 +282,8 @@ app.use(cors({
       const { masterDbClient } = require('./database/masterConnection');
       const hostname = new URL(origin).hostname;
 
-      const { data: customDomain, error: domainError } = await masterDbClient
+      // Check custom_domains table first
+      let { data: customDomain, error: domainError } = await masterDbClient
         .from('custom_domains')
         .select('id, store_id')
         .eq('domain', hostname)
@@ -274,7 +291,22 @@ app.use(cors({
         .eq('verification_status', 'verified')
         .maybeSingle();
 
-      if (!domainError && customDomain) {
+      // If not found, check custom_domains_lookup table (used for verified domains)
+      if (!customDomain) {
+        const { data: lookupDomain, error: lookupError } = await masterDbClient
+          .from('custom_domains_lookup')
+          .select('store_id')
+          .eq('domain', hostname)
+          .eq('is_active', true)
+          .eq('is_verified', true)
+          .maybeSingle();
+
+        if (!lookupError && lookupDomain) {
+          customDomain = lookupDomain;
+        }
+      }
+
+      if (customDomain) {
         return callback(null, true);
       }
     } catch (error) {
