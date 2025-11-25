@@ -8,6 +8,7 @@ import { Customer } from "@/api/entities"; // Added Customer import
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import { Link, useNavigate } from "react-router-dom"; // Added useNavigate import
 import { createPageUrl } from "@/utils";
+import apiClient from "@/api/client";
 import { 
   ShoppingBag, 
   Store as StoreIcon, 
@@ -74,6 +75,12 @@ export default function Dashboard() {
     totalOrders: 0,
     totalProducts: 0,
     totalCustomers: 0
+  });
+  const [performanceMetrics, setPerformanceMetrics] = useState({
+    salesGrowth: 0,
+    newCustomers: 0,
+    pageViews: 0,
+    loadingPerformance: true
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -203,11 +210,86 @@ export default function Dashboard() {
         totalProducts: totalProductsCount,
         totalCustomers
       });
+
+      // Load performance metrics
+      loadPerformanceMetrics(storeId, allOrders, customers);
     } catch (error) {
       console.error("Error loading dashboard data:", error);
       setError("Failed to load dashboard data. Please try refreshing the page.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPerformanceMetrics = async (storeId, allOrders, customers) => {
+    try {
+      setPerformanceMetrics(prev => ({ ...prev, loadingPerformance: true }));
+
+      // Calculate date ranges
+      const now = new Date();
+      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+      // Calculate Sales Growth (current month vs last month)
+      let salesGrowth = 0;
+      if (Array.isArray(allOrders) && allOrders.length > 0) {
+        const currentMonthRevenue = allOrders
+          .filter(order => {
+            const orderDate = new Date(order.created_at || order.createdAt);
+            return orderDate >= currentMonthStart;
+          })
+          .reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0);
+
+        const lastMonthRevenue = allOrders
+          .filter(order => {
+            const orderDate = new Date(order.created_at || order.createdAt);
+            return orderDate >= lastMonthStart && orderDate <= lastMonthEnd;
+          })
+          .reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0);
+
+        if (lastMonthRevenue > 0) {
+          salesGrowth = Math.round(((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
+        } else if (currentMonthRevenue > 0) {
+          salesGrowth = 100; // If no revenue last month but has this month
+        }
+      }
+
+      // Calculate New Customers this month
+      let newCustomers = 0;
+      if (Array.isArray(customers) && customers.length > 0) {
+        newCustomers = customers.filter(customer => {
+          const customerDate = new Date(customer.created_at || customer.createdAt);
+          return customerDate >= currentMonthStart;
+        }).length;
+      }
+
+      // Fetch Page Views from analytics-dashboard API
+      let pageViews = 0;
+      try {
+        const params = new URLSearchParams({
+          start_date: weekAgo.toISOString(),
+          interval: 'day'
+        });
+        const response = await apiClient.get(`/analytics-dashboard/${storeId}/timeseries?${params}`);
+        if (response.data && Array.isArray(response.data)) {
+          pageViews = response.data.reduce((sum, d) => sum + (d.page_views || 0), 0);
+        }
+      } catch (analyticsError) {
+        console.warn('Could not load analytics data:', analyticsError);
+        // Continue without analytics data
+      }
+
+      setPerformanceMetrics({
+        salesGrowth,
+        newCustomers,
+        pageViews,
+        loadingPerformance: false
+      });
+    } catch (error) {
+      console.error('Error loading performance metrics:', error);
+      setPerformanceMetrics(prev => ({ ...prev, loadingPerformance: false }));
     }
   };
 
@@ -477,11 +559,17 @@ export default function Dashboard() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <TrendingUp className="w-8 h-8 text-green-600" />
+                  <div className={`w-16 h-16 ${performanceMetrics.salesGrowth >= 0 ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                    <TrendingUp className={`w-8 h-8 ${performanceMetrics.salesGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`} />
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-2">Sales Growth</h3>
-                  <p className="text-2xl font-bold text-green-600">+24%</p>
+                  {performanceMetrics.loadingPerformance ? (
+                    <div className="animate-pulse h-8 bg-gray-200 rounded w-16 mx-auto"></div>
+                  ) : (
+                    <p className={`text-2xl font-bold ${performanceMetrics.salesGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {performanceMetrics.salesGrowth >= 0 ? '+' : ''}{performanceMetrics.salesGrowth}%
+                    </p>
+                  )}
                   <p className="text-sm text-gray-500">vs last month</p>
                 </div>
                 <div className="text-center">
@@ -489,7 +577,11 @@ export default function Dashboard() {
                     <Users className="w-8 h-8 text-blue-600" />
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-2">New Customers</h3>
-                  <p className="text-2xl font-bold text-blue-600">127</p>
+                  {performanceMetrics.loadingPerformance ? (
+                    <div className="animate-pulse h-8 bg-gray-200 rounded w-16 mx-auto"></div>
+                  ) : (
+                    <p className="text-2xl font-bold text-blue-600">{performanceMetrics.newCustomers.toLocaleString()}</p>
+                  )}
                   <p className="text-sm text-gray-500">this month</p>
                 </div>
                 <div className="text-center">
@@ -497,7 +589,11 @@ export default function Dashboard() {
                     <Eye className="w-8 h-8 text-purple-600" />
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-2">Page Views</h3>
-                  <p className="text-2xl font-bold text-purple-600">2,341</p>
+                  {performanceMetrics.loadingPerformance ? (
+                    <div className="animate-pulse h-8 bg-gray-200 rounded w-16 mx-auto"></div>
+                  ) : (
+                    <p className="text-2xl font-bold text-purple-600">{performanceMetrics.pageViews.toLocaleString()}</p>
+                  )}
                   <p className="text-sm text-gray-500">this week</p>
                 </div>
               </div>
