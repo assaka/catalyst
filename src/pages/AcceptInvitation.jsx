@@ -5,9 +5,24 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle, XCircle, UserPlus, Building2, Shield, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, UserPlus, Building2, Shield, AlertCircle, Eye, EyeOff, Store, Users, Sparkles } from 'lucide-react';
 import apiClient from '@/api/client';
 import { toast } from 'sonner';
+
+// Daino Logo Component
+const DainoLogo = ({ className = "w-8 h-8" }) => (
+  <svg className={className} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="40" height="40" rx="8" fill="url(#gradient)" />
+    <path d="M12 12h6c5.5 0 10 4.5 10 10s-4.5 10-10 10h-6V12z" fill="white" fillOpacity="0.9"/>
+    <path d="M14 14h4c4.4 0 8 3.6 8 8s-3.6 8-8 8h-4V14z" fill="url(#gradient)"/>
+    <defs>
+      <linearGradient id="gradient" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#3B82F6"/>
+        <stop offset="1" stopColor="#8B5CF6"/>
+      </linearGradient>
+    </defs>
+  </svg>
+);
 
 const ROLE_COLORS = {
   admin: 'bg-blue-100 text-blue-800',
@@ -205,10 +220,14 @@ export default function AcceptInvitation() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
+
+        <Card className="w-full max-w-md relative bg-white/95 backdrop-blur-sm shadow-2xl border-0">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
+            <DainoLogo className="w-12 h-12 mb-4" />
+            <Loader2 className="w-6 h-6 animate-spin text-blue-600 mb-3" />
             <p className="text-gray-600">Loading invitation details...</p>
           </CardContent>
         </Card>
@@ -218,9 +237,12 @@ export default function AcceptInvitation() {
 
   if (error && !invitation) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
+
+        <Card className="w-full max-w-md relative bg-white/95 backdrop-blur-sm shadow-2xl border-0">
           <CardContent className="flex flex-col items-center justify-center py-12">
+            <DainoLogo className="w-12 h-12 mb-6" />
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
               <XCircle className="w-8 h-8 text-red-600" />
             </div>
@@ -229,6 +251,7 @@ export default function AcceptInvitation() {
             <Button onClick={() => navigate('/')} variant="outline">
               Go to Homepage
             </Button>
+            <p className="text-xs text-gray-400 mt-6">Powered by Daino</p>
           </CardContent>
         </Card>
       </div>
@@ -237,17 +260,26 @@ export default function AcceptInvitation() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
+
+        <Card className="w-full max-w-md relative bg-white/95 backdrop-blur-sm shadow-2xl border-0 overflow-hidden">
+          {/* Success confetti effect */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500"></div>
+
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
+            <DainoLogo className="w-12 h-12 mb-4" />
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4 animate-pulse">
+              <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Welcome to the Team!</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to the Team!</h2>
             <p className="text-gray-600 text-center mb-2">
-              You've successfully joined <strong>{invitation?.store?.name}</strong>.
+              You've successfully joined <strong className="text-blue-600">{invitation?.store?.name}</strong>
             </p>
-            <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
+            <p className="text-sm text-gray-500 flex items-center gap-2">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Redirecting to dashboard...
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -255,63 +287,91 @@ export default function AcceptInvitation() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
+
+      {/* Floating elements for visual interest */}
+      <div className="absolute top-20 left-20 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 right-20 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl"></div>
+
+      <Card className="w-full max-w-lg relative bg-white/95 backdrop-blur-sm shadow-2xl border-0 overflow-hidden">
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-8 text-white text-center">
-          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UserPlus className="w-8 h-8" />
+        <div className="px-8 pt-8 pb-6 text-center border-b border-gray-100">
+          {/* Daino Branding */}
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <DainoLogo className="w-10 h-10" />
+            <div className="text-left">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Daino</h2>
+              <p className="text-xs text-gray-500 -mt-0.5">E-commerce Platform</p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold">Team Invitation</h1>
-          <p className="text-blue-100 mt-1">You've been invited to join a team</p>
+
+          {/* Invitation Icon */}
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Users className="w-10 h-10 text-blue-600" />
+          </div>
+
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">You're Invited!</h1>
+          <p className="text-gray-500">Join the team and start collaborating</p>
         </div>
 
-        <CardContent className="p-6">
-          {/* Store Info */}
-          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg mb-6">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-blue-600" />
+        <CardContent className="p-8">
+          {/* Store Info Card */}
+          <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl mb-6 border border-blue-100">
+            <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-sm">
+              <Store className="w-7 h-7 text-blue-600" />
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">{invitation?.store?.name || 'Store'}</h3>
-              <p className="text-sm text-gray-500">{invitation?.store?.domain || ''}</p>
+            <div className="flex-1">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">Store</p>
+              <h3 className="font-bold text-gray-900 text-lg">{invitation?.store?.name || 'Store'}</h3>
+              {invitation?.store?.domain && (
+                <p className="text-sm text-gray-500">{invitation.store.domain}</p>
+              )}
             </div>
           </div>
 
-          {/* Role */}
-          <div className="mb-6">
-            <p className="text-sm text-gray-500 mb-2">You're invited as:</p>
-            <Badge className={`${ROLE_COLORS[invitation?.role]} text-sm px-3 py-1`}>
-              <Shield className="w-3 h-3 mr-1" />
-              {invitation?.role?.charAt(0).toUpperCase() + invitation?.role?.slice(1)}
-            </Badge>
-          </div>
+          {/* Role & Inviter Info */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            {/* Role */}
+            <div className="p-4 bg-gray-50 rounded-xl">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Your Role</p>
+              <Badge className={`${ROLE_COLORS[invitation?.role]} text-sm px-3 py-1.5`}>
+                <Shield className="w-3.5 h-3.5 mr-1.5" />
+                {invitation?.role?.charAt(0).toUpperCase() + invitation?.role?.slice(1)}
+              </Badge>
+            </div>
 
-          {/* Inviter */}
-          {invitation?.inviter && (
-            <div className="mb-6">
-              <p className="text-sm text-gray-500 mb-1">Invited by:</p>
-              <p className="text-gray-900">
-                {invitation.inviter.first_name
+            {/* Inviter */}
+            <div className="p-4 bg-gray-50 rounded-xl">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Invited By</p>
+              <p className="text-gray-900 font-medium text-sm">
+                {invitation?.inviter?.first_name
                   ? `${invitation.inviter.first_name} ${invitation.inviter.last_name || ''}`
-                  : invitation.inviter.email}
+                  : invitation?.inviter?.email || 'Store Owner'}
               </p>
             </div>
-          )}
+          </div>
 
           {/* Message */}
           {invitation?.message && (
-            <div className="mb-6 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-r">
-              <p className="text-sm text-gray-700 italic">"{invitation.message}"</p>
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <div className="flex items-start gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-gray-700 italic">"{invitation.message}"</p>
+              </div>
             </div>
           )}
 
           {/* Expiration Warning */}
           {invitation?.expires_at && (
-            <div className="mb-6 flex items-center gap-2 text-sm text-amber-600">
-              <AlertCircle className="w-4 h-4" />
+            <div className="mb-6 flex items-center gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>
-                Expires {new Date(invitation.expires_at).toLocaleDateString('en-US', {
+                This invitation expires on {new Date(invitation.expires_at).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'
@@ -323,53 +383,58 @@ export default function AcceptInvitation() {
           {/* Account Creation/Login Form for non-logged-in users */}
           {!isLoggedIn && (
             <form onSubmit={handleAccept} className="mb-6 space-y-4">
-              <div className="p-4 bg-gray-50 rounded-lg border">
-                <p className="text-sm font-medium text-gray-700 mb-3">
-                  {invitation?.userExists
-                    ? `Enter your password for ${invitation?.email}`
-                    : `Create your account for ${invitation?.email}`
-                  }
-                </p>
+              <div className="p-5 bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-xl border border-gray-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <UserPlus className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {invitation?.userExists ? 'Sign In to Accept' : 'Create Your Account'}
+                    </p>
+                    <p className="text-xs text-gray-500">{invitation?.email}</p>
+                  </div>
+                </div>
 
                 {/* Name fields for new users */}
                 {!invitation?.userExists && (
-                  <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="grid grid-cols-2 gap-3 mb-4">
                     <div>
-                      <Label htmlFor="firstName" className="text-xs">First Name</Label>
+                      <Label htmlFor="firstName" className="text-xs font-medium text-gray-600">First Name</Label>
                       <Input
                         id="firstName"
                         type="text"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                         placeholder="John"
-                        className="mt-1"
+                        className="mt-1 bg-white"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="lastName" className="text-xs">Last Name</Label>
+                      <Label htmlFor="lastName" className="text-xs font-medium text-gray-600">Last Name</Label>
                       <Input
                         id="lastName"
                         type="text"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                         placeholder="Doe"
-                        className="mt-1"
+                        className="mt-1 bg-white"
                       />
                     </div>
                   </div>
                 )}
 
                 {/* Password field */}
-                <div className="mb-3">
-                  <Label htmlFor="password" className="text-xs">Password</Label>
+                <div className="mb-4">
+                  <Label htmlFor="password" className="text-xs font-medium text-gray-600">Password</Label>
                   <div className="relative mt-1">
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder={invitation?.userExists ? 'Enter your password' : 'Create a password'}
-                      className="pr-10"
+                      placeholder={invitation?.userExists ? 'Enter your password' : 'Create a secure password'}
+                      className="pr-10 bg-white"
                     />
                     <button
                       type="button"
@@ -383,25 +448,30 @@ export default function AcceptInvitation() {
 
                 {/* Confirm password for new users */}
                 {!invitation?.userExists && (
-                  <div className="mb-3">
-                    <Label htmlFor="confirmPassword" className="text-xs">Confirm Password</Label>
+                  <div className="mb-4">
+                    <Label htmlFor="confirmPassword" className="text-xs font-medium text-gray-600">Confirm Password</Label>
                     <Input
                       id="confirmPassword"
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm your password"
-                      className="mt-1"
+                      className="mt-1 bg-white"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Min 8 chars with uppercase, lowercase, number, and special character
+                    <p className="text-xs text-gray-400 mt-2">
+                      Min 8 characters with uppercase, lowercase, number, and special character
                     </p>
                   </div>
                 )}
 
                 {/* Form error */}
                 {formError && (
-                  <p className="text-sm text-red-600 mt-2">{formError}</p>
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-600 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      {formError}
+                    </p>
+                  </div>
                 )}
               </div>
             </form>
@@ -411,13 +481,13 @@ export default function AcceptInvitation() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              className="flex-1"
+              className="flex-1 h-12"
               onClick={handleDecline}
             >
               Decline
             </Button>
             <Button
-              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-semibold shadow-lg shadow-blue-500/25"
               onClick={handleAccept}
               disabled={accepting}
             >
@@ -427,9 +497,22 @@ export default function AcceptInvitation() {
                   {isLoggedIn ? 'Accepting...' : (invitation?.userExists ? 'Signing in...' : 'Creating account...')}
                 </>
               ) : (
-                'Accept Invitation'
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Accept Invitation
+                </>
               )}
             </Button>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+            <p className="text-xs text-gray-400">
+              By accepting, you agree to Daino's Terms of Service and Privacy Policy
+            </p>
+            <p className="text-xs text-gray-300 mt-2">
+              Powered by <span className="font-medium text-gray-400">Daino</span> — E-commerce made simple
+            </p>
           </div>
         </CardContent>
       </Card>
