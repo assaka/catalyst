@@ -1086,12 +1086,27 @@ app.get('/api/invitations/:token', async (req, res) => {
       return res.status(410).json({ success: false, message: 'This invitation has already been used' });
     }
 
-    // Get store info
+    // Get store info from master DB
     const { data: store } = await masterDbClient
       .from('stores')
       .select('id, name, domain')
       .eq('id', invitation.store_id)
       .single();
+
+    // Get store name from tenant DB (that's where the actual name is stored)
+    let tenantStoreName = null;
+    try {
+      const ConnectionManager = require('./services/database/ConnectionManager');
+      const tenantDb = await ConnectionManager.getStoreConnection(invitation.store_id);
+      const { data: tenantStore } = await tenantDb
+        .from('stores')
+        .select('name')
+        .eq('id', invitation.store_id)
+        .maybeSingle();
+      tenantStoreName = tenantStore?.name;
+    } catch (err) {
+      console.warn('Could not fetch tenant store name:', err.message);
+    }
 
     // Get inviter info
     let inviter = null;
@@ -1111,10 +1126,10 @@ app.get('/api/invitations/:token', async (req, res) => {
       .eq('email', invitation.invited_email)
       .maybeSingle();
 
-    // Ensure store has a name (fallback to domain or a default)
+    // Ensure store has a name (prefer tenant name, then master name, then domain)
     const storeData = {
       id: store?.id || invitation.store_id,
-      name: store?.name || store?.domain || 'Your Store',
+      name: tenantStoreName || store?.name || store?.domain || 'Your Store',
       domain: store?.domain || ''
     };
 

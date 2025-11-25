@@ -286,6 +286,20 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
         .eq('id', store_id)
         .single();
 
+      // Get store name from tenant DB (that's where the actual name is stored)
+      let tenantStoreName = null;
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+        const { data: tenantStore } = await tenantDb
+          .from('stores')
+          .select('name')
+          .eq('id', store_id)
+          .maybeSingle();
+        tenantStoreName = tenantStore?.name;
+      } catch (err) {
+        console.warn('Could not fetch tenant store name:', err.message);
+      }
+
       // Get inviter info from master DB
       const { data: inviter } = await masterDbClient
         .from('users')
@@ -293,11 +307,18 @@ router.post('/:store_id/invite', authorize(['admin', 'store_owner']), checkStore
         .eq('id', req.user.id)
         .single();
 
+      // Build store data with tenant name preferred
+      const storeData = {
+        id: store?.id || store_id,
+        name: tenantStoreName || store?.name || store?.domain || 'Your Store',
+        domain: store?.domain || ''
+      };
+
       // Send the invitation email
       const emailResult = await emailService.sendTeamInvitationEmail(
         store_id,
         invitation,
-        store || { name: 'Store', domain: '' },
+        storeData,
         inviter || { email: req.user.email }
       );
 
@@ -423,12 +444,33 @@ router.post('/:store_id/invitations/:invitation_id/resend', authorize(['admin', 
         .eq('id', store_id)
         .single();
 
+      // Get store name from tenant DB (that's where the actual name is stored)
+      let tenantStoreName = null;
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+        const { data: tenantStore } = await tenantDb
+          .from('stores')
+          .select('name')
+          .eq('id', store_id)
+          .maybeSingle();
+        tenantStoreName = tenantStore?.name;
+      } catch (err) {
+        console.warn('Could not fetch tenant store name:', err.message);
+      }
+
       // Get inviter info from master DB
       const { data: inviter } = await masterDbClient
         .from('users')
         .select('id, email, first_name, last_name')
         .eq('id', invitation.invited_by)
         .single();
+
+      // Build store data with tenant name preferred
+      const storeData = {
+        id: store?.id || store_id,
+        name: tenantStoreName || store?.name || store?.domain || 'Your Store',
+        domain: store?.domain || ''
+      };
 
       // Update invitation with new expires_at for email
       const updatedInvitation = { ...invitation, expires_at: newExpiresAt };
@@ -437,7 +479,7 @@ router.post('/:store_id/invitations/:invitation_id/resend', authorize(['admin', 
       const emailResult = await emailService.sendTeamInvitationEmail(
         store_id,
         updatedInvitation,
-        store || { name: 'Store', domain: '' },
+        storeData,
         inviter || { email: 'Team Admin' }
       );
 
