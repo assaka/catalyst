@@ -394,7 +394,11 @@ router.post('/refresh', async (req, res) => {
 
 /**
  * POST /api/auth/upgrade-guest
- * Upgrade guest customer to registered account (for post-order account creation)
+ * Upgrade guest checkout to registered account (for post-order account creation)
+ * Handles three scenarios:
+ * 1. Customer record exists with NULL password (guest) -> upgrade it
+ * 2. No customer record exists -> create new customer from order data
+ * 3. Customer record exists with password -> return error (already registered)
  * Public route - requires store_id in body
  */
 router.post('/upgrade-guest', async (req, res) => {
@@ -419,82 +423,158 @@ router.post('/upgrade-guest', async (req, res) => {
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Find existing guest customer (password is null)
-    const { data: guestCustomer, error: findError } = await tenantDb
+    // Check if any customer exists with this email
+    const { data: existingCustomer, error: findError } = await tenantDb
       .from('customers')
       .select('*')
       .eq('email', email)
       .eq('store_id', store_id)
-      .is('password', null)
       .maybeSingle();
 
     if (findError) {
-      console.error('Error finding guest customer:', findError);
+      console.error('Error finding customer:', findError);
       return res.status(500).json({
         success: false,
         error: 'Failed to find customer'
       });
     }
 
-    if (!guestCustomer) {
-      return res.status(404).json({
-        success: false,
-        error: 'No guest account found with this email, or account is already registered'
-      });
-    }
-
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+    let finalCustomer;
 
-    // Update the guest customer with password
-    const { data: updatedCustomer, error: updateError } = await tenantDb
-      .from('customers')
-      .update({
-        password: hashedPassword,
-        email_verified: false,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', guestCustomer.id)
-      .select()
-      .single();
+    if (existingCustomer) {
+      // Customer exists - check if already registered
+      if (existingCustomer.password) {
+        return res.status(400).json({
+          success: false,
+          error: 'An account with this email already exists. Please login instead.'
+        });
+      }
 
-    if (updateError) {
-      console.error('Upgrade guest error:', updateError);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to upgrade account'
-      });
-    }
+      // Guest customer exists (password is null) - upgrade it
+      const { data: updatedCustomer, error: updateError } = await tenantDb
+        .from('customers')
+        .update({
+          password: hashedPassword,
+          email_verified: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingCustomer.id)
+        .select()
+        .single();
 
-    // Link all guest orders to this customer account
-    try {
-      await tenantDb
-        .from('orders')
-        .update({ customer_id: updatedCustomer.id })
+      if (updateError) {
+        console.error('Upgrade guest error:', updateError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to upgrade account'
+        });
+      }
+
+      finalCustomer = updatedCustomer;
+      console.log('✅ Upgraded existing guest customer:', finalCustomer.id);
+
+    } else {
+      // No customer record exists - create new customer from order data
+      // First, find the most recent order for this email to get customer details
+      const { data: recentOrder, error: orderError } = await tenantDb
+        .from('sales_orders')
+        .select('*')
         .eq('customer_email', email)
         .eq('store_id', store_id)
-        .is('customer_id', null);
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (orderError) {
+        console.error('Error finding order:', orderError);
+      }
+
+      // Extract customer details from order or shipping address
+      let firstName = 'Customer';
+      let lastName = '';
+      let phone = null;
+
+      if (recentOrder) {
+        // Try to get name from shipping address
+        const shippingAddr = recentOrder.shipping_address || {};
+        const fullName = shippingAddr.name || shippingAddr.full_name || '';
+
+        if (fullName) {
+          const nameParts = fullName.split(' ');
+          firstName = nameParts[0] || 'Customer';
+          lastName = nameParts.slice(1).join(' ') || '';
+        }
+
+        phone = shippingAddr.phone || recentOrder.customer_phone || null;
+      }
+
+      // Create new customer
+      const { data: newCustomer, error: createError } = await tenantDb
+        .from('customers')
+        .insert({
+          email,
+          password: hashedPassword,
+          first_name: firstName,
+          last_name: lastName,
+          phone: phone,
+          role: 'customer',
+          store_id: store_id,
+          is_active: true,
+          email_verified: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Create customer error:', createError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to create account'
+        });
+      }
+
+      finalCustomer = newCustomer;
+      console.log('✅ Created new customer from guest order:', finalCustomer.id);
+    }
+
+    // Link all orders with this email to the customer
+    try {
+      const { data: linkedOrders, error: linkError } = await tenantDb
+        .from('sales_orders')
+        .update({ customer_id: finalCustomer.id })
+        .eq('customer_email', email)
+        .eq('store_id', store_id)
+        .is('customer_id', null)
+        .select('id');
+
+      if (!linkError && linkedOrders) {
+        console.log(`✅ Linked ${linkedOrders.length} orders to customer ${finalCustomer.id}`);
+      }
     } catch (orderLinkError) {
-      // Don't fail the account upgrade if order linking fails
+      // Don't fail the account creation if order linking fails
       console.error('Order linking error:', orderLinkError);
     }
 
     // Generate token for auto-login
     const tokens = generateTokenPair({
-      id: updatedCustomer.id,
-      email: updatedCustomer.email,
+      id: finalCustomer.id,
+      email: finalCustomer.email,
       role: 'customer',
       account_type: 'individual',
-      first_name: updatedCustomer.first_name,
-      last_name: updatedCustomer.last_name
+      first_name: finalCustomer.first_name,
+      last_name: finalCustomer.last_name
     }, store_id);
 
     // Remove password from response
-    const { password: _, ...customerWithoutPassword } = updatedCustomer;
+    const { password: _, ...customerWithoutPassword } = finalCustomer;
 
     res.status(200).json({
       success: true,
-      message: 'Account upgraded successfully',
+      message: 'Account created successfully',
       data: {
         user: customerWithoutPassword,
         customer: customerWithoutPassword,
@@ -517,6 +597,7 @@ router.post('/upgrade-guest', async (req, res) => {
 /**
  * GET /api/auth/check-customer-status/:email/:store_id
  * Check if a customer has already registered (has password)
+ * Also checks if there are orders for this email (for "Create Account" flow)
  * Public route
  */
 router.get('/check-customer-status/:email/:store_id', async (req, res) => {
@@ -534,11 +615,24 @@ router.get('/check-customer-status/:email/:store_id', async (req, res) => {
       .maybeSingle();
 
     if (!customer) {
+      // No customer record - check if there are orders with this email
+      // This determines if "Create Account" should be shown
+      const { data: orders } = await tenantDb
+        .from('sales_orders')
+        .select('id')
+        .eq('customer_email', email)
+        .eq('store_id', store_id)
+        .limit(1);
+
+      const hasOrders = orders && orders.length > 0;
+
       return res.json({
         success: true,
         data: {
           exists: false,
-          hasPassword: false
+          hasPassword: false,
+          hasOrders: hasOrders,
+          canCreateAccount: hasOrders // Guest with orders can create account
         }
       });
     }
@@ -547,7 +641,9 @@ router.get('/check-customer-status/:email/:store_id', async (req, res) => {
       success: true,
       data: {
         exists: true,
-        hasPassword: customer.password !== null && customer.password !== undefined
+        hasPassword: customer.password !== null && customer.password !== undefined,
+        hasOrders: true,
+        canCreateAccount: !customer.password // Can create if no password yet
       }
     });
   } catch (error) {
