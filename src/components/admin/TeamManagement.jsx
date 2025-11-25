@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -26,7 +25,6 @@ import {
   Users,
   UserPlus,
   Mail,
-  MoreVertical,
   Shield,
   Edit,
   Trash2,
@@ -34,8 +32,7 @@ import {
   Eye,
   Plus,
   AlertCircle,
-  Send,
-  X
+  Send
 } from 'lucide-react';
 import FlashMessage from '@/components/storefront/FlashMessage';
 
@@ -576,26 +573,26 @@ export default function TeamManagement({ storeId, storeName }) {
                       {new Date(member.createdAt || member.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditDialog(member)}>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit Permissions
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => openRemoveMemberDialog(member.id, member.User?.email)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Remove from Team
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(member)}
+                          title="Edit permissions"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openRemoveMemberDialog(member.id, member.User?.email)}
+                          title="Remove from team"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

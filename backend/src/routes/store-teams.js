@@ -650,15 +650,20 @@ router.delete('/:store_id/members/:member_id', authorize(['admin', 'store_owner'
       });
     }
 
-    // Soft delete by setting status to 'removed'
-    const { error: updateError } = await masterDbClient
+    // Hard delete the team member
+    const { error: deleteError } = await masterDbClient
       .from('store_teams')
-      .update({
-        status: 'removed',
-        is_active: false,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', member_id);
+      .delete()
+      .eq('id', member_id)
+      .eq('store_id', store_id);
+
+    if (deleteError) {
+      console.error('Error deleting team member:', deleteError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to remove team member'
+      });
+    }
 
     res.json({
       success: true,
