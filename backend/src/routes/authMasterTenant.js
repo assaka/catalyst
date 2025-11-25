@@ -256,15 +256,31 @@ router.post('/login', async (req, res) => {
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (storesError || !stores || stores.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'No store found for user',
-          code: 'NO_STORE'
-        });
-      }
+      if (!storesError && stores && stores.length > 0) {
+        // User owns a store
+        storeId = stores[0].id;
+      } else {
+        // Check if user is a team member of any store
+        const { data: teamMemberships, error: teamError } = await masterDbClient
+          .from('store_teams')
+          .select('store_id')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1);
 
-      storeId = stores[0].id;
+        if (!teamError && teamMemberships && teamMemberships.length > 0) {
+          // User is a team member
+          storeId = teamMemberships[0].store_id;
+        } else {
+          // No owned stores and no team memberships
+          return res.status(404).json({
+            success: false,
+            error: 'No store found for user',
+            code: 'NO_STORE'
+          });
+        }
+      }
     }
 
     // Update last login (if method exists)
