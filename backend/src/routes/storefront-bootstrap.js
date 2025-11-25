@@ -81,11 +81,11 @@ async function getStoreBySlug(slug) {
   const tenantDb = await ConnectionManager.getStoreConnection(masterStore.id);
 
   // Step 3: Fetch full store data from tenant DB (authoritative source)
+  // Note: Only query by id, not slug - because slug param might be a custom domain
   const { data: store, error: tenantError } = await tenantDb
     .from('stores')
     .select('*')
     .eq('id', masterStore.id)
-    .eq('slug', slug)
     .maybeSingle();
 
   if (tenantError || !store) {
