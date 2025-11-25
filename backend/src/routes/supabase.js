@@ -165,21 +165,7 @@ router.get('/oauth-status', authMiddleware, async (req, res) => {
 // Get connection status and ensure buckets exist
 router.get('/status', authMiddleware, storeResolver(), async (req, res) => {
   try {
-    console.log('========================================');
-    console.log('📊 SUPABASE STATUS CHECK');
-    console.log('========================================');
-    console.log('   storeId:', req.storeId);
-
     const status = await supabaseIntegration.getConnectionStatus(req.storeId);
-
-    console.log('📊 getConnectionStatus returned:', JSON.stringify({
-      connected: status.connected,
-      connectionStatus: status.connectionStatus,
-      hasServiceRoleKey: status.hasServiceRoleKey,
-      projectUrl: status.projectUrl,
-      source: status.source,
-      message: status.message
-    }, null, 2));
 
     // If connected with service role key, ensure buckets exist
     if (status.connected && status.hasServiceRoleKey) {
@@ -189,11 +175,7 @@ router.get('/status', authMiddleware, storeResolver(), async (req, res) => {
       }
     }
 
-    const response = { success: true, ...status };
-    console.log('📊 Sending response to frontend:', JSON.stringify(response, null, 2));
-    console.log('========================================');
-
-    res.json(response);
+    res.json({ success: true, ...status });
   } catch (error) {
     console.error('Error getting Supabase status:', error);
     res.status(500).json({

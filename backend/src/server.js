@@ -174,7 +174,7 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Optimize OPTIONS preflight requests - handle them early before CORS async logic
-app.options('/api/*', (req, res) => {
+app.options('/api/*', async (req, res, next) => {
   // Get origin from request
   const origin = req.headers.origin;
 
@@ -183,6 +183,7 @@ app.options('/api/*', (req, res) => {
   const isLocalhost = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
   const isRenderApp = origin && origin.endsWith('.onrender.com');
 
+  // Quick check for known origins
   if (isVercelApp || isLocalhost || isRenderApp) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
@@ -192,6 +193,35 @@ app.options('/api/*', (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=86400'); // Browser cache
     res.setHeader('Vary', 'Origin'); // Important for caching
     return res.sendStatus(204);
+  }
+
+  // Check for custom domains (async lookup to master DB)
+  if (origin) {
+    try {
+      const { masterDbClient } = require('./database/masterConnection');
+      const hostname = new URL(origin).hostname;
+
+      const { data: customDomain, error: domainError } = await masterDbClient
+        .from('custom_domains')
+        .select('id')
+        .eq('domain', hostname)
+        .eq('is_active', true)
+        .eq('verification_status', 'verified')
+        .maybeSingle();
+
+      if (!domainError && customDomain) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,x-store-id,X-Store-Id,X-Language,x-session-id,X-Session-Id,Cache-Control,cache-control,Pragma,pragma,Expires,expires,params,headers');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Max-Age', '86400');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.setHeader('Vary', 'Origin');
+        return res.sendStatus(204);
+      }
+    } catch (error) {
+      console.warn('⚠️ OPTIONS custom domain check failed:', error.message);
+    }
   }
 
   // If not recognized origin, let CORS middleware handle it
@@ -231,24 +261,25 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // Check if origin is a verified custom domain
+    // Check if origin is a verified custom domain (using master DB Supabase client)
     try {
-      const { CustomDomain } = require('./models'); // Master DB model
+      const { masterDbClient } = require('./database/masterConnection');
       const hostname = new URL(origin).hostname;
 
-      const customDomain = await CustomDomain.findOne({
-        where: {
-          domain: hostname,
-          is_active: true,
-          verification_status: 'verified'
-        }
-      });
+      const { data: customDomain, error: domainError } = await masterDbClient
+        .from('custom_domains')
+        .select('id, store_id')
+        .eq('domain', hostname)
+        .eq('is_active', true)
+        .eq('verification_status', 'verified')
+        .maybeSingle();
 
-      if (customDomain) {
+      if (!domainError && customDomain) {
         return callback(null, true);
       }
     } catch (error) {
-      // Silently fail domain check
+      // Silently fail domain check - log for debugging
+      console.warn('⚠️ CORS custom domain check failed:', error.message);
     }
 
     callback(new Error('Not allowed by CORS: ' + origin));

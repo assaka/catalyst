@@ -1224,31 +1224,16 @@ class SupabaseIntegration {
    * Get connection status
    */
   async getConnectionStatus(storeId) {
-    console.log('[getConnectionStatus] Called for storeId:', storeId);
     try {
       // Get config and token using IntegrationConfig
       let config, token;
       try {
         config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
-        console.log('[getConnectionStatus] integration_configs result:', {
-          found: !!config,
-          connectionStatus: config?.connection_status,
-          isActive: config?.is_active
-        });
 
         // Get token from config (getSupabaseToken returns legacy format)
         token = await this.getSupabaseToken(storeId);
 
-        console.log('[getConnectionStatus] Token query result:', {
-          found: !!token,
-          hasAccessToken: !!token?.access_token,
-          hasRefreshToken: !!token?.refresh_token,
-          hasServiceRoleKey: !!token?.service_role_key,
-          projectUrl: token?.project_url
-        });
-
         if (!token) {
-          console.log('[getConnectionStatus] No OAuth token found, checking Redis/memory...');
 
           // Check Redis for pending OAuth tokens (from recent OAuth callback)
           try {
@@ -1261,7 +1246,6 @@ class SupabaseIntegration {
 
               if (tokenDataStr) {
                 const tokenData = JSON.parse(tokenDataStr);
-                console.log('[getConnectionStatus] Found OAuth tokens in Redis, migrating to integration_configs...');
 
                 // Save to integration_configs
                 const configData = {
@@ -1292,11 +1276,8 @@ class SupabaseIntegration {
                   .eq('store_id', storeId)
                   .eq('integration_type', this.integrationType);
 
-                console.log('[getConnectionStatus] ✅ Tokens migrated to integration_configs successfully');
-
                 // Clean up Redis
                 await redisClient.del(redisKey);
-                console.log('[getConnectionStatus] 🧹 Cleaned up Redis key');
 
                 // Set token from saved data
                 token = {
@@ -1315,7 +1296,6 @@ class SupabaseIntegration {
             // Check memory fallback if still no token
             if (!token && global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {
               const tokenData = global.pendingOAuthTokens.get(storeId);
-              console.log('[getConnectionStatus] Found OAuth tokens in memory, migrating to integration_configs...');
 
               // Save to integration_configs
               const configData = {
@@ -1346,11 +1326,8 @@ class SupabaseIntegration {
                 .eq('store_id', storeId)
                 .eq('integration_type', this.integrationType);
 
-              console.log('[getConnectionStatus] ✅ Tokens migrated to integration_configs successfully');
-
               // Clean up memory
               global.pendingOAuthTokens.delete(storeId);
-              console.log('[getConnectionStatus] 🧹 Cleaned up memory cache');
 
               // Set token from saved data
               token = {
@@ -1497,7 +1474,6 @@ class SupabaseIntegration {
       // Trust the actual OAuth token presence, not stale config flags
       if (!token) {
         // No token in integration_configs - check store_databases (provisioning credentials)
-        console.log('[getConnectionStatus] No integration_configs token, checking store_databases...');
         try {
           const StoreDatabase = require('../models/master/StoreDatabase');
           const storeDb = await StoreDatabase.findByStoreId(storeId);
@@ -1505,7 +1481,6 @@ class SupabaseIntegration {
           if (storeDb && storeDb.database_type === 'supabase') {
             const dbCredentials = storeDb.getCredentials();
             if (dbCredentials && dbCredentials.projectUrl && dbCredentials.serviceRoleKey) {
-              console.log('[getConnectionStatus] Found valid credentials in store_databases');
               // Return connected status using store_databases credentials
               return {
                 connected: true,
@@ -1520,7 +1495,7 @@ class SupabaseIntegration {
             }
           }
         } catch (dbError) {
-          console.log('[getConnectionStatus] Could not check store_databases:', dbError.message);
+          // Could not check store_databases
         }
 
         // No connection found in either place
@@ -1579,43 +1554,26 @@ class SupabaseIntegration {
 
         // If no service key in token, check store_databases
         if (!hasValidServiceKey && hasValidProjectUrl) {
-          console.log('[getConnectionStatus] No service key in token, checking store_databases...');
           try {
             const StoreDatabase = require('../models/master/StoreDatabase');
-            console.log('[getConnectionStatus] Querying store_databases table for storeId:', storeId);
             const storeDb = await StoreDatabase.findByStoreId(storeId);
-            console.log('[getConnectionStatus] store_databases query result:', {
-              found: !!storeDb,
-              databaseType: storeDb?.database_type,
-              connectionStatus: storeDb?.connection_status,
-              host: storeDb?.host
-            });
             if (storeDb && storeDb.database_type === 'supabase') {
               const dbCredentials = storeDb.getCredentials();
-              console.log('[getConnectionStatus] Decrypted credentials:', {
-                hasProjectUrl: !!dbCredentials?.projectUrl,
-                hasServiceRoleKey: !!dbCredentials?.serviceRoleKey,
-                projectUrl: dbCredentials?.projectUrl
-              });
               if (dbCredentials && dbCredentials.serviceRoleKey) {
                 hasValidServiceKey = true;
-                console.log('[getConnectionStatus] ✅ Found service role key in store_databases');
-              } else {
-                console.log('[getConnectionStatus] ❌ No service role key in store_databases credentials');
               }
             }
           } catch (dbError) {
-            console.log('[getConnectionStatus] ❌ Could not check store_databases:', dbError.message);
+            // Could not check store_databases
           }
         }
 
         // If we have valid credentials, update status to success and continue
         if (hasValidProjectUrl && hasValidServiceKey) {
-          console.log('[getConnectionStatus] Has valid credentials despite failed status, updating to success');
           try {
             await IntegrationConfig.updateConnectionStatus(config.id, storeId, 'success');
           } catch (updateError) {
-            console.log('[getConnectionStatus] Could not update status:', updateError.message);
+            // Could not update status
           }
           // Continue to return connected status below
         } else {
@@ -1672,11 +1630,10 @@ class SupabaseIntegration {
             const dbCredentials = storeDb.getCredentials();
             if (dbCredentials && dbCredentials.serviceRoleKey) {
               hasValidServiceKey = true;
-              console.log('[getConnectionStatus] Found service role key in store_databases');
             }
           }
         } catch (dbError) {
-          console.log('[getConnectionStatus] Could not check store_databases:', dbError.message);
+          // Could not check store_databases
         }
       }
 

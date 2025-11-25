@@ -254,19 +254,11 @@ StoreDatabase.findAllActive = async function() {
  */
 StoreDatabase.createWithCredentials = async function(storeId, databaseType, credentials) {
   try {
-    console.log('🔧 StoreDatabase.createWithCredentials called:', {
-      storeId,
-      databaseType,
-      hasProjectUrl: !!credentials.projectUrl,
-      hasServiceRoleKey: !!credentials.serviceRoleKey
-    });
-
     // Use Supabase client instead of Sequelize to avoid connection issues
     const { masterDbClient } = require('../../database/masterConnection');
     const { v4: uuidv4 } = require('uuid');
 
     // Encrypt credentials
-    console.log('🔧 Encrypting credentials...');
     const encryptedCredentials = encryptDatabaseCredentials(credentials);
 
     // Extract host from projectUrl
@@ -280,7 +272,6 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
     }
 
     // Create record via Supabase client
-    console.log('🔧 Creating record in master DB via Supabase client...');
     const { data, error } = await masterDbClient
       .from('store_databases')
       .insert({
@@ -303,12 +294,9 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
       throw new Error(`Failed to create store_databases record: ${error.message}`);
     }
 
-    console.log('✅ StoreDatabase record created successfully:', data.id);
-
     // Also create integration_config for supabase-oauth so storage service can find it
     if (databaseType === 'supabase' && credentials.projectUrl && credentials.serviceRoleKey) {
       try {
-        console.log('🔧 Also creating integration_config for storage access...');
         const ConnectionManager = require('../../services/database/ConnectionManager');
         const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
@@ -342,7 +330,6 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             });
-          console.log('✅ Integration config created for storage access');
         } else {
           // Update existing config with service role key
           await tenantDb
@@ -358,18 +345,15 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
               updated_at: new Date().toISOString()
             })
             .eq('id', existingConfig.id);
-          console.log('✅ Integration config updated with service role key');
         }
       } catch (integrationError) {
         // Don't fail the whole operation if integration_config fails
-        console.warn('⚠️ Could not create integration_config:', integrationError.message);
       }
     }
 
     return data;
   } catch (error) {
-    console.error('❌ StoreDatabase.createWithCredentials error:', error);
-    console.error('Error message:', error.message);
+    console.error('StoreDatabase.createWithCredentials error:', error.message);
     throw error;
   }
 };
