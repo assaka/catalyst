@@ -179,24 +179,11 @@ export default function Billing() {
     setPaymentError('');
     try {
       const userData = await User.me();
-      console.log('📊 [Billing] User data loaded:', { id: userData?.id, credits: userData?.credits });
-
-      // Check for pending credits purchase (optimistic update)
-      const pendingCredits = localStorage.getItem('pending_credits_purchase');
-      if (pendingCredits) {
-        // Clear the pending credits flag
-        localStorage.removeItem('pending_credits_purchase');
-        console.log('📊 [Billing] Cleared pending credits from localStorage');
-      }
-
       setUser(userData);
 
-      // Direct API call to bypass entity transformation and see raw response
-      console.log('📋 [Billing] Fetching transactions directly...');
+      // Fetch transactions
       const rawResponse = await apiClient.get('credits/transactions', { 'x-skip-transform': 'true' });
-      console.log('📋 [Billing] Raw API response:', rawResponse);
 
-      // Extract transactions from response
       let transactionData = [];
       if (rawResponse?.success && Array.isArray(rawResponse?.data)) {
         transactionData = rawResponse.data;
@@ -204,10 +191,6 @@ export default function Billing() {
         transactionData = rawResponse;
       }
 
-      console.log('📋 [Billing] Transactions processed:', {
-        count: transactionData?.length || 0,
-        data: transactionData
-      });
       setTransactions(transactionData);
     } catch (error) {
       console.error("Error loading billing data:", error);
@@ -258,35 +241,57 @@ export default function Billing() {
     }
   }, [selectedCurrency]);
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     setPaymentSuccess(true);
-
-    // Store purchased credits in localStorage for optimistic UI update
-    const purchasedCredits = selectedPackage?.credits || 0;
-    if (purchasedCredits > 0) {
-      localStorage.setItem('pending_credits_purchase', purchasedCredits.toString());
-
-      // Immediately update displayed balance (optimistic update)
-      setUser(prev => ({
-        ...prev,
-        credits: (prev?.credits || 0) + purchasedCredits
-      }));
-    }
-
     setSelectedPackage(null);
 
-    // Reload billing data (will clear localStorage once fresh data arrives)
-    loadBillingData();
+    // Wait for backend to process the payment and update balance
+    // Poll until balance is updated (max 10 attempts, 1 second apart)
+    const previousBalance = user?.credits || 0;
+    let attempts = 0;
+    const maxAttempts = 10;
 
-    // Dispatch event to trigger sidebar credits update with the new amount
-    window.dispatchEvent(new CustomEvent('creditsUpdated', {
-      detail: { addedCredits: purchasedCredits }
-    }));
+    const checkBalance = async () => {
+      attempts++;
+      try {
+        const userData = await User.me();
+        const newBalance = userData?.credits || 0;
 
-    // Show success message for 5 seconds
-    setTimeout(() => {
-        setPaymentSuccess(false);
-    }, 5000);
+        if (newBalance > previousBalance || attempts >= maxAttempts) {
+          // Balance updated or max attempts reached
+          setUser(userData);
+          window.dispatchEvent(new CustomEvent('creditsUpdated'));
+
+          // Also reload transactions
+          const rawResponse = await apiClient.get('credits/transactions', { 'x-skip-transform': 'true' });
+          let transactionData = [];
+          if (rawResponse?.success && Array.isArray(rawResponse?.data)) {
+            transactionData = rawResponse.data;
+          } else if (Array.isArray(rawResponse)) {
+            transactionData = rawResponse;
+          }
+          setTransactions(transactionData);
+
+          // Hide success message after 5 seconds
+          setTimeout(() => setPaymentSuccess(false), 5000);
+        } else {
+          // Balance not updated yet, try again
+          setTimeout(checkBalance, 1000);
+        }
+      } catch (error) {
+        console.error('Error checking balance:', error);
+        if (attempts >= maxAttempts) {
+          // Give up and just reload
+          loadBillingData();
+          setTimeout(() => setPaymentSuccess(false), 5000);
+        } else {
+          setTimeout(checkBalance, 1000);
+        }
+      }
+    };
+
+    // Start polling after a short delay to let backend process
+    setTimeout(checkBalance, 1500);
   };
 
   const handlePaymentError = (error) => {
