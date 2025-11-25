@@ -187,8 +187,8 @@ class EmailService {
       // Prepare email
       const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
       sendSmtpEmail.sender = {
-        name: config.sender_name,
-        email: config.sender_email
+        name: config.senderName,   // camelCase from getConfiguration()
+        email: config.senderEmail  // camelCase from getConfiguration()
       };
       sendSmtpEmail.to = [{ email: recipientEmail }];
       sendSmtpEmail.subject = subject;
