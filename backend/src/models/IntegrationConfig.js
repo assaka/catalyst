@@ -86,9 +86,23 @@ IntegrationConfig.encryptSensitiveData = (configData, integrationType) => {
 };
 
 IntegrationConfig.decryptSensitiveData = (configData, integrationType) => {
-  if (!configData || typeof configData !== 'object') {
-    return configData;
+  // Handle case where config_data is stored as a JSON string
+  let parsedData = configData;
+  if (typeof configData === 'string') {
+    try {
+      parsedData = JSON.parse(configData);
+    } catch (e) {
+      console.warn('Failed to parse config_data as JSON string:', e.message);
+      return configData;
+    }
   }
+
+  if (!parsedData || typeof parsedData !== 'object') {
+    return parsedData;
+  }
+
+  // Use parsedData from here on
+  configData = parsedData;
 
   const sensitiveFields = IntegrationConfig.getSensitiveFields(integrationType);
   const decrypted = { ...configData };
