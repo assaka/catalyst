@@ -137,13 +137,7 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
 
       const { data: logs, error } = await tenantDb
         .from('consent_logs')
-        .select(`
-          *,
-          stores!inner (
-            id,
-            name
-          )
-        `)
+        .select('*')
         .eq('store_id', store_id)
         .order('created_date', { ascending: false })
         .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
@@ -178,13 +172,7 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
 
             const { data: logs, error } = await tenantDb
               .from('consent_logs')
-              .select(`
-                *,
-                stores!inner (
-                  id,
-                  name
-                )
-              `)
+              .select('*')
               .eq('store_id', storeId)
               .order('created_date', { ascending: false });
 
