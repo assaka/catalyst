@@ -1197,7 +1197,7 @@ app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
           first_name: firstName,
           last_name: lastName || '',
           role: 'store_owner',
-          account_type: 'individual',
+          account_type: 'agency',
           is_active: true,
           email_verified: true, // Auto-verify since they're accepting invitation
           created_at: new Date().toISOString(),
