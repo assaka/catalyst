@@ -165,10 +165,7 @@ export function useABTesting(storeId, pageType = null) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log('[useABTesting] Hook triggered:', { storeId, pageType });
-
     if (!storeId) {
-      console.log('[useABTesting] No storeId, skipping');
       setIsLoading(false);
       return;
     }
@@ -183,9 +180,6 @@ export function useABTesting(storeId, pageType = null) {
           ? `/api/ab-testing/active/${storeId}?pageType=${pageType}`
           : `/api/ab-testing/active/${storeId}`;
 
-        console.log('[useABTesting] Fetching from:', url);
-        console.log('[useABTesting] Session ID:', sessionId);
-
         const response = await fetch(url, {
           headers: {
             'Content-Type': 'application/json',
@@ -193,25 +187,19 @@ export function useABTesting(storeId, pageType = null) {
           }
         });
 
-        console.log('[useABTesting] Response status:', response.status);
-
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('[useABTesting] Error response:', errorText);
           throw new Error(`Failed to fetch active tests: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('[useABTesting] Response data:', data);
 
         if (data.success) {
-          console.log('[useABTesting] ✅ Loaded', data.data.length, 'active tests');
           setActiveTests(data.data);
         } else {
           throw new Error(data.error || 'Unknown error');
         }
       } catch (err) {
-        console.error('[useABTesting] Error fetching active tests:', err);
         setError(err.message);
         setActiveTests([]); // Set empty array on error
       } finally {

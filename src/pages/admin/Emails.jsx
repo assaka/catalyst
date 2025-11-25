@@ -59,7 +59,6 @@ export default function Emails() {
   const loadTemplates = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      console.warn("Emails: No store selected.");
       setTemplates([]);
       setLoading(false);
       return;
@@ -68,13 +67,8 @@ export default function Emails() {
     setLoading(true);
     try {
       const templatesData = await EmailTemplate.filter({ store_id: storeId });
-      console.log('📧 Emails - Loaded templates:', {
-        count: templatesData?.length,
-        templates: templatesData
-      });
       setTemplates(templatesData || []);
     } catch (error) {
-      console.error("Error loading email templates:", error);
       setTemplates([]);
     } finally {
       setLoading(false);
@@ -92,13 +86,8 @@ export default function Emails() {
     setLoadingPdf(true);
     try {
       const response = await api.get(`/pdf-templates?store_id=${storeId}`);
-      console.log('📄 PDF Templates - Loaded:', {
-        count: response?.data?.length,
-        templates: response?.data
-      });
       setPdfTemplates(response?.data || []);
     } catch (error) {
-      console.error("Error loading PDF templates:", error);
       setPdfTemplates([]);
     } finally {
       setLoadingPdf(false);
@@ -108,7 +97,6 @@ export default function Emails() {
   const handleFormSubmit = async (formData) => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      console.error("Cannot save email template: No store selected.");
       setFlashMessage({ type: 'error', message: 'Cannot save email template: No store selected.' });
       return;
     }
@@ -125,7 +113,6 @@ export default function Emails() {
       setEditingTemplate(null);
       loadTemplates();
     } catch (error) {
-      console.error("Failed to save email template", error);
       setFlashMessage({ type: 'error', message: 'Failed to save email template.' });
     }
   };
@@ -151,7 +138,6 @@ export default function Emails() {
       setFlashMessage({ type: 'success', message: `Email template ${template.is_active ? 'deactivated' : 'activated'} successfully!` });
       loadTemplates();
     } catch (error) {
-      console.error("Failed to toggle template status", error);
       setFlashMessage({ type: 'error', message: 'Failed to toggle template status.' });
     }
   };
@@ -165,7 +151,6 @@ export default function Emails() {
         setFlashMessage({ type: 'success', message: 'Email template deleted successfully!' });
         loadTemplates();
       } catch (error) {
-        console.error("Failed to delete email template", error);
         setFlashMessage({ type: 'error', message: 'Failed to delete email template.' });
       }
     }
@@ -179,7 +164,6 @@ export default function Emails() {
       const response = await EmailTemplate.bulkTranslate(storeId, fromLang, toLang);
       return response;
     } catch (error) {
-      console.error("Bulk translate error:", error);
       return { success: false, message: error.message };
     }
   };
@@ -194,7 +178,6 @@ export default function Emails() {
       setEditingPdfTemplate(null);
       loadPdfTemplates();
     } catch (error) {
-      console.error("Failed to save PDF template", error);
       setFlashMessage({ type: 'error', message: 'Failed to save PDF template.' });
     }
   };
@@ -216,7 +199,6 @@ export default function Emails() {
       setFlashMessage({ type: 'success', message: `PDF template ${template.is_active ? 'deactivated' : 'activated'} successfully!` });
       loadPdfTemplates();
     } catch (error) {
-      console.error("Failed to toggle PDF template status", error);
       setFlashMessage({ type: 'error', message: 'Failed to toggle PDF template status.' });
     }
   };

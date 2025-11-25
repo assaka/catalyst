@@ -1277,7 +1277,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       } else {
         // Registration
         if (formData.password !== formData.confirmPassword) {
-          setError(t('message.password_mismatch'));
+          setError(t('message.password_mismatch', 'Passwords do not match'));
           return;
         }
 

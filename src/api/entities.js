@@ -20,18 +20,9 @@ class BaseEntity {
       const userRole = apiClient.getCurrentUserRole();
       const usePublicAPI = shouldUsePublicAPI(this.endpoint, hasToken, userRole);
 
-      console.log('🔍 BaseEntity.findAll:', {
-        endpoint: this.endpoint,
-        hasToken: !!hasToken,
-        userRole: userRole,
-        usePublicAPI: usePublicAPI,
-        params: params
-      });
-
       let response;
       if (usePublicAPI) {
         // Use public endpoint for endpoints that support it
-        console.log('📞 Using public API for:', this.endpoint);
         response = await apiClient.publicRequest('GET', url);
         
         // Public API usually returns just an array
@@ -64,7 +55,6 @@ class BaseEntity {
         return Array.isArray(response) ? response : [];
       }
     } catch (error) {
-      console.error(`BaseEntity.findAll() error for ${this.endpoint}:`, error.message);
       return [];
     }
   }
@@ -217,7 +207,6 @@ class BaseEntity {
         };
       }
     } catch (error) {
-      console.error(`BaseEntity.findPaginated() error for ${this.endpoint}:`, error.message);
       return {
         data: [],
         pagination: {

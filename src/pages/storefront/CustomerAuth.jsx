@@ -160,7 +160,7 @@ export default function CustomerAuth() {
       } else {
         // Registration
         if (formData.password !== formData.confirmPassword) {
-          setError(t('message.password_mismatch'));
+          setError(t('message.password_mismatch', 'Passwords do not match'));
           return;
         }
 
