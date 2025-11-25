@@ -12,6 +12,7 @@ const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@catalyst.com';
 /**
  * Master Email Header Component
  * Consistent branding across all platform emails
+ * Note: Uses solid background colors for email client compatibility (no gradients)
  */
 const masterEmailHeader = (options = {}) => {
   const {
@@ -19,7 +20,7 @@ const masterEmailHeader = (options = {}) => {
     subtitle = '',
     logoUrl = null,
     primaryColor = '#6366f1', // Indigo
-    secondaryColor = '#8b5cf6' // Purple
+    secondaryColor = '#8b5cf6' // Purple (unused - keeping for API compatibility)
   } = options;
 
   return `
@@ -27,26 +28,38 @@ const masterEmailHeader = (options = {}) => {
     <table role="presentation" style="width: 100%; border-collapse: collapse;">
       <tr>
         <td style="padding: 0;">
-          <!-- Header with gradient -->
-          <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%); border-radius: 12px 12px 0 0;">
+          <!-- Header with solid background (gradients don't work in email clients) -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: ${primaryColor}; border-radius: 12px 12px 0 0;">
             <tr>
-              <td style="padding: 40px 40px 30px; text-align: center;">
+              <td style="padding: 40px 40px 30px; text-align: center; background-color: ${primaryColor};">
                 ${logoUrl ? `
                 <img src="${logoUrl}" alt="${PLATFORM_NAME}" style="max-width: 180px; height: auto; margin-bottom: 20px;" />
                 ` : `
-                <div style="font-size: 28px; font-weight: 700; color: #ffffff; margin-bottom: 10px; letter-spacing: -0.5px;">
-                  ${PLATFORM_NAME}
-                </div>
+                <table role="presentation" style="margin: 0 auto 10px auto;">
+                  <tr>
+                    <td style="font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">
+                      ${PLATFORM_NAME}
+                    </td>
+                  </tr>
+                </table>
                 `}
                 ${title ? `
-                <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 600; line-height: 1.3;">
-                  ${title}
-                </h1>
+                <table role="presentation" style="width: 100%;">
+                  <tr>
+                    <td style="color: #ffffff; font-size: 26px; font-weight: 600; line-height: 1.3; text-align: center;">
+                      ${title}
+                    </td>
+                  </tr>
+                </table>
                 ` : ''}
                 ${subtitle ? `
-                <p style="margin: 12px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px; font-weight: 400;">
-                  ${subtitle}
-                </p>
+                <table role="presentation" style="width: 100%; margin-top: 12px;">
+                  <tr>
+                    <td style="color: #e0e7ff; font-size: 16px; font-weight: 400; text-align: center;">
+                      ${subtitle}
+                    </td>
+                  </tr>
+                </table>
                 ` : ''}
               </td>
             </tr>
@@ -598,6 +611,7 @@ const passwordResetEmail = (data) => {
 /**
  * Team Invitation Email Template
  * Sent when a store owner invites someone to join their team
+ * Layout matches the AcceptInvitation page design
  */
 const teamInvitationEmail = (data) => {
   const {
@@ -630,48 +644,78 @@ const teamInvitationEmail = (data) => {
     }
   };
 
-  const header = masterEmailHeader({
-    title: "You're Invited!",
-    subtitle: `Join ${cleanStoreName} on ${PLATFORM_NAME}`,
-    primaryColor: '#3b82f6', // Blue
-    secondaryColor: '#8b5cf6' // Purple
-  });
-
   const footer = masterEmailFooter();
 
   const content = `
-    ${header}
+    <!-- Custom Header matching AcceptInvitation page -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+          <!-- Daino Branding -->
+          <table role="presentation" style="margin: 0 auto 24px auto;">
+            <tr>
+              <td style="vertical-align: middle; padding-right: 12px;">
+                <!-- Daino Logo Icon -->
+                <table role="presentation" style="width: 40px; height: 40px; background-color: #6366f1; border-radius: 8px;">
+                  <tr>
+                    <td align="center" valign="middle" style="color: #ffffff; font-size: 20px; font-weight: 700;">
+                      D
+                    </td>
+                  </tr>
+                </table>
+              </td>
+              <td style="vertical-align: middle; text-align: left;">
+                <p style="margin: 0; color: #6366f1; font-size: 20px; font-weight: 700;">Daino</p>
+                <p style="margin: 0; color: #6b7280; font-size: 12px;">E-commerce Platform</p>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Invitation Icon -->
+          <table role="presentation" style="margin: 0 auto 16px auto;">
+            <tr>
+              <td style="width: 80px; height: 80px; background-color: #eef2ff; border-radius: 16px; text-align: center; vertical-align: middle;">
+                <span style="font-size: 40px;">👥</span>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Title -->
+          <table role="presentation" style="width: 100%;">
+            <tr>
+              <td style="text-align: center;">
+                <h1 style="margin: 0 0 8px 0; color: #111827; font-size: 24px; font-weight: 700;">You're Invited!</h1>
+                <p style="margin: 0; color: #6b7280; font-size: 16px;">Join the team and start collaborating</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
 
     <!-- Email Body -->
     <table role="presentation" style="width: 100%; border-collapse: collapse;">
       <tr>
-        <td class="email-content" style="padding: 40px;">
-          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
-            Hi there,
-          </p>
+        <td style="padding: 32px 40px;">
 
-          <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
-            <strong>${inviterName || inviterEmail}</strong> has invited you to join <strong>${cleanStoreName}</strong> as ${roleArticle} <strong>${role}</strong>.
-          </p>
-
-          <!-- Store Card -->
-          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f0f9ff; border: 1px solid #e0e7ff; border-radius: 12px; margin-bottom: 25px;">
+          <!-- Store Info Card -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f0f9ff; border: 1px solid #e0e7ff; border-radius: 12px; margin-bottom: 24px;">
             <tr>
-              <td style="padding: 24px;">
+              <td style="padding: 20px;">
                 <table role="presentation" style="width: 100%; border-collapse: collapse;">
                   <tr>
-                    <td style="vertical-align: middle; width: 60px;">
-                      <table role="presentation" style="width: 50px; height: 50px; background-color: #6366f1; border-radius: 12px;">
+                    <td style="vertical-align: middle; width: 56px;">
+                      <table role="presentation" style="width: 48px; height: 48px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb;">
                         <tr>
-                          <td align="center" valign="middle" style="color: #ffffff; font-size: 24px; font-weight: 700;">
-                            ${cleanStoreName.charAt(0).toUpperCase()}
+                          <td align="center" valign="middle" style="color: #3b82f6; font-size: 24px;">
+                            🏪
                           </td>
                         </tr>
                       </table>
                     </td>
                     <td style="vertical-align: middle; padding-left: 16px;">
+                      <p style="margin: 0 0 2px 0; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">You're joining store</p>
                       <p style="margin: 0; color: #111827; font-size: 18px; font-weight: 700;">${cleanStoreName}</p>
-                      <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">on ${PLATFORM_NAME}</p>
                     </td>
                   </tr>
                 </table>
@@ -679,17 +723,33 @@ const teamInvitationEmail = (data) => {
             </tr>
           </table>
 
-          <!-- Role Badge -->
-          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+          <!-- Role & Inviter Grid -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
             <tr>
-              <td style="padding: 16px; background-color: #f9fafb; border-radius: 8px; text-align: center;">
-                <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-                  Your Role
-                </p>
-                <table role="presentation" style="margin: 0 auto;">
+              <td style="width: 50%; padding-right: 8px; vertical-align: top;">
+                <!-- Role -->
+                <table role="presentation" style="width: 100%; background-color: #f9fafb; border-radius: 12px;">
                   <tr>
-                    <td style="padding: 8px 20px; background-color: ${getRoleBgColor(role)}; color: #ffffff; font-weight: 600; font-size: 14px; border-radius: 6px; text-transform: capitalize;">
-                      ${role}
+                    <td style="padding: 16px;">
+                      <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Your Role</p>
+                      <table role="presentation">
+                        <tr>
+                          <td style="padding: 6px 16px; background-color: ${getRoleBgColor(role)}; color: #ffffff; font-weight: 600; font-size: 13px; border-radius: 6px; text-transform: capitalize;">
+                            ${role}
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+              <td style="width: 50%; padding-left: 8px; vertical-align: top;">
+                <!-- Inviter -->
+                <table role="presentation" style="width: 100%; background-color: #f9fafb; border-radius: 12px;">
+                  <tr>
+                    <td style="padding: 16px;">
+                      <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Invited By</p>
+                      <p style="margin: 0; color: #111827; font-size: 14px; font-weight: 500;">${inviterName || inviterEmail || 'Store Owner'}</p>
                     </td>
                   </tr>
                 </table>
@@ -699,54 +759,74 @@ const teamInvitationEmail = (data) => {
 
           ${message ? `
           <!-- Personal Message -->
-          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
             <tr>
-              <td style="padding: 16px; background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0;">
-                <p style="margin: 0 0 4px 0; color: #92400e; font-size: 12px; font-weight: 600; text-transform: uppercase;">
-                  Message from ${inviterName || 'the inviter'}
-                </p>
-                <p style="margin: 0; color: #78350f; font-size: 14px; font-style: italic; line-height: 1.5;">
-                  "${message}"
-                </p>
+              <td style="padding: 16px; background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 12px;">
+                <table role="presentation" style="width: 100%;">
+                  <tr>
+                    <td style="width: 24px; vertical-align: top; padding-right: 8px;">
+                      <span style="font-size: 16px;">✨</span>
+                    </td>
+                    <td style="vertical-align: top;">
+                      <p style="margin: 0; color: #78350f; font-size: 14px; font-style: italic; line-height: 1.5;">"${message}"</p>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
           </table>
           ` : ''}
 
-          <!-- CTA Button -->
-          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+          <!-- Expiration Warning -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+            <tr>
+              <td style="padding: 12px 16px; background-color: #fef3c7; border-radius: 8px;">
+                <table role="presentation" style="width: 100%;">
+                  <tr>
+                    <td style="width: 24px; vertical-align: middle;">
+                      <span style="font-size: 14px;">⏰</span>
+                    </td>
+                    <td style="vertical-align: middle; color: #92400e; font-size: 13px;">
+                      This invitation expires on <strong>${expiresDate}</strong>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- CTA Buttons -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
             <tr>
               <td align="center">
                 <!--[if mso]>
-                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${inviteUrl}" style="height:50px;v-text-anchor:middle;width:200px;" arcsize="16%" strokecolor="#6366f1" fillcolor="#6366f1">
+                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${inviteUrl}" style="height:48px;v-text-anchor:middle;width:200px;" arcsize="17%" strokecolor="#6366f1" fillcolor="#6366f1">
                 <w:anchorlock/>
                 <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:bold;">Accept Invitation</center>
                 </v:roundrect>
                 <![endif]-->
                 <!--[if !mso]><!-->
-                <a href="${inviteUrl}" style="display: inline-block; padding: 16px 40px; background-color: #6366f1; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
-                  Accept Invitation
+                <a href="${inviteUrl}" style="display: inline-block; padding: 14px 40px; background-color: #6366f1; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px;">
+                  ✓ Accept Invitation
                 </a>
                 <!--<![endif]-->
               </td>
             </tr>
           </table>
 
-          <!-- Expiration Warning -->
-          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+          <!-- Footer text -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; border-top: 1px solid #e5e7eb; padding-top: 24px;">
             <tr>
-              <td style="padding: 12px 16px; background-color: #fef3c7; border-radius: 8px; text-align: center;">
-                <p style="margin: 0; color: #92400e; font-size: 13px;">
-                  ⏰ This invitation expires on <strong>${expiresDate}</strong>
+              <td style="padding-top: 24px; text-align: center;">
+                <p style="margin: 0 0 8px 0; color: #9ca3af; font-size: 12px;">
+                  By accepting, you agree to Daino's Terms of Service and Privacy Policy
+                </p>
+                <p style="margin: 0; color: #d1d5db; font-size: 12px;">
+                  Powered by <span style="color: #9ca3af; font-weight: 500;">Daino</span> — E-commerce made simple
                 </p>
               </td>
             </tr>
           </table>
-
-          <p style="margin: 0; color: #9ca3af; font-size: 13px; text-align: center; line-height: 1.5;">
-            If you didn't expect this invitation, you can safely ignore this email.<br>
-            If the button doesn't work, copy this link: <a href="${inviteUrl}" style="color: #6366f1; word-break: break-all;">${inviteUrl}</a>
-          </p>
         </td>
       </tr>
     </table>
@@ -755,7 +835,7 @@ const teamInvitationEmail = (data) => {
   `;
 
   return masterEmailBase(content, {
-    preheader: `${inviterName || 'Someone'} has invited you to join ${cleanStoreName} on ${PLATFORM_NAME}`
+    preheader: `${inviterName || 'Someone'} has invited you to join ${cleanStoreName} on Daino`
   });
 };
 
