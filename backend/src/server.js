@@ -804,6 +804,7 @@ app.use('/api', slotConfigurationRoutes); // Slot configurations for cart layout
 app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) => {
   try {
     const { payment_reference } = req.params;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
     if (!payment_reference) {
       return res.status(400).json({
@@ -812,11 +813,31 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
       });
     }
 
-    // Try simple lookup first
-    const { Order } = require('./models'); // Tenant DB model
-    const order = await Order.findOne({
-      where: { payment_reference }
-    });
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    // Use ConnectionManager for tenant database
+    const ConnectionManager = require('./core/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Find order by payment reference
+    const { data: order, error: orderError } = await tenantDb
+      .from('orders')
+      .select('*')
+      .eq('payment_reference', payment_reference)
+      .maybeSingle();
+
+    if (orderError) {
+      console.error('Error fetching order:', orderError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch order'
+      });
+    }
 
     if (!order) {
       return res.status(404).json({
@@ -825,45 +846,35 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
       });
     }
 
-    // Try to add associations gradually
-    let orderWithDetails = order;
-    try {
-      const { Store, OrderItem, Product, ProductTranslation } = require('./models'); // Hybrid models
+    // Get order items with product info
+    const { data: orderItems, error: itemsError } = await tenantDb
+      .from('order_items')
+      .select(`
+        *,
+        products (
+          id,
+          sku,
+          product_translations (
+            name,
+            language_code
+          )
+        )
+      `)
+      .eq('order_id', order.id);
 
-      // Get order items separately
-      const orderItems = await OrderItem.findAll({
-        where: { order_id: order.id },
-        include: [{
-          model: Product,
-          attributes: ['id', 'sku'],
-          include: [{
-            model: ProductTranslation,
-            as: 'translations',
-            attributes: ['name', 'language_code'],
-            required: false
-          }],
-          required: false
-        }]
-      });
-
-      // Get store separately
-      const store = await Store.findByPk(order.store_id, {
-        attributes: ['id', 'name']
-      });
-
-      orderWithDetails = {
-        ...order.toJSON(),
-        Store: store,
-        OrderItems: orderItems
-      };
-    } catch (includeError) {
-      // Return basic order with empty OrderItems if associations fail
-      orderWithDetails = {
-        ...order.toJSON(),
-        Store: null,
-        OrderItems: []
-      };
+    if (itemsError) {
+      console.warn('Error fetching order items:', itemsError);
     }
+
+    // Get store info from master DB
+    const { getMasterStore } = require('./core/masterConnection');
+    const store = await getMasterStore(store_id);
+
+    const orderWithDetails = {
+      ...order,
+      Store: store ? { id: store.id, name: store.name } : null,
+      OrderItems: orderItems || []
+    };
 
     res.json({
       success: true,
