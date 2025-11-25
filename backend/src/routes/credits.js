@@ -69,10 +69,22 @@ router.get('/transactions', authMiddleware, async (req, res) => {
 
     console.log('📋 [Transactions] Request received:', {
       userId,
-      storeIdFromQuery: req.query.store_id,
-      storeIdFromHeader: req.headers['x-store-id'],
-      passingStoreIdToQuery: null,
+      userEmail: req.user.email,
       limit
+    });
+
+    // DEBUG: Query ALL transactions to see what's in the table
+    const { masterDbClient } = require('../database/masterConnection');
+    const { data: allTransactions, error: allError } = await masterDbClient
+      .from('credit_transactions')
+      .select('id, user_id, credits_amount, status, created_at')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    console.log('📋 [Transactions] DEBUG - All transactions in DB:', {
+      count: allTransactions?.length || 0,
+      transactions: allTransactions?.map(t => ({ id: t.id, user_id: t.user_id, credits: t.credits_amount })) || [],
+      error: allError?.message
     });
 
     if (limit < 1 || limit > 200) {

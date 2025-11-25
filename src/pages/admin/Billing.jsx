@@ -281,8 +281,6 @@ export default function Billing() {
       } catch (error) {
         console.error('Error checking balance:', error);
         if (attempts >= maxAttempts) {
-          // Give up and just reload
-          loadBillingData();
           setTimeout(() => setPaymentSuccess(false), 5000);
         } else {
           setTimeout(checkBalance, 1000);
