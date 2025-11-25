@@ -489,6 +489,9 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
             <Card>
               <CardHeader>
                 <CardTitle>Available Custom Options</CardTitle>
+                <p className="text-sm text-gray-600">
+                  Products appear here when you enable "Set as Custom Option for Other Products" in the Product settings.
+                </p>
               </CardHeader>
               <CardContent>
                 {loading ? (

@@ -602,6 +602,13 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
         }
       }
 
+      // Check attribute set conditions
+      if (conditions?.attribute_sets?.length > 0 && productData.attribute_set_id) {
+        if (conditions.attribute_sets.includes(productData.attribute_set_id)) {
+          return true;
+        }
+      }
+
       // Check attribute conditions
       if (conditions?.attribute_conditions?.length > 0) {
         for (const condition of conditions.attribute_conditions) {
