@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabaseIntegration = require('../services/supabase-integration');
+const supabaseMediaStorageOAuth = require('../services/supabase-media-storage-oauth');
 const supabaseStorage = require('../services/supabase-storage');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { storeResolver } = require('../middleware/storeResolver');
@@ -577,6 +578,185 @@ router.get('/callback', async (req, res) => {
               'padding: 10px 20px; border-radius: 6px; cursor: pointer; ' +
               'font-size: 16px; margin-top: 10px;">Close Window</button>';
           }
+        </script>
+      </body>
+      </html>
+    `);
+  }
+});
+
+// Media Storage OAuth callback
+router.get('/storage/callback', async (req, res) => {
+  try {
+    console.log('📦 Supabase Media Storage OAuth callback received:', {
+      hasCode: !!req.query.code,
+      hasState: !!req.query.state,
+      hasError: !!req.query.error
+    });
+
+    const { code, state, error, error_description } = req.query;
+
+    // Check for OAuth errors from Supabase
+    if (error) {
+      console.error('OAuth error from Supabase:', error, error_description);
+      throw new Error(error_description || error || 'Authorization failed');
+    }
+
+    if (!code || !state) {
+      throw new Error('Authorization code or state not provided');
+    }
+
+    // Exchange code for token using media storage OAuth service
+    console.log('📦 Exchanging code for token via media storage OAuth...');
+    const result = await supabaseMediaStorageOAuth.exchangeCodeForToken(code, state);
+
+    console.log('📦 Media Storage Token exchange result:', result);
+
+    // Try to create buckets after successful connection
+    if (result.success) {
+      try {
+        console.log('📦 Attempting to create storage buckets...');
+        const bucketResult = await supabaseStorage.ensureBucketsExist(result.storeId);
+        if (bucketResult.success) {
+          console.log('📦 Bucket creation result:', bucketResult.message);
+        }
+      } catch (bucketError) {
+        console.log('📦 Could not create buckets immediately:', bucketError.message);
+      }
+    }
+
+    // Send success page
+    console.log('✅ Media Storage OAuth callback successful');
+    res.setHeader('Content-Security-Policy', "script-src 'unsafe-inline' 'self'; style-src 'unsafe-inline' 'self';");
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Storage Connected</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          }
+          .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 400px;
+          }
+          .checkmark {
+            color: #10b981;
+            font-size: 64px;
+            margin-bottom: 1rem;
+          }
+          h1 { color: #1f2937; margin-bottom: 0.5rem; }
+          p { color: #6b7280; margin-bottom: 1rem; }
+          button {
+            background: #f3f4f6;
+            color: #374151;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.2s;
+          }
+          button:hover { background: #e5e7eb; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="checkmark">✓</div>
+          <h1>Storage Connected!</h1>
+          <p>Your Supabase storage has been connected successfully.</p>
+          <p><strong>Project:</strong> ${result.projectName || 'Connected'}</p>
+          <button id="closeBtn">Close & Continue</button>
+        </div>
+        <script>
+          (function() {
+            console.log('📦 Storage OAuth success page loaded');
+
+            document.getElementById('closeBtn').addEventListener('click', closeWindow);
+            setTimeout(closeWindow, 5000);
+
+            function closeWindow() {
+              if (window.opener && !window.opener.closed) {
+                window.opener.postMessage({
+                  type: 'supabase-storage-oauth-success',
+                  success: true,
+                  projectName: '${result.projectName || ''}'
+                }, '*');
+              }
+              setTimeout(() => window.close(), 500);
+            }
+          })();
+        </script>
+      </body>
+      </html>
+    `);
+
+  } catch (error) {
+    console.error('📦 Media Storage OAuth callback error:', error.message);
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Connection Failed</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: #f3f4f6;
+          }
+          .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+          }
+          .error { color: #ef4444; font-size: 48px; margin-bottom: 1rem; }
+          h1 { color: #1f2937; margin-bottom: 0.5rem; }
+          p { color: #6b7280; }
+          .error-details {
+            background: #fef2f2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            font-size: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="error">✗</div>
+          <h1>Connection Failed</h1>
+          <p>Unable to connect storage. This window will close automatically.</p>
+          <div class="error-details">${error.message}</div>
+        </div>
+        <script>
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage({
+              type: 'supabase-storage-oauth-error',
+              error: '${error.message.replace(/'/g, "\\'")}'
+            }, '*');
+          }
+          setTimeout(() => window.close(), 3000);
         </script>
       </body>
       </html>
