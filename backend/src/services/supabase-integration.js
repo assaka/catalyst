@@ -694,15 +694,14 @@ class SupabaseIntegration {
               .eq('integration_type', this.integrationType)
               .eq('is_active', true)
               .maybeSingle();
-            if (config) {
+            if (config?.data) {
               await tenantDb
                 .from('integration_configs')
-                .eq('id', config.id)
                 .update({
                   is_active: false,
                   connection_status: 'failed',
                   config_data: {
-                    ...config.config_data,
+                    ...config.data.config_data,
                     connected: false,
                     autoDisconnected: true,
                     autoDisconnectedAt: new Date(),
@@ -713,7 +712,8 @@ class SupabaseIntegration {
                     message: 'Authorization was revoked and connection was automatically removed.'
                   },
                   updated_at: new Date()
-                });
+                })
+                .eq('id', config.data.id);
             }
             
             throw new Error('Authorization was revoked and the connection has been automatically removed. Please reconnect.');
@@ -821,18 +821,21 @@ class SupabaseIntegration {
         const tenantDb = await ConnectionManager.getStoreConnection(storeId);
         const config = await tenantDb
           .from('integration_configs')
-          .where({ store_id: storeId, integration_type: this.integrationType, is_active: true })
-          .first();
-        if (config) {
+          .select('*')
+          .eq('store_id', storeId)
+          .eq('integration_type', this.integrationType)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (config?.data) {
           await tenantDb
             .from('integration_configs')
-            .eq('id', config.id)
             .update({
               connection_status: 'success',
               connection_error: null,
               connection_tested_at: new Date(),
               updated_at: new Date()
-            });
+            })
+            .eq('id', config.data.id);
         }
 
         return {
@@ -871,18 +874,21 @@ class SupabaseIntegration {
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
       const config = await tenantDb
         .from('integration_configs')
-        .where({ store_id: storeId, integration_type: this.integrationType, is_active: true })
-        .first();
-      if (config) {
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('integration_type', this.integrationType)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (config?.data) {
         await tenantDb
           .from('integration_configs')
-          .eq('id', config.id)
           .update({
             connection_status: 'failed',
             connection_error: error.message,
             connection_tested_at: new Date(),
             updated_at: new Date()
-          });
+          })
+          .eq('id', config.data.id);
       }
 
       console.error('Connection test error:', error);
@@ -899,11 +905,14 @@ class SupabaseIntegration {
 
       // Get current config data before deletion
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-      const config = await tenantDb
+      const { data: configData } = await tenantDb
         .from('integration_configs')
-        .where({ store_id: storeId, integration_type: this.integrationType, is_active: true })
-        .first();
-      const userEmail = config?.config_data?.userEmail || null;
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('integration_type', this.integrationType)
+        .eq('is_active', true)
+        .maybeSingle();
+      const userEmail = configData?.config_data?.userEmail || null;
 
       // Delete token from tenant database
       const token = await this.getSupabaseToken(storeId);
@@ -923,15 +932,14 @@ class SupabaseIntegration {
       }
 
       // Update IntegrationConfig - preserve userEmail to detect orphaned authorizations
-      if (config) {
+      if (configData) {
         console.log('Updating IntegrationConfig to disconnected state');
 
         // Check if this was a revoked connection
-        const wasRevoked = config.connection_status === 'failed';
+        const wasRevoked = configData.connection_status === 'failed';
 
         await tenantDb
           .from('integration_configs')
-          .eq('id', config.id)
           .update({
             is_active: false,
             connection_status: 'failed',
@@ -945,7 +953,8 @@ class SupabaseIntegration {
                 : 'Disconnected by user. App may still be authorized in Supabase account.'
             },
             updated_at: new Date()
-          });
+          })
+          .eq('id', configData.id);
       } else {
         console.log('No IntegrationConfig found to update');
       }
@@ -1150,17 +1159,19 @@ class SupabaseIntegration {
 
       // Update IntegrationConfig as well
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-      const config = await tenantDb
+      const { data: configData } = await tenantDb
         .from('integration_configs')
-        .where({ store_id: storeId, integration_type: this.integrationType, is_active: true })
-        .first();
-      if (config) {
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('integration_type', this.integrationType)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (configData) {
         await tenantDb
           .from('integration_configs')
-          .eq('id', config.id)
           .update({
             config_data: {
-              ...config.config_data,
+              ...configData.config_data,
               projectUrl: `https://${projectId}.supabase.co`,
               projectName: project.name,
               projectId: projectId,
@@ -1168,7 +1179,8 @@ class SupabaseIntegration {
               lastUpdated: new Date()
             },
             updated_at: new Date()
-          });
+          })
+          .eq('id', configData.id);
       }
 
       return {
@@ -1819,14 +1831,16 @@ class SupabaseIntegration {
 
       // Also update IntegrationConfig
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-      const integrationConfig = await tenantDb
+      const { data: integrationConfig } = await tenantDb
         .from('integration_configs')
-        .where({ store_id: storeId, integration_type: this.integrationType, is_active: true })
-        .first();
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('integration_type', this.integrationType)
+        .eq('is_active', true)
+        .maybeSingle();
       if (integrationConfig) {
         await tenantDb
           .from('integration_configs')
-          .eq('id', integrationConfig.id)
           .update({
             config_data: {
               ...integrationConfig.config_data,
@@ -1835,7 +1849,8 @@ class SupabaseIntegration {
               manuallyConfiguredAt: new Date()
             },
             updated_at: new Date()
-          });
+          })
+          .eq('id', integrationConfig.id);
       }
 
       return {
