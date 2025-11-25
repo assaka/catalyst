@@ -386,7 +386,7 @@ router.get('/me', authMiddleware, async (req, res) => {
     // This ensures credits and other fields are always up-to-date
     const { data: freshUser, error } = await masterDbClient
       .from('users')
-      .select('id, email, first_name, last_name, full_name, role, credits, created_at, updated_at')
+      .select('id, email, first_name, last_name, role, credits, created_at, updated_at')
       .eq('id', req.user.id)
       .single();
 
@@ -403,6 +403,7 @@ router.get('/me', authMiddleware, async (req, res) => {
     const userData = {
       ...req.user,
       ...freshUser,
+      full_name: [freshUser.first_name, freshUser.last_name].filter(Boolean).join(' ') || null,
       store_id: req.user.store_id // Preserve store context from JWT
     };
 
