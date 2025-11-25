@@ -20,12 +20,11 @@ class DailyCreditDeductionJob extends BaseJobHandler {
         throw new Error('masterDbClient not initialized - check MASTER_SUPABASE_URL and MASTER_SUPABASE_SERVICE_KEY');
       }
 
-      // Query active stores from master DB
-      // Master stores table has: id, user_id, slug, status, is_active
+      // Query published stores from master DB
       const { data: publishedStores, error: storesError } = await masterDbClient
         .from('stores')
-        .select('id, user_id, slug, status, is_active')
-        .eq('status', 'active')
+        .select('id, user_id, slug, published')
+        .eq('published', true)
         .order('created_at', { ascending: false });
 
       if (storesError) {

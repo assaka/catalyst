@@ -361,7 +361,8 @@ class CreditService {
   }
 
   /**
-   * Record daily credit charge for published store
+   * Record daily credit charge for published/active store
+   * Uses master DB only - status='active' means store is published and billable
    */
   async chargeDailyPublishingFee(userId, storeId) {
     let dailyCost = 1.0;
@@ -371,51 +372,17 @@ class CreditService {
       // Use fallback
     }
 
-    // Get store from master DB first
-    const { data: masterStore, error: masterError } = await masterDbClient
+    // Check if store is published in master DB
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
-      .select('id, slug, status, is_active')
+      .select('id, slug, status, is_active, published')
       .eq('id', storeId)
       .maybeSingle();
 
-    if (masterError || !masterStore || masterStore.status !== 'active') {
+    if (storeError || !store || !store.published) {
       return {
         success: false,
-        message: 'Store is not active in master DB, skipping daily charge'
-      };
-    }
-
-    // Check if store is published in tenant DB
-    const ConnectionManager = require('./database/ConnectionManager');
-    let tenantDb;
-    let store;
-    try {
-      tenantDb = await ConnectionManager.getStoreConnection(storeId);
-      const { data: tenantStore, error: tenantError } = await tenantDb
-        .from('stores')
-        .select('id, name, slug, published')
-        .eq('id', storeId)
-        .maybeSingle();
-
-      if (tenantError || !tenantStore) {
-        return {
-          success: false,
-          message: 'Store not found in tenant DB, skipping daily charge'
-        };
-      }
-
-      if (!tenantStore.published) {
-        return {
-          success: false,
-          message: 'Store is not published, skipping daily charge'
-        };
-      }
-
-      store = tenantStore;
-    } catch (connError) {
-      return {
-        success: false,
-        message: `Failed to connect to tenant DB: ${connError.message}`
+        message: 'Store is not published, skipping daily charge'
       };
     }
 
@@ -436,45 +403,6 @@ class CreditService {
       storeId,
       'store_publishing'
     );
-
-    // Ensure all numeric values are converted
-    const dailyCostNum = parseFloat(dailyCost);
-    const balanceBeforeNum = parseFloat(balanceBefore);
-    const balanceAfterNum = parseFloat(deductResult.remaining_balance);
-
-    // Log to store_uptime table (tenant DB) - reuse existing tenantDb connection
-    try {
-      const uptimeData = {
-        store_id: storeId,
-        user_id: userId,
-        charged_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
-        credits_charged: dailyCostNum,
-        user_balance_before: balanceBeforeNum,
-        user_balance_after: balanceAfterNum,
-        store_name: store.name,
-        metadata: {
-          charge_type: 'daily',
-          deduction_time: new Date().toISOString()
-        },
-        created_at: new Date().toISOString()
-      };
-
-      // Use upsert to handle duplicate daily charges (one per store per day)
-      const { data, error } = await tenantDb
-        .from('store_uptime')
-        .upsert(uptimeData, {
-          onConflict: 'store_id,charged_date',
-          ignoreDuplicates: false
-        })
-        .select();
-
-      if (error) {
-        console.error('Uptime logging error:', error.message);
-      }
-    } catch (uptimeError) {
-      console.error('Failed to log uptime:', uptimeError.message);
-      // Silent fail - uptime logging is not critical
-    }
 
     return deductResult;
   }
