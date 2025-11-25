@@ -671,11 +671,27 @@ const teamInvitationEmail = (data) => {
             </tr>
           </table>
 
-          <!-- Invitation Icon -->
+          <!-- Invitation Icon (Team icon - styled text for email compatibility) -->
           <table role="presentation" style="margin: 0 auto 16px auto;">
             <tr>
               <td style="width: 80px; height: 80px; background-color: #eef2ff; border-radius: 16px; text-align: center; vertical-align: middle;">
-                <span style="font-size: 40px;">👥</span>
+                <!-- Two person silhouettes using styled circles -->
+                <table role="presentation" style="margin: 0 auto;">
+                  <tr>
+                    <td align="center" style="padding: 0 2px;">
+                      <table role="presentation">
+                        <tr><td style="width: 16px; height: 16px; background-color: #6366f1; border-radius: 50%;"></td></tr>
+                        <tr><td style="width: 20px; height: 12px; background-color: #6366f1; border-radius: 10px 10px 0 0; margin-top: 2px;"></td></tr>
+                      </table>
+                    </td>
+                    <td align="center" style="padding: 0 2px;">
+                      <table role="presentation">
+                        <tr><td style="width: 16px; height: 16px; background-color: #8b5cf6; border-radius: 50%;"></td></tr>
+                        <tr><td style="width: 20px; height: 12px; background-color: #8b5cf6; border-radius: 10px 10px 0 0; margin-top: 2px;"></td></tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
           </table>
@@ -705,10 +721,11 @@ const teamInvitationEmail = (data) => {
                 <table role="presentation" style="width: 100%; border-collapse: collapse;">
                   <tr>
                     <td style="vertical-align: middle; width: 56px;">
-                      <table role="presentation" style="width: 48px; height: 48px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb;">
+                      <!-- Store icon - first letter of store name -->
+                      <table role="presentation" style="width: 48px; height: 48px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                         <tr>
-                          <td align="center" valign="middle" style="color: #3b82f6; font-size: 24px;">
-                            🏪
+                          <td align="center" valign="middle" style="color: #3b82f6; font-size: 22px; font-weight: 700;">
+                            ${cleanStoreName.charAt(0).toUpperCase()}
                           </td>
                         </tr>
                       </table>

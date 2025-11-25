@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle, XCircle, UserPlus, Building2, Shield, AlertCircle, Eye, EyeOff, Store, Users, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, UserPlus, Building2, Shield, AlertCircle, Eye, EyeOff, Users, Sparkles } from 'lucide-react';
 import apiClient from '@/api/client';
 import { toast } from 'sonner';
 
@@ -322,8 +322,10 @@ export default function AcceptInvitation() {
         <CardContent className="p-8">
           {/* Store Info Card */}
           <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl mb-6 border border-blue-100">
-            <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-sm">
-              <Store className="w-7 h-7 text-blue-600" />
+            <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-sm border border-gray-100">
+              <span className="text-2xl font-bold text-blue-600">
+                {invitation?.store?.name?.charAt(0)?.toUpperCase() || 'S'}
+              </span>
             </div>
             <div className="flex-1">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">You're joining store</p>
