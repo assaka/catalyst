@@ -1,15 +1,11 @@
-const ConnectionManager = require('./database/ConnectionManager');
-const { QueryTypes } = require('sequelize');
+const { masterDbClient } = require('../database/masterConnection');
 
 /**
  * Credit Pricing Service
  * Manages credit package pricing with Stripe Price IDs for different currencies
+ * Uses Supabase (masterDbClient) for database operations
  */
 class PricingService {
-  constructor() {
-    // Pricing is now managed entirely in the master database (credit_pricing table)
-  }
-
   /**
    * Get credit pricing for a specific currency
    * @param {string} currency - Currency code (usd, eur)
@@ -19,16 +15,26 @@ class PricingService {
     console.log(`💰 [PricingService] Getting pricing for currency: ${currency}`);
 
     try {
-      // Get pricing from database
-      const dbPricing = await this.getPricingFromDatabase(currency);
+      const { data, error } = await masterDbClient
+        .from('credit_pricing')
+        .select('id, credits, amount, currency, stripe_price_id, popular, active, display_order')
+        .eq('currency', currency.toLowerCase())
+        .eq('active', true)
+        .order('display_order', { ascending: true })
+        .order('amount', { ascending: true });
 
-      if (!dbPricing || dbPricing.length === 0) {
+      if (error) {
+        console.error(`❌ [PricingService] Database error:`, error);
+        throw new Error(`Failed to fetch pricing: ${error.message}`);
+      }
+
+      if (!data || data.length === 0) {
         console.error(`❌ [PricingService] No pricing found in database for ${currency}`);
         throw new Error(`No pricing configured for currency: ${currency.toUpperCase()}`);
       }
 
-      console.log(`✅ [PricingService] Loaded ${dbPricing.length} prices from database for ${currency}`);
-      return dbPricing;
+      console.log(`✅ [PricingService] Loaded ${data.length} prices from database for ${currency}`);
+      return data;
 
     } catch (error) {
       console.error(`❌ [PricingService] Error fetching pricing:`, error);
@@ -37,54 +43,28 @@ class PricingService {
   }
 
   /**
-   * Get pricing from database
-   * @param {string} currency - Currency code
-   * @returns {Array} - Array of pricing options from database
-   */
-  async getPricingFromDatabase(currency) {
-    const masterConnection = ConnectionManager.getMasterConnection();
-    const result = await masterConnection.query(`
-      SELECT
-        id,
-        credits,
-        amount,
-        currency,
-        stripe_price_id,
-        popular,
-        active,
-        display_order
-      FROM credit_pricing
-      WHERE currency = $1 AND active = true
-      ORDER BY display_order ASC, amount ASC
-    `, {
-      bind: [currency.toLowerCase()],
-      type: QueryTypes.SELECT
-    });
-
-    return result;
-  }
-
-  /**
    * Get all available currencies
    * @returns {Array} - Array of currency codes
    */
   async getAvailableCurrencies() {
     try {
-      const masterConnection = ConnectionManager.getMasterConnection();
-      const result = await masterConnection.query(`
-        SELECT DISTINCT currency
-        FROM credit_pricing
-        WHERE active = true
-        ORDER BY currency ASC
-      `, {
-        type: QueryTypes.SELECT
-      });
+      const { data, error } = await masterDbClient
+        .from('credit_pricing')
+        .select('currency')
+        .eq('active', true);
 
-      if (!result || result.length === 0) {
+      if (error) {
+        console.error(`❌ [PricingService] Database error:`, error);
+        throw new Error(`Failed to fetch currencies: ${error.message}`);
+      }
+
+      if (!data || data.length === 0) {
         throw new Error('No currencies configured in credit_pricing table');
       }
 
-      return result.map(r => r.currency);
+      // Get unique currencies
+      const currencies = [...new Set(data.map(r => r.currency))].sort();
+      return currencies;
     } catch (error) {
       console.error(`❌ [PricingService] Error fetching currencies:`, error);
       throw error;
@@ -98,23 +78,19 @@ class PricingService {
    */
   async getPriceByStripeId(stripePriceId) {
     try {
-      const masterConnection = ConnectionManager.getMasterConnection();
-      const [result] = await masterConnection.query(`
-        SELECT
-          id,
-          credits,
-          amount,
-          currency,
-          stripe_price_id,
-          popular
-        FROM credit_pricing
-        WHERE stripe_price_id = $1 AND active = true
-      `, {
-        bind: [stripePriceId],
-        type: QueryTypes.SELECT
-      });
+      const { data, error } = await masterDbClient
+        .from('credit_pricing')
+        .select('id, credits, amount, currency, stripe_price_id, popular')
+        .eq('stripe_price_id', stripePriceId)
+        .eq('active', true)
+        .single();
 
-      return result;
+      if (error) {
+        console.error(`❌ [PricingService] Error fetching price by Stripe ID:`, error);
+        return null;
+      }
+
+      return data;
     } catch (error) {
       console.error(`❌ [PricingService] Error fetching price by Stripe ID:`, error);
       return null;
@@ -122,12 +98,14 @@ class PricingService {
   }
 
   /**
-   * Sync pricing from Stripe (for future implementation)
-   * This would fetch all Stripe prices and update the database
+   * Get default pricing (fallback if database is empty)
    */
-  async syncPricingFromStripe() {
-    // TODO: Implement Stripe price syncing
-    console.log('⚠️ [PricingService] Stripe price syncing not yet implemented');
+  getDefaultPricing(currency = 'usd') {
+    return [
+      { credits: 100, amount: 10, currency, popular: false },
+      { credits: 500, amount: 45, currency, popular: true },
+      { credits: 1000, amount: 80, currency, popular: false }
+    ];
   }
 }
 
