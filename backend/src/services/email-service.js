@@ -533,7 +533,9 @@ class EmailService {
         day: 'numeric'
       });
 
-      const storeName = store.name || 'Your Store';
+      // Clean store name - remove "store" prefix if present (case insensitive)
+      const rawStoreName = store.name || 'Your Store';
+      const storeName = rawStoreName.replace(/^store\s+/i, '').trim();
       const subject = `You've been invited to join ${storeName} on ${PLATFORM_NAME}`;
 
       const htmlContent = teamInvitationEmail({

@@ -611,11 +611,15 @@ const teamInvitationEmail = (data) => {
     expiresDate
   } = data;
 
-  const roleArticle = role === 'admin' ? 'an' : 'a';
+  // Clean store name - remove "store" prefix if present (case insensitive)
+  const cleanStoreName = storeName.replace(/^store\s+/i, '').trim();
+
+  // Determine article based on role (a/an) - vowels need "an"
+  const roleArticle = ['admin', 'editor'].includes(role) ? 'an' : 'a';
 
   const header = masterEmailHeader({
     title: "You're Invited!",
-    subtitle: `Join ${storeName} on ${PLATFORM_NAME}`,
+    subtitle: `Join ${cleanStoreName} on ${PLATFORM_NAME}`,
     primaryColor: '#3b82f6', // Blue
     secondaryColor: '#8b5cf6' // Purple
   });
@@ -634,7 +638,7 @@ const teamInvitationEmail = (data) => {
           </p>
 
           <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
-            <strong>${inviterName || inviterEmail}</strong> has invited you to join the team at <strong>${storeName}</strong> as ${roleArticle} <strong>${role}</strong>.
+            <strong>${inviterName || inviterEmail}</strong> has invited you to join <strong>${cleanStoreName}</strong> as ${roleArticle} <strong>${role}</strong>.
           </p>
 
           <!-- Store Card -->
@@ -645,12 +649,12 @@ const teamInvitationEmail = (data) => {
                   <tr>
                     <td style="vertical-align: middle; width: 60px;">
                       <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); border-radius: 12px; text-align: center; line-height: 50px;">
-                        <span style="color: white; font-size: 24px; font-weight: 700;">${storeName.charAt(0).toUpperCase()}</span>
+                        <span style="color: white; font-size: 24px; font-weight: 700;">${cleanStoreName.charAt(0).toUpperCase()}</span>
                       </div>
                     </td>
                     <td style="vertical-align: middle; padding-left: 16px;">
-                      <p style="margin: 0; color: #111827; font-size: 18px; font-weight: 700;">${storeName}</p>
-                      <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">Powered by ${PLATFORM_NAME}</p>
+                      <p style="margin: 0; color: #111827; font-size: 18px; font-weight: 700;">${cleanStoreName}</p>
+                      <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">on ${PLATFORM_NAME}</p>
                     </td>
                   </tr>
                 </table>
@@ -722,7 +726,7 @@ const teamInvitationEmail = (data) => {
   `;
 
   return masterEmailBase(content, {
-    preheader: `${inviterName || 'Someone'} has invited you to join ${storeName} on ${PLATFORM_NAME}`
+    preheader: `${inviterName || 'Someone'} has invited you to join ${cleanStoreName} on ${PLATFORM_NAME}`
   });
 };
 

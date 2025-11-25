@@ -326,7 +326,7 @@ export default function AcceptInvitation() {
               <Store className="w-7 h-7 text-blue-600" />
             </div>
             <div className="flex-1">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">You're joining</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">You're joining store</p>
               <h3 className="font-bold text-gray-900 text-lg">{invitation?.store?.name}</h3>
               {invitation?.store?.domain && (
                 <p className="text-sm text-gray-500">{invitation.store.domain}</p>
