@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
+import {
   Globe,
   Plus,
   Trash2,
@@ -16,6 +16,7 @@ import {
   Clock,
   RefreshCw,
   Copy,
+  Check,
   ExternalLink,
   Shield,
   Settings,
@@ -35,6 +36,7 @@ const DnsManager = ({ storeId, storeDomain }) => {
   const [cloudflareStatus, setCloudflareStatus] = useState(null);
   const [sslStatus, setSslStatus] = useState({});
   const [verificationStatus, setVerificationStatus] = useState({});
+  const [copiedText, setCopiedText] = useState(null);
 
   useEffect(() => {
     loadDomainData();
@@ -158,7 +160,9 @@ const DnsManager = ({ storeId, storeDomain }) => {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
+    setCopiedText(text);
     toast.success('Copied to clipboard');
+    setTimeout(() => setCopiedText(null), 2000);
   };
 
   const getStatusColor = (status) => {
@@ -401,7 +405,11 @@ const DnsManager = ({ storeId, storeDomain }) => {
                         size="sm"
                         onClick={() => copyToClipboard(record.value)}
                       >
-                        <Copy className="w-4 h-4" />
+                        {copiedText === record.value ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
                       </Button>
                     </div>
                   </div>

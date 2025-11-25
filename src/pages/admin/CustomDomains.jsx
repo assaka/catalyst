@@ -42,6 +42,7 @@ import {
   Trash2,
   Star,
   Copy,
+  Check,
   RefreshCw,
   Info
 } from 'lucide-react';
@@ -72,6 +73,7 @@ const CustomDomains = () => {
   const [selectPrimaryDialogOpen, setSelectPrimaryDialogOpen] = useState(false);
   const [availableDomainsForPrimary, setAvailableDomainsForPrimary] = useState([]);
   const [selectedNewPrimary, setSelectedNewPrimary] = useState(null);
+  const [copiedText, setCopiedText] = useState(null);
 
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {
@@ -331,7 +333,9 @@ const CustomDomains = () => {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
+    setCopiedText(text);
     toast.success('Copied to clipboard!');
+    setTimeout(() => setCopiedText(null), 2000);
   };
 
   const getStoreUrl = (domain) => {
@@ -526,7 +530,11 @@ const CustomDomains = () => {
                           onClick={() => copyToClipboard(getStoreUrl(domain))}
                           className="h-6 w-6 p-0"
                         >
-                          <Copy className="w-3 h-3" />
+                          {copiedText === getStoreUrl(domain) ? (
+                            <Check className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
                         </Button>
                       </div>
                     </TableCell>
@@ -752,7 +760,11 @@ const CustomDomains = () => {
                             size="sm"
                             onClick={() => copyToClipboard('76.76.21.21')}
                           >
-                            <Copy className="w-4 h-4" />
+                            {copiedText === '76.76.21.21' ? (
+                              <Check className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -769,7 +781,11 @@ const CustomDomains = () => {
                             size="sm"
                             onClick={() => copyToClipboard('76.76.21.22')}
                           >
-                            <Copy className="w-4 h-4" />
+                            {copiedText === '76.76.21.22' ? (
+                              <Check className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -794,7 +810,11 @@ const CustomDomains = () => {
                           size="sm"
                           onClick={() => copyToClipboard('cname.vercel-dns.com')}
                         >
-                          <Copy className="w-4 h-4" />
+                          {copiedText === 'cname.vercel-dns.com' ? (
+                            <Check className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -818,7 +838,11 @@ const CustomDomains = () => {
                           size="sm"
                           onClick={() => copyToClipboard(selectedDomain?.verification_token)}
                         >
-                          <Copy className="w-4 h-4" />
+                          {copiedText === selectedDomain?.verification_token ? (
+                            <Check className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -879,7 +903,11 @@ const CustomDomains = () => {
                               size="sm"
                               onClick={() => copyToClipboard('76.76.21.21')}
                             >
-                              <Copy className="w-4 h-4" />
+                              {copiedText === '76.76.21.21' ? (
+                                <Check className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -894,7 +922,11 @@ const CustomDomains = () => {
                               size="sm"
                               onClick={() => copyToClipboard('76.76.21.22')}
                             >
-                              <Copy className="w-4 h-4" />
+                              {copiedText === '76.76.21.22' ? (
+                                <Check className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -926,7 +958,11 @@ const CustomDomains = () => {
                               size="sm"
                               onClick={() => copyToClipboard('cname.vercel-dns.com')}
                             >
-                              <Copy className="w-4 h-4" />
+                              {copiedText === 'cname.vercel-dns.com' ? (
+                                <Check className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -958,7 +994,11 @@ const CustomDomains = () => {
                               size="sm"
                               onClick={() => copyToClipboard(selectedDomain?.verification_token)}
                             >
-                              <Copy className="w-4 h-4" />
+                              {copiedText === selectedDomain?.verification_token ? (
+                                <Check className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -1176,12 +1216,13 @@ const CustomDomains = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                      navigator.clipboard.writeText(dnsDebugData.debug.verification_token);
-                      toast.success('Token copied to clipboard');
-                    }}
+                    onClick={() => copyToClipboard(dnsDebugData.debug.verification_token)}
                   >
-                    <Copy className="w-3 h-3" />
+                    {copiedText === dnsDebugData.debug.verification_token ? (
+                      <Check className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
                   </Button>
                 </div>
               </div>
