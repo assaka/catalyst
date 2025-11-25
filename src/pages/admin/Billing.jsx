@@ -2,9 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { User } from '@/api/entities';
-import { CreditTransaction } from '@/api/entities';
-import apiClient from '@/api/client';
+import { User, CreditTransaction } from '@/api/entities';
 import { createPaymentIntent } from '@/api/functions';
 import { getStripePublishableKey } from '@/api/functions';
 import { Button } from '@/components/ui/button';
@@ -182,16 +180,8 @@ export default function Billing() {
       setUser(userData);
 
       // Fetch transactions
-      const rawResponse = await apiClient.get('credits/transactions', { 'x-skip-transform': 'true' });
-
-      let transactionData = [];
-      if (rawResponse?.success && Array.isArray(rawResponse?.data)) {
-        transactionData = rawResponse.data;
-      } else if (Array.isArray(rawResponse)) {
-        transactionData = rawResponse;
-      }
-
-      setTransactions(transactionData);
+      const transactionData = await CreditTransaction.findAll();
+      setTransactions(Array.isArray(transactionData) ? transactionData : []);
     } catch (error) {
       console.error("Error loading billing data:", error);
     } finally {
@@ -263,14 +253,8 @@ export default function Billing() {
           window.dispatchEvent(new CustomEvent('creditsUpdated'));
 
           // Also reload transactions
-          const rawResponse = await apiClient.get('credits/transactions', { 'x-skip-transform': 'true' });
-          let transactionData = [];
-          if (rawResponse?.success && Array.isArray(rawResponse?.data)) {
-            transactionData = rawResponse.data;
-          } else if (Array.isArray(rawResponse)) {
-            transactionData = rawResponse;
-          }
-          setTransactions(transactionData);
+          const transactionData = await CreditTransaction.findAll();
+          setTransactions(Array.isArray(transactionData) ? transactionData : []);
 
           // Hide success message after 5 seconds
           setTimeout(() => setPaymentSuccess(false), 5000);
