@@ -280,49 +280,67 @@ class SupabaseIntegration {
           
           // Use the first project as default
           const firstProject = allProjects[0];
-          console.log('Using first project as default:', firstProject.name || firstProject.id);
-          
-          // Fetch service role key for the project (anon key no longer needed)
+          // Use ref for URLs (not id) - ref is the project reference used in Supabase URLs
+          const projectRef = firstProject.ref || firstProject.id;
+          const projectId = firstProject.id;
+          console.log('Using first project as default:', firstProject.name, 'ref:', projectRef, 'id:', projectId);
+
+          // Fetch service role key for the project
           let serviceRoleKey = '';
-          
+
           try {
-            const apiKeysResponse = await axios.get(`https://api.supabase.com/v1/projects/${firstProject.id}/config/secrets/project-api-keys`, {
+            // Try the simpler /api-keys endpoint first (same as media storage OAuth)
+            console.log('Fetching API keys from /api-keys endpoint...');
+            const apiKeysResponse = await axios.get(`https://api.supabase.com/v1/projects/${projectId}/api-keys`, {
               headers: {
                 'Authorization': `Bearer ${access_token}`,
                 'Content-Type': 'application/json'
               }
             });
-            
-            console.log('API keys response:', JSON.stringify(apiKeysResponse.data, null, 2));
-            
+
+            console.log('API keys response received, extracting service_role key...');
+
             // Extract service_role key from response
             if (apiKeysResponse.data && Array.isArray(apiKeysResponse.data)) {
               const serviceKeyObj = apiKeysResponse.data.find(key => key.name === 'service_role' || key.name === 'service_role_key');
               serviceRoleKey = serviceKeyObj?.api_key || '';
             } else if (apiKeysResponse.data) {
-              // Handle different response format
               serviceRoleKey = apiKeysResponse.data.service_role || apiKeysResponse.data.service_role_key || '';
             }
-            
+
             console.log('Extracted service role key:', serviceRoleKey ? serviceRoleKey.substring(0, 20) + '...' : 'not found');
-            
+
           } catch (apiKeysError) {
-            console.error('Error fetching API keys:', apiKeysError.response?.data || apiKeysError.message);
-            // If it's a scope error, set default values
-            if (apiKeysError.response?.status === 403 || apiKeysError.response?.data?.message?.includes('scope')) {
-              console.log('OAuth token lacks secrets:read scope for API keys access');
+            console.error('Error fetching API keys from /api-keys:', apiKeysError.response?.data || apiKeysError.message);
+
+            // Try the secrets endpoint as fallback
+            try {
+              console.log('Trying /config/secrets/project-api-keys endpoint as fallback...');
+              const secretsResponse = await axios.get(`https://api.supabase.com/v1/projects/${projectId}/config/secrets/project-api-keys`, {
+                headers: {
+                  'Authorization': `Bearer ${access_token}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (secretsResponse.data && Array.isArray(secretsResponse.data)) {
+                const serviceKeyObj = secretsResponse.data.find(key => key.name === 'service_role' || key.name === 'service_role_key');
+                serviceRoleKey = serviceKeyObj?.api_key || '';
+              }
+              console.log('Fallback extracted service role key:', serviceRoleKey ? serviceRoleKey.substring(0, 20) + '...' : 'not found');
+            } catch (fallbackError) {
+              console.error('Fallback API keys fetch also failed:', fallbackError.response?.data || fallbackError.message);
               serviceRoleKey = null;
             }
-            // Continue without API keys - user can configure them later
           }
-          
+
           projectData = {
-            project_url: `https://${firstProject.id}.supabase.co`,
+            project_url: `https://${projectRef}.supabase.co`,
             anon_key: null,  // No longer used,
             service_role_key: serviceRoleKey || null,
             database_url: `postgresql://postgres.[projectRef]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres`,
-            storage_url: `https://${firstProject.id}.supabase.co/storage/v1`,
-            auth_url: `https://${firstProject.id}.supabase.co/auth/v1`
+            storage_url: `https://${projectRef}.supabase.co/storage/v1`,
+            auth_url: `https://${projectRef}.supabase.co/auth/v1`
           };
         }
       } catch (projectError) {
