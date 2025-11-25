@@ -257,7 +257,26 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
           {formData.tab_type === 'attributes' && (
             <div>
               <Label>Select Attributes</Label>
-              <div className="grid grid-cols-2 gap-3 mt-2 max-h-60 overflow-y-auto border rounded-md p-3">
+              <div className="border rounded-md mt-2">
+                {attributes.length > 0 && (
+                  <div className="flex items-center space-x-2 p-3 border-b bg-gray-50">
+                    <Checkbox
+                      id="select-all-attributes"
+                      checked={attributes.length > 0 && formData.attribute_ids.length === attributes.length}
+                      indeterminate={formData.attribute_ids.length > 0 && formData.attribute_ids.length < attributes.length}
+                      onCheckedChange={(checked) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          attribute_ids: checked ? attributes.map(a => a.id) : []
+                        }));
+                      }}
+                    />
+                    <Label htmlFor="select-all-attributes" className="text-sm font-medium cursor-pointer">
+                      Select/Deselect All ({formData.attribute_ids.length}/{attributes.length})
+                    </Label>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto p-3">
                 {attributes.length > 0 ? (
                   attributes.map((attribute) => (
                     <div key={attribute.id} className="flex items-center space-x-2">
@@ -274,6 +293,7 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
                 ) : (
                   <p className="text-sm text-gray-500 col-span-2">No attributes available</p>
                 )}
+                </div>
               </div>
               <p className="text-sm text-gray-500 mt-1">
                 Selected attributes will be displayed in this tab for each product
