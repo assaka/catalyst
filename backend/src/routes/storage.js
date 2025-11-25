@@ -365,28 +365,23 @@ router.get('/status', async (req, res) => {
 
     console.log('📊 Checking storage status for store:', storeId);
 
-    // Check primary media storage from tenant database
-    const ConnectionManager = require('../services/database/ConnectionManager');
+    // Check primary media storage from integration_configs
+    const IntegrationConfig = require('../models/IntegrationConfig');
 
     let primaryMediaStorage = null;
 
     try {
-      // Get tenant database connection
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+      // Query integration_configs table for primary storage
+      const storageConfig = await IntegrationConfig.getPrimaryStorage(storeId);
 
-      // Query store_media_storages table for primary storage
-      const { data: primaryStorage, error } = await tenantDb
-        .from('store_media_storages')
-        .select('storage_type, is_primary, is_active, storage_name, connection_status')
-        .eq('store_id', storeId)
-        .eq('is_primary', true)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (error) {
-        console.warn('Error querying store_media_storages:', error.message);
-      } else {
-        primaryMediaStorage = primaryStorage;
+      if (storageConfig) {
+        primaryMediaStorage = {
+          storage_type: storageConfig.integration_type.replace('-storage', ''),
+          is_primary: storageConfig.is_primary,
+          is_active: storageConfig.is_active,
+          storage_name: storageConfig.display_name,
+          connection_status: storageConfig.connection_status
+        };
         console.log('💾 Primary media storage:', primaryMediaStorage);
       }
     } catch (err) {

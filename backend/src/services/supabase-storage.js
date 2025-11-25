@@ -12,10 +12,10 @@ class SupabaseStorageService extends StorageInterface {
   }
 
   /**
-   * Get Supabase client using store_media_storages credentials
+   * Get Supabase client using integration_configs credentials
    */
   async getSupabaseClient(storeId) {
-    // Get credentials from store_media_storages table
+    // Get credentials from integration_configs table
     try {
       const credentials = await supabaseMediaStorageOAuth.getStorageCredentials(storeId);
 
@@ -23,7 +23,7 @@ class SupabaseStorageService extends StorageInterface {
         throw new Error('No Supabase storage configured for this store');
       }
 
-      console.log('📦 [Supabase Client] Using credentials from store_media_storages');
+      console.log('📦 [Supabase Client] Using credentials from integration_configs');
 
       // Validate service role key format
       const serviceRoleKey = credentials.service_role_key.trim();

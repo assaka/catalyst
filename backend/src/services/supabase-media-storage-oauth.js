@@ -1,13 +1,13 @@
 /**
  * Supabase Media Storage OAuth Service
  * Simplified OAuth flow specifically for media storage credentials
- * Stores directly to store_media_storages table
+ *
+ * Configuration stored in integration_configs table with integration_type='supabase-storage'
  */
 
 const axios = require('axios');
 const crypto = require('crypto');
-const ConnectionManager = require('./database/ConnectionManager');
-const { encrypt, decrypt } = require('../utils/encryption');
+const IntegrationConfig = require('../models/IntegrationConfig');
 
 class SupabaseMediaStorageOAuth {
   constructor() {
@@ -20,6 +20,7 @@ class SupabaseMediaStorageOAuth {
     this.scopes = 'email profile projects:read storage:read storage:write secrets:read';
 
     this.isConfigured = !!(this.clientId && this.clientSecret);
+    this.integrationType = 'supabase-storage';
 
     console.log('📦 [Supabase Media Storage OAuth] Initialized:', {
       configured: this.isConfigured,
@@ -135,7 +136,7 @@ class SupabaseMediaStorageOAuth {
 
       console.log('✅ [Exchange] Got service role key');
 
-      // Store credentials in store_media_storages table
+      // Store credentials in integration_configs table
       await this.storeCredentials(storeId, {
         access_token,
         refresh_token,
@@ -147,7 +148,7 @@ class SupabaseMediaStorageOAuth {
         expires_at: new Date(Date.now() + expires_in * 1000).toISOString()
       });
 
-      console.log('✅ [Exchange] Credentials stored in store_media_storages');
+      console.log('✅ [Exchange] Credentials stored in integration_configs');
 
       return {
         success: true,
@@ -163,105 +164,65 @@ class SupabaseMediaStorageOAuth {
   }
 
   /**
-   * Store Supabase storage credentials in store_media_storages table
+   * Store Supabase storage credentials in integration_configs table
    */
   async storeCredentials(storeId, credentials) {
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-    // Encrypt sensitive credentials
-    const credentialsEncrypted = encrypt(JSON.stringify({
-      service_role_key: credentials.service_role_key,
-      access_token: credentials.access_token,
-      refresh_token: credentials.refresh_token
-    }));
-
-    // Non-sensitive config data
+    // Config data with all credentials
+    // IntegrationConfig will auto-encrypt sensitive fields
     const configData = {
-      project_url: credentials.project_url,
-      storage_url: credentials.storage_url,
-      project_id: credentials.project_id,
-      project_name: credentials.project_name,
-      expires_at: credentials.expires_at
+      serviceRoleKey: credentials.service_role_key,
+      accessToken: credentials.access_token,
+      refreshToken: credentials.refresh_token,
+      projectUrl: credentials.project_url,
+      storageUrl: credentials.storage_url,
+      projectId: credentials.project_id,
+      projectName: credentials.project_name,
+      bucketName: 'suprshop-assets',
+      connected: true,
+      connectionType: 'oauth'
     };
 
-    // Check if Supabase storage already exists for this store
-    const { data: existing } = await tenantDb
-      .from('store_media_storages')
-      .select('id')
-      .eq('store_id', storeId)
-      .eq('storage_type', 'supabase')
-      .maybeSingle();
+    await IntegrationConfig.createOrUpdateWithKey(
+      storeId,
+      this.integrationType,
+      configData,
+      'default',
+      {
+        displayName: `Supabase Storage (${credentials.project_name})`,
+        isPrimary: true
+      }
+    );
 
-    if (existing) {
-      // Update existing
-      const { error } = await tenantDb
-        .from('store_media_storages')
-        .update({
-          credentials_encrypted: credentialsEncrypted,
-          config_data: configData,
-          storage_name: `Supabase Storage (${credentials.project_name})`,
-          bucket_name: 'suprshop-assets',
-          endpoint_url: credentials.storage_url,
-          is_primary: true,
-          is_active: true,
-          connection_status: 'connected',
-          last_connection_test: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existing.id);
-
-      if (error) throw error;
-    } else {
-      // Insert new
-      const { error } = await tenantDb
-        .from('store_media_storages')
-        .insert({
-          store_id: storeId,
-          storage_type: 'supabase',
-          storage_name: `Supabase Storage (${credentials.project_name})`,
-          credentials_encrypted: credentialsEncrypted,
-          config_data: configData,
-          bucket_name: 'suprshop-assets',
-          endpoint_url: credentials.storage_url,
-          is_primary: true,
-          is_active: true,
-          connection_status: 'connected',
-          last_connection_test: new Date().toISOString()
-        });
-
-      if (error) throw error;
+    // Update connection status and token expiration
+    const config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
+    if (config) {
+      await IntegrationConfig.updateConnectionStatus(config.id, storeId, 'success');
     }
 
-    console.log('💾 [Store] Credentials saved to store_media_storages');
+    console.log('💾 [Store] Credentials saved to integration_configs');
   }
 
   /**
-   * Get Supabase storage credentials from store_media_storages
+   * Get Supabase storage credentials from integration_configs
    */
   async getStorageCredentials(storeId) {
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+    const config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
 
-    const { data, error } = await tenantDb
-      .from('store_media_storages')
-      .select('*')
-      .eq('store_id', storeId)
-      .eq('storage_type', 'supabase')
-      .eq('is_primary', true)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (error || !data) {
+    if (!config || !config.config_data) {
       return null;
     }
 
-    // Decrypt credentials
-    const credentialsDecrypted = JSON.parse(decrypt(data.credentials_encrypted));
-
+    // IntegrationConfig already decrypts sensitive fields
     return {
-      ...credentialsDecrypted,
-      ...data.config_data,
-      bucket_name: data.bucket_name,
-      endpoint_url: data.endpoint_url
+      service_role_key: config.config_data.serviceRoleKey,
+      access_token: config.config_data.accessToken,
+      refresh_token: config.config_data.refreshToken,
+      project_url: config.config_data.projectUrl,
+      storage_url: config.config_data.storageUrl,
+      project_id: config.config_data.projectId,
+      project_name: config.config_data.projectName,
+      bucket_name: config.config_data.bucketName || 'suprshop-assets',
+      endpoint_url: config.config_data.storageUrl
     };
   }
 
@@ -280,9 +241,10 @@ class SupabaseMediaStorageOAuth {
         return { success: false, message: 'Invalid service role key format' };
       }
 
-      // Check if token is expired
-      if (credentials.expires_at && new Date(credentials.expires_at) < new Date()) {
-        return { success: false, message: 'Access token expired, reconnection required' };
+      // Update connection status
+      const config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
+      if (config) {
+        await IntegrationConfig.updateConnectionStatus(config.id, storeId, 'success');
       }
 
       return {
@@ -292,6 +254,15 @@ class SupabaseMediaStorageOAuth {
         projectName: credentials.project_name
       };
     } catch (error) {
+      // Update connection status to failed
+      try {
+        const config = await IntegrationConfig.findByStoreAndType(storeId, this.integrationType);
+        if (config) {
+          await IntegrationConfig.updateConnectionStatus(config.id, storeId, 'failed', error.message);
+        }
+      } catch (updateError) {
+        // Ignore update errors
+      }
       return { success: false, message: error.message };
     }
   }
@@ -300,18 +271,13 @@ class SupabaseMediaStorageOAuth {
    * Disconnect Supabase storage
    */
   async disconnect(storeId) {
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-    const { error } = await tenantDb
-      .from('store_media_storages')
-      .delete()
-      .eq('store_id', storeId)
-      .eq('storage_type', 'supabase');
-
-    if (error) throw error;
-
-    console.log('🗑️ [Disconnect] Supabase storage removed');
-    return { success: true, message: 'Supabase storage disconnected' };
+    try {
+      await IntegrationConfig.deactivate(storeId, this.integrationType);
+      console.log('🗑️ [Disconnect] Supabase storage removed');
+      return { success: true, message: 'Supabase storage disconnected' };
+    } catch (error) {
+      throw error;
+    }
   }
 }
 
