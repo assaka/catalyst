@@ -12,7 +12,7 @@ class SupabaseStorageService extends StorageInterface {
   }
 
   /**
-   * Get storage credentials from either supabase-storage or supabase-oauth integration
+   * Get storage credentials from supabase-storage, supabase-oauth, or store_databases
    */
   async getStorageCredentials(storeId) {
     // First try media storage OAuth credentials (supabase-storage)
@@ -33,6 +33,28 @@ class SupabaseStorageService extends StorageInterface {
       }
     } else {
       console.log('📦 [Storage] Using credentials from supabase-storage');
+    }
+
+    // If still not found, check store_databases (entered during store creation)
+    if (!credentials || !credentials.project_url || !credentials.service_role_key) {
+      console.log('📦 [Storage] No integration credentials, checking store_databases...');
+      try {
+        const StoreDatabase = require('../models/master/StoreDatabase');
+        const storeDb = await StoreDatabase.findByStoreId(storeId);
+
+        if (storeDb && storeDb.database_type === 'supabase') {
+          const dbCredentials = storeDb.getCredentials();
+          if (dbCredentials && dbCredentials.projectUrl && dbCredentials.serviceRoleKey) {
+            credentials = {
+              project_url: dbCredentials.projectUrl,
+              service_role_key: dbCredentials.serviceRoleKey
+            };
+            console.log('📦 [Storage] Using credentials from store_databases');
+          }
+        }
+      } catch (dbError) {
+        console.log('📦 [Storage] Could not check store_databases:', dbError.message);
+      }
     }
 
     return credentials;
