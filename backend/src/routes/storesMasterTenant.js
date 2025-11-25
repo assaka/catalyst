@@ -1004,6 +1004,38 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
       // Default all stores to published: false if column doesn't exist
     }
 
+    // Fetch domain information from custom_domains_lookup (primary domains only)
+    let domainMap = {};
+    try {
+      const storeIds = stores.map(s => s.id);
+      const { data: domainData, error: domainError } = await masterDbClient
+        .from('custom_domains_lookup')
+        .select('store_id, domain, is_verified, is_active, ssl_status, is_primary')
+        .in('store_id', storeIds)
+        .eq('is_primary', true);
+
+      if (domainError) {
+        console.warn('⚠️ Error fetching domain data:', domainError.message);
+      } else if (domainData) {
+        domainData.forEach(item => {
+          // Determine domain_status based on verification and SSL status
+          let domainStatus = 'pending';
+          if (item.is_verified && item.is_active) {
+            domainStatus = item.ssl_status === 'active' ? 'active' : 'ssl_pending';
+          } else if (!item.is_active) {
+            domainStatus = 'inactive';
+          }
+
+          domainMap[item.store_id] = {
+            custom_domain: item.domain,
+            domain_status: domainStatus
+          };
+        });
+      }
+    } catch (domainErr) {
+      console.warn('⚠️ Could not fetch domain information:', domainErr.message);
+    }
+
     // Fetch store names from tenant DB for each store
     const enrichedStores = await Promise.all(
       (stores || []).map(async (store) => {
@@ -1058,6 +1090,9 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
           updated_at: store.updated_at,
           settings: storeSettings,
           admin_navigation: adminNavigation,
+          // Domain info (from custom_domains_lookup)
+          custom_domain: domainMap[store.id]?.custom_domain || null,
+          domain_status: domainMap[store.id]?.domain_status || null,
           // Membership info
           membership_type: store.membership_type || 'owner',  // 'owner' or 'team_member'
           team_role: store.team_role || null  // 'admin', 'editor', 'viewer' for team members
