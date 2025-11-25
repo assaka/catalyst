@@ -1004,32 +1004,54 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
       // Default all stores to published: false if column doesn't exist
     }
 
-    // Fetch domain information from custom_domains_lookup (primary domains only)
+    // Fetch domain information from custom_domains_lookup
     let domainMap = {};
     try {
       const storeIds = stores.map(s => s.id);
-      const { data: domainData, error: domainError } = await masterDbClient
+
+      // Fetch ALL active verified domains for these stores
+      const { data: allDomainData, error: allDomainError } = await masterDbClient
         .from('custom_domains_lookup')
         .select('store_id, domain, is_verified, is_active, ssl_status, is_primary')
         .in('store_id', storeIds)
-        .eq('is_primary', true);
+        .eq('is_verified', true)
+        .eq('is_active', true);
 
-      if (domainError) {
-        console.warn('⚠️ Error fetching domain data:', domainError.message);
-      } else if (domainData) {
-        domainData.forEach(item => {
-          // Determine domain_status based on verification and SSL status
-          let domainStatus = 'pending';
-          if (item.is_verified && item.is_active) {
-            domainStatus = item.ssl_status === 'active' ? 'active' : 'ssl_pending';
-          } else if (!item.is_active) {
-            domainStatus = 'inactive';
+      if (allDomainError) {
+        console.warn('⚠️ Error fetching domain data:', allDomainError.message);
+      } else if (allDomainData) {
+        // Group domains by store_id
+        const domainsByStore = {};
+        allDomainData.forEach(item => {
+          if (!domainsByStore[item.store_id]) {
+            domainsByStore[item.store_id] = [];
           }
+          domainsByStore[item.store_id].push(item);
+        });
 
-          domainMap[item.store_id] = {
-            custom_domain: item.domain,
-            domain_status: domainStatus
-          };
+        // For each store, determine domain status
+        Object.entries(domainsByStore).forEach(([storeId, domains]) => {
+          const primaryDomain = domains.find(d => d.is_primary);
+          const activeDomainCount = domains.length;
+
+          if (primaryDomain) {
+            // Has a primary domain set
+            const domainStatus = primaryDomain.ssl_status === 'active' ? 'active' : 'ssl_pending';
+            domainMap[storeId] = {
+              custom_domain: primaryDomain.domain,
+              domain_status: domainStatus,
+              has_domains_without_primary: false,
+              active_domain_count: activeDomainCount
+            };
+          } else if (activeDomainCount > 0) {
+            // Has active domains but no primary set
+            domainMap[storeId] = {
+              custom_domain: null,
+              domain_status: 'needs_primary',
+              has_domains_without_primary: true,
+              active_domain_count: activeDomainCount
+            };
+          }
         });
       }
     } catch (domainErr) {
@@ -1093,6 +1115,8 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
           // Domain info (from custom_domains_lookup)
           custom_domain: domainMap[store.id]?.custom_domain || null,
           domain_status: domainMap[store.id]?.domain_status || null,
+          has_domains_without_primary: domainMap[store.id]?.has_domains_without_primary || false,
+          active_domain_count: domainMap[store.id]?.active_domain_count || 0,
           // Membership info
           membership_type: store.membership_type || 'owner',  // 'owner' or 'team_member'
           team_role: store.team_role || null  // 'admin', 'editor', 'viewer' for team members

@@ -20,6 +20,7 @@ export const SetupGuide = ({ store }) => {
     }
 
     const isDomainConnected = store.custom_domain && store.domain_status === 'active';
+    const needsPrimaryDomain = store.has_domains_without_primary && store.active_domain_count > 0;
     // Check if Stripe is connected: either has stripe_account_id and onboarding complete flag in settings
     const isStripeConnected = (store.settings?.stripe_onboarding_complete === true) ||
                               (!!store.stripe_account_id && store.stripe_connect_onboarding_complete === true);
@@ -139,8 +140,8 @@ export const SetupGuide = ({ store }) => {
     };
 
     // Only hide the setup guide if domain, Stripe, and email are connected
-    // Keep showing if any is incomplete, allowing management of connected services
-    if (isDomainConnected && isStripeConnected && emailConfigured) {
+    // Keep showing if any is incomplete, or if domains exist but no primary is set
+    if (isDomainConnected && !needsPrimaryDomain && isStripeConnected && emailConfigured) {
         // Show a condensed version when everything is set up
         return (
             <Card className="mb-8 bg-green-50 border-green-200 material-elevation-1">
@@ -215,21 +216,33 @@ export const SetupGuide = ({ store }) => {
                         <div className="flex items-center">
                             {isDomainConnected ? (
                                 <CheckCircle className="w-5 h-5 text-green-600 mr-3" />
+                            ) : needsPrimaryDomain ? (
+                                <AlertCircle className="w-5 h-5 text-orange-500 mr-3" />
                             ) : (
                                 <AlertCircle className="w-5 h-5 text-amber-600 mr-3" />
                             )}
                             <div>
-                                <p className="font-semibold text-gray-800">Connect Your Domain</p>
-                                <p className="text-sm text-gray-600">Make your store accessible at your own URL.</p>
+                                <p className="font-semibold text-gray-800">
+                                    {isDomainConnected ? 'Domain Connected' : needsPrimaryDomain ? 'Set Primary Domain' : 'Connect Your Domain'}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                    {isDomainConnected
+                                        ? `Connected: ${store.custom_domain}`
+                                        : needsPrimaryDomain
+                                            ? `You have ${store.active_domain_count} active domain${store.active_domain_count > 1 ? 's' : ''} but no primary is set.`
+                                            : 'Make your store accessible at your own URL.'
+                                    }
+                                </p>
                             </div>
                         </div>
                         <Button
-                            variant={isDomainConnected ? "secondary" : "default"}
+                            variant={isDomainConnected ? "secondary" : needsPrimaryDomain ? "default" : "default"}
                             size="sm"
                             onClick={() => navigate(createPageUrl('custom-domains'))}
+                            className={needsPrimaryDomain ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}
                         >
                             <Globe className="w-4 h-4 mr-1" />
-                            {isDomainConnected ? 'Manage' : 'Connect'}
+                            {isDomainConnected ? 'Manage' : needsPrimaryDomain ? 'Set Primary' : 'Connect'}
                         </Button>
                     </li>
                     <li className="flex items-center justify-between">
