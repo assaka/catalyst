@@ -837,7 +837,7 @@ router.post('/create-checkout', async (req, res) => {
         const taxPercentage = subtotal > 0 ? ((taxAmountNum / subtotal) * 100).toFixed(2) : '';
         const taxName = taxPercentage ? `Tax (${taxPercentage}%)` : 'Tax';
 
-        const taxRate = await stripe.taxRates.create({
+        const taxRateParams = {
           display_name: taxName,
           description: 'Sales Tax',
           percentage: parseFloat(taxPercentage) || 0,
@@ -846,7 +846,10 @@ router.post('/create-checkout', async (req, res) => {
             item_type: 'tax',
             tax_rate: taxPercentage
           }
-        }, stripeOptions);
+        };
+        const taxRate = store.stripe_account_id
+          ? await stripe.taxRates.create(taxRateParams, stripeOptions)
+          : await stripe.taxRates.create(taxRateParams);
         
         taxRateId = taxRate.id;
         console.log('✅ Created tax rate:', taxRateId);
@@ -1015,7 +1018,7 @@ router.post('/create-checkout', async (req, res) => {
     if (applied_coupon && discount_amount > 0) {
       try {
         // Create a Stripe coupon for the discount
-        const stripeCoupon = await stripe.coupons.create({
+        const couponParams = {
           amount_off: convertToStripeAmount(discount_amount, storeCurrency), // Convert based on currency type
           currency: storeCurrency.toLowerCase(),
           duration: 'once',
@@ -1024,7 +1027,10 @@ router.post('/create-checkout', async (req, res) => {
             original_coupon_code: applied_coupon.code,
             original_coupon_id: applied_coupon.id?.toString() || ''
           }
-        }, stripeOptions);
+        };
+        const stripeCoupon = store.stripe_account_id
+          ? await stripe.coupons.create(couponParams, stripeOptions)
+          : await stripe.coupons.create(couponParams);
 
         // Apply the coupon to the session so it's pre-applied
         sessionConfig.discounts = [{
@@ -1072,8 +1078,9 @@ router.post('/create-checkout', async (req, res) => {
 
       // Create the shipping rate first
       try {
-
-        const shippingRate = await stripe.shippingRates.create(shippingRateData, stripeOptions);
+        const shippingRate = store.stripe_account_id
+          ? await stripe.shippingRates.create(shippingRateData, stripeOptions)
+          : await stripe.shippingRates.create(shippingRateData);
         
         // Use the created shipping rate in the session via shipping_options
         sessionConfig.shipping_options = [{
@@ -1189,7 +1196,10 @@ router.post('/create-checkout', async (req, res) => {
       console.log('💰 Using platform account (no connected account)');
     }
 
-    const session = await stripe.checkout.sessions.create(sessionConfig, stripeOptions);
+    // Only pass stripeOptions if we have a connected account, otherwise omit it
+    const session = store.stripe_account_id
+      ? await stripe.checkout.sessions.create(sessionConfig, stripeOptions)
+      : await stripe.checkout.sessions.create(sessionConfig);
 
     console.log('Created Stripe session:', {
       id: session.id,
