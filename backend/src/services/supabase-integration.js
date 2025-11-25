@@ -1582,16 +1582,30 @@ class SupabaseIntegration {
           console.log('[getConnectionStatus] No service key in token, checking store_databases...');
           try {
             const StoreDatabase = require('../models/master/StoreDatabase');
+            console.log('[getConnectionStatus] Querying store_databases table for storeId:', storeId);
             const storeDb = await StoreDatabase.findByStoreId(storeId);
+            console.log('[getConnectionStatus] store_databases query result:', {
+              found: !!storeDb,
+              databaseType: storeDb?.database_type,
+              connectionStatus: storeDb?.connection_status,
+              host: storeDb?.host
+            });
             if (storeDb && storeDb.database_type === 'supabase') {
               const dbCredentials = storeDb.getCredentials();
+              console.log('[getConnectionStatus] Decrypted credentials:', {
+                hasProjectUrl: !!dbCredentials?.projectUrl,
+                hasServiceRoleKey: !!dbCredentials?.serviceRoleKey,
+                projectUrl: dbCredentials?.projectUrl
+              });
               if (dbCredentials && dbCredentials.serviceRoleKey) {
                 hasValidServiceKey = true;
-                console.log('[getConnectionStatus] Found service role key in store_databases');
+                console.log('[getConnectionStatus] ✅ Found service role key in store_databases');
+              } else {
+                console.log('[getConnectionStatus] ❌ No service role key in store_databases credentials');
               }
             }
           } catch (dbError) {
-            console.log('[getConnectionStatus] Could not check store_databases:', dbError.message);
+            console.log('[getConnectionStatus] ❌ Could not check store_databases:', dbError.message);
           }
         }
 
