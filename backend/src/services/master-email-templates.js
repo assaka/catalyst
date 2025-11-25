@@ -227,8 +227,8 @@ const creditsPurchaseEmail = (data) => {
   const header = masterEmailHeader({
     title: 'Purchase Confirmed!',
     subtitle: `+${creditsPurchased} Credits`,
-    primaryColor: '#10b981', // Green
-    secondaryColor: '#059669'
+    primaryColor: '#6366f1', // Indigo (Daino brand)
+    secondaryColor: '#8b5cf6' // Purple
   });
 
   const footer = masterEmailFooter();
@@ -253,7 +253,7 @@ const creditsPurchaseEmail = (data) => {
           <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; margin-bottom: 25px;">
             <tr>
               <td style="padding: 24px;">
-                <h3 style="margin: 0 0 16px 0; color: #10b981; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                <h3 style="margin: 0 0 16px 0; color: #6366f1; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
                   Purchase Summary
                 </h3>
                 <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -261,7 +261,7 @@ const creditsPurchaseEmail = (data) => {
                     <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
                       Credits Purchased
                     </td>
-                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #10b981; font-size: 18px; font-weight: 700;">
+                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #6366f1; font-size: 18px; font-weight: 700;">
                       ${creditsPurchased}
                     </td>
                   </tr>
@@ -305,8 +305,8 @@ const creditsPurchaseEmail = (data) => {
           <!-- Info Box -->
           <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
             <tr>
-              <td style="padding: 16px; background-color: #ecfdf5; border-left: 4px solid #10b981; border-radius: 0 8px 8px 0;">
-                <p style="margin: 0; color: #065f46; font-size: 14px; line-height: 1.5;">
+              <td style="padding: 16px; background-color: #eef2ff; border-left: 4px solid #6366f1; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #3730a3; font-size: 14px; line-height: 1.5;">
                   <strong>Your credits are ready to use!</strong> Visit your dashboard to start using your credits for AI translations, product descriptions, and more.
                 </p>
               </td>
@@ -317,7 +317,7 @@ const creditsPurchaseEmail = (data) => {
           <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
             <tr>
               <td align="center">
-                <a href="${PLATFORM_URL}/admin/settings/credits" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);">
+                <a href="${PLATFORM_URL}/admin/settings/credits" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);">
                   View Dashboard
                 </a>
               </td>
