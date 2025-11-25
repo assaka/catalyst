@@ -269,7 +269,7 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
                       }}
                     />
                     <Label htmlFor="select-all-attributes" className="text-sm font-medium cursor-pointer">
-                      Select/Deselect All ({formData.attribute_ids.length}/{attributes.length})
+                      {formData.attribute_ids.length === attributes.length ? 'Deselect All' : 'Select All'} ({formData.attribute_ids.length}/{attributes.length})
                     </Label>
                   </div>
                 )}
