@@ -1726,7 +1726,7 @@ export default function ThemeLayout() {
                                             <Input
                                                 id="product_tabs_border_color"
                                                 type="color"
-                                                value={store.settings.theme.product_tabs_border_color || '#E5E7EB'}
+                                                value={store.settings.theme.product_tabs_border_color || '#e0e0e0'}
                                                 onChange={(e) => handleThemeChange('product_tabs_border_color', e.target.value)}
                                             />
                                         </div>
