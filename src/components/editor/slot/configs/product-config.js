@@ -386,12 +386,12 @@ export const productConfig = {
           <div class="space-y-3">
               {{#each customOptions}}
                 <div
-                  class="border rounded-lg p-4 cursor-pointer transition-all duration-200 {{#if this.isSelected}}border-purple-500 bg-purple-50 shadow-sm{{else}}border-purple-200 hover:border-purple-300 hover:shadow-sm{{/if}}"
+                  class="border rounded-lg p-4 cursor-pointer transition-all duration-200 {{#if this.isSelected}}border-gray-700 bg-purple-50 shadow-sm{{else}}border-gray-700 hover:border-gray-900 hover:shadow-sm{{/if}}"
                   data-option-id="{{this.id}}"
                   data-action="toggle-option"
                 >
                   <div class="flex items-start space-x-3">
-                    <div class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 {{#if this.isSelected}}border-purple-500 bg-purple-500{{else}}border-purple-300{{/if}}">
+                    <div class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 {{#if this.isSelected}}border-gray-700 bg-gray-700{{else}}border-gray-700{{/if}}">
                       {{#if this.isSelected}}
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-white">
                           <polyline points="20 6 9 17 4 12"></polyline>
