@@ -472,7 +472,7 @@ export default function TeamManagement({ storeId, storeName }) {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge className={ROLE_COLORS[invitation.role]}>
+                          <Badge variant="outline" className={ROLE_COLORS[invitation.role]}>
                             <RoleIcon className="w-3 h-3 mr-1" />
                             {invitation.role?.charAt(0).toUpperCase() + invitation.role?.slice(1)}
                           </Badge>
