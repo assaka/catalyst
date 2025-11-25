@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { masterDbClient } = require('../database/masterConnection');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/auth');
 const { validateCustomerOrderAccess } = require('../middleware/customerStoreAuth');
@@ -171,8 +172,7 @@ router.post('/finalize-order', async (req, res) => {
     }
 
     // Get the store for the connected account
-    const masterDb = await ConnectionManager.getMasterConnection();
-    const { data: store, error: storeError } = await masterDb
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', order.store_id)
@@ -881,10 +881,9 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
     const { store_id, items, ...orderData } = req.body;
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    const masterDb = await ConnectionManager.getMasterConnection();
 
     // Check store ownership
-    const { data: store, error: storeError } = await masterDb
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('*')
       .eq('id', store_id)
@@ -1034,7 +1033,6 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     }
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    const masterDb = await ConnectionManager.getMasterConnection();
 
     const { data: order, error: orderError } = await tenantDb
       .from('sales_orders')
@@ -1120,7 +1118,6 @@ router.post('/:id/resend-confirmation', authMiddleware, async (req, res) => {
     }
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    const masterDb = await ConnectionManager.getMasterConnection();
 
     // Load order with all details
     const { data: order, error: orderError } = await tenantDb
@@ -1210,7 +1207,6 @@ router.post('/:id/send-invoice', authMiddleware, async (req, res) => {
     }
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    const masterDb = await ConnectionManager.getMasterConnection();
 
     // Load order with all details
     const { data: order, error: orderError } = await tenantDb
@@ -1390,7 +1386,6 @@ router.post('/:id/send-shipment', authMiddleware, async (req, res) => {
     }
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-    const masterDb = await ConnectionManager.getMasterConnection();
 
     // Load order with all details
     const { data: order, error: orderError } = await tenantDb
@@ -1596,10 +1591,8 @@ router.get('/test-invoice-settings/:storeId', async (req, res) => {
 
     console.log('🔍 Testing invoice settings for store:', storeId);
 
-    const masterDb = await ConnectionManager.getMasterConnection();
-
     // Load store with settings
-    const { data: store, error: storeError } = await masterDb
+    const { data: store, error: storeError } = await masterDbClient
       .from('stores')
       .select('id, name, slug, currency, settings')
       .eq('id', storeId)
