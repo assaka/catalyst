@@ -12,12 +12,40 @@ class SupabaseStorageService extends StorageInterface {
   }
 
   /**
+   * Get storage credentials from either supabase-storage or supabase-oauth integration
+   */
+  async getStorageCredentials(storeId) {
+    // First try media storage OAuth credentials (supabase-storage)
+    let credentials = await supabaseMediaStorageOAuth.getStorageCredentials(storeId);
+
+    // If not found or incomplete, fall back to regular OAuth credentials (supabase-oauth)
+    if (!credentials || !credentials.project_url || !credentials.service_role_key) {
+      console.log('📦 [Storage] No media storage credentials, checking regular OAuth...');
+      const IntegrationConfig = require('../models/IntegrationConfig');
+      const oauthConfig = await IntegrationConfig.findByStoreAndType(storeId, 'supabase-oauth');
+
+      if (oauthConfig && oauthConfig.config_data) {
+        credentials = {
+          project_url: oauthConfig.config_data.projectUrl,
+          service_role_key: oauthConfig.config_data.serviceRoleKey
+        };
+        console.log('📦 [Storage] Using credentials from supabase-oauth');
+      }
+    } else {
+      console.log('📦 [Storage] Using credentials from supabase-storage');
+    }
+
+    return credentials;
+  }
+
+  /**
    * Get Supabase client using integration_configs credentials
+   * Checks both supabase-storage and supabase-oauth integrations
    */
   async getSupabaseClient(storeId) {
     // Get credentials from integration_configs table
     try {
-      const credentials = await supabaseMediaStorageOAuth.getStorageCredentials(storeId);
+      const credentials = await this.getStorageCredentials(storeId);
 
       if (!credentials || !credentials.project_url || !credentials.service_role_key) {
         throw new Error('No Supabase storage configured for this store');
@@ -87,7 +115,7 @@ class SupabaseStorageService extends StorageInterface {
   async ensureBucketsExist(storeId) {
     try {
       // Check if we have valid credentials
-      const credentials = await supabaseMediaStorageOAuth.getStorageCredentials(storeId);
+      const credentials = await this.getStorageCredentials(storeId);
 
       if (!credentials || !credentials.service_role_key) {
         console.log('Service role key not available, skipping bucket auto-creation');
@@ -211,7 +239,7 @@ class SupabaseStorageService extends StorageInterface {
   async uploadImageDirect(storeId, file, options = {}) {
     try {
       // Use media storage credentials (from supabase-storage integration)
-      const credentials = await supabaseMediaStorageOAuth.getStorageCredentials(storeId);
+      const credentials = await this.getStorageCredentials(storeId);
 
       if (!credentials || !credentials.project_url) {
         throw new Error('Project URL not configured. Please connect Supabase storage.');
@@ -836,7 +864,7 @@ class SupabaseStorageService extends StorageInterface {
   async listBuckets(storeId) {
     try {
       // Use media storage credentials (from supabase-storage integration)
-      const credentials = await supabaseMediaStorageOAuth.getStorageCredentials(storeId);
+      const credentials = await this.getStorageCredentials(storeId);
 
       // Check if project URL is configured
       if (!credentials?.project_url) {
@@ -993,7 +1021,7 @@ class SupabaseStorageService extends StorageInterface {
   async getStorageStats(storeId) {
     try {
       // Use media storage credentials (from supabase-storage integration)
-      const credentials = await supabaseMediaStorageOAuth.getStorageCredentials(storeId);
+      const credentials = await this.getStorageCredentials(storeId);
 
       if (!credentials || !credentials.project_url) {
         return {
