@@ -409,7 +409,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
             Configure which custom options are available for products based on categories, attribute sets, or other conditions.
           </p>
         </CardHeader>
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-6 pt-0 space-y-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

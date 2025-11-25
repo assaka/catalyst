@@ -63,14 +63,6 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
         };
       }
 
-      console.log('🔍 Frontend: Final translations for form:', {
-        translations,
-        enName: translations.en?.name,
-        enContent: translations.en?.content,
-        nlName: translations.nl?.name,
-        nlContent: translations.nl?.content
-      });
-
       setFormData({
         name: translations.en?.name || "",
         tab_type: tab.tab_type || "text",
@@ -139,15 +131,6 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
         submitData.id = tab.id;
       }
 
-      console.log('📝 ProductTabForm: Submitting tab data:', {
-        id: submitData.id,
-        name: submitData.name,
-        tab_type: submitData.tab_type,
-        translations: submitData.translations,
-        translationKeys: Object.keys(submitData.translations || {}),
-        nlTranslation: submitData.translations?.nl
-      });
-
       await onSubmit(submitData);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
@@ -162,7 +145,7 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card className="material-elevation-1 border-0">
         <CardContent className="space-y-4">
-          <div>
+          <div className="pt-6">
             <Label htmlFor="name">Tab Name *</Label>
             <Input
               id="name"
