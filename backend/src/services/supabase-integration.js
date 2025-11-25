@@ -1540,14 +1540,33 @@ class SupabaseIntegration {
         };
       }
       
-      // If connection test recently failed, show as disconnected
+      // If connection test recently failed, check if we actually have valid credentials
+      // Don't immediately return disconnected if we have a valid project URL and service role key
       if (config && config.connection_status === 'failed') {
-        return {
-          connected: false,
-          message: 'Supabase connection failed - please reconnect',
-          oauthConfigured: true,
-          connectionStatus: 'failed'
-        };
+        const hasValidProjectUrl = token.project_url &&
+                                    token.project_url !== 'pending_configuration' &&
+                                    token.project_url !== 'https://pending-configuration.supabase.co';
+        const hasValidServiceKey = token.service_role_key &&
+                                    token.service_role_key !== 'pending_configuration' &&
+                                    token.service_role_key !== '';
+
+        // If we have valid credentials, update status to success and continue
+        if (hasValidProjectUrl && hasValidServiceKey) {
+          console.log('[getConnectionStatus] Has valid credentials despite failed status, updating to success');
+          try {
+            await IntegrationConfig.updateConnectionStatus(config.id, storeId, 'success');
+          } catch (updateError) {
+            console.log('[getConnectionStatus] Could not update status:', updateError.message);
+          }
+          // Continue to return connected status below
+        } else {
+          return {
+            connected: false,
+            message: 'Supabase connection failed - please reconnect',
+            oauthConfigured: true,
+            connectionStatus: 'failed'
+          };
+        }
       }
 
       // Check if connection has limited scope
