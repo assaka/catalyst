@@ -240,13 +240,9 @@ export default function TeamManagement({ storeId, storeName }) {
       loadTeamData();
     } catch (error) {
       console.error(`Error performing ${type}:`, error);
-      if (type === 'removeMember') {
-        setFlashMessage({ type: 'error', message: 'Failed to remove team member' });
-      } else if (type === 'resend') {
-        setFlashMessage({ type: 'error', message: 'Failed to resend invitation' });
-      } else if (type === 'deleteInvitation') {
-        setFlashMessage({ type: 'error', message: 'Failed to cancel invitation' });
-      }
+      // Use the actual error message from the API if available
+      const errorMessage = error.message || 'An error occurred';
+      setFlashMessage({ type: 'error', message: errorMessage });
     } finally {
       closeConfirmDialog();
     }
