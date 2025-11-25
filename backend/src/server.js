@@ -1214,12 +1214,12 @@ app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
       user = newUser;
     }
 
-    // Now accept the invitation - add to store_team_members
+    // Now accept the invitation - add to store_teams
     const tenantDb = await ConnectionManager.getStoreConnection(invitation.store_id);
 
     // Check if already a member
     const { data: existingMember } = await tenantDb
-      .from('store_team_members')
+      .from('store_teams')
       .select('id')
       .eq('store_id', invitation.store_id)
       .eq('user_id', user.id)
@@ -1234,7 +1234,7 @@ app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
     } else {
       // Add as team member
       const { error: memberError } = await tenantDb
-        .from('store_team_members')
+        .from('store_teams')
         .insert({
           store_id: invitation.store_id,
           user_id: user.id,
