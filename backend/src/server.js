@@ -1240,7 +1240,9 @@ app.post('/api/invitations/:token/accept-with-auth', async (req, res) => {
           user_id: user.id,
           role: invitation.role,
           invited_by: invitation.invited_by,
-          joined_at: new Date().toISOString(),
+          invited_at: invitation.created_at,
+          accepted_at: new Date().toISOString(),
+          status: 'active',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
