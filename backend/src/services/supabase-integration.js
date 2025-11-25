@@ -1496,6 +1496,33 @@ class SupabaseIntegration {
       // Check if we have an OAuth token (all Supabase connections are OAuth-based)
       // Trust the actual OAuth token presence, not stale config flags
       if (!token) {
+        // No token in integration_configs - check store_databases (provisioning credentials)
+        console.log('[getConnectionStatus] No integration_configs token, checking store_databases...');
+        try {
+          const StoreDatabase = require('../models/master/StoreDatabase');
+          const storeDb = await StoreDatabase.findByStoreId(storeId);
+
+          if (storeDb && storeDb.database_type === 'supabase') {
+            const dbCredentials = storeDb.getCredentials();
+            if (dbCredentials && dbCredentials.projectUrl && dbCredentials.serviceRoleKey) {
+              console.log('[getConnectionStatus] Found valid credentials in store_databases');
+              // Return connected status using store_databases credentials
+              return {
+                connected: true,
+                projectUrl: dbCredentials.projectUrl,
+                connectionStatus: storeDb.connection_status || 'success',
+                oauthConfigured: false,
+                hasServiceRoleKey: true,
+                storageReady: true,
+                source: 'store_databases',
+                message: 'Connected via store database credentials'
+              };
+            }
+          }
+        } catch (dbError) {
+          console.log('[getConnectionStatus] Could not check store_databases:', dbError.message);
+        }
+
         // No connection found in either place
         let hasOrphanedAuthorization = false;
         let wasAutoDisconnected = false;
