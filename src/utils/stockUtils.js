@@ -216,12 +216,22 @@ export function getStockLabel(product, settings = {}, lang = null, globalTransla
     return 'No Stock Label';
   };
 
+  // Default colors - same as StockSettings.jsx defaults
+  const defaultColors = {
+    in_stock_text_color: '#166534',
+    in_stock_bg_color: '#dcfce7',
+    out_of_stock_text_color: '#991b1b',
+    out_of_stock_bg_color: '#fee2e2',
+    low_stock_text_color: '#92400e',
+    low_stock_bg_color: '#fef3c7'
+  };
+
   // Handle infinite stock
   if (product.infinite_stock) {
     const label = getTranslatedLabel('in_stock_label');
     const text = processLabel(label, null, settings, globalTranslations); // Remove quantity blocks
-    const textColor = stockSettings.in_stock_text_color;
-    const bgColor = stockSettings.in_stock_bg_color;
+    const textColor = stockSettings.in_stock_text_color || defaultColors.in_stock_text_color;
+    const bgColor = stockSettings.in_stock_bg_color || defaultColors.in_stock_bg_color;
 
     return { text, textColor, bgColor };
   }
@@ -229,8 +239,8 @@ export function getStockLabel(product, settings = {}, lang = null, globalTransla
   // Handle out of stock
   if (product.stock_quantity <= 0) {
     const text = getTranslatedLabel('out_of_stock_label');
-    const textColor = stockSettings.out_of_stock_text_color;
-    const bgColor = stockSettings.out_of_stock_bg_color;
+    const textColor = stockSettings.out_of_stock_text_color || defaultColors.out_of_stock_text_color;
+    const bgColor = stockSettings.out_of_stock_bg_color || defaultColors.out_of_stock_bg_color;
 
     return { text, textColor, bgColor };
   }
@@ -243,8 +253,8 @@ export function getStockLabel(product, settings = {}, lang = null, globalTransla
   if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
     const label = getTranslatedLabel('low_stock_label');
     const text = processLabel(label, hideStockQuantity ? null : product.stock_quantity, settings, globalTranslations);
-    const textColor = stockSettings.low_stock_text_color;
-    const bgColor = stockSettings.low_stock_bg_color;
+    const textColor = stockSettings.low_stock_text_color || defaultColors.low_stock_text_color;
+    const bgColor = stockSettings.low_stock_bg_color || defaultColors.low_stock_bg_color;
 
     return { text, textColor, bgColor };
   }
@@ -252,8 +262,8 @@ export function getStockLabel(product, settings = {}, lang = null, globalTransla
   // Handle regular in stock
   const label = getTranslatedLabel('in_stock_label');
   const text = processLabel(label, hideStockQuantity ? null : product.stock_quantity, settings, globalTranslations);
-  const textColor = stockSettings.in_stock_text_color;
-  const bgColor = stockSettings.in_stock_bg_color;
+  const textColor = stockSettings.in_stock_text_color || defaultColors.in_stock_text_color;
+  const bgColor = stockSettings.in_stock_bg_color || defaultColors.in_stock_bg_color;
 
   return { text, textColor, bgColor };
 }
