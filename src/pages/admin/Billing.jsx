@@ -180,6 +180,15 @@ export default function Billing() {
     try {
       const userData = await User.me();
       console.log('📊 [Billing] User data loaded:', { id: userData?.id, credits: userData?.credits });
+
+      // Check for pending credits purchase (optimistic update)
+      const pendingCredits = localStorage.getItem('pending_credits_purchase');
+      if (pendingCredits) {
+        // Clear the pending credits flag
+        localStorage.removeItem('pending_credits_purchase');
+        console.log('📊 [Billing] Cleared pending credits from localStorage');
+      }
+
       setUser(userData);
 
       // Direct API call to bypass entity transformation and see raw response
@@ -251,13 +260,28 @@ export default function Billing() {
 
   const handlePaymentSuccess = () => {
     setPaymentSuccess(true);
+
+    // Store purchased credits in localStorage for optimistic UI update
+    const purchasedCredits = selectedPackage?.credits || 0;
+    if (purchasedCredits > 0) {
+      localStorage.setItem('pending_credits_purchase', purchasedCredits.toString());
+
+      // Immediately update displayed balance (optimistic update)
+      setUser(prev => ({
+        ...prev,
+        credits: (prev?.credits || 0) + purchasedCredits
+      }));
+    }
+
     setSelectedPackage(null);
 
-    // Immediately reload ALL billing data: balance, transactions, user data
+    // Reload billing data (will clear localStorage once fresh data arrives)
     loadBillingData();
 
-    // Dispatch event to trigger sidebar credits update
-    window.dispatchEvent(new CustomEvent('creditsUpdated'));
+    // Dispatch event to trigger sidebar credits update with the new amount
+    window.dispatchEvent(new CustomEvent('creditsUpdated', {
+      detail: { addedCredits: purchasedCredits }
+    }));
 
     // Show success message for 5 seconds
     setTimeout(() => {

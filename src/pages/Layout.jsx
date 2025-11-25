@@ -197,7 +197,17 @@ function LayoutInner({ children, currentPageName }) {
     };
 
     // Listen for credits updated event (e.g., after credit purchase)
-    const handleCreditsUpdated = () => {
+    const handleCreditsUpdated = (event) => {
+      // Check if we have optimistic update data
+      const addedCredits = event?.detail?.addedCredits;
+      if (addedCredits && addedCredits > 0) {
+        // Immediately update displayed balance (optimistic update)
+        setUser(prev => prev ? {
+          ...prev,
+          credits: (prev.credits || 0) + addedCredits
+        } : prev);
+      }
+      // Then fetch fresh data from server
       loadUserAndHandleCredits();
     };
 
