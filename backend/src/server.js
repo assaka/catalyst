@@ -1111,6 +1111,13 @@ app.get('/api/invitations/:token', async (req, res) => {
       .eq('email', invitation.invited_email)
       .maybeSingle();
 
+    // Ensure store has a name (fallback to domain or a default)
+    const storeData = {
+      id: store?.id || invitation.store_id,
+      name: store?.name || store?.domain || 'Your Store',
+      domain: store?.domain || ''
+    };
+
     res.json({
       success: true,
       data: {
@@ -1119,7 +1126,7 @@ app.get('/api/invitations/:token', async (req, res) => {
         role: invitation.role,
         message: invitation.message,
         expires_at: invitation.expires_at,
-        store: store || { name: 'Store' },
+        store: storeData,
         inviter,
         userExists: !!existingUser
       }

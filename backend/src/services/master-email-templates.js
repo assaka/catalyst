@@ -595,6 +595,137 @@ const passwordResetEmail = (data) => {
   });
 };
 
+/**
+ * Team Invitation Email Template
+ * Sent when a store owner invites someone to join their team
+ */
+const teamInvitationEmail = (data) => {
+  const {
+    inviteeEmail,
+    inviterName,
+    inviterEmail,
+    storeName,
+    role,
+    message,
+    inviteUrl,
+    expiresDate
+  } = data;
+
+  const roleArticle = role === 'admin' ? 'an' : 'a';
+
+  const header = masterEmailHeader({
+    title: "You're Invited!",
+    subtitle: `Join ${storeName} on ${PLATFORM_NAME}`,
+    primaryColor: '#3b82f6', // Blue
+    secondaryColor: '#8b5cf6' // Purple
+  });
+
+  const footer = masterEmailFooter();
+
+  const content = `
+    ${header}
+
+    <!-- Email Body -->
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td class="email-content" style="padding: 40px;">
+          <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            Hi there,
+          </p>
+
+          <p style="margin: 0 0 25px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+            <strong>${inviterName || inviterEmail}</strong> has invited you to join the team at <strong>${storeName}</strong> as ${roleArticle} <strong>${role}</strong>.
+          </p>
+
+          <!-- Store Card -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #f0f9ff 0%, #f5f3ff 100%); border: 1px solid #e0e7ff; border-radius: 12px; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 24px;">
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="vertical-align: middle; width: 60px;">
+                      <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); border-radius: 12px; text-align: center; line-height: 50px;">
+                        <span style="color: white; font-size: 24px; font-weight: 700;">${storeName.charAt(0).toUpperCase()}</span>
+                      </div>
+                    </td>
+                    <td style="vertical-align: middle; padding-left: 16px;">
+                      <p style="margin: 0; color: #111827; font-size: 18px; font-weight: 700;">${storeName}</p>
+                      <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">Powered by ${PLATFORM_NAME}</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Role Badge -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 16px; background-color: #f9fafb; border-radius: 8px; text-align: center;">
+                <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                  Your Role
+                </p>
+                <span style="display: inline-block; padding: 8px 20px; background: ${role === 'admin' ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : role === 'editor' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)'}; color: #ffffff; font-weight: 600; font-size: 14px; border-radius: 6px; text-transform: capitalize;">
+                  ${role}
+                </span>
+              </td>
+            </tr>
+          </table>
+
+          ${message ? `
+          <!-- Personal Message -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 16px; background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0 0 4px 0; color: #92400e; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                  Message from ${inviterName || 'the inviter'}
+                </p>
+                <p style="margin: 0; color: #78350f; font-size: 14px; font-style: italic; line-height: 1.5;">
+                  "${message}"
+                </p>
+              </td>
+            </tr>
+          </table>
+          ` : ''}
+
+          <!-- CTA Button -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td align="center">
+                <a href="${inviteUrl}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);">
+                  Accept Invitation
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Expiration Warning -->
+          <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <tr>
+              <td style="padding: 12px 16px; background-color: #fef3c7; border-radius: 8px; text-align: center;">
+                <p style="margin: 0; color: #92400e; font-size: 13px;">
+                  ⏰ This invitation expires on <strong>${expiresDate}</strong>
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin: 0; color: #9ca3af; font-size: 13px; text-align: center; line-height: 1.5;">
+            If you didn't expect this invitation, you can safely ignore this email.<br>
+            If the button doesn't work, copy this link: <a href="${inviteUrl}" style="color: #6366f1; word-break: break-all;">${inviteUrl}</a>
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    ${footer}
+  `;
+
+  return masterEmailBase(content, {
+    preheader: `${inviterName || 'Someone'} has invited you to join ${storeName} on ${PLATFORM_NAME}`
+  });
+};
+
 module.exports = {
   // Components
   masterEmailHeader,
@@ -606,6 +737,7 @@ module.exports = {
   creditsLowBalanceEmail,
   welcomeEmail,
   passwordResetEmail,
+  teamInvitationEmail,
 
   // Constants
   PLATFORM_NAME,
