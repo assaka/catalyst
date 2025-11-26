@@ -2497,97 +2497,10 @@ async function createPreliminaryOrder(session, orderData) {
 
     console.log('✅ Preliminary order and items created successfully');
 
-    // Send order success email immediately ONLY for offline payments
-    // For online payments, webhook will send the email after payment confirmation
-    if (order && order.customer_email && paymentFlow === 'offline') {
-      try {
-        console.log('📧 Sending order success email to:', order.customer_email);
-
-        const emailService = require('../services/email-service');
-
-        // Get order with full details for email - fetch related data separately
-        const { data: orderWithDetails } = await tenantDb
-          .from('sales_orders')
-          .select('*')
-          .eq('id', order.id)
-          .single();
-
-        // Fetch order items
-        const { data: orderItems } = await tenantDb
-          .from('sales_order_items')
-          .select('*')
-          .eq('order_id', order.id);
-
-        // Fetch products for the items
-        const productIds = orderItems?.map(item => item.product_id).filter(Boolean) || [];
-        const { data: products } = productIds.length > 0 ? await tenantDb
-          .from('products')
-          .select('id, sku')
-          .in('id', productIds) : { data: [] };
-
-        const productMap = {};
-        (products || []).forEach(p => { productMap[p.id] = p; });
-
-        // Attach products to items
-        orderWithDetails.OrderItems = (orderItems || []).map(item => ({
-          ...item,
-          Product: productMap[item.product_id] || null
-        }));
-
-        // Fetch store from master DB
-        const { masterDbClient } = require('../database/masterConnection');
-        const { data: storeData } = await masterDbClient
-          .from('stores')
-          .select('id, name, slug, currency, settings')
-          .eq('id', store_id)
-          .single();
-
-        orderWithDetails.Store = storeData;
-
-        // Try to get customer details
-        let customer = null;
-        if (order.customer_id) {
-          const { data } = await tenantDb
-            .from('customers')
-            .select('*')
-            .eq('id', order.customer_id)
-            .eq('store_id', store_id)
-            .maybeSingle();
-          customer = data;
-        }
-
-        // Extract customer name from shipping/billing address if customer not found
-        const customerName = customer
-          ? `${customer.first_name} ${customer.last_name}`
-          : (order.shipping_address?.full_name || order.shipping_address?.name || order.billing_address?.full_name || order.billing_address?.name || 'Customer');
-
-        const [firstName, ...lastNameParts] = customerName.split(' ');
-        const lastName = lastNameParts.join(' ') || '';
-
-        // Send order success email asynchronously for offline payments only
-        emailService.sendTransactionalEmail(order.store_id, 'order_success_email', {
-          recipientEmail: order.customer_email,
-          customer: customer || {
-            first_name: firstName,
-            last_name: lastName,
-            email: order.customer_email
-          },
-          order: orderWithDetails,
-          store: orderWithDetails.Store,
-          languageCode: 'en'
-        }).then(() => {
-          console.log(`✅ Order success email sent successfully to: ${order.customer_email} (offline payment)`);
-        }).catch(emailError => {
-          console.error(`❌ Failed to send order success email:`, emailError.message);
-          // Don't fail the order creation if email fails
-        });
-      } catch (emailError) {
-        console.error(`❌ Error preparing order success email:`, emailError.message);
-        // Don't fail the order creation if email fails
-      }
-    } else if (order && order.customer_email && paymentFlow === 'online') {
-      console.log(`📧 Skipping email for online payment - will be sent after webhook confirmation`);
-    }
+    // IMPORTANT: Never send email from createPreliminaryOrder
+    // This function is called from Stripe checkout flow - ALL payments here require webhook confirmation
+    // Email will be sent from webhook-connect handler after checkout.session.completed event
+    console.log(`📧 Email will be sent after webhook confirmation (Stripe checkout flow)`);
 
     return order;
 
