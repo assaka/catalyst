@@ -1209,6 +1209,10 @@ router.post('/create-checkout', async (req, res) => {
 
     // Create preliminary order and OrderItems immediately for lazy loading
     console.log('💾 *** LAZY LOADING v7.0 *** Creating preliminary order for immediate availability...');
+    console.log('💾 Session ID:', session.id);
+    console.log('💾 Store ID:', store_id);
+    console.log('💾 Customer Email:', customer_email);
+    console.log('💾 Items count:', items?.length);
     try {
       await createPreliminaryOrder(session, {
         items,
@@ -1231,9 +1235,11 @@ router.post('/create-checkout', async (req, res) => {
         delivery_instructions,
         store
       });
-      console.log('✅ Preliminary order created successfully');
+      console.log('✅ Preliminary order created successfully for session:', session.id);
     } catch (preliminaryOrderError) {
-      console.error('⚠️ Failed to create preliminary order (will retry in webhook):', preliminaryOrderError.message);
+      console.error('⚠️ Failed to create preliminary order for session:', session.id);
+      console.error('⚠️ Error:', preliminaryOrderError.message);
+      console.error('⚠️ Stack:', preliminaryOrderError.stack);
       // Don't fail the checkout if preliminary order fails - webhook will handle it
     }
 
