@@ -822,6 +822,41 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
               </div>
             </div>', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00');
 
+-- email_verification translation
+INSERT INTO email_template_translations ("id", "email_template_id", "language_code", "subject", "template_content", "html_content", "created_at", "updated_at")
+VALUES ('f8a52211-ddca-40d1-ac14-4b3d84ba256c', 'caa52211-ddca-40d1-ac14-4b3d84ba256b', 'en', 'Verify your email - {{store_name}}',
+'Hi {{customer_first_name}},
+
+Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:
+
+Your verification code: {{verification_code}}
+
+This code will expire in 15 minutes.
+
+If you didn''t create an account at {{store_name}}, please ignore this email.
+
+Best regards,
+{{store_name}} Team',
+'<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #333;">Verify Your Email</h2>
+  <p>Hi {{customer_first_name}},</p>
+  <p>Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:</p>
+  <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px;">
+    <h1 style="font-size: 36px; letter-spacing: 8px; color: #4F46E5; font-family: monospace; margin: 0;">
+      {{verification_code}}
+    </h1>
+  </div>
+  <p>This code will expire in <strong>15 minutes</strong>.</p>
+  <p style="color: #666; font-size: 14px;">If you didn''t create an account at {{store_name}}, please ignore this email.</p>
+  <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+  <p style="color: #999; font-size: 12px;">
+    Best regards,<br>
+    {{store_name}} Team<br>
+    <a href="{{store_url}}">{{store_url}}</a>
+  </p>
+</div>', '2025-11-26 10:00:00.000+00', '2025-11-26 10:00:00.000+00')
+ON CONFLICT DO NOTHING;
+
 
 -- languages (15 rows)
 INSERT INTO languages (id, code, name, native_name, flag, is_rtl, is_active, is_default, translations, created_at, updated_at)
