@@ -596,6 +596,26 @@ export default function PaymentMethods() {
                               </Button>
                             </div>
                           </div>
+                        ) : stripeStatus?.connected && !stripeStatus?.onboardingComplete ? (
+                          <div className="space-y-2">
+                            <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                              <AlertCircle className="w-3 h-3 mr-1" /> Setup Incomplete
+                            </Badge>
+                            <Button
+                              onClick={handleConnectStripe}
+                              disabled={connectingStripe}
+                              className="bg-amber-600 hover:bg-amber-700"
+                            >
+                              {connectingStripe ? (
+                                <>
+                                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                  Loading...
+                                </>
+                              ) : (
+                                'Continue Setup'
+                              )}
+                            </Button>
+                          </div>
                         ) : (
                           <Button
                             onClick={handleConnectStripe}
