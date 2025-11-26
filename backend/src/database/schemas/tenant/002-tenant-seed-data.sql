@@ -415,12 +415,10 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
       <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
     </p>
   </div>
-</div>'), ('d3176294-44e3-4893-993d-9b5c60202aaa', 'd1136967-f856-4199-bd97-557cc9603ce4', 'invoice_email', 'html', '["invoice_number", "invoice_date", "order_number", "customer_name", "customer_first_name", "customer_email", "order_date", "order_total", "order_subtotal", "order_tax", "order_shipping", "items_html", "items_count", "billing_address", "shipping_address", "store_name", "store_url", "current_year", "email_header", "email_footer"]', 'true', '10', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Invoice #{{invoice_number}} from {{store_name}}', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Invoice</h1>
-    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">#{{invoice_number}}</p>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+</div>'), ('d3176294-44e3-4893-993d-9b5c60202aaa', 'd1136967-f856-4199-bd97-557cc9603ce4', 'invoice_email', 'html', '["invoice_number", "invoice_date", "order_number", "customer_name", "customer_first_name", "customer_email", "order_date", "order_total", "order_subtotal", "order_tax", "order_shipping", "items_html", "items_count", "billing_address", "shipping_address", "store_name", "store_url", "current_year", "email_header", "email_footer"]', 'true', '10', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Invoice #{{invoice_number}} from {{store_name}}', null, '{{email_header}}
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #f8f9fa; padding: 30px;">
+    <h2 style="color: #667eea; margin: 0 0 20px 0; text-align: center;">Invoice #{{invoice_number}}</h2>
     <p>Hi <strong>{{customer_first_name}}</strong>,</p>
     <p>Thank you for your order! Please find your invoice details below.</p>
     <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -477,18 +475,12 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
         {{shipping_address}}
       </p>
     </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
-    </p>
   </div>
-</div>'), ('155851a2-e285-4ae8-a4eb-04b6aa024fad', 'd1136967-f856-4199-bd97-557cc9603ce4', 'shipment_email', 'html', '["order_number", "tracking_number", "tracking_url", "shipping_method", "estimated_delivery_date", "delivery_instructions", "customer_name", "customer_first_name", "customer_email", "items_html", "items_count", "shipping_address", "store_name", "store_url", "current_year", "email_header", "email_footer"]', 'true', '11', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Your order #{{order_number}} has been shipped!', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Your Order is On Its Way!</h1>
-    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Order #{{order_number}}</p>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+</div>
+{{email_footer}}'), ('155851a2-e285-4ae8-a4eb-04b6aa024fad', 'd1136967-f856-4199-bd97-557cc9603ce4', 'shipment_email', 'html', '["order_number", "tracking_number", "tracking_url", "shipping_method", "estimated_delivery_date", "delivery_instructions", "customer_name", "customer_first_name", "customer_email", "items_html", "items_count", "shipping_address", "store_name", "store_url", "current_year", "email_header", "email_footer"]', 'true', '11', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Your order #{{order_number}} has been shipped!', null, '{{email_header}}
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #f8f9fa; padding: 30px;">
+    <h2 style="color: #667eea; margin: 0 0 20px 0; text-align: center;">Your Order is On Its Way!</h2>
     <p>Hi <strong>{{customer_first_name}}</strong>,</p>
     <p>Great news! Your order has been shipped and is on its way to you.</p>
     <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -533,14 +525,10 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
         {{delivery_instructions}}
       </p>
     </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
-    </p>
   </div>
-</div>'), ('07958749-5770-4838-87e1-b860ee355fb7', 'd1136967-f856-4199-bd97-557cc9603ce4', 'email_header', 'html', '["store_name", "store_logo_url"]', 'true', '100', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Email Header Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+</div>
+{{email_footer}}'), ('07958749-5770-4838-87e1-b860ee355fb7', 'd1136967-f856-4199-bd97-557cc9603ce4', 'email_header', 'html', '["store_name", "store_logo_url"]', 'true', '100', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Email Header Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
                 <div style="background-color: white; width: 120px; height: 120px; margin: 0 auto 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 10px;">
                   <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 100px; max-height: 100px; object-fit: contain;">
                 </div>
@@ -568,12 +556,10 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
 
 
 -- email_template_translations (80 rows)
-INSERT INTO email_template_translations ("id", "email_template_id", "language_code", "subject", "template_content", "html_content", "created_at", "updated_at") VALUES ('ba6dbb5e-4bde-45ca-8386-d4940e8faaf5', '67be93d0-512b-4f58-b55e-4d627dfc1035', 'en', 'Invoice #{{invoice_number}} from {{store_name}}', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Invoice</h1>
-    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">#{{invoice_number}}</p>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+INSERT INTO email_template_translations ("id", "email_template_id", "language_code", "subject", "template_content", "html_content", "created_at", "updated_at") VALUES ('ba6dbb5e-4bde-45ca-8386-d4940e8faaf5', '67be93d0-512b-4f58-b55e-4d627dfc1035', 'en', 'Invoice #{{invoice_number}} from {{store_name}}', null, '{{email_header}}
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #f8f9fa; padding: 30px;">
+    <h2 style="color: #667eea; margin: 0 0 20px 0; text-align: center;">Invoice #{{invoice_number}}</h2>
     <p>Hi <strong>{{customer_first_name}}</strong>,</p>
     <p>Thank you for your order! Please find your invoice details below.</p>
     <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -630,13 +616,9 @@ INSERT INTO email_template_translations ("id", "email_template_id", "language_co
         {{shipping_address}}
       </p>
     </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
-    </p>
   </div>
-</div>', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00'), ('fdac4587-abf7-49d1-9e9d-ff8750bb6aa6', 'd6696302-9e73-4b27-a4bf-b2832803b3e3', 'en', 'Order Confirmation #{{order_number}}', 'Hi {{customer_first_name}},
+</div>
+{{email_footer}}', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00'), ('fdac4587-abf7-49d1-9e9d-ff8750bb6aa6', 'd6696302-9e73-4b27-a4bf-b2832803b3e3', 'en', 'Order Confirmation #{{order_number}}', 'Hi {{customer_first_name}},
 
 Thank you for your order!
 
@@ -704,12 +686,10 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
       <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
     </p>
   </div>
-</div>', '2025-10-31 21:21:14.762+00', '2025-11-06 06:11:10.628+00'), ('20229878-978d-4d65-84c7-5f4fa1b8357c', '365b5e11-7181-45e1-9426-3de098a6182d', 'en', 'Your order #{{order_number}} has been shipped!', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Your Order is On Its Way!</h1>
-    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Order #{{order_number}}</p>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+</div>', '2025-10-31 21:21:14.762+00', '2025-11-06 06:11:10.628+00'), ('20229878-978d-4d65-84c7-5f4fa1b8357c', '365b5e11-7181-45e1-9426-3de098a6182d', 'en', 'Your order #{{order_number}} has been shipped!', null, '{{email_header}}
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #f8f9fa; padding: 30px;">
+    <h2 style="color: #667eea; margin: 0 0 20px 0; text-align: center;">Your Order is On Its Way!</h2>
     <p>Hi <strong>{{customer_first_name}}</strong>,</p>
     <p>Great news! Your order has been shipped and is on its way to you.</p>
     <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -754,13 +734,9 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
         {{delivery_instructions}}
       </p>
     </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
-    </p>
   </div>
-</div>', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00'), ('3a2418cb-7199-416f-be59-70b9ab0abe92', 'a90d6ed4-054e-42f2-b844-7f9c68b89215', 'en', 'Verify your email - {{store_name}}', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+</div>
+{{email_footer}}', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00'), ('3a2418cb-7199-416f-be59-70b9ab0abe92', 'a90d6ed4-054e-42f2-b844-7f9c68b89215', 'en', 'Verify your email - {{store_name}}', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #333;">Verify Your Email</h2>
               <p>Hi {{customer_first_name}},</p>
               <p>Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:</p>
@@ -778,7 +754,7 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
                 <a href="{{store_url}}">{{store_url}}</a>
               </p>
             </div>', '2025-11-03 23:14:30.679+00', '2025-11-06 06:11:10.628+00'), ('00a2b31c-0f9e-4f6f-a0e1-211077b54eae', 'cb434957-62bc-4909-b277-aba53cc97102', 'en', 'Email Header Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+              <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
                 <div style="background-color: white; width: 120px; height: 120px; margin: 0 auto 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 10px;">
                   <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 100px; max-height: 100px; object-fit: contain;">
                 </div>
