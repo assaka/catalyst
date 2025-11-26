@@ -2,25 +2,18 @@
  * Storefronts Admin Page
  *
  * Manage multiple theme/layout configurations per store.
- * Features:
- * - List all storefronts with primary/scheduled badges
- * - Create new storefronts
- * - Edit storefront settings (name, slug, theme override)
- * - Schedule activation (publish_start_at, publish_end_at)
- * - Preview storefronts
- * - Set storefront as primary
- * - Duplicate storefronts
+ * Uses same layout as SalesSettings.jsx
  */
 
 import React, { useState, useEffect } from 'react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +30,7 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import {
+  Palette,
   Plus,
   Edit,
   Trash2,
@@ -45,8 +39,8 @@ import {
   Star,
   Copy,
   Calendar,
-  Palette,
-  ExternalLink
+  ExternalLink,
+  Info
 } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
 import FlashMessage from '@/components/storefront/FlashMessage';
@@ -82,6 +76,13 @@ export default function Storefronts() {
     }
   }, [selectedStore]);
 
+  useEffect(() => {
+    if (flashMessage) {
+      const timer = setTimeout(() => setFlashMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [flashMessage]);
+
   const loadStorefronts = async () => {
     setLoading(true);
     try {
@@ -92,12 +93,38 @@ export default function Storefronts() {
       }
 
       const response = await apiClient.get(`/storefronts?store_id=${storeId}`);
-      setStorefronts(response.data?.data || []);
+      let storefrontsList = response.data?.data || [];
+
+      // If no storefronts exist, create a default one from current store data
+      if (storefrontsList.length === 0) {
+        await createDefaultStorefront(storeId);
+        // Reload after creating default
+        const reloadResponse = await apiClient.get(`/storefronts?store_id=${storeId}`);
+        storefrontsList = reloadResponse.data?.data || [];
+      }
+
+      setStorefronts(storefrontsList);
     } catch (error) {
       console.error('Failed to load storefronts:', error);
       setStorefronts([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const createDefaultStorefront = async (storeId) => {
+    try {
+      await apiClient.post('/storefronts', {
+        store_id: storeId,
+        name: 'Default',
+        slug: 'default',
+        description: 'Default storefront with current store settings',
+        is_primary: true,
+        settings_override: {}
+      });
+      setFlashMessage({ type: 'info', message: 'Created default storefront from current store settings' });
+    } catch (error) {
+      console.error('Failed to create default storefront:', error);
     }
   };
 
@@ -237,8 +264,6 @@ export default function Storefronts() {
   const handlePreview = (storefront) => {
     const storeSlug = selectedStore?.slug;
     if (!storeSlug) return;
-
-    // Open storefront with preview param
     const previewUrl = `/public/${storeSlug}?storefront=${storefront.slug}`;
     window.open(previewUrl, '_blank');
   };
@@ -258,7 +283,7 @@ export default function Storefronts() {
     const now = new Date();
 
     if (storefront.is_primary) {
-      return { label: 'Primary', variant: 'default' };
+      return { label: 'Primary', variant: 'default', color: 'bg-blue-100 text-blue-800' };
     }
 
     if (storefront.publish_start_at) {
@@ -266,172 +291,157 @@ export default function Storefronts() {
       const end = storefront.publish_end_at ? new Date(storefront.publish_end_at) : null;
 
       if (start <= now && (!end || end >= now)) {
-        return { label: 'Active (Scheduled)', variant: 'success' };
+        return { label: 'Active (Scheduled)', variant: 'success', color: 'bg-green-100 text-green-800' };
       } else if (start > now) {
-        return { label: 'Scheduled', variant: 'secondary' };
+        return { label: 'Scheduled', variant: 'secondary', color: 'bg-yellow-100 text-yellow-800' };
       } else if (end && end < now) {
-        return { label: 'Expired', variant: 'outline' };
+        return { label: 'Expired', variant: 'outline', color: 'bg-gray-100 text-gray-600' };
       }
     }
 
-    return { label: 'Draft', variant: 'outline' };
+    return { label: 'Draft', variant: 'outline', color: 'bg-gray-100 text-gray-600' };
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50">
+      <FlashMessage
+        message={flashMessage}
+        onClose={() => setFlashMessage(null)}
+      />
       <AlertComponent />
 
-      {flashMessage && (
-        <FlashMessage
-          message={flashMessage}
-          onClose={() => setFlashMessage(null)}
-        />
-      )}
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Storefronts</h1>
-          <p className="text-gray-600 mt-1">
-            Manage multiple theme and layout variants for your store
-          </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Storefronts</h1>
+            <p className="text-gray-600 mt-1">Manage multiple theme and layout variants for your store</p>
+          </div>
+          <Button onClick={handleCreate}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Storefront
+          </Button>
         </div>
-        <Button onClick={handleCreate}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Storefront
-        </Button>
-      </div>
 
-      {/* Storefronts Grid */}
-      {storefronts.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Palette className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No storefronts yet</h3>
-            <p className="text-gray-600 mb-4">
-              Create your first storefront to start customizing themes and layouts.
+        {/* Info Card */}
+        <Card className="material-elevation-1 border-0 bg-blue-50 mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-blue-900 text-base">
+              <Info className="w-5 h-5" />
+              How Storefronts Work
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-blue-800">
+              Create different theme variants for campaigns (Black Friday), A/B testing, or B2B vs B2C experiences.
+              The <strong>Primary</strong> storefront is shown to all visitors. Use <strong>scheduling</strong> to
+              automatically activate a storefront during specific dates. Preview any storefront using the preview button.
             </p>
-            <Button onClick={handleCreate}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Storefront
-            </Button>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {storefronts.map((storefront) => {
-            const status = getStorefrontStatus(storefront);
-            return (
-              <Card key={storefront.id} className={storefront.is_primary ? 'border-blue-500 border-2' : ''}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {storefront.name}
+
+        {/* Storefronts List */}
+        <Card className="material-elevation-1 border-0 mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="w-5 h-5" />
+              Your Storefronts
+            </CardTitle>
+            <CardDescription>Click on a storefront to edit its settings</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {storefronts.map((storefront, index) => {
+              const status = getStorefrontStatus(storefront);
+              return (
+                <React.Fragment key={storefront.id}>
+                  {index > 0 && <Separator />}
+                  <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="font-medium text-gray-900">{storefront.name}</span>
                         {storefront.is_primary && (
                           <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                         )}
-                      </CardTitle>
-                      <CardDescription className="font-mono text-sm">
-                        /{storefront.slug}
-                      </CardDescription>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handlePreview(storefront)}>
-                          <Eye className="w-4 h-4 mr-2" />
-                          Preview
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEdit(storefront)}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDuplicate(storefront)}>
-                          <Copy className="w-4 h-4 mr-2" />
-                          Duplicate
-                        </DropdownMenuItem>
-                        {!storefront.is_primary && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleSetPrimary(storefront)}>
-                              <Star className="w-4 h-4 mr-2" />
-                              Set as Primary
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(storefront)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <Badge variant={status.variant}>{status.label}</Badge>
-
-                    {storefront.description && (
-                      <p className="text-sm text-gray-600 line-clamp-2">
-                        {storefront.description}
-                      </p>
-                    )}
-
-                    {(storefront.publish_start_at || storefront.publish_end_at) && (
-                      <div className="text-xs text-gray-500 flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {storefront.publish_start_at && (
-                          <span>Starts: {formatDate(storefront.publish_start_at)}</span>
-                        )}
-                        {storefront.publish_end_at && (
-                          <span className="ml-2">Ends: {formatDate(storefront.publish_end_at)}</span>
-                        )}
+                        <Badge className={status.color}>{status.label}</Badge>
                       </div>
-                    )}
+                      <p className="text-sm text-gray-500 font-mono">/{storefront.slug}</p>
+                      {storefront.description && (
+                        <p className="text-sm text-gray-600 mt-1">{storefront.description}</p>
+                      )}
+                      {(storefront.publish_start_at || storefront.publish_end_at) && (
+                        <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {storefront.publish_start_at && (
+                            <span>Starts: {formatDate(storefront.publish_start_at)}</span>
+                          )}
+                          {storefront.publish_end_at && (
+                            <span className="ml-2">Ends: {formatDate(storefront.publish_end_at)}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
-                    <div className="flex gap-2 pt-2">
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handlePreview(storefront)}
-                        className="flex-1"
                       >
-                        <ExternalLink className="w-3 h-3 mr-1" />
+                        <ExternalLink className="w-4 h-4 mr-1" />
                         Preview
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleEdit(storefront)}
-                        className="flex-1"
                       >
-                        <Edit className="w-3 h-3 mr-1" />
+                        <Edit className="w-4 h-4 mr-1" />
                         Edit
                       </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleDuplicate(storefront)}>
+                            <Copy className="w-4 h-4 mr-2" />
+                            Duplicate
+                          </DropdownMenuItem>
+                          {!storefront.is_primary && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleSetPrimary(storefront)}>
+                                <Star className="w-4 h-4 mr-2" />
+                                Set as Primary
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(storefront)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                </React.Fragment>
+              );
+            })}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Create/Edit Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
@@ -471,7 +481,7 @@ export default function Storefronts() {
                 placeholder="e.g., black-friday"
               />
               <p className="text-xs text-gray-500">
-                Used in preview URL: ?storefront={formData.slug || 'slug'}
+                Preview URL: ?storefront={formData.slug || 'slug'}
               </p>
             </div>
 
@@ -486,7 +496,9 @@ export default function Storefronts() {
               />
             </div>
 
-            <div className="border-t pt-4 mt-4">
+            <Separator />
+
+            <div>
               <h4 className="font-medium mb-3 flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 Scheduling (Optional)
@@ -512,8 +524,7 @@ export default function Storefronts() {
                 </div>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Schedule when this storefront should automatically become active.
-                Leave empty for manual control.
+                Schedule when this storefront becomes active. Leave empty for manual control.
               </p>
             </div>
 
