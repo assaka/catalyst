@@ -2669,6 +2669,49 @@ async function createPreliminaryOrder(session, orderData) {
 
     console.log('✅ Preliminary order and items created successfully');
 
+    // Reduce stock for each product
+    for (const item of items) {
+      try {
+        const { data: product } = await tenantDb
+          .from('products')
+          .select('id, sku, manage_stock, stock_quantity, infinite_stock, allow_backorders, purchase_count')
+          .eq('id', item.product_id)
+          .single();
+
+        if (product && product.manage_stock && !product.infinite_stock) {
+          const quantity = item.quantity || 1;
+          const newStockQuantity = product.stock_quantity - quantity;
+
+          if (newStockQuantity < 0 && !product.allow_backorders) {
+            console.warn(`⚠️ Insufficient stock for product ${product.sku}: requested ${quantity}, available ${product.stock_quantity}`);
+          }
+
+          await tenantDb
+            .from('products')
+            .update({
+              stock_quantity: Math.max(0, newStockQuantity),
+              purchase_count: (product.purchase_count || 0) + 1,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', product.id);
+
+          console.log(`✅ Stock reduced for product ${product.sku}: ${product.stock_quantity} -> ${Math.max(0, newStockQuantity)}`);
+        } else if (product && product.infinite_stock) {
+          await tenantDb
+            .from('products')
+            .update({
+              purchase_count: (product.purchase_count || 0) + 1,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', product.id);
+          console.log(`✅ Purchase count updated for infinite stock product ${product.sku}`);
+        }
+      } catch (stockError) {
+        console.error('Error reducing stock for product:', item.product_id, stockError);
+        // Don't fail the order if stock reduction fails
+      }
+    }
+
     // IMPORTANT: Never send email from createPreliminaryOrder
     // This function is called from Stripe checkout flow - ALL payments here require webhook confirmation
     // Email will be sent from webhook-connect handler after checkout.session.completed event

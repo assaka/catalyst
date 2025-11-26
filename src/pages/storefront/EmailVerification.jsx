@@ -18,6 +18,7 @@ export default function EmailVerification() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [resending, setResending] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const inputRefs = useRef([]);
 
   useEffect(() => {
@@ -100,7 +101,8 @@ export default function EmailVerification() {
 
       if (response.success) {
         setError('');
-        alert('Verification code sent! Please check your email.');
+        setSuccessMessage('Verification code sent! Please check your email.');
+        setTimeout(() => setSuccessMessage(''), 5000);
         setCode(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       } else {
