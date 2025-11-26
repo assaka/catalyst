@@ -88,9 +88,15 @@ IntegrationConfig.encryptSensitiveData = (configData, integrationType) => {
 IntegrationConfig.decryptSensitiveData = (configData, integrationType) => {
   // Handle case where config_data is stored as a JSON string
   let parsedData = configData;
+  console.log('🔍 decryptSensitiveData input:', {
+    integrationType,
+    configDataType: typeof configData,
+    configDataSample: typeof configData === 'string' ? configData.substring(0, 100) : configData
+  });
   if (typeof configData === 'string') {
     try {
       parsedData = JSON.parse(configData);
+      console.log('🔍 decryptSensitiveData parsed:', { parsedData });
     } catch (e) {
       console.warn('Failed to parse config_data as JSON string:', e.message);
       return configData;
