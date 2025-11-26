@@ -699,12 +699,13 @@ export default function OrderSuccess() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-600 mb-4">
-                    {t('success.login_to_view', settings) || 'An account exists for'} <strong>{order.customer_email}</strong>. {t('success.login_prompt', settings) || 'Login to view your order history and track this order.'}
+                    {t('success.account_exists', settings) || 'An account exists for'} <strong>{order.customer_email}</strong>. {t('success.login_prompt', settings) || 'Login to view your order history and track this order.'}
                   </p>
                   <Button
                     onClick={() => {
-                      if (storeCode) {
-                        navigate(`/public/${storeCode}/login?redirect=/public/${storeCode}/account/orders`);
+                      const code = storeCode || store?.slug || store?.code;
+                      if (code) {
+                        navigate(`/public/${code}/login?redirect=/public/${code}/account/orders`);
                       } else {
                         navigate('/login?redirect=/account/orders');
                       }
@@ -747,8 +748,9 @@ export default function OrderSuccess() {
                             <div className="mt-4 pt-3 border-t border-green-200">
                               <Button
                                 onClick={() => {
-                                  if (storeCode) {
-                                    navigate(`/public/${storeCode}/account`);
+                                  const code = storeCode || store?.slug || store?.code;
+                                  if (code) {
+                                    navigate(`/public/${code}/account`);
                                   } else {
                                     navigate('/account/orders');
                                   }
