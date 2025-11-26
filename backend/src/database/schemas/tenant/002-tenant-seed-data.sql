@@ -623,7 +623,7 @@ INSERT INTO email_template_translations ("id", "email_template_id", "language_co
                 </p>
               </div>
             </div>
-            {{email_footer}}', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00'), ('fdac4587-abf7-49d1-9e9d-ff8750bb6aa6', '3bc325c1-b951-44c5-a73e-36308d8fbb6b', 'en', 'Order Confirmation #{{order_number}}', 'Hi {{customer_first_name}},
+            {{email_footer}}', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00'), ('fdac4587-abf7-49d1-9e9d-ff8750bb6aa6', 'd6696302-9e73-4b27-a4bf-b2832803b3e3', 'en', 'Order Confirmation #{{order_number}}', 'Hi {{customer_first_name}},
 
 Thank you for your order!
 
