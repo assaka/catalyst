@@ -937,6 +937,193 @@ router.post('/customer/login', async (req, res) => {
 });
 
 /**
+ * POST /api/auth/resend-verification
+ * Resend verification code to customer email
+ * Public route - requires store_id in body
+ */
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const { email, store_id } = req.body;
+
+    if (!email || !store_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email and store_id are required'
+      });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Find customer by email
+    const { data: customer } = await tenantDb
+      .from('customers')
+      .select('*')
+      .eq('email', email)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+
+    // Check if already verified
+    if (customer.email_verified) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email is already verified'
+      });
+    }
+
+    // Generate new verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Update customer with new code
+    await tenantDb
+      .from('customers')
+      .update({
+        email_verification_token: verificationCode,
+        password_reset_expires: verificationExpiry.toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', customer.id);
+
+    // Send verification email
+    try {
+      const emailService = require('../services/email-service');
+      await emailService.sendTransactionalEmail(store_id, 'verification_email', {
+        recipientEmail: email,
+        customer: customer,
+        verificationCode: verificationCode
+      });
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Still return success - code was generated
+    }
+
+    res.json({
+      success: true,
+      message: 'Verification code sent! Please check your email.'
+    });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error'
+    });
+  }
+});
+
+/**
+ * POST /api/auth/verify-email
+ * Verify customer email with code
+ * Public route - requires store_id in body
+ */
+router.post('/verify-email', async (req, res) => {
+  try {
+    const { email, code, store_id } = req.body;
+
+    if (!email || !code || !store_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email, code, and store_id are required'
+      });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Find customer by email
+    const { data: customer } = await tenantDb
+      .from('customers')
+      .select('*')
+      .eq('email', email)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+
+    // Check if already verified
+    if (customer.email_verified) {
+      return res.json({
+        success: true,
+        message: 'Email is already verified'
+      });
+    }
+
+    // Verify the code
+    if (customer.email_verification_token !== code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid verification code'
+      });
+    }
+
+    // Check if code expired
+    if (customer.password_reset_expires && new Date(customer.password_reset_expires) < new Date()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Verification code has expired. Please request a new one.'
+      });
+    }
+
+    // Update customer as verified
+    const { data: updatedCustomer, error: updateError } = await tenantDb
+      .from('customers')
+      .update({
+        email_verified: true,
+        email_verification_token: null,
+        password_reset_expires: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', customer.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    // Generate token for auto-login
+    const tokens = generateTokenPair({
+      id: updatedCustomer.id,
+      email: updatedCustomer.email,
+      role: 'customer',
+      account_type: 'individual',
+      first_name: updatedCustomer.first_name,
+      last_name: updatedCustomer.last_name
+    }, store_id);
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully!',
+      data: {
+        user: updatedCustomer,
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        sessionRole: 'customer',
+        sessionContext: 'storefront'
+      }
+    });
+  } catch (error) {
+    console.error('Verify email error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error'
+    });
+  }
+});
+
+/**
  * GET /api/auth/check-customer-status/:email/:store_id
  * Check if a customer has already registered (has password)
  * Also checks if there are orders for this email (for "Create Account" flow)
