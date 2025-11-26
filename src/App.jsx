@@ -57,10 +57,18 @@ async function initializeDatabasePlugins() {
       return;
     }
 
+    // Get store_id from localStorage (set by StoreSelection or storefront bootstrap)
+    const storeId = localStorage.getItem('selectedStoreId') || localStorage.getItem('storeId');
+
+    if (!storeId) {
+      console.log('⏭️ No store_id available - skipping plugin initialization');
+      return;
+    }
+
     // Fetch active plugins from database (uses normalized tables structure)
     // Add timestamp to bust cache
     // Try new endpoint first, fallback to legacy if not deployed yet
-    let response = await fetch(`/api/plugins/active?_t=${Date.now()}`);
+    let response = await fetch(`/api/plugins/active?store_id=${storeId}&_t=${Date.now()}`);
 
     const result = await response.json();
 
@@ -164,9 +172,17 @@ async function initializeDatabasePlugins() {
 // Load hooks and events for a specific plugin
 async function loadPluginHooksAndEvents(pluginId) {
   try {
+    // Get store_id from localStorage
+    const storeId = localStorage.getItem('selectedStoreId') || localStorage.getItem('storeId');
+
+    if (!storeId) {
+      console.log('⏭️ No store_id available - skipping plugin load');
+      return;
+    }
+
     // Add timestamp to bust cache
     // Try new endpoint first, fallback to legacy if not deployed yet
-    let response = await fetch(`/api/plugins/active/${pluginId}?_t=${Date.now()}`);
+    let response = await fetch(`/api/plugins/active/${pluginId}?store_id=${storeId}&_t=${Date.now()}`);
 
     const result = await response.json();
 
