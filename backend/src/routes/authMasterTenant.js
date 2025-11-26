@@ -1037,6 +1037,62 @@ router.post('/customer/login', async (req, res) => {
       });
     }
 
+    // Check if email is verified - if not, send verification email
+    if (!customer.email_verified) {
+      console.log('📧 Customer email not verified, sending verification code...');
+
+      // Generate verification code
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      // Update customer with verification code
+      await tenantDb
+        .from('customers')
+        .update({
+          email_verification_token: verificationCode,
+          password_reset_expires: verificationExpiry.toISOString()
+        })
+        .eq('id', customer.id);
+
+      // Send verification email
+      try {
+        const emailService = require('../services/email-service');
+        await emailService.sendTransactionalEmail(store_id, 'email_verification', {
+          recipientEmail: email,
+          customer: customer,
+          verification_code: verificationCode
+        });
+        console.log('📧 Verification email sent to:', email);
+      } catch (emailError) {
+        console.error('⚠️ Failed to send verification email:', emailError.message);
+      }
+
+      // Still generate token for partial access but flag as needing verification
+      const tokens = generateTokenPair({
+        id: customer.id,
+        email: customer.email,
+        role: 'customer',
+        account_type: 'individual',
+        first_name: customer.first_name,
+        last_name: customer.last_name
+      }, store_id);
+
+      const { password: _, ...customerWithoutPassword } = customer;
+
+      return res.json({
+        success: true,
+        message: 'Please verify your email to continue',
+        data: {
+          user: customerWithoutPassword,
+          token: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          sessionRole: 'customer',
+          sessionContext: 'storefront',
+          requiresVerification: true
+        }
+      });
+    }
+
     // Update last login
     await tenantDb
       .from('customers')

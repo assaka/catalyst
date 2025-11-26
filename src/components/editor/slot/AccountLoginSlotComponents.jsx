@@ -248,14 +248,19 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
         store.id
       );
 
-      // Backend returns: { success: true, data: { user, token, ... } }
+      // Backend returns: { success: true, data: { user, token, requiresVerification, ... } }
       if (response.success) {
         // Token is already saved by CustomerAuth.login() with store-specific key
         // Just remove the logged out flag
         localStorage.removeItem('user_logged_out');
 
-        const accountUrl = await getCustomerAccountUrl();
-        navigate(accountUrl);
+        // Check if email verification is required
+        if (response.data?.requiresVerification) {
+          navigate(`/public/${storeCode}/verify-email?email=${encodeURIComponent(formData.email)}`);
+        } else {
+          const accountUrl = await getCustomerAccountUrl();
+          navigate(accountUrl);
+        }
       } else {
         setError(response.message || t('common.login_failed', 'Login failed. Please check your credentials.'));
       }
