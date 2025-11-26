@@ -12,6 +12,165 @@ const router = express.Router();
 // Initialize Stripe
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+/**
+ * Get store from master database
+ */
+async function getMasterStore(storeId) {
+  const { data } = await masterDbClient
+    .from('stores')
+    .select('*')
+    .eq('id', storeId)
+    .maybeSingle();
+  return data;
+}
+
+/**
+ * Atomically check and deduct stock for order items
+ */
+async function checkAndDeductStock(tenantDb, orderItems, storeId) {
+  const insufficientItems = [];
+  const deductedItems = [];
+
+  for (const item of orderItems) {
+    try {
+      const { data: product } = await tenantDb
+        .from('products')
+        .select('id, sku, name, manage_stock, stock_quantity, infinite_stock, allow_backorders, purchase_count')
+        .eq('id', item.product_id)
+        .single();
+
+      if (!product) continue;
+
+      if (!product.manage_stock || product.infinite_stock) {
+        await tenantDb
+          .from('products')
+          .update({
+            purchase_count: (product.purchase_count || 0) + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', product.id);
+        continue;
+      }
+
+      const quantity = item.quantity || 1;
+
+      if (product.stock_quantity < quantity && !product.allow_backorders) {
+        insufficientItems.push({
+          product_id: product.id,
+          sku: product.sku,
+          name: product.name,
+          requested: quantity,
+          available: product.stock_quantity
+        });
+        continue;
+      }
+
+      const newStockQuantity = product.stock_quantity - quantity;
+      await tenantDb
+        .from('products')
+        .update({
+          stock_quantity: Math.max(0, newStockQuantity),
+          purchase_count: (product.purchase_count || 0) + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', product.id);
+
+      deductedItems.push({ product_id: product.id, sku: product.sku, quantity });
+      console.log(`✅ Stock deducted for ${product.sku}: ${product.stock_quantity} -> ${Math.max(0, newStockQuantity)}`);
+    } catch (error) {
+      console.error('Error checking/deducting stock for item:', item.product_id, error);
+    }
+  }
+
+  return { success: insufficientItems.length === 0, insufficientItems, deductedItems };
+}
+
+/**
+ * Handle stock issue for an order
+ */
+async function handleStockIssue({ tenantDb, storeId, order, insufficientItems, paymentIntentId }) {
+  try {
+    console.log('⚠️ Stock issue detected for order:', order.id);
+
+    const store = await getMasterStore(storeId);
+    const stockIssueHandling = store?.settings?.sales_settings?.stock_issue_handling || 'manual_review';
+    const storeEmail = store?.email || store?.owner_email;
+
+    await tenantDb
+      .from('sales_orders')
+      .update({
+        fulfillment_status: 'stock_issue',
+        admin_notes: `Stock issue: ${insufficientItems.map(i => `${i.sku} (requested: ${i.requested}, available: ${i.available})`).join(', ')}`,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', order.id);
+
+    const itemsList = insufficientItems.map(i => `- ${i.name} (SKU: ${i.sku}): Requested ${i.requested}, Available ${i.available}`).join('\n');
+
+    // Send notifications
+    try {
+      if (order.customer_email) {
+        await emailService.sendEmail(storeId, 'stock_issue_customer', order.customer_email, {
+          customer_first_name: order.shipping_address?.full_name?.split(' ')[0] || 'Customer',
+          order_number: order.order_number,
+          store_name: store?.name || 'Our Store',
+          items_list: itemsList
+        }, 'en').catch(err => console.error('Failed to send stock issue email to customer:', err.message));
+      }
+
+      if (storeEmail) {
+        await emailService.sendEmail(storeId, 'stock_issue_admin', storeEmail, {
+          order_number: order.order_number,
+          customer_email: order.customer_email,
+          customer_name: order.shipping_address?.full_name || 'Unknown',
+          items_list: itemsList,
+          store_name: store?.name || 'Store'
+        }, 'en').catch(err => console.error('Failed to send stock issue email to admin:', err.message));
+      }
+    } catch (emailError) {
+      console.error('Error sending stock issue notifications:', emailError);
+    }
+
+    // Auto-refund if enabled
+    if (stockIssueHandling === 'auto_refund' && paymentIntentId) {
+      try {
+        const stripeOptions = store?.stripe_account_id ? { stripeAccount: store.stripe_account_id } : {};
+        const refund = await stripe.refunds.create({ payment_intent: paymentIntentId, reason: 'requested_by_customer' }, stripeOptions);
+
+        await tenantDb
+          .from('sales_orders')
+          .update({
+            status: 'cancelled',
+            payment_status: 'refunded',
+            admin_notes: `Auto-refunded due to stock issue. Refund ID: ${refund.id}`,
+            cancelled_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', order.id);
+
+        if (order.customer_email) {
+          await emailService.sendEmail(storeId, 'stock_issue_refunded', order.customer_email, {
+            customer_first_name: order.shipping_address?.full_name?.split(' ')[0] || 'Customer',
+            order_number: order.order_number,
+            store_name: store?.name || 'Our Store',
+            refund_amount: order.total_amount,
+            currency: order.currency
+          }, 'en').catch(err => console.error('Failed to send refund notification:', err.message));
+        }
+
+        return { refunded: true, refundId: refund.id };
+      } catch (refundError) {
+        console.error('Error processing auto-refund:', refundError);
+      }
+    }
+
+    return { refunded: false };
+  } catch (error) {
+    console.error('Error handling stock issue:', error);
+    throw error;
+  }
+}
+
 // @route   GET /api/orders/test
 // @desc    Test endpoint to verify deployment
 // @access  Public (no auth required)
@@ -411,50 +570,34 @@ router.post('/finalize-order', async (req, res) => {
 
     // Deduct stock if transitioning from pending to paid (payment just confirmed)
     if (previousStatus === 'pending' && previousPaymentStatus === 'pending') {
-      console.log('📦 Payment confirmed via finalize-order - reducing stock...');
+      console.log('📦 Payment confirmed via finalize-order - checking and reducing stock...');
       const { data: orderItems } = await tenantDb
         .from('sales_order_items')
         .select('product_id, quantity')
         .eq('order_id', order.id);
 
-      for (const item of (orderItems || [])) {
+      const stockResult = await checkAndDeductStock(tenantDb, orderItems || [], store_id);
+
+      // Handle stock issues if any
+      if (!stockResult.success && stockResult.insufficientItems.length > 0) {
+        console.log('⚠️ Stock issue detected in finalize-order, handling...');
+        // Get payment intent from session
+        let paymentIntentId = null;
         try {
-          const { data: product } = await tenantDb
-            .from('products')
-            .select('id, sku, manage_stock, stock_quantity, infinite_stock, allow_backorders, purchase_count')
-            .eq('id', item.product_id)
-            .single();
-
-          if (product && product.manage_stock && !product.infinite_stock) {
-            const newStockQuantity = product.stock_quantity - item.quantity;
-
-            if (newStockQuantity < 0 && !product.allow_backorders) {
-              console.warn(`⚠️ Insufficient stock for product ${product.sku}: requested ${item.quantity}, available ${product.stock_quantity}`);
-            }
-
-            await tenantDb
-              .from('products')
-              .update({
-                stock_quantity: Math.max(0, newStockQuantity),
-                purchase_count: (product.purchase_count || 0) + 1,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', product.id);
-
-            console.log(`✅ Stock reduced for product ${product.sku}: ${product.stock_quantity} -> ${Math.max(0, newStockQuantity)}`);
-          } else if (product && product.infinite_stock) {
-            await tenantDb
-              .from('products')
-              .update({
-                purchase_count: (product.purchase_count || 0) + 1,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', product.id);
-            console.log(`✅ Purchase count updated for infinite stock product ${product.sku}`);
-          }
-        } catch (stockError) {
-          console.error('Error reducing stock for product:', item.product_id, stockError);
+          const stripeOptions = store?.stripe_account_id ? { stripeAccount: store.stripe_account_id } : {};
+          const stripeSession = await stripe.checkout.sessions.retrieve(session_id, stripeOptions);
+          paymentIntentId = stripeSession.payment_intent;
+        } catch (e) {
+          console.error('Could not retrieve payment intent:', e.message);
         }
+
+        await handleStockIssue({
+          tenantDb,
+          storeId: store_id,
+          order: order,
+          insufficientItems: stockResult.insufficientItems,
+          paymentIntentId
+        });
       }
     }
 

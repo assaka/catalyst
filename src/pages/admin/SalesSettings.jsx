@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Receipt, Send, FileText } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Receipt, Send, FileText, Package, AlertTriangle } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import FlashMessage from '@/components/storefront/FlashMessage';
 
@@ -62,6 +63,7 @@ export default function SalesSettings() {
         auto_shipment_pdf_enabled: false,
         manual_invoice_send: true,
         manual_shipment_send: true,
+        stock_issue_handling: 'manual_review', // 'manual_review' or 'auto_refund'
       };
 
       setStore({
@@ -121,6 +123,7 @@ export default function SalesSettings() {
             auto_shipment_pdf_enabled: store.settings.sales_settings.auto_shipment_pdf_enabled,
             manual_invoice_send: store.settings.sales_settings.manual_invoice_send,
             manual_shipment_send: store.settings.sales_settings.manual_shipment_send,
+            stock_issue_handling: store.settings.sales_settings.stock_issue_handling,
           }
         }
       };
@@ -279,6 +282,62 @@ export default function SalesSettings() {
                 checked={store?.settings?.sales_settings?.manual_shipment_send ?? true}
                 onCheckedChange={(checked) => handleSalesSettingsChange('manual_shipment_send', checked)}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stock Issue Handling Settings */}
+        <Card className="material-elevation-1 border-0 mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5" />
+              Stock Issue Handling
+            </CardTitle>
+            <CardDescription>Configure how to handle orders when stock is insufficient after payment</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="p-4 border rounded-lg bg-amber-50 border-amber-200">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                <div className="space-y-2">
+                  <p className="text-sm text-amber-800">
+                    <strong>When does this happen?</strong> In rare cases, two customers may checkout
+                    with the same product simultaneously. If only one item is in stock, the second
+                    order will have a stock issue after payment.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-base">When stock is insufficient after payment</Label>
+              <Select
+                value={store?.settings?.sales_settings?.stock_issue_handling || 'manual_review'}
+                onValueChange={(value) => handleSalesSettingsChange('stock_issue_handling', value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select handling method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manual_review">
+                    <div className="flex flex-col">
+                      <span className="font-medium">Manual Review</span>
+                      <span className="text-xs text-gray-500">Flag order for review, notify customer and store owner</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="auto_refund">
+                    <div className="flex flex-col">
+                      <span className="font-medium">Auto-Refund</span>
+                      <span className="text-xs text-gray-500">Automatically refund via Stripe and notify customer</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-gray-500">
+                {store?.settings?.sales_settings?.stock_issue_handling === 'auto_refund'
+                  ? 'Orders with stock issues will be automatically refunded via Stripe and the customer will be notified.'
+                  : 'Orders with stock issues will be flagged for your review. You can then choose to refund, wait for restock, or offer alternatives.'}
+              </p>
             </div>
           </CardContent>
         </Card>
