@@ -152,6 +152,13 @@ export default function EmailVerification() {
           </Alert>
         )}
 
+        {successMessage && (
+          <Alert className="mb-6 bg-green-50 border-green-200">
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            <AlertDescription className="text-green-700">{successMessage}</AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit}>
           <div className="flex justify-center gap-2 mb-6">
             {code.map((digit, index) => (
