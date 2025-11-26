@@ -44,10 +44,17 @@ class CartService {
         }
       }
 
-      // Fallback to regular user auth (for admin)
-      const { User } = await import('@/api/entities');
-      const user = await User.me();
-      return user;
+      // Only try admin auth if we're in admin context (not storefront)
+      // Check if we're on an admin route
+      const isAdminContext = window.location.pathname.startsWith('/admin');
+      if (isAdminContext) {
+        const { User } = await import('@/api/entities');
+        const user = await User.me();
+        return user;
+      }
+
+      // For storefront guests, return null
+      return null;
     } catch (error) {
       return null;
     }
