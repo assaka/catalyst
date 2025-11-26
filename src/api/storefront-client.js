@@ -173,11 +173,15 @@ class StorefrontApiClient {
     // Always ensure we have a session ID for guest functionality
     this.sessionId = this.getOrCreateSessionId();
 
-    // For GET and DELETE requests, add session_id to URL
-    // For POST, PUT, PATCH requests, add session_id to body
+    // For GET and DELETE requests, add session_id and store_id to URL
+    // For POST, PUT, PATCH requests, add session_id and store_id to body
     if (method === 'GET' || method === 'DELETE') {
       const separator = endpoint.includes('?') ? '&' : '?';
-      finalEndpoint = `${endpoint}${separator}session_id=${this.sessionId}`;
+      let params = `session_id=${this.sessionId}`;
+      if (this.currentStoreId) {
+        params += `&store_id=${this.currentStoreId}`;
+      }
+      finalEndpoint = `${endpoint}${separator}${params}`;
     }
 
     const url = this.buildAuthUrl(finalEndpoint);
@@ -190,11 +194,14 @@ class StorefrontApiClient {
     };
 
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-      // CRITICAL FIX: Include session_id in body for POST/PUT/PATCH requests
+      // CRITICAL FIX: Include session_id and store_id in body for POST/PUT/PATCH requests
       const bodyData = {
         ...data,
         session_id: this.sessionId
       };
+      if (this.currentStoreId) {
+        bodyData.store_id = this.currentStoreId;
+      }
       config.body = JSON.stringify(bodyData);
     }
 

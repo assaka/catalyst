@@ -165,7 +165,9 @@ router.get('/:id', async (req, res) => {
 // @access  Private (requires authentication) or Public (guest sessions return error)
 router.post('/', optionalAuth, async (req, res) => {
   try {
-    const { session_id, store_id } = req.query;
+    // Get store_id from query OR body (frontend may send in either)
+    const session_id = req.query.session_id || req.body.session_id;
+    const store_id = req.query.store_id || req.body.store_id;
 
     // store_id is required for tenant-specific address creation
     if (!store_id) {
@@ -277,7 +279,8 @@ router.post('/', optionalAuth, async (req, res) => {
 // @access  Private
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const { store_id } = req.query;
+    // Get store_id from query OR body (frontend may send in either)
+    const store_id = req.query.store_id || req.body.store_id;
 
     // store_id is required for tenant-specific address update
     if (!store_id) {
