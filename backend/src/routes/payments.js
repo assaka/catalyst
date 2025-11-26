@@ -1896,9 +1896,143 @@ router.post('/webhook', async (req, res) => {
           return res.status(500).json({ error: 'Failed to complete credit purchase' });
         }
       } else {
-        console.log(`ℹ️ [${piRequestId}] Not a credit purchase - payment intent succeeded but no action needed`);
-        console.log(`ℹ️ [${piRequestId}] Metadata type: ${paymentIntent.metadata?.type || 'NONE'}`);
-        console.log(`ℹ️ [${piRequestId}] Transaction ID: ${paymentIntent.metadata?.transaction_id || 'NONE'}`);
+        // Not a credit purchase - check if this is an order payment
+        console.log(`ℹ️ [${piRequestId}] Not a credit purchase - checking if this is an order payment...`);
+
+        try {
+          // Find the checkout session associated with this payment intent
+          const sessions = await stripe.checkout.sessions.list({
+            payment_intent: paymentIntent.id,
+            limit: 1
+          });
+
+          if (sessions.data.length > 0) {
+            const checkoutSession = sessions.data[0];
+            console.log(`✅ [${piRequestId}] Found checkout session: ${checkoutSession.id}`);
+            console.log(`✅ [${piRequestId}] Session metadata:`, checkoutSession.metadata);
+
+            const store_id = checkoutSession.metadata?.store_id;
+            if (store_id) {
+              console.log(`📦 [${piRequestId}] This is a store order - store_id: ${store_id}`);
+
+              // Get tenant connection
+              const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+              // Find order by payment_reference (checkout session ID)
+              const { data: order } = await tenantDb
+                .from('sales_orders')
+                .select('*')
+                .eq('payment_reference', checkoutSession.id)
+                .maybeSingle();
+
+              if (order) {
+                console.log(`✅ [${piRequestId}] Found order: ${order.id} (${order.order_number})`);
+                console.log(`📋 [${piRequestId}] Order status: ${order.status}, payment_status: ${order.payment_status}`);
+
+                // Update order status if needed (for online payments)
+                if (order.status === 'pending' && order.payment_status === 'pending') {
+                  console.log(`🔄 [${piRequestId}] Updating order to processing/paid...`);
+                  await tenantDb
+                    .from('sales_orders')
+                    .update({
+                      status: 'processing',
+                      payment_status: 'paid',
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', order.id);
+                }
+
+                // Check if email was already sent
+                let emailAlreadySent = false;
+                try {
+                  const { data: emailLogs } = await tenantDb
+                    .from('email_send_logs')
+                    .select('id, metadata')
+                    .eq('recipient_email', order.customer_email)
+                    .eq('status', 'sent')
+                    .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+
+                  emailAlreadySent = emailLogs?.some(log =>
+                    log.metadata?.templateIdentifier === 'order_success_email'
+                  ) || false;
+                } catch (e) {
+                  console.log(`⚠️ [${piRequestId}] Could not check email logs`);
+                }
+
+                if (!emailAlreadySent && order.customer_email) {
+                  console.log(`📧 [${piRequestId}] Sending order confirmation email to: ${order.customer_email}`);
+
+                  const emailService = require('../services/email-service');
+
+                  // Get order items
+                  const { data: orderItems } = await tenantDb
+                    .from('sales_order_items')
+                    .select('*')
+                    .eq('order_id', order.id);
+
+                  // Get store info
+                  const { masterDbClient } = require('../database/masterConnection');
+                  const { data: storeData } = await masterDbClient
+                    .from('stores')
+                    .select('id, name, slug, currency, settings')
+                    .eq('id', store_id)
+                    .single();
+
+                  // Get customer info
+                  let customer = null;
+                  if (order.customer_id) {
+                    const { data } = await tenantDb
+                      .from('customers')
+                      .select('*')
+                      .eq('id', order.customer_id)
+                      .maybeSingle();
+                    customer = data;
+                  }
+
+                  const customerName = customer
+                    ? `${customer.first_name} ${customer.last_name}`
+                    : (order.shipping_address?.full_name || 'Customer');
+                  const [firstName, ...lastNameParts] = customerName.split(' ');
+                  const lastName = lastNameParts.join(' ') || '';
+
+                  const orderWithDetails = {
+                    ...order,
+                    OrderItems: orderItems || [],
+                    Store: storeData
+                  };
+
+                  emailService.sendTransactionalEmail(store_id, 'order_success_email', {
+                    recipientEmail: order.customer_email,
+                    customer: customer || {
+                      first_name: firstName,
+                      last_name: lastName,
+                      email: order.customer_email
+                    },
+                    order: orderWithDetails,
+                    store: storeData,
+                    languageCode: 'en'
+                  }).then(() => {
+                    console.log(`✅ [${piRequestId}] Order confirmation email sent!`);
+                  }).catch(emailError => {
+                    console.error(`❌ [${piRequestId}] Failed to send order email:`, emailError.message);
+                  });
+                } else {
+                  console.log(`ℹ️ [${piRequestId}] Order email already sent or no customer email`);
+                }
+              } else {
+                console.log(`⚠️ [${piRequestId}] No order found for session: ${checkoutSession.id}`);
+              }
+            } else {
+              console.log(`ℹ️ [${piRequestId}] No store_id in session metadata - not a store order`);
+            }
+          } else {
+            console.log(`ℹ️ [${piRequestId}] No checkout session found for this payment intent`);
+          }
+        } catch (orderError) {
+          console.error(`⚠️ [${piRequestId}] Error processing order payment:`, orderError.message);
+          // Don't fail the webhook
+        }
+
         console.log('='.repeat(80));
       }
       break;
