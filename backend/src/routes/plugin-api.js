@@ -295,6 +295,10 @@ router.get('/installed', async (req, res) => {
  * Get active plugins from normalized tables (for App.jsx initialization)
  * This endpoint loads plugins with their hooks, events, AND frontend scripts
  * OPTIMIZED: Now includes all plugin data in one call
+ *
+ * Only returns plugins that are:
+ * 1. Active in plugin_registry (status = 'active')
+ * 2. Enabled for this store in plugin_configurations (is_enabled = true)
  */
 router.get('/active', async (req, res) => {
   try {
@@ -310,7 +314,7 @@ router.get('/active', async (req, res) => {
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Get active plugins from plugin_registry table (exclude starter templates)
-    const { data: plugins, error: pluginsError } = await tenantDb
+    const { data: allPlugins, error: pluginsError } = await tenantDb
       .from('plugin_registry')
       .select('id, name, version, description, author, category, status, type, manifest, created_at, updated_at')
       .eq('status', 'active')
@@ -321,8 +325,34 @@ router.get('/active', async (req, res) => {
       throw new Error(pluginsError.message);
     }
 
+    // Get store-specific plugin configurations to check which are enabled
+    const { data: storeConfigs, error: configError } = await tenantDb
+      .from('plugin_configurations')
+      .select('plugin_id, is_enabled')
+      .eq('store_id', store_id);
+
+    if (configError) {
+      console.warn('Could not fetch plugin configurations:', configError.message);
+    }
+
+    // Create a map of plugin_id -> is_enabled for quick lookup
+    const configMap = new Map((storeConfigs || []).map(c => [c.plugin_id, c.is_enabled]));
+
+    // Filter plugins: only include those that are enabled for this store
+    // If no configuration exists for a plugin, include it (default enabled)
+    // If configuration exists and is_enabled = false, exclude it
+    const plugins = (allPlugins || []).filter(plugin => {
+      const isEnabled = configMap.get(plugin.id);
+      // If explicitly disabled (is_enabled === false), exclude
+      if (isEnabled === false) {
+        console.log(`Plugin "${plugin.name}" (${plugin.id}) is disabled for store ${store_id}`);
+        return false;
+      }
+      return true;
+    });
+
     // Load hooks and events for each plugin from normalized tables
-    const pluginsWithData = await Promise.all((plugins || []).map(async (plugin) => {
+    const pluginsWithData = await Promise.all(plugins.map(async (plugin) => {
       // Load hooks from plugin_hooks table (normalized structure)
       let hooks = [];
       try {
@@ -2535,6 +2565,49 @@ router.all('/:pluginId/exec/*', optionalAuthMiddleware, storeResolver(), async (
 
     // Check if pluginId is UUID or slug
     const isUUID = pluginId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+
+    // Get store_id for plugin configuration check
+    const store_id =
+      req.headers['x-store-id'] ||
+      req.query.store_id ||
+      req.body?.store_id ||
+      req.storeId ||
+      req.user?.store_id ||
+      req.user?.storeId;
+
+    // First check if the plugin is enabled for this store
+    const [pluginConfig] = await sequelize.query(`
+      SELECT pc.is_enabled, pr.status, pr.name
+      FROM plugin_registry pr
+      LEFT JOIN plugin_configurations pc ON pc.plugin_id = pr.id AND pc.store_id = $2
+      WHERE ${isUUID ? 'pr.id = $1' : 'pr.slug = $1'}
+    `, {
+      bind: [pluginId, store_id],
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    if (!pluginConfig) {
+      return res.status(404).json({
+        success: false,
+        error: `Plugin not found: ${pluginId}`
+      });
+    }
+
+    // Check if plugin is active in registry
+    if (pluginConfig.status !== 'active') {
+      return res.status(403).json({
+        success: false,
+        error: `Plugin "${pluginConfig.name || pluginId}" is not active (status: ${pluginConfig.status})`
+      });
+    }
+
+    // Check if plugin is enabled for this store
+    if (pluginConfig.is_enabled === false) {
+      return res.status(403).json({
+        success: false,
+        error: `Plugin "${pluginConfig.name || pluginId}" is disabled for this store`
+      });
+    }
 
     // Find matching controller in plugin_controllers table
     // Get all controllers for this plugin and method to do pattern matching
