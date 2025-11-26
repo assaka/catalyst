@@ -4,7 +4,6 @@ import { Order } from '@/api/entities';
 import { OrderItem } from '@/api/entities';
 import { Product } from '@/api/entities';
 import { Auth } from '@/api/entities';
-import { User } from '@/api/entities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -93,18 +92,14 @@ export default function OrderSuccess() {
 
   // Check authentication status - only consider CUSTOMER authentication for storefront
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const userData = await User.me();
-        // Only consider authenticated if user is a customer (not store_owner/admin)
-        const isCustomerAuth = !!userData?.id && userData?.role === 'customer';
-        setIsAuthenticated(isCustomerAuth);
-      } catch (error) {
-        setIsAuthenticated(false);
-      }
+    const checkAuth = () => {
+      // Use storefrontApiClient to check customer-specific authentication
+      const isCustomerAuth = storefrontApiClient.isCustomerAuthenticated();
+      console.log('🔍 Customer authentication check:', isCustomerAuth);
+      setIsAuthenticated(isCustomerAuth);
     };
     checkAuth();
-  }, [accountCreationSuccess]); // Re-check auth when account is created
+  }, [accountCreationSuccess, store?.slug]); // Re-check auth when account is created or store changes
 
   // Load order data
   useEffect(() => {

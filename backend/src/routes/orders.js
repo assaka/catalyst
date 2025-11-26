@@ -160,6 +160,10 @@ router.post('/finalize-order', async (req, res) => {
     console.log('🎯 Finalizing order for session:', session_id);
 
     const store_id = req.headers['x-store-id'] || req.body.store_id;
+    console.log('🔍 Store ID from header:', req.headers['x-store-id']);
+    console.log('🔍 Store ID from body:', req.body.store_id);
+    console.log('🔍 Final store_id:', store_id);
+
     if (!store_id) {
       return res.status(400).json({
         success: false,
@@ -174,12 +178,16 @@ router.post('/finalize-order', async (req, res) => {
     let order = null;
     let orderError = null;
 
+    console.log('🔍 Looking for order with payment_reference:', session_id);
+
     // Try payment_reference first (most common)
     const { data: orderByRef, error: refError } = await tenantDb
       .from('sales_orders')
       .select('*')
       .eq('payment_reference', session_id)
       .maybeSingle();
+
+    console.log('🔍 payment_reference lookup result:', orderByRef ? `Found order ${orderByRef.id}` : 'Not found', refError ? `Error: ${refError.message}` : '');
 
     if (orderByRef) {
       order = orderByRef;
@@ -191,6 +199,8 @@ router.post('/finalize-order', async (req, res) => {
         .eq('stripe_session_id', session_id)
         .maybeSingle();
 
+      console.log('🔍 stripe_session_id lookup result:', orderBySession ? `Found order ${orderBySession.id}` : 'Not found');
+
       if (orderBySession) {
         order = orderBySession;
       } else {
@@ -200,6 +210,8 @@ router.post('/finalize-order', async (req, res) => {
           .select('*')
           .eq('stripe_payment_intent_id', session_id)
           .maybeSingle();
+
+        console.log('🔍 stripe_payment_intent_id lookup result:', orderByIntent ? `Found order ${orderByIntent.id}` : 'Not found');
 
         if (orderByIntent) {
           order = orderByIntent;
@@ -211,7 +223,26 @@ router.post('/finalize-order', async (req, res) => {
     if (!order) {
       console.error('❌ Order not found for session:', session_id);
       console.error('❌ Searched in payment_reference, stripe_session_id, stripe_payment_intent_id');
-      console.error('❌ Store ID:', store_id);
+      console.error('❌ Store ID used:', store_id);
+      console.error('❌ Database errors:', orderError);
+
+      // Debug: List recent orders for this store
+      try {
+        const { data: recentOrders } = await tenantDb
+          .from('sales_orders')
+          .select('id, payment_reference, stripe_session_id, created_at')
+          .order('created_at', { ascending: false })
+          .limit(5);
+        console.error('❌ Recent orders in this store:', recentOrders?.map(o => ({
+          id: o.id,
+          payment_ref: o.payment_reference,
+          session_id: o.stripe_session_id,
+          created: o.created_at
+        })));
+      } catch (e) {
+        console.error('❌ Could not list recent orders');
+      }
+
       return res.status(404).json({
         success: false,
         message: 'Order not found'
