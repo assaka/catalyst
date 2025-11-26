@@ -315,12 +315,12 @@ export default function OrderSuccess() {
               email: order.customer_email,
               street: order.shipping_address.line1 || order.shipping_address.street,
               city: order.shipping_address.city,
-              state: order.shipping_address.state || order.shipping_address.province,
+              state: order.shipping_address.state || order.shipping_address.province || '',
               postal_code: order.shipping_address.postal_code || order.shipping_address.zip,
-              country: order.shipping_address.country,
+              country: order.shipping_address.country || 'US',
               phone: order.shipping_address.phone || order.customer_phone,
-              is_default_shipping: true,
-              is_default_billing: false
+              type: 'shipping',
+              is_default: true
             };
 
             const savedAddress = await CustomerAddress.create(addressData);
