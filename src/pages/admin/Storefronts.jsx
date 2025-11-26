@@ -106,6 +106,10 @@ export default function Storefronts() {
       setStorefronts(storefrontsList);
     } catch (error) {
       console.error('Failed to load storefronts:', error);
+      setFlashMessage({
+        type: 'error',
+        message: `Failed to load storefronts: ${error.response?.data?.error || error.message}`
+      });
       setStorefronts([]);
     } finally {
       setLoading(false);
@@ -357,6 +361,16 @@ export default function Storefronts() {
             <CardDescription>Click on a storefront to edit its settings</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {storefronts.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <Palette className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">No storefronts found</p>
+                <p className="text-sm mt-1">Click "New Storefront" to create your first storefront.</p>
+                <p className="text-xs mt-2 text-gray-400">
+                  Make sure the storefronts table exists in your database.
+                </p>
+              </div>
+            )}
             {storefronts.map((storefront, index) => {
               const status = getStorefrontStatus(storefront);
               return (

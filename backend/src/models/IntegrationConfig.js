@@ -228,8 +228,16 @@ IntegrationConfig.findByStoreAndType = async function(storeId, integrationType) 
     }
 
     if (!data) {
+      console.log('🔍 findByStoreAndType: No data found for', { storeId, integrationType });
       return null;
     }
+
+    console.log('🔍 findByStoreAndType raw data:', {
+      storeId,
+      integrationType,
+      rawConfigData: data.config_data,
+      rawConfigDataType: typeof data.config_data
+    });
 
     // Ensure we have the id field
     if (!data.id) {
@@ -238,9 +246,15 @@ IntegrationConfig.findByStoreAndType = async function(storeId, integrationType) 
     }
 
     // Decrypt sensitive data before returning
+    const decryptedConfigData = IntegrationConfig.decryptSensitiveData(data.config_data, integrationType);
+    console.log('🔍 findByStoreAndType decrypted data:', {
+      decryptedConfigData,
+      decryptedConfigDataType: typeof decryptedConfigData
+    });
+
     const decryptedData = {
       ...data,
-      config_data: IntegrationConfig.decryptSensitiveData(data.config_data, integrationType)
+      config_data: decryptedConfigData
     };
 
     // Create a simplified plain object (remove backward compatibility with Sequelize)

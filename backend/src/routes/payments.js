@@ -297,9 +297,17 @@ router.get('/connect-status', authMiddleware, authorize(['admin', 'store_owner']
 
     // Get Stripe config from integration_configs
     const stripeConfig = await IntegrationConfig.findByStoreAndType(store_id, STRIPE_INTEGRATION_TYPE);
+    console.log('🔍 Stripe config lookup:', {
+      store_id,
+      integrationType: STRIPE_INTEGRATION_TYPE,
+      foundConfig: !!stripeConfig,
+      configData: stripeConfig?.config_data,
+      configDataType: typeof stripeConfig?.config_data
+    });
     const stripeAccountId = stripeConfig?.config_data?.accountId;
 
     if (!stripeConfig || !stripeAccountId) {
+      console.log('❌ No stripe config or accountId found:', { stripeConfig, stripeAccountId });
       return res.json({
         success: true,
         data: {
