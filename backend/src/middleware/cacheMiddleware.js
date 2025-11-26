@@ -147,8 +147,10 @@ function cacheOrder(ttl = 60) {
     prefix: 'order',
     ttl,
     keyGenerator: (req) => {
-      const paymentReference = req.params.reference || req.query.reference;
-      return generateKey('order', paymentReference);
+      const paymentReference = req.params.paymentReference || req.params.reference || req.query.reference;
+      const storeId = req.headers['x-store-id'] || req.query.store_id;
+      // Include store_id in cache key to prevent cross-store cache collisions
+      return generateKey('order', `${storeId}_${paymentReference}`);
     },
   });
 }
