@@ -1404,6 +1404,53 @@ router.post('/webhook', async (req, res) => {
               })
               .eq('id', existingOrder.id);
             statusAlreadyUpdated = false; // Send email since this is first confirmation
+
+            // NOW deduct stock since payment is confirmed
+            console.log('📦 Payment confirmed - reducing stock for order items...');
+            const { data: orderItems } = await tenantDb
+              .from('sales_order_items')
+              .select('product_id, quantity')
+              .eq('order_id', existingOrder.id);
+
+            for (const item of (orderItems || [])) {
+              try {
+                const { data: product } = await tenantDb
+                  .from('products')
+                  .select('id, sku, manage_stock, stock_quantity, infinite_stock, allow_backorders, purchase_count')
+                  .eq('id', item.product_id)
+                  .single();
+
+                if (product && product.manage_stock && !product.infinite_stock) {
+                  const newStockQuantity = product.stock_quantity - item.quantity;
+
+                  if (newStockQuantity < 0 && !product.allow_backorders) {
+                    console.warn(`⚠️ Insufficient stock for product ${product.sku}: requested ${item.quantity}, available ${product.stock_quantity}`);
+                  }
+
+                  await tenantDb
+                    .from('products')
+                    .update({
+                      stock_quantity: Math.max(0, newStockQuantity),
+                      purchase_count: (product.purchase_count || 0) + 1,
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', product.id);
+
+                  console.log(`✅ Stock reduced for product ${product.sku}: ${product.stock_quantity} -> ${Math.max(0, newStockQuantity)}`);
+                } else if (product && product.infinite_stock) {
+                  await tenantDb
+                    .from('products')
+                    .update({
+                      purchase_count: (product.purchase_count || 0) + 1,
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', product.id);
+                  console.log(`✅ Purchase count updated for infinite stock product ${product.sku}`);
+                }
+              } catch (stockError) {
+                console.error('Error reducing stock for product:', item.product_id, stockError);
+              }
+            }
           } else {
             console.log('✅ Order status already correct (offline payment or already updated)');
             statusAlreadyUpdated = true; // Don't send email again
@@ -2669,47 +2716,53 @@ async function createPreliminaryOrder(session, orderData) {
 
     console.log('✅ Preliminary order and items created successfully');
 
-    // Reduce stock for each product
-    for (const item of items) {
-      try {
-        const { data: product } = await tenantDb
-          .from('products')
-          .select('id, sku, manage_stock, stock_quantity, infinite_stock, allow_backorders, purchase_count')
-          .eq('id', item.product_id)
-          .single();
+    // Only reduce stock for OFFLINE payments (already confirmed)
+    // For ONLINE payments (Stripe), stock is deducted in webhook after payment confirmation
+    if (paymentFlow === 'offline') {
+      console.log('💰 Offline payment - reducing stock immediately');
+      for (const item of items) {
+        try {
+          const { data: product } = await tenantDb
+            .from('products')
+            .select('id, sku, manage_stock, stock_quantity, infinite_stock, allow_backorders, purchase_count')
+            .eq('id', item.product_id)
+            .single();
 
-        if (product && product.manage_stock && !product.infinite_stock) {
-          const quantity = item.quantity || 1;
-          const newStockQuantity = product.stock_quantity - quantity;
+          if (product && product.manage_stock && !product.infinite_stock) {
+            const quantity = item.quantity || 1;
+            const newStockQuantity = product.stock_quantity - quantity;
 
-          if (newStockQuantity < 0 && !product.allow_backorders) {
-            console.warn(`⚠️ Insufficient stock for product ${product.sku}: requested ${quantity}, available ${product.stock_quantity}`);
+            if (newStockQuantity < 0 && !product.allow_backorders) {
+              console.warn(`⚠️ Insufficient stock for product ${product.sku}: requested ${quantity}, available ${product.stock_quantity}`);
+            }
+
+            await tenantDb
+              .from('products')
+              .update({
+                stock_quantity: Math.max(0, newStockQuantity),
+                purchase_count: (product.purchase_count || 0) + 1,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', product.id);
+
+            console.log(`✅ Stock reduced for product ${product.sku}: ${product.stock_quantity} -> ${Math.max(0, newStockQuantity)}`);
+          } else if (product && product.infinite_stock) {
+            await tenantDb
+              .from('products')
+              .update({
+                purchase_count: (product.purchase_count || 0) + 1,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', product.id);
+            console.log(`✅ Purchase count updated for infinite stock product ${product.sku}`);
           }
-
-          await tenantDb
-            .from('products')
-            .update({
-              stock_quantity: Math.max(0, newStockQuantity),
-              purchase_count: (product.purchase_count || 0) + 1,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', product.id);
-
-          console.log(`✅ Stock reduced for product ${product.sku}: ${product.stock_quantity} -> ${Math.max(0, newStockQuantity)}`);
-        } else if (product && product.infinite_stock) {
-          await tenantDb
-            .from('products')
-            .update({
-              purchase_count: (product.purchase_count || 0) + 1,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', product.id);
-          console.log(`✅ Purchase count updated for infinite stock product ${product.sku}`);
+        } catch (stockError) {
+          console.error('Error reducing stock for product:', item.product_id, stockError);
+          // Don't fail the order if stock reduction fails
         }
-      } catch (stockError) {
-        console.error('Error reducing stock for product:', item.product_id, stockError);
-        // Don't fail the order if stock reduction fails
       }
+    } else {
+      console.log('💳 Online payment - stock will be reduced after payment confirmation in webhook');
     }
 
     // IMPORTANT: Never send email from createPreliminaryOrder

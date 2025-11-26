@@ -391,6 +391,9 @@ router.post('/finalize-order', async (req, res) => {
 
     // Update order status
     console.log('🔄 Updating order status to processing/paid...');
+    const previousStatus = order.status;
+    const previousPaymentStatus = order.payment_status;
+
     const { error: updateError } = await tenantDb
       .from('sales_orders')
       .update({
@@ -405,6 +408,55 @@ router.post('/finalize-order', async (req, res) => {
     }
 
     console.log('✅ Order status updated successfully');
+
+    // Deduct stock if transitioning from pending to paid (payment just confirmed)
+    if (previousStatus === 'pending' && previousPaymentStatus === 'pending') {
+      console.log('📦 Payment confirmed via finalize-order - reducing stock...');
+      const { data: orderItems } = await tenantDb
+        .from('sales_order_items')
+        .select('product_id, quantity')
+        .eq('order_id', order.id);
+
+      for (const item of (orderItems || [])) {
+        try {
+          const { data: product } = await tenantDb
+            .from('products')
+            .select('id, sku, manage_stock, stock_quantity, infinite_stock, allow_backorders, purchase_count')
+            .eq('id', item.product_id)
+            .single();
+
+          if (product && product.manage_stock && !product.infinite_stock) {
+            const newStockQuantity = product.stock_quantity - item.quantity;
+
+            if (newStockQuantity < 0 && !product.allow_backorders) {
+              console.warn(`⚠️ Insufficient stock for product ${product.sku}: requested ${item.quantity}, available ${product.stock_quantity}`);
+            }
+
+            await tenantDb
+              .from('products')
+              .update({
+                stock_quantity: Math.max(0, newStockQuantity),
+                purchase_count: (product.purchase_count || 0) + 1,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', product.id);
+
+            console.log(`✅ Stock reduced for product ${product.sku}: ${product.stock_quantity} -> ${Math.max(0, newStockQuantity)}`);
+          } else if (product && product.infinite_stock) {
+            await tenantDb
+              .from('products')
+              .update({
+                purchase_count: (product.purchase_count || 0) + 1,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', product.id);
+            console.log(`✅ Purchase count updated for infinite stock product ${product.sku}`);
+          }
+        } catch (stockError) {
+          console.error('Error reducing stock for product:', item.product_id, stockError);
+        }
+      }
+    }
 
     // Send order confirmation email
     try {
@@ -842,12 +894,55 @@ router.put('/customer-orders/:orderId/status', authMiddleware, validateCustomerO
       .update({
         status,
         status_notes: notes || null,
+        cancelled_at: status === 'cancelled' ? new Date().toISOString() : order.cancelled_at,
         updated_at: new Date().toISOString()
       })
       .eq('id', orderId);
 
     if (updateError) {
       throw new Error(updateError.message);
+    }
+
+    // Restore stock if order is cancelled or refunded (and was previously in a paid state)
+    const previousStatus = order.status?.toLowerCase();
+    const paidStatuses = ['processing', 'shipped', 'delivered'];
+    const shouldRestoreStock = ['cancelled', 'refunded'].includes(status) && paidStatuses.includes(previousStatus);
+
+    if (shouldRestoreStock) {
+      console.log('📦 Restoring stock for cancelled/refunded order:', orderId);
+
+      // Get order items
+      const { data: orderItems } = await tenantDb
+        .from('sales_order_items')
+        .select('product_id, quantity')
+        .eq('order_id', orderId);
+
+      for (const item of (orderItems || [])) {
+        try {
+          const { data: product } = await tenantDb
+            .from('products')
+            .select('id, sku, manage_stock, stock_quantity, infinite_stock, purchase_count')
+            .eq('id', item.product_id)
+            .single();
+
+          if (product && product.manage_stock && !product.infinite_stock) {
+            const newStockQuantity = product.stock_quantity + item.quantity;
+
+            await tenantDb
+              .from('products')
+              .update({
+                stock_quantity: newStockQuantity,
+                purchase_count: Math.max(0, (product.purchase_count || 0) - 1),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', product.id);
+
+            console.log(`✅ Stock restored for product ${product.sku}: ${product.stock_quantity} -> ${newStockQuantity}`);
+          }
+        } catch (stockError) {
+          console.error('Error restoring stock for product:', item.product_id, stockError);
+        }
+      }
     }
 
     // Fetch updated order
