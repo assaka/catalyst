@@ -523,16 +523,26 @@ app.get('/public/:storeSlug/robots.txt', async (req, res) => {
       robotsContent = seoSettings.robots_txt_content;
     } else {
       // Default robots.txt content with store-specific sitemap
-      const baseUrl = store.custom_domain || `${req.protocol}://${req.get('host')}/public/${storeSlug}`;
+      // Use X-Forwarded-Host (from Vercel proxy) or fall back to req.get('host')
+      const forwardedHost = req.get('X-Forwarded-Host') || req.get('host');
+      const forwardedProto = req.get('X-Forwarded-Proto') || req.protocol;
+      const baseUrl = store.custom_domain || `${forwardedProto}://${forwardedHost}/public/${storeSlug}`;
       robotsContent = `User-agent: *
 Allow: /
+
+# Allow content directories (default behavior)
+Allow: /products/
+Allow: /categories/
+Allow: /cms-pages/
+
+# Block admin and system paths
 Disallow: /admin/
+Disallow: /api/
 Disallow: /checkout/
 Disallow: /cart/
 Disallow: /account/
 Disallow: /login
 
-# Sitemap
 Sitemap: ${baseUrl}/sitemap.xml`;
     }
 
@@ -625,16 +635,26 @@ Disallow: /admin/`);
       robotsContent = seoSettings.robots_txt_content;
     } else {
       // Default robots.txt content with store-specific sitemap
-      const baseUrl = store.custom_domain || `${req.protocol}://${req.get('host')}/public/${targetStoreSlug}`;
+      // Use X-Forwarded-Host (from Vercel proxy) or fall back to req.get('host')
+      const forwardedHost = req.get('X-Forwarded-Host') || req.get('host');
+      const forwardedProto = req.get('X-Forwarded-Proto') || req.protocol;
+      const baseUrl = store.custom_domain || `${forwardedProto}://${forwardedHost}/public/${targetStoreSlug}`;
       robotsContent = `User-agent: *
 Allow: /
+
+# Allow content directories (default behavior)
+Allow: /products/
+Allow: /categories/
+Allow: /cms-pages/
+
+# Block admin and system paths
 Disallow: /admin/
+Disallow: /api/
 Disallow: /checkout/
 Disallow: /cart/
 Disallow: /account/
 Disallow: /login
 
-# Sitemap
 Sitemap: ${baseUrl}/sitemap.xml`;
     }
 
