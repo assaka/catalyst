@@ -1,9 +1,17 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Sequelize } = require('sequelize');
 const { sequelize } = require('../database/connection');
+
+// Use TEXT for JSON fields when SQLite is used (stub connection)
+// PostgreSQL would use JSONB, but SQLite doesn't support it
+const isSQLite = sequelize.getDialect() === 'sqlite';
+const JSON_TYPE = isSQLite ? DataTypes.TEXT : DataTypes.JSONB;
 
 /**
  * Plugin Model
  * Tracks installed and available plugins with their configuration and status
+ *
+ * NOTE: This model uses the stub connection (SQLite in-memory) for schema definition only.
+ * Actual queries should go through ConnectionManager for proper tenant database access.
  */
 const Plugin = sequelize.define('Plugin', {
   id: {
@@ -87,33 +95,33 @@ const Plugin = sequelize.define('Plugin', {
   
   // Configuration
   configSchema: {
-    type: DataTypes.JSONB,
+    type: JSON_TYPE,
     allowNull: true,
     field: 'config_schema',
     comment: 'Plugin configuration schema from manifest'
   },
   configData: {
-    type: DataTypes.JSONB,
-    defaultValue: {},
+    type: JSON_TYPE,
+    defaultValue: isSQLite ? '{}' : {},
     field: 'config_data',
     comment: 'User configuration values'
   },
-  
+
   // Dependencies and permissions
   dependencies: {
-    type: DataTypes.JSONB,
-    defaultValue: [],
+    type: JSON_TYPE,
+    defaultValue: isSQLite ? '[]' : [],
     comment: 'Required dependencies'
   },
   permissions: {
-    type: DataTypes.JSONB,
-    defaultValue: [],
+    type: JSON_TYPE,
+    defaultValue: isSQLite ? '[]' : [],
     comment: 'Required permissions'
   },
-  
+
   // Metadata
   manifest: {
-    type: DataTypes.JSONB,
+    type: JSON_TYPE,
     allowNull: true,
     comment: 'Full plugin manifest'
   },

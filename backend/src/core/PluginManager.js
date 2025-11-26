@@ -1,12 +1,32 @@
 const fs = require('fs').promises;
 const path = require('path');
 const Plugin = require('./Plugin');
-const PluginModel = require('../models/Plugin');
 const PluginUninstaller = require('./PluginUninstaller');
 const axios = require('axios');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const execAsync = promisify(exec);
+
+// Lazy-loaded PluginModel to avoid errors at module load time
+// The stub sequelize may fail with JSONB types on SQLite
+let _PluginModel = null;
+let _PluginModelLoadError = null;
+
+function getPluginModel() {
+  if (_PluginModelLoadError) {
+    throw _PluginModelLoadError;
+  }
+  if (!_PluginModel) {
+    try {
+      _PluginModel = require('../models/Plugin');
+    } catch (error) {
+      console.warn('⚠️ PluginModel could not be loaded:', error.message);
+      _PluginModelLoadError = error;
+      throw error;
+    }
+  }
+  return _PluginModel;
+}
 
 /**
  * Plugin Manager
@@ -177,11 +197,16 @@ class PluginManager {
       // Install the plugin
       await plugin.install();
 
-      // Update database
-      const pluginRecord = await PluginModel.findBySlug(name);
-      if (pluginRecord) {
-        await pluginRecord.markInstalled();
-        plugin.dbRecord = pluginRecord;
+      // Update database (optional - may fail if stub sequelize)
+      try {
+        const PluginModel = getPluginModel();
+        const pluginRecord = await PluginModel.findBySlug(name);
+        if (pluginRecord) {
+          await pluginRecord.markInstalled();
+          plugin.dbRecord = pluginRecord;
+        }
+      } catch (dbError) {
+        console.warn(`⚠️ Could not update database for plugin ${name}:`, dbError.message);
       }
 
       // Mark as installed in memory
@@ -196,16 +221,21 @@ class PluginManager {
       return plugin;
     } catch (error) {
       console.error(`❌ Failed to install plugin ${name}:`, error.message);
-      
-      // Update database with error
-      const pluginRecord = await PluginModel.findBySlug(name);
-      if (pluginRecord) {
-        await pluginRecord.update({
-          status: 'error',
-          installationLog: `Installation failed: ${error.message}`
-        });
+
+      // Update database with error (optional - may fail if stub sequelize)
+      try {
+        const PluginModel = getPluginModel();
+        const pluginRecord = await PluginModel.findBySlug(name);
+        if (pluginRecord) {
+          await pluginRecord.update({
+            status: 'error',
+            installationLog: `Installation failed: ${error.message}`
+          });
+        }
+      } catch (dbError) {
+        console.warn(`⚠️ Could not update database with error:`, dbError.message);
       }
-      
+
       throw error;
     }
   }
@@ -447,15 +477,24 @@ class PluginManager {
     try {
       // Discover plugins from filesystem
       await this.discoverPlugins();
-      
+
+      // Get PluginModel (may fail if stub sequelize)
+      let PluginModel;
+      try {
+        PluginModel = getPluginModel();
+      } catch (modelError) {
+        console.warn('⚠️ PluginModel not available, skipping database sync:', modelError.message);
+        return;
+      }
+
       // Define built-in plugins that should be marked as installed
       const builtInPlugins = ['akeneo'];
-      
+
       // Sync each discovered plugin with database
       for (const [name, plugin] of this.plugins.entries()) {
         try {
           const isBuiltIn = builtInPlugins.includes(name);
-          
+
           await PluginModel.createOrUpdate({
             name: plugin.manifest.name || name,
             slug: name,
@@ -500,6 +539,15 @@ class PluginManager {
    */
   async loadInstalledPlugins() {
     try {
+      // Get PluginModel (may fail if stub sequelize)
+      let PluginModel;
+      try {
+        PluginModel = getPluginModel();
+      } catch (modelError) {
+        console.warn('⚠️ PluginModel not available, skipping installed plugins load:', modelError.message);
+        return;
+      }
+
       const installedPlugins = await PluginModel.findInstalled();
       
       for (const pluginRecord of installedPlugins) {
@@ -570,37 +618,48 @@ class PluginManager {
   async installFromGitHub(githubUrl, options = {}) {
     try {
       console.log(`📥 Installing plugin from GitHub: ${githubUrl}`);
-      
+
       // Parse GitHub URL
       const urlMatch = githubUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
       if (!urlMatch) {
         throw new Error('Invalid GitHub URL format');
       }
-      
+
       const [, owner, repo] = urlMatch;
       const pluginName = repo.replace(/[^a-zA-Z0-9-]/g, '');
       const pluginPath = path.join(this.pluginDirectory, pluginName);
-      
-      // Create database record first
-      const pluginRecord = await PluginModel.create({
-        name: pluginName,
-        slug: pluginName,
-        version: '0.0.0', // Will be updated after cloning
-        description: 'Installing from GitHub...',
-        author: owner,
-        category: 'unknown',
-        sourceType: 'github',
-        sourceUrl: githubUrl,
-        installPath: pluginPath,
-        status: 'installing',
-        installationLog: `Starting installation from ${githubUrl}`
-      });
-      
+
+      // Try to get PluginModel for database tracking (optional)
+      let PluginModel = null;
+      try {
+        PluginModel = getPluginModel();
+      } catch (modelError) {
+        console.warn('⚠️ PluginModel not available, continuing without database tracking');
+      }
+
+      // Create database record first (if available)
+      let pluginRecord = null;
+      if (PluginModel) {
+        pluginRecord = await PluginModel.create({
+          name: pluginName,
+          slug: pluginName,
+          version: '0.0.0', // Will be updated after cloning
+          description: 'Installing from GitHub...',
+          author: owner,
+          category: 'unknown',
+          sourceType: 'github',
+          sourceUrl: githubUrl,
+          installPath: pluginPath,
+          status: 'installing',
+          installationLog: `Starting installation from ${githubUrl}`
+        });
+      }
+
       try {
         // Clone the repository
         const cloneCmd = `git clone ${githubUrl} "${pluginPath}"`;
         const { stdout, stderr } = await execAsync(cloneCmd);
-        
+
         // Check if plugin.json exists
         const manifestPath = path.join(pluginPath, 'plugin.json');
         try {
@@ -608,32 +667,34 @@ class PluginManager {
         } catch (error) {
           throw new Error('Plugin manifest (plugin.json) not found in repository');
         }
-        
+
         // Load and validate manifest
         const manifestContent = await fs.readFile(manifestPath, 'utf8');
         const manifest = JSON.parse(manifestContent);
-        
+
         if (!manifest.name || !manifest.version) {
           throw new Error('Invalid plugin manifest: missing name or version');
         }
-        
-        // Update database record with manifest data
-        await pluginRecord.update({
-          name: manifest.name,
-          version: manifest.version,
-          description: manifest.description || '',
-          category: manifest.category || 'other',
-          type: manifest.type || 'plugin',
-          configSchema: manifest.config || {},
-          dependencies: manifest.dependencies || {},
-          permissions: manifest.permissions || [],
-          manifest: manifest,
-          status: 'installed',
-          isInstalled: true,
-          installedAt: new Date(),
-          installationLog: `Successfully installed from ${githubUrl}\n\nClone output:\n${stdout}\n${stderr}`
-        });
-        
+
+        // Update database record with manifest data (if available)
+        if (pluginRecord) {
+          await pluginRecord.update({
+            name: manifest.name,
+            version: manifest.version,
+            description: manifest.description || '',
+            category: manifest.category || 'other',
+            type: manifest.type || 'plugin',
+            configSchema: manifest.config || {},
+            dependencies: manifest.dependencies || {},
+            permissions: manifest.permissions || [],
+            manifest: manifest,
+            status: 'installed',
+            isInstalled: true,
+            installedAt: new Date(),
+            installationLog: `Successfully installed from ${githubUrl}\n\nClone output:\n${stdout}\n${stderr}`
+          });
+        }
+
         // Load the plugin
         await this.loadPlugin(pluginName, pluginPath);
         const plugin = this.plugins.get(pluginName);
@@ -642,29 +703,31 @@ class PluginManager {
           plugin.dbRecord = pluginRecord;
           this.installedPlugins.set(pluginName, plugin);
         }
-        
+
         console.log(`✅ Successfully installed plugin ${manifest.name} v${manifest.version} from GitHub`);
-        
+
         return {
           success: true,
-          plugin: pluginRecord,
+          plugin: pluginRecord || { name: manifest.name, version: manifest.version },
           message: `Plugin ${manifest.name} installed successfully`
         };
-        
+
       } catch (installError) {
-        // Update database with error
-        await pluginRecord.update({
-          status: 'error',
-          installationLog: `Installation failed: ${installError.message}`
-        });
-        
+        // Update database with error (if available)
+        if (pluginRecord) {
+          await pluginRecord.update({
+            status: 'error',
+            installationLog: `Installation failed: ${installError.message}`
+          });
+        }
+
         // Clean up failed installation
         try {
           await fs.rmdir(pluginPath, { recursive: true });
         } catch (cleanupError) {
           console.warn(`⚠️ Failed to clean up ${pluginPath}:`, cleanupError.message);
         }
-        
+
         throw installError;
       }
       
