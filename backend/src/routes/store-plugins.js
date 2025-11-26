@@ -144,18 +144,23 @@ router.post('/:pluginSlug/enable', async (req, res) => {
 
     console.log(`🚀 Enabling plugin ${pluginSlug} for store ${storeId}`);
 
-    // Get connection for this store (use getConnection which returns Sequelize instance)
-    const connection = await ConnectionManager.getConnection(storeId);
-    const sequelize = connection.sequelize;
+    // Get Supabase connection for this store
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Check plugin_registry
-    const [registryPlugin] = await sequelize.query(
-      'SELECT id, name, status FROM plugin_registry WHERE id = :pluginSlug',
-      {
-        replacements: { pluginSlug },
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
+    const { data: registryPlugin, error: pluginError } = await tenantDb
+      .from('plugin_registry')
+      .select('id, name, status')
+      .eq('id', pluginSlug)
+      .maybeSingle();
+
+    if (pluginError) {
+      console.error('❌ Error checking plugin registry:', pluginError.message);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to check plugin registry'
+      });
+    }
 
     if (!registryPlugin) {
       return res.status(404).json({
@@ -166,47 +171,77 @@ router.post('/:pluginSlug/enable', async (req, res) => {
 
     const pluginId = pluginSlug;
 
-    // Enable plugin for this store - use raw SQL to avoid UUID casting
-    const [existing] = await sequelize.query(
-      'SELECT * FROM plugin_configurations WHERE plugin_id = :pluginId AND store_id = :storeId',
-      {
-        replacements: { pluginId, storeId },
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
+    // Check if configuration already exists
+    const { data: existing, error: existingError } = await tenantDb
+      .from('plugin_configurations')
+      .select('*')
+      .eq('plugin_id', pluginId)
+      .eq('store_id', storeId)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error('❌ Error checking existing config:', existingError.message);
+    }
 
     let configResult;
+    const now = new Date().toISOString();
+
     if (!existing) {
       // Create new configuration
-      await sequelize.query(
-        `INSERT INTO plugin_configurations (id, plugin_id, store_id, is_enabled, config_data, last_configured_by, last_configured_at, enabled_at, created_at, updated_at)
-         VALUES (gen_random_uuid(), :pluginId, :storeId, true, :configData, :userId, NOW(), NOW(), NOW(), NOW())`,
-        {
-          replacements: {
-            pluginId,
-            storeId,
-            configData: JSON.stringify(configuration),
-            userId: user.id
-          },
-          type: sequelize.QueryTypes.INSERT
-        }
-      );
-      configResult = { isEnabled: true, configData: configuration, enabledAt: new Date() };
+      const { data: newConfig, error: insertError } = await tenantDb
+        .from('plugin_configurations')
+        .insert({
+          plugin_id: pluginId,
+          store_id: storeId,
+          is_enabled: true,
+          config_data: configuration,
+          last_configured_by: user.id,
+          last_configured_at: now,
+          enabled_at: now,
+          created_at: now,
+          updated_at: now
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('❌ Error creating plugin config:', insertError.message);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to enable plugin: ' + insertError.message
+        });
+      }
+      configResult = { isEnabled: true, configData: configuration, enabledAt: now };
     } else if (!existing.is_enabled) {
       // Update existing to enabled
-      await sequelize.query(
-        `UPDATE plugin_configurations
-         SET is_enabled = true, config_data = :configData, last_configured_by = :userId,
-             last_configured_at = NOW(), enabled_at = NOW(), disabled_at = NULL, updated_at = NOW()
-         WHERE plugin_id = :pluginId AND store_id = :storeId`,
-        {
-          replacements: { pluginId, storeId, configData: JSON.stringify(configuration), userId: user.id },
-          type: sequelize.QueryTypes.UPDATE
-        }
-      );
-      configResult = { isEnabled: true, configData: configuration, enabledAt: new Date() };
+      const { error: updateError } = await tenantDb
+        .from('plugin_configurations')
+        .update({
+          is_enabled: true,
+          config_data: configuration,
+          last_configured_by: user.id,
+          last_configured_at: now,
+          enabled_at: now,
+          disabled_at: null,
+          updated_at: now
+        })
+        .eq('plugin_id', pluginId)
+        .eq('store_id', storeId);
+
+      if (updateError) {
+        console.error('❌ Error updating plugin config:', updateError.message);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to enable plugin: ' + updateError.message
+        });
+      }
+      configResult = { isEnabled: true, configData: configuration, enabledAt: now };
     } else {
-      configResult = existing;
+      configResult = {
+        isEnabled: existing.is_enabled,
+        configData: existing.config_data,
+        enabledAt: existing.enabled_at
+      };
     }
 
     console.log(`✅ Plugin ${pluginSlug} enabled for store ${storeId}`);
@@ -218,8 +253,8 @@ router.post('/:pluginSlug/enable', async (req, res) => {
         pluginSlug,
         storeId,
         isEnabled: configResult.isEnabled,
-        configuration: configResult.config_data || configResult.configData,
-        enabledAt: configResult.enabled_at || configResult.enabledAt
+        configuration: configResult.configData,
+        enabledAt: configResult.enabledAt
       }
     });
   } catch (error) {
@@ -243,18 +278,23 @@ router.post('/:pluginSlug/disable', async (req, res) => {
 
     console.log(`🛑 Disabling plugin ${pluginSlug} for store ${storeId}`);
 
-    // Get connection for this store (use getConnection which returns Sequelize instance)
-    const connection = await ConnectionManager.getConnection(storeId);
-    const sequelize = connection.sequelize;
+    // Get Supabase connection for this store
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Check plugin_registry
-    const [registryPlugin] = await sequelize.query(
-      'SELECT id, name, status FROM plugin_registry WHERE id = :pluginSlug',
-      {
-        replacements: { pluginSlug },
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
+    const { data: registryPlugin, error: pluginError } = await tenantDb
+      .from('plugin_registry')
+      .select('id, name, status')
+      .eq('id', pluginSlug)
+      .maybeSingle();
+
+    if (pluginError) {
+      console.error('❌ Error checking plugin registry:', pluginError.message);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to check plugin registry'
+      });
+    }
 
     if (!registryPlugin) {
       return res.status(404).json({
@@ -265,32 +305,56 @@ router.post('/:pluginSlug/disable', async (req, res) => {
 
     const pluginId = pluginSlug;
 
-    // Disable plugin for this store - use raw SQL to avoid UUID casting
-    const [existing] = await sequelize.query(
-      'SELECT * FROM plugin_configurations WHERE plugin_id = :pluginId AND store_id = :storeId',
-      {
-        replacements: { pluginId, storeId },
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
+    // Check if configuration exists
+    const { data: existing, error: existingError } = await tenantDb
+      .from('plugin_configurations')
+      .select('*')
+      .eq('plugin_id', pluginId)
+      .eq('store_id', storeId)
+      .maybeSingle();
 
-    if (!existing) {
-      return res.status(404).json({
-        success: false,
-        error: 'Plugin is not configured for this store'
-      });
+    if (existingError) {
+      console.error('❌ Error checking existing config:', existingError.message);
     }
 
-    if (existing.is_enabled) {
-      await sequelize.query(
-        `UPDATE plugin_configurations
-         SET is_enabled = false, disabled_at = NOW(), updated_at = NOW()
-         WHERE plugin_id = :pluginId AND store_id = :storeId`,
-        {
-          replacements: { pluginId, storeId },
-          type: sequelize.QueryTypes.UPDATE
-        }
-      );
+    const now = new Date().toISOString();
+
+    if (!existing) {
+      // Create a disabled configuration record
+      const { error: insertError } = await tenantDb
+        .from('plugin_configurations')
+        .insert({
+          plugin_id: pluginId,
+          store_id: storeId,
+          is_enabled: false,
+          config_data: {},
+          disabled_at: now,
+          created_at: now,
+          updated_at: now
+        });
+
+      if (insertError) {
+        console.error('❌ Error creating disabled config:', insertError.message);
+      }
+    } else if (existing.is_enabled) {
+      // Update existing to disabled
+      const { error: updateError } = await tenantDb
+        .from('plugin_configurations')
+        .update({
+          is_enabled: false,
+          disabled_at: now,
+          updated_at: now
+        })
+        .eq('plugin_id', pluginId)
+        .eq('store_id', storeId);
+
+      if (updateError) {
+        console.error('❌ Error disabling plugin:', updateError.message);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to disable plugin: ' + updateError.message
+        });
+      }
     }
 
     console.log(`✅ Plugin ${pluginSlug} disabled for store ${storeId}`);
@@ -302,7 +366,7 @@ router.post('/:pluginSlug/disable', async (req, res) => {
         pluginSlug,
         storeId,
         isEnabled: false,
-        disabledAt: new Date()
+        disabledAt: now
       }
     });
   } catch (error) {
