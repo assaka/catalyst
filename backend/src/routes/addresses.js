@@ -89,7 +89,7 @@ router.get('/', optionalAuth, async (req, res) => {
     const supabaseClient = adapter.client || adapter.getClient();
 
     const { data: addresses, error } = await supabaseClient
-      .from('addresses')
+      .from('customer_addresses')
       .select('*')
       .eq(userField, userIdToQuery)
       .order('is_default', { ascending: false })
@@ -132,7 +132,7 @@ router.get('/:id', async (req, res) => {
     const supabaseClient = adapter.client || adapter.getClient();
 
     const { data: address, error } = await supabaseClient
-      .from('addresses')
+      .from('customer_addresses')
       .select('*')
       .eq('id', req.params.id)
       .single();
@@ -253,7 +253,7 @@ router.post('/', optionalAuth, async (req, res) => {
     console.log('💾 Creating address for verified user:', req.user.id);
 
     const { data: address, error } = await supabaseClient
-      .from('addresses')
+      .from('customer_addresses')
       .insert(addressData)
       .select()
       .single();
@@ -300,7 +300,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     // Check if address exists and belongs to user
     const { data: existingAddress, error: fetchError } = await supabaseClient
-      .from('addresses')
+      .from('customer_addresses')
       .select('*')
       .eq('id', req.params.id)
       .eq(userField, req.user.id)
@@ -314,7 +314,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
     }
 
     const { data: address, error } = await supabaseClient
-      .from('addresses')
+      .from('customer_addresses')
       .update(req.body)
       .eq('id', req.params.id)
       .eq(userField, req.user.id)
@@ -361,7 +361,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 
     // Check if address exists and belongs to user
     const { data: existingAddress, error: fetchError } = await supabaseClient
-      .from('addresses')
+      .from('customer_addresses')
       .select('*')
       .eq('id', req.params.id)
       .eq(userField, req.user.id)
@@ -375,7 +375,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     }
 
     const { error: deleteError } = await supabaseClient
-      .from('addresses')
+      .from('customer_addresses')
       .delete()
       .eq('id', req.params.id)
       .eq(userField, req.user.id);

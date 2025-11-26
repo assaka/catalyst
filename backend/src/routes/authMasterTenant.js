@@ -667,7 +667,7 @@ router.post('/upgrade-guest', async (req, res) => {
     // Send verification email
     try {
       const emailService = require('../services/email-service');
-      await emailService.sendTransactionalEmail(store_id, 'verification_email', {
+      await emailService.sendTransactionalEmail(store_id, 'email_verification', {
         recipientEmail: email,
         customer: finalCustomer,
         verificationCode: verificationCode
@@ -805,7 +805,7 @@ router.post('/customer/register', async (req, res) => {
       // Send verification email
       try {
         const emailService = require('../services/email-service');
-        await emailService.sendTransactionalEmail(store_id, 'verification_email', {
+        await emailService.sendTransactionalEmail(store_id, 'email_verification', {
           recipientEmail: email,
           customer: upgradedCustomer,
           verificationCode: verificationCode
@@ -920,7 +920,7 @@ router.post('/customer/register', async (req, res) => {
     // Send verification email
     try {
       const emailService = require('../services/email-service');
-      await emailService.sendTransactionalEmail(store_id, 'verification_email', {
+      await emailService.sendTransactionalEmail(store_id, 'email_verification', {
         recipientEmail: email,
         customer: newCustomer,
         verificationCode: verificationCode
@@ -1182,7 +1182,7 @@ router.post('/resend-verification', async (req, res) => {
     // Send verification email
     try {
       const emailService = require('../services/email-service');
-      await emailService.sendTransactionalEmail(store_id, 'verification_email', {
+      await emailService.sendTransactionalEmail(store_id, 'email_verification', {
         recipientEmail: email,
         customer: customer,
         verificationCode: verificationCode
