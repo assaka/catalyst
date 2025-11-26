@@ -962,6 +962,52 @@ router.post('/customer/login', async (req, res) => {
       .update({ last_login: new Date().toISOString() })
       .eq('id', customer.id);
 
+    // Link any guest orders placed with this email to this customer
+    try {
+      const { data: unlinkedOrders } = await tenantDb
+        .from('sales_orders')
+        .select('id, total_amount, created_at')
+        .eq('customer_email', email)
+        .eq('store_id', store_id)
+        .is('customer_id', null);
+
+      if (unlinkedOrders && unlinkedOrders.length > 0) {
+        console.log(`🔗 Linking ${unlinkedOrders.length} guest orders to customer ${customer.id} on login`);
+
+        // Link the orders
+        await tenantDb
+          .from('sales_orders')
+          .update({ customer_id: customer.id })
+          .eq('customer_email', email)
+          .eq('store_id', store_id)
+          .is('customer_id', null);
+
+        // Calculate and update stats
+        const newOrderCount = unlinkedOrders.length;
+        const newTotalSpent = unlinkedOrders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+        const lastOrderDate = unlinkedOrders.reduce((latest, o) => {
+          const d = new Date(o.created_at);
+          return d > latest ? d : latest;
+        }, new Date(0));
+
+        const currentOrders = parseInt(customer.total_orders || 0);
+        const currentSpent = parseFloat(customer.total_spent || 0);
+
+        await tenantDb
+          .from('customers')
+          .update({
+            total_orders: currentOrders + newOrderCount,
+            total_spent: currentSpent + newTotalSpent,
+            last_order_date: lastOrderDate.toISOString()
+          })
+          .eq('id', customer.id);
+
+        console.log(`✅ Updated customer stats: +${newOrderCount} orders, +$${newTotalSpent.toFixed(2)}`);
+      }
+    } catch (linkError) {
+      console.error('Error linking guest orders on login:', linkError);
+    }
+
     // Generate token
     const tokens = generateTokenPair({
       id: customer.id,
