@@ -466,9 +466,8 @@ class StorefrontWishlistService {
   async removeItem(productId, storeId) {
     try {
       // Use the same endpoint as addItem but with DELETE method and query params
-      const endpoint = storeId 
-        ? `${this.endpoint}?product_id=${productId}&store_id=${storeId}`
-        : `${this.endpoint}?product_id=${productId}`;
+      // NOTE: Don't add store_id here - customerRequest automatically adds it from currentStoreId
+      const endpoint = `${this.endpoint}?product_id=${productId}`;
       return await this.client.customerRequest('DELETE', endpoint);
     } catch (error) {
       console.error(`Wishlist removeItem error:`, error.message);
@@ -479,10 +478,8 @@ class StorefrontWishlistService {
   async getItems(storeId) {
     try {
       // Always use customerRequest which handles both authenticated and guest users
-      const endpoint = storeId 
-        ? `${this.endpoint}?store_id=${storeId}`
-        : this.endpoint;
-      const response = await this.client.customerRequest('GET', endpoint);
+      // NOTE: Don't add store_id here - customerRequest automatically adds it from currentStoreId
+      const response = await this.client.customerRequest('GET', this.endpoint);
       
       // Handle wrapped response structure from backend
       let items = [];
