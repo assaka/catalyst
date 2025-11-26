@@ -4,15 +4,25 @@ const router = express.Router();
 const PluginExecutor = require('../core/PluginExecutor');
 const PluginPurchaseService = require('../services/PluginPurchaseService');
 const ConnectionManager = require('../services/database/ConnectionManager');
+const { storeResolver } = require('../middleware/storeResolver');
+const { optionalAuthMiddleware } = require('../middleware/authMiddleware');
 
 /**
  * Helper function to get tenant database connection from request
- * Extracts store_id from headers or query params
+ * Extracts store_id from multiple sources (headers, query, body, user context)
  */
 async function getTenantConnection(req) {
-  const store_id = req.headers['x-store-id'] || req.query.store_id;
+  // Try multiple sources for store_id
+  const store_id =
+    req.headers['x-store-id'] ||
+    req.query.store_id ||
+    req.body?.store_id ||
+    req.storeId ||  // From storeResolver middleware
+    req.user?.store_id ||
+    req.user?.storeId;
+
   if (!store_id) {
-    throw new Error('store_id is required');
+    throw new Error('store_id is required (header X-Store-Id, query param, body, or user context)');
   }
   return await ConnectionManager.getStoreConnection(store_id);
 }
@@ -2511,8 +2521,11 @@ router.put('/:pluginId/controllers/:controllerName', async (req, res) => {
  * Route: /api/plugins/:pluginId/exec/*
  * Executes controllers from plugin_controllers table
  * pluginId can be either UUID or slug
+ *
+ * Uses optionalAuth to populate req.user if authenticated
+ * Uses storeResolver to populate req.storeId from domain/referer
  */
-router.all('/:pluginId/exec/*', async (req, res) => {
+router.all('/:pluginId/exec/*', optionalAuthMiddleware, storeResolver(), async (req, res) => {
   try {
     const connection = await getTenantConnection(req);
     const sequelize = connection.sequelize;
