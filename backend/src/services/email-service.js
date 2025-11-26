@@ -211,7 +211,8 @@ class EmailService {
         messageId: response.messageId
       };
     } catch (error) {
-      console.error('Brevo send error:', error.response?.body || error.message);
+      console.error('Brevo send error:', JSON.stringify(error.response?.body, null, 2) || error.message);
+      console.error('Brevo request details - sender:', JSON.stringify(sendSmtpEmail.sender), 'to:', JSON.stringify(sendSmtpEmail.to), 'subject:', subject?.substring(0, 50));
       throw new Error(`Failed to send email via Brevo: ${error.response?.body?.message || error.message}`);
     }
   }
