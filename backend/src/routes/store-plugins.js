@@ -40,18 +40,38 @@ router.get('/', async (req, res) => {
     const storeId = req.params.store_id;
 
     console.log(`🔍 Getting plugins for store: ${storeId}`);
+    console.log(`🔍 User: ${req.user?.id}, Email: ${req.user?.email}`);
 
     // Get connection for this store (use getConnection which returns Sequelize instance)
-    const connection = await ConnectionManager.getConnection(storeId);
+    let connection;
+    try {
+      console.log(`🔌 Attempting to get connection for store: ${storeId}`);
+      connection = await ConnectionManager.getConnection(storeId);
+      console.log(`✅ Connection established for store: ${storeId}`);
+    } catch (connError) {
+      console.error(`❌ Connection failed for store ${storeId}:`, connError.message);
+      console.error(`❌ Connection error stack:`, connError.stack);
+      throw new Error(`Database connection failed: ${connError.message}`);
+    }
+
     const sequelize = connection.sequelize;
 
     // Get plugins from plugin_registry
-    const registryPlugins = await sequelize.query(
-      'SELECT * FROM plugin_registry ORDER BY created_at DESC',
-      {
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
+    let registryPlugins = [];
+    try {
+      console.log(`📋 Querying plugin_registry for store: ${storeId}`);
+      registryPlugins = await sequelize.query(
+        'SELECT * FROM plugin_registry ORDER BY created_at DESC',
+        {
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
+      console.log(`✅ Found ${registryPlugins.length} plugins in registry`);
+    } catch (queryError) {
+      console.error(`❌ plugin_registry query failed:`, queryError.message);
+      console.error(`❌ Query error stack:`, queryError.stack);
+      // Continue with empty array - table might not exist
+    }
 
     // Get store-specific configurations from tenant DB
     let storeConfigs = [];
