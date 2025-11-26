@@ -50,7 +50,6 @@ const ShopifyIntegration = () => {
   const [storageProvider, setStorageProvider] = useState(null);
 
   useEffect(() => {
-    console.log('ShopifyIntegration - storeId:', storeId);
     if (storeId && storeId !== 'undefined') {
       checkConnectionStatus();
       fetchImportStats();
@@ -71,20 +70,16 @@ const ShopifyIntegration = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Storage status:', data);
         const configured = data.configured || data.hasProvider || false;
         setStorageConfigured(configured);
         // Extract provider name (supabase, s3, gcs, local, etc.)
         const provider = data.provider || data.integrationType || 'External URLs';
         setStorageProvider(provider);
-        console.log('Storage configured:', configured, 'Provider:', provider);
       } else {
-        console.warn('Storage status check failed');
         setStorageConfigured(false);
         setStorageProvider('External URLs');
       }
     } catch (error) {
-      console.error('Error checking storage configuration:', error);
       // Set defaults if check fails
       setStorageConfigured(false);
       setStorageProvider('External URLs');
@@ -117,13 +112,6 @@ const ShopifyIntegration = () => {
         'x-store-id': storeId
       };
 
-      console.log('Making request with:', {
-        storeId,
-        hasToken: !!token,
-        tokenPreview: token ? token.substring(0, 20) + '...' : 'null',
-        shopDomain: formattedDomain
-      });
-
       const response = await fetch('/api/shopify/direct-access', {
         method: 'POST',
         headers,
@@ -134,8 +122,6 @@ const ShopifyIntegration = () => {
       });
 
       const data = await response.json();
-
-      console.log('Backend response:', data);
 
       if (data.success) {
         setMessage({
@@ -152,14 +138,12 @@ const ShopifyIntegration = () => {
         // Refresh connection status
         checkConnectionStatus();
       } else {
-        console.error('Connection failed:', data);
         setMessage({
           type: 'error',
           text: data.message || 'Failed to connect to Shopify'
         });
       }
     } catch (error) {
-      console.error('Error connecting to Shopify:', error);
       setMessage({
         type: 'error',
         text: error.message || 'Failed to connect to Shopify'
@@ -171,7 +155,6 @@ const ShopifyIntegration = () => {
 
   const checkConnectionStatus = async () => {
     if (!storeId) {
-      console.warn('Cannot check connection status - no store ID');
       return;
     }
 
@@ -183,20 +166,17 @@ const ShopifyIntegration = () => {
         }
       });
       const data = await response.json();
-      console.log('Connection status:', data);
       setConnectionStatus(data);
 
       if (data.connected) {
         fetchShopInfo();
       }
     } catch (error) {
-      console.error('Error checking Shopify connection status:', error);
     }
   };
 
   const fetchShopInfo = async () => {
     if (!storeId) {
-      console.warn('Cannot fetch shop info - no store ID');
       return;
     }
 
@@ -210,7 +190,6 @@ const ShopifyIntegration = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Shop info:', data);
         setShopInfo(data.shop_info);
       }
     } catch (error) {
@@ -220,7 +199,6 @@ const ShopifyIntegration = () => {
 
   const fetchImportStats = async () => {
     if (!storeId) {
-      console.warn('Cannot fetch import stats - no store ID');
       return;
     }
 
@@ -240,7 +218,6 @@ const ShopifyIntegration = () => {
       console.error('Error fetching import stats:', error);
     }
   };
-
 
   const testConnection = async () => {
     if (!storeId) {
@@ -406,14 +383,6 @@ const ShopifyIntegration = () => {
     if (!dateString) return 'Never';
     return new Date(dateString).toLocaleString();
   };
-
-  // Debug: Log render conditions for Media Storage alert
-  console.log('Media Storage Alert Conditions:', {
-    connected: connectionStatus?.connected,
-    storageProvider,
-    storageConfigured,
-    shouldShow: connectionStatus?.connected && storageProvider
-  });
 
   return (
     <div className="bg-white">
