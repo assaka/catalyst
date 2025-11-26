@@ -1290,6 +1290,19 @@ router.post('/verify-email', async (req, res) => {
       last_name: updatedCustomer.last_name
     }, store_id);
 
+    // Send welcome email after successful verification
+    try {
+      const emailService = require('../services/email-service');
+      await emailService.sendTransactionalEmail(store_id, 'signup_email', {
+        recipientEmail: email,
+        customer: updatedCustomer
+      });
+      console.log('📧 Welcome email sent to:', email);
+    } catch (emailError) {
+      console.error('⚠️ Failed to send welcome email:', emailError.message);
+      // Don't fail verification if welcome email fails
+    }
+
     res.json({
       success: true,
       message: 'Email verified successfully!',
