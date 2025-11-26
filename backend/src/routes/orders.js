@@ -11,6 +11,7 @@ const router = express.Router();
 
 // Initialize Stripe
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const paymentProviderService = require('../services/payment-provider-service');
 
 /**
  * Get store from master database
@@ -132,17 +133,20 @@ async function handleStockIssue({ tenantDb, storeId, order, insufficientItems, p
     }
 
     // Auto-refund if enabled
-    if (stockIssueHandling === 'auto_refund' && paymentIntentId) {
-      try {
-        const stripeOptions = store?.stripe_account_id ? { stripeAccount: store.stripe_account_id } : {};
-        const refund = await stripe.refunds.create({ payment_intent: paymentIntentId, reason: 'requested_by_customer' }, stripeOptions);
+    if (stockIssueHandling === 'auto_refund') {
+      const refundResult = await paymentProviderService.refund({
+        order: { ...order, payment_reference: paymentIntentId || order.payment_reference },
+        reason: 'stock_issue',
+        store
+      });
 
+      if (refundResult.success) {
         await tenantDb
           .from('sales_orders')
           .update({
             status: 'cancelled',
             payment_status: 'refunded',
-            admin_notes: `Auto-refunded due to stock issue. Refund ID: ${refund.id}`,
+            admin_notes: `Auto-refunded due to stock issue via ${refundResult.provider}. Refund ID: ${refundResult.refundId}`,
             cancelled_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
@@ -158,9 +162,15 @@ async function handleStockIssue({ tenantDb, storeId, order, insufficientItems, p
           }, 'en').catch(err => console.error('Failed to send refund notification:', err.message));
         }
 
-        return { refunded: true, refundId: refund.id };
-      } catch (refundError) {
-        console.error('Error processing auto-refund:', refundError);
+        return { refunded: true, refundId: refundResult.refundId, provider: refundResult.provider };
+      } else if (refundResult.requiresManualRefund) {
+        await tenantDb
+          .from('sales_orders')
+          .update({
+            admin_notes: `Stock issue detected. Auto-refund not available for ${refundResult.provider} - please process manually.`,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', order.id);
       }
     }
 

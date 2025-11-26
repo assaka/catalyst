@@ -10,6 +10,7 @@ const router = express.Router();
 // Initialize Stripe
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { masterDbClient } = require('../database/masterConnection');
+const paymentProviderService = require('../services/payment-provider-service');
 
 // Zero-decimal currencies (currencies without decimal places)
 // These should NOT be multiplied by 100 for Stripe
@@ -112,23 +113,17 @@ async function handleStockIssue({ tenantDb, storeId, order, insufficientItems, p
     }
 
     // Auto-refund if enabled
-    if (stockIssueHandling === 'auto_refund' && paymentIntentId) {
-      console.log('💰 Auto-refund enabled, processing refund for payment intent:', paymentIntentId);
+    if (stockIssueHandling === 'auto_refund') {
+      console.log('💰 Auto-refund enabled, attempting refund via payment provider service...');
 
-      try {
-        // Get Stripe options for connected account
-        const stripeOptions = {};
-        if (store?.stripe_account_id) {
-          stripeOptions.stripeAccount = store.stripe_account_id;
-        }
+      const refundResult = await paymentProviderService.refund({
+        order: { ...order, payment_reference: paymentIntentId || order.payment_reference },
+        reason: 'stock_issue',
+        store
+      });
 
-        // Create refund
-        const refund = await stripe.refunds.create({
-          payment_intent: paymentIntentId,
-          reason: 'requested_by_customer'
-        }, stripeOptions);
-
-        console.log('✅ Refund created:', refund.id);
+      if (refundResult.success) {
+        console.log(`✅ Refund created via ${refundResult.provider}:`, refundResult.refundId);
 
         // Update order status
         await tenantDb
@@ -136,7 +131,7 @@ async function handleStockIssue({ tenantDb, storeId, order, insufficientItems, p
           .update({
             status: 'cancelled',
             payment_status: 'refunded',
-            admin_notes: `Auto-refunded due to stock issue. Refund ID: ${refund.id}. Items: ${insufficientItems.map(i => i.sku).join(', ')}`,
+            admin_notes: `Auto-refunded due to stock issue via ${refundResult.provider}. Refund ID: ${refundResult.refundId}. Items: ${insufficientItems.map(i => i.sku).join(', ')}`,
             cancelled_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
@@ -160,14 +155,19 @@ async function handleStockIssue({ tenantDb, storeId, order, insufficientItems, p
           ).catch(err => console.error('Failed to send refund notification:', err.message));
         }
 
-        return { refunded: true, refundId: refund.id };
-      } catch (refundError) {
-        console.error('Error processing auto-refund:', refundError);
-        // Update order notes with refund failure
+        return { refunded: true, refundId: refundResult.refundId, provider: refundResult.provider };
+      } else {
+        console.warn(`⚠️ Auto-refund failed: ${refundResult.error}`);
+
+        // Update order notes with refund failure or manual requirement
+        const noteMessage = refundResult.requiresManualRefund
+          ? `Stock issue detected. Auto-refund not available for ${refundResult.provider} - please process refund manually.`
+          : `Stock issue detected. Auto-refund FAILED: ${refundResult.error}.`;
+
         await tenantDb
           .from('sales_orders')
           .update({
-            admin_notes: `Stock issue detected. Auto-refund FAILED: ${refundError.message}. Items: ${insufficientItems.map(i => i.sku).join(', ')}`,
+            admin_notes: `${noteMessage} Items: ${insufficientItems.map(i => i.sku).join(', ')}`,
             updated_at: new Date().toISOString()
           })
           .eq('id', order.id);
