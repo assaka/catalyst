@@ -4,6 +4,28 @@ import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { getBlockContent } from '@/utils/translationUtils';
 
+/**
+ * Process store variables in CMS content
+ * Replaces {{store_name}}, {{store_email}}, etc. with actual store values
+ */
+function processStoreVariables(content, store, settings) {
+    if (!content || typeof content !== 'string') return content;
+
+    const variables = {
+        store_name: store?.name || '',
+        store_email: store?.contact_email || settings?.contact_email || '',
+        store_phone: store?.contact_phone || settings?.contact_phone || '',
+        store_address: store?.address || settings?.store_address || '',
+        store_city: store?.city || settings?.store_city || '',
+        store_country: store?.country || settings?.store_country || '',
+        store_currency: settings?.currency_symbol || '$',
+    };
+
+    return content.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+        return variables[key] !== undefined ? variables[key] : match;
+    });
+}
+
 // Global cache and request queue to prevent duplicate requests
 const cmsBlockCache = new Map();
 const pendingRequests = new Map();
@@ -99,10 +121,12 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
   }
   
   // Try storefront context
+  let storefrontSettings = null;
   try {
     const storeContext = useStore();
     if (storeContext?.store?.id) {
       storefrontStore = storeContext.store;
+      storefrontSettings = storeContext.settings;
     }
   } catch (e) {
     // Not in storefront context - this is expected on admin pages
@@ -226,11 +250,18 @@ export default function CmsBlockRenderer({ position, page, storeId }) {
     return null;
   }
 
+  // Get store and settings for variable processing
+  const storeForVariables = storefrontStore || adminStore;
+  const settingsForVariables = storefrontSettings;
+
   return (
     <div className="cms-blocks">
       {blocks.map((block) => {
-        const content = getBlockContent(block);
-        if (!content) return null;
+        const rawContent = getBlockContent(block);
+        if (!rawContent) return null;
+
+        // Process store variables ({{store_name}}, {{store_email}}, etc.)
+        const content = processStoreVariables(rawContent, storeForVariables, settingsForVariables);
 
         return (
           <div

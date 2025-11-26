@@ -12,6 +12,28 @@ import { Input } from '@/components/ui/input';
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+/**
+ * Process store variables in CMS content
+ * Replaces {{store_name}}, {{store_email}}, etc. with actual store values
+ */
+function processStoreVariables(content, store, settings) {
+    if (!content || typeof content !== 'string') return content;
+
+    const variables = {
+        store_name: store?.name || '',
+        store_email: store?.contact_email || settings?.contact_email || '',
+        store_phone: store?.contact_phone || settings?.contact_phone || '',
+        store_address: store?.address || settings?.store_address || '',
+        store_city: store?.city || settings?.store_city || '',
+        store_country: store?.country || settings?.store_country || '',
+        store_currency: settings?.currency_symbol || '$',
+    };
+
+    return content.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+        return variables[key] !== undefined ? variables[key] : match;
+    });
+}
+
 export default function CmsPageViewer() {
     const { pageSlug, storeCode } = useParams();
     const { settings, store } = useStore();
@@ -160,8 +182,12 @@ export default function CmsPageViewer() {
         return null;
     }
 
-    const pageTitle = getPageTitle(page);
-    const pageContent = getPageContent(page);
+    const rawPageTitle = getPageTitle(page);
+    const rawPageContent = getPageContent(page);
+
+    // Process store variables ({{store_name}}, {{store_email}}, etc.)
+    const pageTitle = processStoreVariables(rawPageTitle, store, settings);
+    const pageContent = processStoreVariables(rawPageContent, store, settings);
 
     return (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
