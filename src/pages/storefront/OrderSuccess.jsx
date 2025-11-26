@@ -20,7 +20,8 @@ import {
   UserPlus,
   Truck,
   ShoppingBag,
-  Info
+  Info,
+  LogIn
 } from 'lucide-react';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { formatPrice, safeNumber } from '@/utils/priceUtils';
@@ -683,6 +684,36 @@ export default function OrderSuccess() {
                       <p className="text-gray-600">Phone: {order.billing_address.phone || order.customer_phone}</p>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Login prompt - Show for guest users who already have a registered account */}
+            {!isAuthenticated && customerHasAccount && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <LogIn className="w-5 h-5 mr-2 text-blue-600" />
+                    {t('success.existing_account', settings) || 'You have an account!'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {t('success.login_to_view', settings) || 'An account exists for'} <strong>{order.customer_email}</strong>. {t('success.login_prompt', settings) || 'Login to view your order history and track this order.'}
+                  </p>
+                  <Button
+                    onClick={() => {
+                      if (storeCode) {
+                        navigate(`/public/${storeCode}/login?redirect=/public/${storeCode}/account/orders`);
+                      } else {
+                        navigate('/login?redirect=/account/orders');
+                      }
+                    }}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    {t('common.login', settings) || 'Login to Your Account'}
+                  </Button>
                 </CardContent>
               </Card>
             )}
