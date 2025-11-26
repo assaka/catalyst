@@ -1596,7 +1596,7 @@ router.post('/webhook', async (req, res) => {
                       last_name: lastName,
                       email: finalOrder.customer_email
                     },
-                    order: orderWithDetails.toJSON(),
+                    order: orderWithDetails,
                     store: orderWithDetails.Store,
                     attachments: attachments,
                     invoice_number: invoiceNumber,
@@ -2028,21 +2028,44 @@ router.post('/webhook-connect', async (req, res) => {
 
           const emailService = require('../services/email-service');
 
-          // Get order with full details
-          const orderWithDetails = await Order.findByPk(finalOrder.id, {
-            include: [{
-              model: OrderItem,
-              as: 'OrderItems',
-              include: [{
-                model: Product,
-                attributes: ['id', 'sku']
-              }]
-            }, {
-              model: StoreModel,
-              as: 'Store',
-              attributes: ['id', 'name', 'slug', 'currency', 'settings']
-            }]
-          });
+          // Get order with full details using Supabase
+          const { data: orderWithDetails } = await tenantDb
+            .from('sales_orders')
+            .select('*')
+            .eq('id', finalOrder.id)
+            .single();
+
+          // Fetch order items
+          const { data: orderItems } = await tenantDb
+            .from('sales_order_items')
+            .select('*')
+            .eq('order_id', finalOrder.id);
+
+          // Fetch products for the items
+          const productIds = orderItems?.map(item => item.product_id).filter(Boolean) || [];
+          const { data: products } = productIds.length > 0 ? await tenantDb
+            .from('products')
+            .select('id, sku')
+            .in('id', productIds) : { data: [] };
+
+          const productMap = {};
+          (products || []).forEach(p => { productMap[p.id] = p; });
+
+          // Attach products to items
+          orderWithDetails.OrderItems = (orderItems || []).map(item => ({
+            ...item,
+            Product: productMap[item.product_id] || null
+          }));
+
+          // Fetch store from master DB
+          const { masterDbClient } = require('../database/masterConnection');
+          const { data: storeData } = await masterDbClient
+            .from('stores')
+            .select('id, name, slug, currency, settings')
+            .eq('id', store_id)
+            .single();
+
+          orderWithDetails.Store = storeData;
 
           let customer = null;
           if (finalOrder.customer_id) {
@@ -2070,8 +2093,8 @@ router.post('/webhook-connect', async (req, res) => {
               last_name: lastName,
               email: finalOrder.customer_email
             },
-            order: orderWithDetails.toJSON(),
-            store: orderWithDetails.Store.toJSON(),
+            order: orderWithDetails,
+            store: orderWithDetails.Store,
             languageCode: 'en'
           }).then(async () => {
             console.log(`🎉 Order success email sent to: ${finalOrder.customer_email}`);
@@ -2125,7 +2148,7 @@ router.post('/webhook-connect', async (req, res) => {
                     last_name: lastName,
                     email: finalOrder.customer_email
                   },
-                  order: orderWithDetails.toJSON(),
+                  order: orderWithDetails,
                   store: orderWithDetails.Store,
                   attachments: attachments,
                   invoice_number: invoiceNumber,
@@ -2136,8 +2159,8 @@ router.post('/webhook-connect', async (req, res) => {
 
                 // Create invoice record to track that invoice was sent
                 try {
-                  const tenantDb = await ConnectionManager.getStoreConnection(finalOrder.store_id);
-                  const { data: invoice, error } = await tenantDb
+                  const tenantDbInvoice = await ConnectionManager.getStoreConnection(finalOrder.store_id);
+                  const { data: invoice, error } = await tenantDbInvoice
                     .from('invoices')
                     .insert({
                       id: uuidv4(),
