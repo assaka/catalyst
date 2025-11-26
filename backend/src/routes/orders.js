@@ -258,20 +258,28 @@ router.post('/finalize-order', async (req, res) => {
       // Check if order email was already sent by looking at email_send_logs
       let emailAlreadySent = false;
       try {
-        const { data: emailLog } = await tenantDb
+        // Use containedBy for JSONB or just check recipient + recent time
+        const { data: emailLogs } = await tenantDb
           .from('email_send_logs')
-          .select('id')
+          .select('id, metadata')
           .eq('recipient_email', order.customer_email)
-          .like('metadata->templateIdentifier', 'order_success_email')
-          .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
-          .maybeSingle();
+          .eq('status', 'sent')
+          .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()); // Last 24 hours
 
-        if (emailLog) {
-          emailAlreadySent = true;
+        // Check if any of the logs are for order_success_email
+        if (emailLogs && emailLogs.length > 0) {
+          emailAlreadySent = emailLogs.some(log =>
+            log.metadata?.templateIdentifier === 'order_success_email'
+          );
+        }
+
+        if (emailAlreadySent) {
           console.log('✅ Order email already sent, skipping duplicate');
+        } else {
+          console.log('📧 No order email found in logs, will send email');
         }
       } catch (emailCheckError) {
-        console.log('⚠️ Could not check email logs, will send email to be safe');
+        console.log('⚠️ Could not check email logs:', emailCheckError.message, '- will send email to be safe');
       }
 
       // Send email if not already sent
