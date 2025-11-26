@@ -17,7 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages, X, ChevronsUpDown, Check, Building2, Truck } from "lucide-react";
+import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages, X, ChevronsUpDown, Check, Building2, Truck, RefreshCw, ExternalLink } from "lucide-react";
+import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus } from "@/api/functions";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import FlashMessage from "@/components/storefront/FlashMessage";
@@ -40,6 +41,11 @@ export default function PaymentMethods() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [methodToDelete, setMethodToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Stripe Connect state
+  const [stripeStatus, setStripeStatus] = useState(null);
+  const [loadingStripeStatus, setLoadingStripeStatus] = useState(true);
+  const [connectingStripe, setConnectingStripe] = useState(false);
 
   // Conditions data
   const [categories, setCategories] = useState([]);
@@ -80,42 +86,131 @@ export default function PaymentMethods() {
     return `${symbol}${num.toFixed(decimals)}`;
   };
 
-  const quickAddMethods = [
-    {
-      name: "Stripe (Online Payments)",
-      code: "stripe",
-      type: "stripe",
-      payment_flow: "online",
-      description: "Accept credit cards, debit cards, and more via Stripe.",
-      icon_url: "",
-      icon: "creditcard"
-    },
-    {
-      name: "Cash on Delivery",
-      code: "cod",
-      type: "cash_on_delivery",
-      payment_flow: "offline",
-      description: "Pay with cash upon delivery.",
-      icon_url: "",
-      icon: "banknote"
-    },
-    {
-      name: "Bank Transfer",
-      code: "bank_transfer",
-      type: "bank_transfer",
-      payment_flow: "offline",
-      description: "Pay via a manual bank transfer.",
-      icon_url: "",
-      icon: "building"
-    }
+  // Payment providers configuration
+  const paymentProviders = [
+    { id: 'stripe', name: 'Stripe', description: 'Credit cards, Apple Pay, Google Pay', status: 'available' },
+    { id: 'adyen', name: 'Adyen', description: 'Enterprise payment processing', status: 'coming_soon' },
+    { id: 'mollie', name: 'Mollie', description: 'European payment methods', status: 'coming_soon' },
+    { id: 'paypal', name: 'PayPal', description: 'Pay with PayPal account', status: 'coming_soon' }
   ];
 
   useEffect(() => {
     if (selectedStore) {
       loadPaymentMethods();
       loadConditionsData();
+      loadStripeConnectStatus();
     }
   }, [selectedStore, currentLanguage]);
+
+  // Handle Stripe OAuth return
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('stripe_return') === 'true') {
+      setFlashMessage({ type: 'success', message: 'Stripe account connected successfully!' });
+      loadStripeConnectStatus();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (params.get('stripe_refresh') === 'true') {
+      setFlashMessage({ type: 'info', message: 'Please complete Stripe onboarding.' });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  const loadStripeConnectStatus = async () => {
+    if (!selectedStore?.id) return;
+
+    setLoadingStripeStatus(true);
+    try {
+      const response = await checkStripeConnectStatus(selectedStore.id);
+      setStripeStatus(response.data?.data || response.data || null);
+    } catch (error) {
+      console.error("Error loading Stripe status:", error);
+      setStripeStatus(null);
+    } finally {
+      setLoadingStripeStatus(false);
+    }
+  };
+
+  const handleConnectStripe = async () => {
+    if (!selectedStore?.id) return;
+
+    setConnectingStripe(true);
+    try {
+      let onboardingUrl;
+
+      try {
+        const accountResponse = await createStripeConnectAccount(selectedStore.id);
+        onboardingUrl = Array.isArray(accountResponse.data)
+          ? accountResponse.data[0]?.onboarding_url
+          : accountResponse.data?.onboarding_url;
+      } catch (accountError) {
+        if (accountError.message?.includes("already exists")) {
+          const currentUrl = window.location.origin + window.location.pathname;
+          const returnUrl = `${currentUrl}?stripe_return=true`;
+          const refreshUrl = `${currentUrl}?stripe_refresh=true`;
+
+          const linkResponse = await createStripeConnectLink(returnUrl, refreshUrl, selectedStore.id);
+          onboardingUrl = Array.isArray(linkResponse.data)
+            ? linkResponse.data[0]?.url
+            : linkResponse.data?.url;
+        } else {
+          throw accountError;
+        }
+      }
+
+      if (onboardingUrl) {
+        window.location.href = onboardingUrl;
+      } else {
+        setFlashMessage({ type: 'error', message: 'Unable to connect to Stripe. Please try again.' });
+      }
+    } catch (error) {
+      console.error('Error connecting Stripe:', error);
+      setFlashMessage({ type: 'error', message: 'Error connecting to Stripe: ' + error.message });
+    } finally {
+      setConnectingStripe(false);
+    }
+  };
+
+  const handleAddStripeMethod = async () => {
+    if (!store) {
+      setFlashMessage({ type: 'error', message: 'Store not found' });
+      return;
+    }
+
+    // Check if Stripe is connected
+    const isConnected = stripeStatus?.connected && stripeStatus?.onboardingComplete;
+    if (!isConnected) {
+      setFlashMessage({ type: 'error', message: 'Please connect your Stripe account first' });
+      return;
+    }
+
+    // Check if method already exists
+    if (paymentMethods.some(m => m.code === 'stripe')) {
+      setFlashMessage({ type: 'warning', message: 'Stripe payment method already exists' });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        name: 'Stripe (Online Payments)',
+        code: 'stripe',
+        type: 'stripe',
+        payment_flow: 'online',
+        description: 'Accept credit cards, debit cards, and more via Stripe.',
+        store_id: store.id,
+        is_active: true,
+        sort_order: paymentMethods.length + 1,
+        countries: []
+      };
+      await PaymentMethod.create(payload);
+      setFlashMessage({ type: 'success', message: 'Stripe payment method added successfully!' });
+      loadPaymentMethods();
+    } catch (error) {
+      setFlashMessage({ type: 'error', message: 'Failed to add payment method: ' + error.message });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const loadConditionsData = async () => {
     try {
@@ -430,32 +525,6 @@ export default function PaymentMethods() {
     );
   };
 
-  const handleQuickAdd = async (method) => {
-    try {
-      if (!store) {
-        setFlashMessage({ type: 'error', message: 'Store not found. Please ensure store data is loaded.' });
-        return;
-      }
-
-      setSaving(true);
-      const payload = {
-        ...method,
-        store_id: store.id,
-        is_active: true,
-        sort_order: paymentMethods.length + 1,
-        countries: method.countries || []
-      };
-      await PaymentMethod.create(payload);
-      setFlashMessage({ type: 'success', message: `${method.name} payment method added successfully!` });
-      loadPaymentMethods();
-    } catch (error) {
-      setFlashMessage({ type: 'error', message: `Failed to add payment method: ${error.message || 'Unknown error'}` });
-      console.error("Error quick adding payment method:", error);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -478,41 +547,87 @@ export default function PaymentMethods() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="w-5 h-5" />
-              Quick Add Payment Methods
+              Payment Providers
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {quickAddMethods.map(method => {
-                // Render appropriate icon based on method type
-                const renderIcon = () => {
-                  if (method.icon_url) {
-                    return <img src={method.icon_url} alt={method.name} className="h-8 w-auto object-contain" />;
-                  }
-
-                  switch (method.icon) {
-                    case 'stripe':
-                      return <CreditCard className="h-6 w-6 text-blue-600" />;
-                    case 'banknote':
-                      return <Banknote className="h-6 w-6 text-green-600" />;
-                    case 'building':
-                      return <Building2 className="h-6 w-6 text-indigo-600" />;
-                    default:
-                      return <CreditCard className="h-6 w-6 text-gray-600" />;
-                  }
-                };
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {paymentProviders.map(provider => {
+                const isComingSoon = provider.status === 'coming_soon';
+                const isStripeConnected = stripeStatus?.connected && stripeStatus?.onboardingComplete;
+                const hasStripeMethod = paymentMethods.some(m => m.code === 'stripe');
 
                 return (
-                  <Button
-                    key={method.code}
-                    variant="outline"
-                    className="h-20 flex flex-col items-center justify-center gap-2 text-center hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                    onClick={() => handleQuickAdd(method)}
-                    disabled={saving || !store}
+                  <div
+                    key={provider.id}
+                    className={`p-4 border rounded-lg text-center ${isComingSoon ? 'opacity-60' : ''}`}
                   >
-                    {renderIcon()}
-                    <span className="text-xs font-medium">{method.name}</span>
-                  </Button>
+                    <div className={`w-12 h-12 mx-auto rounded-lg flex items-center justify-center mb-3 ${
+                      provider.id === 'stripe' ? 'bg-blue-50' : 'bg-gray-100'
+                    }`}>
+                      <CreditCard className={`w-6 h-6 ${
+                        provider.id === 'stripe' ? 'text-blue-600' : 'text-gray-400'
+                      }`} />
+                    </div>
+                    <h3 className={`font-semibold ${isComingSoon ? 'text-gray-500' : ''}`}>
+                      {provider.name}
+                    </h3>
+                    <p className={`text-sm mb-3 ${isComingSoon ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {provider.description}
+                    </p>
+
+                    {provider.id === 'stripe' && (
+                      <>
+                        {loadingStripeStatus ? (
+                          <RefreshCw className="w-4 h-4 mx-auto animate-spin text-gray-400" />
+                        ) : isStripeConnected ? (
+                          <div className="space-y-2">
+                            <Badge className="bg-green-100 text-green-700 border-green-200">
+                              <CheckCircle className="w-3 h-3 mr-1" /> Connected
+                            </Badge>
+                            <div className="flex gap-2 justify-center">
+                              <Button
+                                size="sm"
+                                onClick={handleAddStripeMethod}
+                                disabled={saving || hasStripeMethod}
+                              >
+                                {hasStripeMethod ? 'Added' : 'Add Method'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleConnectStripe}
+                                disabled={connectingStripe}
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button
+                            onClick={handleConnectStripe}
+                            disabled={connectingStripe}
+                            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                          >
+                            {connectingStripe ? (
+                              <>
+                                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                Connecting...
+                              </>
+                            ) : (
+                              'Connect Stripe'
+                            )}
+                          </Button>
+                        )}
+                      </>
+                    )}
+
+                    {isComingSoon && (
+                      <Badge variant="outline" className="text-gray-400 border-gray-300">
+                        Coming Soon
+                      </Badge>
+                    )}
+                  </div>
                 );
               })}
             </div>

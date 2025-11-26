@@ -153,10 +153,12 @@ const createCustomerAddresses = async (tenantDb, userId, firstName, lastName, ph
 // Helper: Send welcome email
 const sendWelcomeEmail = async (tenantDb, storeId, email, customer) => {
   try {
+    // Get the first active store from tenant database (storeId is tenant identifier, not store UUID)
     const { data: store } = await tenantDb
       .from('stores')
       .select('*')
-      .eq('id', storeId)
+      .eq('is_active', true)
+      .limit(1)
       .maybeSingle();
 
     emailService.sendTransactionalEmail(storeId, 'signup_email', {
@@ -175,10 +177,12 @@ const sendWelcomeEmail = async (tenantDb, storeId, email, customer) => {
 // Helper: Send verification email with code
 const sendVerificationEmail = async (tenantDb, storeId, email, customer, verificationCode) => {
   try {
+    // Get the first active store from tenant database (storeId is tenant identifier, not store UUID)
     const { data: store } = await tenantDb
       .from('stores')
       .select('*')
-      .eq('id', storeId)
+      .eq('is_active', true)
+      .limit(1)
       .maybeSingle();
 
     // Try to send via email template if exists, otherwise send simple email
