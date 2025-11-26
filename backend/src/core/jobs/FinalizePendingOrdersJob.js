@@ -2,6 +2,9 @@ const BaseJobHandler = require('./BaseJobHandler');
 const { Order, OrderItem, Store, Product, Customer } = require('../../models');
 const { Op } = require('sequelize');
 const emailService = require('../../services/email-service');
+const IntegrationConfig = require('../../models/IntegrationConfig');
+
+const STRIPE_INTEGRATION_TYPE = 'stripe-connect';
 
 /**
  * Finalize Pending Orders Job
@@ -71,10 +74,13 @@ class FinalizePendingOrdersJob extends BaseJobHandler {
         let paymentVerified = false;
 
         if (paymentProvider === 'stripe' || paymentProvider.includes('card') || paymentProvider.includes('credit')) {
-          // Stripe verification
+          // Stripe verification - get connected account from IntegrationConfig
+          const stripeConfig = await IntegrationConfig.findByStoreAndType(store.id, STRIPE_INTEGRATION_TYPE);
+          const stripeAccountId = stripeConfig?.config_data?.accountId;
+
           const stripeOptions = {};
-          if (store.stripe_account_id) {
-            stripeOptions.stripeAccount = store.stripe_account_id;
+          if (stripeAccountId) {
+            stripeOptions.stripeAccount = stripeAccountId;
           }
 
           try {

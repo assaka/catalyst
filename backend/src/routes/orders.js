@@ -7,11 +7,15 @@ const { authorize } = require('../middleware/auth');
 const { validateCustomerOrderAccess } = require('../middleware/customerStoreAuth');
 const emailService = require('../services/email-service');
 const { cacheOrder } = require('../middleware/cacheMiddleware');
+const IntegrationConfig = require('../models/IntegrationConfig');
 const router = express.Router();
 
 // Initialize Stripe
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const paymentProviderService = require('../services/payment-provider-service');
+
+// Stripe integration type constant
+const STRIPE_INTEGRATION_TYPE = 'stripe-connect';
 
 /**
  * Get store from master database
@@ -530,8 +534,12 @@ router.post('/finalize-order', async (req, res) => {
       });
     }
 
+    // Get Stripe account from integration_configs
+    const stripeConfig = await IntegrationConfig.findByStoreAndType(store_id, STRIPE_INTEGRATION_TYPE);
+    const stripeAccountId = stripeConfig?.config_data?.accountId;
+
     // Verify payment with Stripe - Stripe Connect required
-    if (!store.stripe_account_id) {
+    if (!stripeAccountId) {
       console.error('❌ Store does not have a connected Stripe account:', store_id);
       return res.status(400).json({
         success: false,
@@ -539,7 +547,7 @@ router.post('/finalize-order', async (req, res) => {
       });
     }
 
-    const stripeOptions = { stripeAccount: store.stripe_account_id };
+    const stripeOptions = { stripeAccount: stripeAccountId };
 
     let session;
     try {
@@ -599,8 +607,8 @@ router.post('/finalize-order', async (req, res) => {
         // Get payment intent from session
         let paymentIntentId = null;
         try {
-          const stripeOptions = store?.stripe_account_id ? { stripeAccount: store.stripe_account_id } : {};
-          const stripeSession = await stripe.checkout.sessions.retrieve(session_id, stripeOptions);
+          const stockStripeOptions = stripeAccountId ? { stripeAccount: stripeAccountId } : {};
+          const stripeSession = await stripe.checkout.sessions.retrieve(session_id, stockStripeOptions);
           paymentIntentId = stripeSession.payment_intent;
         } catch (e) {
           console.error('Could not retrieve payment intent:', e.message);

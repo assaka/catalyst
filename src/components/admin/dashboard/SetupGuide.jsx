@@ -14,6 +14,30 @@ export const SetupGuide = ({ store }) => {
     const [connecting, setConnecting] = useState(false);
     const [emailConfigured, setEmailConfigured] = useState(false);
     const [loadingEmail, setLoadingEmail] = useState(true);
+    const [stripeStatus, setStripeStatus] = useState(null);
+    const [loadingStripe, setLoadingStripe] = useState(true);
+
+    // Load Stripe Connect status
+    useEffect(() => {
+        const loadStripeStatus = async () => {
+            if (!store?.id) return;
+
+            setLoadingStripe(true);
+            try {
+                const response = await checkStripeConnectStatus(store.id);
+                if (response.success) {
+                    setStripeStatus(response.data);
+                }
+            } catch (error) {
+                console.error('Error loading Stripe status:', error);
+                setStripeStatus(null);
+            } finally {
+                setLoadingStripe(false);
+            }
+        };
+
+        loadStripeStatus();
+    }, [store?.id]);
 
     if (!store) {
         return null;
@@ -21,9 +45,9 @@ export const SetupGuide = ({ store }) => {
 
     const isDomainConnected = store.custom_domain && store.domain_status === 'active';
     const needsPrimaryDomain = store.has_domains_without_primary && store.active_domain_count > 0;
-    // Check if Stripe is connected: either has stripe_account_id and onboarding complete flag in settings
-    const isStripeConnected = (store.settings?.stripe_onboarding_complete === true) ||
-                              (!!store.stripe_account_id && store.stripe_connect_onboarding_complete === true);
+    // Check if Stripe is connected from IntegrationConfig via API
+    const isStripeConnected = stripeStatus?.connected && stripeStatus?.onboardingComplete;
+    const stripeAccountId = stripeStatus?.accountId;
 
     // Load email configuration status
     useEffect(() => {
@@ -162,7 +186,7 @@ export const SetupGuide = ({ store }) => {
                             <div className="flex items-center gap-2">
                                 <CheckCircle className="w-4 h-4 text-green-600" />
                                 <span className="text-sm text-gray-700">
-                                    Stripe Connected {store.stripe_account_id && `(${store.stripe_account_id.substring(0, 15)}...)`}
+                                    Stripe Connected {stripeAccountId && `(${stripeAccountId.substring(0, 15)}...)`}
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -257,9 +281,9 @@ export const SetupGuide = ({ store }) => {
                                     {isStripeConnected ? 'Stripe Account Connected' : 'Connect Stripe Account'}
                                 </p>
                                 <p className="text-sm text-gray-600">
-                                    {isStripeConnected 
-                                        ? (store.stripe_account_id 
-                                            ? `Account ID: ${store.stripe_account_id.substring(0, 20)}...`
+                                    {isStripeConnected
+                                        ? (stripeAccountId
+                                            ? `Account ID: ${stripeAccountId.substring(0, 20)}...`
                                             : 'Ready to accept payments')
                                         : 'Securely connect Stripe to receive payments.'
                                     }

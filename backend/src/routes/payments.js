@@ -4,6 +4,7 @@ const { authorize } = require('../middleware/auth');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { getMasterStore, getMasterStoreSafe, updateMasterStore, getMasterUser, checkUserStoreAccess } = require('../utils/dbHelpers');
 const { v4: uuidv4 } = require('uuid');
+const IntegrationConfig = require('../models/IntegrationConfig');
 
 const router = express.Router();
 
@@ -11,6 +12,9 @@ const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { masterDbClient } = require('../database/masterConnection');
 const paymentProviderService = require('../services/payment-provider-service');
+
+// Stripe integration type constant
+const STRIPE_INTEGRATION_TYPE = 'stripe-connect';
 
 // Zero-decimal currencies (currencies without decimal places)
 // These should NOT be multiplied by 100 for Stripe
@@ -291,9 +295,11 @@ router.get('/connect-status', authMiddleware, authorize(['admin', 'store_owner']
       });
     }
 
-    // Get store and check for stripe_account_id (from master DB)
-    const store = await getMasterStoreSafe(store_id);
-    if (!store || !store.stripe_account_id) {
+    // Get Stripe config from integration_configs
+    const stripeConfig = await IntegrationConfig.findByStoreAndType(store_id, STRIPE_INTEGRATION_TYPE);
+    const stripeAccountId = stripeConfig?.config_data?.accountId;
+
+    if (!stripeConfig || !stripeAccountId) {
       return res.json({
         success: true,
         data: {
@@ -315,7 +321,7 @@ router.get('/connect-status', authMiddleware, authorize(['admin', 'store_owner']
     }
 
     // Get account status from Stripe
-    const account = await stripe.accounts.retrieve(store.stripe_account_id);
+    const account = await stripe.accounts.retrieve(stripeAccountId);
 
     // Determine if onboarding is complete
     // Onboarding is complete when details are submitted and charges are enabled
@@ -336,27 +342,21 @@ router.get('/connect-status', authMiddleware, authorize(['admin', 'store_owner']
         transfers: account.capabilities?.transfers || 'inactive'
       },
       details_submitted: account.details_submitted,
-      onboardingComplete: onboardingComplete, // Add this field for frontend
+      onboardingComplete: onboardingComplete,
       type: account.type
     };
 
-    // Update store if onboarding is complete (for caching/performance)
-    if (onboardingComplete && store.settings) {
+    // Update integration config if onboarding is complete (for caching/performance)
+    if (onboardingComplete && !stripeConfig.config_data?.onboardingComplete) {
       try {
-        const currentSettings = store.settings || {};
-        if (!currentSettings.stripe_onboarding_complete) {
-          await updateMasterStore(store_id, {
-            settings: {
-              ...currentSettings,
-              stripe_onboarding_complete: true,
-              stripe_onboarding_completed_at: new Date().toISOString()
-            }
-          });
-          console.log('Updated store settings with Stripe onboarding status');
-        }
+        await IntegrationConfig.createOrUpdate(store_id, STRIPE_INTEGRATION_TYPE, {
+          ...stripeConfig.config_data,
+          onboardingComplete: true,
+          onboardingCompletedAt: new Date().toISOString()
+        });
+        console.log('Updated Stripe integration config with onboarding status');
       } catch (updateError) {
-        console.error('Could not update store settings:', updateError.message);
-        // Don't fail the request if update fails
+        console.error('Could not update Stripe config:', updateError.message);
       }
     }
 
@@ -366,7 +366,7 @@ router.get('/connect-status', authMiddleware, authorize(['admin', 'store_owner']
     });
   } catch (error) {
     console.error('Get Stripe Connect status error:', error);
-    
+
     // If the account doesn't exist, return disconnected status
     if (error.code === 'account_invalid') {
       return res.json({
@@ -418,8 +418,9 @@ router.post('/connect-account', authMiddleware, authorize(['admin', 'store_owner
       });
     }
 
-    // Check if account already exists
-    if (store.stripe_account_id) {
+    // Check if account already exists in integration_configs
+    const existingConfig = await IntegrationConfig.findByStoreAndType(store_id, STRIPE_INTEGRATION_TYPE);
+    if (existingConfig?.config_data?.accountId) {
       return res.status(400).json({
         success: false,
         message: 'Stripe account already exists for this store'
@@ -441,9 +442,13 @@ router.post('/connect-account', authMiddleware, authorize(['admin', 'store_owner
       }
     });
 
-    // Save account ID to store
-    await updateMasterStore(store_id, {
-      stripe_account_id: account.id
+    // Save account ID to integration_configs
+    await IntegrationConfig.createOrUpdate(store_id, STRIPE_INTEGRATION_TYPE, {
+      accountId: account.id,
+      country: country,
+      businessType: business_type,
+      onboardingComplete: false,
+      createdAt: new Date().toISOString()
     });
 
     // Create onboarding link
@@ -493,17 +498,11 @@ router.post('/connect-link', authMiddleware, authorize(['admin', 'store_owner'])
       });
     }
 
-    // Get store
-    const store = await getMasterStore(store_id);
-    if (!store) {
-      return res.status(404).json({
-        success: false,
-        message: 'Store not found'
-      });
-    }
+    // Get Stripe config from integration_configs
+    const stripeConfig = await IntegrationConfig.findByStoreAndType(store_id, STRIPE_INTEGRATION_TYPE);
+    const stripeAccountId = stripeConfig?.config_data?.accountId;
 
-    // Check if store has Stripe account
-    if (!store.stripe_account_id) {
+    if (!stripeAccountId) {
       return res.status(400).json({
         success: false,
         message: 'No Stripe account found for this store. Please create an account first.'
@@ -512,7 +511,7 @@ router.post('/connect-link', authMiddleware, authorize(['admin', 'store_owner'])
 
     // Create account link for existing account
     const accountLink = await stripe.accountLinks.create({
-      account: store.stripe_account_id,
+      account: stripeAccountId,
       refresh_url: refresh_url || `${process.env.CORS_ORIGIN}/dashboard/payments/connect?refresh=true`,
       return_url: return_url || `${process.env.CORS_ORIGIN}/dashboard/payments/connect?success=true`,
       type: 'account_onboarding'
@@ -522,7 +521,7 @@ router.post('/connect-link', authMiddleware, authorize(['admin', 'store_owner'])
       success: true,
       data: {
         url: accountLink.url,
-        account_id: store.stripe_account_id
+        account_id: stripeAccountId
       }
     });
   } catch (error) {
@@ -933,6 +932,10 @@ router.post('/create-checkout', async (req, res) => {
       });
     }
 
+    // Get Stripe account from integration_configs
+    const stripeConfig = await IntegrationConfig.findByStoreAndType(store_id, STRIPE_INTEGRATION_TYPE);
+    const stripeAccountId = stripeConfig?.config_data?.accountId;
+
     // Get tenant DB connection for blacklist checks
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
@@ -1055,8 +1058,8 @@ router.post('/create-checkout', async (req, res) => {
 
     // Determine Stripe options for Connect account
     const stripeOptions = {};
-    if (store.stripe_account_id) {
-      stripeOptions.stripeAccount = store.stripe_account_id;
+    if (stripeAccountId) {
+      stripeOptions.stripeAccount = stripeAccountId;
     }
 
     // Create tax rate if provided
@@ -1077,7 +1080,7 @@ router.post('/create-checkout', async (req, res) => {
             tax_rate: taxPercentage
           }
         };
-        const taxRate = store.stripe_account_id
+        const taxRate = stripeAccountId
           ? await stripe.taxRates.create(taxRateParams, stripeOptions)
           : await stripe.taxRates.create(taxRateParams);
         
@@ -1258,7 +1261,7 @@ router.post('/create-checkout', async (req, res) => {
             original_coupon_id: applied_coupon.id?.toString() || ''
           }
         };
-        const stripeCoupon = store.stripe_account_id
+        const stripeCoupon = stripeAccountId
           ? await stripe.coupons.create(couponParams, stripeOptions)
           : await stripe.coupons.create(couponParams);
 
@@ -1308,7 +1311,7 @@ router.post('/create-checkout', async (req, res) => {
 
       // Create the shipping rate first
       try {
-        const shippingRate = store.stripe_account_id
+        const shippingRate = stripeAccountId
           ? await stripe.shippingRates.create(shippingRateData, stripeOptions)
           : await stripe.shippingRates.create(shippingRateData);
         
@@ -1422,7 +1425,7 @@ router.post('/create-checkout', async (req, res) => {
     console.log('💰 Creating Stripe Checkout session...');
 
     // Enforce Stripe Connect - no platform account fallback
-    if (!store.stripe_account_id) {
+    if (!stripeAccountId) {
       console.error('❌ Store does not have a connected Stripe account:', store_id);
       return res.status(400).json({
         success: false,
@@ -1430,10 +1433,10 @@ router.post('/create-checkout', async (req, res) => {
       });
     }
 
-    console.log('💰 Using connected account (Direct Charge):', store.stripe_account_id);
+    console.log('💰 Using connected account (Direct Charge):', stripeAccountId);
 
     const session = await stripe.checkout.sessions.create(sessionConfig, {
-      stripeAccount: store.stripe_account_id
+      stripeAccount: stripeAccountId
     });
 
     console.log('Created Stripe session:', {
@@ -3016,12 +3019,16 @@ async function createOrderFromCheckoutSession(session) {
     if (!store) {
       throw new Error(`Store not found: ${store_id}`);
     }
-    
+
+    // Get Stripe account from integration_configs
+    const stripeConfig = await IntegrationConfig.findByStoreAndType(store_id, STRIPE_INTEGRATION_TYPE);
+    const stripeAccountId = stripeConfig?.config_data?.accountId;
+
     // Prepare Stripe options for Connect account if needed
     const sessionStripeOptions = {};
-    if (store.stripe_account_id) {
-      sessionStripeOptions.stripeAccount = store.stripe_account_id;
-      console.log('Using Connect account for session retrieval:', store.stripe_account_id);
+    if (stripeAccountId) {
+      sessionStripeOptions.stripeAccount = stripeAccountId;
+      console.log('Using Connect account for session retrieval:', stripeAccountId);
     }
     
     // Get line items from the session with correct account context
@@ -3276,7 +3283,7 @@ async function createOrderFromCheckoutSession(session) {
         sessionId: session.id,
         metadata: session.metadata,
         storeId: store_id,
-        stripeAccountId: store.stripe_account_id
+        stripeAccountId: stripeAccountId
       });
       
       // This is a critical error - we should not commit an order without items

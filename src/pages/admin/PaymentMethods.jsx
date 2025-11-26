@@ -562,13 +562,6 @@ export default function PaymentMethods() {
                     key={provider.id}
                     className={`p-4 border rounded-lg text-center ${isComingSoon ? 'opacity-60' : ''}`}
                   >
-                    <div className={`w-12 h-12 mx-auto rounded-lg flex items-center justify-center mb-3 ${
-                      provider.id === 'stripe' ? 'bg-blue-50' : 'bg-gray-100'
-                    }`}>
-                      <CreditCard className={`w-6 h-6 ${
-                        provider.id === 'stripe' ? 'text-blue-600' : 'text-gray-400'
-                      }`} />
-                    </div>
                     <h3 className={`font-semibold ${isComingSoon ? 'text-gray-500' : ''}`}>
                       {provider.name}
                     </h3>
