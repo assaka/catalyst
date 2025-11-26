@@ -363,176 +363,183 @@ Shipping Address: {{shipping_address}}
 Track your order: {{order_details_url}}
 
 Best regards,
-The {{store_name}} Team', '<div style="font-family: Arial,
-  sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #333;">Thank You for Your
-  Order!</h2>
-      <p>Hi {{customer_first_name}},</p>
-      <p>Your order has been confirmed and is being
-  processed.</p>
-      <div style="background-color: #f9fafb; padding:
-  20px; border-radius: 8px; margin: 20px 0;">
-        <p style="margin: 5px 0;"><strong>Order
-  Number:</strong> {{order_number}}</p>
-        <p style="margin: 5px 0;"><strong>Order
-  Date:</strong> {{order_date}}</p>
-      </div>
-      <h3>Order Items:</h3>
+The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Order Confirmed!</h1>
+    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Order #{{order_number}}</p>
+  </div>
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>Thank you for your order! Your order has been confirmed and is being processed.</p>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Order Details</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Order Number</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">{{order_number}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0;">Order Date</td>
+          <td style="padding: 8px 0; text-align: right;">{{order_date}}</td>
+        </tr>
+      </table>
+    </div>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Order Items</h3>
       {{items_html}}
-      <div style="background-color: #f9fafb; padding:
-  20px; border-radius: 8px; margin: 20px 0;">
-        <h3 style="margin-top: 0;">Order Summary</h3>
-        <table style="width: 100%; border-collapse:
-  collapse;">
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px
-  solid #e5e7eb;">Subtotal</td>
-            <td style="padding: 8px 0; border-bottom: 1px
-  solid #e5e7eb; text-align:
-  right;">{{order_subtotal}}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px
-  solid #e5e7eb;">Shipping</td>
-            <td style="padding: 8px 0; border-bottom: 1px
-  solid #e5e7eb; text-align:
-  right;">{{order_shipping}}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px
-  solid #e5e7eb;">Tax</td>
-            <td style="padding: 8px 0; border-bottom: 1px
-  solid #e5e7eb; text-align: right;">{{order_tax}}</td>
-          </tr>
-          <tr>
-            <td style="padding: 12px 0 0 0; font-size:
-  18px; font-weight: bold;">Total</td>
-            <td style="padding: 12px 0 0 0; font-size:
-  18px; font-weight: bold; text-align:
-  right;">{{order_total}}</td>
-          </tr>
-        </table>
-      </div>
-      <hr style="margin: 30px 0; border: none; border-top:
-   1px solid #e5e7eb;">
-      <p style="color: #999; font-size: 12px;">
-        Best regards,<br>
-        {{store_name}} Team<br>
-        <a href="{{store_url}}">{{store_url}}</a>
+    </div>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Order Summary</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Subtotal</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_subtotal}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_shipping}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tax</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_tax}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; color: #667eea;">Total</td>
+          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; text-align: right; color: #667eea;">{{order_total}}</td>
+        </tr>
+      </table>
+    </div>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team<br>
+      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
+    </p>
+  </div>
+</div>'), ('d3176294-44e3-4893-993d-9b5c60202aaa', 'd1136967-f856-4199-bd97-557cc9603ce4', 'invoice_email', 'html', '["invoice_number", "invoice_date", "order_number", "customer_name", "customer_first_name", "customer_email", "order_date", "order_total", "order_subtotal", "order_tax", "order_shipping", "items_html", "items_count", "billing_address", "shipping_address", "store_name", "store_url", "current_year", "email_header", "email_footer"]', 'true', '10', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Invoice #{{invoice_number}} from {{store_name}}', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Invoice</h1>
+    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">#{{invoice_number}}</p>
+  </div>
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>Thank you for your order! Please find your invoice details below.</p>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Invoice Details</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Invoice Number</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">{{invoice_number}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Invoice Date</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{invoice_date}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0;">Order Number</td>
+          <td style="padding: 8px 0; text-align: right;">{{order_number}}</td>
+        </tr>
+      </table>
+    </div>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Order Items</h3>
+      {{items_html}}
+    </div>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Invoice Summary</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Subtotal</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_subtotal}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_shipping}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tax</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_tax}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; color: #667eea;">Total</td>
+          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; text-align: right; color: #667eea;">{{order_total}}</td>
+        </tr>
+      </table>
+    </div>
+    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0;">
+      <p style="margin: 0; color: #333;">
+        <strong style="color: #667eea;">Billing Address</strong><br>
+        {{billing_address}}
       </p>
-    </div>'), ('d3176294-44e3-4893-993d-9b5c60202aaa', 'd1136967-f856-4199-bd97-557cc9603ce4', 'invoice_email', 'html', '["invoice_number", "invoice_date", "order_number", "customer_name", "customer_first_name", "customer_email", "order_date", "order_total", "order_subtotal", "order_tax", "order_shipping", "items_html", "items_count", "billing_address", "shipping_address", "store_name", "store_url", "current_year", "email_header", "email_footer"]', 'true', '10', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Invoice #{{invoice_number}} from {{store_name}}', null, '{{email_header}}
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #333; margin-bottom: 10px;">Invoice #{{invoice_number}}</h2>
-              <p>Hi {{customer_first_name}},</p>
-              <p>Thank you for your order! Please find your invoice details below.</p>
-
-              <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Invoice Number:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;">{{invoice_number}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Invoice Date:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;">{{invoice_date}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Order Number:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;">{{order_number}}</td>
-                  </tr>
-                </table>
-              </div>
-
-              <h3 style="margin-top: 30px;">Order Items:</h3>
-              {{items_html}}
-
-              <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="margin-top: 0;">Invoice Summary</h3>
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Subtotal</td>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_subtotal}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping</td>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_shipping}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tax</td>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_tax}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold;">Total</td>
-                    <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; text-align: right;">{{order_total}}</td>
-                  </tr>
-                </table>
-              </div>
-
-              <div style="margin-top: 30px; padding: 15px; background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 4px;">
-                <p style="margin: 0; color: #1e40af;">
-                  <strong>Billing Address:</strong><br>
-                  {{billing_address}}
-                </p>
-              </div>
-
-              <div style="margin-top: 15px; padding: 15px; background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px;">
-                <p style="margin: 0; color: #065f46;">
-                  <strong>Shipping Address:</strong><br>
-                  {{shipping_address}}
-                </p>
-              </div>
-            </div>
-            {{email_footer}}'), ('155851a2-e285-4ae8-a4eb-04b6aa024fad', 'd1136967-f856-4199-bd97-557cc9603ce4', 'shipment_email', 'html', '["order_number", "tracking_number", "tracking_url", "shipping_method", "estimated_delivery_date", "delivery_instructions", "customer_name", "customer_first_name", "customer_email", "items_html", "items_count", "shipping_address", "store_name", "store_url", "current_year", "email_header", "email_footer"]', 'true', '11', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Your order #{{order_number}} has been shipped!', null, '{{email_header}}
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #333; margin-bottom: 10px;">Your Order Has Been Shipped!</h2>
-              <p>Hi {{customer_first_name}},</p>
-              <p>Great news! Your order has been shipped and is on its way to you.</p>
-
-              <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Order Number:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;">{{order_number}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Tracking Number:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;"><strong>{{tracking_number}}</strong></td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Shipping Method:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;">{{shipping_method}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Estimated Delivery:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;">{{estimated_delivery_date}}</td>
-                  </tr>
-                </table>
-              </div>
-
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="{{tracking_url}}" style="background-color: #10b981; color: white; padding: 12px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                  Track Your Package
-                </a>
-              </div>
-
-              <h3 style="margin-top: 30px;">Shipped Items:</h3>
-              {{items_html}}
-
-              <div style="margin-top: 30px; padding: 15px; background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px;">
-                <p style="margin: 0; color: #065f46;">
-                  <strong>Shipping Address:</strong><br>
-                  {{shipping_address}}
-                </p>
-              </div>
-
-              <div style="margin-top: 20px; padding: 15px; background-color: #fef3c7; border-radius: 8px;">
-                <p style="margin: 0; font-size: 14px; color: #92400e;">
-                  <strong>📦 Delivery Instructions:</strong><br>
-                  {{delivery_instructions}}
-                </p>
-              </div>
-            </div>
-            {{email_footer}}'), ('07958749-5770-4838-87e1-b860ee355fb7', 'd1136967-f856-4199-bd97-557cc9603ce4', 'email_header', 'html', '["store_name", "store_logo_url"]', 'true', '100', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Email Header Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    </div>
+    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin-bottom: 20px;">
+      <p style="margin: 0; color: #333;">
+        <strong style="color: #10b981;">Shipping Address</strong><br>
+        {{shipping_address}}
+      </p>
+    </div>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team<br>
+      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
+    </p>
+  </div>
+</div>'), ('155851a2-e285-4ae8-a4eb-04b6aa024fad', 'd1136967-f856-4199-bd97-557cc9603ce4', 'shipment_email', 'html', '["order_number", "tracking_number", "tracking_url", "shipping_method", "estimated_delivery_date", "delivery_instructions", "customer_name", "customer_first_name", "customer_email", "items_html", "items_count", "shipping_address", "store_name", "store_url", "current_year", "email_header", "email_footer"]', 'true', '11', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Your order #{{order_number}} has been shipped!', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Your Order is On Its Way!</h1>
+    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Order #{{order_number}}</p>
+  </div>
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>Great news! Your order has been shipped and is on its way to you.</p>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Shipping Details</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Order Number</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_number}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tracking Number</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">{{tracking_number}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping Method</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{shipping_method}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0;">Estimated Delivery</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #10b981;">{{estimated_delivery_date}}</td>
+        </tr>
+      </table>
+    </div>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{tracking_url}}" style="background-color: #667eea; color: white; padding: 12px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+        Track Your Package
+      </a>
+    </div>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Shipped Items</h3>
+      {{items_html}}
+    </div>
+    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
+      <p style="margin: 0; color: #333;">
+        <strong style="color: #10b981;">Shipping Address</strong><br>
+        {{shipping_address}}
+      </p>
+    </div>
+    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 20px;">
+      <p style="margin: 0; color: #333;">
+        <strong style="color: #f59e0b;">Delivery Instructions</strong><br>
+        {{delivery_instructions}}
+      </p>
+    </div>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team<br>
+      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
+    </p>
+  </div>
+</div>'), ('07958749-5770-4838-87e1-b860ee355fb7', 'd1136967-f856-4199-bd97-557cc9603ce4', 'email_header', 'html', '["store_name", "store_logo_url"]', 'true', '100', 'false', '{}', '2025-11-05 17:45:19.314+00', '2025-11-05 19:01:56.141+00', 'true', 'Email Header Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
                 <div style="background-color: white; width: 120px; height: 120px; margin: 0 auto 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 10px;">
                   <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 100px; max-height: 100px; object-fit: contain;">
@@ -561,69 +568,75 @@ The {{store_name}} Team', '<div style="font-family: Arial,
 
 
 -- email_template_translations (80 rows)
-INSERT INTO email_template_translations ("id", "email_template_id", "language_code", "subject", "template_content", "html_content", "created_at", "updated_at") VALUES ('ba6dbb5e-4bde-45ca-8386-d4940e8faaf5', '67be93d0-512b-4f58-b55e-4d627dfc1035', 'en', 'Invoice #{{invoice_number}} from {{store_name}}', null, '{{email_header}}
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #333; margin-bottom: 10px;">Invoice #{{invoice_number}}</h2>
-              <p>Hi {{customer_first_name}},</p>
-              <p>Thank you for your order! Please find your invoice details below.</p>
-
-              <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Invoice Number:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;">{{invoice_number}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Invoice Date:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;">{{invoice_date}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Order Number:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;">{{order_number}}</td>
-                  </tr>
-                </table>
-              </div>
-
-              <h3 style="margin-top: 30px;">Order Items:</h3>
-              {{items_html}}
-
-              <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="margin-top: 0;">Invoice Summary</h3>
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Subtotal</td>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_subtotal}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping</td>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_shipping}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tax</td>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_tax}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold;">Total</td>
-                    <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; text-align: right;">{{order_total}}</td>
-                  </tr>
-                </table>
-              </div>
-
-              <div style="margin-top: 30px; padding: 15px; background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 4px;">
-                <p style="margin: 0; color: #1e40af;">
-                  <strong>Billing Address:</strong><br>
-                  {{billing_address}}
-                </p>
-              </div>
-
-              <div style="margin-top: 15px; padding: 15px; background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px;">
-                <p style="margin: 0; color: #065f46;">
-                  <strong>Shipping Address:</strong><br>
-                  {{shipping_address}}
-                </p>
-              </div>
-            </div>
-            {{email_footer}}', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00'), ('fdac4587-abf7-49d1-9e9d-ff8750bb6aa6', 'd6696302-9e73-4b27-a4bf-b2832803b3e3', 'en', 'Order Confirmation #{{order_number}}', 'Hi {{customer_first_name}},
+INSERT INTO email_template_translations ("id", "email_template_id", "language_code", "subject", "template_content", "html_content", "created_at", "updated_at") VALUES ('ba6dbb5e-4bde-45ca-8386-d4940e8faaf5', '67be93d0-512b-4f58-b55e-4d627dfc1035', 'en', 'Invoice #{{invoice_number}} from {{store_name}}', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Invoice</h1>
+    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">#{{invoice_number}}</p>
+  </div>
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>Thank you for your order! Please find your invoice details below.</p>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Invoice Details</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Invoice Number</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">{{invoice_number}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Invoice Date</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{invoice_date}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0;">Order Number</td>
+          <td style="padding: 8px 0; text-align: right;">{{order_number}}</td>
+        </tr>
+      </table>
+    </div>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Order Items</h3>
+      {{items_html}}
+    </div>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Invoice Summary</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Subtotal</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_subtotal}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_shipping}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tax</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_tax}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; color: #667eea;">Total</td>
+          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; text-align: right; color: #667eea;">{{order_total}}</td>
+        </tr>
+      </table>
+    </div>
+    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0;">
+      <p style="margin: 0; color: #333;">
+        <strong style="color: #667eea;">Billing Address</strong><br>
+        {{billing_address}}
+      </p>
+    </div>
+    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin-bottom: 20px;">
+      <p style="margin: 0; color: #333;">
+        <strong style="color: #10b981;">Shipping Address</strong><br>
+        {{shipping_address}}
+      </p>
+    </div>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team<br>
+      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
+    </p>
+  </div>
+</div>', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00'), ('fdac4587-abf7-49d1-9e9d-ff8750bb6aa6', 'd6696302-9e73-4b27-a4bf-b2832803b3e3', 'en', 'Order Confirmation #{{order_number}}', 'Hi {{customer_first_name}},
 
 Thank you for your order!
 
@@ -639,116 +652,115 @@ Shipping Address: {{shipping_address}}
 Track your order: {{order_details_url}}
 
 Best regards,
-The {{store_name}} Team', '{{email_header}}
-<div style="font-family: Arial,
-  sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #333;">Thank You for Your
-  Order!</h2>
-      <p>Hi {{customer_first_name}},</p>
-      <p>Your order has been confirmed and is being
-  processed.</p>
-      <div style="background-color: #f9fafb; padding:
-  20px; border-radius: 8px; margin: 20px 0;">
-        <p style="margin: 5px 0;"><strong>Order
-  Number:</strong> {{order_number}}</p>
-        <p style="margin: 5px 0;"><strong>Order
-  Date:</strong> {{order_date}}</p>
-      </div>
-      <h3>Order Items:</h3>
+The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Order Confirmed!</h1>
+    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Order #{{order_number}}</p>
+  </div>
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>Thank you for your order! Your order has been confirmed and is being processed.</p>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Order Details</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Order Number</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">{{order_number}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0;">Order Date</td>
+          <td style="padding: 8px 0; text-align: right;">{{order_date}}</td>
+        </tr>
+      </table>
+    </div>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Order Items</h3>
       {{items_html}}
-      <div style="background-color: #f9fafb; padding:
-  20px; border-radius: 8px; margin: 20px 0;">
-        <h3 style="margin-top: 0;">Order Summary</h3>
-        <table style="width: 100%; border-collapse:
-  collapse;">
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px
-  solid #e5e7eb;">Subtotal</td>
-            <td style="padding: 8px 0; border-bottom: 1px
-  solid #e5e7eb; text-align:
-  right;">{{order_subtotal}}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px
-  solid #e5e7eb;">Shipping</td>
-            <td style="padding: 8px 0; border-bottom: 1px
-  solid #e5e7eb; text-align:
-  right;">{{order_shipping}}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px
-  solid #e5e7eb;">Tax</td>
-            <td style="padding: 8px 0; border-bottom: 1px
-  solid #e5e7eb; text-align: right;">{{order_tax}}</td>
-          </tr>
-          <tr>
-            <td style="padding: 12px 0 0 0; font-size:
-  18px; font-weight: bold;">Total</td>
-            <td style="padding: 12px 0 0 0; font-size:
-  18px; font-weight: bold; text-align:
-  right;">{{order_total}}</td>
-          </tr>
-        </table>
-      </div>
-      <hr style="margin: 30px 0; border: none; border-top:
-   1px solid #e5e7eb;">
-      <p style="color: #999; font-size: 12px;">
-        Best regards,<br>
-        {{store_name}} Team<br>
-        <a href="{{store_url}}">{{store_url}}</a>
+    </div>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Order Summary</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Subtotal</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_subtotal}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_shipping}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tax</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_tax}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; color: #667eea;">Total</td>
+          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; text-align: right; color: #667eea;">{{order_total}}</td>
+        </tr>
+      </table>
+    </div>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team<br>
+      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
+    </p>
+  </div>
+</div>', '2025-10-31 21:21:14.762+00', '2025-11-06 06:11:10.628+00'), ('20229878-978d-4d65-84c7-5f4fa1b8357c', '365b5e11-7181-45e1-9426-3de098a6182d', 'en', 'Your order #{{order_number}} has been shipped!', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Your Order is On Its Way!</h1>
+    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Order #{{order_number}}</p>
+  </div>
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>Great news! Your order has been shipped and is on its way to you.</p>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Shipping Details</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Order Number</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_number}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tracking Number</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">{{tracking_number}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping Method</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{shipping_method}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0;">Estimated Delivery</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #10b981;">{{estimated_delivery_date}}</td>
+        </tr>
+      </table>
+    </div>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{tracking_url}}" style="background-color: #667eea; color: white; padding: 12px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+        Track Your Package
+      </a>
+    </div>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Shipped Items</h3>
+      {{items_html}}
+    </div>
+    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
+      <p style="margin: 0; color: #333;">
+        <strong style="color: #10b981;">Shipping Address</strong><br>
+        {{shipping_address}}
       </p>
     </div>
-{{email_footer}}', '2025-10-31 21:21:14.762+00', '2025-11-06 06:11:10.628+00'), ('20229878-978d-4d65-84c7-5f4fa1b8357c', '365b5e11-7181-45e1-9426-3de098a6182d', 'en', 'Your order #{{order_number}} has been shipped!', null, '{{email_header}}
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #333; margin-bottom: 10px;">Your Order Has Been Shipped!</h2>
-              <p>Hi {{customer_first_name}},</p>
-              <p>Great news! Your order has been shipped and is on its way to you.</p>
-
-              <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Order Number:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;">{{order_number}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Tracking Number:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;"><strong>{{tracking_number}}</strong></td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Shipping Method:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;">{{shipping_method}}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px 0;"><strong>Estimated Delivery:</strong></td>
-                    <td style="padding: 5px 0; text-align: right;">{{estimated_delivery_date}}</td>
-                  </tr>
-                </table>
-              </div>
-
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="{{tracking_url}}" style="background-color: #10b981; color: white; padding: 12px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                  Track Your Package
-                </a>
-              </div>
-
-              <h3 style="margin-top: 30px;">Shipped Items:</h3>
-              {{items_html}}
-
-              <div style="margin-top: 30px; padding: 15px; background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px;">
-                <p style="margin: 0; color: #065f46;">
-                  <strong>Shipping Address:</strong><br>
-                  {{shipping_address}}
-                </p>
-              </div>
-
-              <div style="margin-top: 20px; padding: 15px; background-color: #fef3c7; border-radius: 8px;">
-                <p style="margin: 0; font-size: 14px; color: #92400e;">
-                  <strong>📦 Delivery Instructions:</strong><br>
-                  {{delivery_instructions}}
-                </p>
-              </div>
-            </div>
-            {{email_footer}}', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00'), ('3a2418cb-7199-416f-be59-70b9ab0abe92', 'a90d6ed4-054e-42f2-b844-7f9c68b89215', 'en', 'Verify your email - {{store_name}}', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 20px;">
+      <p style="margin: 0; color: #333;">
+        <strong style="color: #f59e0b;">Delivery Instructions</strong><br>
+        {{delivery_instructions}}
+      </p>
+    </div>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team<br>
+      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
+    </p>
+  </div>
+</div>', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00'), ('3a2418cb-7199-416f-be59-70b9ab0abe92', 'a90d6ed4-054e-42f2-b844-7f9c68b89215', 'en', 'Verify your email - {{store_name}}', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #333;">Verify Your Email</h2>
               <p>Hi {{customer_first_name}},</p>
               <p>Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:</p>
