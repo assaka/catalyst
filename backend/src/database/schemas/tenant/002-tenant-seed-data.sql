@@ -863,10 +863,10 @@ SELECT
   'a1b52211-ddca-40d1-ac14-4b3d84ba256d',
   id,
   'en',
-  'Welcome to {{store_name}}!',
+  'Welcome to {{store_name}} store!',
   'Hi {{customer_first_name}},
 
-Welcome to {{store_name}}! We are thrilled to have you with us.
+Welcome to {{store_name}} store! We are thrilled to have you with us.
 
 Your account has been successfully created and verified. You can now:
 - Browse our products
@@ -879,13 +879,13 @@ Login to your account: {{login_url}}
 Best regards,
 The {{store_name}} Team',
   '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Welcome to {{store_name}}!</h1>
+  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Welcome to {{store_name}} store!</h1>
   </div>
-  <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
     <p>Hi <strong>{{customer_first_name}}</strong>,</p>
     <p>We are thrilled to have you with us! Your account has been successfully created and verified.</p>
-    <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
       <h3 style="margin-top: 0; color: #667eea;">What you can do now:</h3>
       <ul style="padding-left: 20px;">
         <li>Browse our products</li>
@@ -895,7 +895,7 @@ The {{store_name}} Team',
       </ul>
     </div>
     <div style="text-align: center; margin: 30px 0;">
-      <a href="{{login_url}}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+      <a href="{{login_url}}" style="background-color: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
         Login to Your Account
       </a>
     </div>
