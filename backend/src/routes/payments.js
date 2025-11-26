@@ -2307,17 +2307,24 @@ async function createPreliminaryOrder(session, orderData) {
   console.log('🔍 Received shipping_address:', JSON.stringify(shipping_address, null, 2));
   console.log('🔍 Received billing_address:', JSON.stringify(billing_address, null, 2));
 
+  // Get tenant DB connection early - used for all lookups
+  const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
   // Lookup payment method to check payment_flow (online vs offline)
   let paymentFlow = 'online'; // default to online for Stripe
   let paymentMethodRecord = null;
   if (selected_payment_method) {
     try {
-      const PaymentMethod = require('../models/PaymentMethod');
-      paymentMethodRecord = await PaymentMethod.findOne({
-        where: { code: selected_payment_method, store_id: store_id }
-      });
-      if (paymentMethodRecord) {
-        paymentFlow = paymentMethodRecord.payment_flow || 'online';
+      const { data: pmRecord } = await tenantDb
+        .from('payment_methods')
+        .select('*')
+        .eq('code', selected_payment_method)
+        .eq('store_id', store_id)
+        .maybeSingle();
+
+      if (pmRecord) {
+        paymentMethodRecord = pmRecord;
+        paymentFlow = pmRecord.payment_flow || 'online';
         console.log(`🔍 Payment method "${selected_payment_method}" has flow: ${paymentFlow}`);
       }
     } catch (error) {
@@ -2331,7 +2338,6 @@ async function createPreliminaryOrder(session, orderData) {
   let validatedCustomerId = null;
   if (customer_id) {
     try {
-      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
       console.log('🔍 Looking up customer_id in database:', customer_id);
       console.log('🔍 Order email:', customer_email);
       const { data: customerExists } = await tenantDb
@@ -2368,9 +2374,6 @@ async function createPreliminaryOrder(session, orderData) {
   }
 
   console.log('🔍 Final validatedCustomerId to be used:', validatedCustomerId);
-
-  // Get tenant DB connection for customer lookups
-  const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
   let orderId = null;
 
