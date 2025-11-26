@@ -7,6 +7,73 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 /**
+ * Get active storefront for a store
+ * Priority: 1. Specific slug (preview), 2. Scheduled (within window), 3. Primary
+ *
+ * @param {Object} tenantDb - Tenant database connection
+ * @param {string} storeId - Store UUID
+ * @param {string|null} storefrontSlug - Specific storefront slug (for preview)
+ * @returns {Promise<Object|null>} Active storefront or null
+ */
+async function getActiveStorefront(tenantDb, storeId, storefrontSlug = null) {
+  const now = new Date().toISOString();
+
+  // 1. If specific storefront requested (preview mode), return it
+  if (storefrontSlug) {
+    const { data, error } = await tenantDb
+      .from('storefronts')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('slug', storefrontSlug)
+      .maybeSingle();
+
+    if (!error && data) {
+      console.log(`✅ Preview storefront: ${data.name} (${storefrontSlug})`);
+      return data;
+    }
+    console.warn(`⚠️ Requested storefront "${storefrontSlug}" not found, falling back to default`);
+  }
+
+  // 2. Check for scheduled storefront (within active window)
+  const { data: scheduled, error: schedError } = await tenantDb
+    .from('storefronts')
+    .select('*')
+    .eq('store_id', storeId)
+    .not('publish_start_at', 'is', null)
+    .lte('publish_start_at', now)
+    .order('publish_start_at', { ascending: false })
+    .limit(10); // Get all potentially active scheduled storefronts
+
+  if (!schedError && scheduled && scheduled.length > 0) {
+    // Filter to those still within their window (publish_end_at is null or >= now)
+    const activeScheduled = scheduled.find(s =>
+      s.publish_end_at === null || new Date(s.publish_end_at) >= new Date(now)
+    );
+
+    if (activeScheduled) {
+      console.log(`✅ Scheduled storefront active: ${activeScheduled.name}`);
+      return activeScheduled;
+    }
+  }
+
+  // 3. Fall back to primary storefront
+  const { data: primary, error: primaryError } = await tenantDb
+    .from('storefronts')
+    .select('*')
+    .eq('store_id', storeId)
+    .eq('is_primary', true)
+    .maybeSingle();
+
+  if (!primaryError && primary) {
+    console.log(`✅ Primary storefront: ${primary.name}`);
+    return primary;
+  }
+
+  // No storefront found (store might not have any yet)
+  return null;
+}
+
+/**
  * Get store by slug or custom domain - TENANT ONLY approach
  *
  * ARCHITECTURAL NOTE: This is a public route that receives a slug OR custom domain.
@@ -130,15 +197,15 @@ router.get('/', cacheMiddleware({
   keyGenerator: (req) => {
     const slug = req.query.slug || 'default';
     const lang = req.query.lang || 'en';
-    // Don't include session_id/user_id in cache key for better hit rate
-    // User-specific data (wishlist) is small and can be fetched separately
-    return `bootstrap:${slug}:${lang}`;
+    const storefront = req.query.storefront || 'primary';
+    // Include storefront in cache key for different theme variants
+    return `bootstrap:${slug}:${lang}:${storefront}`;
   },
-  // Skip caching if user is authenticated (personalized data)
-  condition: (req) => !req.headers.authorization
+  // Skip caching if user is authenticated (personalized data) or previewing specific storefront
+  condition: (req) => !req.headers.authorization && !req.query.storefront
 }), async (req, res) => {
   try {
-    const { slug, lang, session_id, user_id } = req.query;
+    const { slug, lang, session_id, user_id, storefront: storefrontSlug } = req.query;
     const authHeader = req.headers.authorization;
 
     // Validate required parameters
@@ -192,6 +259,33 @@ router.get('/', cacheMiddleware({
         success: false,
         message: 'Store not found'
       });
+    }
+
+    // Get active storefront (handles preview, scheduling, and primary fallback)
+    let activeStorefront = null;
+    try {
+      activeStorefront = await getActiveStorefront(tenantDb, store.id, storefrontSlug);
+
+      // If storefront exists, merge settings_override into store.settings
+      if (activeStorefront && activeStorefront.settings_override) {
+        const originalSettings = store.settings || {};
+        const overrideSettings = activeStorefront.settings_override || {};
+
+        // Deep merge: storefront settings override store settings
+        store.settings = {
+          ...originalSettings,
+          ...overrideSettings,
+          // Deep merge theme object if both exist
+          theme: {
+            ...(originalSettings.theme || {}),
+            ...(overrideSettings.theme || {})
+          }
+        };
+
+        console.log(`✅ Merged storefront settings: ${activeStorefront.name}`);
+      }
+    } catch (err) {
+      console.warn('⚠️ Failed to get storefront, using default store settings:', err.message);
     }
 
     // Execute all other queries in parallel using tenantDb connection
@@ -507,6 +601,14 @@ router.get('/', cacheMiddleware({
       success: true,
       data: {
         store: store,
+        storefront: activeStorefront ? {
+          id: activeStorefront.id,
+          name: activeStorefront.name,
+          slug: activeStorefront.slug,
+          is_primary: activeStorefront.is_primary,
+          publish_start_at: activeStorefront.publish_start_at,
+          publish_end_at: activeStorefront.publish_end_at
+        } : null,
         languages: languagesResult || [],
         translations: {
           language: language,
@@ -523,6 +625,7 @@ router.get('/', cacheMiddleware({
           categoriesCount: categoriesResult.count || 0,
           wishlistCount: wishlistResult?.length || 0,
           authenticated: !!authenticatedUser,
+          isPreviewMode: !!storefrontSlug,
           timestamp: new Date().toISOString()
         }
       }

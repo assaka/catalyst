@@ -59,6 +59,7 @@ export { default as UptimeReport } from './admin/UptimeReport';
 export { default as TeamPage } from './admin/TeamPage';
 export { default as StoreOnboarding } from './admin/StoreOnboarding';
 export { default as ThemeLayout } from './admin/ThemeLayout';
+export { default as Storefronts } from './admin/Storefronts';
 export { default as Translations } from './admin/Translations';
 export { default as Plugins } from './admin/Plugins';
 export { default as AIStudio } from './admin/AIStudio';

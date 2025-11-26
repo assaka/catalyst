@@ -53,8 +53,12 @@ export function useStoreSlugById(storeId) {
  * @returns {Object} React Query result with bootstrap data
  */
 export function useStoreBootstrap(storeSlug, language) {
+  // Check for storefront preview in URL query params
+  const urlParams = new URLSearchParams(window.location.search);
+  const storefrontSlug = urlParams.get('storefront');
+
   return useQuery({
-    queryKey: ['bootstrap', storeSlug, language],
+    queryKey: ['bootstrap', storeSlug, language, storefrontSlug],
     queryFn: async () => {
       if (!storeSlug) {
         throw new Error('Store slug is required for bootstrap');
@@ -72,6 +76,11 @@ export function useStoreBootstrap(storeSlug, language) {
         params.append('session_id', sessionId);
       }
 
+      // Add storefront preview parameter if present in URL
+      if (storefrontSlug) {
+        params.append('storefront', storefrontSlug);
+      }
+
       // Use getPublic (not .get) - returns data directly, not wrapped in response.data
       const result = await storefrontApiClient.getPublic(`storefront/bootstrap?${params.toString()}`);
 
@@ -82,7 +91,7 @@ export function useStoreBootstrap(storeSlug, language) {
 
       return result.data;
     },
-    staleTime: 900000, // 15 minutes - global data rarely changes
+    staleTime: storefrontSlug ? 0 : 900000, // No cache when previewing, 15 minutes otherwise
     gcTime: 1800000, // 30 minutes
     refetchOnMount: false,
     refetchOnWindowFocus: false,

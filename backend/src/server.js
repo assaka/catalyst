@@ -125,6 +125,7 @@ const serviceCreditCostsRoutes = require('./routes/service-credit-costs');
 const emailTemplatesRoutes = require('./routes/email-templates');
 const pdfTemplatesRoutes = require('./routes/pdf-templates');
 const brevoOAuthRoutes = require('./routes/brevo-oauth');
+const storefrontsRoutes = require('./routes/storefronts');
 
 // Import usage tracking middleware
 const {
@@ -1391,6 +1392,7 @@ app.use('/api/background-jobs', backgroundJobRoutes); // Background job manageme
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
 app.use('/api/extensions', extensionsRoutes); // Modern extension system API with hook-based architecture
 app.use('/api/slot-configurations', slotConfigurationRoutes); // Slot configuration versioning API
+app.use('/api/storefronts', storefrontsRoutes); // Multiple storefronts per store (themes, campaigns)
 // Master-Tenant Architecture Routes (NEW - replaces old systems)
 const storesMasterTenantRoutes = require('./routes/storesMasterTenant');
 const creditsMasterTenantRoutes = require('./routes/creditsMasterTenant');

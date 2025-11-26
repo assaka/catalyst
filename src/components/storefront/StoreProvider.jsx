@@ -145,6 +145,7 @@ export const StoreProvider = ({ children }) => {
         const finalStoreData = {
           // Layer 1 - From bootstrap
           store: { ...store, settings: mergedSettings },
+          storefront: bootstrap.storefront || null,
           languages: bootstrap.languages || [],
           categories: bootstrap.categories || [],
           seoSettings: bootstrap.seoSettings || {},
@@ -243,6 +244,10 @@ export const StoreProvider = ({ children }) => {
   }, []);
 
   // Context value
+  // Check for storefront preview mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const isPreviewMode = !!urlParams.get('storefront');
+
   const value = {
     store: storeData?.store,
     settings: storeData?.store?.settings || {},
@@ -256,6 +261,10 @@ export const StoreProvider = ({ children }) => {
     wishlist: storeData?.wishlist || [],
     user: storeData?.user,
     headerSlotConfig: storeData?.headerSlotConfig,
+
+    // Storefront variant support
+    storefront: storeData?.storefront || null,
+    isPreviewMode,
 
     // Layer 3 - Additional data
     taxes: storeData?.taxes || [],

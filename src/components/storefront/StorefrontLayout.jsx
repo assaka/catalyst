@@ -25,6 +25,7 @@ import SeoHeadManager from './SeoHeadManager';
 import DataLayerManager from '@/components/storefront/DataLayerManager';
 import CookieConsentBanner from '@/components/storefront/CookieConsentBanner';
 import RoleSwitcher from '@/components/admin/RoleSwitcher';
+import StorefrontPreviewBanner from '@/components/storefront/StorefrontPreviewBanner';
 import { lazy, Suspense } from 'react';
 
 // Lazy load heatmap tracker to defer it (improves LCP)
@@ -341,6 +342,7 @@ export default function StorefrontLayout({ children }) {
     return (
         <SeoSettingsProvider>
             <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800 relative">
+                <StorefrontPreviewBanner />
                 <RoleSwitcher />
                 <DataLayerManager />
 
