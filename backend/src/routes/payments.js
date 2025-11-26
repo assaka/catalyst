@@ -1443,12 +1443,13 @@ router.post('/webhook', async (req, res) => {
           finalOrder = order;
         }
 
-        // Send order success email (only if status was not already updated by preliminary order)
-        // If statusAlreadyUpdated is true, email was already sent during preliminary order creation
+        // Send order success email
+        // NOTE: Email is NOT sent during preliminary order creation, so we should send it here
+        // The statusAlreadyUpdated flag is used to track if the order was already in processing/paid state
+        // but we still need to send email if it hasn't been sent yet
         if (finalOrder && finalOrder.customer_email) {
-          if (statusAlreadyUpdated) {
-            console.log('✅ Order success email already sent during preliminary order creation, skipping duplicate');
-          } else {
+          // Always send email - the email service will log it and we can check logs to prevent duplicates
+          {
             console.log('📧 Sending order success email to:', finalOrder.customer_email);
 
             const emailService = require('../services/email-service');
@@ -1747,7 +1748,9 @@ router.post('/webhook', async (req, res) => {
               // Don't fail the webhook if email fails
             });
           }
-        } else {
+        }
+
+        if (!finalOrder || !finalOrder.customer_email) {
           console.log('⚠️ Skipping order success email - no customer email found');
         }
 

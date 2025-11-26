@@ -222,7 +222,80 @@ router.post('/finalize-order', async (req, res) => {
 
     // Check if already finalized
     if (order.status === 'processing' && order.payment_status === 'paid') {
-      console.log('✅ Order already finalized, skipping duplicate processing');
+      console.log('✅ Order already finalized, checking if email was sent...');
+
+      // Check if order email was already sent by looking at email_send_logs
+      let emailAlreadySent = false;
+      try {
+        const { data: emailLog } = await tenantDb
+          .from('email_send_logs')
+          .select('id')
+          .eq('recipient_email', order.customer_email)
+          .like('metadata->templateIdentifier', 'order_success_email')
+          .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
+          .maybeSingle();
+
+        if (emailLog) {
+          emailAlreadySent = true;
+          console.log('✅ Order email already sent, skipping duplicate');
+        }
+      } catch (emailCheckError) {
+        console.log('⚠️ Could not check email logs, will send email to be safe');
+      }
+
+      // Send email if not already sent
+      if (!emailAlreadySent && order.customer_email) {
+        console.log('📧 Order was finalized but email not sent yet, sending now...');
+        try {
+          // Get store info
+          const { data: store } = await masterDbClient
+            .from('stores')
+            .select('*')
+            .eq('id', order.store_id)
+            .maybeSingle();
+
+          // Get order items
+          const { data: orderItems } = await tenantDb
+            .from('sales_order_items')
+            .select('*')
+            .eq('order_id', order.id);
+
+          // Get customer info
+          let customer = null;
+          if (order.customer_id) {
+            const { data } = await tenantDb
+              .from('customers')
+              .select('*')
+              .eq('id', order.customer_id)
+              .maybeSingle();
+            customer = data;
+          }
+
+          const customerName = customer
+            ? `${customer.first_name} ${customer.last_name}`
+            : (order.shipping_address?.full_name || order.shipping_address?.name || 'Customer');
+          const [firstName, ...lastNameParts] = customerName.split(' ');
+          const lastName = lastNameParts.join(' ') || '';
+
+          const completeOrder = { ...order, OrderItems: orderItems || [], Store: store };
+
+          await emailService.sendTransactionalEmail(store_id, 'order_success_email', {
+            recipientEmail: order.customer_email,
+            customer: customer || {
+              first_name: firstName,
+              last_name: lastName,
+              email: order.customer_email
+            },
+            order: completeOrder,
+            store: store,
+            languageCode: 'en'
+          });
+          console.log('✅ Order confirmation email sent successfully');
+        } catch (emailError) {
+          console.error('⚠️ Failed to send order email:', emailError.message);
+        }
+      }
+
       return res.json({
         success: true,
         message: 'Order already finalized',
