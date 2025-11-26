@@ -81,11 +81,13 @@ async function getStoreBySlug(slug) {
   const tenantDb = await ConnectionManager.getStoreConnection(masterStore.id);
 
   // Step 3: Fetch full store data from tenant DB (authoritative source)
-  // Note: Only query by id, not slug - because slug param might be a custom domain
+  // Note: Each tenant typically has one active store. We query by is_active
+  // rather than by ID since masterStore.id is the tenant identifier, not the store's UUID
   const { data: store, error: tenantError } = await tenantDb
     .from('stores')
     .select('*')
-    .eq('id', masterStore.id)
+    .eq('is_active', true)
+    .limit(1)
     .maybeSingle();
 
   if (tenantError || !store) {

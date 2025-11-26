@@ -143,11 +143,12 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), async (req
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Check if store exists
+    // Check if store exists - query by is_active since store_id is tenant identifier, not store UUID
     const { data: store, error: storeError } = await tenantDb
       .from('stores')
       .select('id')
-      .eq('id', store_id)
+      .eq('is_active', true)
+      .limit(1)
       .maybeSingle();
 
     if (storeError || !store) {

@@ -1486,11 +1486,13 @@ router.get('/entity-stats', authMiddleware, async (req, res) => {
 
     // Handle Stock Labels separately (stored in store.settings.stock_settings.translations)
     try {
+      // Query by is_active since store_id is tenant identifier, not store UUID
       const { data: store, error: storeError } = await tenantDb
         .from('stores')
         .select('id, settings')
-        .eq('id', store_id)
-        .single();
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
 
       if (storeError) throw storeError;
 

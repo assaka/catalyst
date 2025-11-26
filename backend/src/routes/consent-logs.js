@@ -57,12 +57,13 @@ router.post('/', [
     // Get tenant connection
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Verify store exists
+    // Verify store exists - query by is_active since store_id is tenant identifier, not store UUID
     const { data: store, error: storeError } = await tenantDb
       .from('stores')
       .select('id')
-      .eq('id', store_id)
-      .single();
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
 
     if (storeError || !store) {
       return res.status(404).json({

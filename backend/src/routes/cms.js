@@ -588,11 +588,13 @@ router.post('/create-system-pages', async (req, res) => {
     let storeName = store_name;
     if (!storeName) {
       const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+      // Query by is_active rather than by ID - store_id is tenant identifier, not store UUID
       const { data: storeData } = await tenantDb
         .from('stores')
         .select('name')
-        .eq('id', store_id)
-        .single();
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
 
       storeName = storeData?.name || 'Our Store';
     }

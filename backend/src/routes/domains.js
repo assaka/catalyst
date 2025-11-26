@@ -24,11 +24,13 @@ router.get('/storefront-url', async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+    // Query by is_active since storeId is tenant identifier, not store UUID
     const { data: store } = await tenantDb
       .from('stores')
       .select('*')
-      .eq('id', storeId)
-      .single();
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -107,11 +109,13 @@ router.get('/', async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+    // Query by is_active since storeId is tenant identifier, not store UUID
     const { data: store } = await tenantDb
       .from('stores')
       .select('*')
-      .eq('id', storeId)
-      .single();
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -185,11 +189,13 @@ router.post('/', async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+    // Query by is_active since storeId is tenant identifier, not store UUID
     const { data: store } = await tenantDb
       .from('stores')
       .select('*')
-      .eq('id', storeId)
-      .single();
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -274,11 +280,13 @@ router.post('/:domain_id/verify', async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+    // Query by is_active since storeId is tenant identifier, not store UUID
     const { data: store } = await tenantDb
       .from('stores')
       .select('*')
-      .eq('id', storeId)
-      .single();
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -358,11 +366,13 @@ router.post('/:domain_id/ssl/setup', async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+    // Query by is_active since storeId is tenant identifier, not store UUID
     const { data: store } = await tenantDb
       .from('stores')
       .select('*')
-      .eq('id', storeId)
-      .single();
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
     if (!store) {
       return res.status(404).json({
         success: false,
@@ -445,11 +455,13 @@ router.delete('/:domain_id', async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+    // Query by is_active since storeId is tenant identifier, not store UUID
     const { data: store } = await tenantDb
       .from('stores')
       .select('*')
-      .eq('id', storeId)
-      .single();
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
     if (!store) {
       return res.status(404).json({
         success: false,

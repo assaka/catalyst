@@ -137,12 +137,13 @@ router.get('/:storeId', async (req, res) => {
     // Get tenant database connection
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    // Find the store
+    // Find the store - query by is_active since storeId is tenant identifier, not store UUID
     const { data: store, error } = await tenantDb
       .from('stores')
       .select('custom_domain, slug')
-      .eq('id', storeId)
-      .single();
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
 
     if (error || !store) {
       console.warn(`[Sitemap] Store not found: ${storeId}`);

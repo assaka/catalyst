@@ -14,11 +14,13 @@ router.get('/stores/:storeId/default-mediastorage-provider',
       // Get tenant connection
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+      // Query by is_active since storeId is tenant identifier, not store UUID
       const { data: store } = await tenantDb
         .from('stores')
         .select('*')
-        .eq('id', storeId)
-        .single();
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
 
       if (!store) {
         return res.status(404).json({
@@ -72,11 +74,13 @@ router.post('/stores/:storeId/default-mediastorage-provider',
       // Get tenant connection
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+      // Query by is_active since storeId is tenant identifier, not store UUID
       const { data: store } = await tenantDb
         .from('stores')
         .select('*')
-        .eq('id', storeId)
-        .single();
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
 
       if (!store) {
         return res.status(404).json({
@@ -96,14 +100,14 @@ router.post('/stores/:storeId/default-mediastorage-provider',
       console.log('Current settings before update:', currentSettings);
       console.log('Updating store settings with:', updatedSettings);
 
-      // Update the store with new settings
+      // Update the store with new settings - use store.id (UUID) from the query result
       await tenantDb
         .from('stores')
         .update({
           settings: updatedSettings,
           updated_at: new Date().toISOString()
         })
-        .eq('id', storeId);
+        .eq('id', store.id);
 
       console.log('Settings after save:', updatedSettings);
 
@@ -133,11 +137,13 @@ router.delete('/stores/:storeId/default-mediastorage-provider',
       // Get tenant connection
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+      // Query by is_active since storeId is tenant identifier, not store UUID
       const { data: store } = await tenantDb
         .from('stores')
         .select('*')
-        .eq('id', storeId)
-        .single();
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
 
       if (!store) {
         return res.status(404).json({
@@ -152,14 +158,14 @@ router.delete('/stores/:storeId/default-mediastorage-provider',
       delete updatedSettings.default_mediastorage_provider;
       delete updatedSettings.default_mediastorage_provider_updated_at;
 
-      // Update the store with new settings
+      // Update the store with new settings - use store.id (UUID) from the query result
       await tenantDb
         .from('stores')
         .update({
           settings: updatedSettings,
           updated_at: new Date().toISOString()
         })
-        .eq('id', storeId);
+        .eq('id', store.id);
 
       res.json({
         success: true,
