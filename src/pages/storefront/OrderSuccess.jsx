@@ -174,6 +174,9 @@ export default function OrderSuccess() {
                   source: 'OrderSuccess'
                 }
               }));
+
+              // Remove applied coupon from localStorage
+              localStorage.removeItem('applied_coupon');
             } catch (error) {
               console.error('Failed to clear cart after order:', error);
               // Don't show error to user as order was successful
@@ -706,7 +709,6 @@ export default function OrderSuccess() {
                               {t('success.welcome_message', settings)} <strong>{order.customer_email}</strong>
                             </p>
                             <div className="text-sm space-y-1 mt-3">
-                              <p>✅ {t('success.auto_logged_in', settings)}</p>
                               <p>✅ {t('success.welcome_email_sent', settings)}</p>
                               <p>✅ {t('success.addresses_saved', settings)}</p>
                               <p>✅ {t('success.track_profile', settings)}</p>
