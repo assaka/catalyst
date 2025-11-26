@@ -82,6 +82,13 @@ async function initializeDatabasePlugins() {
     // Only load hooks, events, and scripts on storefront (not on plugins management page)
     const isStorefrontContext = !window.location.pathname.includes('/plugins');
 
+    // Helper to strip ES module syntax for eval compatibility
+    const makeEvalSafe = (code) => {
+      if (!code) return code;
+      // Remove 'export default ' from the beginning
+      return code.replace(/^\s*export\s+default\s+/, '');
+    };
+
     // Process plugins - hooks and events are ALREADY in the response!
     // No need to fetch each plugin individually
     const loadPromise = Promise.all(
@@ -92,7 +99,8 @@ async function initializeDatabasePlugins() {
           plugin.hooks.forEach(hook => {
             try {
               if (hook.handler_code && hook.enabled !== false) {
-                const handlerFn = eval(`(${hook.handler_code})`);
+                const safeCode = makeEvalSafe(hook.handler_code);
+                const handlerFn = eval(`(${safeCode})`);
                 hookSystem.register(hook.hook_name, handlerFn);
               }
             } catch (error) {
@@ -107,7 +115,8 @@ async function initializeDatabasePlugins() {
           plugin.events.forEach(event => {
             try {
               if (event.listener_code && event.enabled !== false) {
-                const listenerFn = eval(`(${event.listener_code})`);
+                const safeCode = makeEvalSafe(event.listener_code);
+                const listenerFn = eval(`(${safeCode})`);
                 eventSystem.on(event.event_name, listenerFn);
               }
             } catch (error) {
