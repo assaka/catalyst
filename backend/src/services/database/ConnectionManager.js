@@ -294,23 +294,8 @@ class ConnectionManager {
       throw new Error(`No database configured for store ${storeId}`);
     }
 
-    console.log(`🔧 Store DB config for ${storeId}:`, {
-      database_type: storeDb.database_type,
-      has_encrypted_credentials: !!storeDb.connection_string_encrypted
-    });
-
     // Decrypt credentials
     const credentials = decryptDatabaseCredentials(storeDb.connection_string_encrypted);
-
-    // Log connection details (sanitized - no password)
-    console.log(`🔧 Decrypted credentials for ${storeId}:`, {
-      hasConnectionString: !!credentials.connectionString,
-      host: credentials.host || 'from connection string',
-      port: credentials.port || 'default',
-      database: credentials.database || 'from connection string',
-      username: credentials.username || 'from connection string',
-      ssl: credentials.ssl
-    });
 
     // Create Sequelize instance for the tenant database
     let sequelize;
@@ -318,10 +303,6 @@ class ConnectionManager {
       // Build connection string
       const connectionString = credentials.connectionString ||
         `postgresql://${credentials.username}:${credentials.password}@${credentials.host}:${credentials.port || 5432}/${credentials.database}`;
-
-      // Log sanitized connection string (hide password)
-      const sanitizedUrl = connectionString.replace(/:([^:@]+)@/, ':****@');
-      console.log(`🔧 Connection string for ${storeId}:`, sanitizedUrl);
 
       sequelize = new Sequelize(connectionString, {
         dialect: 'postgres',
