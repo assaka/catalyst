@@ -838,22 +838,25 @@ If you didn''t create an account at {{store_name}}, please ignore this email.
 Best regards,
 {{store_name}} Team',
 '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <h2 style="color: #333;">Verify Your Email</h2>
-  <p>Hi {{customer_first_name}},</p>
-  <p>Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:</p>
-  <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px;">
-    <h1 style="font-size: 36px; letter-spacing: 8px; color: #4F46E5; font-family: monospace; margin: 0;">
-      {{verification_code}}
-    </h1>
+  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Verify Your Email</h1>
   </div>
-  <p>This code will expire in <strong>15 minutes</strong>.</p>
-  <p style="color: #666; font-size: 14px;">If you didn''t create an account at {{store_name}}, please ignore this email.</p>
-  <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-  <p style="color: #999; font-size: 12px;">
-    Best regards,<br>
-    {{store_name}} Team<br>
-    <a href="{{store_url}}">{{store_url}}</a>
-  </p>
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:</p>
+    <div style="background-color: white; padding: 30px; border-radius: 8px; margin: 20px 0; text-align: center;">
+      <p style="color: #666; margin: 0 0 10px 0; font-size: 14px;">Your verification code:</p>
+      <h1 style="font-size: 42px; letter-spacing: 8px; color: #667eea; font-family: monospace; margin: 0;">
+        {{verification_code}}
+      </h1>
+    </div>
+    <p style="text-align: center; color: #666;">This code will expire in <strong>15 minutes</strong>.</p>
+    <p style="color: #999; font-size: 14px; text-align: center;">If you didn''t create an account at {{store_name}}, please ignore this email.</p>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team
+    </p>
+  </div>
 </div>', '2025-11-26 10:00:00.000+00', '2025-11-26 10:00:00.000+00')
 ON CONFLICT DO NOTHING;
 

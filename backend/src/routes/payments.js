@@ -3046,6 +3046,47 @@ async function createOrderFromCheckoutSession(session) {
       }
 
       console.log('Created order item with ID:', createdItem.id);
+
+      // Reduce stock for this product (since we're using direct Supabase insert, not Sequelize model)
+      try {
+        const { data: product } = await tenantDb
+          .from('products')
+          .select('id, sku, manage_stock, stock_quantity, infinite_stock, allow_backorders, purchase_count')
+          .eq('id', productData.product_id)
+          .single();
+
+        if (product && product.manage_stock && !product.infinite_stock) {
+          const newStockQuantity = product.stock_quantity - productData.quantity;
+
+          if (newStockQuantity < 0 && !product.allow_backorders) {
+            console.warn(`⚠️ Insufficient stock for product ${product.sku}: requested ${productData.quantity}, available ${product.stock_quantity}`);
+          }
+
+          await tenantDb
+            .from('products')
+            .update({
+              stock_quantity: Math.max(0, newStockQuantity),
+              purchase_count: (product.purchase_count || 0) + 1,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', product.id);
+
+          console.log(`✅ Stock reduced for product ${product.sku}: ${product.stock_quantity} -> ${Math.max(0, newStockQuantity)}`);
+        } else if (product && product.infinite_stock) {
+          // Still update purchase count for infinite stock products
+          await tenantDb
+            .from('products')
+            .update({
+              purchase_count: (product.purchase_count || 0) + 1,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', product.id);
+          console.log(`✅ Purchase count updated for infinite stock product ${product.sku}`);
+        }
+      } catch (stockError) {
+        console.error('Error reducing stock for order item:', stockError);
+        // Don't fail the order if stock reduction fails
+      }
     }
 
     console.log(`Order created successfully: ${order.order_number}`);
