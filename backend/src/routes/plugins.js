@@ -93,22 +93,39 @@ router.get('/', async (req, res) => {
 router.get('/marketplace', async (req, res) => {
   try {
     console.log('🔍 Marketplace API called');
-    
+
     // Ensure plugin manager is initialized
     if (!pluginManager.isInitialized) {
       console.log('⚠️ Plugin manager not initialized, initializing now...');
-      await pluginManager.initialize();
+      try {
+        await pluginManager.initialize();
+        console.log('✅ Plugin manager initialized successfully');
+      } catch (initError) {
+        console.error('❌ Plugin manager initialization failed:', initError.message);
+        console.error('❌ Init error stack:', initError.stack);
+        // Continue anyway - marketplace might still work
+      }
     }
-    
+
+    // Check if marketplace exists
+    if (!pluginManager.marketplace) {
+      console.error('❌ pluginManager.marketplace is undefined!');
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
+
     const marketplacePlugins = Array.from(pluginManager.marketplace.values());
     console.log(`🏪 Returning ${marketplacePlugins.length} marketplace plugins`);
-    
+
     res.json({
       success: true,
       data: marketplacePlugins
     });
   } catch (error) {
-    console.error('❌ Marketplace API error:', error);
+    console.error('❌ Marketplace API error:', error.message);
+    console.error('❌ Marketplace error stack:', error.stack);
     res.status(500).json({
       success: false,
       error: error.message
