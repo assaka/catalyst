@@ -318,8 +318,10 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         // Fallback to basic defaults if SEO settings don't provide them
         // Use title separator from settings, default to |
         const titleSeparator = seoSettings?.title_separator || '|';
-        const basicDefaultTitle = store?.name ? `${pageTitle || ''} ${titleSeparator} ${store.name}`.trim() : (pageTitle || store?.name || '');
-        const basicDefaultDescription = pageDescription || store?.description || `Welcome to ${store?.name || 'our store'}. Discover quality products and excellent service.`;
+        const basicDefaultTitle = store?.name
+            ? (pageTitle ? `${pageTitle} ${titleSeparator} ${store.name}` : store.name)
+            : (pageTitle || '');
+        const basicDefaultDescription = pageDescription || store?.description || (store?.name ? `Welcome to ${store.name}. Discover quality products and excellent service.` : 'Discover quality products and excellent service.');
 
         /**
          * PRIORITY CASCADE: META TAGS

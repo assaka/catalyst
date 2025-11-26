@@ -131,7 +131,7 @@ export default function Homepage() {
       <SeoHeadManager
         pageType={searchQuery ? "search" : "homepage"}
         pageData={store}
-        pageTitle={searchQuery ? `Search results for "${searchQuery}"` : "Welcome to our Store"}
+        pageTitle={searchQuery ? `Search results for "${searchQuery}"` : ''}
       />
       
       <div className="max-w-7xl mx-auto">
