@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
 import { Auth } from '@/api/entities';
-import { handleLogout } from '@/utils/auth';
+import { handleLogout, getUserDataForRole } from '@/utils/auth';
 import { StorefrontCategory } from '@/api/storefront-entities';
 import { CustomerAuth } from '@/api/storefront-entities';
 import { DeliverySettings, User, apiClient } from '@/api/entities';
@@ -333,7 +333,10 @@ export default function StorefrontLayout({ children }) {
     const cookieConsentSettings = settings?.cookie_consent;
 
     // Check if store is paused (published === false)
-    const isStorePaused = store?.published === false;
+    // But don't show paused modal if store owner is logged in viewing their own store
+    const storeOwnerData = getUserDataForRole('store_owner') || getUserDataForRole('admin');
+    const isStoreOwnerViewingOwnStore = storeOwnerData && storeOwnerData.store_id === store?.id;
+    const isStorePaused = store?.published === false && !isStoreOwnerViewingOwnStore;
 
     return (
         <SeoSettingsProvider>
