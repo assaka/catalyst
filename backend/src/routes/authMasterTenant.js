@@ -457,6 +457,7 @@ router.post('/upgrade-guest', async (req, res) => {
         .from('customers')
         .update({
           password: hashedPassword,
+          customer_type: 'registered', // Mark as registered
           email_verified: false,
           updated_at: new Date().toISOString()
         })
@@ -520,6 +521,7 @@ router.post('/upgrade-guest', async (req, res) => {
           last_name: lastName,
           phone: phone,
           role: 'customer',
+          customer_type: 'registered', // Mark as registered since they have a password
           store_id: store_id,
           is_active: true,
           email_verified: false,
@@ -541,18 +543,47 @@ router.post('/upgrade-guest', async (req, res) => {
       console.log('✅ Created new customer from guest order:', finalCustomer.id);
     }
 
-    // Link all orders with this email to the customer
+    // Link all orders with this email to the customer and update stats
     try {
-      const { data: linkedOrders, error: linkError } = await tenantDb
+      // First, get all unlinked orders for this email to calculate totals
+      const { data: unlinkedOrders, error: fetchError } = await tenantDb
         .from('sales_orders')
-        .update({ customer_id: finalCustomer.id })
+        .select('id, total_amount')
         .eq('customer_email', email)
         .eq('store_id', store_id)
-        .is('customer_id', null)
-        .select('id');
+        .is('customer_id', null);
 
-      if (!linkError && linkedOrders) {
-        console.log(`✅ Linked ${linkedOrders.length} orders to customer ${finalCustomer.id}`);
+      if (!fetchError && unlinkedOrders && unlinkedOrders.length > 0) {
+        // Link the orders
+        const { error: linkError } = await tenantDb
+          .from('sales_orders')
+          .update({ customer_id: finalCustomer.id })
+          .eq('customer_email', email)
+          .eq('store_id', store_id)
+          .is('customer_id', null);
+
+        if (!linkError) {
+          // Calculate stats from linked orders
+          const orderCount = unlinkedOrders.length;
+          const totalSpent = unlinkedOrders.reduce((sum, order) => {
+            return sum + parseFloat(order.total_amount || 0);
+          }, 0);
+
+          // Update customer stats
+          const currentTotalOrders = parseInt(finalCustomer.total_orders || 0);
+          const currentTotalSpent = parseFloat(finalCustomer.total_spent || 0);
+
+          await tenantDb
+            .from('customers')
+            .update({
+              total_orders: currentTotalOrders + orderCount,
+              total_spent: currentTotalSpent + totalSpent,
+              last_order_date: new Date().toISOString()
+            })
+            .eq('id', finalCustomer.id);
+
+          console.log(`✅ Linked ${orderCount} orders to customer ${finalCustomer.id}, total spent: $${totalSpent.toFixed(2)}`);
+        }
       }
     } catch (orderLinkError) {
       // Don't fail the account creation if order linking fails
