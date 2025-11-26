@@ -698,37 +698,7 @@ The {{store_name}} Team', '{{email_header}}
         <a href="{{store_url}}">{{store_url}}</a>
       </p>
     </div>
-{{email_footer}}', '2025-10-31 21:21:14.762+00', '2025-11-06 06:11:10.628+00'), ('5d090a84-d8cf-445b-ae40-edc1a7ca926b', '8b9db3bd-8b38-4262-ac69-6dfc0d937a02', 'en', 'Credit Purchase Confirmation - {{credits_purchased}} Credits', 'Hi {{customer_first_name}},
-
-Thank you for your credit purchase!
-
-Purchase Details:
-- Credits Purchased: {{credits_purchased}}
-- Amount Paid: {{amount_usd}}
-- Current Balance: {{balance}} credits
-
-Your credits are ready to use!
-
-Best regards,
-The {{store_name}} Team', '<!DOCTYPE html>
-<html>
-<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Purchase Confirmed!</h1>
-    <p style="color: white; font-size: 18px;">+{{credits_purchased}} Credits</p>
-  </div>
-  <div style="background: #f8f9fa; padding: 30px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>Your credit purchase has been processed successfully!</p>
-    <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <p><strong>Credits Purchased:</strong> {{credits_purchased}}</p>
-      <p><strong>Amount Paid:</strong> {{amount_usd}}</p>
-      <p><strong>Current Balance:</strong> {{balance}} credits</p>
-    </div>
-    <p style="color: #999; font-size: 12px; text-align: center;">© {{current_year}} {{store_name}}</p>
-  </div>
-</body>
-</html>', '2025-10-31 21:21:14.762+00', '2025-11-06 06:11:10.628+00'), ('20229878-978d-4d65-84c7-5f4fa1b8357c', '365b5e11-7181-45e1-9426-3de098a6182d', 'en', 'Your order #{{order_number}} has been shipped!', null, '{{email_header}}
+{{email_footer}}', '2025-10-31 21:21:14.762+00', '2025-11-06 06:11:10.628+00'), ('20229878-978d-4d65-84c7-5f4fa1b8357c', '365b5e11-7181-45e1-9426-3de098a6182d', 'en', 'Your order #{{order_number}} has been shipped!', null, '{{email_header}}
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <h2 style="color: #333; margin-bottom: 10px;">Your Order Has Been Shipped!</h2>
               <p>Hi {{customer_first_name}},</p>
@@ -1611,6 +1581,7 @@ VALUES
   ('a0b7d960-4672-4179-bdd6-e3a621239a1d', 'common.terms_agreement', 'en', 'By signing in, you agree to our Terms of Service and Privacy Policy', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('9dee1130-2bd0-4bb0-87c0-edc0c85e2af3', 'common.total', 'en', 'Total', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('4a443dfe-0264-405f-9926-7673c68ba05e', 'common.welcome_back', 'en', 'Welcome Back', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('4a443dfe-0264-405f-9926-7673c68ba05e', 'common.welcome_back', 'en', 'Welcome Back', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('70f32b10-a77f-4d0e-afdc-5a61f9a7c620', 'stock.out_of_stock_label', 'en', 'Out of Stock', 'stock', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('8ccfc5c8-ff23-4d04-93ad-2773cec8de3f', 'order.placed', 'en', 'Placed', 'order', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('dbbd2464-a8b1-41b0-baa9-674863dd4be8', 'order.store', 'en', 'Store', 'order', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
@@ -1640,7 +1611,6 @@ VALUES
   ('e31519d3-a933-4456-af16-fa69117b8dfb', 'common.could_not_apply_coupon', 'en', 'Could not apply coupon', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('a0ef31ad-6b27-4edb-a1c1-6a73abad0ef1', 'cart.cart_empty', 'en', 'Cart is empty', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('fa5731ca-2345-4fc4-90c3-bd5938f22123', 'product.buy_now', 'en', 'Buy Now', 'product', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
-  ('d756673a-3f1f-4601-915a-18557f5e44cf', 'cart.cart_is_empty', 'en', 'Your cart is empty', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('25cf5b20-7dfc-46e0-8731-255c1139ea2d', 'product.quick_view', 'en', 'Quick View', 'product', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('bed23695-4d1d-4cb0-a551-c3b4e7fc0fbb', 'product.details', 'en', 'Product Details', 'product', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('02d1172b-1ae4-4fbf-b843-bc063eecde7b', 'product.reviews', 'en', 'Reviews', 'product', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
@@ -1769,6 +1739,9 @@ VALUES
   ('56a0de09-6fa6-4436-81df-844a46c894a9', 'success.download_invoice', 'en', 'Download Invoice', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('5e5c8ded-f671-47f5-b337-5af8fb234326', 'success.create_description', 'en', 'Create an account using your email', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('5e5c8ded-f671-47f5-b337-5af8fb234326', 'success.create_account', 'en', 'Create Account', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('5e5c8ded-f671-47f5-b337-5af8fb234326', 'success.existing_account', 'en', 'Existing Account', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('5e5c8ded-f671-47f5-b337-5af8fb234326', 'success.account_exists', 'en', 'An account exists for', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('5e5c8ded-f671-47f5-b337-5af8fb234326', 'success.login_prompt', 'en', 'Login to view your order history and track this order.', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('5e5c8ded-f671-47f5-b337-5af8fb234326', 'success.track_orders', 'en', 'to track your orders', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('9e004179-b010-4112-aa59-a28555176258', 'success.account_created', 'en', 'Your Account is Now Created!', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('52b4d7cf-b842-4c77-88b6-c5d92cf7df7d', 'success.welcome_message', 'en', 'Welcome! Your account has been successfully created with email:', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
@@ -1792,7 +1765,7 @@ VALUES
   ('5d9d2de9-125f-4b0e-8ea4-815ad7ba8d83', 'navigation.categories', 'en', 'Categories', 'navigation', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('e2442618-b5da-468f-bdcb-158c951f0534', 'navigation.customers', 'en', 'Customers', 'navigation', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('2e9796e7-dcf9-4ce4-9552-8e37a83b6012', 'navigation.settings', 'en', 'Settings', 'navigation', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
-  ('25bea726-37d4-4e4b-b9e8-e63395c68811', 'navigation.login', 'en', 'Login', 'navigation', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('25bea726-37d4-4e4b-b9e8-e63395c68811', 'common.login', 'en', 'Login', 'navigation', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('4e1c29bf-965d-4b98-b2de-8d31c3ca10ff', 'checkout.shipping_fee', 'en', 'Shipping Fee', 'checkout', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('b234b7df-092b-4a78-b8ce-6cbe3709169e', 'checkout.proceed_to_checkout', 'en', 'Proceed to Checkout', 'checkout', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('4007d86a-f667-42a3-9046-97fdaef89d21', 'account.address', 'en', 'Address', 'account', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),

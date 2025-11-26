@@ -148,7 +148,7 @@ export function CartSlotRenderer({
     if (id === 'empty_cart_title') {
       return wrapWithParentClass(
         <h2 className={className || "text-xl font-semibold text-gray-900 mb-2"} style={styles}>
-          {content || t('common.cart_is_empty', 'Your cart is empty')}
+          {content || t('common.cart_empty', 'Your cart is empty')}
         </h2>
       );
     }

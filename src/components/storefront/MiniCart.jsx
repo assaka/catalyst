@@ -352,7 +352,7 @@ export default function MiniCart({ iconVariant = 'outline' }) {
             <div className="text-center py-4">{t('common.loading', 'Loading...')}</div>
           ) : cartItems.length === 0 ? (
             <div className="text-center py-4 text-gray-500">
-              {t('cart.cart_is_empty', 'Your cart is empty')}
+              {t('cart.cart_empty', 'Your cart is empty')}
             </div>
           ) : (
             <>

@@ -128,7 +128,7 @@ export const cartConfig = {
     empty_cart_title: {
       id: 'empty_cart_title',
       type: 'text',
-      content: '{{t "cart.cart_is_empty"}}',
+      content: '{{t "cart.cart_empty"}}',
       className: 'w-fit text-xl font-semibold text-gray-900 mb-2 mx-auto',
       parentClassName: 'text-center',
       styles: {},

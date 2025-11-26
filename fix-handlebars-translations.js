@@ -29,7 +29,7 @@ const keyMappings = {
 
   // Cart/Checkout keys
   'my_cart': 'checkout.cart',
-  'your_cart_is_empty': 'common.your_cart_is_empty',
+  'your_cart_is_empty': 'common.cart_empty',
   'cart_empty_message': 'common.cart_empty_message',
   'continue_shopping': 'common.continue_shopping',
   'remove': 'common.remove',

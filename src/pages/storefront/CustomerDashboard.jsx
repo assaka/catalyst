@@ -202,7 +202,7 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate, settings, showConfi
                               <p><strong>{t('order.store', settings)}:</strong> {order.Store.name}</p>
                             )}
                             {order.payment_method && (
-                              <p><strong>{t('order.payment', settings)}:</strong> {order.payment_method}</p>
+                              <p><strong>{t('checkout.payment_method', settings)}:</strong> {order.payment_method}</p>
                             )}
                           </div>
                         </div>
