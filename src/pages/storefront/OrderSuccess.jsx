@@ -330,6 +330,14 @@ export default function OrderSuccess() {
             // Don't show error to user as account was created successfully
           }
         }
+
+        // Redirect to email verification if required
+        if (result.data?.requiresVerification) {
+          const code = storeCode || store?.slug || store?.code;
+          setTimeout(() => {
+            navigate(`/public/${code}/verify-email?email=${encodeURIComponent(order.customer_email)}`);
+          }, 2000); // Show success message briefly before redirect
+        }
       }
 
     } catch (error) {

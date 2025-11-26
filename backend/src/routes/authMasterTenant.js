@@ -650,6 +650,34 @@ router.post('/upgrade-guest', async (req, res) => {
       console.error('❌ Order linking error:', orderLinkError);
     }
 
+    // Generate verification code and send email
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Update customer with verification code
+    await tenantDb
+      .from('customers')
+      .update({
+        email_verification_token: verificationCode,
+        password_reset_expires: verificationExpiry.toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', finalCustomer.id);
+
+    // Send verification email
+    try {
+      const emailService = require('../services/email-service');
+      await emailService.sendTransactionalEmail(store_id, 'verification_email', {
+        recipientEmail: email,
+        customer: finalCustomer,
+        verificationCode: verificationCode
+      });
+      console.log('📧 Verification email sent to:', email);
+    } catch (emailError) {
+      console.error('⚠️ Failed to send verification email:', emailError.message);
+      // Still continue - account was created
+    }
+
     // Generate token for auto-login
     const tokens = generateTokenPair({
       id: finalCustomer.id,
@@ -665,14 +693,15 @@ router.post('/upgrade-guest', async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Account created successfully',
+      message: 'Account created successfully. Please verify your email.',
       data: {
         user: customerWithoutPassword,
         customer: customerWithoutPassword,
         token: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         sessionRole: 'customer',
-        sessionContext: 'storefront'
+        sessionContext: 'storefront',
+        requiresVerification: true
       }
     });
   } catch (error) {
@@ -761,6 +790,31 @@ router.post('/customer/register', async (req, res) => {
         });
       }
 
+      // Generate verification code and send email
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      await tenantDb
+        .from('customers')
+        .update({
+          email_verification_token: verificationCode,
+          password_reset_expires: verificationExpiry.toISOString()
+        })
+        .eq('id', upgradedCustomer.id);
+
+      // Send verification email
+      try {
+        const emailService = require('../services/email-service');
+        await emailService.sendTransactionalEmail(store_id, 'verification_email', {
+          recipientEmail: email,
+          customer: upgradedCustomer,
+          verificationCode: verificationCode
+        });
+        console.log('📧 Verification email sent to:', email);
+      } catch (emailError) {
+        console.error('⚠️ Failed to send verification email:', emailError.message);
+      }
+
       // Generate token
       const tokens = generateTokenPair({
         id: upgradedCustomer.id,
@@ -775,13 +829,14 @@ router.post('/customer/register', async (req, res) => {
 
       return res.status(201).json({
         success: true,
-        message: 'Account created successfully',
+        message: 'Account created successfully. Please verify your email.',
         data: {
           user: customerWithoutPassword,
           token: tokens.accessToken,
           refreshToken: tokens.refreshToken,
           sessionRole: 'customer',
-          sessionContext: 'storefront'
+          sessionContext: 'storefront',
+          requiresVerification: true
         }
       });
     }
@@ -850,6 +905,31 @@ router.post('/customer/register', async (req, res) => {
       console.error('Order linking error:', linkError);
     }
 
+    // Generate verification code and send email
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await tenantDb
+      .from('customers')
+      .update({
+        email_verification_token: verificationCode,
+        password_reset_expires: verificationExpiry.toISOString()
+      })
+      .eq('id', newCustomer.id);
+
+    // Send verification email
+    try {
+      const emailService = require('../services/email-service');
+      await emailService.sendTransactionalEmail(store_id, 'verification_email', {
+        recipientEmail: email,
+        customer: newCustomer,
+        verificationCode: verificationCode
+      });
+      console.log('📧 Verification email sent to:', email);
+    } catch (emailError) {
+      console.error('⚠️ Failed to send verification email:', emailError.message);
+    }
+
     // Generate token
     const tokens = generateTokenPair({
       id: newCustomer.id,
@@ -864,13 +944,14 @@ router.post('/customer/register', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Account created successfully',
+      message: 'Account created successfully. Please verify your email.',
       data: {
         user: customerWithoutPassword,
         token: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         sessionRole: 'customer',
-        sessionContext: 'storefront'
+        sessionContext: 'storefront',
+        requiresVerification: true
       }
     });
   } catch (error) {
