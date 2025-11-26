@@ -857,6 +857,61 @@ Best regards,
 </div>', '2025-11-26 10:00:00.000+00', '2025-11-26 10:00:00.000+00')
 ON CONFLICT DO NOTHING;
 
+-- signup_email translation (welcome email after verification)
+INSERT INTO email_template_translations ("id", "email_template_id", "language_code", "subject", "template_content", "html_content", "created_at", "updated_at")
+SELECT
+  'a1b52211-ddca-40d1-ac14-4b3d84ba256d',
+  id,
+  'en',
+  'Welcome to {{store_name}}!',
+  'Hi {{customer_first_name}},
+
+Welcome to {{store_name}}! We are thrilled to have you with us.
+
+Your account has been successfully created and verified. You can now:
+- Browse our products
+- Track your orders
+- Save addresses for faster checkout
+- View your order history
+
+Login to your account: {{login_url}}
+
+Best regards,
+The {{store_name}} Team',
+  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Welcome to {{store_name}}!</h1>
+  </div>
+  <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>We are thrilled to have you with us! Your account has been successfully created and verified.</p>
+    <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">What you can do now:</h3>
+      <ul style="padding-left: 20px;">
+        <li>Browse our products</li>
+        <li>Track your orders</li>
+        <li>Save addresses for faster checkout</li>
+        <li>View your order history</li>
+      </ul>
+    </div>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{login_url}}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+        Login to Your Account
+      </a>
+    </div>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team
+    </p>
+  </div>
+</div>',
+  '2025-11-26 10:00:00.000+00',
+  '2025-11-26 10:00:00.000+00'
+FROM email_templates
+WHERE identifier = 'signup_email'
+LIMIT 1
+ON CONFLICT DO NOTHING;
+
 
 -- languages (15 rows)
 INSERT INTO languages (id, code, name, native_name, flag, is_rtl, is_active, is_default, translations, created_at, updated_at)

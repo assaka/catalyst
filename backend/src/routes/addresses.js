@@ -238,8 +238,11 @@ router.post('/', optionalAuth, async (req, res) => {
     console.log(`✅ User verified in ${tableName} table:`, req.user.id);
 
     // Set the correct foreign key field based on user role
+    // Remove fields that aren't part of customer_addresses table
+    const { session_id: _, store_id: __, ...cleanBody } = req.body;
+
     const addressData = {
-      ...req.body
+      ...cleanBody
     };
 
     if (isCustomer) {
