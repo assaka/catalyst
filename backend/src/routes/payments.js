@@ -1952,12 +1952,19 @@ router.post('/webhook', async (req, res) => {
                     .eq('status', 'sent')
                     .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
 
+                  console.log(`🔍 [${piRequestId}] Email logs found: ${emailLogs?.length || 0}`);
+
                   emailAlreadySent = emailLogs?.some(log =>
                     log.metadata?.templateIdentifier === 'order_success_email'
                   ) || false;
+
+                  console.log(`🔍 [${piRequestId}] Email already sent: ${emailAlreadySent}`);
                 } catch (e) {
-                  console.log(`⚠️ [${piRequestId}] Could not check email logs`);
+                  console.log(`⚠️ [${piRequestId}] Could not check email logs:`, e.message);
                 }
+
+                console.log(`🔍 [${piRequestId}] Customer email: "${order.customer_email}"`);
+                console.log(`🔍 [${piRequestId}] Will send email: ${!emailAlreadySent && !!order.customer_email}`);
 
                 if (!emailAlreadySent && order.customer_email) {
                   console.log(`📧 [${piRequestId}] Sending order confirmation email to: ${order.customer_email}`);
