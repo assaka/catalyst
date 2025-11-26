@@ -253,6 +253,11 @@ class EmailService {
         break;
     }
 
+    // Include orderId in variables for email log metadata (for duplicate detection)
+    if (data.orderId) {
+      variables.orderId = data.orderId;
+    }
+
     return await this.sendEmail(
       storeId,
       templateIdentifier,

@@ -255,10 +255,9 @@ router.post('/finalize-order', async (req, res) => {
     if (order.status === 'processing' && order.payment_status === 'paid') {
       console.log('✅ Order already finalized, checking if email was sent...');
 
-      // Check if order email was already sent by looking at email_send_logs
+      // Check if order email was already sent FOR THIS SPECIFIC ORDER
       let emailAlreadySent = false;
       try {
-        // Use containedBy for JSONB or just check recipient + recent time
         const { data: emailLogs } = await tenantDb
           .from('email_send_logs')
           .select('id, metadata')
@@ -266,17 +265,22 @@ router.post('/finalize-order', async (req, res) => {
           .eq('status', 'sent')
           .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()); // Last 24 hours
 
-        // Check if any of the logs are for order_success_email
+        console.log('🔍 Email logs found:', emailLogs?.length || 0);
+        console.log('🔍 Looking for order_id:', order.id);
+
+        // Check if any email was sent for THIS specific order (not just same recipient)
+        // Note: orderId is stored in metadata.variables.orderId
         if (emailLogs && emailLogs.length > 0) {
           emailAlreadySent = emailLogs.some(log =>
-            log.metadata?.templateIdentifier === 'order_success_email'
+            log.metadata?.templateIdentifier === 'order_success_email' &&
+            (log.metadata?.orderId === order.id || log.metadata?.variables?.orderId === order.id)
           );
         }
 
         if (emailAlreadySent) {
-          console.log('✅ Order email already sent, skipping duplicate');
+          console.log('✅ Order email already sent for this order, skipping duplicate');
         } else {
-          console.log('📧 No order email found in logs, will send email');
+          console.log('📧 No order email found for this order, will send email');
         }
       } catch (emailCheckError) {
         console.log('⚠️ Could not check email logs:', emailCheckError.message, '- will send email to be safe');
@@ -327,7 +331,8 @@ router.post('/finalize-order', async (req, res) => {
             },
             order: completeOrder,
             store: store,
-            languageCode: 'en'
+            languageCode: 'en',
+            orderId: order.id  // Include orderId for duplicate detection
           });
           console.log('✅ Order confirmation email sent successfully');
         } catch (emailError) {

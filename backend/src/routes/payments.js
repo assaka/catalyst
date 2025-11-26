@@ -1942,7 +1942,7 @@ router.post('/webhook', async (req, res) => {
                     .eq('id', order.id);
                 }
 
-                // Check if email was already sent
+                // Check if email was already sent FOR THIS SPECIFIC ORDER
                 let emailAlreadySent = false;
                 try {
                   const { data: emailLogs } = await tenantDb
@@ -1953,12 +1953,16 @@ router.post('/webhook', async (req, res) => {
                     .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
 
                   console.log(`🔍 [${piRequestId}] Email logs found: ${emailLogs?.length || 0}`);
+                  console.log(`🔍 [${piRequestId}] Looking for order_id: ${order.id}`);
 
+                  // Check if any email was sent for THIS specific order (not just same recipient)
+                  // Note: orderId is stored in metadata.variables.orderId
                   emailAlreadySent = emailLogs?.some(log =>
-                    log.metadata?.templateIdentifier === 'order_success_email'
+                    log.metadata?.templateIdentifier === 'order_success_email' &&
+                    (log.metadata?.orderId === order.id || log.metadata?.variables?.orderId === order.id)
                   ) || false;
 
-                  console.log(`🔍 [${piRequestId}] Email already sent: ${emailAlreadySent}`);
+                  console.log(`🔍 [${piRequestId}] Email already sent for this order: ${emailAlreadySent}`);
                 } catch (e) {
                   console.log(`⚠️ [${piRequestId}] Could not check email logs:`, e.message);
                 }
@@ -2017,7 +2021,8 @@ router.post('/webhook', async (req, res) => {
                     },
                     order: orderWithDetails,
                     store: storeData,
-                    languageCode: 'en'
+                    languageCode: 'en',
+                    orderId: order.id  // Include orderId for duplicate detection
                   }).then(() => {
                     console.log(`✅ [${piRequestId}] Order confirmation email sent!`);
                   }).catch(emailError => {
