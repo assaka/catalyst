@@ -626,6 +626,317 @@ router.post('/upgrade-guest', async (req, res) => {
 });
 
 /**
+ * POST /api/auth/customer/register
+ * Register a new customer in tenant database
+ * Public route - requires store_id in body
+ */
+router.post('/customer/register', async (req, res) => {
+  try {
+    const { email, password, first_name, last_name, phone, store_id } = req.body;
+
+    // Validate input
+    if (!email || !password || !first_name || !last_name || !store_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email, password, first name, last name, and store_id are required'
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password must be at least 6 characters long'
+      });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Check if customer exists
+    const { data: existingCustomer, error: findError } = await tenantDb
+      .from('customers')
+      .select('id, password')
+      .eq('email', email)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
+    if (findError) {
+      console.error('Error finding customer:', findError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to check existing customer'
+      });
+    }
+
+    if (existingCustomer) {
+      if (existingCustomer.password) {
+        return res.status(400).json({
+          success: false,
+          error: 'An account with this email already exists. Please login instead.'
+        });
+      }
+      // Guest customer exists - upgrade them instead
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const { data: upgradedCustomer, error: upgradeError } = await tenantDb
+        .from('customers')
+        .update({
+          first_name,
+          last_name,
+          phone,
+          password: hashedPassword,
+          customer_type: 'registered',
+          email_verified: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingCustomer.id)
+        .select()
+        .single();
+
+      if (upgradeError) {
+        console.error('Upgrade customer error:', upgradeError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to create account'
+        });
+      }
+
+      // Generate token
+      const tokens = generateTokenPair({
+        id: upgradedCustomer.id,
+        email: upgradedCustomer.email,
+        role: 'customer',
+        account_type: 'individual',
+        first_name: upgradedCustomer.first_name,
+        last_name: upgradedCustomer.last_name
+      }, store_id);
+
+      const { password: _, ...customerWithoutPassword } = upgradedCustomer;
+
+      return res.status(201).json({
+        success: true,
+        message: 'Account created successfully',
+        data: {
+          user: customerWithoutPassword,
+          token: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          sessionRole: 'customer',
+          sessionContext: 'storefront'
+        }
+      });
+    }
+
+    // Create new customer
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const { data: newCustomer, error: createError } = await tenantDb
+      .from('customers')
+      .insert({
+        email,
+        password: hashedPassword,
+        first_name,
+        last_name,
+        phone,
+        role: 'customer',
+        customer_type: 'registered',
+        store_id: store_id,
+        is_active: true,
+        email_verified: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('Create customer error:', createError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to create account'
+      });
+    }
+
+    // Link any existing guest orders to this customer
+    try {
+      const { data: unlinkedOrders } = await tenantDb
+        .from('sales_orders')
+        .select('id, total_amount')
+        .eq('customer_email', email)
+        .eq('store_id', store_id)
+        .is('customer_id', null);
+
+      if (unlinkedOrders && unlinkedOrders.length > 0) {
+        await tenantDb
+          .from('sales_orders')
+          .update({ customer_id: newCustomer.id })
+          .eq('customer_email', email)
+          .eq('store_id', store_id)
+          .is('customer_id', null);
+
+        // Update customer stats
+        const orderCount = unlinkedOrders.length;
+        const totalSpent = unlinkedOrders.reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0);
+
+        await tenantDb
+          .from('customers')
+          .update({
+            total_orders: orderCount,
+            total_spent: totalSpent,
+            last_order_date: new Date().toISOString()
+          })
+          .eq('id', newCustomer.id);
+      }
+    } catch (linkError) {
+      console.error('Order linking error:', linkError);
+    }
+
+    // Generate token
+    const tokens = generateTokenPair({
+      id: newCustomer.id,
+      email: newCustomer.email,
+      role: 'customer',
+      account_type: 'individual',
+      first_name: newCustomer.first_name,
+      last_name: newCustomer.last_name
+    }, store_id);
+
+    const { password: _, ...customerWithoutPassword } = newCustomer;
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully',
+      data: {
+        user: customerWithoutPassword,
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        sessionRole: 'customer',
+        sessionContext: 'storefront'
+      }
+    });
+  } catch (error) {
+    console.error('Customer registration error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/auth/customer/login
+ * Login customer from tenant database
+ * Public route - requires store_id in body
+ */
+router.post('/customer/login', async (req, res) => {
+  try {
+    const { email, password, store_id, rememberMe } = req.body;
+
+    // Validate input
+    if (!email || !password || !store_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email, password, and store_id are required'
+      });
+    }
+
+    // Get tenant connection
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+
+    // Find customer
+    const { data: customer, error: findError } = await tenantDb
+      .from('customers')
+      .select('*')
+      .eq('email', email)
+      .eq('store_id', store_id)
+      .maybeSingle();
+
+    if (findError) {
+      console.error('Error finding customer:', findError);
+      return res.status(500).json({
+        success: false,
+        error: 'Authentication failed'
+      });
+    }
+
+    if (!customer) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid email or password'
+      });
+    }
+
+    if (!customer.password) {
+      return res.status(401).json({
+        success: false,
+        error: 'This account has not been activated. Please create a password first.'
+      });
+    }
+
+    // Verify password
+    const isMatch = await bcrypt.compare(password, customer.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid email or password'
+      });
+    }
+
+    if (!customer.is_active) {
+      return res.status(401).json({
+        success: false,
+        error: 'Account is inactive'
+      });
+    }
+
+    if (customer.is_blacklisted) {
+      return res.status(403).json({
+        success: false,
+        error: 'This account has been suspended. Please contact support.'
+      });
+    }
+
+    // Update last login
+    await tenantDb
+      .from('customers')
+      .update({ last_login: new Date().toISOString() })
+      .eq('id', customer.id);
+
+    // Generate token
+    const tokens = generateTokenPair({
+      id: customer.id,
+      email: customer.email,
+      role: 'customer',
+      account_type: 'individual',
+      first_name: customer.first_name,
+      last_name: customer.last_name
+    }, store_id);
+
+    const { password: _, ...customerWithoutPassword } = customer;
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        user: customerWithoutPassword,
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: rememberMe ? '30 days' : '7 days',
+        sessionRole: 'customer',
+        sessionContext: 'storefront'
+      }
+    });
+  } catch (error) {
+    console.error('Customer login error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      details: error.message
+    });
+  }
+});
+
+/**
  * GET /api/auth/check-customer-status/:email/:store_id
  * Check if a customer has already registered (has password)
  * Also checks if there are orders for this email (for "Create Account" flow)
