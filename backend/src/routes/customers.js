@@ -68,9 +68,45 @@ router.get('/', storeOwnerOnly, async (req, res) => {
 
     const { count: totalCount } = await countQuery;
 
-    // Enhance customer data with addresses
+    // Enhance customer data with addresses and calculated stats
     const enhancedCustomers = await Promise.all(customers.map(async (customer) => {
       const customerData = { ...customer };
+
+      // Calculate real order stats from sales_orders table
+      try {
+        const { data: orderStats } = await tenantDb
+          .from('sales_orders')
+          .select('id, total_amount, created_at')
+          .eq('customer_id', customer.id);
+
+        if (orderStats && orderStats.length > 0) {
+          customerData.total_orders = orderStats.length;
+          customerData.total_spent = orderStats.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+          customerData.last_order_date = orderStats.reduce((latest, o) => {
+            const d = new Date(o.created_at);
+            return d > new Date(latest) ? o.created_at : latest;
+          }, orderStats[0].created_at);
+        } else {
+          // No orders linked - check for unlinked orders by email
+          const { data: guestOrders } = await tenantDb
+            .from('sales_orders')
+            .select('id, total_amount, created_at')
+            .eq('customer_email', customer.email)
+            .eq('store_id', store_id);
+
+          if (guestOrders && guestOrders.length > 0) {
+            customerData.total_orders = guestOrders.length;
+            customerData.total_spent = guestOrders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+            customerData.last_order_date = guestOrders.reduce((latest, o) => {
+              const d = new Date(o.created_at);
+              return d > new Date(latest) ? o.created_at : latest;
+            }, guestOrders[0].created_at);
+            customerData._orders_unlinked = true; // Flag for debugging
+          }
+        }
+      } catch (statsError) {
+        console.error('Error calculating customer stats:', statsError);
+      }
 
       // For registered customers, fetch from customer_addresses table
       if (customer.customer_type === 'registered') {
