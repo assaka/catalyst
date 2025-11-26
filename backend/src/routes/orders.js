@@ -289,9 +289,62 @@ router.post('/finalize-order', async (req, res) => {
 
     console.log('✅ Order status updated successfully');
 
-    // NOTE: Order confirmation email is sent by the Stripe webhook (webhook-connect)
-    // to avoid duplicate emails and ensure email is only sent after payment is fully confirmed
-    console.log('📧 Email will be sent by webhook handler');
+    // Send order confirmation email
+    try {
+      const emailService = require('../services/email-service');
+
+      // Get updated order with items
+      const { data: completeOrder } = await tenantDb
+        .from('sales_orders')
+        .select('*')
+        .eq('id', order.id)
+        .single();
+
+      // Fetch order items
+      const { data: orderItems } = await tenantDb
+        .from('sales_order_items')
+        .select('*')
+        .eq('order_id', order.id);
+
+      completeOrder.OrderItems = orderItems || [];
+      completeOrder.Store = store;
+
+      // Get customer info
+      let customer = null;
+      if (order.customer_id) {
+        const { data } = await tenantDb
+          .from('customers')
+          .select('*')
+          .eq('id', order.customer_id)
+          .maybeSingle();
+        customer = data;
+      }
+
+      const customerName = customer
+        ? `${customer.first_name} ${customer.last_name}`
+        : (order.shipping_address?.full_name || order.shipping_address?.name || 'Customer');
+      const [firstName, ...lastNameParts] = customerName.split(' ');
+      const lastName = lastNameParts.join(' ') || '';
+
+      console.log('📧 Sending order confirmation email to:', order.customer_email);
+
+      await emailService.sendTransactionalEmail(store_id, 'order_success_email', {
+        recipientEmail: order.customer_email,
+        customer: customer || {
+          first_name: firstName,
+          last_name: lastName,
+          email: order.customer_email
+        },
+        order: completeOrder,
+        store: store,
+        languageCode: 'en'
+      });
+
+      console.log('✅ Order confirmation email sent successfully');
+    } catch (emailError) {
+      console.error('⚠️ Failed to send order email:', emailError.message);
+      // Don't fail the order finalization if email fails
+    }
 
     res.json({
       success: true,
