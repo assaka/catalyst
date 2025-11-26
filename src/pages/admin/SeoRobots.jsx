@@ -26,7 +26,36 @@ export default function SeoRobots() {
   const [seoSetting, setSeoSetting] = useState(null);
   const [loading, setLoading] = useState(true);
   const [flashMessage, setFlashMessage] = useState(null);
-  const [robotsTxt, setRobotsTxt] = useState(`User-agent: *
+  const [robotsTxt, setRobotsTxt] = useState('');
+
+  // Quick settings state
+  const [blockAllCrawlers, setBlockAllCrawlers] = useState(false);
+  const [blockImages, setBlockImages] = useState(false);
+  const [blockJsCss, setBlockJsCss] = useState(false);
+  const [crawlDelay, setCrawlDelay] = useState(0);
+
+  // Helper function to get the store's domain for sitemap URL
+  const getStoreSitemapUrl = (store) => {
+    let domain = store?.settings?.custom_domain ||
+                 store?.settings?.domain ||
+                 store?.custom_domain ||
+                 store?.domain;
+
+    if (!domain) {
+      // Construct from current domain + store slug
+      const currentDomain = window.location.origin;
+      domain = `${currentDomain}/public/${store?.slug}`;
+    } else if (!domain.startsWith('http://') && !domain.startsWith('https://')) {
+      domain = 'https://' + domain;
+    }
+
+    return `${domain}/sitemap.xml`;
+  };
+
+  // Generate default robots.txt content with proper sitemap URL
+  const getDefaultRobotsTxt = (store) => {
+    const sitemapUrl = getStoreSitemapUrl(store);
+    return `User-agent: *
 Allow: /
 
 # Allow content directories (default behavior)
@@ -42,13 +71,8 @@ Disallow: /cart/
 Disallow: /account/
 Disallow: /login
 
-Sitemap: https://example.com/sitemap.xml`);
-
-  // Quick settings state
-  const [blockAllCrawlers, setBlockAllCrawlers] = useState(false);
-  const [blockImages, setBlockImages] = useState(false);
-  const [blockJsCss, setBlockJsCss] = useState(false);
-  const [crawlDelay, setCrawlDelay] = useState(0);
+Sitemap: ${sitemapUrl}`;
+  };
 
   // Load SEO settings on mount and when store changes
   React.useEffect(() => {
@@ -64,11 +88,19 @@ Sitemap: https://example.com/sitemap.xml`);
           setSeoSetting(settings[0]);
           if (settings[0].robots_txt_content) {
             setRobotsTxt(settings[0].robots_txt_content);
+          } else {
+            // No saved content, set default with proper sitemap URL
+            setRobotsTxt(getDefaultRobotsTxt(selectedStore));
           }
+        } else {
+          // No SEO settings exist, set default with proper sitemap URL
+          setRobotsTxt(getDefaultRobotsTxt(selectedStore));
         }
       } catch (error) {
         console.error("Error loading SEO settings:", error);
         setFlashMessage({ type: 'error', message: 'Failed to load robots.txt settings' });
+        // Still set default on error
+        setRobotsTxt(getDefaultRobotsTxt(selectedStore));
       } finally {
         setLoading(false);
       }
@@ -629,7 +661,7 @@ Sitemap: https://example.com/sitemap.xml`);
                       <div><strong>Disallow: /admin/</strong> - Blocks the /admin/ directory</div>
                       <div><strong>Disallow: /*.pdf$</strong> - Blocks all PDF files</div>
                       <div><strong>Crawl-delay: 10</strong> - Wait 10 seconds between requests</div>
-                      <div><strong>Sitemap: https://example.com/sitemap.xml</strong> - Location of your sitemap</div>
+                      <div><strong>Sitemap: https://yourstore.com/sitemap.xml</strong> - Location of your sitemap</div>
                     </div>
                   </div>
                 </div>
