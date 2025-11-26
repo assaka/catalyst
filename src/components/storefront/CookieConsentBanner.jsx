@@ -345,12 +345,31 @@ export default function CookieConsentBanner() {
                 </Button>
               )}
 
-              <Link
-                to={cookieSettings.privacy_policy_url || createCmsPageUrl(store?.slug, 'privacy-policy')}
-                className="text-sm text-blue-600 hover:text-blue-800 underline self-center"
-              >
-                {getTranslatedText('privacy_policy_text', 'Privacy Policy')}
-              </Link>
+              {(() => {
+                const privacyUrl = cookieSettings.privacy_policy_url ||
+                  (store?.website_url
+                    ? `${store.website_url.replace(/\/$/, '')}${createCmsPageUrl(store?.slug, 'privacy-policy')}`
+                    : createCmsPageUrl(store?.slug, 'privacy-policy'));
+                const isExternal = privacyUrl.startsWith('http');
+
+                return isExternal ? (
+                  <a
+                    href={privacyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:text-blue-800 underline self-center"
+                  >
+                    {getTranslatedText('privacy_policy_text', 'Privacy Policy')}
+                  </a>
+                ) : (
+                  <Link
+                    to={privacyUrl}
+                    className="text-sm text-blue-600 hover:text-blue-800 underline self-center"
+                  >
+                    {getTranslatedText('privacy_policy_text', 'Privacy Policy')}
+                  </Link>
+                );
+              })()}
 
               {showPreferences && (
                 <Button
