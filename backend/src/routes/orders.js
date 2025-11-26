@@ -43,14 +43,41 @@ router.get('/by-payment-reference/:paymentReference', cacheOrder(60), async (req
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Find order by payment reference
-    const { data: order, error: orderError } = await tenantDb
+    // Find order by payment reference - try multiple fields
+    let order = null;
+
+    // Try payment_reference first
+    const { data: orderByRef } = await tenantDb
       .from('sales_orders')
       .select('*')
-      .or(`payment_reference.eq.${paymentReference},stripe_payment_intent_id.eq.${paymentReference},stripe_session_id.eq.${paymentReference}`)
+      .eq('payment_reference', paymentReference)
       .maybeSingle();
 
-    if (orderError || !order) {
+    if (orderByRef) {
+      order = orderByRef;
+    } else {
+      // Try stripe_session_id
+      const { data: orderBySession } = await tenantDb
+        .from('sales_orders')
+        .select('*')
+        .eq('stripe_session_id', paymentReference)
+        .maybeSingle();
+
+      if (orderBySession) {
+        order = orderBySession;
+      } else {
+        // Try stripe_payment_intent_id
+        const { data: orderByIntent } = await tenantDb
+          .from('sales_orders')
+          .select('*')
+          .eq('stripe_payment_intent_id', paymentReference)
+          .maybeSingle();
+
+        order = orderByIntent;
+      }
+    }
+
+    if (!order) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
@@ -143,21 +170,53 @@ router.post('/finalize-order', async (req, res) => {
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Find the order by payment reference using Supabase
-    const { data: orders, error: orderError } = await tenantDb
+    // Try multiple lookups since .or() can have issues with special characters
+    let order = null;
+    let orderError = null;
+
+    // Try payment_reference first (most common)
+    const { data: orderByRef, error: refError } = await tenantDb
       .from('sales_orders')
       .select('*')
-      .or(`payment_reference.eq.${session_id},stripe_session_id.eq.${session_id},stripe_payment_intent_id.eq.${session_id}`)
+      .eq('payment_reference', session_id)
       .maybeSingle();
 
-    if (orderError || !orders) {
-      console.error('❌ Order not found for session:', session_id, orderError);
+    if (orderByRef) {
+      order = orderByRef;
+    } else {
+      // Try stripe_session_id
+      const { data: orderBySession, error: sessionError } = await tenantDb
+        .from('sales_orders')
+        .select('*')
+        .eq('stripe_session_id', session_id)
+        .maybeSingle();
+
+      if (orderBySession) {
+        order = orderBySession;
+      } else {
+        // Try stripe_payment_intent_id
+        const { data: orderByIntent, error: intentError } = await tenantDb
+          .from('sales_orders')
+          .select('*')
+          .eq('stripe_payment_intent_id', session_id)
+          .maybeSingle();
+
+        if (orderByIntent) {
+          order = orderByIntent;
+        }
+        orderError = intentError || sessionError || refError;
+      }
+    }
+
+    if (!order) {
+      console.error('❌ Order not found for session:', session_id);
+      console.error('❌ Searched in payment_reference, stripe_session_id, stripe_payment_intent_id');
+      console.error('❌ Store ID:', store_id);
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
-
-    const order = orders;
 
     console.log('✅ Found order:', order.id, 'Current status:', order.status, 'Payment status:', order.payment_status);
 
@@ -274,12 +333,39 @@ router.get('/db-diagnostic/:sessionId', async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // Query using Supabase client
-    const { data: orderResult, error: orderError } = await tenantDb
+    // Query using Supabase client - try multiple fields
+    let orderResult = null;
+
+    // Try payment_reference first
+    const { data: orderByRef } = await tenantDb
       .from('sales_orders')
       .select('id, order_number, customer_email, total_amount, store_id, created_at')
-      .or(`payment_reference.eq.${sessionId},stripe_payment_intent_id.eq.${sessionId},stripe_session_id.eq.${sessionId}`)
+      .eq('payment_reference', sessionId)
       .maybeSingle();
+
+    if (orderByRef) {
+      orderResult = orderByRef;
+    } else {
+      // Try stripe_session_id
+      const { data: orderBySession } = await tenantDb
+        .from('sales_orders')
+        .select('id, order_number, customer_email, total_amount, store_id, created_at')
+        .eq('stripe_session_id', sessionId)
+        .maybeSingle();
+
+      if (orderBySession) {
+        orderResult = orderBySession;
+      } else {
+        // Try stripe_payment_intent_id
+        const { data: orderByIntent } = await tenantDb
+          .from('sales_orders')
+          .select('id, order_number, customer_email, total_amount, store_id, created_at')
+          .eq('stripe_payment_intent_id', sessionId)
+          .maybeSingle();
+
+        orderResult = orderByIntent;
+      }
+    }
 
     let orderItemsResult = [];
     if (orderResult) {
