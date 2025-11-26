@@ -544,17 +544,37 @@ router.post('/upgrade-guest', async (req, res) => {
     }
 
     // Link all orders with this email to the customer and update stats
+    console.log('🔗 Starting order linking for customer:', finalCustomer.id, 'email:', email);
     try {
-      // First, get all unlinked orders for this email to calculate totals
+      // First, check ALL orders for this email (regardless of customer_id)
+      const { data: allOrders, error: allOrdersError } = await tenantDb
+        .from('sales_orders')
+        .select('id, total_amount, customer_id, customer_email, created_at')
+        .eq('customer_email', email)
+        .eq('store_id', store_id);
+
+      console.log('📦 All orders for this email:', allOrders?.length || 0);
+      if (allOrders) {
+        allOrders.forEach(o => console.log(`  - Order ${o.id}: customer_id=${o.customer_id}, amount=${o.total_amount}`));
+      }
+
+      // Get unlinked orders (customer_id is null)
       const { data: unlinkedOrders, error: fetchError } = await tenantDb
         .from('sales_orders')
-        .select('id, total_amount')
+        .select('id, total_amount, created_at')
         .eq('customer_email', email)
         .eq('store_id', store_id)
         .is('customer_id', null);
 
-      if (!fetchError && unlinkedOrders && unlinkedOrders.length > 0) {
+      console.log('📦 Unlinked orders (customer_id=null):', unlinkedOrders?.length || 0, 'Error:', fetchError?.message || 'none');
+
+      if (fetchError) {
+        console.error('❌ Error fetching unlinked orders:', fetchError);
+      }
+
+      if (unlinkedOrders && unlinkedOrders.length > 0) {
         // Link the orders
+        console.log('🔗 Linking', unlinkedOrders.length, 'orders to customer', finalCustomer.id);
         const { error: linkError } = await tenantDb
           .from('sales_orders')
           .update({ customer_id: finalCustomer.id })
@@ -562,32 +582,72 @@ router.post('/upgrade-guest', async (req, res) => {
           .eq('store_id', store_id)
           .is('customer_id', null);
 
-        if (!linkError) {
+        if (linkError) {
+          console.error('❌ Error linking orders:', linkError);
+        } else {
           // Calculate stats from linked orders
           const orderCount = unlinkedOrders.length;
           const totalSpent = unlinkedOrders.reduce((sum, order) => {
             return sum + parseFloat(order.total_amount || 0);
           }, 0);
 
+          // Get the most recent order date
+          const lastOrderDate = unlinkedOrders.reduce((latest, order) => {
+            const orderDate = new Date(order.created_at);
+            return orderDate > latest ? orderDate : latest;
+          }, new Date(0));
+
           // Update customer stats
           const currentTotalOrders = parseInt(finalCustomer.total_orders || 0);
           const currentTotalSpent = parseFloat(finalCustomer.total_spent || 0);
 
-          await tenantDb
+          console.log('📊 Updating customer stats: orders=', currentTotalOrders + orderCount, ', spent=', currentTotalSpent + totalSpent);
+
+          const { error: statsError } = await tenantDb
             .from('customers')
             .update({
               total_orders: currentTotalOrders + orderCount,
               total_spent: currentTotalSpent + totalSpent,
-              last_order_date: new Date().toISOString()
+              last_order_date: lastOrderDate.toISOString()
             })
             .eq('id', finalCustomer.id);
 
-          console.log(`✅ Linked ${orderCount} orders to customer ${finalCustomer.id}, total spent: $${totalSpent.toFixed(2)}`);
+          if (statsError) {
+            console.error('❌ Error updating customer stats:', statsError);
+          } else {
+            console.log(`✅ Linked ${orderCount} orders to customer ${finalCustomer.id}, total spent: $${totalSpent.toFixed(2)}`);
+          }
+        }
+      } else {
+        console.log('⚠️ No unlinked orders found for email:', email);
+
+        // If there are orders but they're already linked, still update stats
+        if (allOrders && allOrders.length > 0) {
+          const linkedToThisCustomer = allOrders.filter(o => o.customer_id === finalCustomer.id);
+          if (linkedToThisCustomer.length > 0) {
+            const orderCount = linkedToThisCustomer.length;
+            const totalSpent = linkedToThisCustomer.reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0);
+            const lastOrderDate = linkedToThisCustomer.reduce((latest, order) => {
+              const orderDate = new Date(order.created_at);
+              return orderDate > latest ? orderDate : latest;
+            }, new Date(0));
+
+            console.log('📊 Orders already linked, updating stats anyway:', orderCount, 'orders, $', totalSpent);
+
+            await tenantDb
+              .from('customers')
+              .update({
+                total_orders: orderCount,
+                total_spent: totalSpent,
+                last_order_date: lastOrderDate.toISOString()
+              })
+              .eq('id', finalCustomer.id);
+          }
         }
       }
     } catch (orderLinkError) {
       // Don't fail the account creation if order linking fails
-      console.error('Order linking error:', orderLinkError);
+      console.error('❌ Order linking error:', orderLinkError);
     }
 
     // Generate token for auto-login
