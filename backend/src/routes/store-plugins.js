@@ -40,50 +40,41 @@ router.get('/', async (req, res) => {
     const storeId = req.params.store_id;
 
     console.log(`🔍 Getting plugins for store: ${storeId}`);
-    console.log(`🔍 User: ${req.user?.id}, Email: ${req.user?.email}`);
 
-    // Get connection for this store (use getConnection which returns Sequelize instance)
-    let connection;
-    try {
-      console.log(`🔌 Attempting to get connection for store: ${storeId}`);
-      connection = await ConnectionManager.getConnection(storeId);
-      console.log(`✅ Connection established for store: ${storeId}`);
-    } catch (connError) {
-      console.error(`❌ Connection failed for store ${storeId}:`, connError.message);
-      console.error(`❌ Connection error stack:`, connError.stack);
-      throw new Error(`Database connection failed: ${connError.message}`);
-    }
-
-    const sequelize = connection.sequelize;
+    // Get Supabase connection for this store (same method used by all other working routes)
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Get plugins from plugin_registry
     let registryPlugins = [];
     try {
-      console.log(`📋 Querying plugin_registry for store: ${storeId}`);
-      registryPlugins = await sequelize.query(
-        'SELECT * FROM plugin_registry ORDER BY created_at DESC',
-        {
-          type: sequelize.QueryTypes.SELECT
-        }
-      );
+      const { data, error } = await tenantDb
+        .from('plugin_registry')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn(`⚠️ plugin_registry query failed:`, error.message);
+      } else {
+        registryPlugins = data || [];
+      }
       console.log(`✅ Found ${registryPlugins.length} plugins in registry`);
     } catch (queryError) {
-      console.error(`❌ plugin_registry query failed:`, queryError.message);
-      console.error(`❌ Query error stack:`, queryError.stack);
+      console.warn(`⚠️ plugin_registry query failed:`, queryError.message);
       // Continue with empty array - table might not exist
     }
 
     // Get store-specific configurations from tenant DB
     let storeConfigs = [];
     try {
-      const configResults = await sequelize.query(
-        'SELECT * FROM plugin_configurations WHERE store_id = :storeId ORDER BY updated_at DESC',
-        {
-          replacements: { storeId },
-          type: sequelize.QueryTypes.SELECT
-        }
-      );
-      storeConfigs = configResults || [];
+      const { data, error } = await tenantDb
+        .from('plugin_configurations')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('updated_at', { ascending: false });
+
+      if (!error && data) {
+        storeConfigs = data;
+      }
     } catch (configError) {
       console.warn('⚠️ Could not fetch plugin configurations:', configError.message);
     }
@@ -343,20 +334,26 @@ router.put('/:pluginSlug/configure', async (req, res) => {
 
     console.log(`⚙️ Updating configuration for plugin ${pluginSlug} in store ${storeId}`);
 
-    // Get connection for this store
-    const connection = await ConnectionManager.getConnection(storeId);
-    const sequelize = connection.sequelize;
+    // Get Supabase connection for this store
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     const pluginId = pluginSlug;
 
     // Check if configuration exists
-    const [existing] = await sequelize.query(
-      'SELECT * FROM plugin_configurations WHERE plugin_id = :pluginId AND store_id = :storeId',
-      {
-        replacements: { pluginId, storeId },
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
+    const { data: existing, error: fetchError } = await tenantDb
+      .from('plugin_configurations')
+      .select('*')
+      .eq('plugin_id', pluginId)
+      .eq('store_id', storeId)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('❌ Error fetching plugin config:', fetchError.message);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch plugin configuration'
+      });
+    }
 
     if (!existing) {
       return res.status(404).json({
@@ -370,21 +367,24 @@ router.put('/:pluginSlug/configure', async (req, res) => {
     const mergedConfig = { ...existingConfig, ...configuration };
 
     // Update configuration
-    await sequelize.query(
-      `UPDATE plugin_configurations
-       SET config_data = :configData, last_configured_by = :userId,
-           last_configured_at = NOW(), updated_at = NOW()
-       WHERE plugin_id = :pluginId AND store_id = :storeId`,
-      {
-        replacements: {
-          pluginId,
-          storeId,
-          configData: JSON.stringify(mergedConfig),
-          userId: user.id
-        },
-        type: sequelize.QueryTypes.UPDATE
-      }
-    );
+    const { error: updateError } = await tenantDb
+      .from('plugin_configurations')
+      .update({
+        config_data: mergedConfig,
+        last_configured_by: user.id,
+        last_configured_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('plugin_id', pluginId)
+      .eq('store_id', storeId);
+
+    if (updateError) {
+      console.error('❌ Error updating plugin config:', updateError.message);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update plugin configuration'
+      });
+    }
 
     res.json({
       success: true,
