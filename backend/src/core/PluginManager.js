@@ -52,22 +52,26 @@ class PluginManager {
   
   async _doInitialize() {
     console.log('🔌 Initializing Plugin Manager...');
-    
+
     // Ensure plugin directory exists
     await this.ensurePluginDirectory();
-    
-    // Sync database with filesystem plugins
-    await this.syncPluginsWithDatabase();
-    
-    // Load installed plugins from database
-    await this.loadInstalledPlugins();
-    
-    // Load marketplace plugins
+
+    // Discover plugins from filesystem (no database required)
+    await this.discoverPlugins();
+
+    // Load marketplace plugins (in-memory, no database required)
     await this.loadMarketplace();
-    
-    // Auto-enable previously enabled plugins
-    await this.autoEnablePlugins();
-    
+
+    // Try to sync with database, but don't fail initialization if it fails
+    try {
+      await this.syncPluginsWithDatabase();
+      await this.loadInstalledPlugins();
+      await this.autoEnablePlugins();
+    } catch (error) {
+      console.warn('⚠️ Could not sync plugins with database:', error.message);
+      console.warn('   Plugin manager will work with filesystem plugins only');
+    }
+
     this.isInitialized = true;
     console.log(`✅ Plugin Manager initialized with ${this.plugins.size} plugins, ${this.marketplace.size} marketplace plugins`);
   }
