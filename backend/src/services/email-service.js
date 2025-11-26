@@ -52,13 +52,13 @@ class EmailService {
       // Get tenant database connection
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-      // Get template
+      // Get template (query by identifier only - storeId is tenant identifier, not store UUID)
       const { data: template, error: templateError } = await tenantDb
         .from('email_templates')
         .select('*')
-        .eq('store_id', storeId)
         .eq('identifier', templateIdentifier)
         .eq('is_active', true)
+        .limit(1)
         .maybeSingle();
 
       if (templateError) {
@@ -368,12 +368,13 @@ class EmailService {
 
       // Get header template if needed
       if (content.includes('{{email_header}}')) {
+        // Query by identifier only (storeId is tenant identifier, not store UUID)
         const { data: headerTemplate, error: headerError } = await tenantDb
           .from('email_templates')
           .select('*')
-          .eq('store_id', storeId)
           .eq('identifier', 'email_header')
           .eq('is_active', true)
+          .limit(1)
           .maybeSingle();
 
         if (!headerError && headerTemplate) {
@@ -395,12 +396,13 @@ class EmailService {
 
       // Get footer template if needed
       if (content.includes('{{email_footer}}')) {
+        // Query by identifier only (storeId is tenant identifier, not store UUID)
         const { data: footerTemplate, error: footerError } = await tenantDb
           .from('email_templates')
           .select('*')
-          .eq('store_id', storeId)
           .eq('identifier', 'email_footer')
           .eq('is_active', true)
+          .limit(1)
           .maybeSingle();
 
         if (!footerError && footerTemplate) {
@@ -445,10 +447,23 @@ class EmailService {
       // Get tenant database connection
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+      // Get the actual store UUID (storeId is tenant identifier, not store UUID)
+      const { data: store } = await tenantDb
+        .from('stores')
+        .select('id')
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (!store?.id) {
+        console.error('Failed to log email: No active store found');
+        return null;
+      }
+
       const { data, error } = await tenantDb
         .from('email_send_logs')
         .insert({
-          store_id: storeId,
+          store_id: store.id,
           email_template_id: templateId,
           recipient_email: recipientEmail,
           subject,
@@ -586,10 +601,10 @@ class EmailService {
     // Get tenant database connection
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+    // Query all logs for this tenant (storeId is tenant identifier, not store UUID)
     const { data: logs, error } = await tenantDb
       .from('email_send_logs')
       .select('status')
-      .eq('store_id', storeId)
       .gte('created_at', startDate.toISOString());
 
     if (error) {
