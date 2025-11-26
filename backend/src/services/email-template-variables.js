@@ -87,9 +87,21 @@ function getVariableKeys(templateIdentifier) {
 function renderTemplate(template, values) {
   if (!template) return '';
 
+  // Clone values and mark HTML content as SafeString to prevent escaping
+  const safeValues = { ...values };
+
+  // Variables that contain HTML should not be escaped
+  const htmlVariables = ['items_html', 'email_header', 'email_footer', 'shipping_address_html', 'billing_address_html'];
+
+  htmlVariables.forEach(key => {
+    if (safeValues[key] && typeof safeValues[key] === 'string') {
+      safeValues[key] = new Handlebars.SafeString(safeValues[key]);
+    }
+  });
+
   // Use Handlebars for full template support ({{#if}}, {{#each}}, etc.)
   const compiledTemplate = Handlebars.compile(template);
-  return compiledTemplate(values);
+  return compiledTemplate(safeValues);
 }
 
 /**
