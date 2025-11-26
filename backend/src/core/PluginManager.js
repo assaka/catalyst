@@ -1,7 +1,13 @@
 const fs = require('fs').promises;
 const path = require('path');
 const Plugin = require('./Plugin');
-const PluginModel = require('../models/Plugin');
+// NOTE: PluginModel uses broken Sequelize connection - load lazily and handle errors
+let PluginModel = null;
+try {
+  PluginModel = require('../models/Plugin');
+} catch (err) {
+  console.warn('⚠️ Could not load PluginModel:', err.message);
+}
 const PluginUninstaller = require('./PluginUninstaller');
 const axios = require('axios');
 const { exec } = require('child_process');
