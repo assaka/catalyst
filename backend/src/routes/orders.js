@@ -530,11 +530,16 @@ router.post('/finalize-order', async (req, res) => {
       });
     }
 
-    // Verify payment with Stripe (use connected account if available)
-    const stripeOptions = {};
-    if (store.stripe_account_id) {
-      stripeOptions.stripeAccount = store.stripe_account_id;
+    // Verify payment with Stripe - Stripe Connect required
+    if (!store.stripe_account_id) {
+      console.error('❌ Store does not have a connected Stripe account:', store_id);
+      return res.status(400).json({
+        success: false,
+        message: 'Stripe Connect not configured for this store.'
+      });
     }
+
+    const stripeOptions = { stripeAccount: store.stripe_account_id };
 
     let session;
     try {
@@ -663,6 +668,49 @@ router.post('/finalize-order', async (req, res) => {
       });
 
       console.log('✅ Order confirmation email sent successfully');
+
+      // For online payment methods, also send invoice email automatically
+      try {
+        // Check if payment method is online
+        const { data: paymentMethod } = await tenantDb
+          .from('payment_methods')
+          .select('payment_flow')
+          .eq('id', order.payment_method_id)
+          .maybeSingle();
+
+        if (paymentMethod?.payment_flow === 'online') {
+          console.log('📧 Online payment detected, sending invoice email...');
+
+          // Generate invoice number if not exists
+          let invoiceNumber = completeOrder.invoice_number;
+          if (!invoiceNumber) {
+            invoiceNumber = `INV-${completeOrder.order_number}`;
+            await tenantDb
+              .from('sales_orders')
+              .update({ invoice_number: invoiceNumber })
+              .eq('id', order.id);
+          }
+
+          // Send invoice email
+          await emailService.sendTransactionalEmail(store_id, 'invoice_email', {
+            recipientEmail: order.customer_email,
+            customer: customer || {
+              first_name: firstName,
+              last_name: lastName,
+              email: order.customer_email
+            },
+            order: { ...completeOrder, invoice_number: invoiceNumber },
+            store: store,
+            languageCode: 'en',
+            invoice_number: invoiceNumber,
+            invoice_date: new Date().toISOString()
+          });
+          console.log('✅ Invoice email sent automatically for online payment order', order.id);
+        }
+      } catch (invoiceError) {
+        console.error('⚠️ Failed to send automatic invoice email:', invoiceError.message);
+        // Don't fail the order - invoice email is non-critical
+      }
     } catch (emailError) {
       console.error('⚠️ Failed to send order email:', emailError.message);
       // Don't fail the order finalization if email fails

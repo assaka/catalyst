@@ -1418,18 +1418,23 @@ router.post('/create-checkout', async (req, res) => {
     console.log('🔍 Tax line items:', taxItems.length, taxItems.length > 0 ? taxItems[0].price_data?.product_data?.name : 'None');
     console.log('🔍 Fee line items:', feeItems.length, feeItems.length > 0 ? feeItems[0].price_data?.product_data?.name : 'None');
 
-    // Create checkout session (using stripeOptions defined above)
+    // Create checkout session - Stripe Connect required
     console.log('💰 Creating Stripe Checkout session...');
-    if (store.stripe_account_id) {
-      console.log('💰 Using connected account (Direct Charge):', store.stripe_account_id);
-    } else {
-      console.log('💰 Using platform account (no connected account)');
+
+    // Enforce Stripe Connect - no platform account fallback
+    if (!store.stripe_account_id) {
+      console.error('❌ Store does not have a connected Stripe account:', store_id);
+      return res.status(400).json({
+        success: false,
+        message: 'Stripe Connect not configured. Please connect your Stripe account in Payment Settings.'
+      });
     }
 
-    // Only pass stripeOptions if we have a connected account, otherwise omit it
-    const session = store.stripe_account_id
-      ? await stripe.checkout.sessions.create(sessionConfig, stripeOptions)
-      : await stripe.checkout.sessions.create(sessionConfig);
+    console.log('💰 Using connected account (Direct Charge):', store.stripe_account_id);
+
+    const session = await stripe.checkout.sessions.create(sessionConfig, {
+      stripeAccount: store.stripe_account_id
+    });
 
     console.log('Created Stripe session:', {
       id: session.id,

@@ -854,10 +854,10 @@ SELECT
   'a1b52211-ddca-40d1-ac14-4b3d84ba256d',
   id,
   'en',
-  'Welcome to {{store_name}} store!',
+  'Welcome to {{store_name}}!',
   'Hi {{customer_first_name}},
 
-Welcome to {{store_name}} store! We are thrilled to have you with us.
+Welcome to {{store_name}}! We are thrilled to have you with us.
 
 Your account has been successfully created and verified. You can now:
 - Browse our products
@@ -871,7 +871,7 @@ Best regards,
 The {{store_name}} Team',
   '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Welcome to {{store_name}} store!</h1>
+    <h1 style="color: white; margin: 0;">Welcome to {{store_name}}!</h1>
   </div>
   <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
     <p>Hi <strong>{{customer_first_name}}</strong>,</p>
