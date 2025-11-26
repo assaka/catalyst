@@ -150,41 +150,21 @@ class AkeneoErrorBoundary extends React.Component {
 
 const AkeneoIntegration = () => {
   try {
-    console.log('🚀 AkeneoIntegration component starting...');
-
     let storeSlugData;
-    console.log('📞 Calling useStoreSlug hook...');
     try {
       storeSlugData = useStoreSlug();
-      console.log('✅ useStoreSlug completed successfully:', storeSlugData);
     } catch (hookError) {
       console.error('❌ useStoreSlug hook failed:', hookError);
       console.error('Stack:', hookError.stack);
       throw hookError;
     }
-    
+
     const { storeSlug } = storeSlugData;
 
     // Get store selection context
-    console.log('📞 Calling useStoreSelection hook...');
     const { selectedStore } = useStoreSelection();
-    console.log('✅ useStoreSelection completed successfully:', selectedStore);
-  
-  // Add render debugging to track what's causing blank page
-  const renderCount = React.useRef(0);
-  renderCount.current += 1;
-  
-  console.log(`🔄 AkeneoIntegration render #${renderCount.current}`, {
-    storeSlug,
-    timestamp: new Date().toISOString()
-  });
-  
-  // Early state check that doesn't depend on component state
-  console.log('🔍 Early state check - storeSlug:', storeSlug);
-  console.log('🔍 Early state check - typeof storeSlug:', typeof storeSlug);
   
   // Configuration state
-  console.log('🔧 Initializing config state...');
   const [config, setConfig] = useState({
     baseUrl: '',
     clientId: '',
@@ -193,7 +173,6 @@ const AkeneoIntegration = () => {
     password: '',
     locale: 'en_US'
   });
-  console.log('✅ Config state initialized');
   const [lastImportDates, setLastImportDates] = useState({});
 
   // UI state
@@ -254,7 +233,6 @@ const AkeneoIntegration = () => {
     if (!responseData) return responseData;
     
     if (responseData.details?.errors) {
-      console.log('🔍 Fresh import response errors for debugging:', responseData.details.errors);
       return {
         ...responseData,
         stats: {
@@ -296,23 +274,10 @@ const AkeneoIntegration = () => {
     }
   };
   
-  // Debug importing state changes (moved after all state declarations)
-  React.useEffect(() => {
-    console.log('🔄 importing state changed to:', importing);
-    if (!importing) {
-      console.log('🔍 Import completed, current state:', {
-        hasConfig: config.baseUrl ? 'yes' : 'no',
-        familiesCount: families?.length || 0,
-        statsLoaded: stats ? 'yes' : 'no'
-      });
-    }
-  }, [importing, config.baseUrl, families?.length, stats]);
-  
   // Memoized family options to prevent excessive re-renders
   const familyOptions = useMemo(() => {
     if (!families || families.length === 0) return [];
-    
-    console.log('🔄 Computing family options (this should only happen when families change)');
+
     return families
       .filter(family => family != null) // Filter out any null/undefined entries
       .map((family) => {
@@ -383,7 +348,6 @@ const AkeneoIntegration = () => {
   
   // Debug dry run changes
   const handleDryRunChange = (checked) => {
-    console.log('🔧 Dry run toggle changed:', checked);
     setDryRun(checked);
   };
 
@@ -401,7 +365,6 @@ const AkeneoIntegration = () => {
       if (savedResults) {
         const parsedResults = JSON.parse(savedResults);
         setImportResults(parsedResults);
-        console.log('📥 Loaded saved import results:', parsedResults);
       }
     } catch (error) {
       console.warn('Failed to load saved import results:', error);
@@ -448,37 +411,27 @@ const AkeneoIntegration = () => {
 
   // Load import statistics with enhanced error handling
   const loadStats = async () => {
-    console.log('🔍 Loading statistics...');
-    console.log('Store slug:', storeSlug);
-    
     // Use storeId from context instead of localStorage
     const storeId = selectedStore?.id;
-    console.log('Store ID from context:', storeId);
-    
+
     if (!storeId) {
-      console.log('❌ No store ID found, skipping stats load');
       return;
     }
-    
+
     setLoadingStats(true);
     try {
-
-      console.log('📡 Making API call to /integrations/akeneo/stats');
-      
       // Add timeout to prevent hanging requests
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
+
       const response = await apiClient.get('/integrations/akeneo/stats', {
         'x-skip-transform': 'true'  // Don't transform this response
       });
-      
+
       clearTimeout(timeoutId);
-      console.log('📥 Stats API response:', response);
 
       // With x-skip-transform, we get the raw response
       if (response?.success && response?.stats) {
-        console.log('✅ Stats loaded successfully:', response.stats);
         // Set stats directly from the response
         setStats({
           categories: response.stats.categories ?? 0,
@@ -506,7 +459,6 @@ const AkeneoIntegration = () => {
                   failedItems: detail.error_details ? (() => {
                     try {
                       const parsed = JSON.parse(detail.error_details);
-                      console.log('🔍 Parsed error_details for debugging:', parsed);
                       if (Array.isArray(parsed)) {
                         return parsed.slice(0, 10).map(item => {
                           let errorMessage = 'Unknown error';
@@ -543,28 +495,11 @@ const AkeneoIntegration = () => {
           });
           setImportResults(prev => ({ ...prev, ...detailedImportResults }));
         }
-      } else {
-        console.log('❌ Stats API returned invalid response:', response);
-        // Keep existing stats on error instead of resetting
-        console.log('⚠️ Keeping existing stats on error');
       }
+      // Keep existing stats on error instead of resetting
     } catch (error) {
-      console.error('❌ Failed to load stats:', error);
-      console.error('Error details:', {
-        name: error.name,
-        status: error.status,
-        message: error.message,
-        response: error.response?.data,
-        stack: error.stack
-      });
-      
+      console.error('Failed to load stats:', error);
       // Keep existing stats on error instead of resetting to empty
-      console.log('⚠️ Keeping existing stats after error');
-      
-      // Don't show error toast for aborted requests
-      if (error.name !== 'AbortError') {
-        console.warn('⚠️ Stats loading failed but continuing with empty stats');
-      }
     } finally {
       setLoadingStats(false);
     }
@@ -655,7 +590,6 @@ const AkeneoIntegration = () => {
     
     try {
       await apiClient.post('/integrations/akeneo/custom-mappings', mappings);
-      console.log('✅ Custom mappings saved to database');
     } catch (error) {
       console.error('Failed to save custom mappings to database:', error);
       toast.error('Failed to save custom mappings');
@@ -683,26 +617,17 @@ const AkeneoIntegration = () => {
 
   const loadAvailableCategories = async () => {
     if (!connectionStatus?.success) {
-      console.log('⚠️ Connection not successful, skipping category load');
       return;
     }
-    
+
     setLoadingCategories(true);
     try {
       const storeId = selectedStore?.id;
       if (!storeId) {
-        console.error('❌ No store ID found');
         return;
       }
 
-      console.log('📡 Loading categories from Akeneo for store:', storeId);
-      console.log('🔧 Current connection status:', connectionStatus);
-      console.log('⚙️ Config saved:', configSaved);
-      
       const response = await apiClient.get('/integrations/akeneo/categories');
-
-      console.log('📥 Categories API response status:', response.status);
-      console.log('📥 Categories API response data:', response.data);
 
       if (response.data?.success || response.success) {
         const responseData = response.data || response;
@@ -717,20 +642,13 @@ const AkeneoIntegration = () => {
         setAvailableCategories(rootCategories);
 
         if (rootCategories.length === 0) {
-          console.warn('⚠️ No root categories found. All categories might have parents.');
           toast.info('No root categories found in Akeneo. All categories appear to have parent categories.');
         }
       } else {
-        console.error('❌ API response indicates failure:', responseData);
         toast.error('Failed to load categories from Akeneo API');
       }
     } catch (error) {
-      console.error('❌ Failed to load categories:', error);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data
-      });
+      console.error('Failed to load categories:', error);
       toast.error(`Failed to load categories: ${error.message}`);
     } finally {
       setLoadingCategories(false);
@@ -741,20 +659,16 @@ const AkeneoIntegration = () => {
   const loadFamiliesForFilter = async () => {
     try {
       const storeId = selectedStore?.id;
-      console.log('🔍 loadFamiliesForFilter called with storeId:', storeId);
-      
+
       if (!storeId) {
-        console.warn('❌ No storeId found in context');
         return;
       }
 
       setLoadingFamilies(true);
-      
+
       // First try to load families from local database (imported AttributeSets)
       try {
-        console.log('📡 Making API call to /attribute-sets with storeId:', storeId);
         const localResponse = await apiClient.get(`/attribute-sets?store_id=${storeId}`);
-        console.log('📋 API response:', localResponse);
 
         // Handle both wrapped and raw array response formats
         let attributeSets = [];
@@ -777,25 +691,10 @@ const AkeneoIntegration = () => {
               source: 'local'
             }));
           setFamilies(localFamilies);
-          console.log(`✅ Loaded ${localFamilies.length} families from local database:`, localFamilies.slice(0, 3));
-          console.log('🔍 Full families data for debugging:', localFamilies);
           return; // Use local families if available
-        } else {
-          console.warn('⚠️ API call successful but no families found:', {
-            success: localResponse.success,
-            hasData: !!localResponse.data,
-            attributeSetsLength: localResponse.data?.attribute_sets?.length,
-            isArray: Array.isArray(localResponse),
-            arrayLength: Array.isArray(localResponse) ? localResponse.length : 'not array'
-          });
         }
       } catch (localError) {
-        console.error('❌ Failed to load families from local database:', localError);
-        console.error('Error details:', {
-          message: localError.message,
-          status: localError.status,
-          response: localError.response
-        });
+        console.error('Failed to load families from local database:', localError);
       }
 
       // Fallback to loading families directly from Akeneo if connection is successful
@@ -808,10 +707,7 @@ const AkeneoIntegration = () => {
             source: 'akeneo'
           })) || [];
           setFamilies(familyData);
-          console.log(`Loaded ${familyData.length} families from Akeneo`);
         }
-      } else {
-        console.log('No Akeneo connection available, and no local families found');
       }
     } catch (error) {
       console.error('Failed to load families:', error);
@@ -932,9 +828,8 @@ const AkeneoIntegration = () => {
         try {
           const parsedStatus = JSON.parse(savedConnectionStatus);
           setConnectionStatus(parsedStatus);
-          console.log('📥 Loaded saved connection status:', parsedStatus);
         } catch (error) {
-          console.warn('⚠️ Failed to parse saved connection status:', error);
+          // Ignore parse errors
         }
       }
 
@@ -944,9 +839,8 @@ const AkeneoIntegration = () => {
         try {
           const parsedCategories = JSON.parse(savedCategories);
           setSelectedRootCategories(parsedCategories);
-          console.log('📥 Loaded saved categories:', parsedCategories);
         } catch (error) {
-          console.warn('⚠️ Failed to parse saved categories:', error);
+          // Ignore parse errors
         }
       }
 
@@ -956,9 +850,8 @@ const AkeneoIntegration = () => {
         try {
           const parsedFamilies = JSON.parse(savedFamilies);
           setSelectedFamilies(parsedFamilies);
-          console.log('📥 Loaded saved families:', parsedFamilies);
         } catch (error) {
-          console.warn('⚠️ Failed to parse saved families:', error);
+          // Ignore parse errors
         }
       }
 
@@ -969,7 +862,7 @@ const AkeneoIntegration = () => {
           const parsedSettings = JSON.parse(savedCategorySettings);
           setCategorySettings(parsedSettings);
         } catch (error) {
-          console.warn('⚠️ Failed to parse saved category settings:', error);
+          // Ignore parse errors
         }
       }
 
@@ -979,7 +872,7 @@ const AkeneoIntegration = () => {
           const parsedSettings = JSON.parse(savedProductSettings);
           setProductSettings(parsedSettings);
         } catch (error) {
-          console.warn('⚠️ Failed to parse saved product settings:', error);
+          // Ignore parse errors
         }
       }
 
@@ -989,7 +882,7 @@ const AkeneoIntegration = () => {
           const parsedSettings = JSON.parse(savedAttributeSettings);
           setAttributeSettings(parsedSettings);
         } catch (error) {
-          console.warn('⚠️ Failed to parse saved attribute settings:', error);
+          // Ignore parse errors
         }
       }
 
@@ -1010,42 +903,12 @@ const AkeneoIntegration = () => {
 
   // Load families on component mount (from local database)
   useEffect(() => {
-    console.log('🚀 AkeneoIntegration component mounted, loading families...');
     loadFamiliesForFilter();
-    
-    // Add global error handler to catch unhandled errors that might cause blank page
-    const handleError = (event) => {
-      console.error('🚨 Global error detected in AkeneoIntegration:', event.error);
-      console.error('Error details:', {
-        message: event.error?.message,
-        stack: event.error?.stack,
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno
-      });
-    };
-    
-    const handleUnhandledRejection = (event) => {
-      console.error('🚨 Unhandled promise rejection in AkeneoIntegration:', event.reason);
-      console.error('Rejection details:', {
-        reason: event.reason,
-        promise: event.promise
-      });
-    };
-    
-    window.addEventListener('error', handleError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-    
-    return () => {
-      window.removeEventListener('error', handleError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    };
   }, []);
 
   // Load additional data when connection becomes successful
   useEffect(() => {
     if (connectionStatus?.success) {
-      console.log('✅ Connection successful, reloading families and other data...');
       loadSchedules();
       loadChannels();
       loadFamiliesForFilter(); // Reload to get Akeneo families if available
@@ -1131,42 +994,33 @@ const AkeneoIntegration = () => {
   // Load saved connection status on page load
   const loadConnectionStatus = async () => {
     try {
-      console.log('🔗 Loading saved connection status...');
-      
       const storeId = selectedStore?.id;
       if (!storeId) {
-        console.warn('⚠️ No store selected, skipping connection status load');
         return;
       }
 
       const response = await apiClient.get('/integrations/akeneo/connection-status');
-      
-      console.log('📡 Connection status response:', response);
-      
+
       const responseData = response.data || response;
       if (responseData.success && responseData.connectionStatus) {
         const { status, message, testedAt } = responseData.connectionStatus;
-        
+
         if (status === 'success') {
-          setConnectionStatus({ 
-            success: true, 
-            message: 'Connection verified', 
-            testedAt 
+          setConnectionStatus({
+            success: true,
+            message: 'Connection verified',
+            testedAt
           });
-          console.log('✅ Loaded successful connection status from', testedAt);
         } else if (status === 'failed') {
-          setConnectionStatus({ 
-            success: false, 
-            message: message || 'Connection failed', 
-            testedAt 
+          setConnectionStatus({
+            success: false,
+            message: message || 'Connection failed',
+            testedAt
           });
-          console.log('❌ Loaded failed connection status:', message);
-        } else {
-          console.log('ℹ️ Connection not yet tested');
         }
       }
     } catch (error) {
-      console.error('❌ Failed to load connection status:', error);
+      console.error('Failed to load connection status:', error);
     }
   };
 
@@ -1198,64 +1052,42 @@ const AkeneoIntegration = () => {
 
   const loadConfigStatus = async () => {
     try {
-      console.log('🔄 Loading Akeneo configuration status...');
-      
       // Get store_id from context
       const storeId = selectedStore?.id;
-      console.log('🏪 Store ID:', storeId);
-      
+
       if (!storeId) {
-        console.warn('⚠️ No store selected, skipping config status load');
         return;
       }
 
       setLoading(true);
       const response = await apiClient.get('/integrations/akeneo/config-status');
-      
-      console.log('📥 Config status response:', response);
-      
+
       // Handle different response structures
       const responseData = response.data || response;
-      console.log('📋 Response data:', responseData);
-      
+
       if (responseData.success && responseData.config) {
-        console.log('✅ Config found, updating state with:', responseData.config);
         setConfig(prev => ({
           ...prev,
           ...responseData.config
         }));
-        
+
         // Set last import dates if available
         if (responseData.config.lastImportDates) {
           setLastImportDates(responseData.config.lastImportDates);
-          console.log('📅 Loaded last import dates:', responseData.config.lastImportDates);
         }
-        
+
         // If we have a complete configuration, set configSaved to true
         const loadedConfig = responseData.config;
-        if (loadedConfig.baseUrl && loadedConfig.clientId && loadedConfig.clientSecret && 
+        if (loadedConfig.baseUrl && loadedConfig.clientId && loadedConfig.clientSecret &&
             loadedConfig.username && loadedConfig.password) {
           setConfigSaved(true);
-          console.log('✅ Configuration marked as saved');
-          
+
           // Load saved connection status after config is loaded
           await loadConnectionStatus();
-        } else {
-          console.log('⚠️ Incomplete configuration loaded');
         }
-      } else {
-        console.log('⚠️ No valid config found in response');
       }
     } catch (error) {
-      console.error('❌ Failed to load config status:', error);
-      // Check if it's a specific API error
-      if (error.status) {
-        console.error('📊 Error details:', {
-          status: error.status,
-          message: error.message,
-          data: error.data
-        });
-      }
+      console.error('Failed to load config status:', error);
     } finally {
       setLoading(false);
     }
@@ -1263,27 +1095,16 @@ const AkeneoIntegration = () => {
 
   const loadLocales = async () => {
     try {
-      console.log('🌐 Loading locales...');
       const response = await apiClient.get('/integrations/akeneo/locales');
-      console.log('🌐 Locales API response:', response);
-      
+
       // Handle both wrapped and direct response formats
       const responseData = response.data || response;
-      console.log('🌐 Locales responseData:', responseData);
-      
+
       if (responseData?.success) {
-        console.log('✅ Locales loaded successfully:', responseData.locales);
         setLocales(responseData.locales);
-      } else {
-        console.log('❌ Locales API returned unsuccessful response');
       }
     } catch (error) {
-      console.error('❌ Failed to load locales:', error);
-      console.error('Locales error details:', {
-        message: error.message,
-        status: error.status,
-        response: error.response
-      });
+      console.error('Failed to load locales:', error);
     }
   };
 
@@ -1298,44 +1119,24 @@ const AkeneoIntegration = () => {
   };
 
   const testConnection = async () => {
-    console.log('🔌 Test Connection button clicked!');
-    console.log('🔌 Starting connection test...');
-    console.log('📋 Current config:', { 
-      baseUrl: config.baseUrl, 
-      clientId: config.clientId, 
-      username: config.username,
-      hasClientSecret: !!config.clientSecret,
-      hasPassword: !!config.password,
-      clientSecretPlaceholder: config.clientSecret === '••••••••',
-      passwordPlaceholder: config.password === '••••••••'
-    });
-
     // Check if we have placeholder values - if so, we need actual values
     if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
-      console.error('❌ Missing configuration fields');
       toast.error('Please fill in all configuration fields');
       return;
     }
 
     // Check if we have placeholder values - we can still test if config is saved
     const hasPlaceholders = config.clientSecret === '••••••••' || config.password === '••••••••';
-    
+
     if (hasPlaceholders && !configSaved) {
-      console.error('❌ Placeholder values detected but config not saved');
       toast.error('Please enter your actual Client Secret and Password to test the connection');
       return;
-    }
-    
-    if (hasPlaceholders && configSaved) {
-      console.log('ℹ️ Using saved configuration with placeholder values - will use stored credentials');
     }
 
     // Get store_id from context
     const storeId = selectedStore?.id;
-    console.log('🏪 Using store ID:', storeId);
-    
+
     if (!storeId) {
-      console.error('❌ No store selected');
       toast.error('No store selected. Please select a store first.');
       return;
     }
@@ -1344,65 +1145,49 @@ const AkeneoIntegration = () => {
     setConnectionStatus(null);
 
     try {
-      console.log('📡 Making API call to test-connection...');
-      
       // Prepare the request payload
       let requestPayload;
       if (hasPlaceholders && configSaved) {
         // Send empty body to trigger stored config usage
         requestPayload = {};
-        console.log('🔒 Using stored configuration from database');
       } else {
         // Send full config
         requestPayload = config;
-        console.log('📋 Using provided configuration for test');
       }
-      
+
       const response = await apiClient.post('/integrations/akeneo/test-connection', requestPayload);
-      
-      console.log('📥 Test connection response:', response);
-      
+
       // Handle different response structures
       const responseData = response.data || response;
-      console.log('📋 Response data:', responseData);
-      
+
       const success = responseData.success;
       const message = responseData.message || 'Connection test completed';
-      
+
       if (success) {
-        console.log('✅ Connection successful');
         const successStatus = { success: true, message };
         setConnectionStatus(successStatus);
         localStorage.setItem('akeneo_connection_status', JSON.stringify(successStatus));
         toast.success('Connection successful!');
       } else {
-        console.log('❌ Connection failed:', message);
         const failureStatus = { success: false, message };
         setConnectionStatus(failureStatus);
         localStorage.setItem('akeneo_connection_status', JSON.stringify(failureStatus));
         toast.error('Connection failed');
       }
     } catch (error) {
-      console.error('❌ Connection test error:', error);
-      console.error('📊 Error details:', {
-        status: error.status,
-        message: error.message,
-        response: error.response?.data
-      });
-      
+      console.error('Connection test error:', error);
+
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
       const errorStatus = { success: false, message };
       setConnectionStatus(errorStatus);
       localStorage.setItem('akeneo_connection_status', JSON.stringify(errorStatus));
       toast.error(`Connection failed: ${message}`);
     } finally {
-      console.log('🏁 Connection test completed');
       setTesting(false);
     }
   };
 
   const saveConfiguration = async () => {
-    console.log('💾 Save Configuration button clicked!');
     if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
       toast.error('Please fill in all configuration fields');
       return;
@@ -1449,156 +1234,117 @@ const AkeneoIntegration = () => {
   };
 
   const importCategories = async () => {
-    console.log('🚀 IMPORT CATEGORIES FUNCTION CALLED - v2 - This should appear in console');
     try {
-      console.log('📦 Starting categories import...');
-      console.log('🔗 Connection status:', connectionStatus);
-    
-    // Debug authentication state
-    const authToken = localStorage.getItem('store_owner_auth_token');
-    const storeId = selectedStore?.id;
-    console.log('🔐 Auth token present:', !!authToken);
-    console.log('🔐 Auth token length:', authToken?.length || 0);
-    console.log('🏪 Store ID:', storeId);
-    
-    if (!authToken) {
-      console.error('❌ No authentication token found');
-      toast.error('Authentication required. Please refresh the page and log in again.');
-      return;
-    }
-    
-    if (!connectionStatus?.success) {
-      console.error('❌ Connection not tested or failed');
-      toast.error('Please test the connection first');
-      return;
-    }
+      // Debug authentication state
+      const authToken = localStorage.getItem('store_owner_auth_token');
+      const storeId = selectedStore?.id;
 
-    // Validate that at least one category is selected
-    if (selectedRootCategories.length === 0) {
-      console.error('❌ No categories selected');
-      toast.error('Please select at least 1 category to import');
-      return;
-    }
-
-    // storeId already declared above
-    console.log('🏪 Using store ID:', storeId);
-    
-    if (!storeId) {
-      console.error('❌ No store selected');
-      toast.error('No store selected. Please select a store first.');
-      return;
-    }
-
-    console.log('🔧 Import settings:', { dryRun, config });
-
-    setImporting(true);
-    setImportResults(null);
-    
-    // Initialize progress tracking for categories
-    setImportProgress(prev => ({
-      ...prev,
-      categories: { current: 0, total: 0, isActive: true }
-    }));
-
-    try {
-      console.log('📡 Making API call to import-categories...');
-      
-      // Prepare the request payload for import
-      const hasPlaceholders = config.clientSecret === '••••••••' || config.password === '••••••••';
-      let requestPayload;
-      
-      if (hasPlaceholders && configSaved) {
-        // Use stored config for import
-        requestPayload = { 
-          dryRun,
-          filters: {
-            rootCategories: selectedRootCategories.length > 0 ? selectedRootCategories : undefined
-          },
-          settings: {
-            hideFromMenu: categorySettings.hideFromMenu,
-            setNewActive: categorySettings.setNewActive,
-            preventUrlKeyOverride: categorySettings.preventUrlKeyOverride,
-            akeneoUrlField: categorySettings.akeneoUrlField
-          }
-        };
-        console.log('🔒 Using stored configuration for import');
-      } else {
-        // Use provided config
-        requestPayload = { 
-          ...config, 
-          dryRun,
-          filters: {
-            rootCategories: selectedRootCategories.length > 0 ? selectedRootCategories : undefined
-          },
-          settings: {
-            hideFromMenu: categorySettings.hideFromMenu,
-            setNewActive: categorySettings.setNewActive,
-            preventUrlKeyOverride: categorySettings.preventUrlKeyOverride,
-            akeneoUrlField: categorySettings.akeneoUrlField
-          }
-        };
-        console.log('📋 Using provided configuration for import');
-      }
-      
-      console.log('🎯 Selected root categories for import:', selectedRootCategories);
-      
-      const response = await apiClient.post('/integrations/akeneo/import-categories', requestPayload);
-
-      console.log('📥 Import categories response:', response);
-      
-      const responseData = response.data || response;
-      // Enhance with error details and timestamp
-      const enhancedResponseData = enhanceImportResponse(responseData, 'categories');
-      setTabImportResults('categories', enhancedResponseData);
-      
-      if (responseData?.success) {
-        console.log('✅ Categories import successful');
-        const stats = responseData?.stats || {};
-        toast.success(`Categories import completed! ${stats?.imported || 0} categories imported`);
-        // Reload stats and config to reflect changes
-        await loadStats();
-        await loadConfigStatus();
-      } else {
-        console.log('❌ Categories import failed:', responseData.error);
-        toast.error(`Categories import failed: ${responseData.error}`);
-      }
-    } catch (error) {
-      console.error('❌ Categories import error:', error);
-      console.error('📊 Error details:', {
-        status: error.status,
-        message: error.message,
-        response: error.response?.data
-      });
-      
-      // Handle authentication errors specifically
-      if (error.status === 401) {
-        console.error('🚨 Authentication error detected - token may be expired');
-        toast.error('Authentication expired. Please refresh the page and log in again.');
-        setImportResults({ success: false, error: 'Authentication expired' });
+      if (!authToken) {
+        toast.error('Authentication required. Please refresh the page and log in again.');
         return;
       }
-      
-      const message = error.response?.data?.error || error.response?.data?.message || error.message;
-      setImportResults({ success: false, error: message });
-      toast.error(`Import failed: ${message}`);
-    } finally {
-      console.log('🏁 Categories import completed');
-      
-      // Reset progress tracking for categories
+
+      if (!connectionStatus?.success) {
+        toast.error('Please test the connection first');
+        return;
+      }
+
+      // Validate that at least one category is selected
+      if (selectedRootCategories.length === 0) {
+        toast.error('Please select at least 1 category to import');
+        return;
+      }
+
+      if (!storeId) {
+        toast.error('No store selected. Please select a store first.');
+        return;
+      }
+
+      setImporting(true);
+      setImportResults(null);
+
+      // Initialize progress tracking for categories
       setImportProgress(prev => ({
         ...prev,
-        categories: { current: 0, total: 0, isActive: false }
+        categories: { current: 0, total: 0, isActive: true }
       }));
-      
-      setImporting(false);
-    }
+
+      try {
+        // Prepare the request payload for import
+        const hasPlaceholders = config.clientSecret === '••••••••' || config.password === '••••••••';
+        let requestPayload;
+
+        if (hasPlaceholders && configSaved) {
+          // Use stored config for import
+          requestPayload = {
+            dryRun,
+            filters: {
+              rootCategories: selectedRootCategories.length > 0 ? selectedRootCategories : undefined
+            },
+            settings: {
+              hideFromMenu: categorySettings.hideFromMenu,
+              setNewActive: categorySettings.setNewActive,
+              preventUrlKeyOverride: categorySettings.preventUrlKeyOverride,
+              akeneoUrlField: categorySettings.akeneoUrlField
+            }
+          };
+        } else {
+          // Use provided config
+          requestPayload = {
+            ...config,
+            dryRun,
+            filters: {
+              rootCategories: selectedRootCategories.length > 0 ? selectedRootCategories : undefined
+            },
+            settings: {
+              hideFromMenu: categorySettings.hideFromMenu,
+              setNewActive: categorySettings.setNewActive,
+              preventUrlKeyOverride: categorySettings.preventUrlKeyOverride,
+              akeneoUrlField: categorySettings.akeneoUrlField
+            }
+          };
+        }
+
+        const response = await apiClient.post('/integrations/akeneo/import-categories', requestPayload);
+
+        const responseData = response.data || response;
+        // Enhance with error details and timestamp
+        const enhancedResponseData = enhanceImportResponse(responseData, 'categories');
+        setTabImportResults('categories', enhancedResponseData);
+
+        if (responseData?.success) {
+          const stats = responseData?.stats || {};
+          toast.success(`Categories import completed! ${stats?.imported || 0} categories imported`);
+          // Reload stats and config to reflect changes
+          await loadStats();
+          await loadConfigStatus();
+        } else {
+          toast.error(`Categories import failed: ${responseData.error}`);
+        }
+      } catch (error) {
+        console.error('Categories import error:', error);
+
+        // Handle authentication errors specifically
+        if (error.status === 401) {
+          toast.error('Authentication expired. Please refresh the page and log in again.');
+          setImportResults({ success: false, error: 'Authentication expired' });
+          return;
+        }
+
+        const message = error.response?.data?.error || error.response?.data?.message || error.message;
+        setImportResults({ success: false, error: message });
+        toast.error(`Import failed: ${message}`);
+      } finally {
+        // Reset progress tracking for categories
+        setImportProgress(prev => ({
+          ...prev,
+          categories: { current: 0, total: 0, isActive: false }
+        }));
+
+        setImporting(false);
+      }
     } catch (unexpectedError) {
-      console.error('🚨 UNEXPECTED ERROR in importCategories function:', unexpectedError);
-      console.error('🚨 Error type:', typeof unexpectedError);
-      console.error('🚨 Error name:', unexpectedError?.name);
-      console.error('🚨 Error message:', unexpectedError?.message);
-      console.error('🚨 Error stack:', unexpectedError?.stack);
-      
+      console.error('Unexpected error in importCategories function:', unexpectedError);
       toast.error('An unexpected error occurred during import. Check console for details.');
       setImporting(false);
       setImportResults({ success: false, error: 'Unexpected error: ' + unexpectedError?.message });
@@ -1606,54 +1352,28 @@ const AkeneoIntegration = () => {
   };
 
   const importAttributes = async () => {
-    console.log('📦 Starting attributes import...');
-    
-    // Add comprehensive state debugging
-    console.log('🔍 Complete component state at import time:', {
-      stats: stats,
-      statsType: typeof stats,
-      statsIsNull: stats === null,
-      statsIsUndefined: stats === undefined,
-      statsKeys: stats ? Object.keys(stats) : 'N/A',
-      families: families?.length || 0,
-      familiesType: typeof families,
-      familiesIsArray: Array.isArray(families),
-      attributes: attributes?.length || 0,
-      importResults: importResults,
-      activeTab: activeTab
-    });
-    
     // Debug authentication state
     const authToken = localStorage.getItem('store_owner_auth_token');
     const storeId = selectedStore?.id;
-    console.log('🔐 Auth token present:', !!authToken);
-    console.log('🔐 Auth token length:', authToken?.length || 0);
-    console.log('🏪 Store ID:', storeId);
-    
+
     if (!authToken) {
-      console.error('❌ No authentication token found');
       toast.error('Authentication required. Please refresh the page and log in again.');
       return;
     }
-    
+
     if (!connectionStatus?.success) {
-      console.error('❌ Connection not tested or failed');
       toast.error('Please test the connection first');
       return;
     }
 
-    // storeId already declared above
-    console.log('🏪 Using store ID:', storeId);
-    
     if (!storeId) {
-      console.error('❌ No store selected');
       toast.error('No store selected. Please select a store first.');
       return;
     }
 
     setImporting(true);
     setImportResults(null);
-    
+
     // Initialize progress tracking for attributes
     setImportProgress(prev => ({
       ...prev,
@@ -1661,15 +1381,13 @@ const AkeneoIntegration = () => {
     }));
 
     try {
-      console.log('📡 Making API call to import-attributes...');
-      
       // Prepare the request payload for import
       const hasPlaceholders = config.clientSecret === '••••••••' || config.password === '••••••••';
       let requestPayload;
-      
+
       if (hasPlaceholders && configSaved) {
         // Use stored config for import with attribute settings
-        requestPayload = { 
+        requestPayload = {
           dryRun,
           filters: {
             families: attributeSettings.selectedFamilies.length > 0 ? attributeSettings.selectedFamilies : undefined,
@@ -1677,11 +1395,10 @@ const AkeneoIntegration = () => {
           },
           settings: attributeSettings
         };
-        console.log('🔒 Using stored configuration for import');
       } else {
         // Use provided config with attribute settings
-        requestPayload = { 
-          ...config, 
+        requestPayload = {
+          ...config,
           dryRun,
           filters: {
             families: attributeSettings.selectedFamilies.length > 0 ? attributeSettings.selectedFamilies : undefined,
@@ -1689,57 +1406,34 @@ const AkeneoIntegration = () => {
           },
           settings: attributeSettings
         };
-        console.log('📋 Using provided configuration for import');
       }
 
-      console.log('🎯 Attribute import settings:', requestPayload);
-      
       const response = await apiClient.post('/integrations/akeneo/import-attributes', requestPayload);
 
-      console.log('📥 Import attributes response:', response);
-      
       const responseData = response.data || response;
       // Ensure responseData is not null before setting
       if (responseData) {
         const enhancedResponseData = enhanceImportResponse(responseData, 'attributes');
         setTabImportResults('attributes', enhancedResponseData);
       } else {
-        console.error('⚠️ Received null response data');
         setTabImportResults('attributes', { success: false, error: 'Invalid response from server' });
       }
-      
+
       if (responseData?.success) {
-        console.log('✅ Attributes import successful');
         const stats = responseData?.stats || {};
         toast.success(`Attributes import completed! ${stats?.imported || 0} attributes imported`);
         // Reload stats and config to reflect changes
         try {
-          console.log('🔄 Reloading stats after successful import...');
           await loadStats();
-          console.log('✅ Stats reloaded successfully');
         } catch (statsError) {
-          console.error('❌ Error reloading stats:', statsError);
-          console.error('Stats error details:', {
-            message: statsError.message,
-            stack: statsError.stack,
-            response: statsError.response
-          });
+          console.error('Error reloading stats:', statsError);
         }
         try {
-          console.log('🔄 Reloading config status after successful import...');
           await loadConfigStatus();
-          console.log('✅ Config status reloaded successfully');
         } catch (configError) {
-          console.error('❌ Error reloading config status:', configError);
-          console.error('Config error details:', {
-            message: configError.message,
-            stack: configError.stack,
-            response: configError.response
-          });
+          console.error('Error reloading config status:', configError);
         }
-        console.log('🏁 Post-import reload completed');
       } else {
-        console.log('❌ Attributes import failed:', responseData.error);
         toast.error(`Attributes import failed: ${responseData.error}`);
       }
     } catch (error) {
@@ -1757,9 +1451,8 @@ const AkeneoIntegration = () => {
       setTabImportResults('attributes', { success: false, error: message });
       toast.error(`Import failed: ${message}`);
     } finally {
-      console.log('🏁 Attributes import completed');
       setImporting(false);
-      
+
       // Reset progress tracking for attributes
       setImportProgress(prev => ({
         ...prev,
@@ -1769,28 +1462,21 @@ const AkeneoIntegration = () => {
   };
 
   const importFamilies = async () => {
-    console.log('📦 Starting families import...');
     const storeId = selectedStore?.id;
-    
+
     if (!connectionStatus?.success) {
-      console.error('❌ Connection not tested or failed');
       toast.error('Please test the connection first');
       return;
     }
 
-    console.log('🏪 Using store ID:', storeId);
-    
     if (!storeId) {
-      console.error('❌ No store selected');
       toast.error('No store selected. Please select a store first.');
       return;
     }
 
-    console.log('🔧 Import settings:', { dryRun });
-
     setImporting(true);
     setImportResults(null);
-    
+
     // Initialize progress tracking for families
     setImportProgress(prev => ({
       ...prev,
@@ -1798,64 +1484,53 @@ const AkeneoIntegration = () => {
     }));
 
     try {
-      console.log('📡 Making API call to import-families...');
-      
       // Prepare the request payload for import
       const hasPlaceholders = config.clientSecret === '••••••••' || config.password === '••••••••';
       let requestPayload;
-      
+
       if (hasPlaceholders && configSaved) {
         // Use stored config for import
-        requestPayload = { 
+        requestPayload = {
           dryRun,
           filters: {
             families: selectedFamiliesToImport.length > 0 ? selectedFamiliesToImport : undefined
           }
         };
-        console.log('🔒 Using stored configuration for import');
       } else {
         // Use provided config
-        requestPayload = { 
-          ...config, 
+        requestPayload = {
+          ...config,
           dryRun,
           filters: {
             families: selectedFamiliesToImport.length > 0 ? selectedFamiliesToImport : undefined
           }
         };
-        console.log('📋 Using provided configuration for import');
       }
-      
-      console.log('🎯 Selected families for import:', selectedFamiliesToImport);
-      
+
       const response = await apiClient.post('/integrations/akeneo/import-families', requestPayload);
 
-      console.log('📥 Import families response:', response);
-      
       const responseData = response.data || response;
       const enhancedResponseData = enhanceImportResponse(responseData, 'families');
       setTabImportResults('families', enhancedResponseData);
-      
+
       if (responseData?.success) {
-        console.log('✅ Families import successful');
         const stats = responseData?.stats || {};
         toast.success(`Families import completed! ${stats?.imported || 0} families imported`);
         // Reload stats and config to reflect changes
         await loadStats();
         await loadConfigStatus();
       } else {
-        console.log('❌ Families import failed:', responseData.error);
         toast.error(`Families import failed: ${responseData.error}`);
       }
     } catch (error) {
-      console.error('❌ Families import error:', error);
-      
+      console.error('Families import error:', error);
+
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
       setImportResults({ success: false, error: message });
       toast.error(`Import failed: ${message}`);
     } finally {
-      console.log('🏁 Families import completed');
       setImporting(false);
-      
+
       // Reset progress tracking for families
       setImportProgress(prev => ({
         ...prev,
@@ -1865,27 +1540,20 @@ const AkeneoIntegration = () => {
   };
 
   const importProducts = async () => {
-    console.log('📦 Starting products import...');
-    
     // Debug authentication state
     const authToken = localStorage.getItem('store_owner_auth_token');
     const storeId = selectedStore?.id;
-    console.log('🔐 Auth token present:', !!authToken);
-    console.log('🔐 Auth token length:', authToken?.length || 0);
-    console.log('🏪 Store ID:', storeId);
-    
+
     if (!authToken) {
-      console.error('❌ No authentication token found');
       toast.error('Authentication required. Please refresh the page and log in again.');
       return;
     }
-    
+
     if (!connectionStatus?.success) {
       toast.error('Please test the connection first');
       return;
     }
 
-    // storeId already declared above
     if (!storeId) {
       toast.error('No store selected. Please select a store first.');
       return;
@@ -1893,7 +1561,7 @@ const AkeneoIntegration = () => {
 
     setImporting(true);
     setImportResults(null);
-    
+
     // Initialize progress tracking for products
     setImportProgress(prev => ({
       ...prev,
@@ -1923,17 +1591,10 @@ const AkeneoIntegration = () => {
         customMappings: customMappings
       };
 
-      console.log('🎯 Product import settings:', requestPayload);
-
       const response = await apiClient.post('/integrations/akeneo/import-products', requestPayload);
 
-      console.log('📥 Import products response:', response);
-      console.log('📥 Import products response.data:', response.data);
-      
       const responseData = response.data || response;
-      console.log('📥 Final responseData:', responseData);
-      console.log('📥 responseData.success:', responseData?.success);
-      
+
       // Ensure responseData has the expected structure
       const finalResults = {
         success: responseData?.success ?? false,
@@ -1942,107 +1603,50 @@ const AkeneoIntegration = () => {
         error: responseData?.error || '',
         ...responseData
       };
-      
-      console.log('📥 Final results to set:', finalResults);
+
       setTabImportResults('products', finalResults);
-      
+
       if (responseData?.success) {
-        console.log('✅ Products import successful');
         const stats = responseData?.stats || {};
         toast.success(`Products import completed! ${stats?.imported || 0} products imported`);
         // Reload stats and config to reflect changes with enhanced error handling
-        console.log('🔄 Starting post-import reload sequence...');
-        
+
         // Reload stats with isolation
         setTimeout(async () => {
           try {
-            console.log('🔄 Reloading stats after successful products import...');
-            console.log('🔍 State before stats reload:', {
-              hasConfig: config.baseUrl ? 'yes' : 'no',
-              familiesCount: families?.length || 0,
-              statsLoaded: stats ? 'yes' : 'no'
-            });
             await loadStats();
-            console.log('✅ Stats reloaded successfully after products import');
-            console.log('🔍 State after stats reload:', {
-              hasConfig: config.baseUrl ? 'yes' : 'no',
-              familiesCount: families?.length || 0,
-              statsLoaded: stats ? 'yes' : 'no'
-            });
           } catch (statsError) {
-            console.error('❌ Error reloading stats after products import:', statsError);
-            console.error('Products stats error details:', {
-              name: statsError.name,
-              message: statsError.message,
-              stack: statsError.stack,
-              response: statsError.response?.data
-            });
+            console.error('Error reloading stats after products import:', statsError);
             // Continue even if stats reload fails
           }
         }, 100);
-        
+
         // Reload config with isolation
         setTimeout(async () => {
           try {
-            console.log('🔄 Reloading config status after successful products import...');
-            console.log('🔍 State before config reload:', {
-              hasConfig: config.baseUrl ? 'yes' : 'no',
-              familiesCount: families?.length || 0,
-              statsLoaded: stats ? 'yes' : 'no'
-            });
             await loadConfigStatus();
-            console.log('✅ Config status reloaded successfully after products import');
-            console.log('🔍 State after config reload:', {
-              hasConfig: config.baseUrl ? 'yes' : 'no',
-              familiesCount: families?.length || 0,
-              statsLoaded: stats ? 'yes' : 'no'
-            });
           } catch (configError) {
-            console.error('❌ Error reloading config status after products import:', configError);
-            console.error('Products config error details:', {
-              name: configError.name,
-              message: configError.message,
-              stack: configError.stack,
-              response: configError.response?.data
-            });
+            console.error('Error reloading config status after products import:', configError);
             // Continue even if config reload fails
           }
         }, 200);
-        
-        console.log('🏁 Post-products-import reload sequence initiated');
       } else {
-        console.log('❌ Products import was not successful:', responseData);
         toast.error(`Products import failed: ${responseData.error}`);
       }
     } catch (error) {
-      console.error('❌ Products import failed with error:', error);
-      console.error('Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-        response: error.response?.data
-      });
-      
+      console.error('Products import failed with error:', error);
+
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
       setTabImportResults('products', { success: false, error: message });
       toast.error(`Import failed: ${message}`);
     } finally {
-      console.log('🏁 Products import finally block executed');
-      console.log('🔍 State in finally block:', {
-        hasConfig: config.baseUrl ? 'yes' : 'no',
-        familiesCount: families?.length || 0,
-        statsLoaded: stats ? 'yes' : 'no',
-        importing: importing ? 'yes' : 'no'
-      });
-      
       // Reset progress tracking for products
       setImportProgress(prev => ({
         ...prev,
         products: { current: 0, total: 0, isActive: false }
       }));
-      
+
       setImporting(false);
-      console.log('🏁 setImporting(false) completed');
     }
   };
 
@@ -2256,17 +1860,8 @@ const AkeneoIntegration = () => {
     );
   };
 
-    console.log(`🎨 AkeneoIntegration about to render JSX for render #${renderCount.current}`);
-    console.log(`🔍 Key state values:`, {
-      hasConfig: config.baseUrl ? 'yes' : 'no',
-      familiesCount: families?.length || 0,
-      statsLoaded: stats ? 'yes' : 'no',
-      importing: importing ? 'yes' : 'no'
-    });
-    
     // Defensive check - if critical state is invalid, return loading state
     if (!config && !families && !stats) {
-      console.warn('⚠️ All critical state is empty, showing loading state');
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
@@ -3268,12 +2863,8 @@ const AkeneoIntegration = () => {
                 </Card>
 
                 <div className="flex items-center gap-4">
-                  <Button 
-                    onClick={() => {
-                      console.log('🖱️ IMPORT CATEGORIES BUTTON CLICKED - Button click registered');
-                      console.log('🖱️ Button state - importing:', importing, 'connectionStatus:', connectionStatus?.success, 'selectedCategories:', selectedRootCategories?.length);
-                      importCategories();
-                    }} 
+                  <Button
+                    onClick={importCategories}
                     disabled={importing || !connectionStatus?.success || selectedRootCategories.length === 0}
                     className="flex items-center gap-2"
                   >
