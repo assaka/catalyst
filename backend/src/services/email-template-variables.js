@@ -38,7 +38,7 @@ const EMAIL_VARIABLES = {
     { key: '{{customer_name}}', description: 'Customer full name', example: 'John Doe' },
     { key: '{{customer_first_name}}', description: 'Customer first name', example: 'John' },
     { key: '{{customer_email}}', description: 'Customer email address', example: 'john@example.com' },
-    { key: '{{verificationCode}}', description: '6-digit verification code', example: '123456' },
+    { key: '{{verification_code}}', description: '6-digit verification code', example: '123456' },
     { key: '{{store_name}}', description: 'Store name', example: 'My Awesome Store' },
     { key: '{{store_url}}', description: 'Store URL', example: 'https://mystore.com' },
     { key: '{{current_year}}', description: 'Current year', example: '2025' }

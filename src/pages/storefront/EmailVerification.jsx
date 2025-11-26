@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import apiClient from '@/api/client';
+import { useStore } from '@/components/storefront/StoreProvider';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, Mail, AlertCircle } from 'lucide-react';
@@ -9,6 +10,7 @@ export default function EmailVerification() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { storeCode } = useParams();
+  const { store } = useStore();
   const email = searchParams.get('email');
 
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -70,7 +72,8 @@ export default function EmailVerification() {
     try {
       const response = await apiClient.post('auth/verify-email', {
         email,
-        code: verificationCode
+        code: verificationCode,
+        store_id: store?.id
       });
 
       if (response.success) {
@@ -93,7 +96,7 @@ export default function EmailVerification() {
     setError('');
 
     try {
-      const response = await apiClient.post('auth/resend-verification', { email });
+      const response = await apiClient.post('auth/resend-verification', { email, store_id: store?.id });
 
       if (response.success) {
         setError('');

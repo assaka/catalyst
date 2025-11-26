@@ -670,7 +670,7 @@ router.post('/upgrade-guest', async (req, res) => {
       await emailService.sendTransactionalEmail(store_id, 'email_verification', {
         recipientEmail: email,
         customer: finalCustomer,
-        verificationCode: verificationCode
+        verification_code: verificationCode
       });
       console.log('📧 Verification email sent to:', email);
     } catch (emailError) {
@@ -808,7 +808,7 @@ router.post('/customer/register', async (req, res) => {
         await emailService.sendTransactionalEmail(store_id, 'email_verification', {
           recipientEmail: email,
           customer: upgradedCustomer,
-          verificationCode: verificationCode
+          verification_code: verificationCode
         });
         console.log('📧 Verification email sent to:', email);
       } catch (emailError) {
@@ -923,7 +923,7 @@ router.post('/customer/register', async (req, res) => {
       await emailService.sendTransactionalEmail(store_id, 'email_verification', {
         recipientEmail: email,
         customer: newCustomer,
-        verificationCode: verificationCode
+        verification_code: verificationCode
       });
       console.log('📧 Verification email sent to:', email);
     } catch (emailError) {
@@ -1185,7 +1185,7 @@ router.post('/resend-verification', async (req, res) => {
       await emailService.sendTransactionalEmail(store_id, 'email_verification', {
         recipientEmail: email,
         customer: customer,
-        verificationCode: verificationCode
+        verification_code: verificationCode
       });
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
