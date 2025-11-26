@@ -129,6 +129,10 @@ export default function Storefronts() {
       setFlashMessage({ type: 'info', message: 'Created default storefront from current store settings' });
     } catch (error) {
       console.error('Failed to create default storefront:', error);
+      setFlashMessage({
+        type: 'error',
+        message: `Failed to create default storefront: ${error.response?.data?.error || error.message}. Run the migration first.`
+      });
     }
   };
 
