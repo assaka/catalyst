@@ -537,20 +537,18 @@ export function CategorySlotRenderer({
           const total = Number(categoryContext.filteredProductsCount) || 0;
           const start = (currentPage - 1) * itemsPerPage + 1;
           const end = Math.min(currentPage * itemsPerPage, total);
-          const productWord = total === 1 ? t('common.product', 'product') : t('common.products', 'products');
-
-          // Build the product count text with proper singular/plural
+          // Build the product count text with proper singular/plural (lowercase)
           let countText;
           if (total === 0) {
             countText = t('category.no_products_found', 'No products found');
           } else if (total === 1) {
-            countText = `1 ${productWord}`;
+            countText = `1 ${t('common.product', 'product').toLowerCase()}`;
           } else if (start === 1 && end === total) {
             // All products on one page
-            countText = `${total} ${productWord}`;
+            countText = `${total} ${t('common.products', 'products').toLowerCase()}`;
           } else {
-            // Paginated
-            countText = `${start}-${end} ${t('common.of', 'of')} ${total} ${productWord}`;
+            // Paginated: "5 out of 10 products"
+            countText = `${end} ${t('common.out_of', 'out of')} ${total} ${t('common.products', 'products').toLowerCase()}`;
           }
 
           return {
@@ -736,9 +734,6 @@ export function CategorySlotRenderer({
     if (id === 'product_count_info') {
       // Use filteredProductsCount for accurate count after filtering
       const totalProducts = Number(filteredProductsCount) || allProducts?.length || 0;
-      const productLabel = totalProducts === 1
-        ? t('common.product', 'product')
-        : t('common.products', 'products');
 
       // Handle infinite scroll case
       if (itemsPerPage === -1) {
@@ -747,9 +742,9 @@ export function CategorySlotRenderer({
             {totalProducts === 0 ? (
               t('category.no_products_found', 'No products found')
             ) : totalProducts === 1 ? (
-              `1 ${productLabel}`
+              `1 ${t('common.product', 'product').toLowerCase()}`
             ) : (
-              `${totalProducts} ${productLabel}`
+              `${totalProducts} ${t('common.products', 'products').toLowerCase()}`
             )}
           </div>
         );
@@ -760,19 +755,20 @@ export function CategorySlotRenderer({
       const startIndex = (currentPageNum - 1) * itemsPerPage + 1;
       const endIndex = Math.min(startIndex + (products?.length || 0) - 1, totalProducts);
 
-      // Build the display text with proper singular/plural
+      // Build the display text with proper singular/plural (lowercase)
       const getProductCountText = () => {
         if (totalProducts === 0) {
           return t('category.no_products_found', 'No products found');
         }
         if (totalProducts === 1) {
-          return `1 ${productLabel}`;
+          return `1 ${t('common.product', 'product').toLowerCase()}`;
         }
         // If showing all products on one page
         if (startIndex === 1 && endIndex === totalProducts) {
-          return `${totalProducts} ${productLabel}`;
+          return `${totalProducts} ${t('common.products', 'products').toLowerCase()}`;
         }
-        return `${t('common.showing', 'Showing')} ${startIndex}-${endIndex} ${t('common.of', 'of')} ${totalProducts} ${productLabel}`;
+        // Paginated: "5 out of 10 products"
+        return `${endIndex} ${t('common.out_of', 'out of')} ${totalProducts} ${t('common.products', 'products').toLowerCase()}`;
       };
 
       return wrapWithParentClass(
