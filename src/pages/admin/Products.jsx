@@ -736,7 +736,9 @@ export default function Products() {
     return (
       <div className="flex items-center justify-between mt-6">
         <p className="text-sm text-gray-700">
-          Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredProducts.length)} of {filteredProducts.length} products
+          {filteredProducts.length === 1
+            ? "1 product"
+            : `Showing ${startIndex + 1}-${Math.min(startIndex + itemsPerPage, filteredProducts.length)} of ${filteredProducts.length} products`}
         </p>
         
         <div className="flex items-center space-x-2">
