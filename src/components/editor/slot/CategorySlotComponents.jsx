@@ -214,7 +214,6 @@ const LayeredNavigation = createSlotComponent({
           }
         });
 
-        console.log('🔧 Filter change - newFilters from DOM:', newFilters);
         categoryContext.handleFilterChange(newFilters);
       };
 

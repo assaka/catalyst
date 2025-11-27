@@ -389,6 +389,16 @@ export default function Category() {
     const minPrice = allPrices.length > 0 ? Math.floor(Math.min(...allPrices)) : 0;
     const maxPrice = allPrices.length > 0 ? Math.ceil(Math.max(...allPrices)) : 0;
 
+    // Always add price slider if we have products with prices
+    if (minPrice > 0 && maxPrice > 0 && minPrice !== maxPrice) {
+      filters.price = {
+        label: t('common.price', 'Price'),
+        min: minPrice,
+        max: maxPrice,
+        type: 'slider'
+      };
+    }
+
     // Use filterableAttributes from database (where is_filterable = true)
     if (!filterableAttributes || filterableAttributes.length === 0) {
       return filters;
@@ -430,19 +440,11 @@ export default function Category() {
                             attr.name ||
                             attrCode;
 
-      // Handle price attribute with slider filter type
-      if (attrCode === 'price' && (attr.filter_type === 'slider' || attr.filter_input_type === 'slider')) {
-        if (minPrice > 0 && maxPrice > 0) {
-          filters[attrCode] = {
-            label: attributeLabel,
-            min: minPrice,
-            max: maxPrice,
-            type: 'slider'
-          };
-        }
-      }
+      // Skip price attribute (handled separately above)
+      if (attrCode === 'price') return;
+
       // Only include attributes that have values with count > 0
-      else if (valueSet.size > 0) {
+      if (valueSet.size > 0) {
         // Store just the value codes array
         // Labels will be fetched from attribute_values.translations when displaying
         filters[attrCode] = {
