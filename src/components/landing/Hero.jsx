@@ -1,0 +1,196 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { ArrowRight, Send } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+export default function Hero() {
+    const [prompt, setPrompt] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const [currentTitleIndex, setCurrentTitleIndex] = useState(0);
+
+    const examplePrompts = [
+        "Create a fashion store with a minimalist layout",
+        "Add a wishlist plugin with heart icons",
+        "Translate my store to Spanish and French",
+        "Make the layout more spacious and modern"
+    ];
+
+    const titleVariants = [
+        "you can imagine",
+        "that converts",
+        "in any language",
+        "with AI plugins"
+    ];
+
+    const sampleStores = [
+        { image: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=500&fit=crop&q=80", title: "Wireframe Layout" },
+        { image: "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=400&h=500&fit=crop&q=80", title: "UI Sketch" },
+        { image: "https://images.unsplash.com/photo-1586717791821-3f44a5638d0f?w=400&h=500&fit=crop&q=80", title: "Grid Structure" },
+        { image: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=400&h=500&fit=crop&q=80", title: "Component Map" },
+    ];
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentTitleIndex((prev) => (prev + 1) % titleVariants.length);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (prompt.trim()) {
+            setIsTyping(true);
+            setTimeout(() => {
+                setIsTyping(false);
+                setPrompt('');
+            }, 2000);
+        }
+    };
+
+    return (
+        <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-50 text-slate-900 pt-20">
+
+            {/* Animated Background Grid */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-50 blur-3xl opacity-60" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-50 blur-3xl opacity-60" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+            </div>
+
+            {/* Left side floating images */}
+            <div className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 xl:-translate-x-0">
+                <motion.div
+                    initial={{ opacity: 0, x: -50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
+                    className="relative w-64 h-80"
+                >
+                    <div className="absolute top-0 left-0 w-56 h-72 bg-white rounded-2xl shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden z-10 transform -rotate-3 hover:rotate-0 transition-transform duration-500">
+                        <img src={sampleStores[0].image} alt={sampleStores[0].title} className="w-full h-full object-cover opacity-90 hover:opacity-100 hover:scale-105 transition-all duration-700" />
+                    </div>
+                    <div className="absolute bottom-0 right-0 w-48 h-64 bg-white rounded-2xl shadow-xl shadow-slate-200 border border-slate-100 overflow-hidden transform translate-y-12 translate-x-8 hover:-translate-y-2 transition-transform duration-500">
+                        <img src={sampleStores[1].image} alt={sampleStores[1].title} className="w-full h-full object-cover opacity-90 hover:opacity-100" />
+                    </div>
+                </motion.div>
+            </div>
+
+            {/* Right side floating images */}
+            <div className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 xl:translate-x-0">
+                <motion.div
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
+                    className="relative w-64 h-80"
+                >
+                    <div className="absolute top-0 right-0 w-56 h-72 bg-white rounded-2xl shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden z-10 transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                        <img src={sampleStores[2].image} alt={sampleStores[2].title} className="w-full h-full object-cover opacity-90 hover:opacity-100 hover:scale-105 transition-all duration-700" />
+                    </div>
+                    <div className="absolute bottom-0 left-0 w-48 h-64 bg-white rounded-2xl shadow-xl shadow-slate-200 border border-slate-100 overflow-hidden transform translate-y-12 -translate-x-8 hover:-translate-y-2 transition-transform duration-500">
+                        <img src={sampleStores[3].image} alt={sampleStores[3].title} className="w-full h-full object-cover opacity-90 hover:opacity-100" />
+                    </div>
+                </motion.div>
+            </div>
+
+            {/* Content */}
+            <div className="relative z-10 max-w-3xl mx-auto px-6 py-12 text-center">
+                <motion.h1
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="text-5xl md:text-6xl lg:text-7xl font-black mb-4 leading-tight text-slate-900"
+                >
+                    Build any store
+                    <br />
+                    <AnimatePresence mode="wait">
+                        <motion.span
+                            key={currentTitleIndex}
+                            initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
+                            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                            exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
+                            transition={{ duration: 0.5 }}
+                            className="text-indigo-600 inline-block"
+                        >
+                            {titleVariants[currentTitleIndex]}
+                        </motion.span>
+                    </AnimatePresence>
+                    <motion.span
+                        animate={{ opacity: [1, 0] }}
+                        transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
+                        className="inline-block w-[3px] h-14 bg-slate-900 ml-2 align-middle"
+                    />
+                </motion.h1>
+
+                <motion.p
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.1 }}
+                    className="text-lg text-slate-400 font-medium mb-8"
+                >
+                    Start with a prompt or dive into pro editing tools, your next store is just a step away.
+                </motion.p>
+
+                {/* AI Prompt Input */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                    className="mb-6"
+                >
+                    <form onSubmit={handleSubmit}>
+                        <div className="relative bg-white rounded-2xl p-2 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-100 transition-shadow duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+                            <input
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                placeholder="Describe your dream store..."
+                                className="w-full bg-transparent px-6 py-4 text-lg text-slate-900 placeholder:text-slate-400 outline-none font-medium"
+                            />
+                            <div className="flex items-center gap-3 px-2 pb-2">
+                                <button type="button" className="text-slate-400 hover:text-slate-900 text-sm px-3 py-1 rounded-lg hover:bg-slate-100 transition-colors font-medium">
+                                    + Advanced
+                                </button>
+                                <div className="flex-1" />
+                                <Button
+                                    type="submit"
+                                    disabled={!prompt.trim() || isTyping}
+                                    className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-6 py-2 font-bold disabled:opacity-50 shadow-lg shadow-slate-200 transition-all"
+                                >
+                                    {isTyping ? (
+                                        <motion.div
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                            className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                                        />
+                                    ) : (
+                                        <>
+                                            <span className="mr-2">Create</span>
+                                            <Send className="w-4 h-4" />
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                    </form>
+                </motion.div>
+
+                {/* Quick prompts */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                    className="flex flex-wrap justify-center gap-2"
+                >
+                    {examplePrompts.slice(0, 3).map((example, i) => (
+                        <button
+                            key={i}
+                            type="button"
+                            onClick={() => setPrompt(example)}
+                            className="text-xs bg-white hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded-full border border-slate-200 hover:border-slate-300 transition-colors shadow-sm font-medium"
+                        >
+                            {example}
+                        </button>
+                    ))}
+                </motion.div>
+            </div>
+        </section>
+    );
+}
