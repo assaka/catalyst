@@ -16,7 +16,6 @@ const ConnectionManager = require('../services/database/ConnectionManager');
  * @returns {Promise<Array>} Payment methods with translated fields
  */
 async function getPaymentMethodsWithTranslations(storeId, where = {}, lang = 'en') {
-  console.log('🔍 [Helper] getPaymentMethodsWithTranslations called with:', { storeId, where, lang });
 
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
@@ -33,7 +32,6 @@ async function getPaymentMethodsWithTranslations(storeId, where = {}, lang = 'en
   const { data: methods, error: methodsError } = await methodsQuery;
 
   if (methodsError) {
-    console.error('Error fetching payment_methods:', methodsError);
     throw methodsError;
   }
 
@@ -50,7 +48,6 @@ async function getPaymentMethodsWithTranslations(storeId, where = {}, lang = 'en
     .in('language_code', [lang, 'en']);
 
   if (transError) {
-    console.error('Error fetching payment_method_translations:', transError);
     throw transError;
   }
 
@@ -73,8 +70,6 @@ async function getPaymentMethodsWithTranslations(storeId, where = {}, lang = 'en
       description: reqLang?.description || enLang?.description || method.description || null
     };
   });
-
-  console.log(`📦 [Helper] Query returned ${results.length} payment methods`);
 
   if (results.length > 0) {
     console.log('📝 [Helper] First payment method:', {

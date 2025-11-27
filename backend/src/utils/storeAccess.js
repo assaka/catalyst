@@ -7,8 +7,6 @@ const { masterDbClient } = require('../database/masterConnection');
  */
 async function getUserStoresForDropdown(userId) {
   try {
-    console.log(`🔍 Getting accessible stores for user ID: ${userId}`);
-    
     // BULLETPROOF: Simple query with clear logic
     // Note: Can't use DISTINCT with JSON columns, so we cast settings to text for comparison
     const query = `
@@ -67,7 +65,6 @@ async function getUserStoresForDropdown(userId) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching user stores:', error);
       return [];
     }
 
@@ -86,11 +83,7 @@ async function getUserStoresForDropdown(userId) {
  */
 async function checkUserStoreAccess(userId, storeId) {
   try {
-    console.log('🔍 checkUserStoreAccess called:', { userId, storeId });
-    console.log('🔍 masterDbClient is:', masterDbClient ? 'CONNECTED' : 'NULL/UNDEFINED');
-
     if (!masterDbClient) {
-      console.error('❌ masterDbClient is not initialized!');
       return null;
     }
 
@@ -103,10 +96,6 @@ async function checkUserStoreAccess(userId, storeId) {
       .single();
 
     if (storeError || !store) {
-      console.log('❌ Store not found or not active:', storeId);
-      console.log('❌ Error details:', storeError);
-      console.log('❌ Store data:', store);
-
       // Also try without is_active filter to see if store exists at all
       const { data: anyStore, error: anyError } = await masterDbClient
         .from('stores')
@@ -114,13 +103,11 @@ async function checkUserStoreAccess(userId, storeId) {
         .eq('id', storeId)
         .single();
 
-      console.log('🔍 Store check without is_active filter:', { anyStore, anyError });
       return null;
     }
 
     // Check direct ownership
     if (store.user_id === userId) {
-      console.log('✅ User is direct owner of store');
       return {
         id: store.id,
         slug: store.slug,
@@ -144,11 +131,9 @@ async function checkUserStoreAccess(userId, storeId) {
       .single();
 
     if (teamError || !teamMember) {
-      console.log('❌ User is not a team member with sufficient permissions');
       return null;
     }
 
-    console.log('✅ User is team member with role:', teamMember.role);
     return {
       id: store.id,
       slug: store.slug,

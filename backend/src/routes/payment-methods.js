@@ -68,7 +68,6 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
     const { data: rows, error } = await query;
 
     if (error) {
-      console.error('Error fetching payment methods:', error);
       return res.status(500).json({
         success: false,
         message: 'Error fetching payment methods',
@@ -103,7 +102,6 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
       }
     });
   } catch (error) {
-    console.error('Get payment methods error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -160,7 +158,6 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
       data: method
     });
   } catch (error) {
-    console.error('Get payment method error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -211,7 +208,6 @@ router.post('/', [
       .single();
 
     if (error) {
-      console.error('Error creating payment method:', error);
       return res.status(500).json({
         success: false,
         message: 'Error creating payment method',
@@ -236,11 +232,6 @@ router.post('/', [
           .upsert(translationInserts, {
             onConflict: 'payment_method_id,language_code'
           });
-
-        if (transError) {
-          console.error('Error creating payment method translations:', transError);
-          // Note: We don't fail the whole request if translations fail
-        }
       }
     }
 
@@ -250,7 +241,6 @@ router.post('/', [
       data: method
     });
   } catch (error) {
-    console.error('Create payment method error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',

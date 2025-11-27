@@ -121,7 +121,10 @@ export default function PaymentMethods() {
     setLoadingStripeStatus(true);
     try {
       const response = await checkStripeConnectStatus(selectedStore.id);
-      setStripeStatus(response.data?.data || response.data || null);
+      console.log('🔍 Stripe status raw response:', response);
+      const status = response.data?.data || response.data || null;
+      console.log('🔍 Stripe status parsed:', status);
+      setStripeStatus(status);
     } catch (error) {
       console.error("Error loading Stripe status:", error);
       setStripeStatus(null);
