@@ -624,10 +624,21 @@ export default function PaymentMethods() {
                             )}
                           </div>
                         ) : stripeStatus?.connected && !stripeStatus?.onboardingComplete ? (
-                          <div className="space-y-2">
-                            <Badge className="bg-amber-100 text-amber-700 border-amber-200">
-                              <AlertCircle className="w-3 h-3 mr-1" /> Setup Incomplete
-                            </Badge>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-center gap-2">
+                              <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                                <AlertCircle className="w-3 h-3 mr-1" /> Setup Incomplete
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setDisconnectDialogOpen(true)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 px-2"
+                                title="Reset and choose different account"
+                              >
+                                <Unlink className="w-3 h-3" />
+                              </Button>
+                            </div>
                             <Button
                               onClick={handleConnectStripe}
                               disabled={connectingStripe}
