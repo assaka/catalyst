@@ -386,6 +386,27 @@ export default function OrderSuccess() {
           <p className="text-sm text-gray-500 mb-4">{t('order.number', settings)}: <span className="font-semibold text-gray-900">#{order.order_number}</span></p>
         </div>
 
+        {/* Pending Payment Notice for Offline Payments */}
+        {order.payment_status !== 'paid' && (
+          <div className="mb-8 bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-amber-800">
+                  {t('success.payment_pending_title', settings) || 'Payment Pending'}
+                </h3>
+                <p className="text-sm text-amber-700 mt-1">
+                  {t('success.payment_pending_message', settings) || 'Your order has been placed successfully. Payment will be collected upon delivery.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid lg:grid-cols-2 gap-8">
           
           {/* Left Column */}
@@ -417,7 +438,16 @@ export default function OrderSuccess() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">{t('common.payment_status', settings)}:</span>
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    <Badge
+                      variant="outline"
+                      className={
+                        order.payment_status === 'paid'
+                          ? "bg-green-50 text-green-700 border-green-200"
+                          : order.payment_status === 'refunded'
+                            ? "bg-gray-50 text-gray-700 border-gray-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200"
+                      }
+                    >
                       {t(`common.${order.payment_status || 'pending'}`, settings)}
                     </Badge>
                   </div>

@@ -326,6 +326,13 @@ class EmailService {
     const shippingAddress = formatAddress(order.shipping_address);
     const billingAddress = formatAddress(order.billing_address);
 
+    // Determine payment status display text
+    const paymentStatusRaw = order.payment_status || 'pending';
+    const paymentStatusDisplay = paymentStatusRaw === 'paid' ? 'Paid' :
+                                  paymentStatusRaw === 'refunded' ? 'Refunded' :
+                                  paymentStatusRaw === 'partially_refunded' ? 'Partially Refunded' :
+                                  'Pending Payment';
+
     return {
       customer_name: `${customer.first_name} ${customer.last_name}`,
       customer_first_name: customer.first_name,
@@ -342,6 +349,9 @@ class EmailService {
       shipping_address: shippingAddress,
       billing_address: billingAddress,
       payment_method: order.payment_method || 'Credit Card',
+      payment_status: paymentStatusDisplay,
+      payment_status_raw: paymentStatusRaw,
+      is_payment_pending: paymentStatusRaw !== 'paid',
       tracking_url: order.tracking_url || '#',
       order_status: order.status || 'Processing',
       estimated_delivery: order.estimated_delivery || 'TBD',

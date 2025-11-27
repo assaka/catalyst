@@ -157,6 +157,18 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate, settings, showConfi
     }
   };
 
+  const getPaymentStatusBadgeColor = (status) => {
+    const statusLower = status?.toLowerCase();
+    switch (statusLower) {
+      case 'paid': return 'bg-green-100 text-green-800';
+      case 'refunded': return 'bg-gray-100 text-gray-800';
+      case 'partially_refunded': return 'bg-orange-100 text-orange-800';
+      case 'pending':
+      case 'unpaid':
+      default: return 'bg-amber-100 text-amber-800';
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -208,9 +220,14 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate, settings, showConfi
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        <Badge className={getStatusBadgeColor(order.status)}>
-                          {t(`common.${order.status || 'pending'}`, settings)}
-                        </Badge>
+                        <div className="flex gap-2">
+                          <Badge className={getStatusBadgeColor(order.status)}>
+                            {t(`common.${order.status || 'pending'}`, settings)}
+                          </Badge>
+                          <Badge className={getPaymentStatusBadgeColor(order.payment_status)}>
+                            {t(`common.${order.payment_status || 'pending'}`, settings)}
+                          </Badge>
+                        </div>
                         <Button
                           variant="outline"
                           size="sm"
@@ -251,11 +268,22 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate, settings, showConfi
                           <h4 className="font-semibold mb-2">{t('order.payment_information', settings)}</h4>
                           <div className="text-sm text-gray-600 space-y-1">
                             {order.payment_method && <p><strong>{t('common.method', settings)}:</strong> {order.payment_method}</p>}
+                            <p>
+                              <strong>{t('common.payment_status', settings)}:</strong>{' '}
+                              <Badge className={getPaymentStatusBadgeColor(order.payment_status)}>
+                                {t(`common.${order.payment_status || 'pending'}`, settings)}
+                              </Badge>
+                            </p>
+                            {order.payment_status !== 'paid' && (
+                              <p className="text-amber-600 text-xs mt-1">
+                                {t('order.payment_pending_note', settings) || 'Payment will be collected upon delivery'}
+                              </p>
+                            )}
                             {order.payment_method_details && (
                               <div>
                                 <p><strong>{t('common.details', settings)}:</strong></p>
                                 <div className="ml-2 text-xs bg-gray-50 p-2 rounded">
-                                  {typeof order.payment_method_details === 'object' ? 
+                                  {typeof order.payment_method_details === 'object' ?
                                     JSON.stringify(order.payment_method_details, null, 2) :
                                     order.payment_method_details
                                   }

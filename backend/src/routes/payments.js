@@ -3052,8 +3052,10 @@ async function createPreliminaryOrder(session, orderData) {
     console.log('💾 Final billing address for order:', JSON.stringify(finalBillingAddress, null, 2));
 
     // Determine order status based on payment_flow
+    // For offline payments (COD, bank transfer): order is 'processing', payment is 'pending' (not yet collected)
+    // For online payments (Stripe): order is 'pending' until payment confirmed, then 'processing'
     const orderStatus = paymentFlow === 'offline' ? 'processing' : 'pending';
-    const paymentStatus = paymentFlow === 'offline' ? 'paid' : 'pending';
+    const paymentStatus = paymentFlow === 'offline' ? 'pending' : 'pending'; // Offline = pending until collected on delivery
 
     console.log(`💾 Order status will be: ${orderStatus}, payment status: ${paymentStatus} (payment flow: ${paymentFlow})`);
 
@@ -3079,7 +3081,7 @@ async function createPreliminaryOrder(session, orderData) {
         delivery_date: delivery_date ? new Date(delivery_date).toISOString() : null,
         delivery_time_slot,
         delivery_instructions,
-        payment_method: 'stripe',
+        payment_method: selected_payment_method_name || selected_payment_method || 'stripe',
         payment_reference: session.id,
         shipping_method: selected_shipping_method,
         coupon_code: applied_coupon?.code || null,
