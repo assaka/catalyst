@@ -2124,7 +2124,7 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
     };
 
     // Helper function for single field translation
-    const translateEntityField = async (entity, entityType, field, fromLang, toLang) => {
+    const translateEntityField = async (entity, entityType, field, fromLang, toLang, tableName) => {
       if (!entity.translations || !entity.translations[fromLang] || !entity.translations[fromLang][field]) {
         return false; // Skip
       }
@@ -2147,9 +2147,12 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
       }
       translations[toLang][field] = translatedValue;
 
-      entity.translations = translations;
-      entity.changed('translations', true);
-      await entity.save();
+      // Update using knex connection
+      if (connection && tableName) {
+        await connection(tableName)
+          .where('id', entity.id)
+          .update({ translations: JSON.stringify(translations) });
+      }
 
       // Track text length for cost calculation
       results.totalTextLength += sourceValue.length;
@@ -2295,7 +2298,16 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
           // Skip other special types without models
           continue;
         } else {
-          entities = await config.model.findAll({ where: whereClause });
+          // Use knex connection to fetch entities
+          if (!connection || !config.tableName) {
+            console.error(`No connection or tableName for entity type: ${entityType}`);
+            continue;
+          }
+          let query = connection(config.tableName).select('id', 'translations');
+          if (store_id) {
+            query = query.where('store_id', store_id);
+          }
+          entities = await query;
         }
 
         let typeTranslated = 0;
@@ -2307,7 +2319,7 @@ router.post('/wizard-execute', authMiddleware, async (req, res) => {
             try {
               if (singleField) {
                 // Translate single field
-                const translated = await translateEntityField(entity, entityType, singleField, fromLang, toLang);
+                const translated = await translateEntityField(entity, entityType, singleField, fromLang, toLang, config.tableName);
                 if (translated) {
                   typeTranslated++;
                 } else {
