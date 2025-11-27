@@ -170,75 +170,73 @@ button:focus-visible {
   }
 }
 
-/* Category Page Filter Radio/Checkbox Styling */
-@layer components {
-  /* Custom radio button styling for filter options */
-  input[type="radio"][data-action="toggle-filter"] {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    border: 2px solid #d1d5db;
-    border-radius: 50%;
-    background-color: white;
-    cursor: pointer;
-    position: relative;
-    flex-shrink: 0;
-  }
+/* Category Page Filter Radio/Checkbox Styling - Outside @layer for higher specificity */
+/* Custom radio button styling for filter options */
+input[type="radio"][data-action="toggle-filter"] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 16px !important;
+  height: 16px !important;
+  border: 2px solid #d1d5db !important;
+  border-radius: 50% !important;
+  background-color: white !important;
+  cursor: pointer !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+}
 
-  input[type="radio"][data-action="toggle-filter"]:checked {
-    border-color: var(--filter-color, #3b82f6);
-    background-color: var(--filter-color, #3b82f6);
-  }
+input[type="radio"][data-action="toggle-filter"]:checked {
+  border-color: #3b82f6 !important;
+  background-color: #3b82f6 !important;
+}
 
-  input[type="radio"][data-action="toggle-filter"]:checked::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: white;
-  }
+input[type="radio"][data-action="toggle-filter"]:checked::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background-color: white !important;
+}
 
-  input[type="radio"][data-action="toggle-filter"]:hover {
-    border-color: var(--filter-color, #3b82f6);
-  }
+input[type="radio"][data-action="toggle-filter"]:hover {
+  border-color: #3b82f6 !important;
+}
 
-  /* Custom checkbox styling for filter options */
-  input[type="checkbox"][data-action="toggle-filter"] {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    border: 2px solid #d1d5db;
-    border-radius: 4px;
-    background-color: white;
-    cursor: pointer;
-    position: relative;
-    flex-shrink: 0;
-  }
+/* Custom checkbox styling for filter options */
+input[type="checkbox"][data-action="toggle-filter"] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 16px !important;
+  height: 16px !important;
+  border: 2px solid #d1d5db !important;
+  border-radius: 4px !important;
+  background-color: white !important;
+  cursor: pointer !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+}
 
-  input[type="checkbox"][data-action="toggle-filter"]:checked {
-    border-color: var(--filter-color, #3b82f6);
-    background-color: var(--filter-color, #3b82f6);
-  }
+input[type="checkbox"][data-action="toggle-filter"]:checked {
+  border-color: #3b82f6 !important;
+  background-color: #3b82f6 !important;
+}
 
-  input[type="checkbox"][data-action="toggle-filter"]:checked::after {
-    content: '';
-    position: absolute;
-    top: 45%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(45deg);
-    width: 4px;
-    height: 8px;
-    border: solid white;
-    border-width: 0 2px 2px 0;
-  }
+input[type="checkbox"][data-action="toggle-filter"]:checked::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 45% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) rotate(45deg) !important;
+  width: 4px !important;
+  height: 8px !important;
+  border: solid white !important;
+  border-width: 0 2px 2px 0 !important;
+}
 
-  input[type="checkbox"][data-action="toggle-filter"]:hover {
-    border-color: var(--filter-color, #3b82f6);
-  }
+input[type="checkbox"][data-action="toggle-filter"]:hover {
+  border-color: #3b82f6 !important;
 }
