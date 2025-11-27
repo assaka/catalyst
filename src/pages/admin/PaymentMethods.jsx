@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages, X, ChevronsUpDown, Check, Building2, Truck, RefreshCw, ExternalLink, Unlink } from "lucide-react";
+import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages, X, ChevronsUpDown, Check, Building2, Truck, RefreshCw, ExternalLink, Unlink, Eye, EyeOff } from "lucide-react";
 import apiClient from "@/api/client";
 import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus, linkExistingStripeAccount } from "@/api/functions";
 import {
@@ -447,6 +447,20 @@ export default function PaymentMethods() {
     }
   };
 
+  const handleToggleActive = async (method) => {
+    try {
+      await PaymentMethod.update(method.id, { is_active: !method.is_active });
+      setFlashMessage({
+        type: 'success',
+        message: `Payment method ${!method.is_active ? 'enabled' : 'disabled'} successfully!`
+      });
+      await loadPaymentMethods();
+    } catch (error) {
+      console.error("Error toggling payment method status:", error);
+      setFlashMessage({ type: 'error', message: 'Failed to update payment method status' });
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -859,6 +873,15 @@ export default function PaymentMethods() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleToggleActive(method)}
+                      title={method.is_active ? 'Disable payment method' : 'Enable payment method'}
+                      className={method.is_active ? 'text-green-600 hover:text-green-700' : 'text-gray-400 hover:text-gray-600'}
+                    >
+                      {method.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => handleEdit(method)}>
                       <Edit className="w-4 h-4" />
                     </Button>
