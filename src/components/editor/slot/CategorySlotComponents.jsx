@@ -197,38 +197,25 @@ const LayeredNavigation = createSlotComponent({
         const filterValue = checkbox.getAttribute('data-filter-value');
         const attributeCode = checkbox.getAttribute('data-attribute-code');
 
-        console.log('🔧 Filter checkbox change:', {
-          checked: checkbox.checked,
-          filterType,
-          filterValue,
-          attributeCode,
-          currentSelectedFilters: categoryContext.selectedFilters
+        // Build filters from all checked checkboxes in the DOM (avoids stale closure issue)
+        const newFilters = {};
+        const allCheckboxes = containerRef.current.querySelectorAll('[data-action="toggle-filter"]');
+
+        allCheckboxes.forEach(cb => {
+          const cbType = cb.getAttribute('data-filter-type');
+          const cbCode = cb.getAttribute('data-attribute-code');
+          const cbValue = cb.getAttribute('data-filter-value');
+
+          if (cbType === 'attribute' && cbCode && cb.checked) {
+            if (!newFilters[cbCode]) {
+              newFilters[cbCode] = [];
+            }
+            newFilters[cbCode].push(cbValue);
+          }
         });
 
-        // Get current filters from categoryContext
-        const currentFilters = categoryContext.selectedFilters || {};
-
-        if (filterType === 'attribute' && attributeCode) {
-          // Handle attribute filter (color, size, brand, etc.)
-          const currentValues = currentFilters[attributeCode] || [];
-          let newValues;
-
-          if (checkbox.checked) {
-            newValues = [...currentValues, filterValue];
-          } else {
-            newValues = currentValues.filter(v => v !== filterValue);
-          }
-
-          const newFilters = { ...currentFilters };
-          if (newValues.length > 0) {
-            newFilters[attributeCode] = newValues;
-          } else {
-            delete newFilters[attributeCode];
-          }
-
-          console.log('🔧 Calling handleFilterChange with:', newFilters);
-          categoryContext.handleFilterChange(newFilters);
-        }
+        console.log('🔧 Filter change - newFilters from DOM:', newFilters);
+        categoryContext.handleFilterChange(newFilters);
       };
 
       const updatePriceSliderTrack = () => {
