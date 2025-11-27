@@ -11,11 +11,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar, Filter } from 'lucide-react';
+import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus, Pause, Play, AlertCircle, Calendar, Filter, Mail, CreditCard } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import apiClient from '@/api/client';
+import brevoAPI from '@/api/brevo';
+import { PaymentMethod } from '@/api/entities';
 
 export default function Stores() {
   const navigate = useNavigate();
@@ -30,6 +32,9 @@ export default function Stores() {
   const [storeToDelete, setStoreToDelete] = useState(null);
   const [storeUptimes, setStoreUptimes] = useState({});
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', 'pending_database', 'provisioning', 'suspended', 'inactive'
+  const [showValidationError, setShowValidationError] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({ email: false, payment: false });
+  const [validatingStore, setValidatingStore] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -91,11 +96,43 @@ export default function Stores() {
   const handleTogglePublished = async (storeId, currentStatus) => {
     const newStatus = !currentStatus;
 
-    // If publishing (paused -> running), show confirmation modal
+    // If publishing (paused -> running), validate email and payment configuration first
     if (!currentStatus) {
       const store = stores.find(s => s.id === storeId);
-      setStoreToPublish({ id: storeId, name: store?.name });
-      setShowPublishConfirm(true);
+      setValidatingStore({ id: storeId, name: store?.name });
+
+      try {
+        // Check email configuration
+        const emailStatus = await brevoAPI.getConnectionStatus(storeId);
+        const isEmailConfigured = emailStatus?.data?.isConfigured || emailStatus?.isConfigured || false;
+
+        // Check payment methods - need at least one active
+        const paymentMethods = await PaymentMethod.findAll();
+        const hasActivePaymentMethod = paymentMethods.some(pm => pm.is_active === true);
+
+        // If either is missing, show validation error modal
+        if (!isEmailConfigured || !hasActivePaymentMethod) {
+          setValidationErrors({
+            email: !isEmailConfigured,
+            payment: !hasActivePaymentMethod
+          });
+          setShowValidationError(true);
+          setValidatingStore(null);
+          return;
+        }
+
+        // Validation passed - show publish confirmation
+        setStoreToPublish({ id: storeId, name: store?.name });
+        setShowPublishConfirm(true);
+        setValidatingStore(null);
+      } catch (error) {
+        console.error('Error validating store configuration:', error);
+        // If validation fails due to error, show generic error
+        setValidationErrors({ email: true, payment: true });
+        setShowValidationError(true);
+        setValidatingStore(null);
+        return;
+      }
       return;
     }
 
@@ -498,6 +535,79 @@ export default function Stores() {
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete Store
               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Validation Error Modal */}
+      <Dialog open={showValidationError} onOpenChange={setShowValidationError}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertCircle className="w-5 h-5" />
+              Cannot Start Store
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-sm text-amber-900 font-medium mb-3">
+                Please complete the following setup before starting your store:
+              </p>
+              <ul className="space-y-3">
+                {validationErrors.email && (
+                  <li className="flex items-start gap-3 text-sm text-amber-800">
+                    <Mail className="w-5 h-5 mt-0.5 text-amber-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">Email Service Not Configured</p>
+                      <p className="text-amber-700">Configure your email service (Brevo) to send order confirmations and customer notifications.</p>
+                    </div>
+                  </li>
+                )}
+                {validationErrors.payment && (
+                  <li className="flex items-start gap-3 text-sm text-amber-800">
+                    <CreditCard className="w-5 h-5 mt-0.5 text-amber-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">No Payment Method Enabled</p>
+                      <p className="text-amber-700">Enable at least one payment method so customers can complete purchases.</p>
+                    </div>
+                  </li>
+                )}
+              </ul>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowValidationError(false);
+                  setValidationErrors({ email: false, payment: false });
+                }}
+              >
+                Close
+              </Button>
+              {validationErrors.email && (
+                <Button
+                  onClick={() => {
+                    setShowValidationError(false);
+                    navigate('/admin/email-settings');
+                  }}
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Configure Email
+                </Button>
+              )}
+              {!validationErrors.email && validationErrors.payment && (
+                <Button
+                  onClick={() => {
+                    setShowValidationError(false);
+                    navigate('/admin/payment-methods');
+                  }}
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Configure Payments
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>
