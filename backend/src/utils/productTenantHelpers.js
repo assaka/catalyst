@@ -97,6 +97,8 @@ async function loadProductAttributes(tenantDb, productId) {
       .select('*')
       .eq('product_id', productId);
 
+    console.log('📖 loadProductAttributes - pavs:', JSON.stringify(pavs));
+
     if (!pavs || pavs.length === 0) return {};
 
     // Get attribute info to map IDs to codes
@@ -106,16 +108,19 @@ async function loadProductAttributes(tenantDb, productId) {
       .select('id, code, type')
       .in('id', attributeIds);
 
+    console.log('📖 loadProductAttributes - attrs:', JSON.stringify(attrs));
     const attrMap = new Map(attrs?.map(a => [a.id, a]) || []);
 
     // Get attribute values for select/multiselect
     const valueIds = pavs.filter(p => p.value_id).map(p => p.value_id);
+    console.log('📖 loadProductAttributes - valueIds:', valueIds);
     let valMap = new Map();
     if (valueIds.length > 0) {
       const { data: vals } = await tenantDb
         .from('attribute_values')
         .select('id, code')
         .in('id', valueIds);
+      console.log('📖 loadProductAttributes - vals from attribute_values:', JSON.stringify(vals));
       valMap = new Map(vals?.map(v => [v.id, v.code]) || []);
     }
 
@@ -144,6 +149,7 @@ async function loadProductAttributes(tenantDb, productId) {
       }
     }
 
+    console.log('📖 loadProductAttributes - final result:', JSON.stringify(attributes));
     return attributes;
   } catch (err) {
     console.error('Error loading product attributes:', err);
