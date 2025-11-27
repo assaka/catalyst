@@ -1175,8 +1175,73 @@ export const categoryConfig = {
       type: 'component',
       component: 'LayeredNavigation',
       content: `
+        <!-- Custom CSS for radio and checkbox styling -->
+        <style>
+          /* Custom radio button styling for filter options */
+          input[type="radio"][data-action="toggle-filter"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #d1d5db;
+            border-radius: 50%;
+            background-color: white;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+          }
+          input[type="radio"][data-action="toggle-filter"]:checked {
+            border-color: {{filterOptionStyles.checkboxColor}};
+            background-color: {{filterOptionStyles.checkboxColor}};
+          }
+          input[type="radio"][data-action="toggle-filter"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: white;
+          }
+          input[type="radio"][data-action="toggle-filter"]:hover {
+            border-color: {{filterOptionStyles.checkboxColor}};
+          }
+          /* Custom checkbox styling for filter options */
+          input[type="checkbox"][data-action="toggle-filter"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+          }
+          input[type="checkbox"][data-action="toggle-filter"]:checked {
+            border-color: {{filterOptionStyles.checkboxColor}};
+            background-color: {{filterOptionStyles.checkboxColor}};
+          }
+          input[type="checkbox"][data-action="toggle-filter"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+          }
+          input[type="checkbox"][data-action="toggle-filter"]:hover {
+            border-color: {{filterOptionStyles.checkboxColor}};
+          }
+        </style>
         <!-- Desktop Filters - visible on sm+ screens -->
-        <div class="space-y-3" style="--filter-checkbox-color: {{filterOptionStyles.checkboxColor}}">
+        <div class="space-y-3">
           <!-- Price Filter Slider -->
           {{#if filters.price.min}}
             <div class="border-b border-gray-200 pb-2" data-filter-section="price">
@@ -1237,68 +1302,6 @@ export const categoryConfig = {
                     cursor: pointer;
                     border: 2px solid white;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-                  }
-                  /* Custom radio button styling for filter options */
-                  input[type="radio"][data-action="toggle-filter"] {
-                    appearance: none;
-                    -webkit-appearance: none;
-                    width: 16px;
-                    height: 16px;
-                    border: 2px solid #d1d5db;
-                    border-radius: 50%;
-                    background-color: white;
-                    cursor: pointer;
-                    position: relative;
-                    flex-shrink: 0;
-                  }
-                  input[type="radio"][data-action="toggle-filter"]:checked {
-                    border-color: {{filterOptionStyles.checkboxColor}};
-                    background-color: {{filterOptionStyles.checkboxColor}};
-                  }
-                  input[type="radio"][data-action="toggle-filter"]:checked::after {
-                    content: '';
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    width: 6px;
-                    height: 6px;
-                    border-radius: 50%;
-                    background-color: white;
-                  }
-                  input[type="radio"][data-action="toggle-filter"]:hover {
-                    border-color: {{filterOptionStyles.checkboxColor}};
-                  }
-                  /* Custom checkbox styling for filter options */
-                  input[type="checkbox"][data-action="toggle-filter"] {
-                    appearance: none;
-                    -webkit-appearance: none;
-                    width: 16px;
-                    height: 16px;
-                    border: 2px solid #d1d5db;
-                    border-radius: 4px;
-                    background-color: white;
-                    cursor: pointer;
-                    position: relative;
-                    flex-shrink: 0;
-                  }
-                  input[type="checkbox"][data-action="toggle-filter"]:checked {
-                    border-color: {{filterOptionStyles.checkboxColor}};
-                    background-color: {{filterOptionStyles.checkboxColor}};
-                  }
-                  input[type="checkbox"][data-action="toggle-filter"]:checked::after {
-                    content: '';
-                    position: absolute;
-                    top: 45%;
-                    left: 50%;
-                    transform: translate(-50%, -50%) rotate(45deg);
-                    width: 4px;
-                    height: 8px;
-                    border: solid white;
-                    border-width: 0 2px 2px 0;
-                  }
-                  input[type="checkbox"][data-action="toggle-filter"]:hover {
-                    border-color: {{filterOptionStyles.checkboxColor}};
                   }
                 </style>
               </div>
