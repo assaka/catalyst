@@ -262,7 +262,6 @@ export const categoryConfig = {
                         {{else}}
                         <input type="checkbox"
                                class="w-4 h-4 rounded border-gray-300 cursor-pointer"
-                               style="background-color: {{#if this.active}}{{filterOptionStyles.checkboxColor}}{{else}}white{{/if}};"
                                data-action="toggle-filter"
                                data-filter-type="attribute"
                                data-filter-input-type="multiselect"
@@ -1374,7 +1373,6 @@ export const categoryConfig = {
                       {{else}}
                       <input type="checkbox"
                              class="w-4 h-4 rounded border-gray-300 cursor-pointer"
-                             style="background-color: {{#if this.active}}{{filterOptionStyles.checkboxColor}}{{else}}white{{/if}};"
                              data-action="toggle-filter"
                              data-filter-type="attribute"
                              data-filter-input-type="multiselect"
