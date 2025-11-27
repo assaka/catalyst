@@ -324,10 +324,12 @@ export default function PaymentMethods() {
         setLoading(false);
         return;
       }
-      
+
       setStore(selectedStore);
-      const methods = await PaymentMethod.filter({ store_id: storeId }, 'sort_order');
-      setPaymentMethods(methods || []);
+      // Use authenticated endpoint to get ALL payment methods (including inactive)
+      const response = await apiClient.get(`payment-methods?store_id=${storeId}&limit=100`);
+      const methods = response?.data?.payment_methods || response?.payment_methods || [];
+      setPaymentMethods(methods);
     } catch (error) {
       console.error("Error loading payment methods:", error);
       setFlashMessage({ type: 'error', message: 'Failed to load payment methods' });
