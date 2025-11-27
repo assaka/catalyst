@@ -213,56 +213,40 @@ router.get('/by-slug/:slug/full', async (req, res) => {
     const imagesByProduct = await fetchProductImages(productIds, tenantDb);
 
     // Load product attribute values for layered navigation
-    console.log('🔍 Category endpoint - Loading attributes for productIds:', productIds);
     let attributeValuesData = [];
     if (productIds.length > 0) {
-      const { data: pavs, error: pavError } = await tenantDb
+      const { data: pavs } = await tenantDb
         .from('product_attribute_values')
         .select('*')
         .in('product_id', productIds);
-      if (pavError) {
-        console.error('❌ Error loading product_attribute_values:', pavError);
-      }
       attributeValuesData = pavs || [];
-      console.log('📊 product_attribute_values found:', attributeValuesData.length, 'records');
-      console.log('📊 PAV data sample:', JSON.stringify(attributeValuesData.slice(0, 3)));
     }
 
     // Load attributes and attribute values referenced
     const attributeIds = [...new Set(attributeValuesData.map(pav => pav.attribute_id))];
     const attributeValueIds = [...new Set(attributeValuesData.filter(pav => pav.value_id).map(pav => pav.value_id))];
-    console.log('📊 Unique attributeIds:', attributeIds);
-    console.log('📊 Unique attributeValueIds:', attributeValueIds);
 
     // Load attributes
     let attributesData = [];
     if (attributeIds.length > 0) {
-      const { data: attrs, error: attrsError } = await tenantDb
+      const { data: attrs } = await tenantDb
         .from('attributes')
         .select('id, code, type, is_filterable')
         .in('id', attributeIds);
-      if (attrsError) {
-        console.error('❌ Error loading attributes:', attrsError);
-      }
       attributesData = attrs || [];
     }
 
     // Load attribute values
     let attributeValuesListData = [];
     if (attributeValueIds.length > 0) {
-      const { data: attrVals, error: attrValsError } = await tenantDb
+      const { data: attrVals } = await tenantDb
         .from('attribute_values')
         .select('id, code, metadata')
         .in('id', attributeValueIds);
-      if (attrValsError) {
-        console.error('❌ Error loading attribute_values:', attrValsError);
-      }
       attributeValuesListData = attrVals || [];
     }
 
     // Create lookup maps
-    console.log('📊 attributesData loaded:', attributesData.length, 'records:', JSON.stringify(attributesData));
-    console.log('📊 attributeValuesListData loaded:', attributeValuesListData.length, 'records:', JSON.stringify(attributeValuesListData));
     const attrMap = new Map((attributesData || []).map(a => [a.id, a]));
     const valMap = new Map((attributeValuesListData || []).map(v => [v.id, v]));
 
@@ -304,7 +288,6 @@ router.get('/by-slug/:slug/full', async (req, res) => {
     });
 
     // Apply translations, images, and attributes to products
-    console.log('📊 pavByProduct keys:', Object.keys(pavByProduct));
     const productsWithTrans = (products || []).map(p => {
       const trans = prodTransMap[p.id];
       const reqLang = trans?.[lang];
@@ -312,7 +295,6 @@ router.get('/by-slug/:slug/full', async (req, res) => {
 
       // Transform product attribute values to array format
       const productPavs = pavByProduct[p.id] || [];
-      console.log(`📊 Product ${p.id} has ${productPavs.length} PAVs`);
       const attributes = productPavs.map(pav => {
         const attr = attrMap.get(pav.attribute_id);
         if (!attr) return null;
@@ -346,7 +328,6 @@ router.get('/by-slug/:slug/full', async (req, res) => {
         };
       }).filter(Boolean);
 
-      console.log(`📊 Product ${p.id} final attributes:`, JSON.stringify(attributes));
       return {
         ...p,
         name: reqLang?.name || enLang?.name || p.name,
@@ -356,7 +337,6 @@ router.get('/by-slug/:slug/full', async (req, res) => {
       };
     });
 
-    console.log('✅ Category endpoint complete - returning', productsWithTrans.length, 'products');
     res.json({
       success: true,
       data: {
