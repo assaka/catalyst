@@ -134,16 +134,29 @@ export default function LayeredNavigation({
         onFilterChange(filtersToSend);
     }, [selectedFilters, priceRange, minPrice, maxPrice, onFilterChange]);
     
-    const handleAttributeChange = (attributeCode, value, checked) => {
+    const handleAttributeChange = (attributeCode, value, checked, filterType = 'multiselect') => {
         setSelectedFilters(prev => {
             const newFilters = { ...prev };
-            const currentValues = newFilters[attributeCode] || [];
-            if (checked) {
-                newFilters[attributeCode] = [...currentValues, value];
-            } else {
-                newFilters[attributeCode] = currentValues.filter(v => v !== value);
-                if (newFilters[attributeCode].length === 0) {
+
+            // For 'select' filter type (radio buttons), only one value can be selected
+            if (filterType === 'select') {
+                if (checked) {
+                    // Replace any existing selection with the new value
+                    newFilters[attributeCode] = [value];
+                } else {
+                    // Allow deselecting the radio button
                     delete newFilters[attributeCode];
+                }
+            } else {
+                // For 'multiselect' filter type (checkboxes), multiple values allowed
+                const currentValues = newFilters[attributeCode] || [];
+                if (checked) {
+                    newFilters[attributeCode] = [...currentValues, value];
+                } else {
+                    newFilters[attributeCode] = currentValues.filter(v => v !== value);
+                    if (newFilters[attributeCode].length === 0) {
+                        delete newFilters[attributeCode];
+                    }
                 }
             }
             return newFilters;
@@ -234,7 +247,8 @@ export default function LayeredNavigation({
 
                         options[attr.code] = {
                             name: attributeLabel,
-                            values: valuesWithProducts
+                            values: valuesWithProducts,
+                            filterType: attr.filter_type || 'multiselect' // Default to multiselect (checkboxes)
                         };
                     }
                 }
@@ -513,7 +527,9 @@ export default function LayeredNavigation({
                     </AccordionItem>
 
                     {/* FIXED: Attribute Filters with all options */}
-                    {Object.entries(filterOptions).map(([code, { name, values }]) => {
+                    {Object.entries(filterOptions).map(([code, { name, values, filterType }]) => {
+                        // Determine if this is a single-select (radio) or multi-select (checkbox) filter
+                        const isRadioFilter = filterType === 'select';
                         // Only render attribute sections that have values
                         if (!values || values.length === 0) {
                             return null;
@@ -603,28 +619,57 @@ export default function LayeredNavigation({
                                                             onElementClick={onElementClick}
                                                             className=""
                                                         >
-                                                            <Checkbox
+                                                            {isRadioFilter ? (
+                                                                <input
+                                                                    type="radio"
+                                                                    id={`attr-${code}-${value}`}
+                                                                    name={`attr-${code}`}
+                                                                    checked={selectedFilters[code]?.includes(value) || false}
+                                                                    onChange={() => {}}
+                                                                    disabled={true}
+                                                                    className="pointer-events-none h-4 w-4"
+                                                                    style={{
+                                                                        accentColor: checkboxColor
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <Checkbox
+                                                                    id={`attr-${code}-${value}`}
+                                                                    checked={selectedFilters[code]?.includes(value) || false}
+                                                                    onCheckedChange={() => {}}
+                                                                    disabled={true}
+                                                                    className="pointer-events-none"
+                                                                    style={{
+                                                                        accentColor: checkboxColor
+                                                                    }}
+                                                                />
+                                                            )}
+                                                        </EditableSlotElement>
+                                                    ) : (
+                                                        isRadioFilter ? (
+                                                            <input
+                                                                type="radio"
                                                                 id={`attr-${code}-${value}`}
+                                                                name={`attr-${code}`}
                                                                 checked={selectedFilters[code]?.includes(value) || false}
-                                                                onCheckedChange={() => {}}
-                                                                disabled={true}
-                                                                className="pointer-events-none"
+                                                                onChange={(e) => handleAttributeChange(code, value, e.target.checked, filterType)}
+                                                                className="h-4 w-4 cursor-pointer"
                                                                 style={{
                                                                     accentColor: checkboxColor
                                                                 }}
                                                             />
-                                                        </EditableSlotElement>
-                                                    ) : (
-                                                        <Checkbox
-                                                            id={`attr-${code}-${value}`}
-                                                            checked={selectedFilters[code]?.includes(value) || false}
-                                                            onCheckedChange={(checked) => handleAttributeChange(code, value, checked)}
-                                                            disabled={false}
-                                                            className=""
-                                                            style={{
-                                                                accentColor: checkboxColor
-                                                            }}
-                                                        />
+                                                        ) : (
+                                                            <Checkbox
+                                                                id={`attr-${code}-${value}`}
+                                                                checked={selectedFilters[code]?.includes(value) || false}
+                                                                onCheckedChange={(checked) => handleAttributeChange(code, value, checked, filterType)}
+                                                                disabled={false}
+                                                                className=""
+                                                                style={{
+                                                                    accentColor: checkboxColor
+                                                                }}
+                                                            />
+                                                        )
                                                     )}
                                                     <Label
                                                         htmlFor={`attr-${code}-${value}`}

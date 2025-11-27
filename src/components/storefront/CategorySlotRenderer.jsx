@@ -117,6 +117,7 @@ export function CategorySlotRenderer({
     category,
     products = [],
     allProducts = [],
+    filteredProductsCount = 0, // Count of products after filtering
     filters = {},
     filterableAttributes = [],
     sortOption,
@@ -709,7 +710,8 @@ export function CategorySlotRenderer({
 
     // Product count info
     if (id === 'product_count_info') {
-      const totalProducts = allProducts?.length || 0;
+      // Use filteredProductsCount for accurate count after filtering
+      const totalProducts = filteredProductsCount || allProducts?.length || 0;
       const productLabel = totalProducts === 1
         ? t('common.product', 'product')
         : t('common.products', 'products');
@@ -723,7 +725,7 @@ export function CategorySlotRenderer({
             ) : totalProducts === 1 ? (
               `1 ${productLabel}`
             ) : (
-              `${t('common.showing', 'Showing')} ${t('common.all', 'all')} ${totalProducts} ${productLabel}`
+              `${totalProducts} ${productLabel}`
             )}
           </div>
         );
