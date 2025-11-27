@@ -136,12 +136,9 @@ export default function PaymentMethods() {
     setLoadingStripeStatus(true);
     try {
       const response = await checkStripeConnectStatus(selectedStore.id);
-      console.log('🔍 Stripe status raw response:', response);
       const status = response.data?.data || response.data || null;
-      console.log('🔍 Stripe status parsed:', status);
       setStripeStatus(status);
     } catch (error) {
-      console.error("Error loading Stripe status:", error);
       setStripeStatus(null);
     } finally {
       setLoadingStripeStatus(false);
@@ -181,7 +178,6 @@ export default function PaymentMethods() {
         setFlashMessage({ type: 'error', message: 'Unable to connect to Stripe. Please try again.' });
       }
     } catch (error) {
-      console.error('Error connecting Stripe:', error);
       setFlashMessage({ type: 'error', message: 'Error connecting to Stripe: ' + error.message });
     } finally {
       setConnectingStripe(false);
@@ -199,7 +195,6 @@ export default function PaymentMethods() {
       setDisconnectDialogOpen(false);
       loadStripeConnectStatus();
     } catch (error) {
-      console.error('Error disconnecting Stripe:', error);
       setFlashMessage({ type: 'error', message: 'Error disconnecting Stripe: ' + error.message });
     } finally {
       setDisconnectingStripe(false);
@@ -230,7 +225,6 @@ export default function PaymentMethods() {
       setExistingAccountId('');
       loadStripeConnectStatus();
     } catch (error) {
-      console.error('Error linking Stripe account:', error);
       setFlashMessage({ type: 'error', message: 'Error linking account: ' + error.message });
     } finally {
       setLinkingAccount(false);
@@ -308,7 +302,6 @@ export default function PaymentMethods() {
       setAttributes(transformedAttributes);
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
     } catch (error) {
-      console.error("Error loading conditions data:", error);
       setAttributeSets([]);
       setAttributes([]);
       setCategories([]);
@@ -320,7 +313,6 @@ export default function PaymentMethods() {
     try {
       const storeId = getSelectedStoreId();
       if (!storeId) {
-        console.warn("No store selected");
         setLoading(false);
         return;
       }
@@ -331,7 +323,6 @@ export default function PaymentMethods() {
       const methods = response?.data?.payment_methods || response?.payment_methods || [];
       setPaymentMethods(methods);
     } catch (error) {
-      console.error("Error loading payment methods:", error);
       setFlashMessage({ type: 'error', message: 'Failed to load payment methods' });
     } finally {
       setLoading(false);
@@ -442,7 +433,6 @@ export default function PaymentMethods() {
       setDeleteDialogOpen(false);
       setMethodToDelete(null);
     } catch (error) {
-      console.error("Error deleting payment method:", error);
       setFlashMessage({ type: 'error', message: 'Failed to delete payment method' });
     } finally {
       setDeleting(false);

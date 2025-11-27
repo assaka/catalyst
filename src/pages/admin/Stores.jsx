@@ -142,7 +142,6 @@ export default function Stores() {
 
   const confirmTogglePublished = async (storeId, currentStatus) => {
     const newStatus = !currentStatus;
-    console.log('🔄 Toggling store published status:', { storeId, currentStatus, newStatus });
 
     try {
       // Optimistic update: Update UI immediately
@@ -156,7 +155,6 @@ export default function Stores() {
 
       // Update backend
       const response = await Store.update(storeId, { published: newStatus });
-      console.log('✅ Backend update response:', response);
 
       // Wait a moment for database to propagate
       await new Promise(resolve => setTimeout(resolve, 500));
