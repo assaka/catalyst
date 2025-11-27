@@ -435,6 +435,81 @@ router.delete('/disconnect-stripe', authMiddleware, authorize(['admin', 'store_o
   }
 });
 
+// @route   POST /api/payments/link-existing-account
+// @desc    Link an existing Stripe account (for testing/development)
+// @access  Private
+router.post('/link-existing-account', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id, account_id } = req.body;
+
+    if (!store_id || !account_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id and account_id are required'
+      });
+    }
+
+    // Validate the account_id format
+    if (!account_id.startsWith('acct_')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid account ID format. Must start with "acct_"'
+      });
+    }
+
+    // Check if Stripe is configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(400).json({
+        success: false,
+        message: 'Stripe not configured'
+      });
+    }
+
+    // Verify the account exists in Stripe
+    let account;
+    try {
+      account = await stripe.accounts.retrieve(account_id);
+    } catch (stripeError) {
+      return res.status(400).json({
+        success: false,
+        message: `Stripe account not found: ${stripeError.message}`
+      });
+    }
+
+    // Check onboarding status
+    const onboardingComplete = account.details_submitted && account.charges_enabled;
+
+    // Save account ID to integration_configs
+    await IntegrationConfig.createOrUpdate(store_id, STRIPE_INTEGRATION_TYPE, {
+      accountId: account.id,
+      onboardingComplete: onboardingComplete,
+      onboardingCompletedAt: onboardingComplete ? new Date().toISOString() : null,
+      linkedManually: true,
+      createdAt: new Date().toISOString()
+    });
+
+    console.log(`Linked existing Stripe account ${account_id} to store ${store_id}`);
+
+    res.json({
+      success: true,
+      data: {
+        account_id: account.id,
+        charges_enabled: account.charges_enabled,
+        payouts_enabled: account.payouts_enabled,
+        details_submitted: account.details_submitted,
+        onboardingComplete: onboardingComplete
+      }
+    });
+  } catch (error) {
+    console.error('Link existing Stripe account error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to link Stripe account',
+      error: error.message
+    });
+  }
+});
+
 // @route   POST /api/payments/connect-account
 // @desc    Create Stripe Connect account
 // @access  Private

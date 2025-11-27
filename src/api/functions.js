@@ -134,6 +134,19 @@ export const createStripeConnectLink = async (returnUrl, refreshUrl, storeId) =>
   }
 };
 
+export const linkExistingStripeAccount = async (storeId, accountId) => {
+  try {
+    const response = await apiClient.post('payments/link-existing-account', {
+      store_id: storeId,
+      account_id: accountId
+    });
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error linking existing Stripe account:', error);
+    throw error;
+  }
+};
+
 export const checkStripeConnectStatus = async (storeId) => {
   try {
     const response = await apiClient.get(`payments/connect-status${storeId ? `?store_id=${storeId}` : ''}`);
