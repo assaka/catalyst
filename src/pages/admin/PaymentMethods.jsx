@@ -815,12 +815,12 @@ export default function PaymentMethods() {
                         <Badge variant={method.is_active ? 'default' : 'secondary'}>
                           {method.is_active ? 'Active' : 'Inactive'}
                         </Badge>
-                        <Badge variant={method.payment_flow === 'online' ? 'default' : 'outline'} className={method.payment_flow === 'online' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-blue-100 text-blue-700 border-blue-200'}>
+                        <Badge variant={method.payment_flow === 'online' ? 'outline' : 'outline'} className={method.payment_flow === 'online' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-blue-100 text-blue-700 border-blue-200'}>
                           {method.payment_flow === 'online' ? 'Online' : 'Offline'}
                         </Badge>
                         {method.type === 'stripe' && (
                           <Badge
-                            variant={stripeStatus?.connected && stripeStatus?.onboardingComplete ? "default" : "outline"}
+                            variant={stripeStatus?.connected && stripeStatus?.onboardingComplete ? "outline" : "outline"}
                             className={stripeStatus?.connected && stripeStatus?.onboardingComplete ? "bg-green-100 text-green-700 border-green-200" : "bg-yellow-100 text-yellow-700 border-yellow-200"}
                           >
                             {stripeStatus?.connected && stripeStatus?.onboardingComplete ? (
