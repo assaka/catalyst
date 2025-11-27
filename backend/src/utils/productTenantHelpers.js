@@ -211,7 +211,10 @@ async function updateProduct(storeId, productId, productData) {
 
   // Sync attributes to product_attribute_values table for storefront filtering
   if (attributes && typeof attributes === 'object') {
+    console.log('🔄 Syncing attributes for product:', productId, 'attributes:', JSON.stringify(attributes));
     await syncProductAttributeValues(tenantDb, storeId, productId, attributes);
+  } else {
+    console.log('⚠️ No attributes to sync for product:', productId, 'attributes value:', attributes);
   }
 
   // Return updated product
@@ -228,12 +231,19 @@ async function updateProduct(storeId, productId, productData) {
  * @param {Object} attributes - Attributes object {attributeCode: value}
  */
 async function syncProductAttributeValues(tenantDb, storeId, productId, attributes) {
+  console.log('🔄 syncProductAttributeValues called with:', { productId, storeId, attributes: JSON.stringify(attributes) });
   try {
     // Delete existing attribute values for this product
-    await tenantDb
+    const { error: deleteError } = await tenantDb
       .from('product_attribute_values')
       .delete()
       .eq('product_id', productId);
+
+    if (deleteError) {
+      console.error('❌ Error deleting old attribute values:', deleteError);
+    } else {
+      console.log('✅ Deleted old attribute values for product:', productId);
+    }
 
     // Get all attributes for this store to map codes to IDs
     const { data: storeAttributes } = await tenantDb
@@ -300,14 +310,19 @@ async function syncProductAttributeValues(tenantDb, storeId, productId, attribut
     }
 
     // Insert new attribute values
+    console.log('📝 Insert records to save:', JSON.stringify(insertRecords));
     if (insertRecords.length > 0) {
       const { error: insertError } = await tenantDb
         .from('product_attribute_values')
         .insert(insertRecords);
 
       if (insertError) {
-        console.error('Error syncing product_attribute_values:', insertError);
+        console.error('❌ Error syncing product_attribute_values:', insertError);
+      } else {
+        console.log('✅ Successfully inserted', insertRecords.length, 'attribute values');
       }
+    } else {
+      console.log('⚠️ No insert records to save - attributes may not match store attributes');
     }
   } catch (err) {
     console.error('Error in syncProductAttributeValues:', err);
