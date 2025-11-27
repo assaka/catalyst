@@ -380,7 +380,8 @@ export function CategorySlotRenderer({
         const result = {
           code: attrCode,
           label: attributeLabel, // Use translated label from filter data
-          options: formattedOptions
+          options: formattedOptions,
+          filter_type: attr.filter_type || 'multiselect' // multiselect (checkboxes), select (radio), slider
         };
 
         return result;

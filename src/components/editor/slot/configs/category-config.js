@@ -209,13 +209,25 @@ export const categoryConfig = {
                   <div class="filter-content space-y-2 max-h-48 overflow-y-auto {{#unless settings.collapse_filters}}block{{/unless}}"
                        style="{{#if settings.collapse_filters}}display: none;{{/if}}"
                        data-max-visible="{{settings.max_visible_attributes}}"
-                       data-attribute-code="{{this.code}}">
+                       data-attribute-code="{{this.code}}"
+                       data-filter-input-type="{{this.filter_type}}">
                     {{#each this.options}}
                       <label class="flex items-center mr-2 gap-2 cursor-pointer filter-option"
                              style="color: {{filterOptionStyles.optionTextColor}}; font-size: {{filterOptionStyles.optionFontSize}}; font-weight: {{filterOptionStyles.optionFontWeight}};"
                              onmouseover="this.style.color='{{filterOptionStyles.optionHoverColor}}';"
                              onmouseout="this.style.color='{{filterOptionStyles.optionTextColor}}';"
                              data-option-index="{{@index}}">
+                        {{#if (eq ../filter_type "select")}}
+                        <input type="radio"
+                               name="filter_{{this.attributeCode}}"
+                               class="border-gray-300"
+                               style="accent-color: {{filterOptionStyles.checkboxColor}};"
+                               data-action="toggle-filter"
+                               data-filter-type="attribute"
+                               data-attribute-code="{{this.attributeCode}}"
+                               data-filter-value="{{this.value}}"
+                               {{#if this.active}}checked{{/if}} />
+                        {{else}}
                         <input type="checkbox"
                                class="rounded border-gray-300"
                                style="accent-color: {{filterOptionStyles.checkboxColor}};"
@@ -224,6 +236,7 @@ export const categoryConfig = {
                                data-attribute-code="{{this.attributeCode}}"
                                data-filter-value="{{this.value}}"
                                {{#if this.active}}checked{{/if}} />
+                        {{/if}}
                         <span>{{this.label}}</span>
                         <span class="ml-auto" style="color: {{filterOptionStyles.optionCountColor}}; font-size: {{filterOptionStyles.optionFontSize}};">({{this.count}})</span>
                       </label>
@@ -1211,13 +1224,25 @@ export const categoryConfig = {
               <div class="filter-content space-y-2 max-h-48 overflow-y-auto {{#unless settings.collapse_filters}}block{{/unless}}"
                    style="{{#if settings.collapse_filters}}display: none;{{/if}}"
                    data-max-visible="{{settings.max_visible_attributes}}"
-                   data-attribute-code="{{this.code}}">
+                   data-attribute-code="{{this.code}}"
+                   data-filter-input-type="{{this.filter_type}}">
                 {{#each this.options}}
                   <div class="flex items-center justify-between mr-2 gap-2 filter-option" data-option-index="{{@index}}">
                     <label class="flex items-center gap-2 cursor-pointer"
                            style="color: {{filterOptionStyles.optionTextColor}}; font-size: {{filterOptionStyles.optionFontSize}}; font-weight: {{filterOptionStyles.optionFontWeight}};"
                            onmouseover="this.style.color='{{filterOptionStyles.optionHoverColor}}';"
                            onmouseout="this.style.color='{{filterOptionStyles.optionTextColor}}';">
+                      {{#if (eq ../filter_type "select")}}
+                      <input type="radio"
+                             name="filter_{{this.attributeCode}}"
+                             class="border-gray-300"
+                             style="accent-color: {{filterOptionStyles.checkboxColor}};"
+                             data-action="toggle-filter"
+                             data-filter-type="attribute"
+                             data-attribute-code="{{this.attributeCode}}"
+                             data-filter-value="{{this.value}}"
+                             {{#if this.active}}checked{{/if}} />
+                      {{else}}
                       <input type="checkbox"
                              class="rounded border-gray-300"
                              style="accent-color: {{filterOptionStyles.checkboxColor}};"
@@ -1226,6 +1251,7 @@ export const categoryConfig = {
                              data-attribute-code="{{this.attributeCode}}"
                              data-filter-value="{{this.value}}"
                              {{#if this.active}}checked{{/if}} />
+                      {{/if}}
                       <span>{{this.label}}</span>
                     </label>
                     <span class="text-xs" style="color: {{filterOptionStyles.optionCountColor}}; font-size: {{filterOptionStyles.optionFontSize}};">({{this.count}})</span>
