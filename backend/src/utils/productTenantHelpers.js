@@ -66,6 +66,7 @@ async function getProducts(storeId, filters = {}, pagination = {}) {
  * @returns {Promise<Object|null>} Product or null
  */
 async function getProductById(storeId, productId) {
+  console.log('🔍 getProductById called:', { storeId, productId });
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   const { data: product, error } = await tenantDb
