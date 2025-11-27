@@ -228,16 +228,16 @@ router.get('/by-slug/:slug/full', async (req, res) => {
 
     const [attributesData, attributeValuesListData] = await Promise.all([
       attributeIds.length > 0
-        ? tenantDb.from('attributes').select('id, code, type, is_filterable').in('id', attributeIds).then(r => r.data || [])
+        ? tenantDb.from('attributes').select('id, code, type, is_filterable').in('id', attributeIds).then(r => (r && r.data) || []).catch(() => [])
         : Promise.resolve([]),
       attributeValueIds.length > 0
-        ? tenantDb.from('attribute_values').select('id, code, metadata').in('id', attributeValueIds).then(r => r.data || [])
+        ? tenantDb.from('attribute_values').select('id, code, metadata').in('id', attributeValueIds).then(r => (r && r.data) || []).catch(() => [])
         : Promise.resolve([])
     ]);
 
     // Create lookup maps
-    const attrMap = new Map(attributesData.map(a => [a.id, a]));
-    const valMap = new Map(attributeValuesListData.map(v => [v.id, v]));
+    const attrMap = new Map((attributesData || []).map(a => [a.id, a]));
+    const valMap = new Map((attributeValuesListData || []).map(v => [v.id, v]));
 
     // Load attribute translations
     let attributeTranslations = [];
