@@ -398,7 +398,8 @@ export function CategorySlotRenderer({
                 count: productCount,
                 active: isActive,
                 attributeCode: attrCode,
-                sort_order: attrValue.sort_order || 0
+                sort_order: attrValue.sort_order || 0,
+                filter_type: filterType // Pass filter_type to each option for template access
               };
             }
 
@@ -409,7 +410,8 @@ export function CategorySlotRenderer({
               count: productCount,
               active: isActive,
               attributeCode: attrCode,
-              sort_order: 999
+              sort_order: 999,
+              filter_type: filterType // Pass filter_type to each option for template access
             };
           })
           .sort((a, b) => a.sort_order - b.sort_order); // Sort by sort_order

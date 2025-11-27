@@ -211,27 +211,38 @@ const LayeredNavigation = createSlotComponent({
       if (!containerRef.current || context === 'editor') return;
 
       const handleChange = (e) => {
-        const checkbox = e.target.closest('[data-action="toggle-filter"]');
-        if (!checkbox || !categoryContext?.handleFilterChange) return;
+        const input = e.target.closest('[data-action="toggle-filter"]');
+        if (!input || !categoryContext?.handleFilterChange) return;
 
-        const filterType = checkbox.getAttribute('data-filter-type');
-        const filterValue = checkbox.getAttribute('data-filter-value');
-        const attributeCode = checkbox.getAttribute('data-attribute-code');
+        const filterType = input.getAttribute('data-filter-type');
+        const filterValue = input.getAttribute('data-filter-value');
+        const attributeCode = input.getAttribute('data-attribute-code');
+        const filterInputType = input.getAttribute('data-filter-input-type'); // 'select' or 'multiselect'
 
-        // Build filters from all checked checkboxes in the DOM (avoids stale closure issue)
+        // Build filters from all checked inputs in the DOM (avoids stale closure issue)
         const newFilters = {};
-        const allCheckboxes = containerRef.current.querySelectorAll('[data-action="toggle-filter"]');
+        const allInputs = containerRef.current.querySelectorAll('[data-action="toggle-filter"]');
 
-        allCheckboxes.forEach(cb => {
+        allInputs.forEach(cb => {
           const cbType = cb.getAttribute('data-filter-type');
           const cbCode = cb.getAttribute('data-attribute-code');
           const cbValue = cb.getAttribute('data-filter-value');
+          const cbInputType = cb.getAttribute('data-filter-input-type');
 
           if (cbType === 'attribute' && cbCode && cb.checked) {
-            if (!newFilters[cbCode]) {
-              newFilters[cbCode] = [];
+            // For 'select' type (radio buttons), only keep the one value
+            if (cbInputType === 'select') {
+              // Radio button - replace any existing value
+              newFilters[cbCode] = [cbValue];
+            } else {
+              // Checkbox - add to array
+              if (!newFilters[cbCode]) {
+                newFilters[cbCode] = [];
+              }
+              if (!newFilters[cbCode].includes(cbValue)) {
+                newFilters[cbCode].push(cbValue);
+              }
             }
-            newFilters[cbCode].push(cbValue);
           }
         });
 

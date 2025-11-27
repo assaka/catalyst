@@ -249,13 +249,14 @@ export const categoryConfig = {
                              onmouseover="this.style.color='{{filterOptionStyles.optionHoverColor}}';"
                              onmouseout="this.style.color='{{filterOptionStyles.optionTextColor}}';"
                              data-option-index="{{@index}}">
-                        {{#if (eq ../filter_type "select")}}
+                        {{#if (eq this.filter_type "select")}}
                         <input type="radio"
                                name="filter_{{this.attributeCode}}"
                                class="border-gray-300"
                                style="accent-color: {{filterOptionStyles.checkboxColor}};"
                                data-action="toggle-filter"
                                data-filter-type="attribute"
+                               data-filter-input-type="select"
                                data-attribute-code="{{this.attributeCode}}"
                                data-filter-value="{{this.value}}"
                                {{#if this.active}}checked{{/if}} />
@@ -265,6 +266,7 @@ export const categoryConfig = {
                                style="accent-color: {{filterOptionStyles.checkboxColor}};"
                                data-action="toggle-filter"
                                data-filter-type="attribute"
+                               data-filter-input-type="multiselect"
                                data-attribute-code="{{this.attributeCode}}"
                                data-filter-value="{{this.value}}"
                                {{#if this.active}}checked{{/if}} />
@@ -1298,13 +1300,14 @@ export const categoryConfig = {
                            style="color: {{filterOptionStyles.optionTextColor}}; font-size: {{filterOptionStyles.optionFontSize}}; font-weight: {{filterOptionStyles.optionFontWeight}};"
                            onmouseover="this.style.color='{{filterOptionStyles.optionHoverColor}}';"
                            onmouseout="this.style.color='{{filterOptionStyles.optionTextColor}}';">
-                      {{#if (eq ../filter_type "select")}}
+                      {{#if (eq this.filter_type "select")}}
                       <input type="radio"
                              name="filter_{{this.attributeCode}}"
                              class="border-gray-300"
                              style="accent-color: {{filterOptionStyles.checkboxColor}};"
                              data-action="toggle-filter"
                              data-filter-type="attribute"
+                             data-filter-input-type="select"
                              data-attribute-code="{{this.attributeCode}}"
                              data-filter-value="{{this.value}}"
                              {{#if this.active}}checked{{/if}} />
@@ -1314,6 +1317,7 @@ export const categoryConfig = {
                              style="accent-color: {{filterOptionStyles.checkboxColor}};"
                              data-action="toggle-filter"
                              data-filter-type="attribute"
+                             data-filter-input-type="multiselect"
                              data-attribute-code="{{this.attributeCode}}"
                              data-filter-value="{{this.value}}"
                              {{#if this.active}}checked{{/if}} />
