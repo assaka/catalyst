@@ -533,18 +533,40 @@ export function CategorySlotRenderer({
         products: formattedProducts,
         filters: formattedFilters,
         activeFilters: categoryContext.activeFilters || [],
-        pagination: {
-          start: (currentPage - 1) * itemsPerPage + 1,
-          end: Math.min(currentPage * itemsPerPage, categoryContext.filteredProductsCount || 0),
-          total: categoryContext.filteredProductsCount || 0,
-          currentPage,
-          totalPages,
-          hasPrev: currentPage > 1,
-          hasNext: currentPage < totalPages,
-          prevPage: currentPage - 1,
-          nextPage: currentPage + 1,
-          pages: buildPagesArray() // Add pages array for template
-        },
+        pagination: (() => {
+          const total = categoryContext.filteredProductsCount || 0;
+          const start = (currentPage - 1) * itemsPerPage + 1;
+          const end = Math.min(currentPage * itemsPerPage, total);
+          const productWord = total === 1 ? t('common.product', 'product') : t('common.products', 'products');
+
+          // Build the product count text with proper singular/plural
+          let countText;
+          if (total === 0) {
+            countText = t('category.no_products_found', 'No products found');
+          } else if (total === 1) {
+            countText = `1 ${productWord}`;
+          } else if (start === 1 && end === total) {
+            // All products on one page
+            countText = `${total} ${productWord}`;
+          } else {
+            // Paginated
+            countText = `${start}-${end} ${t('common.of', 'of')} ${total} ${productWord}`;
+          }
+
+          return {
+            start,
+            end,
+            total,
+            countText, // Pre-formatted product count text
+            currentPage,
+            totalPages,
+            hasPrev: currentPage > 1,
+            hasNext: currentPage < totalPages,
+            prevPage: currentPage - 1,
+            nextPage: currentPage + 1,
+            pages: buildPagesArray() // Add pages array for template
+          };
+        })(),
         sorting: {
           current: sortOption
         },

@@ -375,7 +375,7 @@ export const categoryConfig = {
     product_count_text: {
       id: 'product_count_text',
       type: 'text',
-      content: '{{#if (eq pagination.total 1)}}1 {{t "common.product"}}{{else}}{{#if (eq pagination.start pagination.end)}}{{pagination.total}} {{t "common.products"}}{{else}}{{pagination.start}}-{{pagination.end}} {{t "common.of"}} {{pagination.total}} {{t "common.products"}}{{/if}}{{/if}}',
+      content: '{{pagination.countText}}',
       className: 'text-sm text-blue-600 font-bold',
       parentClassName: '',
       styles: {
@@ -1247,14 +1247,14 @@ export const categoryConfig = {
                     height: 16px;
                     border: 2px solid #d1d5db;
                     border-radius: 50%;
-                    background: white;
+                    background-color: white;
                     cursor: pointer;
                     position: relative;
                     flex-shrink: 0;
                   }
                   input[type="radio"][data-action="toggle-filter"]:checked {
-                    border-color: var(--filter-checkbox-color, #3b82f6);
-                    background: var(--filter-checkbox-color, #3b82f6);
+                    border-color: {{filterOptionStyles.checkboxColor}};
+                    background-color: {{filterOptionStyles.checkboxColor}};
                   }
                   input[type="radio"][data-action="toggle-filter"]:checked::after {
                     content: '';
@@ -1265,10 +1265,41 @@ export const categoryConfig = {
                     width: 6px;
                     height: 6px;
                     border-radius: 50%;
-                    background: white;
+                    background-color: white;
                   }
                   input[type="radio"][data-action="toggle-filter"]:hover {
-                    border-color: var(--filter-checkbox-color, #3b82f6);
+                    border-color: {{filterOptionStyles.checkboxColor}};
+                  }
+                  /* Custom checkbox styling for filter options */
+                  input[type="checkbox"][data-action="toggle-filter"] {
+                    appearance: none;
+                    -webkit-appearance: none;
+                    width: 16px;
+                    height: 16px;
+                    border: 2px solid #d1d5db;
+                    border-radius: 4px;
+                    background-color: white;
+                    cursor: pointer;
+                    position: relative;
+                    flex-shrink: 0;
+                  }
+                  input[type="checkbox"][data-action="toggle-filter"]:checked {
+                    border-color: {{filterOptionStyles.checkboxColor}};
+                    background-color: {{filterOptionStyles.checkboxColor}};
+                  }
+                  input[type="checkbox"][data-action="toggle-filter"]:checked::after {
+                    content: '';
+                    position: absolute;
+                    top: 45%;
+                    left: 50%;
+                    transform: translate(-50%, -50%) rotate(45deg);
+                    width: 4px;
+                    height: 8px;
+                    border: solid white;
+                    border-width: 0 2px 2px 0;
+                  }
+                  input[type="checkbox"][data-action="toggle-filter"]:hover {
+                    border-color: {{filterOptionStyles.checkboxColor}};
                   }
                 </style>
               </div>
