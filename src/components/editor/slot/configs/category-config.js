@@ -104,6 +104,71 @@ export const categoryConfig = {
       type: 'component',
       component: 'LayeredNavigation',
       content: `
+        <!-- Custom CSS for mobile radio and checkbox styling -->
+        <style>
+          /* Custom radio button styling for mobile filter options */
+          .mobile-filter-content input[type="radio"][data-action="toggle-filter"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #d1d5db;
+            border-radius: 50%;
+            background-color: white;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+          }
+          .mobile-filter-content input[type="radio"][data-action="toggle-filter"]:checked {
+            border-color: var(--filter-color, #3b82f6);
+            background-color: var(--filter-color, #3b82f6);
+          }
+          .mobile-filter-content input[type="radio"][data-action="toggle-filter"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: white;
+          }
+          .mobile-filter-content input[type="radio"][data-action="toggle-filter"]:hover {
+            border-color: var(--filter-color, #3b82f6);
+          }
+          /* Custom checkbox styling for mobile filter options */
+          .mobile-filter-content input[type="checkbox"][data-action="toggle-filter"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+          }
+          .mobile-filter-content input[type="checkbox"][data-action="toggle-filter"]:checked {
+            border-color: var(--filter-color, #3b82f6);
+            background-color: var(--filter-color, #3b82f6);
+          }
+          .mobile-filter-content input[type="checkbox"][data-action="toggle-filter"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+          }
+          .mobile-filter-content input[type="checkbox"][data-action="toggle-filter"]:hover {
+            border-color: var(--filter-color, #3b82f6);
+          }
+        </style>
         <!-- Mobile Filter Toggle Button -->
         <button data-action="toggle-mobile-filters" class="w-full px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center justify-center gap-2 mb-4">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,7 +213,7 @@ export const categoryConfig = {
             </div>
 
             <!-- Overlay Content -->
-            <div class="p-4 overflow-y-auto h-[calc(100vh-120px)] space-y-3" style="--filter-checkbox-color: {{filterOptionStyles.checkboxColor}}">
+            <div class="mobile-filter-content p-4 overflow-y-auto h-[calc(100vh-120px)] space-y-3" style="--filter-color: {{filterOptionStyles.checkboxColor}}">
               <!-- Price Filter Slider -->
               {{#if filters.price.min}}
                 <div class="border-b border-gray-200 pb-2" data-filter-section="price">
