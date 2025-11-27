@@ -213,18 +213,26 @@ router.get('/by-slug/:slug/full', async (req, res) => {
     const imagesByProduct = await fetchProductImages(productIds, tenantDb);
 
     // Load product attribute values for layered navigation
+    console.log('🔍 Category endpoint - Loading attributes for productIds:', productIds);
     let attributeValuesData = [];
     if (productIds.length > 0) {
-      const { data: pavs } = await tenantDb
+      const { data: pavs, error: pavError } = await tenantDb
         .from('product_attribute_values')
         .select('*')
         .in('product_id', productIds);
+      if (pavError) {
+        console.error('❌ Error loading product_attribute_values:', pavError);
+      }
       attributeValuesData = pavs || [];
+      console.log('📊 product_attribute_values found:', attributeValuesData.length, 'records');
+      console.log('📊 PAV data sample:', JSON.stringify(attributeValuesData.slice(0, 3)));
     }
 
     // Load attributes and attribute values referenced
     const attributeIds = [...new Set(attributeValuesData.map(pav => pav.attribute_id))];
     const attributeValueIds = [...new Set(attributeValuesData.filter(pav => pav.value_id).map(pav => pav.value_id))];
+    console.log('📊 Unique attributeIds:', attributeIds);
+    console.log('📊 Unique attributeValueIds:', attributeValueIds);
 
     const [attributesData, attributeValuesListData] = await Promise.all([
       attributeIds.length > 0
@@ -236,6 +244,8 @@ router.get('/by-slug/:slug/full', async (req, res) => {
     ]);
 
     // Create lookup maps
+    console.log('📊 attributesData loaded:', JSON.stringify(attributesData));
+    console.log('📊 attributeValuesListData loaded:', JSON.stringify(attributeValuesListData));
     const attrMap = new Map((attributesData || []).map(a => [a.id, a]));
     const valMap = new Map((attributeValuesListData || []).map(v => [v.id, v]));
 
@@ -277,6 +287,7 @@ router.get('/by-slug/:slug/full', async (req, res) => {
     });
 
     // Apply translations, images, and attributes to products
+    console.log('📊 pavByProduct keys:', Object.keys(pavByProduct));
     const productsWithTrans = (products || []).map(p => {
       const trans = prodTransMap[p.id];
       const reqLang = trans?.[lang];
@@ -284,6 +295,7 @@ router.get('/by-slug/:slug/full', async (req, res) => {
 
       // Transform product attribute values to array format
       const productPavs = pavByProduct[p.id] || [];
+      console.log(`📊 Product ${p.id} has ${productPavs.length} PAVs`);
       const attributes = productPavs.map(pav => {
         const attr = attrMap.get(pav.attribute_id);
         if (!attr) return null;
@@ -317,6 +329,7 @@ router.get('/by-slug/:slug/full', async (req, res) => {
         };
       }).filter(Boolean);
 
+      console.log(`📊 Product ${p.id} final attributes:`, JSON.stringify(attributes));
       return {
         ...p,
         name: reqLang?.name || enLang?.name || p.name,
@@ -326,6 +339,7 @@ router.get('/by-slug/:slug/full', async (req, res) => {
       };
     });
 
+    console.log('✅ Category endpoint complete - returning', productsWithTrans.length, 'products');
     res.json({
       success: true,
       data: {
