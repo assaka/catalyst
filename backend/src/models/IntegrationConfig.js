@@ -411,6 +411,31 @@ IntegrationConfig.getActiveConfigs = async function(storeId) {
   }
 };
 
+IntegrationConfig.deleteByStoreAndType = async function(storeId, integrationType) {
+  const ConnectionManager = require('../services/database/ConnectionManager');
+
+  try {
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data, error } = await tenantDb
+      .from('integration_configs')
+      .delete()
+      .eq('store_id', storeId)
+      .eq('integration_type', integrationType)
+      .select();
+
+    if (error) {
+      console.error('Error deleting integration config:', error);
+      throw error;
+    }
+
+    return data && data.length > 0;
+  } catch (error) {
+    console.error('IntegrationConfig.deleteByStoreAndType error:', error);
+    throw error;
+  }
+};
+
 // ============================================
 // Token Refresh Methods (for OAuth integrations)
 // ============================================

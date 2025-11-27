@@ -99,7 +99,6 @@ export default function ProductTabs() {
       setLoading(true);
 
       const storeId = getSelectedStoreId();
-      console.log('🏪 Admin ProductTabs: Loading data for store:', storeId);
       if (!storeId) {
         console.warn("No store selected");
         setLoading(false);
@@ -116,14 +115,10 @@ export default function ProductTabs() {
         AttributeSet.filter({ store_id: storeId })
       ]);
 
-      console.log('📋 Admin ProductTabs: Loaded tabs data:', tabsData);
-      console.log('📋 Admin ProductTabs: Tabs count:', tabsData?.length || 0);
-
       setTabs(tabsData || []);
       setAttributes(attributesData || []);
       setAttributeSets(setsData || []);
     } catch (error) {
-      console.error("Error loading data:", error);
       setTabs([]);
       setAttributes([]);
       setAttributeSets([]);
@@ -159,7 +154,6 @@ export default function ProductTabs() {
       setShowForm(false);
       setEditingTab(null);
     } catch (error) {
-      console.error("Error submitting tab:", error);
       setFlashMessage({ type: 'error', message: `Failed to ${editingTab ? 'update' : 'create'} product tab` });
     }
   };
@@ -167,20 +161,12 @@ export default function ProductTabs() {
   const handleEdit = async (tab) => {
     if (tab) {
       // Fetch the full tab with all translations from the API
-      console.log('🔍 Frontend: Fetching full tab with all translations for ID:', tab.id);
       try {
         const response = await ProductTab.findById(tab.id);
-        console.log('🔍 Frontend: Received response from API:', response);
         // Extract the actual tab data from the API response
         const fullTab = response?.data || response;
-        console.log('🔍 Frontend: Full tab with translations:', {
-          id: fullTab.id,
-          translations: fullTab.translations,
-          translationKeys: Object.keys(fullTab.translations || {})
-        });
         setEditingTab(fullTab);
       } catch (error) {
-        console.error('Failed to fetch full tab:', error);
         setFlashMessage({ type: 'error', message: 'Failed to load tab details' });
         return;
       }
@@ -235,7 +221,6 @@ export default function ProductTabs() {
         message: `Product tab ${tab.is_active ? 'deactivated' : 'activated'} successfully!`
       });
     } catch (error) {
-      console.error("Error updating tab status:", error);
       setFlashMessage({ type: 'error', message: 'Failed to update tab status' });
     }
   };
@@ -309,9 +294,7 @@ export default function ProductTabs() {
         {/* Tabs Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {(() => {
-            console.log('🎨 Rendering tabs grid. filteredTabs:', filteredTabs);
             return filteredTabs.map((tab) => {
-              console.log('🎨 Rendering individual tab:', tab);
               return (
             <Card key={tab.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
               <CardHeader className="pb-3">

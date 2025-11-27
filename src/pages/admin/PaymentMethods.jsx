@@ -17,7 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages, X, ChevronsUpDown, Check, Building2, Truck, RefreshCw, ExternalLink } from "lucide-react";
+import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle, Languages, X, ChevronsUpDown, Check, Building2, Truck, RefreshCw, ExternalLink, Unlink } from "lucide-react";
+import apiClient from "@/api/client";
 import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus } from "@/api/functions";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -46,6 +47,7 @@ export default function PaymentMethods() {
   const [stripeStatus, setStripeStatus] = useState(null);
   const [loadingStripeStatus, setLoadingStripeStatus] = useState(true);
   const [connectingStripe, setConnectingStripe] = useState(false);
+  const [disconnectingStripe, setDisconnectingStripe] = useState(false);
 
   // Conditions data
   const [categories, setCategories] = useState([]);
@@ -170,6 +172,29 @@ export default function PaymentMethods() {
       setFlashMessage({ type: 'error', message: 'Error connecting to Stripe: ' + error.message });
     } finally {
       setConnectingStripe(false);
+    }
+  };
+
+  const handleDisconnectStripe = async () => {
+    if (!selectedStore?.id) return;
+
+    const confirmed = window.confirm(
+      'Are you sure you want to disconnect your Stripe account? This will disable online payments for your store.'
+    );
+
+    if (!confirmed) return;
+
+    setDisconnectingStripe(true);
+    try {
+      await apiClient.delete(`payments/disconnect-stripe?store_id=${selectedStore.id}`);
+      setFlashMessage({ type: 'success', message: 'Stripe account disconnected successfully.' });
+      setStripeStatus(null);
+      loadStripeConnectStatus();
+    } catch (error) {
+      console.error('Error disconnecting Stripe:', error);
+      setFlashMessage({ type: 'error', message: 'Error disconnecting Stripe: ' + error.message });
+    } finally {
+      setDisconnectingStripe(false);
     }
   };
 
@@ -577,27 +602,35 @@ export default function PaymentMethods() {
                         {loadingStripeStatus ? (
                           <RefreshCw className="w-4 h-4 mx-auto animate-spin text-gray-400" />
                         ) : isStripeConnected ? (
-                          <div className="space-y-2">
-                            <Badge className="bg-green-100 text-green-700 border-green-200">
-                              <CheckCircle className="w-3 h-3 mr-1" /> Connected
-                            </Badge>
-                            <div className="flex gap-2 justify-center">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-center gap-2">
+                              <Badge className="bg-green-100 text-green-700 border-green-200">
+                                <CheckCircle className="w-3 h-3 mr-1" /> Connected
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleDisconnectStripe}
+                                disabled={disconnectingStripe}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 px-2"
+                                title="Disconnect Stripe"
+                              >
+                                {disconnectingStripe ? (
+                                  <RefreshCw className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Unlink className="w-3 h-3" />
+                                )}
+                              </Button>
+                            </div>
+                            {!hasStripeMethod && (
                               <Button
                                 size="sm"
                                 onClick={handleAddStripeMethod}
-                                disabled={saving || hasStripeMethod}
+                                disabled={saving}
                               >
-                                {hasStripeMethod ? 'Added' : 'Add Method'}
+                                Add Method
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={handleConnectStripe}
-                                disabled={connectingStripe}
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                              </Button>
-                            </div>
+                            )}
                           </div>
                         ) : stripeStatus?.connected && !stripeStatus?.onboardingComplete ? (
                           <div className="space-y-2">
@@ -631,7 +664,7 @@ export default function PaymentMethods() {
                                 Connecting...
                               </>
                             ) : (
-                              'Connect Stripe'
+                              <><CreditCard className="w-4 h-4 mr-2" /> Connect</>
                             )}
                           </Button>
                         )}

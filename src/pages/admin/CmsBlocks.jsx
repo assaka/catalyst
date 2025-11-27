@@ -54,15 +54,8 @@ export default function CmsBlocks() {
     setLoading(true);
     try {
       const blocksData = await CmsBlock.filter({ store_id: storeId });
-      console.log('🔍 CmsBlocks - Loaded blocks:', {
-        count: blocksData?.length,
-        firstBlock: blocksData?.[0],
-        firstBlockTranslations: blocksData?.[0]?.translations,
-        firstBlockTranslationKeys: Object.keys(blocksData?.[0]?.translations || {})
-      });
       setBlocks(blocksData || []);
     } catch (error) {
-      console.error("Error loading CMS blocks:", error);
       setBlocks([]);
     } finally {
       setLoading(false);
@@ -72,7 +65,6 @@ export default function CmsBlocks() {
   const handleFormSubmit = async (formData) => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
-      console.error("Cannot save CMS block: No store selected.");
       setFlashMessage({ type: 'error', message: 'Cannot save CMS block: No store selected.' });
       return;
     }
@@ -95,19 +87,11 @@ export default function CmsBlocks() {
       // Clear storefront cache for instant updates
       if (storeId) clearCmsBlocksCache(storeId);
     } catch (error) {
-      console.error("Failed to save CMS block", error);
       setFlashMessage({ type: 'error', message: 'Failed to save CMS block.' });
     }
   };
 
   const handleEdit = (block) => {
-    console.log('🔍 CmsBlocks - Edit clicked on block:', {
-      blockId: block?.id,
-      blockIdentifier: block?.identifier,
-      hasTranslations: !!block?.translations,
-      translationKeys: Object.keys(block?.translations || {}),
-      translations: block?.translations
-    });
     setEditingBlock(block); // Changed from 'setSelectedBlock'
     setShowForm(true);
   };
@@ -123,7 +107,6 @@ export default function CmsBlocks() {
         const storeId = getSelectedStoreId();
         if (storeId) clearCmsBlocksCache(storeId);
       } catch (error) {
-        console.error("Failed to delete CMS block", error);
         setFlashMessage({ type: 'error', message: 'Failed to delete CMS block.' });
       }
     }
@@ -138,7 +121,6 @@ export default function CmsBlocks() {
       const storeId = getSelectedStoreId();
       if (storeId) clearCmsBlocksCache(storeId);
     } catch (error) {
-      console.error("Failed to toggle block status", error);
       setFlashMessage({ type: 'error', message: 'Failed to toggle block status.' });
     }
   };

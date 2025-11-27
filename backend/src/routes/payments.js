@@ -395,6 +395,46 @@ router.get('/connect-status', authMiddleware, authorize(['admin', 'store_owner']
   }
 });
 
+// @route   DELETE /api/payments/disconnect-stripe
+// @desc    Disconnect Stripe Connect account
+// @access  Private
+router.delete('/disconnect-stripe', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const { store_id } = req.query;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Delete the Stripe integration config
+    const deleted = await IntegrationConfig.deleteByStoreAndType(store_id, STRIPE_INTEGRATION_TYPE);
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'No Stripe connection found for this store'
+      });
+    }
+
+    console.log(`Disconnected Stripe for store ${store_id}`);
+
+    res.json({
+      success: true,
+      message: 'Stripe account disconnected successfully'
+    });
+  } catch (error) {
+    console.error('Disconnect Stripe error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to disconnect Stripe',
+      error: error.message
+    });
+  }
+});
+
 // @route   POST /api/payments/connect-account
 // @desc    Create Stripe Connect account
 // @access  Private
