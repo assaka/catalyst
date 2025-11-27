@@ -48,6 +48,7 @@ export default function PaymentMethods() {
   const [loadingStripeStatus, setLoadingStripeStatus] = useState(true);
   const [connectingStripe, setConnectingStripe] = useState(false);
   const [disconnectingStripe, setDisconnectingStripe] = useState(false);
+  const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
 
   // Conditions data
   const [categories, setCategories] = useState([]);
@@ -178,17 +179,12 @@ export default function PaymentMethods() {
   const handleDisconnectStripe = async () => {
     if (!selectedStore?.id) return;
 
-    const confirmed = window.confirm(
-      'Are you sure you want to disconnect your Stripe account? This will disable online payments for your store.'
-    );
-
-    if (!confirmed) return;
-
     setDisconnectingStripe(true);
     try {
       await apiClient.delete(`payments/disconnect-stripe?store_id=${selectedStore.id}`);
       setFlashMessage({ type: 'success', message: 'Stripe account disconnected successfully.' });
       setStripeStatus(null);
+      setDisconnectDialogOpen(false);
       loadStripeConnectStatus();
     } catch (error) {
       console.error('Error disconnecting Stripe:', error);
@@ -610,16 +606,11 @@ export default function PaymentMethods() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={handleDisconnectStripe}
-                                disabled={disconnectingStripe}
+                                onClick={() => setDisconnectDialogOpen(true)}
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 px-2"
                                 title="Disconnect Stripe"
                               >
-                                {disconnectingStripe ? (
-                                  <RefreshCw className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Unlink className="w-3 h-3" />
-                                )}
+                                <Unlink className="w-3 h-3" />
                               </Button>
                             </div>
                             {!hasStripeMethod && (
@@ -1344,6 +1335,19 @@ export default function PaymentMethods() {
           title="Delete Payment Method"
           description={`Are you sure you want to delete "${methodToDelete?.name}"? This action cannot be undone.`}
           loading={deleting}
+        />
+
+        <DeleteConfirmationDialog
+          open={disconnectDialogOpen}
+          onOpenChange={setDisconnectDialogOpen}
+          onConfirm={handleDisconnectStripe}
+          title="Disconnect Stripe"
+          description="Are you sure you want to disconnect your Stripe account? This will disable online payments for your store. You can reconnect at any time."
+          confirmText="Disconnect"
+          loading={disconnectingStripe}
+          icon={Unlink}
+          iconClassName="text-orange-600"
+          iconBgClassName="bg-orange-100"
         />
       </div>
     </div>

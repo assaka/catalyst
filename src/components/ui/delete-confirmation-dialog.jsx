@@ -19,15 +19,18 @@ export function DeleteConfirmationDialog({
   description = "This action cannot be undone. This will permanently delete this item.",
   confirmText = "Delete",
   cancelText = "Cancel",
-  loading = false
+  loading = false,
+  icon: Icon = AlertTriangle,
+  iconClassName = "text-red-600",
+  iconBgClassName = "bg-red-100"
 }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+            <div className={`flex-shrink-0 w-12 h-12 rounded-full ${iconBgClassName} flex items-center justify-center`}>
+              <Icon className={`w-6 h-6 ${iconClassName}`} />
             </div>
             <div className="flex-1">
               <AlertDialogTitle className="text-lg">{title}</AlertDialogTitle>
