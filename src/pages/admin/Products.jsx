@@ -724,110 +724,126 @@ export default function Products() {
 
   // Enhanced pagination component
   const renderPagination = (currentPage, totalPages, onPageChange) => {
-    if (totalPages <= 1) return null;
-
     const getVisiblePages = () => {
       const pages = [];
-      
+
       // Always show previous page if exists
       if (currentPage > 1) {
         pages.push(currentPage - 1);
       }
-      
+
       // Always show current page (non-clickable, highlighted)
       pages.push(currentPage);
-      
+
       // Show next 3 pages if they exist
       for (let i = 1; i <= 3 && currentPage + i <= totalPages; i++) {
         pages.push(currentPage + i);
       }
-      
+
       return pages;
     };
 
     const visiblePages = getVisiblePages();
 
+    // Build the product count text with proper singular/plural
+    const getProductCountText = () => {
+      const total = filteredProducts.length;
+      if (total === 0) return `0 ${t('common.products', 'products')}`;
+      if (total === 1) return `1 ${t('common.product', 'product')}`;
+
+      const start = startIndex + 1;
+      const end = Math.min(startIndex + itemsPerPage, total);
+
+      // If showing all products on one page, just show the count
+      if (start === 1 && end === total) {
+        return `${total} ${t('common.products', 'products')}`;
+      }
+
+      return `${t('common.showing', 'Showing')} ${start}-${end} ${t('common.of', 'of')} ${total} ${t('common.products', 'products')}`;
+    };
+
     return (
       <div className="flex items-center justify-between mt-6">
         <p className="text-sm text-gray-700">
-          {filteredProducts.length === 1
-            ? `1 ${t('common.product', 'product')}`
-            : `Showing ${startIndex + 1}-${Math.min(startIndex + itemsPerPage, filteredProducts.length)} of ${filteredProducts.length} ${t('common.products', 'products')}`}
+          {getProductCountText()}
         </p>
-        
-        <div className="flex items-center space-x-2">
-          {/* Previous Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
 
-          {/* Page Numbers */}
-          {visiblePages.map((page) => (
+        {/* Only show navigation when there are multiple pages */}
+        {totalPages > 1 && (
+          <div className="flex items-center space-x-2">
+            {/* Previous Button */}
             <Button
-              key={page}
-              variant={currentPage === page ? "default" : "outline"}
+              variant="outline"
               size="sm"
-              onClick={currentPage === page ? undefined : () => onPageChange(page)}
-              disabled={currentPage === page}
-              className={currentPage === page ? "bg-blue-600 text-white cursor-default" : ""}
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
             >
-              {page}
+              Previous
             </Button>
-          ))}
 
-          {/* Show ellipsis and last page if there are more pages */}
-          {currentPage + 3 < totalPages && (
-            <>
-              <span className="px-2 text-gray-500">...</span>
+            {/* Page Numbers */}
+            {visiblePages.map((page) => (
               <Button
-                variant="outline"
+                key={page}
+                variant={currentPage === page ? "default" : "outline"}
                 size="sm"
-                onClick={() => onPageChange(totalPages)}
+                onClick={currentPage === page ? undefined : () => onPageChange(page)}
+                disabled={currentPage === page}
+                className={currentPage === page ? "bg-blue-600 text-white cursor-default" : ""}
               >
-                {totalPages}
+                {page}
               </Button>
-            </>
-          )}
+            ))}
 
-          {/* Next Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
+            {/* Show ellipsis and last page if there are more pages */}
+            {currentPage + 3 < totalPages && (
+              <>
+                <span className="px-2 text-gray-500">...</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPageChange(totalPages)}
+                >
+                  {totalPages}
+                </Button>
+              </>
+            )}
 
-          {/* Page Dropdown */}
-          <div className="ml-4">
-            <Select
-              value={currentPage.toString()}
-              onValueChange={(value) => onPageChange(parseInt(value))}
+            {/* Next Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
             >
-              <SelectTrigger className="w-20">
-                <SelectValue placeholder={currentPage} />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <SelectItem key={page} value={page.toString()}>
-                    {page}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              Next
+            </Button>
 
-          {/* Page Info */}
-          <span className="ml-4 text-sm text-gray-600">
-            of {totalPages} pages
-          </span>
-        </div>
+            {/* Page Dropdown */}
+            <div className="ml-4">
+              <Select
+                value={currentPage.toString()}
+                onValueChange={(value) => onPageChange(parseInt(value))}
+              >
+                <SelectTrigger className="w-20">
+                  <SelectValue placeholder={currentPage} />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <SelectItem key={page} value={page.toString()}>
+                      {page}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Page Info */}
+            <span className="ml-4 text-sm text-gray-600">
+              of {totalPages} {totalPages === 1 ? t('common.page', 'page') : t('common.pages', 'pages')}
+            </span>
+          </div>
+        )}
       </div>
     );
   };
