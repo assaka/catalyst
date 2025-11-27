@@ -547,4 +547,10 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
         <SaveButton
           type="submit"
           loading={loading}
-          success={saveSuccess
+          success={saveSuccess}
+          defaultText={attribute ? "Update Attribute" : "Create Attribute"}
+        />
+      </div>
+    </form>
+  );
+}
