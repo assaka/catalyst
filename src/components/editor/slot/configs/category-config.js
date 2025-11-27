@@ -148,7 +148,7 @@ export const categoryConfig = {
             </div>
 
             <!-- Overlay Content -->
-            <div class="p-4 overflow-y-auto h-[calc(100vh-120px)] space-y-3">
+            <div class="p-4 overflow-y-auto h-[calc(100vh-120px)] space-y-3" style="--filter-checkbox-color: {{filterOptionStyles.checkboxColor}}">
               <!-- Price Filter Slider -->
               {{#if filters.price.min}}
                 <div class="border-b border-gray-200 pb-2" data-filter-section="price">
@@ -1178,7 +1178,7 @@ export const categoryConfig = {
       component: 'LayeredNavigation',
       content: `
         <!-- Desktop Filters - visible on sm+ screens -->
-        <div class="space-y-3">
+        <div class="space-y-3" style="--filter-checkbox-color: {{filterOptionStyles.checkboxColor}}">
           <!-- Price Filter Slider -->
           {{#if filters.price.min}}
             <div class="border-b border-gray-200 pb-2" data-filter-section="price">
@@ -1239,6 +1239,37 @@ export const categoryConfig = {
                     cursor: pointer;
                     border: 2px solid white;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                  }
+                  /* Custom radio button styling for filter options */
+                  input[type="radio"][data-action="toggle-filter"] {
+                    appearance: none;
+                    -webkit-appearance: none;
+                    width: 16px;
+                    height: 16px;
+                    border: 2px solid #d1d5db;
+                    border-radius: 50%;
+                    background: white;
+                    cursor: pointer;
+                    position: relative;
+                    flex-shrink: 0;
+                  }
+                  input[type="radio"][data-action="toggle-filter"]:checked {
+                    border-color: var(--filter-checkbox-color, #3b82f6);
+                    background: var(--filter-checkbox-color, #3b82f6);
+                  }
+                  input[type="radio"][data-action="toggle-filter"]:checked::after {
+                    content: '';
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 6px;
+                    height: 6px;
+                    border-radius: 50%;
+                    background: white;
+                  }
+                  input[type="radio"][data-action="toggle-filter"]:hover {
+                    border-color: var(--filter-checkbox-color, #3b82f6);
                   }
                 </style>
               </div>

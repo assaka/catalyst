@@ -58,6 +58,7 @@ import { UnifiedSlotRenderer } from './UnifiedSlotRenderer';
 import { processVariables } from '@/utils/variableProcessor';
 import { formatPrice } from '@/utils/priceUtils';
 import { getStockLabel, getStockLabelStyle } from '@/utils/stockUtils';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 // Active Filters Component with processVariables
 const ActiveFilters = createSlotComponent({
@@ -1129,6 +1130,26 @@ const ProductItemsGrid = createSlotComponent({
      * DO NOT re-format prices here or you'll break the fix!
      */
     const products = variableContext?.products || categoryContext?.products || [];
+    const { t } = useTranslation();
+
+    // Show friendly message when no products match filters
+    if (products.length === 0) {
+      return (
+        <div className={`${className || slot.className || ''}`} style={styles || slot.styles}>
+          <div className="flex flex-col items-center justify-center py-16 px-4 bg-gray-50 rounded-lg border border-gray-200">
+            <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              {t('category.no_products_match', 'No products match your filters')}
+            </h3>
+            <p className="text-gray-500 text-center max-w-md">
+              {t('category.try_different_filters', 'Try adjusting your filters or clearing some selections to see more products.')}
+            </p>
+          </div>
+        </div>
+      );
+    }
 
     // Find product card template and descendants
     const productCardTemplate = allSlots?.product_card_template;
