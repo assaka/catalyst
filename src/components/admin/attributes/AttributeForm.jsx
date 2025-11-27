@@ -190,24 +190,24 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
     setSaveSuccess(false);
     setLoading(true);
     try {
-      // Submit the attribute first
-      const savedAttribute = await onSubmit(formData);
-
-      // If this is a select/multiselect attribute, save the attribute values
+      // For select/multiselect attributes, save values BEFORE the main attribute
+      // so that loadData() in the parent will include the updated values
       if ((formData.type === 'select' || formData.type === 'multiselect') && attributeValues.length > 0) {
-        const attributeId = savedAttribute?.id || attribute?.id;
+        const attributeId = attribute?.id;
 
         if (attributeId) {
           // Save each attribute value
           for (const value of attributeValues) {
             const valueData = {
               code: value.code,
-              translations: value.translations,
+              translations: value.translations || {},
               metadata: value.metadata || {},
-              sort_order: value.sort_order
+              sort_order: value.sort_order || 0
             };
 
-            if (value.id) {
+            console.log('Saving attribute value:', { valueId: value.id, valueData });
+
+            if (value.id && !String(value.id).startsWith('temp-')) {
               // Update existing value
               await api.put(`/attributes/${attributeId}/values/${value.id}`, valueData);
             } else {
@@ -223,13 +223,32 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
             );
 
             for (const removedValue of removedValues) {
-              if (removedValue.id) {
+              if (removedValue.id && !String(removedValue.id).startsWith('temp-')) {
                 await api.delete(`/attributes/${attributeId}/values/${removedValue.id}`);
               }
             }
           }
         }
       }
+
+      // Submit the attribute (this will trigger loadData in parent and close form)
+      const savedAttribute = await onSubmit(formData);
+
+      // For NEW attributes, save values after creation
+      if (!attribute?.id && savedAttribute?.id) {
+        if ((formData.type === 'select' || formData.type === 'multiselect') && attributeValues.length > 0) {
+          for (const value of attributeValues) {
+            const valueData = {
+              code: value.code,
+              translations: value.translations || {},
+              metadata: value.metadata || {},
+              sort_order: value.sort_order || 0
+            };
+            await api.post(`/attributes/${savedAttribute.id}/values`, valueData);
+          }
+        }
+      }
+
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
@@ -348,7 +367,10 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label htmlFor="is_filterable">Use in Layered Navigation</Label>
+              <div>
+                <Label htmlFor="is_filterable">Use in Layered Navigation</Label>
+                <p className="text-xs text-gray-500">Show as filter option on category pages</p>
+              </div>
               <Switch
                 id="is_filterable"
                 checked={formData.is_filterable}
@@ -387,8 +409,11 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
                 }
               />
             </div>
-             <div className="flex items-center justify-between">
-              <Label htmlFor="is_usable_in_conditions" className="pr-4">Use for Rule Condition</Label>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="is_usable_in_conditions">Use for Rule Condition</Label>
+                <p className="text-xs text-gray-500">Use in cart/catalog rules and promotions</p>
+              </div>
               <Switch
                 id="is_usable_in_conditions"
                 checked={formData.is_usable_in_conditions}
@@ -522,10 +547,4 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
         <SaveButton
           type="submit"
           loading={loading}
-          success={saveSuccess}
-          defaultText={attribute ? "Update Attribute" : "Create Attribute"}
-        />
-      </div>
-    </form>
-  );
-}
+          success={saveSuccess

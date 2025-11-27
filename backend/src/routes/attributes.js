@@ -514,6 +514,8 @@ router.post('/:attributeId/values', authMiddleware, authorize(['admin', 'store_o
 
     const { code, translations, metadata, sort_order } = req.body;
 
+    console.log('📝 Creating attribute value:', { code, translations, sort_order });
+
     // Insert attribute value
     const { data: value, error: insertError } = await tenantDb
       .from('attribute_values')
@@ -529,9 +531,15 @@ router.post('/:attributeId/values', authMiddleware, authorize(['admin', 'store_o
       throw insertError;
     }
 
+    console.log('✅ Attribute value created:', value.id);
+
     // Save translations if provided
-    if (translations && typeof translations === 'object') {
+    if (translations && typeof translations === 'object' && Object.keys(translations).length > 0) {
+      console.log('📝 Saving translations for value:', value.id, translations);
       await saveAttributeValueTranslations(tenantDb, value.id, translations);
+      console.log('✅ Translations saved for value:', value.id);
+    } else {
+      console.log('⚠️ No translations provided for value:', value.id);
     }
 
     res.json({ success: true, data: value });
@@ -588,20 +596,28 @@ router.put('/:attributeId/values/:valueId', authMiddleware, authorize(['admin', 
     // Extract translations from request body
     const { translations, ...valueData } = req.body;
 
-    // Update value fields (excluding translations)
-    const { error: updateError } = await tenantDb
-      .from('attribute_values')
-      .update(valueData)
-      .eq('id', req.params.valueId)
-      .eq('attribute_id', req.params.attributeId);
+    console.log('📝 Updating attribute value:', req.params.valueId, { translations, valueData });
 
-    if (updateError) {
-      throw updateError;
+    // Update value fields (excluding translations)
+    if (Object.keys(valueData).length > 0) {
+      const { error: updateError } = await tenantDb
+        .from('attribute_values')
+        .update(valueData)
+        .eq('id', req.params.valueId)
+        .eq('attribute_id', req.params.attributeId);
+
+      if (updateError) {
+        throw updateError;
+      }
     }
 
     // Save translations to normalized table if provided
-    if (translations && typeof translations === 'object') {
+    if (translations && typeof translations === 'object' && Object.keys(translations).length > 0) {
+      console.log('📝 Saving translations for value:', req.params.valueId, translations);
       await saveAttributeValueTranslations(tenantDb, req.params.valueId, translations);
+      console.log('✅ Translations saved for value:', req.params.valueId);
+    } else {
+      console.log('⚠️ No translations provided for value:', req.params.valueId);
     }
 
     // Fetch updated value with translations
