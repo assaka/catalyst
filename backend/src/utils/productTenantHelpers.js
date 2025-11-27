@@ -104,12 +104,24 @@ async function loadProductAttributes(tenantDb, productId) {
 
     // Get attribute info to map IDs to codes
     const attributeIds = [...new Set(pavs.map(p => p.attribute_id))];
-    const { data: attrs } = await tenantDb
+    console.log('📖 loadProductAttributes - looking for attributeIds:', attributeIds);
+
+    const { data: attrs, error: attrsError } = await tenantDb
       .from('attributes')
       .select('id, code, type')
       .in('id', attributeIds);
 
-    console.log('📖 loadProductAttributes - attrs:', JSON.stringify(attrs));
+    if (attrsError) {
+      console.error('❌ Error fetching attributes:', attrsError);
+    }
+    console.log('📖 loadProductAttributes - attrs found:', JSON.stringify(attrs));
+
+    // Also log all attributes in the tenant DB for debugging
+    const { data: allAttrs } = await tenantDb
+      .from('attributes')
+      .select('id, code, type')
+      .limit(20);
+    console.log('📖 loadProductAttributes - all attrs in DB:', JSON.stringify(allAttrs));
     const attrMap = new Map(attrs?.map(a => [a.id, a]) || []);
 
     // Get attribute values for select/multiselect
