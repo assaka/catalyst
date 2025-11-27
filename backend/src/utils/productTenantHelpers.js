@@ -66,7 +66,6 @@ async function getProducts(storeId, filters = {}, pagination = {}) {
  * @returns {Promise<Object|null>} Product or null
  */
 async function getProductById(storeId, productId) {
-  console.log('🔍 getProductById called:', { storeId, productId });
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   const { data: product, error } = await tenantDb
@@ -98,42 +97,25 @@ async function loadProductAttributes(tenantDb, productId) {
       .select('*')
       .eq('product_id', productId);
 
-    console.log('📖 loadProductAttributes - pavs:', JSON.stringify(pavs));
-
     if (!pavs || pavs.length === 0) return {};
 
     // Get attribute info to map IDs to codes
     const attributeIds = [...new Set(pavs.map(p => p.attribute_id))];
-    console.log('📖 loadProductAttributes - looking for attributeIds:', attributeIds);
 
-    const { data: attrs, error: attrsError } = await tenantDb
+    const { data: attrs } = await tenantDb
       .from('attributes')
       .select('id, code, type')
       .in('id', attributeIds);
-
-    if (attrsError) {
-      console.error('❌ Error fetching attributes:', attrsError);
-    }
-    console.log('📖 loadProductAttributes - attrs found:', JSON.stringify(attrs));
-
-    // Also log all attributes in the tenant DB for debugging
-    const { data: allAttrs } = await tenantDb
-      .from('attributes')
-      .select('id, code, type')
-      .limit(20);
-    console.log('📖 loadProductAttributes - all attrs in DB:', JSON.stringify(allAttrs));
     const attrMap = new Map(attrs?.map(a => [a.id, a]) || []);
 
     // Get attribute values for select/multiselect
     const valueIds = pavs.filter(p => p.value_id).map(p => p.value_id);
-    console.log('📖 loadProductAttributes - valueIds:', valueIds);
     let valMap = new Map();
     if (valueIds.length > 0) {
       const { data: vals } = await tenantDb
         .from('attribute_values')
         .select('id, code')
         .in('id', valueIds);
-      console.log('📖 loadProductAttributes - vals from attribute_values:', JSON.stringify(vals));
       valMap = new Map(vals?.map(v => [v.id, v.code]) || []);
     }
 
@@ -162,7 +144,6 @@ async function loadProductAttributes(tenantDb, productId) {
       }
     }
 
-    console.log('📖 loadProductAttributes - final result:', JSON.stringify(attributes));
     return attributes;
   } catch (err) {
     console.error('Error loading product attributes:', err);
@@ -230,10 +211,7 @@ async function updateProduct(storeId, productId, productData) {
 
   // Sync attributes to product_attribute_values table for storefront filtering
   if (attributes && typeof attributes === 'object') {
-    console.log('🔄 Syncing attributes for product:', productId, 'attributes:', JSON.stringify(attributes));
     await syncProductAttributeValues(tenantDb, storeId, productId, attributes);
-  } else {
-    console.log('⚠️ No attributes to sync for product:', productId, 'attributes value:', attributes);
   }
 
   // Return updated product
@@ -250,19 +228,12 @@ async function updateProduct(storeId, productId, productData) {
  * @param {Object} attributes - Attributes object {attributeCode: value}
  */
 async function syncProductAttributeValues(tenantDb, storeId, productId, attributes) {
-  console.log('🔄 syncProductAttributeValues called with:', { productId, storeId, attributes: JSON.stringify(attributes) });
   try {
     // Delete existing attribute values for this product
-    const { error: deleteError } = await tenantDb
+    await tenantDb
       .from('product_attribute_values')
       .delete()
       .eq('product_id', productId);
-
-    if (deleteError) {
-      console.error('❌ Error deleting old attribute values:', deleteError);
-    } else {
-      console.log('✅ Deleted old attribute values for product:', productId);
-    }
 
     // Get all attributes for this store to map codes to IDs
     const { data: storeAttributes } = await tenantDb
@@ -329,23 +300,13 @@ async function syncProductAttributeValues(tenantDb, storeId, productId, attribut
     }
 
     // Insert new attribute values
-    console.log('📝 Insert records to save:', JSON.stringify(insertRecords));
     if (insertRecords.length > 0) {
-      const { error: insertError } = await tenantDb
+      await tenantDb
         .from('product_attribute_values')
         .insert(insertRecords);
-
-      if (insertError) {
-        console.error('❌ Error syncing product_attribute_values:', insertError);
-      } else {
-        console.log('✅ Successfully inserted', insertRecords.length, 'attribute values');
-      }
-    } else {
-      console.log('⚠️ No insert records to save - attributes may not match store attributes');
     }
   } catch (err) {
     console.error('Error in syncProductAttributeValues:', err);
-    // Don't throw - this is a non-critical operation
   }
 }
 
