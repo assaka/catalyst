@@ -547,8 +547,8 @@ export function CategorySlotRenderer({
             // All products on one page
             countText = `${total} ${t('common.products', 'products').toLowerCase()}`;
           } else {
-            // Paginated: "5 out of 10 products"
-            countText = `${end} ${t('common.out_of', 'out of')} ${total} ${t('common.products', 'products').toLowerCase()}`;
+            // Paginated: "1-8 of 9 products"
+            countText = `${start}-${end} ${t('common.of', 'of')} ${total} ${t('common.products', 'products').toLowerCase()}`;
           }
 
           return {
@@ -767,8 +767,8 @@ export function CategorySlotRenderer({
         if (startIndex === 1 && endIndex === totalProducts) {
           return `${totalProducts} ${t('common.products', 'products').toLowerCase()}`;
         }
-        // Paginated: "5 out of 10 products"
-        return `${endIndex} ${t('common.out_of', 'out of')} ${totalProducts} ${t('common.products', 'products').toLowerCase()}`;
+        // Paginated: "1-8 of 9 products"
+        return `${startIndex}-${endIndex} ${t('common.of', 'of')} ${totalProducts} ${t('common.products', 'products').toLowerCase()}`;
       };
 
       return wrapWithParentClass(
