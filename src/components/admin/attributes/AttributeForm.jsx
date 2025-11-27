@@ -190,9 +190,9 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
     setSaveSuccess(false);
     setLoading(true);
     try {
-      // For select/multiselect attributes, save values BEFORE the main attribute
+      // For select/multiselect attributes, handle values BEFORE the main attribute
       // so that loadData() in the parent will include the updated values
-      if ((formData.type === 'select' || formData.type === 'multiselect') && attributeValues.length > 0) {
+      if (formData.type === 'select' || formData.type === 'multiselect') {
         const attributeId = attribute?.id;
 
         if (attributeId) {
@@ -217,15 +217,19 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
           }
 
           // Delete removed values (if editing existing attribute)
-          if (attribute?.values) {
+          if (attribute?.values && attribute.values.length > 0) {
+            const currentValueIds = attributeValues
+              .filter(v => v.id && !String(v.id).startsWith('temp-'))
+              .map(v => v.id);
+
             const removedValues = attribute.values.filter(oldVal =>
-              !attributeValues.some(newVal => newVal.id === oldVal.id)
+              oldVal.id && !currentValueIds.includes(oldVal.id)
             );
 
+            console.log('Deleting removed values:', removedValues.map(v => v.id));
+
             for (const removedValue of removedValues) {
-              if (removedValue.id && !String(removedValue.id).startsWith('temp-')) {
-                await api.delete(`/attributes/${attributeId}/values/${removedValue.id}`);
-              }
+              await api.delete(`/attributes/${attributeId}/values/${removedValue.id}`);
             }
           }
         }
