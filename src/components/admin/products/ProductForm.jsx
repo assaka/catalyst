@@ -1292,30 +1292,30 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 {categories && categories.length > 0 ? (
                   <>
                     <div className="flex justify-end gap-2 mb-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // Expand all categories that have children
-                          const allParentIds = categories
-                            .filter(cat => categories.some(c => c.parent_id === cat.id))
-                            .map(cat => cat.id);
-                          setExpandedCategories(new Set(allParentIds));
-                        }}
-                        className="text-xs"
-                      >
-                        Expand All
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setExpandedCategories(new Set())}
-                        className="text-xs"
-                      >
-                        Collapse All
-                      </Button>
+                      {(() => {
+                        const allParentIds = categories
+                          .filter(cat => categories.some(c => c.parent_id === cat.id))
+                          .map(cat => cat.id);
+                        const isAllExpanded = allParentIds.length > 0 && allParentIds.every(id => expandedCategories.has(id));
+
+                        return (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (isAllExpanded) {
+                                setExpandedCategories(new Set());
+                              } else {
+                                setExpandedCategories(new Set(allParentIds));
+                              }
+                            }}
+                            className="text-xs"
+                          >
+                            {isAllExpanded ? 'Collapse All' : 'Expand All'}
+                          </Button>
+                        );
+                      })()}
                     </div>
                     <div className="border rounded-lg p-3 max-h-64 overflow-y-auto">
                     {(() => {
