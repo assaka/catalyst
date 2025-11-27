@@ -962,21 +962,25 @@ CREATE TABLE IF NOT EXISTS attribute_sets (
 );
 
 CREATE TABLE IF NOT EXISTS attribute_translations (
-  attribute_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  language_code VARCHAR(10),
-  label VARCHAR(255) NOT NULL,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  attribute_id UUID NOT NULL,
+  language_code VARCHAR(10) NOT NULL,
+  label VARCHAR(255),
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  UNIQUE(attribute_id, language_code)
 );
 
 CREATE TABLE IF NOT EXISTS attribute_value_translations (
-  attribute_value_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  language_code VARCHAR(10),
-  value VARCHAR(255) NOT NULL,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  attribute_value_id UUID NOT NULL,
+  language_code VARCHAR(10) NOT NULL,
+  value VARCHAR(255),
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  UNIQUE(attribute_value_id, language_code)
 );
 
 CREATE TABLE IF NOT EXISTS attribute_values (

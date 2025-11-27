@@ -259,6 +259,7 @@ async function getAttributesWithValuesForStore(tenantDb, storeId, options = {}) 
 
 /**
  * Save attribute translations to normalized table
+ * Uses upsert pattern to avoid duplicate key violations
  *
  * @param {Object} tenantDb - Tenant database connection (Supabase client)
  * @param {string} attributeId - Attribute ID
@@ -275,52 +276,30 @@ async function saveAttributeTranslations(tenantDb, attributeId, translations) {
     const label = data.name || data.label || ''; // Accept 'name' (new) or 'label' (old) for backward compatibility
     const description = data.description || null;
 
-    // Check if translation exists
-    const { data: existing } = await tenantDb
+    // Use upsert pattern - insert or update on conflict
+    const { error } = await tenantDb
       .from('attribute_translations')
-      .select('id')
-      .eq('attribute_id', attributeId)
-      .eq('language_code', langCode)
-      .maybeSingle();
+      .upsert({
+        attribute_id: attributeId,
+        language_code: langCode,
+        label: label !== undefined ? label : null,
+        description: description !== undefined ? description : null,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'attribute_id,language_code',
+        ignoreDuplicates: false
+      });
 
-    if (existing) {
-      // Update existing translation
-      const { error } = await tenantDb
-        .from('attribute_translations')
-        .update({
-          label: label !== undefined ? label : null,
-          description: description !== undefined ? description : null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('attribute_id', attributeId)
-        .eq('language_code', langCode);
-
-      if (error) {
-        console.error('Error updating attribute translation:', error);
-        throw error;
-      }
-    } else {
-      // Insert new translation
-      const { error } = await tenantDb
-        .from('attribute_translations')
-        .insert({
-          attribute_id: attributeId,
-          language_code: langCode,
-          label: label !== undefined ? label : null,
-          description: description !== undefined ? description : null,
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) {
-        console.error('Error inserting attribute translation:', error);
-        throw error;
-      }
+    if (error) {
+      console.error('Error upserting attribute translation:', error);
+      throw error;
     }
   }
 }
 
 /**
  * Save attribute value translations to normalized table
+ * Uses upsert pattern to avoid duplicate key violations
  *
  * @param {Object} tenantDb - Tenant database connection (Supabase client)
  * @param {string} valueId - Attribute value ID
@@ -337,46 +316,23 @@ async function saveAttributeValueTranslations(tenantDb, valueId, translations) {
     const value = data.label || ''; // JSON uses 'label', but table uses 'value'
     const description = data.description || null;
 
-    // Check if translation exists
-    const { data: existing } = await tenantDb
+    // Use upsert pattern - insert or update on conflict
+    const { error } = await tenantDb
       .from('attribute_value_translations')
-      .select('id')
-      .eq('attribute_value_id', valueId)
-      .eq('language_code', langCode)
-      .maybeSingle();
+      .upsert({
+        attribute_value_id: valueId,
+        language_code: langCode,
+        value: value !== undefined ? value : null,
+        description: description !== undefined ? description : null,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'attribute_value_id,language_code',
+        ignoreDuplicates: false
+      });
 
-    if (existing) {
-      // Update existing translation
-      const { error } = await tenantDb
-        .from('attribute_value_translations')
-        .update({
-          value: value !== undefined ? value : null,
-          description: description !== undefined ? description : null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('attribute_value_id', valueId)
-        .eq('language_code', langCode);
-
-      if (error) {
-        console.error('Error updating attribute value translation:', error);
-        throw error;
-      }
-    } else {
-      // Insert new translation
-      const { error } = await tenantDb
-        .from('attribute_value_translations')
-        .insert({
-          attribute_value_id: valueId,
-          language_code: langCode,
-          value: value !== undefined ? value : null,
-          description: description !== undefined ? description : null,
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) {
-        console.error('Error inserting attribute value translation:', error);
-        throw error;
-      }
+    if (error) {
+      console.error('Error upserting attribute value translation:', error);
+      throw error;
     }
   }
 }
