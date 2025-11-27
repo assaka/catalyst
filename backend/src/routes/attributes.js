@@ -75,11 +75,14 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
       attrTranslations = trans || [];
     }
 
-    // Build translation map
+    // Build translation map - transform 'label' to 'name' for frontend compatibility
     const attrTransMap = {};
     attrTranslations.forEach(t => {
       if (!attrTransMap[t.attribute_id]) attrTransMap[t.attribute_id] = {};
-      attrTransMap[t.attribute_id][t.language_code] = t;
+      attrTransMap[t.attribute_id][t.language_code] = {
+        name: t.label,
+        description: t.description
+      };
     });
 
     // Load attribute values for select/multiselect attributes
@@ -92,7 +95,7 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
       const attrWithTrans = {
         ...attr,
         translations: trans || {},
-        label: reqLang?.label || enLang?.label || attr.code
+        label: reqLang?.name || enLang?.name || attr.code
       };
 
       // Load values for select/multiselect types
@@ -191,9 +194,13 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
       .eq('attribute_id', attribute.id)
       .in('language_code', [lang, 'en']);
 
+    // Transform 'label' to 'name' for frontend compatibility
     const transMap = {};
     (attrTrans || []).forEach(t => {
-      transMap[t.language_code] = t;
+      transMap[t.language_code] = {
+        name: t.label,
+        description: t.description
+      };
     });
 
     const reqLang = transMap[lang];
@@ -202,7 +209,7 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     const attributeData = {
       ...attribute,
       translations: transMap,
-      label: reqLang?.label || enLang?.label || attribute.code
+      label: reqLang?.name || enLang?.name || attribute.code
     };
 
     // Load values if select/multiselect
