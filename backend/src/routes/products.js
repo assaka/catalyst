@@ -132,9 +132,12 @@ router.get('/:id', authAdmin, async (req, res) => {
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
     const productsWithImages = await applyProductImages([product], tenantDb);
 
+    // Apply all translations from product_translations table
+    const productsWithTranslations = await applyAllProductTranslations(productsWithImages, tenantDb);
+
     res.json({
       success: true,
-      data: productsWithImages[0]
+      data: productsWithTranslations[0]
     });
   } catch (error) {
     console.error('Get product error:', error);
