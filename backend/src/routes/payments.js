@@ -1156,6 +1156,98 @@ router.post('/create-checkout', async (req, res) => {
       }
     }
 
+    // Check if this is an offline payment method (COD, bank transfer, etc.)
+    let paymentMethodRecord = null;
+    if (selected_payment_method) {
+      const { data: pmRecord } = await tenantDb
+        .from('payment_methods')
+        .select('*')
+        .eq('code', selected_payment_method)
+        .eq('store_id', store_id)
+        .maybeSingle();
+
+      if (pmRecord) {
+        paymentMethodRecord = pmRecord;
+      }
+    }
+
+    // Handle offline payment methods (COD, bank transfer, etc.) - skip Stripe
+    if (paymentMethodRecord && paymentMethodRecord.payment_flow === 'offline') {
+      console.log('💵 Processing OFFLINE payment method:', selected_payment_method);
+
+      // Generate a unique order ID for offline payments
+      const offlineOrderId = uuidv4();
+
+      // Create order directly without Stripe
+      const orderData = {
+        items,
+        store_id,
+        customer_email,
+        customer_id,
+        shipping_address,
+        billing_address: shipping_address,
+        shipping_method,
+        selected_shipping_method,
+        shipping_cost,
+        tax_amount,
+        payment_fee,
+        selected_payment_method,
+        selected_payment_method_name: paymentMethodRecord.name || selected_payment_method_name,
+        discount_amount,
+        applied_coupon,
+        delivery_date,
+        delivery_time_slot,
+        delivery_instructions,
+        store
+      };
+
+      // Create a mock session object for the preliminary order function
+      const mockSession = {
+        id: `offline_${offlineOrderId}`,
+        payment_status: 'unpaid', // Offline payments are unpaid until fulfilled
+        amount_total: 0, // Will be calculated from items
+        metadata: {
+          store_id: store_id.toString(),
+          customer_id: customer_id || '',
+          delivery_date: delivery_date || '',
+          delivery_time_slot: delivery_time_slot || '',
+          delivery_instructions: delivery_instructions || '',
+          coupon_code: applied_coupon?.code || '',
+          discount_amount: discount_amount?.toString() || '0',
+          shipping_method_name: shipping_method?.name || selected_shipping_method || '',
+          shipping_method_id: shipping_method?.id?.toString() || '',
+          shipping_cost: shipping_cost?.toString() || '0',
+          tax_amount: (parseFloat(tax_amount) || 0).toString(),
+          payment_fee: (parseFloat(payment_fee) || 0).toString(),
+          payment_method: selected_payment_method || ''
+        }
+      };
+
+      try {
+        await createPreliminaryOrder(mockSession, orderData);
+        console.log('✅ Offline order created successfully:', mockSession.id);
+
+        // Build success URL for offline payment
+        const successUrl = `${process.env.CORS_ORIGIN || req.headers.origin}/public/${store.slug}/order-success?session_id=${mockSession.id}`;
+
+        return res.json({
+          success: true,
+          data: {
+            session_id: mockSession.id,
+            checkout_url: successUrl, // Redirect directly to success page
+            payment_flow: 'offline',
+            message: 'Order placed successfully. Payment will be collected on delivery.'
+          }
+        });
+      } catch (offlineOrderError) {
+        console.error('❌ Failed to create offline order:', offlineOrderError.message);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to create order. Please try again.'
+        });
+      }
+    }
+
     // Get store currency
     const storeCurrency = store.currency || 'usd';
     
