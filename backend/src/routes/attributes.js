@@ -531,7 +531,7 @@ router.post('/:attributeId/values', authMiddleware, authorize(['admin', 'store_o
 
     // Save translations if provided
     if (translations && typeof translations === 'object') {
-      await saveAttributeValueTranslations(value.id, translations);
+      await saveAttributeValueTranslations(tenantDb, value.id, translations);
     }
 
     res.json({ success: true, data: value });
@@ -601,11 +601,11 @@ router.put('/:attributeId/values/:valueId', authMiddleware, authorize(['admin', 
 
     // Save translations to normalized table if provided
     if (translations && typeof translations === 'object') {
-      await saveAttributeValueTranslations(req.params.valueId, translations);
+      await saveAttributeValueTranslations(tenantDb, req.params.valueId, translations);
     }
 
     // Fetch updated value with translations
-    const updatedValues = await getAttributeValuesWithTranslations({ id: req.params.valueId });
+    const updatedValues = await getAttributeValuesWithTranslations(tenantDb, { id: req.params.valueId });
     const updatedValue = updatedValues[0] || value;
 
     res.json({ success: true, data: updatedValue });
