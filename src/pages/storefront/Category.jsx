@@ -265,26 +265,45 @@ export default function Category() {
 
       // Attribute filtering
       for (const key in activeFilters) {
-        if (key !== 'priceRange') {
-          const filterValues = activeFilters[key];
-          if (!filterValues || filterValues.length === 0) continue;
+        if (key === 'priceRange') continue;
+
+        const filterValues = activeFilters[key];
+        if (!filterValues || filterValues.length === 0) continue;
+
+        // Handle attribute range filters (e.g., price_amountRange, weightRange)
+        if (key.endsWith('Range') && Array.isArray(filterValues) && filterValues.length === 2) {
+          const attrCode = key.replace(/Range$/, ''); // Remove 'Range' suffix to get attribute code
+          const [min, max] = filterValues;
 
           const productAttributes = product.attributes || [];
-
-          // Attributes is an array of {code, label, value, ...}
           if (!Array.isArray(productAttributes)) return false;
 
-          const matchingAttr = productAttributes.find(pAttr => pAttr.code === key);
-          if (!matchingAttr || !matchingAttr.value) {
+          const matchingAttr = productAttributes.find(pAttr => pAttr.code === attrCode);
+          if (!matchingAttr) return false;
+
+          const attrValue = parseFloat(matchingAttr.rawValue || matchingAttr.value);
+          if (isNaN(attrValue) || attrValue < min || attrValue > max) {
             return false;
           }
+          continue;
+        }
 
-          const productValue = String(matchingAttr.value);
-          const hasMatch = filterValues.some(filterVal => String(filterVal) === productValue);
+        // Standard attribute value filtering (multiselect/select)
+        const productAttributes = product.attributes || [];
 
-          if (!hasMatch) {
-            return false;
-          }
+        // Attributes is an array of {code, label, value, ...}
+        if (!Array.isArray(productAttributes)) return false;
+
+        const matchingAttr = productAttributes.find(pAttr => pAttr.code === key);
+        if (!matchingAttr || !matchingAttr.value) {
+          return false;
+        }
+
+        const productValue = String(matchingAttr.value);
+        const hasMatch = filterValues.some(filterVal => String(filterVal) === productValue);
+
+        if (!hasMatch) {
+          return false;
         }
       }
       return true;

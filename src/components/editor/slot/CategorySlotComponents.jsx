@@ -306,6 +306,80 @@ const LayeredNavigation = createSlotComponent({
         categoryContext.handleFilterChange(newFilters);
       };
 
+      // Handle custom attribute slider (for numeric attributes like price_amount, weight, etc.)
+      const updateAttributeSliderTrack = (attrCode) => {
+        const minSlider = containerRef.current.querySelector(`#${attrCode}-slider-min`);
+        const maxSlider = containerRef.current.querySelector(`#${attrCode}-slider-max`);
+        const rangeTrack = containerRef.current.querySelector(`#${attrCode}-range-track`);
+
+        if (!minSlider || !maxSlider || !rangeTrack) return;
+
+        let min = parseFloat(minSlider.getAttribute('min')) || 0;
+        let max = parseFloat(minSlider.getAttribute('max')) || 100;
+
+        const minValue = parseFloat(minSlider.value);
+        const maxValue = parseFloat(maxSlider.value);
+
+        const percentMin = ((minValue - min) / (max - min)) * 100;
+        const percentMax = ((maxValue - min) / (max - min)) * 100;
+        rangeTrack.style.left = percentMin + '%';
+        rangeTrack.style.width = (percentMax - percentMin) + '%';
+      };
+
+      const handleAttributeSlider = (e) => {
+        const slider = e.target.closest('[data-action="attribute-slider"]');
+        if (!slider || !categoryContext?.handleFilterChange) return;
+
+        const attrCode = slider.getAttribute('data-attribute-code');
+        const sliderType = slider.getAttribute('data-slider-type');
+        const value = parseFloat(slider.value);
+
+        if (!attrCode) return;
+
+        const minSlider = containerRef.current.querySelector(`#${attrCode}-slider-min`);
+        const maxSlider = containerRef.current.querySelector(`#${attrCode}-slider-max`);
+        const minDisplay = containerRef.current.querySelector(`#${attrCode}-min-display`);
+        const maxDisplay = containerRef.current.querySelector(`#${attrCode}-max-display`);
+
+        if (!minSlider || !maxSlider) return;
+
+        let minValue = parseFloat(minSlider.value);
+        let maxValue = parseFloat(maxSlider.value);
+
+        // Update values based on which slider moved
+        if (sliderType === 'min') {
+          minValue = Math.min(value, maxValue);
+          minSlider.value = minValue;
+        } else {
+          maxValue = Math.max(value, minValue);
+          maxSlider.value = maxValue;
+        }
+
+        // Update display
+        if (minDisplay) minDisplay.textContent = minValue;
+        if (maxDisplay) maxDisplay.textContent = maxValue;
+
+        // Update the colored track between thumbs
+        updateAttributeSliderTrack(attrCode);
+
+        // Update filters - store as attributeRange for this attribute
+        const currentFilters = categoryContext.selectedFilters || {};
+        const newFilters = { ...currentFilters };
+        newFilters[`${attrCode}Range`] = [minValue, maxValue];
+        categoryContext.handleFilterChange(newFilters);
+      };
+
+      // Initialize attribute sliders
+      const initAttributeSliders = () => {
+        const attrSliders = containerRef.current?.querySelectorAll('[data-action="attribute-slider"][data-slider-type="min"]');
+        attrSliders?.forEach(minSlider => {
+          const attrCode = minSlider.getAttribute('data-attribute-code');
+          if (attrCode) {
+            updateAttributeSliderTrack(attrCode);
+          }
+        });
+      };
+
       // Initialize slider track position and values on mount
       const initSlider = () => {
         const minSlider = containerRef.current?.querySelector('#price-slider-min');
@@ -382,6 +456,7 @@ const LayeredNavigation = createSlotComponent({
 
       setTimeout(() => {
         initSlider();
+        initAttributeSliders();
         initMaxVisibleAttributes();
       }, 100);
 
@@ -510,6 +585,7 @@ const LayeredNavigation = createSlotComponent({
 
       containerRef.current.addEventListener('change', handleChange);
       containerRef.current.addEventListener('input', handlePriceSlider);
+      containerRef.current.addEventListener('input', handleAttributeSlider);
       containerRef.current.addEventListener('click', handleToggleSection);
       containerRef.current.addEventListener('click', handleShowMore);
       containerRef.current.addEventListener('click', handleRemoveFilter);
@@ -522,6 +598,7 @@ const LayeredNavigation = createSlotComponent({
         if (containerRef.current) {
           containerRef.current.removeEventListener('change', handleChange);
           containerRef.current.removeEventListener('input', handlePriceSlider);
+          containerRef.current.removeEventListener('input', handleAttributeSlider);
           containerRef.current.removeEventListener('click', handleToggleSection);
           containerRef.current.removeEventListener('click', handleShowMore);
           containerRef.current.removeEventListener('click', handleRemoveFilter);
