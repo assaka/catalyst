@@ -234,18 +234,35 @@ router.get('/by-slug/:slug/full', async (req, res) => {
     console.log('📊 Unique attributeIds:', attributeIds);
     console.log('📊 Unique attributeValueIds:', attributeValueIds);
 
-    const [attributesData, attributeValuesListData] = await Promise.all([
-      attributeIds.length > 0
-        ? tenantDb.from('attributes').select('id, code, type, is_filterable').in('id', attributeIds).then(r => (r && r.data) || []).catch(() => [])
-        : Promise.resolve([]),
-      attributeValueIds.length > 0
-        ? tenantDb.from('attribute_values').select('id, code, metadata').in('id', attributeValueIds).then(r => (r && r.data) || []).catch(() => [])
-        : Promise.resolve([])
-    ]);
+    // Load attributes
+    let attributesData = [];
+    if (attributeIds.length > 0) {
+      const { data: attrs, error: attrsError } = await tenantDb
+        .from('attributes')
+        .select('id, code, type, is_filterable')
+        .in('id', attributeIds);
+      if (attrsError) {
+        console.error('❌ Error loading attributes:', attrsError);
+      }
+      attributesData = attrs || [];
+    }
+
+    // Load attribute values
+    let attributeValuesListData = [];
+    if (attributeValueIds.length > 0) {
+      const { data: attrVals, error: attrValsError } = await tenantDb
+        .from('attribute_values')
+        .select('id, code, metadata')
+        .in('id', attributeValueIds);
+      if (attrValsError) {
+        console.error('❌ Error loading attribute_values:', attrValsError);
+      }
+      attributeValuesListData = attrVals || [];
+    }
 
     // Create lookup maps
-    console.log('📊 attributesData loaded:', JSON.stringify(attributesData));
-    console.log('📊 attributeValuesListData loaded:', JSON.stringify(attributeValuesListData));
+    console.log('📊 attributesData loaded:', attributesData.length, 'records:', JSON.stringify(attributesData));
+    console.log('📊 attributeValuesListData loaded:', attributeValuesListData.length, 'records:', JSON.stringify(attributeValuesListData));
     const attrMap = new Map((attributesData || []).map(a => [a.id, a]));
     const valMap = new Map((attributeValuesListData || []).map(v => [v.id, v]));
 
