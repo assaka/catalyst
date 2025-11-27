@@ -346,6 +346,9 @@ export function CategorySlotRenderer({
               return matchingAttr && productValue === String(valueCode);
             }).length;
 
+            // Check if this filter value is currently selected
+            const isActive = selectedFilters[attrCode]?.includes(valueCode) || false;
+
             if (attrValue) {
               // Get translated label
               const valueLabel = attrValue.translations?.[currentLanguage]?.label ||
@@ -356,7 +359,7 @@ export function CategorySlotRenderer({
                 value: valueCode,
                 label: valueLabel,
                 count: productCount,
-                active: false,
+                active: isActive,
                 attributeCode: attrCode,
                 sort_order: attrValue.sort_order || 0
               };
@@ -367,7 +370,7 @@ export function CategorySlotRenderer({
               value: valueCode,
               label: valueCode,
               count: productCount,
-              active: false,
+              active: isActive,
               attributeCode: attrCode,
               sort_order: 999
             };
