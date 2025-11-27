@@ -299,5 +299,6 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
-  getAllProducts
+  getAllProducts,
+  syncProductAttributeValues
 };
