@@ -209,10 +209,10 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
 
             if (value.id) {
               // Update existing value
-              await api.put(`/api/attributes/${attributeId}/values/${value.id}`, valueData);
+              await api.put(`/attributes/${attributeId}/values/${value.id}`, valueData);
             } else {
               // Create new value
-              await api.post(`/api/attributes/${attributeId}/values`, valueData);
+              await api.post(`/attributes/${attributeId}/values`, valueData);
             }
           }
 
@@ -224,7 +224,7 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
 
             for (const removedValue of removedValues) {
               if (removedValue.id) {
-                await api.delete(`/api/attributes/${attributeId}/values/${removedValue.id}`);
+                await api.delete(`/attributes/${attributeId}/values/${removedValue.id}`);
               }
             }
           }
