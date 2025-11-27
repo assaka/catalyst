@@ -710,7 +710,7 @@ export default function PaymentMethods() {
                                   Connecting...
                                 </>
                               ) : (
-                                <><CreditCard className="w-4 h-4 mr-2" /> Connect</>
+                                <><CreditCard className="w-4 h-4 mr-2" /> Connect New</>
                               )}
                             </Button>
                             <Button
@@ -1441,7 +1441,7 @@ export default function PaymentMethods() {
                 className="mt-2"
               />
               <p className="text-xs text-gray-500 mt-2">
-                Find your account ID in your Stripe Dashboard under Settings → Account details
+                Find your account ID in the URL when logged into Stripe (e.g., dashboard.stripe.com/<strong>acct_xxx</strong>/...) or under Settings → Account details
               </p>
             </div>
             <DialogFooter>
