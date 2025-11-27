@@ -8,7 +8,6 @@ import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import { CategorySlotRenderer } from "@/components/storefront/CategorySlotRenderer";
 import { usePagination, useSorting } from "@/hooks/useUrlUtils";
-import { Package } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { categoryConfig } from '@/components/editor/slot/configs/category-config';
 import { formatPrice } from '@/utils/priceUtils';

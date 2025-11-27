@@ -252,8 +252,8 @@ export const categoryConfig = {
                         {{#if (eq this.filter_type "select")}}
                         <input type="radio"
                                name="filter_{{this.attributeCode}}"
-                               class="border-gray-300"
-                               style="accent-color: {{filterOptionStyles.checkboxColor}};"
+                               class="w-4 h-4 border-gray-300 cursor-pointer"
+                               style="accent-color: {{filterOptionStyles.checkboxColor}}; color: {{filterOptionStyles.checkboxColor}};"
                                data-action="toggle-filter"
                                data-filter-type="attribute"
                                data-filter-input-type="select"
@@ -262,8 +262,8 @@ export const categoryConfig = {
                                {{#if this.active}}checked{{/if}} />
                         {{else}}
                         <input type="checkbox"
-                               class="rounded border-gray-300"
-                               style="accent-color: {{filterOptionStyles.checkboxColor}};"
+                               class="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                               style="accent-color: {{filterOptionStyles.checkboxColor}}; color: {{filterOptionStyles.checkboxColor}};"
                                data-action="toggle-filter"
                                data-filter-type="attribute"
                                data-filter-input-type="multiselect"
@@ -1303,8 +1303,8 @@ export const categoryConfig = {
                       {{#if (eq this.filter_type "select")}}
                       <input type="radio"
                              name="filter_{{this.attributeCode}}"
-                             class="border-gray-300"
-                             style="accent-color: {{filterOptionStyles.checkboxColor}};"
+                             class="w-4 h-4 border-gray-300 cursor-pointer"
+                             style="accent-color: {{filterOptionStyles.checkboxColor}}; color: {{filterOptionStyles.checkboxColor}};"
                              data-action="toggle-filter"
                              data-filter-type="attribute"
                              data-filter-input-type="select"
@@ -1313,8 +1313,8 @@ export const categoryConfig = {
                              {{#if this.active}}checked{{/if}} />
                       {{else}}
                       <input type="checkbox"
-                             class="rounded border-gray-300"
-                             style="accent-color: {{filterOptionStyles.checkboxColor}};"
+                             class="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                             style="accent-color: {{filterOptionStyles.checkboxColor}}; color: {{filterOptionStyles.checkboxColor}};"
                              data-action="toggle-filter"
                              data-filter-type="attribute"
                              data-filter-input-type="multiselect"
