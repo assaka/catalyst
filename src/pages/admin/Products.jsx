@@ -268,6 +268,21 @@ export default function Products() {
     }
   };
 
+  // Fetch fresh product data for editing (includes attributes from product_attribute_values)
+  const handleEditProduct = async (product) => {
+    const storeId = getSelectedStoreId();
+    try {
+      const freshProduct = await Product.get(product.id, { store_id: storeId });
+      setSelectedProduct(freshProduct);
+      setShowProductForm(true);
+    } catch (error) {
+      console.error("Error fetching product for edit:", error);
+      // Fallback to list data if fetch fails
+      setSelectedProduct(product);
+      setShowProductForm(true);
+    }
+  };
+
   const handleCreateProduct = async (productData) => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
@@ -1304,10 +1319,7 @@ export default function Products() {
                                         View
                                       </DropdownMenuItem>
                                       <DropdownMenuItem
-                                        onClick={() => {
-                                          setSelectedProduct(product);
-                                          setShowProductForm(true);
-                                        }}
+                                        onClick={() => handleEditProduct(product)}
                                       >
                                         <Edit className="w-4 h-4 mr-2" />
                                         Edit
