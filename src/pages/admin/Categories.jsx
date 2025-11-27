@@ -360,7 +360,8 @@ export default function Categories() {
   const handleUpdateCategory = async (categoryData) => {
     const storeId = getSelectedStoreId();
     try {
-      await Category.update(selectedCategory.id, categoryData);
+      // Include store_id in the category data for the update request
+      await Category.update(selectedCategory.id, { ...categoryData, store_id: storeId });
       await loadCategories(); // Updated function name
       setShowCategoryForm(false);
       setSelectedCategory(null);
@@ -386,14 +387,15 @@ export default function Categories() {
   };
 
   const handleToggleStatus = async (category) => {
+    const storeId = getSelectedStoreId();
     try {
-      await Category.update(category.id, { 
-        ...category, 
-        is_active: !category.is_active 
+      await Category.update(category.id, {
+        ...category,
+        is_active: !category.is_active,
+        store_id: storeId
       });
       await loadCategories(); // Updated function name
       // Clear storefront cache for instant updates
-      const storeId = getSelectedStoreId();
       if (storeId) clearCategoriesCache(storeId);
     } catch (error) {
       console.error("Error updating category status:", error);
@@ -401,14 +403,15 @@ export default function Categories() {
   };
 
   const handleToggleMenuVisibility = async (category) => {
+    const storeId = getSelectedStoreId();
     try {
       await Category.update(category.id, {
         ...category,
-        hide_in_menu: !category.hide_in_menu
+        hide_in_menu: !category.hide_in_menu,
+        store_id: storeId
       });
       await loadCategories(); // Updated function name
       // Clear storefront cache for instant updates
-      const storeId = getSelectedStoreId();
       if (storeId) clearCategoriesCache(storeId);
     } catch (error) {
       console.error("Error updating category visibility:", error);

@@ -189,7 +189,8 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
             ...formData,
             image_url: newImageUrl,
             parent_id: formData.parent_id || null,
-            sort_order: parseInt(formData.sort_order) || 0
+            sort_order: parseInt(formData.sort_order) || 0,
+            store_id: storeId
           });
           
           if (response.success) {
@@ -371,6 +372,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
                    sessionStorage.getItem('token') ||
                    sessionStorage.getItem('authToken');
 
+      const storeId = getSelectedStoreId();
       const response = await fetch(`/api/categories/${category.id}/translate`, {
         method: 'POST',
         headers: {
@@ -379,7 +381,8 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         },
         body: JSON.stringify({
           fromLang: translateFromLang,
-          toLang: translateToLang
+          toLang: translateToLang,
+          store_id: storeId
         })
       });
 
