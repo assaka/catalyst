@@ -404,7 +404,10 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
               </div>
             )}
             <div className="flex items-center justify-between">
-              <Label htmlFor="is_searchable">Use in Search</Label>
+              <div>
+                <Label htmlFor="is_searchable">Use in Search</Label>
+                <p className="text-xs text-gray-500">Include attribute values in search results</p>
+              </div>
               <Switch
                 id="is_searchable"
                 checked={formData.is_searchable}
