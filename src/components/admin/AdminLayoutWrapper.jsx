@@ -27,6 +27,17 @@ export function AdminLayoutWrapper({ children }) {
       return;
     }
 
+    // Skip check for non-admin routes (storefront, public pages, etc.)
+    // Admin routes start with /admin/ or /plugins or /editor/
+    const isAdminRoute = location.pathname.startsWith('/admin') ||
+                         location.pathname.startsWith('/plugins') ||
+                         location.pathname.startsWith('/editor');
+
+    if (!isAdminRoute) {
+      setChecking(false);
+      return;
+    }
+
     try {
       // Check if user has any stores
       const response = await apiClient.get('/stores/dropdown');
