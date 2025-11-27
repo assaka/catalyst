@@ -449,76 +449,57 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
     const imagesByProduct = await fetchProductImages(product.id, tenantDb);
     productData.images = imagesByProduct[product.id] || [];
 
-    // Load product attribute values
-    const { data: pavs, error: pavError } = await tenantDb
-      .from('product_attribute_values')
-      .select('*')
-      .eq('product_id', product.id);
+    // Load product attributes - skip if fails to not break product page
+    productData.attributes = [];
+    try {
+      const { data: pavs } = await tenantDb
+        .from('product_attribute_values')
+        .select('*')
+        .eq('product_id', product.id);
 
-    if (pavError) {
-      console.error('Error loading product attribute values:', pavError.message);
-    }
+      if (pavs && pavs.length > 0) {
+        const attributeIds = [...new Set(pavs.map(pav => pav.attribute_id))];
+        const attributeValueIds = [...new Set(pavs.filter(pav => pav.value_id).map(pav => pav.value_id))];
 
-    const attributeValuesData = pavs || [];
-    const attributeIds = [...new Set((attributeValuesData || []).map(pav => pav.attribute_id))];
-    const attributeValueIds = [...new Set((attributeValuesData || []).filter(pav => pav.value_id).map(pav => pav.value_id))];
+        const [attributesData, attributeValuesListData, attributeTranslations, valueTranslations] = await Promise.all([
+          attributeIds.length > 0 ? tenantDb.from('attributes').select('id, code, type').in('id', attributeIds).then(r => r.data || []) : [],
+          attributeValueIds.length > 0 ? tenantDb.from('attribute_values').select('id, code, metadata').in('id', attributeValueIds).then(r => r.data || []) : [],
+          attributeIds.length > 0 ? getAttributesWithTranslations(tenantDb, { id: attributeIds }) : [],
+          attributeValueIds.length > 0 ? getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds }) : []
+        ]);
 
-    // Load attributes and attribute values
-    const [attributesData, attributeValuesListData] = await Promise.all([
-      attributeIds.length > 0
-        ? tenantDb.from('attributes').select('id, code, type').in('id', attributeIds).then(r => (r && r.data) || []).catch(() => [])
-        : Promise.resolve([]),
-      attributeValueIds.length > 0
-        ? tenantDb.from('attribute_values').select('id, code, metadata').in('id', attributeValueIds).then(r => (r && r.data) || []).catch(() => [])
-        : Promise.resolve([])
-    ]);
+        const attrMap = new Map(attributesData.map(a => [a.id, a]));
+        const valMap = new Map(attributeValuesListData.map(v => [v.id, v]));
+        const attrTransMap = new Map((attributeTranslations || []).map(attr => [attr.id, attr.translations]));
+        const valTransMap = new Map((valueTranslations || []).map(val => [val.id, val.translations]));
 
-    // Create lookup maps
-    const attrMap = new Map((attributesData || []).map(a => [a.id, a]));
-    const valMap = new Map((attributeValuesListData || []).map(v => [v.id, v]));
+        productData.attributes = pavs.map(pav => {
+          const attr = attrMap.get(pav.attribute_id);
+          if (!attr) return null;
 
-    // Fetch attribute and value translations
-    const [attributeTranslations, valueTranslations] = await Promise.all([
-      attributeIds.length > 0 ? getAttributesWithTranslations(tenantDb, { id: attributeIds }).catch(() => []) : [],
-      attributeValueIds.length > 0 ? getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds }).catch(() => []) : []
-    ]);
+          const attrTrans = attrTransMap.get(attr.id) || {};
+          const attrLabel = attrTrans[lang]?.label || attrTrans.en?.label || attr.code;
 
-    const attrTransMap = new Map((attributeTranslations || []).map(attr => [attr.id, attr.translations]));
-    const valTransMap = new Map((valueTranslations || []).map(val => [val.id, val.translations]));
+          let value, valueLabel, metadata = null;
+          if (pav.value_id) {
+            const val = valMap.get(pav.value_id);
+            if (val) {
+              value = val.code;
+              const valTrans = valTransMap.get(val.id) || {};
+              valueLabel = valTrans[lang]?.label || valTrans.en?.label || val.code;
+              metadata = val.metadata;
+            }
+          } else {
+            value = pav.text_value || pav.number_value || pav.date_value || pav.boolean_value;
+            valueLabel = String(value);
+          }
 
-    // Format attributes with translations
-    productData.attributes = attributeValuesData.map(pav => {
-      const attr = attrMap.get(pav.attribute_id);
-      if (!attr) return null;
-
-      const attrTranslations = attrTransMap.get(attr.id) || {};
-      const attrLabel = attrTranslations[lang]?.label || attrTranslations.en?.label || attr.code;
-
-      let value, valueLabel, metadata = null;
-
-      if (pav.value_id) {
-        const val = valMap.get(pav.value_id);
-        if (val) {
-          value = val.code;
-          const valTranslations = valTransMap.get(val.id) || {};
-          valueLabel = valTranslations[lang]?.label || valTranslations.en?.label || val.code;
-          metadata = val.metadata;
-        }
-      } else {
-        value = pav.text_value || pav.number_value || pav.date_value || pav.boolean_value;
-        valueLabel = String(value);
+          return { id: attr.id, code: attr.code, label: attrLabel, value: valueLabel, rawValue: value, type: attr.type, metadata };
+        }).filter(Boolean);
       }
-
-      return {
-        id: attr.id,
-        code: attr.code,
-        label: attrLabel,
-        value: valueLabel,
-        rawValue: value,
-        type: attr.type,
-        metadata
-      };
-    }).filter(Boolean);
+    } catch (attrErr) {
+      console.error('Error loading product attributes:', attrErr);
+    }
 
     // 2. Load product tabs
     const { getProductTabsWithTranslations } = require('../utils/productTabHelpers');
