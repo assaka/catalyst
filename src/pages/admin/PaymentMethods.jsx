@@ -643,7 +643,7 @@ export default function PaymentMethods() {
                         ) : isStripeConnected ? (
                           <div className="space-y-3">
                             <div className="flex items-center justify-center gap-2">
-                              <Badge className="bg-green-100 text-green-700 border-green-200">
+                              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
                                 <CheckCircle className="w-3 h-3 mr-1" /> Connected
                               </Badge>
                               <Button
@@ -669,7 +669,7 @@ export default function PaymentMethods() {
                         ) : stripeStatus?.connected && !stripeStatus?.onboardingComplete ? (
                           <div className="space-y-3">
                             <div className="flex items-center justify-center gap-2">
-                              <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                              <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-200">
                                 <AlertCircle className="w-3 h-3 mr-1" /> Setup Incomplete
                               </Badge>
                               <Button
@@ -819,12 +819,14 @@ export default function PaymentMethods() {
                           {method.payment_flow === 'online' ? 'Online' : 'Offline'}
                         </Badge>
                         {method.type === 'stripe' && (
-                          <Badge 
-                            variant={store?.stripe_connect_onboarding_complete ? "default" : "outline"}
-                            className={store?.stripe_connect_onboarding_complete ? "bg-green-100 text-green-700 border-green-200" : "bg-yellow-100 text-yellow-700 border-yellow-200"}
+                          <Badge
+                            variant={stripeStatus?.connected && stripeStatus?.onboardingComplete ? "default" : "outline"}
+                            className={stripeStatus?.connected && stripeStatus?.onboardingComplete ? "bg-green-100 text-green-700 border-green-200" : "bg-yellow-100 text-yellow-700 border-yellow-200"}
                           >
-                            {store?.stripe_connect_onboarding_complete ? (
+                            {stripeStatus?.connected && stripeStatus?.onboardingComplete ? (
                               <><CheckCircle className="w-3 h-3 mr-1" /> Connected</>
+                            ) : stripeStatus?.connected ? (
+                              <><AlertCircle className="w-3 h-3 mr-1" /> Setup Incomplete</>
                             ) : (
                               <><AlertCircle className="w-3 h-3 mr-1" /> Not Connected</>
                             )}
@@ -1437,7 +1439,7 @@ export default function PaymentMethods() {
                 id="accountId"
                 value={existingAccountId}
                 onChange={(e) => setExistingAccountId(e.target.value)}
-                placeholder="acct_1RjiuYPHUgV1kz3f"
+                placeholder="acct_xxxxxxxxxxxx"
                 className="mt-2"
               />
               <p className="text-xs text-gray-500 mt-2">
