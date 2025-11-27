@@ -171,14 +171,14 @@ router.get('/', cacheProducts(180), async (req, res) => {
 
     // Fetch attribute and value translations
     const attributeTranslations = attributeIds.length > 0
-      ? await getAttributesWithTranslations(tenantDb, { id: attributeIds })
+      ? await getAttributesWithTranslations(tenantDb, { id: attributeIds }).catch(() => [])
       : [];
     const valueTranslations = attributeValueIds.length > 0
-      ? await getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds })
+      ? await getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds }).catch(() => [])
       : [];
 
-    const attrTransMap = new Map(attributeTranslations.map(a => [a.id, a.translations]));
-    const valTransMap = new Map(valueTranslations.map(v => [v.id, v.translations]));
+    const attrTransMap = new Map((attributeTranslations || []).map(a => [a.id, a.translations]));
+    const valTransMap = new Map((valueTranslations || []).map(v => [v.id, v.translations]));
 
     // Fetch images from product_files table
     const imagesByProduct = await fetchProductImages(productIds, tenantDb);
@@ -324,12 +324,12 @@ router.get('/:id', cacheProduct(300), async (req, res) => {
 
     // Fetch attribute and value translations
     const [attributeTranslations, valueTranslations] = await Promise.all([
-      attributeIds.length > 0 ? getAttributesWithTranslations(tenantDb, { id: attributeIds }) : [],
-      attributeValueIds.length > 0 ? getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds }) : []
+      attributeIds.length > 0 ? getAttributesWithTranslations(tenantDb, { id: attributeIds }).catch(() => []) : [],
+      attributeValueIds.length > 0 ? getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds }).catch(() => []) : []
     ]);
 
-    const attrTransMap = new Map(attributeTranslations.map(attr => [attr.id, attr.translations]));
-    const valTransMap = new Map(valueTranslations.map(val => [val.id, val.translations]));
+    const attrTransMap = new Map((attributeTranslations || []).map(attr => [attr.id, attr.translations]));
+    const valTransMap = new Map((valueTranslations || []).map(val => [val.id, val.translations]));
 
     // Format attributes for frontend with normalized translations
     productData.attributes = attributeValuesData.map(pav => {
@@ -479,12 +479,12 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
 
     // Fetch attribute and value translations
     const [attributeTranslations, valueTranslations] = await Promise.all([
-      attributeIds.length > 0 ? getAttributesWithTranslations(tenantDb, { id: attributeIds }) : [],
-      attributeValueIds.length > 0 ? getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds }) : []
+      attributeIds.length > 0 ? getAttributesWithTranslations(tenantDb, { id: attributeIds }).catch(() => []) : [],
+      attributeValueIds.length > 0 ? getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds }).catch(() => []) : []
     ]);
 
-    const attrTransMap = new Map(attributeTranslations.map(attr => [attr.id, attr.translations]));
-    const valTransMap = new Map(valueTranslations.map(val => [val.id, val.translations]));
+    const attrTransMap = new Map((attributeTranslations || []).map(attr => [attr.id, attr.translations]));
+    const valTransMap = new Map((valueTranslations || []).map(val => [val.id, val.translations]));
 
     // Format attributes with translations
     productData.attributes = attributeValuesData.map(pav => {
