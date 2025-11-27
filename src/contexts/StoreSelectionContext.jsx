@@ -81,24 +81,16 @@ export const StoreSelectionProvider = ({ children }) => {
         const savedStoreId = localStorage.getItem('selectedStoreId');
         let savedStore = savedStoreId ? stores.find(s => s.id === savedStoreId) : null;
 
-        console.log('🔍 StoreSelection: savedStoreId from localStorage:', savedStoreId);
-        console.log('🔍 StoreSelection: Found savedStore:', savedStore ? savedStore.name : 'NOT FOUND');
-        console.log('🔍 StoreSelection: Available stores:', stores.map(s => ({ id: s.id, name: s.name, slug: s.slug })));
-
         if (savedStore) {
           // Found the saved store - but check if it's actually active
-          console.log('🔍 StoreSelection: Found saved store:', savedStore.name, 'is_active:', savedStore.is_active, 'status:', savedStore.status);
-
           if (savedStore.is_active && savedStore.status !== 'pending_database') {
             // Store is valid - use it
-            console.log('✅ StoreSelection: Using saved store:', savedStore.name);
             setSelectedStore(savedStore);
             localStorage.setItem('selectedStoreId', savedStore.id);
             localStorage.setItem('selectedStoreName', savedStore.name);
             localStorage.setItem('selectedStoreSlug', savedStore.slug || savedStore.code);
           } else {
             // Saved store is not active or pending - clear it and select first active store
-            console.warn('⚠️ StoreSelection: Saved store is not active or pending_database, selecting first active store');
             localStorage.removeItem('selectedStoreId');
             localStorage.removeItem('selectedStoreName');
             localStorage.removeItem('selectedStoreSlug');
@@ -106,14 +98,12 @@ export const StoreSelectionProvider = ({ children }) => {
             const firstActiveStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
 
             if (firstActiveStore) {
-              console.log('✅ StoreSelection: Selected first active store:', firstActiveStore.name);
               setSelectedStore(firstActiveStore);
               localStorage.setItem('selectedStoreId', firstActiveStore.id);
               localStorage.setItem('selectedStoreName', firstActiveStore.name);
               localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);
             } else {
               // No active stores at all - clear auth and redirect to login
-              console.error('❌ StoreSelection: No active stores available! Redirecting to login...');
               localStorage.removeItem('store_owner_auth_token');
               localStorage.removeItem('store_owner_user_data');
               localStorage.setItem('user_logged_out', 'true');
@@ -123,7 +113,6 @@ export const StoreSelectionProvider = ({ children }) => {
         } else if (!selectedStore) {
           // No saved store or not found - use first ACTIVE store
           const firstActiveStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
-          console.log('⚠️ StoreSelection: Saved store not found, using first active store:', firstActiveStore?.name);
 
           if (firstActiveStore) {
             setSelectedStore(firstActiveStore);
@@ -135,11 +124,6 @@ export const StoreSelectionProvider = ({ children }) => {
           }
         }
 
-        console.log('✅ StoreSelection: Final localStorage values:', {
-          selectedStoreId: localStorage.getItem('selectedStoreId'),
-          selectedStoreName: localStorage.getItem('selectedStoreName'),
-          selectedStoreSlug: localStorage.getItem('selectedStoreSlug')
-        });
       }
     } catch (error) {
       console.error('❌ StoreSelection: Error loading stores:', error);
