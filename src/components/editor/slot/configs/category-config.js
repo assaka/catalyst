@@ -1191,8 +1191,8 @@ export const categoryConfig = {
             flex-shrink: 0;
           }
           input[type="radio"][data-action="toggle-filter"]:checked {
-            border-color: {{filterOptionStyles.checkboxColor}};
-            background-color: {{filterOptionStyles.checkboxColor}};
+            border-color: var(--filter-color, #3b82f6);
+            background-color: var(--filter-color, #3b82f6);
           }
           input[type="radio"][data-action="toggle-filter"]:checked::after {
             content: '';
@@ -1206,7 +1206,7 @@ export const categoryConfig = {
             background-color: white;
           }
           input[type="radio"][data-action="toggle-filter"]:hover {
-            border-color: {{filterOptionStyles.checkboxColor}};
+            border-color: var(--filter-color, #3b82f6);
           }
           /* Custom checkbox styling for filter options */
           input[type="checkbox"][data-action="toggle-filter"] {
@@ -1222,8 +1222,8 @@ export const categoryConfig = {
             flex-shrink: 0;
           }
           input[type="checkbox"][data-action="toggle-filter"]:checked {
-            border-color: {{filterOptionStyles.checkboxColor}};
-            background-color: {{filterOptionStyles.checkboxColor}};
+            border-color: var(--filter-color, #3b82f6);
+            background-color: var(--filter-color, #3b82f6);
           }
           input[type="checkbox"][data-action="toggle-filter"]:checked::after {
             content: '';
@@ -1237,11 +1237,11 @@ export const categoryConfig = {
             border-width: 0 2px 2px 0;
           }
           input[type="checkbox"][data-action="toggle-filter"]:hover {
-            border-color: {{filterOptionStyles.checkboxColor}};
+            border-color: var(--filter-color, #3b82f6);
           }
         </style>
         <!-- Desktop Filters - visible on sm+ screens -->
-        <div class="space-y-3">
+        <div class="space-y-3" style="--filter-color: {{filterOptionStyles.checkboxColor}}">
           <!-- Price Filter Slider -->
           {{#if filters.price.min}}
             <div class="border-b border-gray-200 pb-2" data-filter-section="price">
