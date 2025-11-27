@@ -149,6 +149,16 @@ export function CategorySlotRenderer({
   // Check if filters should be enabled
   const filtersEnabled = settings?.enable_product_filters !== false && filterableAttributes?.length > 0;
 
+  // Prepare settings with proper defaults for category page behavior
+  // This is defined at component level so it's available everywhere
+  const settingsForCategoryPage = {
+    ...(settings || {}),
+    collapse_filters: settings?.collapse_filters !== undefined ? settings.collapse_filters : false,
+    max_visible_attributes: settings?.max_visible_attributes || 5,
+    // Map hide_currency_category to hide_currency_product for ProductItemCard on category pages
+    hide_currency_product: settings?.hide_currency_category ?? settings?.hide_currency_product ?? false
+  };
+
   // Helper function to evaluate conditional display expressions
   const evaluateConditionalDisplay = (expression, context) => {
     if (!expression) return true; // No condition means always show
@@ -426,19 +436,11 @@ export function CategorySlotRenderer({
         return result;
       }).filter(attr => attr && attr.options && attr.options.length > 0) || [];
 
-      // Prepare settings with proper defaults for filter behavior
-      const settingsWithDefaults = {
-        ...(settings || {}),
-        collapse_filters: settings?.collapse_filters !== undefined ? settings.collapse_filters : false,
-        max_visible_attributes: settings?.max_visible_attributes || 5,
-        // Map hide_currency_category to hide_currency_product for ProductItemCard on category pages
-        hide_currency_product: settings?.hide_currency_category ?? settings?.hide_currency_product ?? false
-      };
-
+      // Use component-level settingsForCategoryPage (defined above) for filter behavior
       const formattedFilters = {
         price: priceFilter,
         attributes: attributeFilters,
-        settings: settingsWithDefaults // Pass settings within filters object for easier template access
+        settings: settingsForCategoryPage // Pass settings within filters object for easier template access
       };
 
       // Get filter option styles from slots
@@ -570,7 +572,7 @@ export function CategorySlotRenderer({
         sorting: {
           current: sortOption
         },
-        settings: settingsWithDefaults,
+        settings: settingsForCategoryPage,
         translations, // Add translations from TranslationContext
         filterOptionStyles: filterOptionStyles,
         attributeLabelStyles: attributeLabelStyles,
@@ -839,7 +841,7 @@ export function CategorySlotRenderer({
             <ProductItemCard
               key={product.id}
               product={product}
-              settings={settings}
+              settings={settingsForCategoryPage}
               store={store}
               taxes={taxes}
               selectedCountry={selectedCountry}
