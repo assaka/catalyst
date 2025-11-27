@@ -344,7 +344,10 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     }
 
     // Extract translations and non-table fields from request body
-    const { translations, name, label, ...attributeData } = req.body;
+    // values = attribute_values array (stored in separate table)
+    // name, label = legacy fields (now in translations)
+    // store_id = should not be updated
+    const { translations, name, label, values, store_id: _, ...attributeData } = req.body;
 
     // Only update if there are attribute fields to update
     if (Object.keys(attributeData).length > 0) {
