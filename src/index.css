@@ -177,9 +177,9 @@ input[type="radio"][data-action="toggle-filter"] {
   -webkit-appearance: none !important;
   width: 16px !important;
   height: 16px !important;
-  border: 2px solid #d1d5db !important;
+  border: 3px solid red !important;
   border-radius: 50% !important;
-  background-color: white !important;
+  background-color: yellow !important;
   cursor: pointer !important;
   position: relative !important;
   flex-shrink: 0 !important;
