@@ -171,10 +171,10 @@ router.get('/', cacheProducts(180), async (req, res) => {
 
     // Fetch attribute and value translations
     const attributeTranslations = attributeIds.length > 0
-      ? await getAttributesWithTranslations({ id: attributeIds })
+      ? await getAttributesWithTranslations(tenantDb, { id: attributeIds })
       : [];
     const valueTranslations = attributeValueIds.length > 0
-      ? await getAttributeValuesWithTranslations({ id: attributeValueIds })
+      ? await getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds })
       : [];
 
     const attrTransMap = new Map(attributeTranslations.map(a => [a.id, a.translations]));
@@ -324,8 +324,8 @@ router.get('/:id', cacheProduct(300), async (req, res) => {
 
     // Fetch attribute and value translations
     const [attributeTranslations, valueTranslations] = await Promise.all([
-      attributeIds.length > 0 ? getAttributesWithTranslations({ id: attributeIds }) : [],
-      attributeValueIds.length > 0 ? getAttributeValuesWithTranslations({ id: attributeValueIds}) : []
+      attributeIds.length > 0 ? getAttributesWithTranslations(tenantDb, { id: attributeIds }) : [],
+      attributeValueIds.length > 0 ? getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds }) : []
     ]);
 
     const attrTransMap = new Map(attributeTranslations.map(attr => [attr.id, attr.translations]));
@@ -479,8 +479,8 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
 
     // Fetch attribute and value translations
     const [attributeTranslations, valueTranslations] = await Promise.all([
-      attributeIds.length > 0 ? getAttributesWithTranslations({ id: attributeIds }) : [],
-      attributeValueIds.length > 0 ? getAttributeValuesWithTranslations({ id: attributeValueIds }) : []
+      attributeIds.length > 0 ? getAttributesWithTranslations(tenantDb, { id: attributeIds }) : [],
+      attributeValueIds.length > 0 ? getAttributeValuesWithTranslations(tenantDb, { id: attributeValueIds }) : []
     ]);
 
     const attrTransMap = new Map(attributeTranslations.map(attr => [attr.id, attr.translations]));
