@@ -1227,6 +1227,49 @@ router.post('/create-checkout', async (req, res) => {
         await createPreliminaryOrder(mockSession, orderData);
         console.log('✅ Offline order created successfully:', mockSession.id);
 
+        // Send order confirmation email for offline orders
+        try {
+          const emailService = require('../services/email-service');
+
+          // Get the created order to send email
+          const { data: createdOrder } = await tenantDb
+            .from('sales_orders')
+            .select('*, sales_order_items(*)')
+            .eq('payment_reference', mockSession.id)
+            .single();
+
+          if (createdOrder) {
+            const customerName = shipping_address?.full_name || customer_email?.split('@')[0] || 'Customer';
+            const nameParts = customerName.split(' ');
+            const firstName = nameParts[0] || 'Customer';
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            // Send the order confirmation email
+            emailService.sendTransactionalEmail(store_id, 'order_success_email', {
+              recipientEmail: customer_email,
+              orderId: createdOrder.id,
+              customer: {
+                first_name: firstName,
+                last_name: lastName,
+                email: customer_email
+              },
+              order: {
+                ...createdOrder,
+                OrderItems: createdOrder.sales_order_items || []
+              },
+              store: store,
+              languageCode: 'en'
+            }).then(() => {
+              console.log(`🎉 Offline order confirmation email sent to: ${customer_email}`);
+            }).catch(emailError => {
+              console.error('❌ Failed to send offline order confirmation email:', emailError.message);
+            });
+          }
+        } catch (emailError) {
+          console.error('⚠️ Error sending offline order email:', emailError.message);
+          // Don't fail the order if email fails
+        }
+
         // Build success URL for offline payment
         const successUrl = `${process.env.CORS_ORIGIN || req.headers.origin}/public/${store.slug}/order-success?session_id=${mockSession.id}`;
 
@@ -2006,6 +2049,10 @@ router.post('/webhook', async (req, res) => {
 
               // Check if auto-invoice is enabled in sales settings
               const store = orderWithDetails.Store;
+              if (!store) {
+                console.log('⚠️ Store not found in orderWithDetails, skipping auto-invoice check');
+                return;
+              }
               const salesSettings = store.settings?.sales_settings || {};
 
               console.log('🔍 ========================================');
@@ -2724,6 +2771,10 @@ router.post('/webhook-connect', async (req, res) => {
 
             // Check auto-invoice settings
             const store = orderWithDetails.Store;
+            if (!store) {
+              console.log('⚠️ Store not found in orderWithDetails, skipping auto-invoice check');
+              return;
+            }
             const salesSettings = store.settings?.sales_settings || {};
 
             console.log('🔍 Checking auto-invoice settings:', {
