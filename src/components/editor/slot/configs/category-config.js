@@ -375,7 +375,7 @@ export const categoryConfig = {
     product_count_text: {
       id: 'product_count_text',
       type: 'text',
-      content: '{{pagination.start}}-{{pagination.end}} {{t "common.of"}} {{pagination.total}} {{t "common.products"}}',
+      content: '{{#if (eq pagination.total 1)}}1 {{t "common.product"}}{{else}}{{#if (eq pagination.start pagination.end)}}{{pagination.total}} {{t "common.products"}}{{else}}{{pagination.start}}-{{pagination.end}} {{t "common.of"}} {{pagination.total}} {{t "common.products"}}{{/if}}{{/if}}',
       className: 'text-sm text-blue-600 font-bold',
       parentClassName: '',
       styles: {
