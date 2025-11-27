@@ -435,6 +435,10 @@ export default function Checkout() {
         ]);
       }
 
+      console.log('💳 Payment methods from API:', paymentData);
+      console.log('💳 Payment methods count:', paymentData?.length);
+      paymentData?.forEach(pm => console.log(`  - ${pm.name} (${pm.code}): is_active=${pm.is_active}, countries=`, pm.countries));
+
       setPaymentMethods(paymentData || []);
       setShippingMethods(shippingData || []);
       setDeliverySettings(deliveryData && deliveryData.length > 0 ? deliveryData[0] : null);
@@ -1090,10 +1094,14 @@ export default function Checkout() {
 
   const getEligiblePaymentMethods = () => {
     const country = getBillingCountry();
-    return paymentMethods.filter(method => {
+    console.log('💳 Filtering payment methods for country:', country);
+    console.log('💳 All payment methods:', paymentMethods.length);
+    const eligible = paymentMethods.filter(method => {
       if (!method.countries || method.countries.length === 0) return true;
       return method.countries.includes(country);
     });
+    console.log('💳 Eligible payment methods:', eligible.length, eligible.map(m => m.name));
+    return eligible;
   };
 
   const getDeliveryDateConstraints = () => {
