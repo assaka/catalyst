@@ -203,6 +203,12 @@ const LayeredNavigation = createSlotComponent({
           if (cb.checked !== shouldBeChecked) {
             cb.checked = shouldBeChecked;
           }
+          // Also add/remove CSS class for styling (backup for :checked selector)
+          if (shouldBeChecked) {
+            cb.classList.add('filter-checked');
+          } else {
+            cb.classList.remove('filter-checked');
+          }
         }
       });
     }, [categoryContext?.selectedFilters, context]);

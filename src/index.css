@@ -177,21 +177,23 @@ input[type="radio"][data-action="toggle-filter"] {
   -webkit-appearance: none !important;
   width: 16px !important;
   height: 16px !important;
-  border: 3px solid red !important;
+  border: 2px solid #d1d5db !important;
   border-radius: 50% !important;
-  background-color: yellow !important;
+  background-color: white !important;
   cursor: pointer !important;
   position: relative !important;
   flex-shrink: 0 !important;
 }
 
 input[type="radio"][data-action="toggle-filter"]:checked,
-input[type="radio"][data-action="toggle-filter"][checked] {
-  border-color: green !important;
-  background-color: lime !important;
+input[type="radio"][data-action="toggle-filter"][checked],
+input[type="radio"][data-action="toggle-filter"].filter-checked {
+  border-color: #3b82f6 !important;
+  background-color: #3b82f6 !important;
 }
 
-input[type="radio"][data-action="toggle-filter"]:checked::after {
+input[type="radio"][data-action="toggle-filter"]:checked::after,
+input[type="radio"][data-action="toggle-filter"].filter-checked::after {
   content: '' !important;
   position: absolute !important;
   top: 50% !important;
@@ -221,12 +223,14 @@ input[type="checkbox"][data-action="toggle-filter"] {
   flex-shrink: 0 !important;
 }
 
-input[type="checkbox"][data-action="toggle-filter"]:checked {
+input[type="checkbox"][data-action="toggle-filter"]:checked,
+input[type="checkbox"][data-action="toggle-filter"].filter-checked {
   border-color: #3b82f6 !important;
   background-color: #3b82f6 !important;
 }
 
-input[type="checkbox"][data-action="toggle-filter"]:checked::after {
+input[type="checkbox"][data-action="toggle-filter"]:checked::after,
+input[type="checkbox"][data-action="toggle-filter"].filter-checked::after {
   content: '' !important;
   position: absolute !important;
   top: 45% !important;
