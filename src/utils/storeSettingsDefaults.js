@@ -85,9 +85,12 @@ function getStockDefaults(settings) {
     display_low_stock_threshold: settings?.display_low_stock_threshold !== undefined
       ? settings.display_low_stock_threshold
       : 0,
-    show_stock_label: settings?.stock_settings?.show_stock_label !== undefined
-      ? settings.stock_settings.show_stock_label
-      : true,
+    // FIXED: Check top-level path first (where ThemeLayout saves), then fall back to nested path for backwards compatibility
+    show_stock_label: settings?.show_stock_label !== undefined
+      ? settings.show_stock_label
+      : (settings?.stock_settings?.show_stock_label !== undefined
+        ? settings.stock_settings.show_stock_label
+        : false),
   };
 }
 
@@ -132,6 +135,31 @@ function getGeneralDefaults(settings) {
     show_category_in_breadcrumb: settings?.show_category_in_breadcrumb !== undefined
       ? settings.show_category_in_breadcrumb
       : true,
+    // Header settings
+    show_language_selector: settings?.show_language_selector !== undefined
+      ? settings.show_language_selector
+      : false,
+  };
+}
+
+/**
+ * Get category page default settings
+ */
+function getCategoryDefaults(settings) {
+  return {
+    enable_product_filters: settings?.enable_product_filters !== undefined
+      ? settings.enable_product_filters
+      : true,
+    collapse_filters: settings?.collapse_filters !== undefined
+      ? settings.collapse_filters
+      : false,
+    max_visible_attributes: settings?.max_visible_attributes !== undefined
+      ? settings.max_visible_attributes
+      : 5,
+    enable_view_mode_toggle: settings?.enable_view_mode_toggle !== undefined
+      ? settings.enable_view_mode_toggle
+      : true,
+    default_view_mode: settings?.default_view_mode || 'grid',
   };
 }
 
@@ -312,6 +340,7 @@ export function mergeStoreSettings(store) {
     // Apply defaults for each category
     ...getStockDefaults(settings),
     ...getGeneralDefaults(settings),
+    ...getCategoryDefaults(settings),
     ...getCurrencyDefaults(store, settings),
     ...getProductGalleryDefaults(settings),
     ...getNavigationDefaults(settings),

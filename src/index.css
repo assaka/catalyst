@@ -188,8 +188,8 @@ input[type="radio"][data-action="toggle-filter"] {
 input[type="radio"][data-action="toggle-filter"]:checked,
 input[type="radio"][data-action="toggle-filter"][checked],
 input[type="radio"][data-action="toggle-filter"].filter-checked {
-  border-color: #3b82f6 !important;
-  background-color: #3b82f6 !important;
+  border-color: var(--filter-color, #3b82f6) !important;
+  background-color: var(--filter-color, #3b82f6) !important;
 }
 
 input[type="radio"][data-action="toggle-filter"]:checked::after,
@@ -206,7 +206,7 @@ input[type="radio"][data-action="toggle-filter"].filter-checked::after {
 }
 
 input[type="radio"][data-action="toggle-filter"]:hover {
-  border-color: #3b82f6 !important;
+  border-color: var(--filter-color, #3b82f6) !important;
 }
 
 /* Custom checkbox styling for filter options */
@@ -225,8 +225,8 @@ input[type="checkbox"][data-action="toggle-filter"] {
 
 input[type="checkbox"][data-action="toggle-filter"]:checked,
 input[type="checkbox"][data-action="toggle-filter"].filter-checked {
-  border-color: #3b82f6 !important;
-  background-color: #3b82f6 !important;
+  border-color: var(--filter-color, #3b82f6) !important;
+  background-color: var(--filter-color, #3b82f6) !important;
 }
 
 input[type="checkbox"][data-action="toggle-filter"]:checked::after,
@@ -243,5 +243,5 @@ input[type="checkbox"][data-action="toggle-filter"].filter-checked::after {
 }
 
 input[type="checkbox"][data-action="toggle-filter"]:hover {
-  border-color: #3b82f6 !important;
+  border-color: var(--filter-color, #3b82f6) !important;
 }

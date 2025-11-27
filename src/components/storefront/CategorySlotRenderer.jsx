@@ -430,7 +430,9 @@ export function CategorySlotRenderer({
       const settingsWithDefaults = {
         ...(settings || {}),
         collapse_filters: settings?.collapse_filters !== undefined ? settings.collapse_filters : false,
-        max_visible_attributes: settings?.max_visible_attributes || 5
+        max_visible_attributes: settings?.max_visible_attributes || 5,
+        // Map hide_currency_category to hide_currency_product for ProductItemCard on category pages
+        hide_currency_product: settings?.hide_currency_category ?? settings?.hide_currency_product ?? false
       };
 
       const formattedFilters = {
