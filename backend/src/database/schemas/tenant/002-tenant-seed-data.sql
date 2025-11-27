@@ -1784,7 +1784,7 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 
--- translations (6284 rows)
+-- translations (378 rows)
 INSERT INTO translations (id, key, language_code, value, category, created_at, updated_at, type, store_id)
 VALUES
   ('a12568dd-1415-4fe7-808e-a300640683c7', 'customer_auth.error.store_not_available', 'en', 'Store information not available. Please refresh the page.', 'customer_auth', '2025-11-12T19:47:07.088Z', '2025-11-12T19:47:07.088Z', 'system', '00000000-0000-0000-0000-000000000000'),
@@ -2109,20 +2109,20 @@ VALUES
   ('c8e8e88c-1931-4cc0-9256-1be45ff30b9a', 'success.order_placed', 'en', 'Your order has been successfully placed', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('658f7a13-afed-4fc0-a83c-6846b071b024', 'success.confirmation_sent', 'en', 'A confirmation email has been sent to', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('56a0de09-6fa6-4436-81df-844a46c894a9', 'success.download_invoice', 'en', 'Download Invoice', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
-  ('5e5c8ded-f671-47f5-b337-5af8fb234326', 'success.create_description', 'en', 'Create an account using your email', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
-  ('5e5c8ded-f671-47f5-b337-5af8fb234326', 'success.create_account', 'en', 'Create Account', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
-  ('5e5c8ded-f671-47f5-b337-5af8fb234326', 'success.existing_account', 'en', 'Existing Account', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
-  ('5e5c8ded-f671-47f5-b337-5af8fb234326', 'success.account_exists', 'en', 'An account exists for', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
-  ('5e5c8ded-f671-47f5-b337-5af8fb234326', 'success.login_prompt', 'en', 'Login to view your order history and track this order.', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
-  ('5e5c8ded-f671-47f5-b337-5af8fb234326', 'success.track_orders', 'en', 'to track your orders', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('6e5c8ded-f671-47f5-b337-5af8fb234326', 'success.create_description', 'en', 'Create an account using your email', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('7e5c8ded-f671-47f5-b337-5af8fb234326', 'success.create_account', 'en', 'Create Account', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('8e5c8ded-f671-47f5-b337-5af8fb234326', 'success.existing_account', 'en', 'Existing Account', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('9e5c8ded-f671-47f5-b337-5af8fb234326', 'success.account_exists', 'en', 'An account exists for', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('1e5c8ded-f671-47f5-b337-5af8fb234326', 'success.login_prompt', 'en', 'Login to view your order history and track this order.', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('2e5c8ded-f671-47f5-b337-5af8fb234326', 'success.track_orders', 'en', 'to track your orders', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('9e004179-b010-4112-aa59-a28555176258', 'success.account_created', 'en', 'Your Account is Now Created!', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('52b4d7cf-b842-4c77-88b6-c5d92cf7df7d', 'success.welcome_message', 'en', 'Welcome! Your account has been successfully created with email:', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('96498520-7f4c-43e7-bcf3-2f0f9c30b84f', 'success.welcome_email_sent', 'en', 'A welcome email has been sent to your inbox', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('1a1744b1-53dc-4f80-9b35-d618b6701fcc', 'success.addresses_saved', 'en', 'Your shipping and billing addresses have been saved', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('6b22f6fb-9f3c-4163-ab88-c49563c8472f', 'success.track_profile', 'en', 'You can now track your orders and manage your profile', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('1f179af5-dcfc-4b30-a22f-b3fa3d5edc1e', 'success.view_orders', 'en', 'View My Orders', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
-  ('1f179af5-dcfc-4b30-a22f-b3fa3d5edc1e', 'success.payment_pending_title', 'en', 'Payment pending', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
-  ('1f179af5-dcfc-4b30-a22f-b3fa3d5edc1e', 'success.payment_pending_message', 'en', 'Your order has been placed successfully. Payment will be collected upon delivery.', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('2f179af5-dcfc-4b30-a22f-b3fa3d5edc1e', 'success.payment_pending_title', 'en', 'Payment pending', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('3f179af5-dcfc-4b30-a22f-b3fa3d5edc1e', 'success.payment_pending_message', 'en', 'Your order has been placed successfully. Payment will be collected upon delivery.', 'order_success', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('1abb9f06-a9ff-451d-bfac-e31706f847eb', 'common.item', 'en', 'item', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('cb4ac080-d3c5-416c-8770-d7e10f98d082', 'common.items', 'en', 'items', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('989059e2-a388-4d5c-a796-e2a01832ce6d', 'common.unit', 'en', 'unit', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
