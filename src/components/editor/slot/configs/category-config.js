@@ -353,7 +353,7 @@ export const categoryConfig = {
       component: 'ProductCountInfo',
       content: `
         <div class="text-sm text-blue-600 font-bold">
-          {{pagination.start}}-{{pagination.end}} {{t "common.of"}} {{pagination.total}} {{t "common.products"}}
+          {{pagination.countText}}
         </div>
       `,
       className: '',

@@ -534,7 +534,7 @@ export function CategorySlotRenderer({
         filters: formattedFilters,
         activeFilters: categoryContext.activeFilters || [],
         pagination: (() => {
-          const total = categoryContext.filteredProductsCount || 0;
+          const total = Number(categoryContext.filteredProductsCount) || 0;
           const start = (currentPage - 1) * itemsPerPage + 1;
           const end = Math.min(currentPage * itemsPerPage, total);
           const productWord = total === 1 ? t('common.product', 'product') : t('common.products', 'products');
@@ -735,7 +735,7 @@ export function CategorySlotRenderer({
     // Product count info
     if (id === 'product_count_info') {
       // Use filteredProductsCount for accurate count after filtering
-      const totalProducts = filteredProductsCount || allProducts?.length || 0;
+      const totalProducts = Number(filteredProductsCount) || allProducts?.length || 0;
       const productLabel = totalProducts === 1
         ? t('common.product', 'product')
         : t('common.products', 'products');
