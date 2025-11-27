@@ -44,7 +44,7 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
 
       for (const lang of availableLanguages) {
         try {
-          const response = await api.get(`/translations/ui-labels?lang=${lang.code}`);
+          const response = await api.get(`/translations/ui-labels?store_id=${storeId}&lang=${lang.code}`);
 
           if (response && response.success && response.data) {
             const { labels } = response.data;
@@ -145,7 +145,7 @@ export default function StockLabelTranslationRow({ storeId, stockSettings, onUpd
       }
 
       // Save using bulk translations API
-      await api.post('/translations/ui-labels/bulk', { labels });
+      await api.post('/translations/ui-labels/bulk', { store_id: storeId, labels });
 
       if (onFlashMessage) {
         onFlashMessage('Stock label translations updated successfully', 'success');

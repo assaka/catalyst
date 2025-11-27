@@ -606,31 +606,15 @@ export default function Category() {
           </div>
         ) : (
           <>
-            {sortedProducts.length > 0 ? (
-              <>
-                <div className="grid grid-cols-12 gap-2 auto-rows-min">
-                  <CategorySlotRenderer
-                    slots={categorySlots}
-                    parentId={null}
-                    viewMode={viewMode}
-                    categoryContext={categoryContext}
-                  />
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-col justify-center items-center bg-white rounded-lg shadow-sm p-16">
-                <Package className="w-16 h-16 text-gray-400 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-800">
-                  {t('category.no_products_found', 'No Products Found')}
-                </h3>
-                <p className="text-gray-500 mt-2 text-center">
-                  {currentCategory ?
-                    t('category.no_products_in_category', `No products found in the "{category}" category.`).replace('{category}', getCategoryName(currentCategory, getCurrentLanguage()) || currentCategory.name) :
-                    t('category.no_products_match_filters', 'No products match your current filters.')
-                  }
-                </p>
-              </div>
-            )}
+            {/* Always show CategorySlotRenderer with layered navigation, even when no products */}
+            <div className="grid grid-cols-12 gap-2 auto-rows-min">
+              <CategorySlotRenderer
+                slots={categorySlots}
+                parentId={null}
+                viewMode={viewMode}
+                categoryContext={categoryContext}
+              />
+            </div>
           </>
         )}
       </div>
