@@ -153,21 +153,21 @@ router.get('/', cacheProducts(180), async (req, res) => {
     }
 
     // Load attributes and attribute values referenced
-    const attributeIds = [...new Set(attributeValuesData.map(pav => pav.attribute_id))];
-    const attributeValueIds = [...new Set(attributeValuesData.filter(pav => pav.value_id).map(pav => pav.value_id))];
+    const attributeIds = [...new Set((attributeValuesData || []).map(pav => pav.attribute_id))];
+    const attributeValueIds = [...new Set((attributeValuesData || []).filter(pav => pav.value_id).map(pav => pav.value_id))];
 
     const [attributesData, attributeValuesListData] = await Promise.all([
       attributeIds.length > 0
-        ? tenantDb.from('attributes').select('id, code, type, is_filterable').in('id', attributeIds).then(r => r.data || [])
+        ? tenantDb.from('attributes').select('id, code, type, is_filterable').in('id', attributeIds).then(r => (r && r.data) || []).catch(() => [])
         : Promise.resolve([]),
       attributeValueIds.length > 0
-        ? tenantDb.from('attribute_values').select('id, code, metadata').in('id', attributeValueIds).then(r => r.data || [])
+        ? tenantDb.from('attribute_values').select('id, code, metadata').in('id', attributeValueIds).then(r => (r && r.data) || []).catch(() => [])
         : Promise.resolve([])
     ]);
 
     // Create lookup maps
-    const attrMap = new Map(attributesData.map(a => [a.id, a]));
-    const valMap = new Map(attributeValuesListData.map(v => [v.id, v]));
+    const attrMap = new Map((attributesData || []).map(a => [a.id, a]));
+    const valMap = new Map((attributeValuesListData || []).map(v => [v.id, v]));
 
     // Fetch attribute and value translations
     const attributeTranslations = attributeIds.length > 0
@@ -305,22 +305,22 @@ router.get('/:id', cacheProduct(300), async (req, res) => {
     }
 
     const attributeValuesData = pavs || [];
-    const attributeIds = [...new Set(attributeValuesData.map(pav => pav.attribute_id))];
-    const attributeValueIds = [...new Set(attributeValuesData.filter(pav => pav.value_id).map(pav => pav.value_id))];
+    const attributeIds = [...new Set((attributeValuesData || []).map(pav => pav.attribute_id))];
+    const attributeValueIds = [...new Set((attributeValuesData || []).filter(pav => pav.value_id).map(pav => pav.value_id))];
 
     // Load attributes and attribute values
     const [attributesData, attributeValuesListData] = await Promise.all([
       attributeIds.length > 0
-        ? tenantDb.from('attributes').select('id, code, type').in('id', attributeIds).then(r => r.data || [])
+        ? tenantDb.from('attributes').select('id, code, type').in('id', attributeIds).then(r => (r && r.data) || []).catch(() => [])
         : Promise.resolve([]),
       attributeValueIds.length > 0
-        ? tenantDb.from('attribute_values').select('id, code, metadata').in('id', attributeValueIds).then(r => r.data || [])
+        ? tenantDb.from('attribute_values').select('id, code, metadata').in('id', attributeValueIds).then(r => (r && r.data) || []).catch(() => [])
         : Promise.resolve([])
     ]);
 
     // Create lookup maps
-    const attrMap = new Map(attributesData.map(a => [a.id, a]));
-    const valMap = new Map(attributeValuesListData.map(v => [v.id, v]));
+    const attrMap = new Map((attributesData || []).map(a => [a.id, a]));
+    const valMap = new Map((attributeValuesListData || []).map(v => [v.id, v]));
 
     // Fetch attribute and value translations
     const [attributeTranslations, valueTranslations] = await Promise.all([
@@ -460,22 +460,22 @@ router.get('/by-slug/:slug/full', cacheProduct(300), async (req, res) => {
     }
 
     const attributeValuesData = pavs || [];
-    const attributeIds = [...new Set(attributeValuesData.map(pav => pav.attribute_id))];
-    const attributeValueIds = [...new Set(attributeValuesData.filter(pav => pav.value_id).map(pav => pav.value_id))];
+    const attributeIds = [...new Set((attributeValuesData || []).map(pav => pav.attribute_id))];
+    const attributeValueIds = [...new Set((attributeValuesData || []).filter(pav => pav.value_id).map(pav => pav.value_id))];
 
     // Load attributes and attribute values
     const [attributesData, attributeValuesListData] = await Promise.all([
       attributeIds.length > 0
-        ? tenantDb.from('attributes').select('id, code, type').in('id', attributeIds).then(r => r.data || [])
+        ? tenantDb.from('attributes').select('id, code, type').in('id', attributeIds).then(r => (r && r.data) || []).catch(() => [])
         : Promise.resolve([]),
       attributeValueIds.length > 0
-        ? tenantDb.from('attribute_values').select('id, code, metadata').in('id', attributeValueIds).then(r => r.data || [])
+        ? tenantDb.from('attribute_values').select('id, code, metadata').in('id', attributeValueIds).then(r => (r && r.data) || []).catch(() => [])
         : Promise.resolve([])
     ]);
 
     // Create lookup maps
-    const attrMap = new Map(attributesData.map(a => [a.id, a]));
-    const valMap = new Map(attributeValuesListData.map(v => [v.id, v]));
+    const attrMap = new Map((attributesData || []).map(a => [a.id, a]));
+    const valMap = new Map((attributeValuesListData || []).map(v => [v.id, v]));
 
     // Fetch attribute and value translations
     const [attributeTranslations, valueTranslations] = await Promise.all([
