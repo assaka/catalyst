@@ -314,6 +314,7 @@ export function CategorySlotRenderer({
       const attributeFilters = filterableAttributes?.map(attr => {
         const attrCode = attr.code || attr.name;
         const filterData = filtersData[attrCode];
+        const filterType = attr.filter_type || 'multiselect';
 
         // Structure: { label, options: ["inbouw", "onderbouw"] }
         let valueCodes = [];
@@ -322,6 +323,41 @@ export function CategorySlotRenderer({
         if (filterData && typeof filterData === 'object' && filterData.options) {
           valueCodes = filterData.options;
           attributeLabel = filterData.label || attributeLabel;
+        }
+
+        // Handle slider type for numeric attributes
+        if (filterType === 'slider') {
+          // Collect numeric values from products for this attribute
+          const numericValues = [];
+          allProducts.forEach(p => {
+            const productAttributes = p.attributes || [];
+            if (!Array.isArray(productAttributes)) return;
+
+            const matchingAttr = productAttributes.find(pAttr => pAttr.code === attrCode);
+            if (matchingAttr) {
+              const numVal = parseFloat(matchingAttr.rawValue || matchingAttr.value);
+              if (!isNaN(numVal)) {
+                numericValues.push(numVal);
+              }
+            }
+          });
+
+          if (numericValues.length > 0) {
+            const minVal = Math.floor(Math.min(...numericValues));
+            const maxVal = Math.ceil(Math.max(...numericValues));
+
+            // Only show slider if there's a range
+            if (minVal !== maxVal) {
+              return {
+                code: attrCode,
+                label: attributeLabel,
+                filter_type: 'slider',
+                min: minVal,
+                max: maxVal
+              };
+            }
+          }
+          return null; // Skip if no valid numeric range
         }
 
         // Get attribute values with translations from attr

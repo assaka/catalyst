@@ -185,6 +185,27 @@ const LayeredNavigation = createSlotComponent({
 
     const html = processVariables(template, variableContext);
 
+    // Sync DOM checkboxes with selectedFilters state when filters are cleared or changed externally
+    useEffect(() => {
+      if (!containerRef.current || context === 'editor') return;
+
+      const selectedFilters = categoryContext?.selectedFilters || {};
+      const allCheckboxes = containerRef.current.querySelectorAll('[data-action="toggle-filter"]');
+
+      allCheckboxes.forEach(cb => {
+        const cbCode = cb.getAttribute('data-attribute-code');
+        const cbValue = cb.getAttribute('data-filter-value');
+
+        if (cbCode && cbValue) {
+          // Check if this value is in the selectedFilters
+          const shouldBeChecked = selectedFilters[cbCode]?.includes(cbValue) || false;
+          if (cb.checked !== shouldBeChecked) {
+            cb.checked = shouldBeChecked;
+          }
+        }
+      });
+    }, [categoryContext?.selectedFilters, context]);
+
     // Attach event listeners in storefront
     useEffect(() => {
       if (!containerRef.current || context === 'editor') return;

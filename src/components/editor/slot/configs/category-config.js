@@ -206,11 +206,43 @@ export const categoryConfig = {
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                   </button>
-                  <div class="filter-content space-y-2 max-h-48 overflow-y-auto {{#unless settings.collapse_filters}}block{{/unless}}"
+                  <div class="filter-content space-y-2 {{#unless settings.collapse_filters}}block{{/unless}}"
                        style="{{#if settings.collapse_filters}}display: none;{{/if}}"
-                       data-max-visible="{{settings.max_visible_attributes}}"
                        data-attribute-code="{{this.code}}"
                        data-filter-input-type="{{this.filter_type}}">
+                    {{#if (eq this.filter_type "slider")}}
+                    <!-- Slider for numeric attributes -->
+                    <div class="px-2 py-3">
+                      <div class="flex justify-between text-sm mb-2">
+                        <span id="{{this.code}}-min-display">{{this.min}}</span>
+                        <span id="{{this.code}}-max-display">{{this.max}}</span>
+                      </div>
+                      <div class="relative h-2">
+                        <div class="absolute w-full h-2 bg-gray-200 rounded"></div>
+                        <div id="{{this.code}}-range-track" class="absolute h-2 bg-blue-500 rounded" style="left: 0%; right: 0%;"></div>
+                        <input type="range"
+                               id="{{this.code}}-slider-min"
+                               class="absolute w-full h-2 appearance-none bg-transparent pointer-events-auto"
+                               min="{{this.min}}"
+                               max="{{this.max}}"
+                               value="{{this.min}}"
+                               data-action="attribute-slider"
+                               data-attribute-code="{{this.code}}"
+                               data-slider-type="min" />
+                        <input type="range"
+                               id="{{this.code}}-slider-max"
+                               class="absolute w-full h-2 appearance-none bg-transparent pointer-events-auto"
+                               min="{{this.min}}"
+                               max="{{this.max}}"
+                               value="{{this.max}}"
+                               data-action="attribute-slider"
+                               data-attribute-code="{{this.code}}"
+                               data-slider-type="max" />
+                      </div>
+                    </div>
+                    {{else}}
+                    <!-- Checkbox/Radio options -->
+                    <div class="max-h-48 overflow-y-auto" data-max-visible="{{settings.max_visible_attributes}}">
                     {{#each this.options}}
                       <label class="flex items-center mr-2 gap-2 cursor-pointer filter-option"
                              style="color: {{filterOptionStyles.optionTextColor}}; font-size: {{filterOptionStyles.optionFontSize}}; font-weight: {{filterOptionStyles.optionFontWeight}};"
@@ -241,11 +273,13 @@ export const categoryConfig = {
                         <span class="ml-auto" style="color: {{filterOptionStyles.optionCountColor}}; font-size: {{filterOptionStyles.optionFontSize}};">({{this.count}})</span>
                       </label>
                     {{/each}}
+                    </div>
                     <button class="text-sm text-blue-600 hover:text-blue-800 mt-2 show-more-btn hidden"
                             data-action="toggle-show-more"
                             data-attribute-code="{{this.code}}">
                       {{t "common.show_more"}}
                     </button>
+                    {{/if}}
                   </div>
                 </div>
               {{/each}}
@@ -1221,11 +1255,43 @@ export const categoryConfig = {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
-              <div class="filter-content space-y-2 max-h-48 overflow-y-auto {{#unless settings.collapse_filters}}block{{/unless}}"
+              <div class="filter-content space-y-2 {{#unless settings.collapse_filters}}block{{/unless}}"
                    style="{{#if settings.collapse_filters}}display: none;{{/if}}"
-                   data-max-visible="{{settings.max_visible_attributes}}"
                    data-attribute-code="{{this.code}}"
                    data-filter-input-type="{{this.filter_type}}">
+                {{#if (eq this.filter_type "slider")}}
+                <!-- Slider for numeric attributes -->
+                <div class="px-2 py-3">
+                  <div class="flex justify-between text-sm mb-2">
+                    <span id="{{this.code}}-min-display">{{this.min}}</span>
+                    <span id="{{this.code}}-max-display">{{this.max}}</span>
+                  </div>
+                  <div class="relative h-2">
+                    <div class="absolute w-full h-2 bg-gray-200 rounded"></div>
+                    <div id="{{this.code}}-range-track" class="absolute h-2 bg-blue-500 rounded" style="left: 0%; right: 0%;"></div>
+                    <input type="range"
+                           id="{{this.code}}-slider-min"
+                           class="absolute w-full h-2 appearance-none bg-transparent pointer-events-auto"
+                           min="{{this.min}}"
+                           max="{{this.max}}"
+                           value="{{this.min}}"
+                           data-action="attribute-slider"
+                           data-attribute-code="{{this.code}}"
+                           data-slider-type="min" />
+                    <input type="range"
+                           id="{{this.code}}-slider-max"
+                           class="absolute w-full h-2 appearance-none bg-transparent pointer-events-auto"
+                           min="{{this.min}}"
+                           max="{{this.max}}"
+                           value="{{this.max}}"
+                           data-action="attribute-slider"
+                           data-attribute-code="{{this.code}}"
+                           data-slider-type="max" />
+                  </div>
+                </div>
+                {{else}}
+                <!-- Checkbox/Radio options -->
+                <div class="max-h-48 overflow-y-auto" data-max-visible="{{settings.max_visible_attributes}}">
                 {{#each this.options}}
                   <div class="flex items-center justify-between mr-2 gap-2 filter-option" data-option-index="{{@index}}">
                     <label class="flex items-center gap-2 cursor-pointer"
@@ -1257,11 +1323,13 @@ export const categoryConfig = {
                     <span class="text-xs" style="color: {{filterOptionStyles.optionCountColor}}; font-size: {{filterOptionStyles.optionFontSize}};">({{this.count}})</span>
                   </div>
                 {{/each}}
+                </div>
                 <button class="text-sm text-blue-600 hover:text-blue-800 mt-2 show-more-btn hidden"
                         data-action="toggle-show-more"
                         data-attribute-code="{{this.code}}">
                   {{t "common.show_more"}}
                 </button>
+                {{/if}}
               </div>
             </div>
           {{/each}}
