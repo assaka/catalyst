@@ -61,7 +61,7 @@ export function CategorySlotRenderer({
   categoryContext = {}
 }) {
   // Get translations for stock labels
-  const { translations } = useTranslation();
+  const { translations, t } = useTranslation();
 
   // Helper function to generate dynamic grid classes
   const getDynamicGridClasses = (slot) => {
@@ -710,15 +710,20 @@ export function CategorySlotRenderer({
     // Product count info
     if (id === 'product_count_info') {
       const totalProducts = allProducts?.length || 0;
+      const productLabel = totalProducts === 1
+        ? t('common.product', 'product')
+        : t('common.products', 'products');
 
       // Handle infinite scroll case
       if (itemsPerPage === -1) {
         return wrapWithParentClass(
           <div className={className} style={styles}>
-            {totalProducts > 0 ? (
-              `Showing all ${totalProducts} products`
+            {totalProducts === 0 ? (
+              t('category.no_products_found', 'No products found')
+            ) : totalProducts === 1 ? (
+              `1 ${productLabel}`
             ) : (
-              'No products found'
+              `${t('common.showing', 'Showing')} ${t('common.all', 'all')} ${totalProducts} ${productLabel}`
             )}
           </div>
         );
@@ -729,13 +734,24 @@ export function CategorySlotRenderer({
       const startIndex = (currentPageNum - 1) * itemsPerPage + 1;
       const endIndex = Math.min(startIndex + (products?.length || 0) - 1, totalProducts);
 
+      // Build the display text with proper singular/plural
+      const getProductCountText = () => {
+        if (totalProducts === 0) {
+          return t('category.no_products_found', 'No products found');
+        }
+        if (totalProducts === 1) {
+          return `1 ${productLabel}`;
+        }
+        // If showing all products on one page
+        if (startIndex === 1 && endIndex === totalProducts) {
+          return `${totalProducts} ${productLabel}`;
+        }
+        return `${t('common.showing', 'Showing')} ${startIndex}-${endIndex} ${t('common.of', 'of')} ${totalProducts} ${productLabel}`;
+      };
+
       return wrapWithParentClass(
         <div className={className} style={styles}>
-          {totalProducts > 0 ? (
-            `Showing ${startIndex}-${endIndex} of ${totalProducts} products`
-          ) : (
-            'No products found'
-          )}
+          {getProductCountText()}
         </div>
       );
     }
