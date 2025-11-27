@@ -25,9 +25,9 @@ export const SetupGuide = ({ store }) => {
             setLoadingStripe(true);
             try {
                 const response = await checkStripeConnectStatus(store.id);
-                if (response.success) {
-                    setStripeStatus(response.data);
-                }
+                // response structure: { data: { connected: true, onboardingComplete: true, ... } }
+                const status = response.data?.data || response.data || null;
+                setStripeStatus(status);
             } catch (error) {
                 console.error('Error loading Stripe status:', error);
                 setStripeStatus(null);
@@ -47,7 +47,7 @@ export const SetupGuide = ({ store }) => {
     const needsPrimaryDomain = store.has_domains_without_primary && store.active_domain_count > 0;
     // Check if Stripe is connected from IntegrationConfig via API
     const isStripeConnected = stripeStatus?.connected && stripeStatus?.onboardingComplete;
-    const stripeAccountId = stripeStatus?.accountId;
+    const stripeAccountId = stripeStatus?.account_id; // API returns account_id not accountId
 
     // Load email configuration status
     useEffect(() => {
