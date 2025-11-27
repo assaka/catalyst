@@ -1900,6 +1900,7 @@ router.post('/bulk-translate-entities', authMiddleware, async (req, res) => {
 router.post('/preview', authMiddleware, async (req, res) => {
   try {
     const { store_id, what, fromLang, toLanguages, specificItems, singleField } = req.body;
+    const storeId = store_id;
 
     if (!what || !fromLang || !toLanguages || toLanguages.length === 0) {
       return res.status(400).json({
