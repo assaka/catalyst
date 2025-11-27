@@ -270,10 +270,9 @@ export default function Products() {
 
   // Fetch fresh product data for editing (includes attributes from product_attribute_values)
   const handleEditProduct = async (product) => {
-    const storeId = getSelectedStoreId();
     try {
-      const freshProduct = await Product.get(product.id, { store_id: storeId });
-      setSelectedProduct(freshProduct);
+      const freshProduct = await Product.findById(product.id);
+      setSelectedProduct(freshProduct || product);
       setShowProductForm(true);
     } catch (error) {
       console.error("Error fetching product for edit:", error);
