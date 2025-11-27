@@ -944,7 +944,7 @@ export default function Products() {
         <Card className="material-elevation-1 border-0">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Products ({filteredProducts.length})</span>
+              <span>{filteredProducts.length === 1 ? t('common.product', 'Product') : t('common.products', 'Products')} ({filteredProducts.length})</span>
               {(searchQuery || Object.values(filters).some(f => f !== "all")) && (
                 <Button
                   variant="ghost"
