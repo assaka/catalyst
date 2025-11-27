@@ -102,6 +102,11 @@ async function createProduct(storeId, productData) {
 
   if (error) throw error;
 
+  // Sync attributes to product_attribute_values table for storefront filtering
+  if (productData.attributes && typeof productData.attributes === 'object') {
+    await syncProductAttributeValues(tenantDb, storeId, product.id, productData.attributes);
+  }
+
   return product;
 }
 
@@ -117,10 +122,11 @@ async function updateProduct(storeId, productId, productData) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   // Exclude translation fields (name, description, short_description) - these go in product_translations table
-  const { name, description, short_description, ...productFieldsOnly } = productData;
+  const { name, description, short_description, attributes, ...productFieldsOnly } = productData;
 
   const updateFields = {
     ...productFieldsOnly,
+    attributes, // Keep attributes in products table for admin
     updated_at: new Date().toISOString()
   };
 
@@ -131,8 +137,110 @@ async function updateProduct(storeId, productId, productData) {
 
   if (error) throw error;
 
+  // Sync attributes to product_attribute_values table for storefront filtering
+  if (attributes && typeof attributes === 'object') {
+    await syncProductAttributeValues(tenantDb, storeId, productId, attributes);
+  }
+
   // Return updated product
   return await getProductById(storeId, productId);
+}
+
+/**
+ * Sync product attributes to product_attribute_values table
+ * This enables layered navigation filtering on the storefront
+ *
+ * @param {Object} tenantDb - Tenant database connection
+ * @param {string} storeId - Store UUID
+ * @param {string} productId - Product UUID
+ * @param {Object} attributes - Attributes object {attributeCode: value}
+ */
+async function syncProductAttributeValues(tenantDb, storeId, productId, attributes) {
+  try {
+    // Delete existing attribute values for this product
+    await tenantDb
+      .from('product_attribute_values')
+      .delete()
+      .eq('product_id', productId);
+
+    // Get all attributes for this store to map codes to IDs
+    const { data: storeAttributes } = await tenantDb
+      .from('attributes')
+      .select('id, code, type')
+      .eq('store_id', storeId);
+
+    if (!storeAttributes || storeAttributes.length === 0) {
+      return;
+    }
+
+    const attrCodeToId = new Map(storeAttributes.map(a => [a.code, { id: a.id, type: a.type }]));
+
+    // Get all attribute values for select/multiselect attributes
+    const { data: allAttrValues } = await tenantDb
+      .from('attribute_values')
+      .select('id, code, attribute_id');
+
+    const attrValueCodeToId = new Map();
+    if (allAttrValues) {
+      allAttrValues.forEach(v => {
+        const key = `${v.attribute_id}:${v.code}`;
+        attrValueCodeToId.set(key, v.id);
+      });
+    }
+
+    // Build insert records
+    const insertRecords = [];
+
+    for (const [attrCode, value] of Object.entries(attributes)) {
+      if (value === null || value === undefined || value === '') continue;
+
+      const attrInfo = attrCodeToId.get(attrCode);
+      if (!attrInfo) continue; // Skip unknown attributes
+
+      const record = {
+        product_id: productId,
+        attribute_id: attrInfo.id
+      };
+
+      // Handle different attribute types
+      if (attrInfo.type === 'select' || attrInfo.type === 'multiselect') {
+        // For select types, value is the code of the attribute_value
+        const valueKey = `${attrInfo.id}:${value}`;
+        const valueId = attrValueCodeToId.get(valueKey);
+        if (valueId) {
+          record.value_id = valueId;
+        } else {
+          // Store as text if value_id not found
+          record.text_value = String(value);
+        }
+      } else if (attrInfo.type === 'number') {
+        record.number_value = parseFloat(value) || 0;
+      } else if (attrInfo.type === 'boolean') {
+        record.boolean_value = Boolean(value);
+      } else if (attrInfo.type === 'date') {
+        record.date_value = value;
+      } else {
+        // text, file, image, etc.
+        record.text_value = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      }
+
+      insertRecords.push(record);
+    }
+
+    // Insert new attribute values
+    if (insertRecords.length > 0) {
+      const { error: insertError } = await tenantDb
+        .from('product_attribute_values')
+        .insert(insertRecords);
+
+      if (insertError) {
+        console.error('Error syncing product_attribute_values:', insertError);
+      }
+    }
+  } catch (err) {
+    console.error('Error in syncProductAttributeValues:', err);
+    // Don't throw - this is a non-critical operation
+  }
 }
 
 /**
@@ -145,7 +253,13 @@ async function updateProduct(storeId, productId, productData) {
 async function deleteProduct(storeId, productId) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-  // Delete translations first
+  // Delete attribute values first
+  await tenantDb
+    .from('product_attribute_values')
+    .delete()
+    .eq('product_id', productId);
+
+  // Delete translations
   await tenantDb
     .from('product_translations')
     .delete()
