@@ -197,6 +197,14 @@ const LayeredNavigation = createSlotComponent({
         const filterValue = checkbox.getAttribute('data-filter-value');
         const attributeCode = checkbox.getAttribute('data-attribute-code');
 
+        console.log('🔧 Filter checkbox change:', {
+          checked: checkbox.checked,
+          filterType,
+          filterValue,
+          attributeCode,
+          currentSelectedFilters: categoryContext.selectedFilters
+        });
+
         // Get current filters from categoryContext
         const currentFilters = categoryContext.selectedFilters || {};
 
@@ -218,6 +226,7 @@ const LayeredNavigation = createSlotComponent({
             delete newFilters[attributeCode];
           }
 
+          console.log('🔧 Calling handleFilterChange with:', newFilters);
           categoryContext.handleFilterChange(newFilters);
         }
       };

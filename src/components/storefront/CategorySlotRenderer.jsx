@@ -348,6 +348,7 @@ export function CategorySlotRenderer({
 
             // Check if this filter value is currently selected
             const isActive = selectedFilters[attrCode]?.includes(valueCode) || false;
+            console.log('🎯 Filter option:', { attrCode, valueCode, isActive, selectedFilters: selectedFilters[attrCode] });
 
             if (attrValue) {
               // Get translated label
