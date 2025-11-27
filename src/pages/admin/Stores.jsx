@@ -17,7 +17,6 @@ import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import apiClient from '@/api/client';
 import brevoAPI from '@/api/brevo';
-import { PaymentMethod } from '@/api/entities';
 
 export default function Stores() {
   const navigate = useNavigate();
@@ -107,7 +106,8 @@ export default function Stores() {
         const isEmailConfigured = emailStatus?.data?.isConfigured || emailStatus?.isConfigured || false;
 
         // Check payment methods - need at least one active
-        const paymentMethods = await PaymentMethod.findAll();
+        const pmResponse = await apiClient.get(`payment-methods?store_id=${storeId}&limit=100`);
+        const paymentMethods = pmResponse?.data?.payment_methods || pmResponse?.payment_methods || [];
         const hasActivePaymentMethod = paymentMethods.some(pm => pm.is_active === true);
 
         // If either is missing, show validation error modal
