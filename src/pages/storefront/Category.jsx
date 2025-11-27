@@ -294,12 +294,16 @@ export default function Category() {
   const sortedProducts = useMemo(() => {
     const sorted = [...filteredProducts];
 
+    // Handle both hyphen format (name-asc) and underscore format (name_asc)
     switch (currentSort) {
       case 'name-asc':
+      case 'name_asc':
         return sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       case 'name-desc':
+      case 'name_desc':
         return sorted.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
       case 'price-asc':
+      case 'price_asc':
         return sorted.sort((a, b) => {
           // Use the same logic as ProductCard for actual selling price
           let priceA = parseFloat(a.price || 0);
@@ -316,6 +320,7 @@ export default function Category() {
           return priceA - priceB;
         });
       case 'price-desc':
+      case 'price_desc':
         return sorted.sort((a, b) => {
           // Use the same logic as ProductCard for actual selling price
           let priceA = parseFloat(a.price || 0);
@@ -332,9 +337,12 @@ export default function Category() {
           return priceB - priceA;
         });
       case 'newest':
+      case 'created_desc':
         return sorted.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
       case 'oldest':
+      case 'created_asc':
         return sorted.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+      case 'position':
       default:
         return sorted;
     }
