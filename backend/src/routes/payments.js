@@ -1228,45 +1228,65 @@ router.post('/create-checkout', async (req, res) => {
         console.log('✅ Offline order created successfully:', mockSession.id);
 
         // Send order confirmation email for offline orders
+        console.log('📧 Sending order confirmation email for offline payment...');
         try {
           const emailService = require('../services/email-service');
 
           // Get the created order to send email
-          const { data: createdOrder } = await tenantDb
+          console.log('📧 Looking up order with payment_reference:', mockSession.id);
+          const { data: createdOrder, error: orderLookupError } = await tenantDb
             .from('sales_orders')
-            .select('*, sales_order_items(*)')
+            .select('*')
             .eq('payment_reference', mockSession.id)
             .single();
 
+          if (orderLookupError) {
+            console.error('❌ Error looking up order for email:', orderLookupError.message);
+          }
+
           if (createdOrder) {
+            console.log('📧 Found order for email:', createdOrder.id, createdOrder.order_number);
+
+            // Get order items separately
+            const { data: orderItems } = await tenantDb
+              .from('sales_order_items')
+              .select('*')
+              .eq('order_id', createdOrder.id);
+
             const customerName = shipping_address?.full_name || customer_email?.split('@')[0] || 'Customer';
             const nameParts = customerName.split(' ');
             const firstName = nameParts[0] || 'Customer';
             const lastName = nameParts.slice(1).join(' ') || '';
 
-            // Send the order confirmation email
-            emailService.sendTransactionalEmail(store_id, 'order_success_email', {
-              recipientEmail: customer_email,
-              orderId: createdOrder.id,
-              customer: {
-                first_name: firstName,
-                last_name: lastName,
-                email: customer_email
-              },
-              order: {
-                ...createdOrder,
-                OrderItems: createdOrder.sales_order_items || []
-              },
-              store: store,
-              languageCode: 'en'
-            }).then(() => {
+            console.log('📧 Sending email to:', customer_email);
+
+            // Send the order confirmation email (await to ensure it's sent before response)
+            try {
+              await emailService.sendTransactionalEmail(store_id, 'order_success_email', {
+                recipientEmail: customer_email,
+                orderId: createdOrder.id,
+                customer: {
+                  first_name: firstName,
+                  last_name: lastName,
+                  email: customer_email
+                },
+                order: {
+                  ...createdOrder,
+                  OrderItems: orderItems || []
+                },
+                store: store,
+                languageCode: 'en'
+              });
               console.log(`🎉 Offline order confirmation email sent to: ${customer_email}`);
-            }).catch(emailError => {
-              console.error('❌ Failed to send offline order confirmation email:', emailError.message);
-            });
+            } catch (emailSendError) {
+              console.error('❌ Failed to send offline order confirmation email:', emailSendError.message);
+            }
+          } else {
+            console.error('❌ Could not find order with payment_reference:', mockSession.id);
           }
         } catch (emailError) {
           console.error('⚠️ Error sending offline order email:', emailError.message);
+          console.error('⚠️ Error stack:', emailError.stack);
           // Don't fail the order if email fails
         }
 
