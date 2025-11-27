@@ -117,22 +117,25 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
           valueTrans = vt || [];
         }
 
-        // Build value translation map
+        // Build value translation map (transform to { lang: { label: '...' } } format)
         const valTransMap = {};
         valueTrans.forEach(t => {
           if (!valTransMap[t.attribute_value_id]) valTransMap[t.attribute_value_id] = {};
-          valTransMap[t.attribute_value_id][t.language_code] = t;
+          valTransMap[t.attribute_value_id][t.language_code] = {
+            label: t.value,  // DB uses 'value', frontend expects 'label'
+            description: t.description
+          };
         });
 
         // Apply translations to values
         attrWithTrans.values = (values || []).map(v => {
-          const vTrans = valTransMap[v.id];
-          const vReqLang = vTrans?.[lang];
-          const vEnLang = vTrans?.['en'];
+          const vTrans = valTransMap[v.id] || {};
+          const vReqLang = vTrans[lang];
+          const vEnLang = vTrans['en'];
 
           return {
             ...v,
-            translations: vTrans || {},
+            translations: vTrans,
             label: vReqLang?.label || vEnLang?.label || v.code
           };
         });
@@ -220,20 +223,24 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
           .in('attribute_value_id', valueIds)
           .in('language_code', [lang, 'en']);
 
+        // Build value translation map (transform to { lang: { label: '...' } } format)
         const valTransMap = {};
         (valTrans || []).forEach(t => {
           if (!valTransMap[t.attribute_value_id]) valTransMap[t.attribute_value_id] = {};
-          valTransMap[t.attribute_value_id][t.language_code] = t;
+          valTransMap[t.attribute_value_id][t.language_code] = {
+            label: t.value,  // DB uses 'value', frontend expects 'label'
+            description: t.description
+          };
         });
 
         attributeData.values = (values || []).map(v => {
-          const vTrans = valTransMap[v.id];
-          const vReqLang = vTrans?.[lang];
-          const vEnLang = vTrans?.['en'];
+          const vTrans = valTransMap[v.id] || {};
+          const vReqLang = vTrans[lang];
+          const vEnLang = vTrans['en'];
 
           return {
             ...v,
-            translations: vTrans || {},
+            translations: vTrans,
             label: vReqLang?.label || vEnLang?.label || v.code
           };
         });
