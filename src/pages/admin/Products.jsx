@@ -88,7 +88,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 export default function Products() {
   const navigate = useNavigate();
   const { selectedStore, getSelectedStoreId, availableStores } = useStoreSelection();
-  const { availableLanguages } = useTranslation();
+  const { availableLanguages, t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [taxes, setTaxes] = useState([]);
@@ -737,8 +737,8 @@ export default function Products() {
       <div className="flex items-center justify-between mt-6">
         <p className="text-sm text-gray-700">
           {filteredProducts.length === 1
-            ? "1 product"
-            : `Showing ${startIndex + 1}-${Math.min(startIndex + itemsPerPage, filteredProducts.length)} of ${filteredProducts.length} products`}
+            ? `1 ${t('common.product', 'product')}`
+            : `Showing ${startIndex + 1}-${Math.min(startIndex + itemsPerPage, filteredProducts.length)} of ${filteredProducts.length} ${t('common.products', 'products')}`}
         </p>
         
         <div className="flex items-center space-x-2">
