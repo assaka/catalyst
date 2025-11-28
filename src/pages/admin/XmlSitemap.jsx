@@ -22,7 +22,6 @@ export default function XmlSitemap() {
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [generating, setGenerating] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
     const [sitemapXml, setSitemapXml] = useState('');
     const [flashMessage, setFlashMessage] = useState(null);
 
@@ -44,8 +43,6 @@ export default function XmlSitemap() {
         sitemap_include_videos: false,
         sitemap_enable_news: false,
         sitemap_max_urls: 50000,
-        google_search_console_api_key: '',
-        sitemap_auto_submit: false,
         // Priority and changefreq per URL group
         category_priority: '0.8',
         category_changefreq: 'weekly',
@@ -104,8 +101,6 @@ export default function XmlSitemap() {
                         sitemap_include_videos: xmlSettings.include_videos ?? false,
                         sitemap_enable_news: xmlSettings.enable_news ?? false,
                         sitemap_max_urls: xmlSettings.max_urls ?? 50000,
-                        google_search_console_api_key: xmlSettings.google_search_console_api_key ?? '',
-                        sitemap_auto_submit: xmlSettings.auto_submit ?? false,
                         // Priority and changefreq per URL group
                         category_priority: xmlSettings.category_priority ?? '0.8',
                         category_changefreq: xmlSettings.category_changefreq ?? 'weekly',
@@ -367,38 +362,6 @@ export default function XmlSitemap() {
             .replace(/'/g, '&apos;');
     };
 
-    const submitToGoogle = async () => {
-        if (!settings.google_search_console_api_key) {
-            setFlashMessage({
-                type: 'error',
-                message: 'Google Search Console API key is required for auto-submission'
-            });
-            return;
-        }
-
-        try {
-            setSubmitting(true);
-            const sitemapUrl = `${window.location.origin}/sitemap.xml`;
-
-            // Note: This is a placeholder for the actual Google Search Console API call
-            // In production, this should be handled by your backend
-            setFlashMessage({
-                type: 'info',
-                message: `Sitemap submission to Google initiated for: ${sitemapUrl}. Please configure backend API integration.`
-            });
-
-            // TODO: Implement backend API call to submit sitemap to Google Search Console
-            // Example endpoint: POST /api/seo/submit-sitemap
-            // with payload: { sitemapUrl, apiKey: settings.google_search_console_api_key }
-
-        } catch (error) {
-            console.error('Error submitting sitemap to Google:', error);
-            setFlashMessage({ type: 'error', message: 'Failed to submit sitemap to Google' });
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
     const handleSave = async () => {
         if (!store?.id) return;
 
@@ -416,8 +379,6 @@ export default function XmlSitemap() {
                 include_videos: settings.sitemap_include_videos,
                 enable_news: settings.sitemap_enable_news,
                 max_urls: settings.sitemap_max_urls,
-                google_search_console_api_key: settings.google_search_console_api_key,
-                auto_submit: settings.sitemap_auto_submit,
                 // Priority and changefreq per URL group
                 category_priority: settings.category_priority,
                 category_changefreq: settings.category_changefreq,
@@ -444,11 +405,6 @@ export default function XmlSitemap() {
 
             // Regenerate sitemap with new settings
             await generateSitemap();
-
-            // Auto-submit if enabled
-            if (settings.sitemap_auto_submit) {
-                await submitToGoogle();
-            }
 
             setTimeout(() => setSaveSuccess(false), 2000);
         } catch (error) {
@@ -798,48 +754,41 @@ export default function XmlSitemap() {
                                     />
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5 flex items-center gap-2">
+                                {/* Submit to Search Engines Instructions */}
+                                <div className="border rounded-lg p-4 space-y-4 bg-muted/50">
+                                    <div className="flex items-center gap-2">
                                         <Upload className="h-5 w-5 text-blue-600" />
+                                        <Label className="text-base font-medium">Submit Your Sitemap</Label>
+                                    </div>
+
+                                    <div className="space-y-3 text-sm">
                                         <div>
-                                            <Label htmlFor="auto-submit">Auto-Submit to Google</Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                Automatically notify Google when sitemap is updated
-                                            </p>
+                                            <p className="font-medium">Google Search Console:</p>
+                                            <ol className="list-decimal list-inside text-muted-foreground space-y-1 ml-2">
+                                                <li>Go to <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" className="text-primary underline">search.google.com/search-console</a></li>
+                                                <li>Select your property (or add your site)</li>
+                                                <li>Click "Sitemaps" in the left menu</li>
+                                                <li>Enter your sitemap URL and click Submit</li>
+                                            </ol>
+                                        </div>
+
+                                        <div>
+                                            <p className="font-medium">Bing Webmaster Tools:</p>
+                                            <ol className="list-decimal list-inside text-muted-foreground space-y-1 ml-2">
+                                                <li>Go to <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" className="text-primary underline">bing.com/webmasters</a></li>
+                                                <li>Add or select your site</li>
+                                                <li>Click "Sitemaps" and submit your URL</li>
+                                            </ol>
+                                        </div>
+
+                                        <div className="pt-2 border-t">
+                                            <p className="font-medium">Your Sitemap URL:</p>
+                                            <code className="block mt-1 p-2 bg-background rounded text-xs break-all">
+                                                {window.location.origin}/sitemap.xml
+                                            </code>
                                         </div>
                                     </div>
-                                    <Switch
-                                        id="auto-submit"
-                                        checked={settings.sitemap_auto_submit}
-                                        onCheckedChange={(checked) => {
-                                            setSettings({ ...settings, sitemap_auto_submit: checked });
-                                        }}
-                                    />
                                 </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="gsc-api-key">Google Search Console API Key</Label>
-                                    <Input
-                                        id="gsc-api-key"
-                                        type="password"
-                                        placeholder="Enter your Google Search Console API key"
-                                        value={settings.google_search_console_api_key}
-                                        onChange={(e) => setSettings({ ...settings, google_search_console_api_key: e.target.value })}
-                                    />
-                                    <p className="text-sm text-muted-foreground">
-                                        Required for auto-submission feature. Get your API key from Google Search Console.
-                                    </p>
-                                </div>
-
-                                <Button
-                                    onClick={submitToGoogle}
-                                    disabled={submitting || !settings.google_search_console_api_key}
-                                    variant="outline"
-                                    className="w-full"
-                                >
-                                    <Upload className={`mr-2 h-4 w-4 ${submitting ? 'animate-bounce' : ''}`} />
-                                    {submitting ? 'Submitting to Google...' : 'Submit to Google Now'}
-                                </Button>
                             </div>
                         </CardContent>
                     </Card>
@@ -852,13 +801,6 @@ export default function XmlSitemap() {
                             <CardTitle>Advanced Configuration</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <Alert>
-                                <FileText className="h-4 w-4" />
-                                <AlertDescription>
-                                    Configure advanced sitemap settings.
-                                </AlertDescription>
-                            </Alert>
-
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="max-urls">Maximum URLs Per Sitemap</Label>
