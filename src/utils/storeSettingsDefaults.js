@@ -301,6 +301,9 @@ function getProductGalleryDefaults(settings) {
     vertical_gallery_position: settings?.vertical_gallery_position !== undefined
       ? settings.vertical_gallery_position
       : 'left',
+    mobile_gallery_layout: settings?.mobile_gallery_layout !== undefined
+      ? settings.mobile_gallery_layout
+      : 'below',
   };
 }
 

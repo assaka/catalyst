@@ -44,6 +44,13 @@ import './BreadcrumbsSlotComponent.jsx';
 const QuantitySelector = createSlotComponent({
   name: 'QuantitySelector',
   render: ({ slot, productContext, className, styles, context, variableContext }) => {
+    // CRITICAL: Check hide_quantity_selector setting FIRST (before any other logic)
+    // Check both productContext and variableContext for settings
+    const settings = productContext?.settings || variableContext?.settings;
+    if (settings?.hide_quantity_selector === true) {
+      return null;
+    }
+
     const containerRef = React.useRef(null);
     const content = slot?.content || '';
 
@@ -120,13 +127,6 @@ const QuantitySelector = createSlotComponent({
     }
 
     // Storefront version - full functionality
-    const { settings } = productContext;
-
-    // Preserve settings check - hide if setting is enabled
-    if (settings?.hide_quantity_selector) {
-      return null;
-    }
-
     return (
       <div
         ref={containerRef}
@@ -248,180 +248,140 @@ const ProductGallery = createSlotComponent({
   name: 'ProductGallerySlot',
 
   render: ({ slot, productContext, className, styles, context, variableContext }) => {
-    // SIMPLIFIED: Get settings from ONE place - variableContext (which now has same data for both contexts)
+    // Get settings from variableContext
     const settings = variableContext?.settings || {};
 
     const galleryLayout = settings.product_gallery_layout || 'horizontal';
     const verticalPosition = settings.vertical_gallery_position || 'left';
+    const mobileLayout = settings.mobile_gallery_layout || 'below'; // 'above' or 'below'
     const isVertical = galleryLayout === 'vertical';
 
+    // Build responsive container classes
+    // Mobile: always flex-col (vertical stack)
+    // Desktop: flex-row for vertical layout, flex-col for horizontal
+    const getContainerClass = () => {
+      if (isVertical) {
+        // Vertical layout: side-by-side on desktop, stacked on mobile
+        return 'flex flex-col sm:flex-row gap-4';
+      }
+      // Horizontal layout: always stacked
+      return 'flex flex-col space-y-4';
+    };
+
+    // Get thumbnail order classes based on position settings
+    // Mobile: controlled by mobileLayout (above/below)
+    // Desktop: controlled by verticalPosition (left/right) for vertical layout
+    const getThumbnailOrderClass = () => {
+      const mobileOrder = mobileLayout === 'above' ? 'order-first' : 'order-last';
+
+      if (isVertical) {
+        // Desktop: left = first, right = last
+        const desktopOrder = verticalPosition === 'left' ? 'sm:order-first' : 'sm:order-last';
+        return `${mobileOrder} ${desktopOrder}`;
+      }
+      // Horizontal layout: thumbnails always below main image on desktop
+      return `${mobileOrder} sm:order-last`;
+    };
+
+    // Get thumbnail container layout class
+    const getThumbnailContainerClass = () => {
+      if (isVertical) {
+        // Mobile: horizontal scroll, Desktop: vertical stack
+        return 'flex flex-row overflow-x-auto space-x-2 sm:flex-col sm:space-x-0 sm:space-y-2 sm:w-24 sm:overflow-visible';
+      }
+      // Horizontal: always horizontal thumbnails
+      return 'flex overflow-x-auto space-x-2';
+    };
+
+    // Shared thumbnail button renderer
+    const renderThumbnail = (thumbUrl, index, activeIndex, onClick, altText) => (
+      <button
+        key={index}
+        onClick={onClick}
+        className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
+          activeIndex === index
+            ? 'border-blue-500 ring-2 ring-blue-200'
+            : 'border-gray-300 hover:border-gray-400'
+        }`}
+      >
+        <img
+          src={thumbUrl}
+          alt={altText}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+          onError={(e) => {
+            e.target.src = 'https://placehold.co/100x100?text=Error';
+          }}
+        />
+        {activeIndex === index && (
+          <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+        )}
+      </button>
+    );
+
     if (context === 'editor') {
-      // Editor version - show both main image and thumbnails
-      // Use state for active image in editor too
       const [editorActiveIndex, setEditorActiveIndex] = useState(0);
-
-      // For vertical layout: DOM order controls position (left=thumbnails first, right=main first)
-      // Always use flex-row since render order already handles left/right positioning
-      const containerClass = isVertical
-        ? 'flex flex-row gap-4'
-        : 'flex flex-col space-y-4';
-
+      const containerClass = getContainerClass();
       const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
 
       return (
         <div className={finalContainerClass} style={styles}>
-          {/* Render thumbnails first if vertical left, otherwise main image first */}
-          {isVertical && verticalPosition === 'left' && (
-            /* Thumbnails */
-            <div className="flex flex-col space-y-2 w-24">
-              {Array.from({ length: 4 }, (_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setEditorActiveIndex(i)}
-                  className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
-                    editorActiveIndex === i
-                      ? 'border-blue-500 ring-2 ring-blue-200'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <img
-                    src={`https://placehold.co/100x100?text=Thumb+${i + 1}`}
-                    alt={`Demo Thumbnail ${i + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                  {/* Active indicator */}
-                  {editorActiveIndex === i && (
-                    <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Main Image */}
-          <div className={isVertical ? "flex-1" : ""}>
+          {/* Main Image - always order-none (natural position) */}
+          <div className={`order-none ${isVertical ? 'sm:flex-1' : ''}`}>
             <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
               <img
                 src={`https://placehold.co/600x600?text=Product+Image+${editorActiveIndex + 1}`}
                 alt="Product"
                 className="w-full h-full object-cover"
               />
-              {/* Demo labels for editor */}
               <div className="absolute top-2 left-2">
                 <Badge className="bg-blue-600 text-white">NEW</Badge>
               </div>
               <div className="absolute top-2 right-2">
-                <Badge variant="destructive" className="bg-red-600 text-white">
-                  SALE
-                </Badge>
+                <Badge variant="destructive" className="bg-red-600 text-white">SALE</Badge>
               </div>
             </div>
           </div>
 
-          {/* Thumbnails - render after main image for horizontal OR vertical right */}
-          {(!isVertical || (isVertical && verticalPosition === 'right')) && (
-            <div className={isVertical
-              ? "flex flex-col space-y-2 w-24"
-              : "flex overflow-x-auto space-x-2"
-            }>
-              {Array.from({ length: 4 }, (_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setEditorActiveIndex(i)}
-                  className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
-                    editorActiveIndex === i
-                      ? 'border-blue-500 ring-2 ring-blue-200'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <img
-                    src={`https://placehold.co/100x100?text=Thumb+${i + 1}`}
-                    alt={`Demo Thumbnail ${i + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                  {/* Active indicator */}
-                  {editorActiveIndex === i && (
-                    <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Thumbnails - order controlled by CSS */}
+          <div className={`${getThumbnailOrderClass()} ${getThumbnailContainerClass()}`}>
+            {Array.from({ length: 4 }, (_, i) =>
+              renderThumbnail(
+                `https://placehold.co/100x100?text=Thumb+${i + 1}`,
+                i,
+                editorActiveIndex,
+                () => setEditorActiveIndex(i),
+                `Demo Thumbnail ${i + 1}`
+              )
+            )}
+          </div>
         </div>
       );
     }
 
-    // Storefront version - full functionality
+    // Storefront version
     const { product, activeImageIndex = 0, setActiveImageIndex } = productContext;
 
     if (!product) return null;
 
     const images = product.images || [];
 
-    // Handle both string URLs and object structures
     const getImageUrl = (img) => {
       if (!img) return 'https://placehold.co/600x600?text=No+Image';
       if (typeof img === 'string') return img;
       if (typeof img === 'object') {
-        // Try different possible property names
         return img.url || img.src || img.image || img.thumbnail || img.path || 'https://placehold.co/600x600?text=No+Image';
       }
       return 'https://placehold.co/600x600?text=No+Image';
     };
 
     const currentImage = getImageUrl(images[activeImageIndex]) || getImageUrl(images[0]) || 'https://placehold.co/600x600?text=No+Image';
-
-    // For vertical layout: DOM order controls position (left=thumbnails first, right=main first)
-    // Always use flex-row since render order already handles left/right positioning
-    const containerClass = isVertical
-      ? 'flex flex-row gap-4'
-      : 'flex flex-col space-y-4';
-
-    // Apply className if provided
+    const containerClass = getContainerClass();
     const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
 
     return (
       <div className={finalContainerClass} style={styles}>
-        {/* Render thumbnails first if vertical left */}
-        {isVertical && verticalPosition === 'left' && images.length > 0 && (
-          <div className="flex flex-col space-y-2 w-24">
-            {images.map((image, index) => {
-              const thumbUrl = getImageUrl(image);
-              return (
-                <button
-                  key={index}
-                  onClick={() => {
-                    console.log('Thumbnail clicked:', index, 'Current active:', activeImageIndex);
-                    if (setActiveImageIndex) {
-                      setActiveImageIndex(index);
-                    }
-                  }}
-                  className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
-                    activeImageIndex === index
-                      ? 'border-blue-500 ring-2 ring-blue-200'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <img
-                    src={thumbUrl}
-                    alt={`${product.name} ${index + 1}`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                    onError={(e) => {
-                      e.target.src = 'https://placehold.co/100x100?text=Error';
-                    }}
-                  />
-                  {/* Active indicator */}
-                  {activeImageIndex === index && (
-                    <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Main Image */}
-        <div className={isVertical ? "flex-1" : ""}>
+        {/* Main Image - always order-none (natural position) */}
+        <div className={`order-none ${isVertical ? 'sm:flex-1' : ''}`}>
           <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
             <img
               src={currentImage}
@@ -432,9 +392,7 @@ const ProductGallery = createSlotComponent({
             {productContext.productLabels && productContext.productLabels.length > 0 && (
               <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-2 justify-between">
                 {productContext.productLabels.map((label, index) => {
-                  // Backend returns translated text in label.text (based on X-Language header)
                   const labelText = label.text || label;
-
                   return (
                     <Badge
                       key={index}
@@ -454,52 +412,24 @@ const ProductGallery = createSlotComponent({
             {/* Sale Badge */}
             {product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price) && (
               <div className="absolute top-2 right-2">
-                <Badge variant="destructive" className="bg-red-600 text-white">
-                  SALE
-                </Badge>
+                <Badge variant="destructive" className="bg-red-600 text-white">SALE</Badge>
               </div>
             )}
           </div>
         </div>
 
-        {/* Thumbnails - render after main image for horizontal OR vertical right */}
-        {(!isVertical || (isVertical && verticalPosition === 'right')) && images.length > 0 && (
-          <div className={isVertical
-            ? "flex flex-col space-y-2 w-24"
-            : "flex overflow-x-auto space-x-2"
-          }>
-            {images.map((image, index) => {
-              const thumbUrl = getImageUrl(image);
-              return (
-                <button
-                  key={index}
-                  onClick={() => {
-                    console.log('Thumbnail clicked:', index, 'Current active:', activeImageIndex);
-                    if (setActiveImageIndex) {
-                      setActiveImageIndex(index);
-                    }
-                  }}
-                  className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
-                    activeImageIndex === index
-                      ? 'border-blue-500 ring-2 ring-blue-200'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <img
-                    src={thumbUrl}
-                    alt={`${product.name} ${index + 1}`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                    onError={(e) => {
-                      e.target.src = 'https://placehold.co/100x100?text=Error';
-                    }}
-                  />
-                  {/* Active indicator */}
-                  {activeImageIndex === index && (
-                    <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
-                  )}
-                </button>
-              );
-            })}
+        {/* Thumbnails - order controlled by CSS */}
+        {images.length > 1 && (
+          <div className={`${getThumbnailOrderClass()} ${getThumbnailContainerClass()}`}>
+            {images.map((image, index) =>
+              renderThumbnail(
+                getImageUrl(image),
+                index,
+                activeImageIndex,
+                () => setActiveImageIndex && setActiveImageIndex(index),
+                `${product.name} ${index + 1}`
+              )
+            )}
           </div>
         )}
       </div>
