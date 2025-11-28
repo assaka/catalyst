@@ -588,14 +588,32 @@ export default function XmlSitemap() {
                     </div>
 
                     {/* Submit Instructions */}
-                    <div className="p-3 border rounded-lg bg-muted/50 text-sm space-y-2">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <span className="font-medium">Sitemap URL:</span>
-                            <code className="px-2 py-1 bg-background rounded text-xs">{window.location.origin}/sitemap.xml</code>
+                    <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-muted-foreground">Submit to Search Engines</h4>
+                        <div className="p-3 border rounded-lg bg-muted/50 text-sm space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <span className="font-medium">Your Sitemap URL:</span>
+                                <code className="px-2 py-1 bg-background rounded text-xs">{window.location.origin}/sitemap.xml</code>
+                            </div>
+                            <div className="grid sm:grid-cols-2 gap-3 text-xs text-muted-foreground">
+                                <div>
+                                    <p className="font-medium text-foreground mb-1">Google Search Console:</p>
+                                    <ol className="list-decimal list-inside space-y-0.5">
+                                        <li>Go to <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" className="text-primary underline">Search Console</a></li>
+                                        <li>Select your property</li>
+                                        <li>Click "Sitemaps" → Submit URL</li>
+                                    </ol>
+                                </div>
+                                <div>
+                                    <p className="font-medium text-foreground mb-1">Bing Webmaster Tools:</p>
+                                    <ol className="list-decimal list-inside space-y-0.5">
+                                        <li>Go to <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" className="text-primary underline">Bing Webmasters</a></li>
+                                        <li>Select your site</li>
+                                        <li>Click "Sitemaps" → Submit URL</li>
+                                    </ol>
+                                </div>
+                            </div>
                         </div>
-                        <p className="text-muted-foreground text-xs">
-                            Submit to <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" className="text-primary underline">Google Search Console</a> or <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" className="text-primary underline">Bing Webmaster Tools</a>
-                        </p>
                     </div>
                 </CardContent>
             </Card>
