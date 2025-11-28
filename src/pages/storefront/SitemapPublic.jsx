@@ -94,8 +94,19 @@ export default function SitemapPublic() {
         fetchData();
     }, [store?.id, storeCategories]);
 
+    // Get all category IDs in the list to detect orphans
+    const categoryIds = new Set(categories.map(cat => cat.id));
+
     const renderCategoryTree = (parentId = null) => {
-        const children = categories.filter(cat => cat.parent_id === parentId);
+        // Find children: either parent_id matches, OR parent_id points to non-existent category (orphan = treat as root)
+        const children = categories.filter(cat => {
+            if (parentId === null) {
+                // Root level: include categories with null parent OR orphans (parent doesn't exist in list)
+                return cat.parent_id === null || !categoryIds.has(cat.parent_id);
+            }
+            return cat.parent_id === parentId;
+        });
+
         if (children.length === 0) return null;
 
         return (
