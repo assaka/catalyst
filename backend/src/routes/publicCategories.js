@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
       });
     }
 
-    const { page = 1, limit = 100, parent_id, search } = req.query;
+    const { page = 1, limit = 100, parent_id, search, include_hidden } = req.query;
     const offset = (page - 1) * limit;
     const lang = getLanguageFromRequest(req);
 
@@ -30,8 +30,12 @@ router.get('/', async (req, res) => {
       .from('categories')
       .select('*', { count: 'exact' })
       .eq('store_id', store_id)
-      .eq('is_active', true)
-      .eq('hide_in_menu', false);
+      .eq('is_active', true);
+
+    // Only filter by hide_in_menu if include_hidden is not set (for sitemap use case)
+    if (include_hidden !== 'true') {
+      query = query.eq('hide_in_menu', false);
+    }
 
     if (parent_id !== undefined) {
       query = query.eq('parent_id', parent_id);

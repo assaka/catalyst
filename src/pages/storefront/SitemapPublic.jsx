@@ -46,7 +46,7 @@ export default function SitemapPublic() {
                 if (htmlSitemapSettings.include_categories) {
                     promises.push(
                         store?.id
-                            ? StorefrontCategory.filter({ is_active: true, store_id: store.id, limit: 1000 })
+                            ? StorefrontCategory.filter({ is_active: true, store_id: store.id, limit: 1000, include_hidden: true })
                             : Promise.resolve([])
                     );
                 } else {
@@ -76,20 +76,20 @@ export default function SitemapPublic() {
 
                 const [categoryData, productData, pageData] = await Promise.all(promises);
 
-                // Filter out system pages (404, privacy policy, etc.)
-                const nonSystemPages = (pageData || []).filter(page => !page.is_system);
+                // Filter out only 404 page from sitemap - other system pages like privacy policy should be included
+                const sitemapPages = (pageData || []).filter(page => page.slug !== '404' && page.slug !== 'not-found');
 
                 console.log('Sitemap data fetched:', {
                     categories: categoryData,
                     products: productData,
                     pages: pageData,
-                    nonSystemPages: nonSystemPages,
+                    sitemapPages: sitemapPages,
                     storeId: store?.id
                 });
 
                 setCategories(categoryData || []);
                 setProducts(productData || []);
-                setPages(nonSystemPages);
+                setPages(sitemapPages);
             } catch (error) {
                 console.error("Error fetching sitemap data:", error);
             } finally {
