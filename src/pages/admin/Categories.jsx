@@ -622,7 +622,16 @@ export default function Categories() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2">
-                    <h3 className="text-sm font-medium text-gray-900 truncate">{getCategoryName(category)}</h3>
+                    <h3
+                      className={`text-sm font-medium text-gray-900 truncate ${category.children && category.children.length > 0 ? 'cursor-pointer hover:text-blue-600' : ''}`}
+                      onClick={() => {
+                        if (category.children && category.children.length > 0) {
+                          toggleCategoryExpansion(category.id);
+                        }
+                      }}
+                    >
+                      {getCategoryName(category)}
+                    </h3>
                     <span className="text-xs text-gray-500 font-mono">/{category.slug}</span>
                   </div>
                   {getCategoryDescription(category) && (
