@@ -293,11 +293,19 @@ const ProductGallery = createSlotComponent({
       return 'flex overflow-x-auto space-x-2';
     };
 
+    // State for active image - must be at top level (React hooks rules)
+    // For editor: use local state; for storefront: use productContext state
+    const [editorActiveIndex, setEditorActiveIndex] = useState(0);
+
+    // Get active index and setter based on context
+    const activeIndex = context === 'editor' ? editorActiveIndex : (productContext?.activeImageIndex || 0);
+    const setActiveIndex = context === 'editor' ? setEditorActiveIndex : productContext?.setActiveImageIndex;
+
     // Shared thumbnail button renderer
-    const renderThumbnail = (thumbUrl, index, activeIndex, onClick, altText) => (
+    const renderThumbnail = (thumbUrl, index, altText) => (
       <button
         key={index}
-        onClick={onClick}
+        onClick={() => setActiveIndex && setActiveIndex(index)}
         className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
           activeIndex === index
             ? 'border-blue-500 ring-2 ring-blue-200'
@@ -319,7 +327,6 @@ const ProductGallery = createSlotComponent({
     );
 
     if (context === 'editor') {
-      const [editorActiveIndex, setEditorActiveIndex] = useState(0);
       const containerClass = getContainerClass();
       const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
 
@@ -329,7 +336,7 @@ const ProductGallery = createSlotComponent({
           <div className={`order-none ${isVertical ? 'sm:flex-1' : ''}`}>
             <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
               <img
-                src={`https://placehold.co/600x600?text=Product+Image+${editorActiveIndex + 1}`}
+                src={`https://placehold.co/600x600?text=Product+Image+${activeIndex + 1}`}
                 alt="Product"
                 className="w-full h-full object-cover"
               />
@@ -348,8 +355,6 @@ const ProductGallery = createSlotComponent({
               renderThumbnail(
                 `https://placehold.co/100x100?text=Thumb+${i + 1}`,
                 i,
-                editorActiveIndex,
-                () => setEditorActiveIndex(i),
                 `Demo Thumbnail ${i + 1}`
               )
             )}
@@ -359,7 +364,7 @@ const ProductGallery = createSlotComponent({
     }
 
     // Storefront version
-    const { product, activeImageIndex = 0, setActiveImageIndex } = productContext;
+    const { product } = productContext || {};
 
     if (!product) return null;
 
@@ -374,7 +379,7 @@ const ProductGallery = createSlotComponent({
       return 'https://placehold.co/600x600?text=No+Image';
     };
 
-    const currentImage = getImageUrl(images[activeImageIndex]) || getImageUrl(images[0]) || 'https://placehold.co/600x600?text=No+Image';
+    const currentImage = getImageUrl(images[activeIndex]) || getImageUrl(images[0]) || 'https://placehold.co/600x600?text=No+Image';
     const containerClass = getContainerClass();
     const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
 
@@ -425,8 +430,6 @@ const ProductGallery = createSlotComponent({
               renderThumbnail(
                 getImageUrl(image),
                 index,
-                activeImageIndex,
-                () => setActiveImageIndex && setActiveImageIndex(index),
                 `${product.name} ${index + 1}`
               )
             )}
