@@ -154,9 +154,7 @@ export function CategorySlotRenderer({
   const settingsForCategoryPage = {
     ...(settings || {}),
     collapse_filters: settings?.collapse_filters !== undefined ? settings.collapse_filters : false,
-    max_visible_attributes: settings?.max_visible_attributes || 5,
-    // Map hide_currency_category to hide_currency_product for ProductItemCard on category pages
-    hide_currency_product: settings?.hide_currency_category ?? settings?.hide_currency_product ?? false
+    max_visible_attributes: settings?.max_visible_attributes || 5
   };
 
   // Helper function to evaluate conditional display expressions
@@ -848,6 +846,7 @@ export function CategorySlotRenderer({
               productLabels={productLabels}
               viewMode={viewMode}
               slotConfig={slotConfig}
+              pageType="category"
               onAddToCartStateChange={(isAdding) => {
                 // Handle add to cart state change
               }}

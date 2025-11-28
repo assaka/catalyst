@@ -27,7 +27,8 @@ const ProductItemCard = ({
   onAddToCartStateChange = null,
   isAddingToCart = false,
   isEditorMode = false,
-  onElementClick = null
+  onElementClick = null,
+  pageType = 'category' // 'category' or 'product' - determines which hide_currency setting to use
 }) => {
   const { t, translations, currentLanguage } = useTranslation();
 
@@ -39,6 +40,12 @@ const ProductItemCard = ({
   const setAddingToCart = onAddToCartStateChange || setLocalIsAddingToCart;
 
   if (!product || !store) return null;
+
+  // Determine whether to hide currency based on page type
+  // Category pages use hide_currency_category, product pages use hide_currency_product
+  const hideCurrency = pageType === 'category'
+    ? settings?.hide_currency_category
+    : settings?.hide_currency_product;
 
   // Get slot configurations for styling - support both nested and flat structures
   const {
@@ -344,7 +351,7 @@ const ProductItemCard = ({
                         data-slot-id={isEditorMode ? 'product_card_price' : undefined}
                         onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price') : undefined}
                       >
-                        {settings?.hide_currency_product ? '' : formatPriceWithTax(priceInfo.displayPrice)}
+                        {hideCurrency ? '' : formatPriceWithTax(priceInfo.displayPrice)}
                       </p>
                       <p
                         className={comparePriceConfig.className || "text-gray-500 line-through text-sm"}
@@ -352,7 +359,7 @@ const ProductItemCard = ({
                         data-slot-id={isEditorMode ? 'product_card_compare_price' : undefined}
                         onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_compare_price') : undefined}
                       >
-                        {settings?.hide_currency_product ? '' : formatPriceWithTax(priceInfo.originalPrice)}
+                        {hideCurrency ? '' : formatPriceWithTax(priceInfo.originalPrice)}
                       </p>
                     </>
                   );
@@ -365,7 +372,7 @@ const ProductItemCard = ({
                     data-slot-id={isEditorMode ? 'product_card_price' : undefined}
                     onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price') : undefined}
                   >
-                    {settings?.hide_currency_product ? '' : formatPriceWithTax(priceInfo.displayPrice)}
+                    {hideCurrency ? '' : formatPriceWithTax(priceInfo.displayPrice)}
                   </p>
                 );
               })()}
