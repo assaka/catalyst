@@ -202,21 +202,21 @@ export default function ProductTabs({ productTabs = [], product = null, settings
   const template = `
     <div class="w-full">
       <!-- Desktop: Tab Navigation - Hidden on mobile -->
-      <div class="hidden md:block border-b border-gray-200">
-        <nav class="-mb-px flex space-x-8">
+      <div class="hidden md:block">
+        <nav class="flex space-x-2">
           {{#each tabs}}
             {{#if this.isActive}}
             <button
-              class="py-2 px-1 border-b-2 transition-colors duration-200"
-              style="font-size: {{settings.theme.product_tabs_title_size}}; font-weight: {{settings.theme.product_tabs_font_weight}}; text-decoration: {{settings.theme.product_tabs_text_decoration}}; color: {{settings.theme.product_tabs_title_color}}; border-color: {{settings.theme.product_tabs_title_color}}; background-color: {{settings.theme.product_tabs_active_bg}};"
+              class="py-2 px-4 border transition-colors duration-200"
+              style="font-size: {{settings.theme.product_tabs_title_size}}; font-weight: {{settings.theme.product_tabs_font_weight}}; text-decoration: {{settings.theme.product_tabs_text_decoration}}; color: {{settings.theme.product_tabs_title_color}}; background-color: {{settings.theme.product_tabs_active_bg}}; border-color: {{settings.theme.product_tabs_border_color}}; border-radius: {{settings.theme.product_tabs_border_radius}};"
               data-action="switch-tab"
               data-tab-id="{{this.id}}">
               {{this.title}}
             </button>
             {{else}}
             <button
-              class="py-2 px-1 border-b-2 border-transparent transition-colors duration-200"
-              style="font-size: {{settings.theme.product_tabs_title_size}}; font-weight: {{settings.theme.product_tabs_font_weight}}; text-decoration: {{settings.theme.product_tabs_text_decoration}}; color: {{settings.theme.product_tabs_inactive_color}}; background-color: {{settings.theme.product_tabs_inactive_bg}};"
+              class="py-2 px-4 border transition-colors duration-200"
+              style="font-size: {{settings.theme.product_tabs_title_size}}; font-weight: {{settings.theme.product_tabs_font_weight}}; text-decoration: {{settings.theme.product_tabs_text_decoration}}; color: {{settings.theme.product_tabs_inactive_color}}; background-color: {{settings.theme.product_tabs_inactive_bg}}; border-color: {{settings.theme.product_tabs_border_color}}; border-radius: {{settings.theme.product_tabs_border_radius}};"
               onmouseover="this.style.color='{{settings.theme.product_tabs_hover_color}}'; this.style.backgroundColor='{{settings.theme.product_tabs_hover_bg}}';"
               onmouseout="this.style.color='{{settings.theme.product_tabs_inactive_color}}'; this.style.backgroundColor='{{settings.theme.product_tabs_inactive_bg}}';"
               data-action="switch-tab"
@@ -237,8 +237,8 @@ export default function ProductTabs({ productTabs = [], product = null, settings
             data-tab-index="{{@index}}"
             data-tab-type="{{this.tab_type}}"
             data-tab-text-content="{{this.content}}">
-            <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container p-6 border"
-                 style="background-color: {{settings.theme.product_tabs_content_bg}}; border-radius: {{settings.theme.product_tabs_border_radius}}; border-color: {{settings.theme.product_tabs_border_color}};">
+            <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container p-6"
+                 style="background-color: {{settings.theme.product_tabs_content_bg}};">
               {{#if (eq this.tab_type "text")}}
                 <div>{{{this.content}}}</div>
               {{/if}}
@@ -262,11 +262,11 @@ export default function ProductTabs({ productTabs = [], product = null, settings
       <!-- Mobile: Accordion - Hidden on desktop -->
       <div class="md:hidden space-y-2">
         {{#each tabs}}
-          <div class="border" data-accordion-item="{{@index}}" style="background-color: {{settings.theme.product_tabs_inactive_bg}}; border-radius: {{settings.theme.product_tabs_border_radius}}; border-color: {{settings.theme.product_tabs_border_color}};">
+          <div data-accordion-item="{{@index}}" style="background-color: {{settings.theme.product_tabs_inactive_bg}};">
             <!-- Accordion Header -->
             <button
-              class="w-full flex items-center justify-between p-4 text-left transition-colors duration-200"
-              style="color: {{settings.theme.product_tabs_title_color}}; background-color: {{settings.theme.product_tabs_active_bg}}; border-top-left-radius: {{settings.theme.product_tabs_border_radius}}; border-top-right-radius: {{settings.theme.product_tabs_border_radius}};"
+              class="w-full flex items-center justify-between p-4 text-left border transition-colors duration-200"
+              style="color: {{settings.theme.product_tabs_title_color}}; background-color: {{settings.theme.product_tabs_active_bg}}; border-color: {{settings.theme.product_tabs_border_color}}; border-radius: {{settings.theme.product_tabs_border_radius}};"
               onmouseover="this.style.backgroundColor='{{settings.theme.product_tabs_hover_bg}}';"
               onmouseout="this.style.backgroundColor='{{settings.theme.product_tabs_active_bg}}';"
               data-action="toggle-accordion"
@@ -283,11 +283,10 @@ export default function ProductTabs({ productTabs = [], product = null, settings
             </button>
 
             <!-- Accordion Content -->
-            <div class="accordion-content {{#if @first}}{{else}}hidden{{/if}} p-4 pt-0 border-t"
+            <div class="accordion-content {{#if @first}}{{else}}hidden{{/if}} p-4 pt-0"
                  data-accordion-content="{{@index}}"
                  data-tab-type="{{this.tab_type}}"
-                 data-tab-text-content="{{this.content}}"
-                 style="border-color: {{settings.theme.product_tabs_border_color}};">
+                 data-tab-text-content="{{this.content}}">
               <div class="prose max-w-none text-gray-800 leading-relaxed tab-content-container p-6"
                    style="background-color: {{settings.theme.product_tabs_content_bg}};">
                 {{#if (eq this.tab_type "text")}}
