@@ -162,12 +162,22 @@ export default function XmlSitemap() {
 
         try {
             setGenerating(true);
-            // Use findAll for admin API access (not public API) to get all products
-            const [products, categories, pages] = await Promise.all([
-                Product.findAll({ status: 'active', store_id: store.id }),
-                Category.findAll({ is_active: true, store_id: store.id }),
-                CmsPage.findAll({ is_active: true, store_id: store.id })
+            // Use findPaginated with high limit to get all items for sitemap
+            const [productsResult, categoriesResult, pagesResult] = await Promise.all([
+                Product.findPaginated(1, 10000, { status: 'active', store_id: store.id }),
+                Category.findPaginated(1, 10000, { is_active: true, store_id: store.id }),
+                CmsPage.findPaginated(1, 10000, { is_active: true, store_id: store.id })
             ]);
+
+            const products = productsResult?.data || [];
+            const categories = categoriesResult?.data || [];
+            const pages = pagesResult?.data || [];
+
+            console.log('Sitemap data loaded:', {
+                products: products.length,
+                categories: categories.length,
+                pages: pages.length
+            });
 
             // Generate standard sitemap
             const standardSitemap = generateStandardSitemap(products, categories, pages);
