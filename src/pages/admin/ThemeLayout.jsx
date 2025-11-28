@@ -1829,201 +1829,13 @@ export default function ThemeLayout() {
                                 </div>
                             </div>
 
-                            <Separator />
-
-                            {/* Step Indicator Styling */}
-                            <div className="space-y-4">
-                                <Label className="text-base font-medium">Step Indicator Styling</Label>
-
-                                <div>
-                                    <Label htmlFor="checkout_step_indicator_style">Indicator Style</Label>
-                                    <Select
-                                        value={store.settings?.checkout_step_indicator_style || 'circles'}
-                                        onValueChange={(value) => handleSettingsChange('checkout_step_indicator_style', value)}
-                                    >
-                                        <SelectTrigger className="mt-1">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="circles">Circles</SelectItem>
-                                            <SelectItem value="bars">Progress Bars</SelectItem>
-                                            <SelectItem value="numbers">Numbered Steps</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <Label htmlFor="checkout_step_indicator_active_color">Active Step Color</Label>
-                                        <div className="flex gap-2 mt-1">
-                                            <Input
-                                                id="checkout_step_indicator_active_color"
-                                                type="color"
-                                                value={store.settings?.checkout_step_indicator_active_color || '#007bff'}
-                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_active_color', e.target.value)}
-                                                className="w-20 h-10 p-1 cursor-pointer"
-                                            />
-                                            <Input
-                                                type="text"
-                                                value={store.settings?.checkout_step_indicator_active_color || '#007bff'}
-                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_active_color', e.target.value)}
-                                                className="flex-1"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="checkout_step_indicator_inactive_color">Inactive Step Color</Label>
-                                        <div className="flex gap-2 mt-1">
-                                            <Input
-                                                id="checkout_step_indicator_inactive_color"
-                                                type="color"
-                                                value={store.settings?.checkout_step_indicator_inactive_color || '#D1D5DB'}
-                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_inactive_color', e.target.value)}
-                                                className="w-20 h-10 p-1 cursor-pointer"
-                                            />
-                                            <Input
-                                                type="text"
-                                                value={store.settings?.checkout_step_indicator_inactive_color || '#D1D5DB'}
-                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_inactive_color', e.target.value)}
-                                                className="flex-1"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="checkout_step_indicator_completed_color">Completed Step Color</Label>
-                                        <div className="flex gap-2 mt-1">
-                                            <Input
-                                                id="checkout_step_indicator_completed_color"
-                                                type="color"
-                                                value={store.settings?.checkout_step_indicator_completed_color || '#10B981'}
-                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_completed_color', e.target.value)}
-                                                className="w-20 h-10 p-1 cursor-pointer"
-                                            />
-                                            <Input
-                                                type="text"
-                                                value={store.settings?.checkout_step_indicator_completed_color || '#10B981'}
-                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_completed_color', e.target.value)}
-                                                className="flex-1"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <Separator />
-
-                            {/* Section Styling */}
-                            <div className="space-y-4">
-                                <Label className="text-base font-medium">Section Styling</Label>
-                                <p className="text-sm text-gray-500">Customize the appearance of checkout sections (Shipping Address, Payment Method, etc.).</p>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="checkout_section_title_color">Section Title Color</Label>
-                                        <div className="flex gap-2 mt-1">
-                                            <Input
-                                                id="checkout_section_title_color"
-                                                type="color"
-                                                value={store.settings?.checkout_section_title_color || '#111827'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_title_color', e.target.value)}
-                                                className="w-20 h-10 p-1 cursor-pointer"
-                                            />
-                                            <Input
-                                                type="text"
-                                                value={store.settings?.checkout_section_title_color || '#111827'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_title_color', e.target.value)}
-                                                className="flex-1"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="checkout_section_title_size">Section Title Size</Label>
-                                        <Select
-                                            value={store.settings?.checkout_section_title_size || '1.25rem'}
-                                            onValueChange={(value) => handleSettingsChange('checkout_section_title_size', value)}
-                                        >
-                                            <SelectTrigger className="mt-1">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="0.875rem">Small (14px)</SelectItem>
-                                                <SelectItem value="1rem">Medium (16px)</SelectItem>
-                                                <SelectItem value="1.125rem">Large (18px)</SelectItem>
-                                                <SelectItem value="1.25rem">X-Large (20px)</SelectItem>
-                                                <SelectItem value="1.5rem">2X-Large (24px)</SelectItem>
-                                                <SelectItem value="1.875rem">3X-Large (30px)</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="checkout_section_bg_color">Section Background Color</Label>
-                                        <div className="flex gap-2 mt-1">
-                                            <Input
-                                                id="checkout_section_bg_color"
-                                                type="color"
-                                                value={store.settings?.checkout_section_bg_color || '#FFFFFF'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_bg_color', e.target.value)}
-                                                className="w-20 h-10 p-1 cursor-pointer"
-                                            />
-                                            <Input
-                                                type="text"
-                                                value={store.settings?.checkout_section_bg_color || '#FFFFFF'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_bg_color', e.target.value)}
-                                                className="flex-1"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="checkout_section_border_color">Section Border Color</Label>
-                                        <div className="flex gap-2 mt-1">
-                                            <Input
-                                                id="checkout_section_border_color"
-                                                type="color"
-                                                value={store.settings?.checkout_section_border_color || '#E5E7EB'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_border_color', e.target.value)}
-                                                className="w-20 h-10 p-1 cursor-pointer"
-                                            />
-                                            <Input
-                                                type="text"
-                                                value={store.settings?.checkout_section_border_color || '#E5E7EB'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_border_color', e.target.value)}
-                                                className="flex-1"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="checkout_section_text_color">Section Text Color</Label>
-                                        <div className="flex gap-2 mt-1">
-                                            <Input
-                                                id="checkout_section_text_color"
-                                                type="color"
-                                                value={store.settings?.checkout_section_text_color || '#374151'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_text_color', e.target.value)}
-                                                className="w-20 h-10 p-1 cursor-pointer"
-                                            />
-                                            <Input
-                                                type="text"
-                                                value={store.settings?.checkout_section_text_color || '#374151'}
-                                                onChange={(e) => handleSettingsChange('checkout_section_text_color', e.target.value)}
-                                                className="flex-1"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </CardContent>
                     </Card>
 
                     <Card className="material-elevation-1 border-0">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5" /> Checkout Layout Configuration</CardTitle>
-                            <CardDescription>Define the column layout and section order for each checkout step configuration.</CardDescription>
+                            <CardDescription>Define the column layout, styling, and section order for each checkout step configuration.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -2176,6 +1988,196 @@ export default function ThemeLayout() {
                                         </div>
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Step Indicator Styling */}
+                            <div className="p-4 border rounded-lg space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">Step Indicator Styling</Label>
+                                    <p className="text-sm text-gray-500">Customize how the step progress indicator appears during checkout.</p>
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="checkout_step_indicator_style">Indicator Style</Label>
+                                    <Select
+                                        value={store.settings?.checkout_step_indicator_style || 'circles'}
+                                        onValueChange={(value) => handleSettingsChange('checkout_step_indicator_style', value)}
+                                    >
+                                        <SelectTrigger className="mt-1 w-48">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="circles">Circles</SelectItem>
+                                            <SelectItem value="bars">Progress Bars</SelectItem>
+                                            <SelectItem value="numbers">Numbered Steps</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <Label htmlFor="checkout_step_indicator_active_color">Active Step Color</Label>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input
+                                                id="checkout_step_indicator_active_color"
+                                                type="color"
+                                                value={store.settings?.checkout_step_indicator_active_color || '#007bff'}
+                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_active_color', e.target.value)}
+                                                className="w-20 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings?.checkout_step_indicator_active_color || '#007bff'}
+                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_active_color', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="checkout_step_indicator_inactive_color">Inactive Step Color</Label>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input
+                                                id="checkout_step_indicator_inactive_color"
+                                                type="color"
+                                                value={store.settings?.checkout_step_indicator_inactive_color || '#D1D5DB'}
+                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_inactive_color', e.target.value)}
+                                                className="w-20 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings?.checkout_step_indicator_inactive_color || '#D1D5DB'}
+                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_inactive_color', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="checkout_step_indicator_completed_color">Completed Step Color</Label>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input
+                                                id="checkout_step_indicator_completed_color"
+                                                type="color"
+                                                value={store.settings?.checkout_step_indicator_completed_color || '#10B981'}
+                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_completed_color', e.target.value)}
+                                                className="w-20 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings?.checkout_step_indicator_completed_color || '#10B981'}
+                                                onChange={(e) => handleSettingsChange('checkout_step_indicator_completed_color', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Section Styling */}
+                            <div className="p-4 border rounded-lg space-y-4">
+                                <div>
+                                    <Label className="text-base font-medium">Section Styling</Label>
+                                    <p className="text-sm text-gray-500">Customize the appearance of checkout sections (Shipping Address, Payment Method, etc.).</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="checkout_section_title_color">Section Title Color</Label>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input
+                                                id="checkout_section_title_color"
+                                                type="color"
+                                                value={store.settings?.checkout_section_title_color || '#111827'}
+                                                onChange={(e) => handleSettingsChange('checkout_section_title_color', e.target.value)}
+                                                className="w-20 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings?.checkout_section_title_color || '#111827'}
+                                                onChange={(e) => handleSettingsChange('checkout_section_title_color', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="checkout_section_title_size">Section Title Size</Label>
+                                        <Select
+                                            value={store.settings?.checkout_section_title_size || '1.25rem'}
+                                            onValueChange={(value) => handleSettingsChange('checkout_section_title_size', value)}
+                                        >
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="0.875rem">Small (14px)</SelectItem>
+                                                <SelectItem value="1rem">Medium (16px)</SelectItem>
+                                                <SelectItem value="1.125rem">Large (18px)</SelectItem>
+                                                <SelectItem value="1.25rem">X-Large (20px)</SelectItem>
+                                                <SelectItem value="1.5rem">2X-Large (24px)</SelectItem>
+                                                <SelectItem value="1.875rem">3X-Large (30px)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="checkout_section_bg_color">Section Background Color</Label>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input
+                                                id="checkout_section_bg_color"
+                                                type="color"
+                                                value={store.settings?.checkout_section_bg_color || '#FFFFFF'}
+                                                onChange={(e) => handleSettingsChange('checkout_section_bg_color', e.target.value)}
+                                                className="w-20 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings?.checkout_section_bg_color || '#FFFFFF'}
+                                                onChange={(e) => handleSettingsChange('checkout_section_bg_color', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="checkout_section_border_color">Section Border Color</Label>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input
+                                                id="checkout_section_border_color"
+                                                type="color"
+                                                value={store.settings?.checkout_section_border_color || '#E5E7EB'}
+                                                onChange={(e) => handleSettingsChange('checkout_section_border_color', e.target.value)}
+                                                className="w-20 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings?.checkout_section_border_color || '#E5E7EB'}
+                                                onChange={(e) => handleSettingsChange('checkout_section_border_color', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="checkout_section_text_color">Section Text Color</Label>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input
+                                                id="checkout_section_text_color"
+                                                type="color"
+                                                value={store.settings?.checkout_section_text_color || '#374151'}
+                                                onChange={(e) => handleSettingsChange('checkout_section_text_color', e.target.value)}
+                                                className="w-20 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings?.checkout_section_text_color || '#374151'}
+                                                onChange={(e) => handleSettingsChange('checkout_section_text_color', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* 1-Step Layout */}
