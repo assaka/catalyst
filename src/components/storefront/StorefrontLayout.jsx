@@ -120,6 +120,13 @@ export default function StorefrontLayout({ children }) {
         const theme = store.settings.theme;
         const root = document.documentElement;
 
+        // Debug logging
+        console.log('🎨 Font Debug:', {
+          font_family: theme.font_family,
+          custom_fonts: theme.custom_fonts,
+          custom_fonts_count: theme.custom_fonts?.length || 0
+        });
+
         if (theme.primary_button_color) {
           root.style.setProperty('--theme-primary-button', theme.primary_button_color);
         }
@@ -130,6 +137,7 @@ export default function StorefrontLayout({ children }) {
           root.style.setProperty('--theme-add-to-cart-button', theme.add_to_cart_button_color);
         }
         if (theme.font_family) {
+          console.log('🎨 Setting font-family CSS variable to:', `'${theme.font_family}', sans-serif`);
           root.style.setProperty('--theme-font-family', `'${theme.font_family}', sans-serif`);
         }
 
@@ -137,6 +145,7 @@ export default function StorefrontLayout({ children }) {
         const customFonts = theme.custom_fonts || [];
         const selectedFont = theme.font_family || 'Inter';
         const isCustomFont = customFonts.some(f => f.name === selectedFont);
+        console.log('🎨 Is custom font?', isCustomFont, 'Selected:', selectedFont);
 
         // Remove old font links
         document.querySelectorAll('link[data-custom-font]').forEach(el => el.remove());
