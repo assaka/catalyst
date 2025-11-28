@@ -1409,8 +1409,9 @@ app.use('/api/pdf-templates', pdfTemplatesRoutes); // PDF template management fo
 app.use('/api/brevo', brevoOAuthRoutes); // Brevo email service OAuth and configuration
 // Conditional auth middleware that excludes preview and public routes
 const conditionalAuthMiddleware = (req, res, next) => {
-  // Skip authentication for preview routes and public routes
-  if (req.path.startsWith('/api/preview') || req.path.startsWith('/public')) {
+  // Skip authentication for preview routes, public routes, and auth routes
+  // Note: req.path here is the path AFTER '/api' is stripped (e.g., /auth/customer/login)
+  if (req.path.startsWith('/api/preview') || req.path.startsWith('/public') || req.path.startsWith('/auth')) {
     return next();
   }
   return authMiddleware(req, res, next);
