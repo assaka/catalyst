@@ -166,7 +166,7 @@ function getCategoryDefaults(settings) {
 /**
  * Get theme default settings
  */
-function getThemeDefaults(themeSettings = {}) {
+export function getThemeDefaults(themeSettings = {}) {
   return {
     // Button colors
     primary_button_color: '#007bff',

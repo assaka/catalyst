@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { processVariables } from '@/utils/variableProcessor';
+import { getThemeDefaults } from '@/utils/storeSettingsDefaults';
 
 /**
  * ProductTabs Component
@@ -124,9 +125,10 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     });
   }, [product, tabsData, activeTabIndex, settings]);
 
-  // Store theme settings in ref for click handler access
-  const themeSettingsRef = useRef(settings?.theme || {});
-  themeSettingsRef.current = settings?.theme || {};
+  // Store theme settings in ref for click handler access (merged with defaults)
+  const mergedTheme = getThemeDefaults(settings?.theme || {});
+  const themeSettingsRef = useRef(mergedTheme);
+  themeSettingsRef.current = mergedTheme;
 
   // Attach tab click handlers
   useEffect(() => {
@@ -320,8 +322,8 @@ export default function ProductTabs({ productTabs = [], product = null, settings
   `;
 
   // Use settings from props (passed from productContext)
-  // Only include theme settings to avoid passing large translation objects
-  const themeSettings = settings?.theme || {};
+  // Merge with defaults to ensure all theme settings have values
+  const themeSettings = getThemeDefaults(settings?.theme || {});
 
   const variableContext = {
     tabs: tabsData,
