@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { StorefrontCategory, StorefrontProduct, StorefrontSeoSetting, StorefrontCmsPage } from '@/api/storefront-entities';
+import { StorefrontProduct, StorefrontSeoSetting, StorefrontCmsPage } from '@/api/storefront-entities';
 import { createCmsPageUrl, createProductUrl, createCategoryUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { Layout, FileText, ChevronRight, Package } from 'lucide-react';
@@ -8,7 +8,7 @@ import { getPageTitle, getProductName, getCategoryName } from '@/utils/translati
 
 export default function SitemapPublic() {
     const { storeCode } = useParams();
-    const { store } = useStore();
+    const { store, categories: storeCategories } = useStore();
     const [categories, setCategories] = useState([]);
     const [products, setProducts] = useState([]);
     const [pages, setPages] = useState([]);
@@ -40,19 +40,10 @@ export default function SitemapPublic() {
                     return;
                 }
 
-                // Fetch data based on settings - use storefront API
+                // Fetch data based on settings
                 const promises = [];
 
-                if (htmlSitemapSettings.include_categories) {
-                    promises.push(
-                        store?.id
-                            ? StorefrontCategory.filter({ is_active: true, store_id: store.id, limit: 1000, include_hidden: true })
-                            : Promise.resolve([])
-                    );
-                } else {
-                    promises.push(Promise.resolve([]));
-                }
-
+                // Products - fetch from API
                 if (htmlSitemapSettings.include_products) {
                     const maxProducts = htmlSitemapSettings.max_products || 20;
                     promises.push(
@@ -64,6 +55,7 @@ export default function SitemapPublic() {
                     promises.push(Promise.resolve([]));
                 }
 
+                // CMS Pages - fetch from API
                 if (htmlSitemapSettings.include_pages) {
                     promises.push(
                         store?.id
@@ -74,7 +66,10 @@ export default function SitemapPublic() {
                     promises.push(Promise.resolve([]));
                 }
 
-                const [categoryData, productData, pageData] = await Promise.all(promises);
+                const [productData, pageData] = await Promise.all(promises);
+
+                // Categories - use from store context (already loaded in bootstrap)
+                const categoryData = htmlSitemapSettings.include_categories ? (storeCategories || []) : [];
 
                 // Filter out only 404 page from sitemap - other system pages like privacy policy should be included
                 const sitemapPages = (pageData || []).filter(page => page.slug !== '404' && page.slug !== 'not-found');
@@ -97,7 +92,7 @@ export default function SitemapPublic() {
             }
         };
         fetchData();
-    }, [store?.id]);
+    }, [store?.id, storeCategories]);
 
     const renderCategoryTree = (parentId = null) => {
         const children = categories.filter(cat => cat.parent_id === parentId);

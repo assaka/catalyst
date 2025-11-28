@@ -329,12 +329,13 @@ router.get('/', cacheMiddleware({
         try {
           // Since getCategoriesWithTranslations uses old sequelize connection,
           // we need to fetch categories directly from tenantDb
+          // Note: hide_in_menu filter removed - sitemap needs all categories
+          // Menu navigation should filter client-side if needed
           const { data: categories, error: catError } = await tenantDb
             .from('categories')
             .select('*')
             .eq('store_id', store.id)
             .eq('is_active', true)
-            .eq('hide_in_menu', false)
             .order('sort_order', { ascending: true })
             .limit(1000);
 
