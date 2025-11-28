@@ -542,6 +542,8 @@ function App() {
               <Route path="/order-success" element={<PageWrapper Component={Pages.OrderSuccess} pageName="OrderSuccess" />} />
               <Route path="/order-cancel" element={<PageWrapper Component={Pages.OrderCancel} pageName="OrderCancel" />} />
               <Route path="/login" element={<PageWrapper Component={Pages.CustomerAuth} pageName="CustomerAuth" />} />
+              <Route path="/register" element={<PageWrapper Component={Pages.CustomerAuth} pageName="CustomerAuth" />} />
+              <Route path="/forgot-password" element={<PageWrapper Component={Pages.CustomerAuth} pageName="CustomerAuth" />} />
               <Route path="/account" element={<PageWrapper Component={Pages.CustomerDashboard} pageName="CustomerDashboard" />} />
               <Route path="/cms-page/:pageSlug" element={<PageWrapper Component={Pages.CmsPageViewer} pageName="CmsPageViewer" />} />
               <Route path="/sitemap" element={<PageWrapper Component={Pages.SitemapPublic} pageName="SitemapPublic" />} />
@@ -558,6 +560,8 @@ function App() {
           <Route path="/public/:storeCode/order-success" element={<PageWrapper Component={Pages.OrderSuccess} pageName="OrderSuccess" />} />
           <Route path="/public/:storeCode/order-cancel" element={<PageWrapper Component={Pages.OrderCancel} pageName="OrderCancel" />} />
           <Route path="/public/:storeCode/login" element={<PageWrapper Component={Pages.CustomerAuth} pageName="CustomerAuth" />} />
+          <Route path="/public/:storeCode/register" element={<PageWrapper Component={Pages.CustomerAuth} pageName="CustomerAuth" />} />
+          <Route path="/public/:storeCode/forgot-password" element={<PageWrapper Component={Pages.CustomerAuth} pageName="CustomerAuth" />} />
           <Route path="/public/:storeCode/customer-auth" element={<PageWrapper Component={Pages.CustomerAuth} pageName="CustomerAuth" />} />
           <Route path="/public/:storeCode/verify-email" element={<PageWrapper Component={Pages.EmailVerification} pageName="EmailVerification" />} />
           <Route path="/public/:storeCode/account" element={<PageWrapper Component={Pages.CustomerDashboard} pageName="CustomerDashboard" />} />
