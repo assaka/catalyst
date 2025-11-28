@@ -91,6 +91,11 @@ export default function Checkout() {
     password: '',
     rememberMe: false
   });
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
+  const [forgotPasswordError, setForgotPasswordError] = useState('');
   const [saveShippingAddress, setSaveShippingAddress] = useState(false);
   const [saveBillingAddress, setSaveBillingAddress] = useState(false);
   
@@ -1019,6 +1024,36 @@ export default function Checkout() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setForgotPasswordLoading(true);
+    setForgotPasswordError('');
+    setForgotPasswordSuccess(false);
+
+    try {
+      const response = await AuthService.forgotPassword(forgotPasswordEmail, store?.id);
+
+      if (response?.success) {
+        setForgotPasswordSuccess(true);
+      } else {
+        setForgotPasswordError(response?.message || t('account.forgot_password_error', 'Failed to send reset email. Please try again.'));
+      }
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      setForgotPasswordError(error.message || t('account.forgot_password_error', 'Failed to send reset email. Please try again.'));
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
+
+  const openForgotPasswordModal = () => {
+    setShowLoginModal(false);
+    setForgotPasswordEmail(loginFormData.email || '');
+    setForgotPasswordError('');
+    setForgotPasswordSuccess(false);
+    setShowForgotPasswordModal(true);
   };
 
   const handleLogout = async () => {
@@ -2741,10 +2776,7 @@ export default function Checkout() {
 
               <button
                 type="button"
-                onClick={() => {
-                  setShowLoginModal(false);
-                  navigate(createPublicUrl(store?.slug, 'CUSTOMER_FORGOT_PASSWORD'));
-                }}
+                onClick={openForgotPasswordModal}
                 className="text-sm text-blue-600 hover:text-blue-700"
               >
                 {t('account.forgot_password', 'Forgot password?')}
@@ -2784,6 +2816,79 @@ export default function Checkout() {
               </button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Forgot Password Modal */}
+      <Dialog open={showForgotPasswordModal} onOpenChange={setShowForgotPasswordModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('account.forgot_password', 'Forgot Password')}</DialogTitle>
+            <DialogDescription>
+              {t('account.forgot_password_description', 'Enter your email address and we will send you a link to reset your password.')}
+            </DialogDescription>
+          </DialogHeader>
+
+          {forgotPasswordSuccess ? (
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+                {t('account.forgot_password_success', 'Password reset email sent! Please check your inbox.')}
+              </div>
+              <Button
+                onClick={() => {
+                  setShowForgotPasswordModal(false);
+                  setShowLoginModal(true);
+                }}
+                className="w-full"
+              >
+                {t('account.back_to_login', 'Back to Login')}
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              {forgotPasswordError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                  {forgotPasswordError}
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="forgot-password-email">{t('common.email', 'Email')}</Label>
+                <Input
+                  id="forgot-password-email"
+                  type="email"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  required
+                  disabled={forgotPasswordLoading}
+                  placeholder={t('common.enter_email', 'Enter your email address')}
+                  className="mt-1"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowForgotPasswordModal(false);
+                    setShowLoginModal(true);
+                  }}
+                  disabled={forgotPasswordLoading}
+                  className="flex-1"
+                >
+                  {t('common.cancel', 'Cancel')}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={forgotPasswordLoading}
+                  className="flex-1"
+                >
+                  {forgotPasswordLoading ? t('common.sending', 'Sending...') : t('account.send_reset_link', 'Send Reset Link')}
+                </Button>
+              </div>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </div>

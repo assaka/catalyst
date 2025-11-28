@@ -10,6 +10,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { createPublicUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import AuthService from '@/services/authService';
 
 /**
  * UserProfileSlot - User profile display with avatar and info
@@ -207,6 +209,12 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
   const [success, setSuccess] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
 
+  // Forgot password state
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = React.useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = React.useState('');
+  const [forgotPasswordLoading, setForgotPasswordLoading] = React.useState(false);
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = React.useState(false);
+  const [forgotPasswordError, setForgotPasswordError] = React.useState('');
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -271,6 +279,35 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setForgotPasswordLoading(true);
+    setForgotPasswordError('');
+    setForgotPasswordSuccess(false);
+
+    try {
+      const response = await AuthService.forgotPassword(forgotPasswordEmail, store?.id);
+
+      if (response?.success) {
+        setForgotPasswordSuccess(true);
+      } else {
+        setForgotPasswordError(response?.message || t('account.forgot_password_error', 'Failed to send reset email. Please try again.'));
+      }
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      setForgotPasswordError(error.message || t('account.forgot_password_error', 'Failed to send reset email. Please try again.'));
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
+
+  const openForgotPasswordModal = () => {
+    setForgotPasswordEmail(formData.email || '');
+    setForgotPasswordError('');
+    setForgotPasswordSuccess(false);
+    setShowForgotPasswordModal(true);
+  };
+
     return (
       <div className={slot.className} style={slot.styles}>
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -320,16 +357,25 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
               </button>
             </div>
           </div>
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              name="rememberMe"
-              checked={formData.rememberMe}
-              onChange={handleInputChange}
-              className="rounded"
-              disabled={loading}
-            />
-            <label className="ml-2 text-sm">{t('common.remember_me', 'Remember me')}</label>
+          <div className="flex items-center justify-between">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                name="rememberMe"
+                checked={formData.rememberMe}
+                onChange={handleInputChange}
+                className="rounded"
+                disabled={loading}
+              />
+              <span className="ml-2 text-sm">{t('common.remember_me', 'Remember me')}</span>
+            </label>
+            <button
+              type="button"
+              onClick={openForgotPasswordModal}
+              className="text-sm text-blue-600 hover:text-blue-700"
+            >
+              {t('account.forgot_password', 'Forgot password?')}
+            </button>
           </div>
           <button
             type="submit"
@@ -339,6 +385,71 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
             {loading ? t('common.signing_in', 'Signing in...') : t('common.sign_in', 'Sign In')}
           </button>
         </form>
+
+        {/* Forgot Password Modal */}
+        <Dialog open={showForgotPasswordModal} onOpenChange={setShowForgotPasswordModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{t('account.forgot_password', 'Forgot Password')}</DialogTitle>
+              <DialogDescription>
+                {t('account.forgot_password_description', 'Enter your email address and we will send you a link to reset your password.')}
+              </DialogDescription>
+            </DialogHeader>
+
+            {forgotPasswordSuccess ? (
+              <div className="space-y-4">
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+                  {t('account.forgot_password_success', 'Password reset email sent! Please check your inbox.')}
+                </div>
+                <button
+                  onClick={() => setShowForgotPasswordModal(false)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-md"
+                >
+                  {t('common.close', 'Close')}
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                {forgotPasswordError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                    {forgotPasswordError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.email', 'Email')}</label>
+                  <input
+                    type="email"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    required
+                    disabled={forgotPasswordLoading}
+                    placeholder={t('common.enter_email', 'Enter your email address')}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPasswordModal(false)}
+                    disabled={forgotPasswordLoading}
+                    className="flex-1 border border-gray-300 text-gray-700 font-medium py-2.5 rounded-md hover:bg-gray-50"
+                  >
+                    {t('common.cancel', 'Cancel')}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotPasswordLoading}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-md disabled:bg-gray-400"
+                  >
+                    {forgotPasswordLoading ? t('common.sending', 'Sending...') : t('account.send_reset_link', 'Send Reset Link')}
+                  </button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     );
 };
