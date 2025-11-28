@@ -1,3 +1,4 @@
+console.log('[AUTH ROUTES] Loading auth.js module - v1.0.3');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
@@ -1530,6 +1531,7 @@ router.post('/customer/forgot-password', [
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
   body('store_id').notEmpty().withMessage('Store ID is required')
 ], async (req, res) => {
+  console.log('[FORGOT-PASSWORD] Route hit! Path:', req.path, 'Original URL:', req.originalUrl);
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

@@ -1509,6 +1509,7 @@ app.get('/api/extension-system-status', async (req, res) => {
 
 // 404 handler
 app.use('*', (req, res) => {
+  console.log('[404 HANDLER] Not found:', req.method, req.originalUrl, 'Path:', req.path);
   res.status(404).json({
     error: 'Not Found',
     message: `Route ${req.originalUrl} not found`
