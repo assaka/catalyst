@@ -308,11 +308,16 @@ class HeatmapTracker {
   getElementInfo(element) {
     if (!element) return {};
 
-    // Truncate className to avoid validation errors
-    const className = element.className || null;
+    // Get className as string - handle SVGAnimatedString for SVG elements
+    let className = element.className;
+    if (className && typeof className === 'object' && className.baseVal !== undefined) {
+      // SVG elements have className as SVGAnimatedString with baseVal property
+      className = className.baseVal;
+    }
+    // Ensure it's a string and truncate to avoid validation errors
     const truncatedClassName = className && typeof className === 'string'
       ? className.substring(0, 500)
-      : className;
+      : null;
 
     return {
       element_tag: element.tagName.toLowerCase(),
@@ -331,18 +336,29 @@ class HeatmapTracker {
     return text.trim().substring(0, 200); // Limit to 200 characters
   }
 
+  // Helper to get className as string (handles SVG elements)
+  getClassNameString(element) {
+    if (!element) return '';
+    let className = element.className;
+    if (className && typeof className === 'object' && className.baseVal !== undefined) {
+      className = className.baseVal;
+    }
+    return typeof className === 'string' ? className : '';
+  }
+
   // Generate CSS selector for element
   getElementSelector(element) {
     if (!element || element === document.documentElement) return null;
 
     try {
       let selector = element.tagName.toLowerCase();
+      const className = this.getClassNameString(element);
 
       if (element.id) {
         selector += `#${element.id}`;
-      } else if (element.className) {
-        const classes = element.className.trim().split(/\s+/).slice(0, 3); // Limit to 3 classes
-        if (classes.length > 0) {
+      } else if (className) {
+        const classes = className.trim().split(/\s+/).slice(0, 3); // Limit to 3 classes
+        if (classes.length > 0 && classes[0]) {
           selector += '.' + classes.join('.');
         }
       }
@@ -351,11 +367,12 @@ class HeatmapTracker {
       const parent = element.parentElement;
       if (parent && parent !== document.body) {
         const parentSelector = parent.tagName.toLowerCase();
+        const parentClassName = this.getClassNameString(parent);
         if (parent.id) {
           selector = `${parentSelector}#${parent.id} > ${selector}`;
-        } else if (parent.className) {
-          const parentClasses = parent.className.trim().split(/\s+/).slice(0, 2);
-          if (parentClasses.length > 0) {
+        } else if (parentClassName) {
+          const parentClasses = parentClassName.trim().split(/\s+/).slice(0, 2);
+          if (parentClasses.length > 0 && parentClasses[0]) {
             selector = `${parentSelector}.${parentClasses.join('.')} > ${selector}`;
           }
         }
