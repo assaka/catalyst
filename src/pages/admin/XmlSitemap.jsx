@@ -163,9 +163,9 @@ export default function XmlSitemap() {
         try {
             setGenerating(true);
             const [products, categories, pages] = await Promise.all([
-                Product.filter({ status: 'active' }),
-                Category.filter({ is_active: true }),
-                CmsPage.filter({ is_active: true })
+                Product.filter({ status: 'active', store_id: store.id }),
+                Category.filter({ is_active: true, store_id: store.id }),
+                CmsPage.filter({ is_active: true, store_id: store.id })
             ]);
 
             // Generate standard sitemap
