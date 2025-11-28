@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import SaveButton from '@/components/ui/save-button';
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Download, RefreshCw, CheckCircle, AlertCircle, Upload, Image, Video, Newspaper, FileStack, Settings2 } from "lucide-react";
+import { FileText, Download, RefreshCw, CheckCircle, AlertCircle, Upload, FileStack } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Product } from '@/api/entities';
@@ -24,22 +24,15 @@ export default function XmlSitemap() {
     const [generating, setGenerating] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [sitemapXml, setSitemapXml] = useState('');
-    const [imageSitemapXml, setImageSitemapXml] = useState('');
-    const [videoSitemapXml, setVideoSitemapXml] = useState('');
-    const [newsSitemapXml, setNewsSitemapXml] = useState('');
     const [sitemapIndexXml, setSitemapIndexXml] = useState('');
     const [flashMessage, setFlashMessage] = useState(null);
-
 
     // Statistics
     const [stats, setStats] = useState({
         totalUrls: 0,
         products: 0,
         categories: 0,
-        pages: 0,
-        images: 0,
-        videos: 0,
-        newsArticles: 0
+        pages: 0
     });
 
     // Settings
@@ -179,30 +172,9 @@ export default function XmlSitemap() {
                 pages: pages.length
             });
 
-            // Generate standard sitemap
+            // Generate standard sitemap (includes images, videos, news when enabled)
             const standardSitemap = generateStandardSitemap(products, categories, pages);
             setSitemapXml(standardSitemap.xml);
-
-            // Generate image sitemap if enabled
-            if (settings.sitemap_include_images) {
-                const imageSitemap = generateImageSitemap(products, categories, pages);
-                setImageSitemapXml(imageSitemap.xml);
-                setStats(prev => ({ ...prev, images: imageSitemap.count }));
-            }
-
-            // Generate video sitemap if enabled
-            if (settings.sitemap_include_videos) {
-                const videoSitemap = generateVideoSitemap(products, pages);
-                setVideoSitemapXml(videoSitemap.xml);
-                setStats(prev => ({ ...prev, videos: videoSitemap.count }));
-            }
-
-            // Generate news sitemap if enabled
-            if (settings.sitemap_enable_news) {
-                const newsSitemap = generateNewsSitemap(pages);
-                setNewsSitemapXml(newsSitemap.xml);
-                setStats(prev => ({ ...prev, newsArticles: newsSitemap.count }));
-            }
 
             // Generate sitemap index if enabled
             if (settings.sitemap_enable_index) {
@@ -210,13 +182,12 @@ export default function XmlSitemap() {
                 setSitemapIndexXml(indexSitemap);
             }
 
-            setStats(prev => ({
-                ...prev,
+            setStats({
                 totalUrls: standardSitemap.stats.totalUrls,
                 categories: standardSitemap.stats.categories,
                 products: standardSitemap.stats.products,
                 pages: standardSitemap.stats.pages
-            }));
+            });
         } catch (error) {
             console.error('Error generating sitemap:', error);
             setFlashMessage({ type: 'error', message: 'Failed to generate sitemap' });
@@ -226,12 +197,20 @@ export default function XmlSitemap() {
     };
 
     const generateStandardSitemap = (products, categories, pages) => {
-        const baseNamespace = settings.sitemap_include_images
-            ? 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"'
-            : 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"';
+        // Build namespace string based on enabled features
+        let namespaces = 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"';
+        if (settings.sitemap_include_images) {
+            namespaces += ' xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"';
+        }
+        if (settings.sitemap_include_videos) {
+            namespaces += ' xmlns:video="http://www.google.com/schemas/sitemap-video/1.1"';
+        }
+        if (settings.sitemap_enable_news) {
+            namespaces += ' xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"';
+        }
 
         let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset ${baseNamespace}>
+<urlset ${namespaces}>
   <url>
     <loc>${window.location.origin}</loc>
     <changefreq>daily</changefreq>
@@ -260,7 +239,7 @@ export default function XmlSitemap() {
                     xml += `
     <image:image>
       <image:loc>${category.image_url}</image:loc>
-      <image:title>${category.name || 'Category Image'}</image:title>
+      <image:title>${escapeXml(category.name || 'Category Image')}</image:title>
     </image:image>`;
                 }
 
@@ -288,8 +267,8 @@ export default function XmlSitemap() {
                         xml += `
     <image:image>
       <image:loc>${product.image_url}</image:loc>
-      <image:title>${product.name || 'Product Image'}</image:title>
-      ${product.description ? `<image:caption>${product.description.substring(0, 256)}</image:caption>` : ''}
+      <image:title>${escapeXml(product.name || 'Product Image')}</image:title>
+      ${product.description ? `<image:caption>${escapeXml(product.description.substring(0, 256))}</image:caption>` : ''}
     </image:image>`;
                     }
                     // Gallery images
@@ -298,10 +277,21 @@ export default function XmlSitemap() {
                             xml += `
     <image:image>
       <image:loc>${img.url || img}</image:loc>
-      <image:title>${product.name} - Image ${idx + 1}</image:title>
+      <image:title>${escapeXml(product.name)} - Image ${idx + 1}</image:title>
     </image:image>`;
                         });
                     }
+                }
+
+                // Add video if enabled and available
+                if (settings.sitemap_include_videos && product.video_url) {
+                    xml += `
+    <video:video>
+      <video:thumbnail_loc>${product.video_thumbnail || product.image_url || ''}</video:thumbnail_loc>
+      <video:title>${escapeXml(product.name || 'Product Video')}</video:title>
+      <video:description>${escapeXml(product.description?.substring(0, 256) || product.name || '')}</video:description>
+      <video:content_loc>${product.video_url}</video:content_loc>
+    </video:video>`;
                 }
 
                 xml += `
@@ -326,8 +316,33 @@ export default function XmlSitemap() {
                     xml += `
     <image:image>
       <image:loc>${page.featured_image}</image:loc>
-      <image:title>${page.title || 'Page Image'}</image:title>
+      <image:title>${escapeXml(page.title || 'Page Image')}</image:title>
     </image:image>`;
+                }
+
+                // Add video if enabled and available
+                if (settings.sitemap_include_videos && page.video_url) {
+                    xml += `
+    <video:video>
+      <video:thumbnail_loc>${page.video_thumbnail || page.featured_image || ''}</video:thumbnail_loc>
+      <video:title>${escapeXml(page.title || 'Page Video')}</video:title>
+      <video:description>${escapeXml(page.content?.substring(0, 256) || page.title || '')}</video:description>
+      <video:content_loc>${page.video_url}</video:content_loc>
+    </video:video>`;
+                }
+
+                // Add news if enabled and page is a news article
+                if (settings.sitemap_enable_news && page.is_news_article) {
+                    const pubDate = new Date(page.createdAt || page.created_date);
+                    xml += `
+    <news:news>
+      <news:publication>
+        <news:name>${escapeXml(store?.name || 'Store')}</news:name>
+        <news:language>${page.language || 'en'}</news:language>
+      </news:publication>
+      <news:publication_date>${pubDate.toISOString()}</news:publication_date>
+      <news:title>${escapeXml(page.title)}</news:title>
+    </news:news>`;
                 }
 
                 xml += `
@@ -350,130 +365,18 @@ export default function XmlSitemap() {
         };
     };
 
-    const generateImageSitemap = (products, categories, pages) => {
-        let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">`;
-
-        let imageCount = 0;
-
-        // Product images
-        products?.forEach(product => {
-            if (product.image_url || (product.gallery_images && product.gallery_images.length > 0)) {
-                xml += `
-  <url>
-    <loc>${window.location.origin}/product/${product.slug || product.id}</loc>`;
-
-                if (product.image_url) {
-                    xml += `
-    <image:image>
-      <image:loc>${product.image_url}</image:loc>
-      <image:title>${product.name || 'Product'}</image:title>
-      ${product.description ? `<image:caption>${product.description.substring(0, 256)}</image:caption>` : ''}
-    </image:image>`;
-                    imageCount++;
-                }
-
-                if (product.gallery_images && Array.isArray(product.gallery_images)) {
-                    product.gallery_images.slice(0, 10).forEach((img, idx) => {
-                        xml += `
-    <image:image>
-      <image:loc>${img.url || img}</image:loc>
-      <image:title>${product.name} - ${idx + 1}</image:title>
-    </image:image>`;
-                        imageCount++;
-                    });
-                }
-
-                xml += `
-  </url>`;
-            }
-        });
-
-        xml += '\n</urlset>';
-        return { xml, count: imageCount };
-    };
-
-    const generateVideoSitemap = (products, pages) => {
-        let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">`;
-
-        let videoCount = 0;
-
-        // Product videos
-        products?.forEach(product => {
-            if (product.video_url) {
-                xml += `
-  <url>
-    <loc>${window.location.origin}/product/${product.slug || product.id}</loc>
-    <video:video>
-      <video:thumbnail_loc>${product.video_thumbnail || product.image_url}</video:thumbnail_loc>
-      <video:title>${product.name}</video:title>
-      <video:description>${product.description || product.name}</video:description>
-      <video:content_loc>${product.video_url}</video:content_loc>
-      <video:publication_date>${formatDate(product.createdAt || product.created_date)}</video:publication_date>
-    </video:video>
-  </url>`;
-                videoCount++;
-            }
-        });
-
-        // CMS page videos
-        pages?.forEach(page => {
-            if (page.video_url) {
-                xml += `
-  <url>
-    <loc>${window.location.origin}/page/${page.slug}</loc>
-    <video:video>
-      <video:thumbnail_loc>${page.video_thumbnail || page.featured_image}</video:thumbnail_loc>
-      <video:title>${page.title}</video:title>
-      <video:description>${page.content?.substring(0, 500) || page.title}</video:description>
-      <video:content_loc>${page.video_url}</video:content_loc>
-      <video:publication_date>${formatDate(page.createdAt || page.created_date)}</video:publication_date>
-    </video:video>
-  </url>`;
-                videoCount++;
-            }
-        });
-
-        xml += '\n</urlset>';
-        return { xml, count: videoCount };
-    };
-
-    const generateNewsSitemap = (pages) => {
-        const twoDaysAgo = new Date();
-        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-
-        let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">`;
-
-        let newsCount = 0;
-
-        // Only include recent pages (within last 2 days for Google News)
-        pages?.forEach(page => {
-            const pageDate = new Date(page.createdAt || page.created_date);
-            if (pageDate >= twoDaysAgo && page.is_news_article) {
-                xml += `
-  <url>
-    <loc>${window.location.origin}/page/${page.slug}</loc>
-    <news:news>
-      <news:publication>
-        <news:name>${store?.name || 'Store'}</news:name>
-        <news:language>${page.language || 'en'}</news:language>
-      </news:publication>
-      <news:publication_date>${pageDate.toISOString()}</news:publication_date>
-      <news:title>${page.title}</news:title>
-    </news:news>
-  </url>`;
-                newsCount++;
-            }
-        });
-
-        xml += '\n</urlset>';
-        return { xml, count: newsCount };
+    // Helper to escape XML special characters
+    const escapeXml = (str) => {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
     };
 
     const generateSitemapIndex = (totalUrls) => {
-        const numSitemaps = Math.ceil(totalUrls / settings.sitemap_max_urls);
         const baseUrl = window.location.origin;
 
         let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -481,33 +384,9 @@ export default function XmlSitemap() {
   <sitemap>
     <loc>${baseUrl}/sitemap.xml</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-  </sitemap>`;
+  </sitemap>
+</sitemapindex>`;
 
-        if (settings.sitemap_include_images && stats.images > 0) {
-            xml += `
-  <sitemap>
-    <loc>${baseUrl}/sitemap-images.xml</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-  </sitemap>`;
-        }
-
-        if (settings.sitemap_include_videos && stats.videos > 0) {
-            xml += `
-  <sitemap>
-    <loc>${baseUrl}/sitemap-videos.xml</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-  </sitemap>`;
-        }
-
-        if (settings.sitemap_enable_news && stats.newsArticles > 0) {
-            xml += `
-  <sitemap>
-    <loc>${baseUrl}/sitemap-news.xml</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-  </sitemap>`;
-        }
-
-        xml += '\n</sitemapindex>';
         return xml;
     };
 
@@ -1057,38 +936,8 @@ export default function XmlSitemap() {
                     variant="outline"
                 >
                     <Download className="mr-2 h-4 w-4" />
-                    Download Standard
+                    Download Sitemap
                 </Button>
-                {settings.sitemap_include_images && imageSitemapXml && (
-                    <Button
-                        onClick={() => downloadSitemap(imageSitemapXml, 'sitemap-images.xml')}
-                        disabled={generating}
-                        variant="outline"
-                    >
-                        <Image className="mr-2 h-4 w-4" />
-                        Download Images
-                    </Button>
-                )}
-                {settings.sitemap_include_videos && videoSitemapXml && (
-                    <Button
-                        onClick={() => downloadSitemap(videoSitemapXml, 'sitemap-videos.xml')}
-                        disabled={generating}
-                        variant="outline"
-                    >
-                        <Video className="mr-2 h-4 w-4" />
-                        Download Videos
-                    </Button>
-                )}
-                {settings.sitemap_enable_news && newsSitemapXml && (
-                    <Button
-                        onClick={() => downloadSitemap(newsSitemapXml, 'sitemap-news.xml')}
-                        disabled={generating}
-                        variant="outline"
-                    >
-                        <Newspaper className="mr-2 h-4 w-4" />
-                        Download News
-                    </Button>
-                )}
                 {settings.sitemap_enable_index && sitemapIndexXml && (
                     <Button
                         onClick={() => downloadSitemap(sitemapIndexXml, 'sitemap-index.xml')}
@@ -1101,99 +950,34 @@ export default function XmlSitemap() {
                 )}
             </div>
 
-            {/* Preview Tabs */}
-            <Tabs defaultValue="standard" className="w-full">
-                <TabsList>
-                    <TabsTrigger value="standard">Standard Sitemap</TabsTrigger>
-                    {settings.sitemap_include_images && <TabsTrigger value="images">Images</TabsTrigger>}
-                    {settings.sitemap_include_videos && <TabsTrigger value="videos">Videos</TabsTrigger>}
-                    {settings.sitemap_enable_news && <TabsTrigger value="news">News</TabsTrigger>}
-                    {settings.sitemap_enable_index && <TabsTrigger value="index">Index</TabsTrigger>}
-                </TabsList>
+            {/* Preview */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Sitemap Preview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="bg-muted p-4 rounded-md max-h-[400px] overflow-auto">
+                        <pre className="text-xs">
+                            {sitemapXml || 'Generating sitemap...'}
+                        </pre>
+                    </div>
+                </CardContent>
+            </Card>
 
-                <TabsContent value="standard">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Standard Sitemap Preview</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="bg-muted p-4 rounded-md max-h-[400px] overflow-auto">
-                                <pre className="text-xs">
-                                    {sitemapXml || 'Generating sitemap...'}
-                                </pre>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {settings.sitemap_include_images && (
-                    <TabsContent value="images">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Image Sitemap Preview</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="bg-muted p-4 rounded-md max-h-[400px] overflow-auto">
-                                    <pre className="text-xs">
-                                        {imageSitemapXml || 'No image sitemap generated'}
-                                    </pre>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                )}
-
-                {settings.sitemap_include_videos && (
-                    <TabsContent value="videos">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Video Sitemap Preview</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="bg-muted p-4 rounded-md max-h-[400px] overflow-auto">
-                                    <pre className="text-xs">
-                                        {videoSitemapXml || 'No video sitemap generated'}
-                                    </pre>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                )}
-
-                {settings.sitemap_enable_news && (
-                    <TabsContent value="news">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Google News Sitemap Preview</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="bg-muted p-4 rounded-md max-h-[400px] overflow-auto">
-                                    <pre className="text-xs">
-                                        {newsSitemapXml || 'No news sitemap generated'}
-                                    </pre>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                )}
-
-                {settings.sitemap_enable_index && (
-                    <TabsContent value="index">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Sitemap Index Preview</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="bg-muted p-4 rounded-md max-h-[400px] overflow-auto">
-                                    <pre className="text-xs">
-                                        {sitemapIndexXml || 'No sitemap index generated'}
-                                    </pre>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                )}
-            </Tabs>
+            {settings.sitemap_enable_index && sitemapIndexXml && (
+                <Card className="mt-4">
+                    <CardHeader>
+                        <CardTitle>Sitemap Index Preview</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="bg-muted p-4 rounded-md max-h-[400px] overflow-auto">
+                            <pre className="text-xs">
+                                {sitemapIndexXml || 'No sitemap index generated'}
+                            </pre>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Save Button */}
             <div className="flex justify-end">

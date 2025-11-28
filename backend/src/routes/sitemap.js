@@ -22,6 +22,9 @@ async function generateSitemapXml(storeId, baseUrl) {
     const includeCategories = xmlSettings.include_categories !== false;
     const includeProducts = xmlSettings.include_products !== false;
     const includePages = xmlSettings.include_pages !== false;
+    const includeImages = xmlSettings.include_images === true;
+    const includeVideos = xmlSettings.include_videos === true;
+    const enableNews = xmlSettings.enable_news === true;
 
     // Priority and changefreq settings per URL group (with defaults)
     const categoryPriority = xmlSettings.category_priority || '0.8';
@@ -45,19 +48,27 @@ async function generateSitemapXml(storeId, baseUrl) {
     if (includeCategories) {
       const { data: categories } = await tenantDb
         .from('categories')
-        .select('slug, updated_at')
+        .select('slug, name, updated_at, image_url')
         .eq('is_active', true)
         .eq('store_id', storeId)
         .order('sort_order', { ascending: true });
 
       if (categories) {
         categories.forEach(category => {
-          urls.push({
+          const urlEntry = {
             loc: `${baseUrl}/category/${category.slug}`,
             changefreq: categoryChangefreq,
             priority: categoryPriority,
             lastmod: category.updated_at ? new Date(category.updated_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-          });
+          };
+          // Add image if enabled and available
+          if (includeImages && category.image_url) {
+            urlEntry.images = [{
+              loc: category.image_url,
+              title: category.name || 'Category Image'
+            }];
+          }
+          urls.push(urlEntry);
         });
       }
     }
@@ -66,19 +77,57 @@ async function generateSitemapXml(storeId, baseUrl) {
     if (includeProducts) {
       const { data: products } = await tenantDb
         .from('products')
-        .select('slug, updated_at')
+        .select('id, slug, name, description, updated_at, video_url, video_thumbnail')
         .eq('status', 'active')
         .eq('store_id', storeId)
         .order('created_at', { ascending: false });
 
       if (products) {
+        // Get product images from product_files if images are enabled
+        let productImages = {};
+        if (includeImages && products.length > 0) {
+          const productIds = products.map(p => p.id);
+          const { data: files } = await tenantDb
+            .from('product_files')
+            .select('product_id, file_url, alt_text')
+            .in('product_id', productIds)
+            .eq('file_type', 'image')
+            .order('sort_order', { ascending: true });
+
+          if (files) {
+            files.forEach(file => {
+              if (!productImages[file.product_id]) {
+                productImages[file.product_id] = [];
+              }
+              productImages[file.product_id].push({
+                loc: file.file_url,
+                title: file.alt_text || 'Product Image'
+              });
+            });
+          }
+        }
+
         products.forEach(product => {
-          urls.push({
+          const urlEntry = {
             loc: `${baseUrl}/product/${product.slug}`,
             changefreq: productChangefreq,
             priority: productPriority,
             lastmod: product.updated_at ? new Date(product.updated_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-          });
+          };
+          // Add images if enabled
+          if (includeImages && productImages[product.id]) {
+            urlEntry.images = productImages[product.id].slice(0, 10); // Max 10 images per URL
+          }
+          // Add video if enabled and available
+          if (includeVideos && product.video_url) {
+            urlEntry.video = {
+              thumbnail_loc: product.video_thumbnail || (productImages[product.id]?.[0]?.loc) || '',
+              title: product.name || 'Product Video',
+              description: (product.description || product.name || '').substring(0, 256),
+              content_loc: product.video_url
+            };
+          }
+          urls.push(urlEntry);
         });
       }
     }
@@ -87,25 +136,66 @@ async function generateSitemapXml(storeId, baseUrl) {
     if (includePages) {
       const { data: pages } = await tenantDb
         .from('cms_pages')
-        .select('slug, updated_at')
+        .select('slug, title, content, updated_at, created_at, featured_image, video_url, video_thumbnail, is_news_article, language')
         .eq('is_active', true)
         .eq('store_id', storeId);
 
+      // Get store name for news sitemap
+      let storeName = 'Store';
+      if (enableNews) {
+        const { data: storeData } = await tenantDb
+          .from('stores')
+          .select('name')
+          .eq('id', storeId)
+          .single();
+        storeName = storeData?.name || 'Store';
+      }
+
       if (pages) {
         pages.forEach(page => {
-          urls.push({
+          const urlEntry = {
             loc: `${baseUrl}/${page.slug}`,
             changefreq: pageChangefreq,
             priority: pagePriority,
             lastmod: page.updated_at ? new Date(page.updated_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-          });
+          };
+          // Add image if enabled and available
+          if (includeImages && page.featured_image) {
+            urlEntry.images = [{
+              loc: page.featured_image,
+              title: page.title || 'Page Image'
+            }];
+          }
+          // Add video if enabled and available
+          if (includeVideos && page.video_url) {
+            urlEntry.video = {
+              thumbnail_loc: page.video_thumbnail || page.featured_image || '',
+              title: page.title || 'Page Video',
+              description: (page.content || page.title || '').substring(0, 256),
+              content_loc: page.video_url
+            };
+          }
+          // Add news if enabled and page is a news article
+          if (enableNews && page.is_news_article) {
+            urlEntry.news = {
+              publication_name: storeName,
+              language: page.language || 'en',
+              publication_date: new Date(page.created_at).toISOString(),
+              title: page.title
+            };
+          }
+          urls.push(urlEntry);
         });
       }
     }
 
-    // Generate XML
+    // Generate XML with appropriate namespaces
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+    let namespaces = 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"';
+    if (includeImages) namespaces += ' xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"';
+    if (includeVideos) namespaces += ' xmlns:video="http://www.google.com/schemas/sitemap-video/1.1"';
+    if (enableNews) namespaces += ' xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"';
+    xml += `<urlset ${namespaces}>\n`;
 
     urls.forEach(url => {
       xml += '  <url>\n';
@@ -113,6 +203,39 @@ async function generateSitemapXml(storeId, baseUrl) {
       xml += `    <lastmod>${url.lastmod}</lastmod>\n`;
       xml += `    <changefreq>${url.changefreq}</changefreq>\n`;
       xml += `    <priority>${url.priority}</priority>\n`;
+
+      // Add images if present
+      if (url.images && url.images.length > 0) {
+        url.images.forEach(img => {
+          xml += '    <image:image>\n';
+          xml += `      <image:loc>${escapeXml(img.loc)}</image:loc>\n`;
+          xml += `      <image:title>${escapeXml(img.title)}</image:title>\n`;
+          xml += '    </image:image>\n';
+        });
+      }
+
+      // Add video if present
+      if (url.video) {
+        xml += '    <video:video>\n';
+        xml += `      <video:thumbnail_loc>${escapeXml(url.video.thumbnail_loc)}</video:thumbnail_loc>\n`;
+        xml += `      <video:title>${escapeXml(url.video.title)}</video:title>\n`;
+        xml += `      <video:description>${escapeXml(url.video.description)}</video:description>\n`;
+        xml += `      <video:content_loc>${escapeXml(url.video.content_loc)}</video:content_loc>\n`;
+        xml += '    </video:video>\n';
+      }
+
+      // Add news if present
+      if (url.news) {
+        xml += '    <news:news>\n';
+        xml += '      <news:publication>\n';
+        xml += `        <news:name>${escapeXml(url.news.publication_name)}</news:name>\n`;
+        xml += `        <news:language>${url.news.language}</news:language>\n`;
+        xml += '      </news:publication>\n';
+        xml += `      <news:publication_date>${url.news.publication_date}</news:publication_date>\n`;
+        xml += `      <news:title>${escapeXml(url.news.title)}</news:title>\n`;
+        xml += '    </news:news>\n';
+      }
+
       xml += '  </url>\n';
     });
 
