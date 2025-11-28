@@ -24,7 +24,7 @@ const countryData = countries.map(country => ({
   flag: country.flag
 }));
 
-export function CountrySelect({ value, onValueChange, onChange, placeholder = "Select country...", multiple = false, allowedCountries = [] }) {
+export function CountrySelect({ value, onValueChange, onChange, placeholder = "Select country...", multiple = false, allowedCountries = [], style = {}, dropdownStyle = {} }) {
   const [open, setOpen] = useState(false);
   const { t } = useTranslation();
 
@@ -73,12 +73,13 @@ export function CountrySelect({ value, onValueChange, onChange, placeholder = "S
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
+          style={style}
         >
           {(multiple ? (Array.isArray(safeValue) && safeValue.length > 0) : value) ? safeSelectedLabels : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0">
+      <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[--radix-popover-content-available-height] p-0" style={dropdownStyle}>
         <Command>
           <CommandInput placeholder={t('common.search_country', 'Search country...')} />
           <CommandList>

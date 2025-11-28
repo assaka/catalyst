@@ -1803,6 +1803,8 @@ export default function Checkout() {
                     allowedCountries={settings?.allowed_countries}
                     required
                     className={shippingErrors.country ? 'border-red-500' : ''}
+                    style={{ backgroundColor: checkoutSectionBgColor }}
+                    dropdownStyle={{ backgroundColor: checkoutSectionBgColor }}
                   />
 
                   {user && (
@@ -2026,6 +2028,8 @@ export default function Checkout() {
                           allowedCountries={settings?.allowed_countries}
                           required
                           className={billingErrors.country ? 'border-red-500' : ''}
+                          style={{ backgroundColor: checkoutSectionBgColor }}
+                          dropdownStyle={{ backgroundColor: checkoutSectionBgColor }}
                         />
 
                         {user && (
@@ -2098,6 +2102,7 @@ export default function Checkout() {
                       value={deliveryTimeSlot}
                       onChange={(e) => setDeliveryTimeSlot(e.target.value)}
                       className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ backgroundColor: checkoutSectionBgColor }}
                     >
                       <option value="">{t('checkout.select_time_slot', 'Select time slot')}</option>
                       {getAvailableTimeSlots().map((slot, index) => (
