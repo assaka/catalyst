@@ -1327,7 +1327,6 @@ export default function Checkout() {
   const checkoutSectionBgColor = settings?.checkout_section_bg_color || '#FFFFFF';
   const checkoutSectionBorderColor = settings?.checkout_section_border_color || '#E5E7EB';
   const checkoutSectionTextColor = settings?.checkout_section_text_color || '#374151';
-  const checkoutSectionPlaceholderColor = settings?.checkout_section_placeholder_color || '#9CA3AF';
 
   // Get step settings
   const stepsCount = settings?.checkout_steps_count || 3;
@@ -2560,7 +2559,7 @@ export default function Checkout() {
         .checkout-section input::placeholder,
         .checkout-section textarea::placeholder,
         .checkout-section select::placeholder {
-          color: ${checkoutSectionPlaceholderColor} !important;
+          color: ${checkoutSectionTextColor} !important;
         }
       `}</style>
       <h1 className="text-2xl lg:text-3xl font-bold mb-6 lg:mb-8">{t('checkout.title', 'Checkout')}</h1>

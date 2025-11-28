@@ -251,7 +251,6 @@ function getCheckoutDefaults(settings) {
     checkout_section_bg_color: settings?.checkout_section_bg_color || '#FFFFFF',
     checkout_section_border_color: settings?.checkout_section_border_color || '#E5E7EB',
     checkout_section_text_color: settings?.checkout_section_text_color || '#374151',
-    checkout_section_placeholder_color: settings?.checkout_section_placeholder_color || '#9CA3AF',
 
     // Checkout Layout Configuration
     checkout_1step_columns: settings?.checkout_1step_columns ?? 3,
