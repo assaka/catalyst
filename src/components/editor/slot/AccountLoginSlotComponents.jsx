@@ -11,7 +11,7 @@ import { createPublicUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import AuthService from '@/services/authService';
+import { Auth as AuthService } from '@/api/entities';
 
 /**
  * UserProfileSlot - User profile display with avatar and info
