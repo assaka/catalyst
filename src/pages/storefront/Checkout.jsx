@@ -1640,8 +1640,6 @@ export default function Checkout() {
               </div>
             )}
 
-            {/* Only show checkout form when user is logged in OR guest checkout is allowed */}
-            {(user || settings?.allow_guest_checkout !== false) && (
             <Card key="shipping-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
               <CardHeader>
                 <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.shipping_address', 'Shipping Address')}</CardTitle>
@@ -1831,7 +1829,6 @@ export default function Checkout() {
               )}
             </CardContent>
           </Card>
-          )}
           </>
         );
 
@@ -1871,7 +1868,7 @@ export default function Checkout() {
         );
 
       case 'Billing Address':
-        return isSectionVisible('billing') && (user || settings?.allow_guest_checkout !== false) && (
+        return isSectionVisible('billing') && (
           <Card key="billing-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.billing_address', 'Billing Address')}</CardTitle>
@@ -2062,7 +2059,7 @@ export default function Checkout() {
         );
 
       case 'Delivery Settings':
-        return isSectionVisible('delivery') && (user || settings?.allow_guest_checkout !== false) && deliverySettings && (deliverySettings.enable_delivery_date || deliverySettings.enable_comments) && (
+        return isSectionVisible('delivery') && deliverySettings && (deliverySettings.enable_delivery_date || deliverySettings.enable_comments) && (
           <Card key="delivery-settings" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('checkout.delivery_settings', 'Delivery Settings')}</CardTitle>
@@ -2139,7 +2136,7 @@ export default function Checkout() {
         );
 
       case 'Payment Method':
-        return isSectionVisible('payment') && (user || settings?.allow_guest_checkout !== false) && eligiblePaymentMethods.length > 0 && (
+        return isSectionVisible('payment') && eligiblePaymentMethods.length > 0 && (
           <Card key="payment-method" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('checkout.payment_method', 'Payment Method')}</CardTitle>
@@ -2450,10 +2447,10 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {isSectionVisible('review') && (user || settings?.allow_guest_checkout !== false) && (
+              {isSectionVisible('review') && (
                 <Button
                   onClick={handleCheckout}
-                  disabled={isProcessing || cartItems.length === 0}
+                  disabled={isProcessing || cartItems.length === 0 || (!user && settings?.allow_guest_checkout === false)}
                   className="w-full h-12 text-lg"
                   style={{
                     backgroundColor: settings?.theme?.place_order_button_color || '#28a745',
