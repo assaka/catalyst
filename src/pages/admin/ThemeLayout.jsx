@@ -979,7 +979,7 @@ export default function ThemeLayout() {
                             <div className="flex items-center justify-between p-3 border rounded-lg">
                                 <div>
                                     <Label htmlFor="show_language_selector">Show Language Selector</Label>
-                                    <p className="text-sm text-gray-500">Display language selector in header navigation.</p>
+                                    <p className="text-sm text-gray-500">Display language selector in header navigation. Only visible when more than 1 language is active.</p>
                                 </div>
                                 <Switch id="show_language_selector" checked={!!store.settings.show_language_selector} onCheckedChange={(c) => handleSettingsChange('show_language_selector', c)} />
                             </div>
