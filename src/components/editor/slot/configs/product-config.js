@@ -239,7 +239,7 @@ export const productConfig = {
     product_price: {
       id: 'product_price',
       type: 'text',
-      content: '{{#if product.compare_price}}{{product.compare_price_formatted}}{{else}}{{product.price_formatted}}{{/if}}',
+      content: '{{#unless settings.hide_currency_product}}{{#if product.compare_price}}{{product.compare_price_formatted}}{{else}}{{product.price_formatted}}{{/if}}{{/unless}}',
       className: 'w-fit text-3xl font-bold text-green-600',
       parentClassName: '',
       styles: {},
@@ -261,7 +261,7 @@ export const productConfig = {
     original_price: {
       id: 'original_price',
       type: 'text',
-      content: '{{#if product.compare_price}}{{product.price_formatted}}{{/if}}',
+      content: '{{#unless settings.hide_currency_product}}{{#if product.compare_price}}{{product.price_formatted}}{{/if}}{{/unless}}',
       className: 'w-fit text-xl text-gray-500 line-through',
       parentClassName: '',
       styles: {},

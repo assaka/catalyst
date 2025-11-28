@@ -730,7 +730,7 @@ export const categoryConfig = {
     product_card_price: {
       id: 'product_card_price',
       type: 'text',
-      content: '{{this.price_formatted}}',
+      content: '{{#unless settings.hide_currency_category}}{{this.price_formatted}}{{/unless}}',
       className: 'text-lg font-bold text-red-600',
       parentClassName: '',
       styles: {},
@@ -749,7 +749,7 @@ export const categoryConfig = {
     product_card_compare_price: {
       id: 'product_card_compare_price',
       type: 'text',
-      content: '{{this.compare_price_formatted}}',
+      content: '{{#unless settings.hide_currency_category}}{{this.compare_price_formatted}}{{/unless}}',
       className: 'text-sm text-gray-500 line-through',
       parentClassName: '',
       styles: {},
@@ -959,6 +959,7 @@ export const categoryConfig = {
               </a>
 
               <!-- Price Container -->
+              {{#unless settings.hide_currency_category}}
               <div class="flex items-baseline gap-2 mb-4">
                 <!-- Display price (always shown - lowest price) -->
                 <span class="text-lg font-bold text-red-600">
@@ -971,6 +972,7 @@ export const categoryConfig = {
                   </span>
                 {{/if}}
               </div>
+              {{/unless}}
 
               <!-- Add to Cart Button -->
               <!-- AI INSTRUCTION: To change this button color, update the database setting: settings.theme.add_to_cart_button_color -->

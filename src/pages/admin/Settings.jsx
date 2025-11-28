@@ -20,6 +20,7 @@ import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { clearSettingsCache, clearAllCache } from '@/utils/cacheUtils';
+import { queryClient } from '@/config/queryClient';
 import FlashMessage from '@/components/storefront/FlashMessage';
 
 
@@ -410,6 +411,9 @@ export default function Settings() {
           clearAllCache(store.id);
           localStorage.removeItem('storeProviderCache');
           sessionStorage.removeItem('storeProviderCache');
+
+          // CRITICAL: Invalidate React Query bootstrap cache to force storefront to refetch settings
+          queryClient.invalidateQueries({ queryKey: ['bootstrap'] });
         } catch (e) {
           console.warn('Failed to clear cache from storage:', e);
         }

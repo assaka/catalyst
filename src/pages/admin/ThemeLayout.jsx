@@ -16,6 +16,7 @@ import SaveButton from '@/components/ui/save-button';
 import TranslationFields from '@/components/admin/TranslationFields';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
+import { queryClient } from '@/config/queryClient';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -825,6 +826,9 @@ export default function ThemeLayout() {
             try {
                 clearSpecificCacheKeys();
 
+                // CRITICAL: Invalidate React Query bootstrap cache to force storefront to refetch settings
+                queryClient.invalidateQueries({ queryKey: ['bootstrap'] });
+
                 // Broadcast cache clear to all tabs
                 try {
                     const channel = new BroadcastChannel('store_settings_update');
@@ -982,6 +986,7 @@ export default function ThemeLayout() {
                             <div className="flex items-center justify-between p-3 border rounded-lg">
                                 <div>
                                     <Label htmlFor="show_permanent_search">Show Permanent Search Bar</Label>
+                                    <p className="text-sm text-gray-500">Always show search bar on mobile instead of toggle icon.</p>
                                 </div>
                                 <Switch id="show_permanent_search" checked={!!store.settings.show_permanent_search} onCheckedChange={(c) => handleSettingsChange('show_permanent_search', c)} />
                             </div>
