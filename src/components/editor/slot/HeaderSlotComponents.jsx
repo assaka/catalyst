@@ -147,8 +147,6 @@ const MiniCartSlot = createSlotComponent({
     }
 
     // Storefront rendering
-    if (settings.hide_header_cart) return null;
-
     return (
       <div className={className} style={styles}>
         <MiniCart iconVariant={iconVariant} />

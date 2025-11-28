@@ -629,9 +629,7 @@ export default function StorefrontLayout({ children }) {
                                      </div>
 
                                      {/* Single responsive MiniCart for both mobile and desktop */}
-                                     {!settings?.hide_header_cart && (
-                                         <MiniCart />
-                                     )}
+                                     <MiniCart />
 
                                      <Button
                                         variant="ghost"

@@ -393,7 +393,6 @@ export function HeaderSlotRenderer({
         );
 
       case 'MiniCart':
-        if (settings?.hide_header_cart) return null;
         return (
           <div key={id} data-slot-id={id}>
             <MiniCart iconVariant={metadata?.iconVariant} />
