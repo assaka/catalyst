@@ -1,6 +1,6 @@
 {
   "name": "catalyst-backend",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Backend API for Catalyst E-commerce Platform",
   "main": "src/server.js",
   "scripts": {
