@@ -83,6 +83,7 @@ export { default as Checkout } from './storefront/Checkout';
 export { default as OrderSuccess } from './storefront/OrderSuccess';
 export { default as OrderCancel } from './storefront/OrderCancel';
 export { default as CustomerAuth } from './storefront/CustomerAuth';
+export { default as ResetPassword } from './storefront/ResetPassword';
 export { default as EmailVerification } from './storefront/EmailVerification';
 export { default as CustomerDashboard } from './storefront/CustomerDashboard';
 export { default as Storefront } from './storefront/Storefront';
