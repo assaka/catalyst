@@ -14,6 +14,7 @@ import { CmsPage } from '@/api/entities';
 import { SeoSetting } from '@/api/entities';
 import { useStore } from '@/components/storefront/StoreProvider';
 import FlashMessage from '@/components/storefront/FlashMessage';
+import apiClient from '@/api/client';
 
 export default function XmlSitemap() {
     const { store } = useStore();
@@ -23,10 +24,11 @@ export default function XmlSitemap() {
     const [generating, setGenerating] = useState(false);
     const [sitemapXml, setSitemapXml] = useState('');
     const [flashMessage, setFlashMessage] = useState(null);
+    const [primaryDomain, setPrimaryDomain] = useState(null);
 
-    // Determine base URL: use custom domain if configured and active, otherwise use origin
-    const sitemapBaseUrl = (store?.custom_domain && store?.domain_status === 'active')
-        ? `https://${store.custom_domain}`
+    // Determine base URL: use primary custom domain if available, otherwise use origin
+    const sitemapBaseUrl = primaryDomain
+        ? `https://${primaryDomain}`
         : window.location.origin;
 
     // Statistics
@@ -81,17 +83,23 @@ export default function XmlSitemap() {
         { value: '0.1', label: '0.1 (Lowest)' }
     ];
 
-    // Load existing settings
+    // Load existing settings and custom domains
     useEffect(() => {
         const loadSettings = async () => {
             if (!store?.id) return;
 
             try {
                 setLoading(true);
-                const result = await SeoSetting.filter({ store_id: store.id });
 
-                if (result && result.length > 0) {
-                    const existingSettings = result[0];
+                // Load SEO settings and custom domains in parallel
+                const [seoResult, domainsResponse] = await Promise.all([
+                    SeoSetting.filter({ store_id: store.id }),
+                    apiClient.get('/custom-domains').catch(() => ({ success: false, domains: [] }))
+                ]);
+
+                // Process SEO settings
+                if (seoResult && seoResult.length > 0) {
+                    const existingSettings = seoResult[0];
                     setSeoSettingId(existingSettings.id);
 
                     // Extract from JSON field
@@ -113,6 +121,16 @@ export default function XmlSitemap() {
                         page_priority: xmlSettings.page_priority ?? '0.6',
                         page_changefreq: xmlSettings.page_changefreq ?? 'monthly'
                     });
+                }
+
+                // Find primary active custom domain
+                if (domainsResponse.success && domainsResponse.domains?.length > 0) {
+                    const activePrimary = domainsResponse.domains.find(
+                        d => d.is_primary && d.verification_status === 'verified' && d.ssl_status === 'active'
+                    );
+                    if (activePrimary) {
+                        setPrimaryDomain(activePrimary.domain);
+                    }
                 }
             } catch (error) {
                 console.error('Error loading SEO settings:', error);
@@ -600,8 +618,11 @@ export default function XmlSitemap() {
                                 <span className="font-medium">Your Sitemap URL:</span>
                                 <code className="px-2 py-1 bg-background rounded text-xs">{sitemapBaseUrl}/sitemap.xml</code>
                             </div>
-                            {store?.custom_domain && store?.domain_status === 'active' && (
-                                <p className="text-xs text-green-600 dark:text-green-400">Using custom domain: {store.custom_domain}</p>
+                            {primaryDomain && (
+                                <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                                    <CheckCircle className="w-3 h-3" />
+                                    Using primary custom domain: {primaryDomain}
+                                </p>
                             )}
                             <div className="grid sm:grid-cols-2 gap-3 text-xs text-muted-foreground">
                                 <div>
