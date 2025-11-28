@@ -1906,4 +1906,7 @@ router.post('/debug/fix-customer-stores', async (req, res) => {
   });
 });
 
+// Log registered routes on module load
+console.log(`[AUTH ROUTES] Registered ${router.stack.length} routes including: customer/login, customer/register, customer/forgot-password, customer/reset-password`);
+
 module.exports = router;
