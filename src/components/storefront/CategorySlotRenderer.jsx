@@ -11,7 +11,7 @@ import { ComponentRegistry } from '@/components/editor/slot/SlotComponentRegistr
 import '@/components/editor/slot/CategorySlotComponents';
 import '@/components/editor/slot/BreadcrumbsSlotComponent';
 import { createProductUrl } from '@/utils/urlUtils';
-import { formatPrice, getPriceDisplay } from '@/utils/priceUtils';
+import { formatPrice, formatPriceNumber, getPriceDisplay } from '@/utils/priceUtils';
 import { getStockLabel, getStockLabelStyle, isProductOutOfStock } from '@/utils/stockUtils';
 import { getCategoryName, getProductName, getCurrentLanguage } from '@/utils/translationUtils';
 import { processVariables } from '@/utils/variableProcessor';
@@ -257,8 +257,11 @@ export function CategorySlotRenderer({
           // Add translated name
           name: translatedName,
           // Use getPriceDisplay results for consistent pricing
-          price_formatted: formatPrice(priceInfo.displayPrice), // Lowest price
-          compare_price_formatted: priceInfo.hasComparePrice ? formatPrice(priceInfo.originalPrice) : '', // Highest price (only if sale)
+          price_formatted: formatPrice(priceInfo.displayPrice), // Lowest price with currency
+          compare_price_formatted: priceInfo.hasComparePrice ? formatPrice(priceInfo.originalPrice) : '', // Highest price with currency (only if sale)
+          // Price numbers without currency (for conditional currency display)
+          price_number: formatPriceNumber(priceInfo.displayPrice),
+          compare_price_number: priceInfo.hasComparePrice ? formatPriceNumber(priceInfo.originalPrice) : '',
           lowest_price_formatted: formatPrice(priceInfo.displayPrice),
           highest_price_formatted: priceInfo.hasComparePrice ? formatPrice(priceInfo.originalPrice) : formatPrice(priceInfo.displayPrice),
           // Also keep old names for backwards compatibility

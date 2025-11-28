@@ -147,7 +147,7 @@ import cartService from '@/services/cartService';
 import { headerConfig } from '@/components/editor/slot/configs/header-config';
 import { CmsBlock } from '@/api/entities';
 import { useStore } from '@/components/storefront/StoreProvider';
-import { formatPrice } from '@/utils/priceUtils';
+import { formatPrice, formatPriceNumber } from '@/utils/priceUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 
 // Import component registry to ensure all components are registered

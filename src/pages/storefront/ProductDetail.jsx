@@ -838,6 +838,7 @@ export default function ProductDetail() {
               relatedProducts: [], // TODO: Load related products
               store,
               settings,
+              categories, // CRITICAL: Pass categories for breadcrumb building
               breadcrumbs: buildProductBreadcrumbs(product, storeCode, categories, settings),
               productLabels: product?.applicableLabels || productLabels,
               selectedOptions,

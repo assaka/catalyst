@@ -730,7 +730,7 @@ export const categoryConfig = {
     product_card_price: {
       id: 'product_card_price',
       type: 'text',
-      content: '{{#unless settings.hide_currency_category}}{{this.price_formatted}}{{/unless}}',
+      content: '{{#unless settings.hide_currency_category}}{{settings.currency_symbol}}{{/unless}}{{this.price_number}}',
       className: 'text-lg font-bold text-red-600',
       parentClassName: '',
       styles: {},
@@ -749,7 +749,7 @@ export const categoryConfig = {
     product_card_compare_price: {
       id: 'product_card_compare_price',
       type: 'text',
-      content: '{{#unless settings.hide_currency_category}}{{this.compare_price_formatted}}{{/unless}}',
+      content: '{{#unless settings.hide_currency_category}}{{settings.currency_symbol}}{{/unless}}{{this.compare_price_number}}',
       className: 'text-sm text-gray-500 line-through',
       parentClassName: '',
       styles: {},
@@ -959,20 +959,18 @@ export const categoryConfig = {
               </a>
 
               <!-- Price Container -->
-              {{#unless settings.hide_currency_category}}
               <div class="flex items-baseline gap-2 mb-4">
                 <!-- Display price (always shown - lowest price) -->
                 <span class="text-lg font-bold text-red-600">
-                  {{this.price_formatted}}
+                  {{#unless settings.hide_currency_category}}{{settings.currency_symbol}}{{/unless}}{{this.price_number}}
                 </span>
                 <!-- Original price with strikethrough (only shown when on sale) -->
-                {{#if this.compare_price_formatted}}
+                {{#if this.compare_price_number}}
                   <span class="text-sm text-gray-500 line-through">
-                    {{this.compare_price_formatted}}
+                    {{#unless settings.hide_currency_category}}{{settings.currency_symbol}}{{/unless}}{{this.compare_price_number}}
                   </span>
                 {{/if}}
               </div>
-              {{/unless}}
 
               <!-- Add to Cart Button -->
               <!-- AI INSTRUCTION: To change this button color, update the database setting: settings.theme.add_to_cart_button_color -->

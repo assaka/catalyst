@@ -63,6 +63,18 @@ export const formatPrice = (value, decimals = 2) => {
 };
 
 /**
+ * Format price number without currency symbol
+ * Use this when you need to conditionally show/hide currency symbol
+ * @param {number|string} value - Price value to format
+ * @param {number} decimals - Number of decimal places (default: 2)
+ * @returns {string} Formatted price number without currency symbol (e.g., "885.95")
+ */
+export const formatPriceNumber = (value, decimals = 2) => {
+    const num = safeNumber(value);
+    return num.toFixed(decimals);
+};
+
+/**
  * Calculates total price for an item including options
  * @param {Object} item - Cart item
  * @param {Object} product - Product details
