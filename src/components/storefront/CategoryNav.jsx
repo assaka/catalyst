@@ -277,6 +277,16 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
         const hasChildren = category.children && category.children.length > 0;
         const isExpanded = expandedCategories.has(category.id);
 
+        // Handle click on category name - if has children, toggle subcategories; otherwise navigate
+        const handleCategoryClick = (e) => {
+            if (hasChildren) {
+                e.preventDefault();
+                toggleCategory(category.id);
+            } else {
+                onLinkClick?.();
+            }
+        };
+
         return (
             <div key={category.id} className="block">
                 <div className="flex items-center justify-between">
@@ -295,7 +305,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
                             e.currentTarget.style.color = linkStyles.color;
                             e.currentTarget.style.backgroundColor = 'transparent';
                         }}
-                        onClick={() => onLinkClick?.()}
+                        onClick={handleCategoryClick}
                     >
                         {getCategoryName(category, getCurrentLanguage())}
                     </Link>
