@@ -261,10 +261,12 @@ const ProductGallery = createSlotComponent({
     const setActiveImageIndex = productContext?.setActiveImageIndex;
 
     // Thumbnail renderer
+    // Mobile: always horizontal row
+    // Desktop: horizontal row for horizontal layout, vertical column for vertical layout
     const renderThumbnails = (images, getImageUrl, productName, activeIdx, setActiveIdx, extraClass = '') => {
       const thumbContainerClass = isVertical
-        ? 'flex flex-col space-y-2 w-24 flex-shrink-0'
-        : 'flex overflow-x-auto space-x-2 mt-4';
+        ? 'flex flex-row overflow-x-auto space-x-2 sm:flex-col sm:overflow-visible sm:space-x-0 sm:space-y-2 sm:w-24 flex-shrink-0'
+        : 'flex flex-row overflow-x-auto space-x-2';
 
       return (
         <div className={`${thumbContainerClass} ${extraClass}`.trim()}>
