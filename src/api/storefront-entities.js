@@ -149,8 +149,8 @@ class CustomerAuthService {
       throw new Error('Store ID is required for customer login');
     }
 
-    // Use the customer-specific login endpoint that validates email+store_id
-    const response = await this.client.postCustomer('auth/customer/login', {
+    // Use the public customer login endpoint (no auth required for login)
+    const response = await this.client.postPublic('auth/customer/login', {
       email,
       password,
       store_id: storeId,
@@ -191,8 +191,8 @@ class CustomerAuthService {
       throw new Error('Store ID is required for customer registration');
     }
 
-    // Use the customer-specific register endpoint
-    const response = await this.client.postCustomer('auth/customer/register', userData);
+    // Use the public customer register endpoint (no auth required for registration)
+    const response = await this.client.postPublic('auth/customer/register', userData);
 
     // Extract token from response.data (backend returns {success, data: {token, user}})
     const token = response.data?.token;
