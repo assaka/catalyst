@@ -292,12 +292,39 @@ export default function StorefrontLayout({ children }) {
     // FIXED: Apply show permanent search setting
     const showPermanentSearch = settings?.show_permanent_search !== false;
 
-    const googleFontLink = settings?.theme?.font_family 
-      ? `https://fonts.googleapis.com/css2?family=${settings.theme.font_family.replace(/ /g, '+')}:wght@400;700&display=swap`
+    // Check if selected font is a custom uploaded font
+    const customFonts = settings?.theme?.custom_fonts || [];
+    const selectedFontFamily = settings?.theme?.font_family || 'Inter';
+    const selectedCustomFont = customFonts.find(f => f.name === selectedFontFamily);
+    const isCustomFont = !!selectedCustomFont;
+
+    // Only load Google Font if NOT using a custom font
+    const googleFontLink = (!isCustomFont && selectedFontFamily)
+      ? `https://fonts.googleapis.com/css2?family=${selectedFontFamily.replace(/ /g, '+')}:wght@400;700&display=swap`
       : '';
+
+    // Generate @font-face rules for custom fonts
+    const customFontFaces = customFonts.map(font => {
+      const formatMap = {
+        'ttf': 'truetype',
+        'otf': 'opentype',
+        'woff': 'woff',
+        'woff2': 'woff2'
+      };
+      return `
+        @font-face {
+          font-family: '${font.name}';
+          src: url('${font.url}') format('${formatMap[font.format] || 'truetype'}');
+          font-weight: normal;
+          font-style: normal;
+          font-display: swap;
+        }
+      `;
+    }).join('\n');
 
     // FIXED: Apply theme colors to cart buttons
     const themeStyles = `
+      ${customFontFaces}
       :root {
         --theme-primary-button: ${settings?.theme?.primary_button_color || '#007bff'};
         --theme-secondary-button: ${settings?.theme?.secondary_button_color || '#6c757d'};
@@ -305,7 +332,7 @@ export default function StorefrontLayout({ children }) {
         --theme-view-cart-button: ${settings?.theme?.view_cart_button_color || '#17a2b8'};
         --theme-checkout-button: ${settings?.theme?.checkout_button_color || '#007bff'};
         --theme-place-order-button: ${settings?.theme?.place_order_button_color || '#28a745'};
-        --theme-font-family: ${settings?.theme?.font_family || 'Inter'}, sans-serif;
+        --theme-font-family: '${selectedFontFamily}', sans-serif;
       }
       body {
           font-family: var(--theme-font-family);

@@ -25,7 +25,12 @@ const upload = multer({
       'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       'text/plain', 'text/csv',
       // Archives
-      'application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed'
+      'application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed',
+      // Fonts
+      'font/ttf', 'font/otf', 'font/woff', 'font/woff2',
+      'application/x-font-ttf', 'application/x-font-otf',
+      'application/font-woff', 'application/font-woff2',
+      'application/octet-stream' // Some browsers send fonts as octet-stream
     ];
     
     if (allowedMimes.includes(file.mimetype)) {
