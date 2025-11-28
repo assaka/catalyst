@@ -81,6 +81,7 @@ const publicAttributeRoutes = require('./routes/publicAttributes');
 const addressRoutes = require('./routes/addresses');
 const publicCmsBlocksRoutes = require('./routes/public-cms-blocks');
 const publicCmsPagesRoutes = require('./routes/public-cms-pages');
+const publicCustomerAuthRoutes = require('./routes/public-customer-auth');
 const storeTeamRoutes = require('./routes/store-teams');
 const robotsRoutes = require('./routes/robots');
 const sitemapRoutes = require('./routes/sitemap');
@@ -461,6 +462,7 @@ app.use('/api/cache-test', cacheTestRoutes);
 
 // Public routes for guest access
 app.use('/api/public/auth', authRoutes);
+app.use('/api/public/customer-auth', publicCustomerAuthRoutes); // Forgot password, reset password
 app.use('/api/public/storefront/bootstrap', storefrontBootstrapRoutes); // Unified storefront initialization endpoint
 app.use('/api/public/page-bootstrap', pageBootstrapRoutes); // Page-specific bootstrap (product, category, checkout, homepage)
 app.use('/api/public/stores', storeRoutes);

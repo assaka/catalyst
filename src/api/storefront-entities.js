@@ -287,8 +287,8 @@ class CustomerAuthService {
       throw new Error('Store ID is required for password reset');
     }
 
-    // Use public endpoint - no auth required for forgot password
-    return this.client.postPublic('auth/customer/forgot-password', {
+    // Use dedicated public customer-auth endpoint
+    return this.client.postPublic('customer-auth/forgot-password', {
       email,
       store_id: storeId
     });
@@ -299,8 +299,8 @@ class CustomerAuthService {
       throw new Error('Store ID is required for password reset');
     }
 
-    // Use public endpoint - no auth required for password reset
-    return this.client.postPublic('auth/customer/reset-password', {
+    // Use dedicated public customer-auth endpoint
+    return this.client.postPublic('customer-auth/reset-password', {
       token,
       password,
       store_id: storeId
