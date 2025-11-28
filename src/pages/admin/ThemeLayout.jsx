@@ -739,6 +739,34 @@ export default function ThemeLayout() {
         setFlashMessage({ type: 'success', message: `Font "${newFont.name}" added successfully.` });
     };
 
+    // Handle font family change with auto-save
+    const handleFontFamilyChange = async (value) => {
+        // Update the font family
+        setStore(prev => ({
+            ...prev,
+            settings: {
+                ...prev.settings,
+                theme: { ...prev.settings.theme, font_family: value }
+            }
+        }));
+
+        // Auto-save after a short delay to ensure state is updated
+        setTimeout(async () => {
+            try {
+                const { Store } = await import('@/api/entities');
+                const updatedSettings = {
+                    ...store.settings,
+                    theme: { ...store.settings.theme, font_family: value }
+                };
+                await Store.updateSettings(store.id, { settings: updatedSettings });
+                setFlashMessage({ type: 'success', message: `Font changed to "${value}"` });
+            } catch (error) {
+                console.error('Auto-save font error:', error);
+                setFlashMessage({ type: 'error', message: 'Failed to save font change' });
+            }
+        }, 100);
+    };
+
     // Remove custom font
     const handleFontDelete = (fontToDelete) => {
         const currentFonts = store.settings.theme?.custom_fonts || [];
@@ -1004,7 +1032,7 @@ export default function ThemeLayout() {
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     <div>
                                         <Label htmlFor="font_family">Font Family</Label>
-                                        <Select value={store.settings.theme.font_family} onValueChange={(value) => handleThemeChange('font_family', value)}>
+                                        <Select value={store.settings.theme.font_family} onValueChange={handleFontFamilyChange}>
                                             <SelectTrigger><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 {/* Google Fonts */}
