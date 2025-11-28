@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import SaveButton from '@/components/ui/save-button';
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Download, RefreshCw, CheckCircle, AlertCircle, Upload, Image, Video, Newspaper } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -499,328 +498,107 @@ export default function XmlSitemap() {
                 </CardContent>
             </Card>
 
-            {/* Tabbed Settings */}
-            <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="basic">Basic Settings</TabsTrigger>
-                    <TabsTrigger value="google">Google Features</TabsTrigger>
-                    <TabsTrigger value="advanced">Advanced</TabsTrigger>
-                </TabsList>
-
-                {/* Basic Settings Tab */}
-                <TabsContent value="basic">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Basic Sitemap Configuration</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <Alert>
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertDescription>
-                                    Configure what content types should be included in your XML sitemap.
-                                </AlertDescription>
-                            </Alert>
-
-                            <div className="space-y-6">
-                                {/* Categories Settings */}
-                                <div className="border rounded-lg p-4 space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-2">
-                                            <Switch
-                                                id="include-categories"
-                                                checked={settings.sitemap_include_categories}
-                                                onCheckedChange={(checked) => {
-                                                    setSettings({ ...settings, sitemap_include_categories: checked });
-                                                }}
-                                            />
-                                            <Label htmlFor="include-categories" className="font-medium">Include Categories</Label>
-                                        </div>
-                                    </div>
-                                    {settings.sitemap_include_categories && (
-                                        <div className="grid grid-cols-2 gap-4 pl-8">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="category-priority">Priority</Label>
-                                                <Select
-                                                    value={settings.category_priority}
-                                                    onValueChange={(value) => setSettings({ ...settings, category_priority: value })}
-                                                >
-                                                    <SelectTrigger id="category-priority">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {priorityOptions.map(opt => (
-                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="category-changefreq">Change Frequency</Label>
-                                                <Select
-                                                    value={settings.category_changefreq}
-                                                    onValueChange={(value) => setSettings({ ...settings, category_changefreq: value })}
-                                                >
-                                                    <SelectTrigger id="category-changefreq">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {changefreqOptions.map(opt => (
-                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-                                    )}
+            {/* Settings Card */}
+            <Card>
+                <CardHeader className="pb-3">
+                    <CardTitle>Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {/* Content Types */}
+                    <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-muted-foreground">Content Types</h4>
+                        <div className="grid gap-2">
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <Switch id="include-categories" checked={settings.sitemap_include_categories} onCheckedChange={(checked) => setSettings({ ...settings, sitemap_include_categories: checked })} />
+                                    <Label htmlFor="include-categories">Categories</Label>
                                 </div>
-
-                                {/* Products Settings */}
-                                <div className="border rounded-lg p-4 space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-2">
-                                            <Switch
-                                                id="include-products"
-                                                checked={settings.sitemap_include_products}
-                                                onCheckedChange={(checked) => {
-                                                    setSettings({ ...settings, sitemap_include_products: checked });
-                                                }}
-                                            />
-                                            <Label htmlFor="include-products" className="font-medium">Include Products</Label>
-                                        </div>
+                                {settings.sitemap_include_categories && (
+                                    <div className="flex gap-2">
+                                        <Select value={settings.category_priority} onValueChange={(value) => setSettings({ ...settings, category_priority: value })}>
+                                            <SelectTrigger className="w-20 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent>{priorityOptions.map(opt => (<SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>))}</SelectContent>
+                                        </Select>
+                                        <Select value={settings.category_changefreq} onValueChange={(value) => setSettings({ ...settings, category_changefreq: value })}>
+                                            <SelectTrigger className="w-24 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent>{changefreqOptions.map(opt => (<SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>))}</SelectContent>
+                                        </Select>
                                     </div>
-                                    {settings.sitemap_include_products && (
-                                        <div className="grid grid-cols-2 gap-4 pl-8">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="product-priority">Priority</Label>
-                                                <Select
-                                                    value={settings.product_priority}
-                                                    onValueChange={(value) => setSettings({ ...settings, product_priority: value })}
-                                                >
-                                                    <SelectTrigger id="product-priority">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {priorityOptions.map(opt => (
-                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="product-changefreq">Change Frequency</Label>
-                                                <Select
-                                                    value={settings.product_changefreq}
-                                                    onValueChange={(value) => setSettings({ ...settings, product_changefreq: value })}
-                                                >
-                                                    <SelectTrigger id="product-changefreq">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {changefreqOptions.map(opt => (
-                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* CMS Pages Settings */}
-                                <div className="border rounded-lg p-4 space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-2">
-                                            <Switch
-                                                id="include-pages"
-                                                checked={settings.sitemap_include_pages}
-                                                onCheckedChange={(checked) => {
-                                                    setSettings({ ...settings, sitemap_include_pages: checked });
-                                                }}
-                                            />
-                                            <Label htmlFor="include-pages" className="font-medium">Include CMS Pages</Label>
-                                        </div>
-                                    </div>
-                                    {settings.sitemap_include_pages && (
-                                        <div className="grid grid-cols-2 gap-4 pl-8">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="page-priority">Priority</Label>
-                                                <Select
-                                                    value={settings.page_priority}
-                                                    onValueChange={(value) => setSettings({ ...settings, page_priority: value })}
-                                                >
-                                                    <SelectTrigger id="page-priority">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {priorityOptions.map(opt => (
-                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="page-changefreq">Change Frequency</Label>
-                                                <Select
-                                                    value={settings.page_changefreq}
-                                                    onValueChange={(value) => setSettings({ ...settings, page_changefreq: value })}
-                                                >
-                                                    <SelectTrigger id="page-changefreq">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {changefreqOptions.map(opt => (
-                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                )}
                             </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {/* Google Features Tab */}
-                <TabsContent value="google">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Google-Specific Features</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <Alert>
-                                <CheckCircle className="h-4 w-4" />
-                                <AlertDescription>
-                                    Enable advanced Google features like image sitemaps, video sitemaps, and Google News support.
-                                </AlertDescription>
-                            </Alert>
-
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5 flex items-center gap-2">
-                                        <Image className="h-5 w-5 text-pink-600" />
-                                        <div>
-                                            <Label htmlFor="include-images">Image Sitemap</Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                Include product and page images with image tags
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <Switch
-                                        id="include-images"
-                                        checked={settings.sitemap_include_images}
-                                        onCheckedChange={(checked) => {
-                                            setSettings({ ...settings, sitemap_include_images: checked });
-                                        }}
-                                    />
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <Switch id="include-products" checked={settings.sitemap_include_products} onCheckedChange={(checked) => setSettings({ ...settings, sitemap_include_products: checked })} />
+                                    <Label htmlFor="include-products">Products</Label>
                                 </div>
-
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5 flex items-center gap-2">
-                                        <Video className="h-5 w-5 text-indigo-600" />
-                                        <div>
-                                            <Label htmlFor="include-videos">Video Sitemap</Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                Include product demonstration and page videos
-                                            </p>
-                                        </div>
+                                {settings.sitemap_include_products && (
+                                    <div className="flex gap-2">
+                                        <Select value={settings.product_priority} onValueChange={(value) => setSettings({ ...settings, product_priority: value })}>
+                                            <SelectTrigger className="w-20 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent>{priorityOptions.map(opt => (<SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>))}</SelectContent>
+                                        </Select>
+                                        <Select value={settings.product_changefreq} onValueChange={(value) => setSettings({ ...settings, product_changefreq: value })}>
+                                            <SelectTrigger className="w-24 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent>{changefreqOptions.map(opt => (<SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>))}</SelectContent>
+                                        </Select>
                                     </div>
-                                    <Switch
-                                        id="include-videos"
-                                        checked={settings.sitemap_include_videos}
-                                        onCheckedChange={(checked) => {
-                                            setSettings({ ...settings, sitemap_include_videos: checked });
-                                        }}
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5 flex items-center gap-2">
-                                        <Newspaper className="h-5 w-5 text-yellow-600" />
-                                        <div>
-                                            <Label htmlFor="enable-news">Google News Sitemap</Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                Generate Google News sitemap for recent articles (last 2 days)
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <Switch
-                                        id="enable-news"
-                                        checked={settings.sitemap_enable_news}
-                                        onCheckedChange={(checked) => {
-                                            setSettings({ ...settings, sitemap_enable_news: checked });
-                                        }}
-                                    />
-                                </div>
-
-                                {/* Submit to Search Engines Instructions */}
-                                <div className="border rounded-lg p-4 space-y-4 bg-muted/50">
-                                    <div className="flex items-center gap-2">
-                                        <Upload className="h-5 w-5 text-blue-600" />
-                                        <Label className="text-base font-medium">Submit Your Sitemap</Label>
-                                    </div>
-
-                                    <div className="space-y-3 text-sm">
-                                        <div>
-                                            <p className="font-medium">Google Search Console:</p>
-                                            <ol className="list-decimal list-inside text-muted-foreground space-y-1 ml-2">
-                                                <li>Go to <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" className="text-primary underline">search.google.com/search-console</a></li>
-                                                <li>Select your property (or add your site)</li>
-                                                <li>Click "Sitemaps" in the left menu</li>
-                                                <li>Enter your sitemap URL and click Submit</li>
-                                            </ol>
-                                        </div>
-
-                                        <div>
-                                            <p className="font-medium">Bing Webmaster Tools:</p>
-                                            <ol className="list-decimal list-inside text-muted-foreground space-y-1 ml-2">
-                                                <li>Go to <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" className="text-primary underline">bing.com/webmasters</a></li>
-                                                <li>Add or select your site</li>
-                                                <li>Click "Sitemaps" and submit your URL</li>
-                                            </ol>
-                                        </div>
-
-                                        <div className="pt-2 border-t">
-                                            <p className="font-medium">Your Sitemap URL:</p>
-                                            <code className="block mt-1 p-2 bg-background rounded text-xs break-all">
-                                                {window.location.origin}/sitemap.xml
-                                            </code>
-                                        </div>
-                                    </div>
-                                </div>
+                                )}
                             </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {/* Advanced Tab */}
-                <TabsContent value="advanced">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Advanced Configuration</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="max-urls">Maximum URLs Per Sitemap</Label>
-                                    <Input
-                                        id="max-urls"
-                                        type="number"
-                                        min="100"
-                                        max="50000"
-                                        value={settings.sitemap_max_urls}
-                                        onChange={(e) => setSettings({ ...settings, sitemap_max_urls: parseInt(e.target.value) || 50000 })}
-                                    />
-                                    <p className="text-sm text-muted-foreground">
-                                        Google recommends max 50,000 URLs per sitemap. Split into multiple files if exceeded.
-                                    </p>
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <Switch id="include-pages" checked={settings.sitemap_include_pages} onCheckedChange={(checked) => setSettings({ ...settings, sitemap_include_pages: checked })} />
+                                    <Label htmlFor="include-pages">CMS Pages</Label>
                                 </div>
+                                {settings.sitemap_include_pages && (
+                                    <div className="flex gap-2">
+                                        <Select value={settings.page_priority} onValueChange={(value) => setSettings({ ...settings, page_priority: value })}>
+                                            <SelectTrigger className="w-20 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent>{priorityOptions.map(opt => (<SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>))}</SelectContent>
+                                        </Select>
+                                        <Select value={settings.page_changefreq} onValueChange={(value) => setSettings({ ...settings, page_changefreq: value })}>
+                                            <SelectTrigger className="w-24 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                            <SelectContent>{changefreqOptions.map(opt => (<SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>))}</SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
                             </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+                        </div>
+                    </div>
+
+                    {/* Google Features */}
+                    <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-muted-foreground">Google Features</h4>
+                        <div className="flex flex-wrap gap-4">
+                            <div className="flex items-center gap-2">
+                                <Switch id="include-images" checked={settings.sitemap_include_images} onCheckedChange={(checked) => setSettings({ ...settings, sitemap_include_images: checked })} />
+                                <Image className="h-4 w-4 text-pink-600" />
+                                <Label htmlFor="include-images" className="text-sm">Images</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Switch id="include-videos" checked={settings.sitemap_include_videos} onCheckedChange={(checked) => setSettings({ ...settings, sitemap_include_videos: checked })} />
+                                <Video className="h-4 w-4 text-indigo-600" />
+                                <Label htmlFor="include-videos" className="text-sm">Videos</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Switch id="enable-news" checked={settings.sitemap_enable_news} onCheckedChange={(checked) => setSettings({ ...settings, sitemap_enable_news: checked })} />
+                                <Newspaper className="h-4 w-4 text-yellow-600" />
+                                <Label htmlFor="enable-news" className="text-sm">News</Label>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Submit Instructions */}
+                    <div className="p-3 border rounded-lg bg-muted/50 text-sm space-y-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <span className="font-medium">Sitemap URL:</span>
+                            <code className="px-2 py-1 bg-background rounded text-xs">{window.location.origin}/sitemap.xml</code>
+                        </div>
+                        <p className="text-muted-foreground text-xs">
+                            Submit to <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" className="text-primary underline">Google Search Console</a> or <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" className="text-primary underline">Bing Webmaster Tools</a>
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Actions */}
             <div className="flex gap-2 flex-wrap">
