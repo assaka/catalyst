@@ -114,12 +114,12 @@ export default function StorefrontLayout({ children }) {
         }
     };
 
-    // Apply store theme settings to CSS variables
+    // Apply store theme settings to CSS variables and load fonts
     useEffect(() => {
       if (store?.settings?.theme) {
         const theme = store.settings.theme;
         const root = document.documentElement;
-        
+
         if (theme.primary_button_color) {
           root.style.setProperty('--theme-primary-button', theme.primary_button_color);
         }
@@ -132,6 +132,51 @@ export default function StorefrontLayout({ children }) {
         if (theme.font_family) {
           root.style.setProperty('--theme-font-family', theme.font_family);
         }
+
+        // Load custom fonts into <head>
+        const customFonts = theme.custom_fonts || [];
+        const selectedFont = theme.font_family || 'Inter';
+        const isCustomFont = customFonts.some(f => f.name === selectedFont);
+
+        // Remove old font links
+        document.querySelectorAll('link[data-custom-font]').forEach(el => el.remove());
+        document.querySelectorAll('style[data-custom-font-face]').forEach(el => el.remove());
+
+        // Add Google Font for built-in fonts
+        if (!isCustomFont && selectedFont) {
+          const googleLink = document.createElement('link');
+          googleLink.rel = 'stylesheet';
+          googleLink.href = `https://fonts.googleapis.com/css2?family=${selectedFont.replace(/ /g, '+')}:wght@100..900&display=swap`;
+          googleLink.setAttribute('data-custom-font', 'google-builtin');
+          document.head.appendChild(googleLink);
+        }
+
+        // Add custom fonts
+        customFonts.forEach((font, idx) => {
+          if (font.isGoogleFont) {
+            // Google Fonts URL - add as link
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = font.url;
+            link.setAttribute('data-custom-font', `custom-${idx}`);
+            document.head.appendChild(link);
+          } else {
+            // Direct font file - add @font-face style
+            const formatMap = { ttf: 'truetype', otf: 'opentype', woff: 'woff', woff2: 'woff2' };
+            const style = document.createElement('style');
+            style.setAttribute('data-custom-font-face', `custom-${idx}`);
+            style.textContent = `
+              @font-face {
+                font-family: '${font.name}';
+                src: url('${font.url}') format('${formatMap[font.format] || 'truetype'}');
+                font-weight: 100 900;
+                font-style: normal;
+                font-display: swap;
+              }
+            `;
+            document.head.appendChild(style);
+          }
+        });
       }
     }, [store?.settings?.theme]);
 
@@ -292,43 +337,11 @@ export default function StorefrontLayout({ children }) {
     // FIXED: Apply show permanent search setting
     const showPermanentSearch = settings?.show_permanent_search !== false;
 
-    // Check if selected font is a custom font
-    const customFonts = settings?.theme?.custom_fonts || [];
+    // Font family for CSS (fonts are loaded in useEffect into <head>)
     const selectedFontFamily = settings?.theme?.font_family || 'Inter';
-    const selectedCustomFont = customFonts.find(f => f.name === selectedFontFamily);
-    const isCustomFont = !!selectedCustomFont;
-
-    // Separate Google Fonts URLs from direct font file URLs
-    const googleFontUrls = customFonts.filter(f => f.isGoogleFont).map(f => f.url);
-    const directFontFiles = customFonts.filter(f => !f.isGoogleFont);
-
-    // Only load built-in Google Font if NOT using a custom font
-    const googleFontLink = (!isCustomFont && selectedFontFamily)
-      ? `https://fonts.googleapis.com/css2?family=${selectedFontFamily.replace(/ /g, '+')}:wght@400;700&display=swap`
-      : '';
-
-    // Generate @font-face rules for direct font file URLs only
-    const customFontFaces = directFontFiles.map(font => {
-      const formatMap = {
-        'ttf': 'truetype',
-        'otf': 'opentype',
-        'woff': 'woff',
-        'woff2': 'woff2'
-      };
-      return `
-        @font-face {
-          font-family: '${font.name}';
-          src: url('${font.url}') format('${formatMap[font.format] || 'truetype'}');
-          font-weight: 100 900;
-          font-style: normal;
-          font-display: swap;
-        }
-      `;
-    }).join('\n');
 
     // FIXED: Apply theme colors to cart buttons
     const themeStyles = `
-      ${customFontFaces}
       :root {
         --theme-primary-button: ${settings?.theme?.primary_button_color || '#007bff'};
         --theme-secondary-button: ${settings?.theme?.secondary_button_color || '#6c757d'};
@@ -427,13 +440,7 @@ export default function StorefrontLayout({ children }) {
                         }}
                     />
                 </Suspense>
-            {googleFontLink && (
-              <link href={googleFontLink} rel="stylesheet" />
-            )}
-            {/* Load custom Google Fonts URLs */}
-            {googleFontUrls.map((url, idx) => (
-              <link key={`custom-google-font-${idx}`} href={url} rel="stylesheet" />
-            ))}
+            {/* Fonts are loaded in useEffect to ensure they're in <head> */}
             {settings?.theme?.font_script && (
               <div dangerouslySetInnerHTML={{ __html: settings.theme.font_script }} />
             )}
