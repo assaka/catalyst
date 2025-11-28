@@ -113,12 +113,6 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
           meta_robots_tag: category.seo?.meta_robots_tag || "index, follow"
         }
       };
-      console.log('🔍 CategoryForm - Loading category SEO data:', {
-        categoryId: category.id,
-        hasSeoInCategory: !!category.seo,
-        categorySeo: category.seo,
-        formDataSeo: categoryData.seo
-      });
       setFormData(categoryData);
       setOriginalSlug(category.slug || "");
     }
@@ -329,12 +323,6 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         // Convert empty string to null for UUID fields
         parent_id: formData.parent_id || null
       };
-
-      console.log('🔍 CategoryForm - Submitting category with SEO:', {
-        categoryId: category?.id,
-        seoData: submitData.seo,
-        fullSubmitData: submitData
-      });
 
       // Always create redirect if slug changed (essential for SEO)
       console.log('🔍 Checking redirect creation conditions:', {
@@ -737,9 +725,12 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
                 You can use these variables in your meta title and description templates:
               </p>
               <div className="grid grid-cols-2 gap-2 text-sm text-blue-700">
+                <div><code>{'{{category_name}}'}</code> - Category name</div>
+                <div><code>{'{{category_description}}'}</code> - Category description</div>
                 <div><code>{'{{store_name}}'}</code> - Your store name</div>
                 <div><code>{'{{page_title}}'}</code> - Current page title</div>
-                <div><code>{'{{category_name}}'}</code> - Category name</div>
+                <div><code>{'{{year}}'}</code> - Current year</div>
+                <div><code>{'{{separator}}'}</code> - Title separator</div>
               </div>
             </div>
             <div>
