@@ -179,16 +179,28 @@ export default function ProductTabs({ productTabs = [], product = null, settings
         const accordionContent = containerRef.current.querySelector(`[data-accordion-content="${accordionIndex}"]`);
         const chevron = accordionButton.querySelector('.accordion-chevron');
 
+        // Get theme colors from data attributes
+        const activeBg = accordionButton.getAttribute('data-active-bg');
+        const inactiveBg = accordionButton.getAttribute('data-inactive-bg');
+        const activeColor = accordionButton.getAttribute('data-active-color');
+        const inactiveColor = accordionButton.getAttribute('data-inactive-color');
+
         if (accordionContent) {
           // Toggle visibility
           const isHidden = accordionContent.classList.contains('hidden');
 
           if (isHidden) {
+            // Opening - apply active styles
             accordionContent.classList.remove('hidden');
             if (chevron) chevron.style.transform = 'rotate(180deg)';
+            accordionButton.style.backgroundColor = activeBg;
+            accordionButton.style.color = activeColor;
           } else {
+            // Closing - apply inactive styles
             accordionContent.classList.add('hidden');
             if (chevron) chevron.style.transform = 'rotate(0deg)';
+            accordionButton.style.backgroundColor = inactiveBg;
+            accordionButton.style.color = inactiveColor;
           }
         }
       }
@@ -271,25 +283,48 @@ export default function ProductTabs({ productTabs = [], product = null, settings
       <!-- Mobile: Accordion - Hidden on desktop -->
       <div class="md:hidden space-y-2">
         {{#each tabs}}
-          <div data-accordion-item="{{@index}}" style="background-color: {{settings.theme.product_tabs_inactive_bg}};">
+          <div data-accordion-item="{{@index}}">
             <!-- Accordion Header -->
+            {{#if @first}}
             <button
               class="w-full flex items-center justify-between p-4 text-left border transition-colors duration-200"
               style="color: {{settings.theme.product_tabs_title_color}}; background-color: {{settings.theme.product_tabs_active_bg}}; border-color: {{settings.theme.product_tabs_border_color}}; border-radius: {{settings.theme.product_tabs_border_radius}};"
-              onmouseover="this.style.backgroundColor='{{settings.theme.product_tabs_hover_bg}}';"
-              onmouseout="this.style.backgroundColor='{{settings.theme.product_tabs_active_bg}}';"
               data-action="toggle-accordion"
-              data-accordion-index="{{@index}}">
+              data-accordion-index="{{@index}}"
+              data-active-bg="{{settings.theme.product_tabs_active_bg}}"
+              data-inactive-bg="{{settings.theme.product_tabs_inactive_bg}}"
+              data-active-color="{{settings.theme.product_tabs_title_color}}"
+              data-inactive-color="{{settings.theme.product_tabs_inactive_color}}">
               <span style="font-size: {{settings.theme.product_tabs_title_size}}; font-weight: {{settings.theme.product_tabs_font_weight}}; text-decoration: {{settings.theme.product_tabs_text_decoration}};">{{this.title}}</span>
               <svg
                 class="w-5 h-5 transition-transform duration-200 accordion-chevron"
-                style="color: {{settings.theme.product_tabs_title_color}};"
+                style="transform: rotate(180deg);"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
+            {{else}}
+            <button
+              class="w-full flex items-center justify-between p-4 text-left border transition-colors duration-200"
+              style="color: {{settings.theme.product_tabs_inactive_color}}; background-color: {{settings.theme.product_tabs_inactive_bg}}; border-color: {{settings.theme.product_tabs_border_color}}; border-radius: {{settings.theme.product_tabs_border_radius}};"
+              data-action="toggle-accordion"
+              data-accordion-index="{{@index}}"
+              data-active-bg="{{settings.theme.product_tabs_active_bg}}"
+              data-inactive-bg="{{settings.theme.product_tabs_inactive_bg}}"
+              data-active-color="{{settings.theme.product_tabs_title_color}}"
+              data-inactive-color="{{settings.theme.product_tabs_inactive_color}}">
+              <span style="font-size: {{settings.theme.product_tabs_title_size}}; font-weight: {{settings.theme.product_tabs_font_weight}}; text-decoration: {{settings.theme.product_tabs_text_decoration}};">{{this.title}}</span>
+              <svg
+                class="w-5 h-5 transition-transform duration-200 accordion-chevron"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {{/if}}
 
             <!-- Accordion Content -->
             <div class="accordion-content {{#if @first}}{{else}}hidden{{/if}} p-4 pt-0"
