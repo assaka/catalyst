@@ -853,9 +853,9 @@ export default function XmlSitemap() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <Alert>
-                                <FileStack className="h-4 w-4" />
+                                <FileText className="h-4 w-4" />
                                 <AlertDescription>
-                                    Configure sitemap index and splitting for large sites.
+                                    Configure advanced sitemap settings.
                                 </AlertDescription>
                             </Alert>
 
