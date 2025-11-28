@@ -4,7 +4,7 @@ import { createProductUrl } from '@/utils/urlUtils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ProductLabelComponent from '@/components/storefront/ProductLabel';
-import { formatPriceWithTax, safeNumber, getPriceDisplay } from '@/utils/priceUtils';
+import { formatPriceWithTax, formatPriceNumber, safeNumber, getPriceDisplay } from '@/utils/priceUtils';
 import cartService from '@/services/cartService';
 import { ShoppingCart } from 'lucide-react';
 import { getPrimaryImageUrl } from '@/utils/imageUtils';
@@ -351,7 +351,7 @@ const ProductItemCard = ({
                         data-slot-id={isEditorMode ? 'product_card_price' : undefined}
                         onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price') : undefined}
                       >
-                        {hideCurrency ? '' : formatPriceWithTax(priceInfo.displayPrice)}
+                        {!hideCurrency && settings?.currency_symbol}{formatPriceNumber(priceInfo.displayPrice)}
                       </p>
                       <p
                         className={comparePriceConfig.className || "text-gray-500 line-through text-sm"}
@@ -359,7 +359,7 @@ const ProductItemCard = ({
                         data-slot-id={isEditorMode ? 'product_card_compare_price' : undefined}
                         onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_compare_price') : undefined}
                       >
-                        {hideCurrency ? '' : formatPriceWithTax(priceInfo.originalPrice)}
+                        {!hideCurrency && settings?.currency_symbol}{formatPriceNumber(priceInfo.originalPrice)}
                       </p>
                     </>
                   );
@@ -372,7 +372,7 @@ const ProductItemCard = ({
                     data-slot-id={isEditorMode ? 'product_card_price' : undefined}
                     onClick={isEditorMode ? (e) => handleSlotClick(e, 'product_card_price') : undefined}
                   >
-                    {hideCurrency ? '' : formatPriceWithTax(priceInfo.displayPrice)}
+                    {!hideCurrency && settings?.currency_symbol}{formatPriceNumber(priceInfo.displayPrice)}
                   </p>
                 );
               })()}

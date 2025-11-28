@@ -547,6 +547,9 @@ export function UnifiedSlotRenderer({
       // Formatted prices for template
       price_formatted: hasValidComparePrice ? formatPrice(comparePrice) : formatPrice(price),
       compare_price_formatted: hasValidComparePrice ? formatPrice(price) : '',
+      // Price numbers without currency (for conditional currency display)
+      price_number: hasValidComparePrice ? formatPriceNumber(comparePrice) : formatPriceNumber(price),
+      compare_price_number: hasValidComparePrice ? formatPriceNumber(price) : '',
       lowest_price_formatted: formatPrice(lowestPrice),
       highest_price_formatted: formatPrice(highestPrice),
       formatted_price: formatPrice(price),
