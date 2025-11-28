@@ -1906,4 +1906,4 @@ router.post('/debug/fix-customer-stores', async (req, res) => {
   });
 });
 
-module.exports = router;
+module.exports = router;// Force rebuild 28 Nov 2025 18:08:08
