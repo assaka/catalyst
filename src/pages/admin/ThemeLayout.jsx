@@ -342,6 +342,8 @@ export default function ThemeLayout() {
             }, 500); // Small delay to let API load first
 
             // Handle database response structure
+            console.log('📦 ThemeLayout loadStore - fullStore.settings.theme:', fullStore?.settings?.theme);
+            console.log('📦 ThemeLayout loadStore - custom_fonts:', fullStore?.settings?.theme?.custom_fonts);
 
             // Ensure settings object and its nested properties exist with defaults
             const settings = {
@@ -406,6 +408,7 @@ export default function ThemeLayout() {
                     checkout_button_color: '#007bff',
                     place_order_button_color: '#28a745',
                     font_family: 'Inter',
+                    custom_fonts: [], // Custom fonts array
                     // Product Tabs Styling defaults
                     product_tabs_title_color: '#DC2626', // red-600
                     product_tabs_title_size: '1.875rem', // text-3xl
@@ -421,7 +424,9 @@ export default function ThemeLayout() {
                     breadcrumb_mobile_font_size: '0.75rem', // text-xs
                     breadcrumb_font_weight: '400', // font-normal
                     // Override with existing settings if they exist
-                    ...((fullStore?.settings || {}).theme || {})
+                    ...((fullStore?.settings || {}).theme || {}),
+                    // Ensure custom_fonts is preserved (array might not spread correctly)
+                    custom_fonts: (fullStore?.settings?.theme?.custom_fonts || [])
                 },
             };
             
