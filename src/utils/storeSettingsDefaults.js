@@ -250,6 +250,7 @@ function getCheckoutDefaults(settings) {
     checkout_section_title_size: settings?.checkout_section_title_size || '1.25rem',
     checkout_section_bg_color: settings?.checkout_section_bg_color || '#FFFFFF',
     checkout_section_border_color: settings?.checkout_section_border_color || '#E5E7EB',
+    checkout_section_text_color: settings?.checkout_section_text_color || '#374151',
 
     // Checkout Layout Configuration
     checkout_1step_columns: settings?.checkout_1step_columns ?? 3,

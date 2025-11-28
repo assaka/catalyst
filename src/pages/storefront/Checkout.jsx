@@ -1326,6 +1326,7 @@ export default function Checkout() {
   const checkoutSectionTitleSize = settings?.checkout_section_title_size || '1.25rem';
   const checkoutSectionBgColor = settings?.checkout_section_bg_color || '#FFFFFF';
   const checkoutSectionBorderColor = settings?.checkout_section_border_color || '#E5E7EB';
+  const checkoutSectionTextColor = settings?.checkout_section_text_color || '#374151';
 
   // Get step settings
   const stepsCount = settings?.checkout_steps_count || 3;
@@ -1612,7 +1613,7 @@ export default function Checkout() {
               </div>
             )}
 
-            <Card key="shipping-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+            <Card key="shipping-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
               <CardHeader>
                 <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.shipping_address', 'Shipping Address')}</CardTitle>
               </CardHeader>
@@ -1804,7 +1805,7 @@ export default function Checkout() {
 
       case 'Shipping Method':
         return isSectionVisible('shipping') && eligibleShippingMethods.length > 0 && (
-          <Card key="shipping-method" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+          <Card key="shipping-method" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.shipping_method', 'Shipping Method')}</CardTitle>
             </CardHeader>
@@ -1839,7 +1840,7 @@ export default function Checkout() {
 
       case 'Billing Address':
         return isSectionVisible('billing') && (
-          <Card key="billing-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+          <Card key="billing-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.billing_address', 'Billing Address')}</CardTitle>
             </CardHeader>
@@ -2028,7 +2029,7 @@ export default function Checkout() {
 
       case 'Delivery Settings':
         return isSectionVisible('delivery') && deliverySettings && (deliverySettings.enable_delivery_date || deliverySettings.enable_comments) && (
-          <Card key="delivery-settings" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+          <Card key="delivery-settings" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('checkout.delivery_settings', 'Delivery Settings')}</CardTitle>
             </CardHeader>
@@ -2104,7 +2105,7 @@ export default function Checkout() {
 
       case 'Payment Method':
         return isSectionVisible('payment') && eligiblePaymentMethods.length > 0 && (
-          <Card key="payment-method" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+          <Card key="payment-method" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('checkout.payment_method', 'Payment Method')}</CardTitle>
             </CardHeader>
@@ -2154,7 +2155,7 @@ export default function Checkout() {
 
       case 'Coupon':
         return (
-          <Card key="coupon" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+          <Card key="coupon" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.apply_coupon', 'Apply Coupon')}</CardTitle>
             </CardHeader>
@@ -2281,7 +2282,7 @@ export default function Checkout() {
 
       case 'Order Summary':
         return (
-          <Card key="order-summary" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor }}>
+          <Card key="order-summary" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('checkout.order_summary', 'Order Summary')}</CardTitle>
             </CardHeader>

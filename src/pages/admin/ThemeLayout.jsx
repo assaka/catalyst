@@ -374,6 +374,7 @@ export default function ThemeLayout() {
                 checkout_section_title_size: fullStore?.settings?.checkout_section_title_size || '1.25rem',
                 checkout_section_bg_color: fullStore?.settings?.checkout_section_bg_color || '#FFFFFF',
                 checkout_section_border_color: fullStore?.settings?.checkout_section_border_color || '#E5E7EB',
+                checkout_section_text_color: fullStore?.settings?.checkout_section_text_color || '#374151',
                 // Checkout Layout Configuration
                 checkout_1step_columns: fullStore?.settings?.checkout_1step_columns ?? 3,
                 checkout_2step_columns: fullStore?.settings?.checkout_2step_columns ?? 2,
@@ -1991,6 +1992,25 @@ export default function ThemeLayout() {
                                                 type="text"
                                                 value={store.settings?.checkout_section_border_color || '#E5E7EB'}
                                                 onChange={(e) => handleSettingsChange('checkout_section_border_color', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="checkout_section_text_color">Section Text Color</Label>
+                                        <div className="flex gap-2 mt-1">
+                                            <Input
+                                                id="checkout_section_text_color"
+                                                type="color"
+                                                value={store.settings?.checkout_section_text_color || '#374151'}
+                                                onChange={(e) => handleSettingsChange('checkout_section_text_color', e.target.value)}
+                                                className="w-20 h-10 p-1 cursor-pointer"
+                                            />
+                                            <Input
+                                                type="text"
+                                                value={store.settings?.checkout_section_text_color || '#374151'}
+                                                onChange={(e) => handleSettingsChange('checkout_section_text_color', e.target.value)}
                                                 className="flex-1"
                                             />
                                         </div>
