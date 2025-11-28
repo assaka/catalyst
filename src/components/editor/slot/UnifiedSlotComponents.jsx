@@ -326,30 +326,32 @@ const ProductGallery = createSlotComponent({
       </div>
     );
 
+    // Build thumbnail order classes based on settings
+    // Mobile: controlled by mobileLayout (above/below)
+    // Desktop vertical: controlled by verticalPosition (left/right)
+    const getThumbnailOrderClass = () => {
+      const mobileOrder = mobileLayout === 'above' ? 'order-first' : 'order-last';
+      if (isVertical) {
+        const desktopOrder = verticalPosition === 'left' ? 'sm:order-first' : 'sm:order-last';
+        return `${mobileOrder} ${desktopOrder}`;
+      }
+      // Horizontal: always below on desktop
+      return `${mobileOrder} sm:order-last`;
+    };
+
     // EDITOR VERSION
     if (context === 'editor') {
       const demoImages = Array.from({ length: 4 }, (_, i) => `https://placehold.co/100x100?text=Thumb+${i + 1}`);
-      const containerClass = isVertical ? 'flex flex-row gap-4' : 'flex flex-col space-y-4';
+      // Always flex-col on mobile, flex-row on desktop for vertical layout
+      const containerClass = isVertical
+        ? 'flex flex-col sm:flex-row gap-4'
+        : 'flex flex-col gap-4';
       const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
 
-      // For vertical layout, render based on position
-      if (isVertical) {
-        return (
-          <div className={finalContainerClass} style={styles}>
-            {verticalPosition === 'left' && renderThumbnails(demoImages, (img) => img, 'Demo', 0, null)}
-            {renderMainImage('https://placehold.co/600x600?text=Product+Image', 'Product', null, null, 'flex-1')}
-            {verticalPosition === 'right' && renderThumbnails(demoImages, (img) => img, 'Demo', 0, null)}
-          </div>
-        );
-      }
-
-      // Horizontal layout - use CSS order for mobile above/below
-      // Mobile: order-first puts thumbnails above, order-last puts below
-      const mobileOrderClass = mobileLayout === 'above' ? 'order-first sm:order-last' : 'order-last';
       return (
         <div className={finalContainerClass} style={styles}>
-          {renderMainImage('https://placehold.co/600x600?text=Product+Image', 'Product', null, null, 'order-none')}
-          {renderThumbnails(demoImages, (img) => img, 'Demo', 0, null, mobileOrderClass)}
+          {renderMainImage('https://placehold.co/600x600?text=Product+Image', 'Product', null, null, `order-none ${isVertical ? 'sm:flex-1' : ''}`)}
+          {renderThumbnails(demoImages, (img) => img, 'Demo', 0, null, getThumbnailOrderClass())}
         </div>
       );
     }
@@ -372,31 +374,17 @@ const ProductGallery = createSlotComponent({
     const currentImage = getImageUrl(images[activeImageIndex]) || getImageUrl(images[0]) || 'https://placehold.co/600x600?text=No+Image';
     const hasMultipleImages = images.length > 1;
 
-    // Container classes based on layout
-    const containerClass = isVertical ? 'flex flex-row gap-4' : 'flex flex-col space-y-4';
+    // Container classes - always flex-col on mobile, flex-row on desktop for vertical
+    const containerClass = isVertical
+      ? 'flex flex-col sm:flex-row gap-4'
+      : 'flex flex-col gap-4';
     const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
 
-    // For vertical layout
-    if (isVertical) {
-      return (
-        <div className={finalContainerClass} style={styles}>
-          {verticalPosition === 'left' && hasMultipleImages &&
-            renderThumbnails(images, getImageUrl, product.name, activeImageIndex, setActiveImageIndex)}
-          {renderMainImage(currentImage, product.name, productContext.productLabels, product, 'flex-1')}
-          {verticalPosition === 'right' && hasMultipleImages &&
-            renderThumbnails(images, getImageUrl, product.name, activeImageIndex, setActiveImageIndex)}
-        </div>
-      );
-    }
-
-    // Horizontal layout - use CSS order for mobile above/below
-    // Mobile: order-first puts thumbnails above, order-last puts below
-    const mobileOrderClass = mobileLayout === 'above' ? 'order-first sm:order-last' : 'order-last';
     return (
       <div className={finalContainerClass} style={styles}>
-        {renderMainImage(currentImage, product.name, productContext.productLabels, product, 'order-none')}
+        {renderMainImage(currentImage, product.name, productContext.productLabels, product, `order-none ${isVertical ? 'sm:flex-1' : ''}`)}
         {hasMultipleImages &&
-          renderThumbnails(images, getImageUrl, product.name, activeImageIndex, setActiveImageIndex, mobileOrderClass)}
+          renderThumbnails(images, getImageUrl, product.name, activeImageIndex, setActiveImageIndex, getThumbnailOrderClass())}
       </div>
     );
   }
