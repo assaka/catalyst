@@ -1298,17 +1298,23 @@ router.post('/customer/login', [
           store_id
         });
 
+      const { getTranslation } = require('../utils/translationHelper');
+      const language = req.headers['x-language'] || 'en';
+      const message = await getTranslation('auth.error.invalid_credentials', language, store_id);
       return res.status(400).json({
         success: false,
-        message: 'Invalid credentials or you don\'t have an account for this store'
+        message: message || 'Invalid credentials'
       });
     }
 
     // Check password
     if (!customer.password) {
+      const { getTranslation } = require('../utils/translationHelper');
+      const language = req.headers['x-language'] || 'en';
+      const message = await getTranslation('auth.error.account_not_activated', language, store_id);
       return res.status(400).json({
         success: false,
-        message: 'This account has not been activated yet. Please create a password first.'
+        message: message || 'This account has not been activated yet. Please create a password first.'
       });
     }
 
@@ -1325,9 +1331,12 @@ router.post('/customer/login', [
           store_id
         });
 
+      const { getTranslation } = require('../utils/translationHelper');
+      const language = req.headers['x-language'] || 'en';
+      const message = await getTranslation('auth.error.invalid_credentials', language, store_id);
       return res.status(400).json({
         success: false,
-        message: 'Invalid credentials'
+        message: message || 'Invalid credentials'
       });
     }
 
