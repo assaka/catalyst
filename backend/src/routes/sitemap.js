@@ -10,12 +10,26 @@ async function generateSitemapXml(storeId, baseUrl) {
     // Get tenant database connection
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    // Get SEO settings for the store
+    // Get SEO settings for the store (using JSON column)
     const { data: seoSettings } = await tenantDb
       .from('seo_settings')
-      .select('sitemap_include_categories, sitemap_include_products, sitemap_include_pages')
+      .select('xml_sitemap_settings')
       .eq('store_id', storeId)
       .single();
+
+    // Extract settings from JSON, with defaults
+    const xmlSettings = seoSettings?.xml_sitemap_settings || {};
+    const includeCategories = xmlSettings.include_categories !== false;
+    const includeProducts = xmlSettings.include_products !== false;
+    const includePages = xmlSettings.include_pages !== false;
+
+    // Priority and changefreq settings per URL group (with defaults)
+    const categoryPriority = xmlSettings.category_priority || '0.8';
+    const categoryChangefreq = xmlSettings.category_changefreq || 'weekly';
+    const productPriority = xmlSettings.product_priority || '0.7';
+    const productChangefreq = xmlSettings.product_changefreq || 'daily';
+    const pagePriority = xmlSettings.page_priority || '0.6';
+    const pageChangefreq = xmlSettings.page_changefreq || 'monthly';
 
     const urls = [];
 
@@ -28,7 +42,7 @@ async function generateSitemapXml(storeId, baseUrl) {
     });
 
     // Add categories if enabled
-    if (!seoSettings || seoSettings.sitemap_include_categories !== false) {
+    if (includeCategories) {
       const { data: categories } = await tenantDb
         .from('categories')
         .select('slug, updated_at')
@@ -40,8 +54,8 @@ async function generateSitemapXml(storeId, baseUrl) {
         categories.forEach(category => {
           urls.push({
             loc: `${baseUrl}/category/${category.slug}`,
-            changefreq: 'weekly',
-            priority: '0.8',
+            changefreq: categoryChangefreq,
+            priority: categoryPriority,
             lastmod: category.updated_at ? new Date(category.updated_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
           });
         });
@@ -49,7 +63,7 @@ async function generateSitemapXml(storeId, baseUrl) {
     }
 
     // Add products if enabled
-    if (!seoSettings || seoSettings.sitemap_include_products !== false) {
+    if (includeProducts) {
       const { data: products } = await tenantDb
         .from('products')
         .select('slug, updated_at')
@@ -61,8 +75,8 @@ async function generateSitemapXml(storeId, baseUrl) {
         products.forEach(product => {
           urls.push({
             loc: `${baseUrl}/product/${product.slug}`,
-            changefreq: 'daily',
-            priority: '0.7',
+            changefreq: productChangefreq,
+            priority: productPriority,
             lastmod: product.updated_at ? new Date(product.updated_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
           });
         });
@@ -70,7 +84,7 @@ async function generateSitemapXml(storeId, baseUrl) {
     }
 
     // Add CMS pages if enabled
-    if (!seoSettings || seoSettings.sitemap_include_pages !== false) {
+    if (includePages) {
       const { data: pages } = await tenantDb
         .from('cms_pages')
         .select('slug, updated_at')
@@ -81,8 +95,8 @@ async function generateSitemapXml(storeId, baseUrl) {
         pages.forEach(page => {
           urls.push({
             loc: `${baseUrl}/${page.slug}`,
-            changefreq: 'monthly',
-            priority: '0.6',
+            changefreq: pageChangefreq,
+            priority: pagePriority,
             lastmod: page.updated_at ? new Date(page.updated_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
           });
         });

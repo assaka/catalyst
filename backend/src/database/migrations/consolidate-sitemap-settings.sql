@@ -3,7 +3,7 @@
 
 -- Step 1: Add new JSON columns
 ALTER TABLE seo_settings
-  ADD COLUMN IF NOT EXISTS xml_sitemap_settings JSONB DEFAULT '{"enabled": true, "include_products": true, "include_categories": true, "include_pages": true, "include_images": false, "include_videos": false, "enable_news": false, "enable_index": false, "max_urls": 50000, "google_search_console_api_key": "", "auto_submit": false}',
+  ADD COLUMN IF NOT EXISTS xml_sitemap_settings JSONB DEFAULT '{"enabled": true, "include_products": true, "include_categories": true, "include_pages": true, "include_images": false, "include_videos": false, "enable_news": false, "enable_index": false, "max_urls": 50000, "google_search_console_api_key": "", "auto_submit": false, "category_priority": "0.8", "category_changefreq": "weekly", "product_priority": "0.7", "product_changefreq": "daily", "page_priority": "0.6", "page_changefreq": "monthly"}',
   ADD COLUMN IF NOT EXISTS html_sitemap_settings JSONB DEFAULT '{"enabled": true, "include_products": true, "include_categories": true, "include_pages": true, "max_products": 20, "product_sort": "-updated_date"}';
 
 -- Step 2: Migrate existing data from individual columns to JSON columns
@@ -20,7 +20,13 @@ SET
     'enable_index', false,
     'max_urls', 50000,
     'google_search_console_api_key', '',
-    'auto_submit', false
+    'auto_submit', false,
+    'category_priority', '0.8',
+    'category_changefreq', 'weekly',
+    'product_priority', '0.7',
+    'product_changefreq', 'daily',
+    'page_priority', '0.6',
+    'page_changefreq', 'monthly'
   ),
   html_sitemap_settings = jsonb_build_object(
     'enabled', COALESCE(enable_html_sitemap, true),

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import SaveButton from '@/components/ui/save-button';
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Download, RefreshCw, CheckCircle, AlertCircle, Upload, Image, Video, Newspaper, FileStack } from "lucide-react";
+import { FileText, Download, RefreshCw, CheckCircle, AlertCircle, Upload, Image, Video, Newspaper, FileStack, Settings2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Product } from '@/api/entities';
 import { Category } from '@/api/entities';
@@ -53,8 +54,40 @@ export default function XmlSitemap() {
         sitemap_enable_index: false,
         sitemap_max_urls: 50000,
         google_search_console_api_key: '',
-        sitemap_auto_submit: false
+        sitemap_auto_submit: false,
+        // Priority and changefreq per URL group
+        category_priority: '0.8',
+        category_changefreq: 'weekly',
+        product_priority: '0.7',
+        product_changefreq: 'daily',
+        page_priority: '0.6',
+        page_changefreq: 'monthly'
     });
+
+    // Changefreq options for dropdown
+    const changefreqOptions = [
+        { value: 'always', label: 'Always' },
+        { value: 'hourly', label: 'Hourly' },
+        { value: 'daily', label: 'Daily' },
+        { value: 'weekly', label: 'Weekly' },
+        { value: 'monthly', label: 'Monthly' },
+        { value: 'yearly', label: 'Yearly' },
+        { value: 'never', label: 'Never' }
+    ];
+
+    // Priority options for dropdown
+    const priorityOptions = [
+        { value: '1.0', label: '1.0 (Highest)' },
+        { value: '0.9', label: '0.9' },
+        { value: '0.8', label: '0.8' },
+        { value: '0.7', label: '0.7' },
+        { value: '0.6', label: '0.6' },
+        { value: '0.5', label: '0.5 (Default)' },
+        { value: '0.4', label: '0.4' },
+        { value: '0.3', label: '0.3' },
+        { value: '0.2', label: '0.2' },
+        { value: '0.1', label: '0.1 (Lowest)' }
+    ];
 
     // Load existing settings
     useEffect(() => {
@@ -82,7 +115,14 @@ export default function XmlSitemap() {
                         sitemap_enable_index: xmlSettings.enable_index ?? false,
                         sitemap_max_urls: xmlSettings.max_urls ?? 50000,
                         google_search_console_api_key: xmlSettings.google_search_console_api_key ?? '',
-                        sitemap_auto_submit: xmlSettings.auto_submit ?? false
+                        sitemap_auto_submit: xmlSettings.auto_submit ?? false,
+                        // Priority and changefreq per URL group
+                        category_priority: xmlSettings.category_priority ?? '0.8',
+                        category_changefreq: xmlSettings.category_changefreq ?? 'weekly',
+                        product_priority: xmlSettings.product_priority ?? '0.7',
+                        product_changefreq: xmlSettings.product_changefreq ?? 'daily',
+                        page_priority: xmlSettings.page_priority ?? '0.6',
+                        page_changefreq: xmlSettings.page_changefreq ?? 'monthly'
                     });
                 }
             } catch (error) {
@@ -200,8 +240,8 @@ export default function XmlSitemap() {
                 xml += `
   <url>
     <loc>${window.location.origin}/category/${category.slug || category.id}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <changefreq>${settings.category_changefreq}</changefreq>
+    <priority>${settings.category_priority}</priority>
     <lastmod>${lastmod}</lastmod>`;
 
                 // Add image if enabled and available
@@ -226,8 +266,8 @@ export default function XmlSitemap() {
                 xml += `
   <url>
     <loc>${window.location.origin}/product/${product.slug || product.id}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
+    <changefreq>${settings.product_changefreq}</changefreq>
+    <priority>${settings.product_priority}</priority>
     <lastmod>${lastmod}</lastmod>`;
 
                 // Add images if enabled
@@ -266,8 +306,8 @@ export default function XmlSitemap() {
                 xml += `
   <url>
     <loc>${window.location.origin}/page/${page.slug}</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <changefreq>${settings.page_changefreq}</changefreq>
+    <priority>${settings.page_priority}</priority>
     <lastmod>${lastmod}</lastmod>`;
 
                 // Add image if enabled and available
@@ -511,7 +551,14 @@ export default function XmlSitemap() {
                 enable_index: settings.sitemap_enable_index,
                 max_urls: settings.sitemap_max_urls,
                 google_search_console_api_key: settings.google_search_console_api_key,
-                auto_submit: settings.sitemap_auto_submit
+                auto_submit: settings.sitemap_auto_submit,
+                // Priority and changefreq per URL group
+                category_priority: settings.category_priority,
+                category_changefreq: settings.category_changefreq,
+                product_priority: settings.product_priority,
+                product_changefreq: settings.product_changefreq,
+                page_priority: settings.page_priority,
+                page_changefreq: settings.page_changefreq
             };
 
             const payload = {
@@ -652,36 +699,161 @@ export default function XmlSitemap() {
                                 </AlertDescription>
                             </Alert>
 
-                            <div className="space-y-4">
-                                <div className="flex items-center space-x-2">
-                                    <Switch
-                                        id="include-products"
-                                        checked={settings.sitemap_include_products}
-                                        onCheckedChange={(checked) => {
-                                            setSettings({ ...settings, sitemap_include_products: checked });
-                                        }}
-                                    />
-                                    <Label htmlFor="include-products">Include Products</Label>
+                            <div className="space-y-6">
+                                {/* Categories Settings */}
+                                <div className="border rounded-lg p-4 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-2">
+                                            <Switch
+                                                id="include-categories"
+                                                checked={settings.sitemap_include_categories}
+                                                onCheckedChange={(checked) => {
+                                                    setSettings({ ...settings, sitemap_include_categories: checked });
+                                                }}
+                                            />
+                                            <Label htmlFor="include-categories" className="font-medium">Include Categories</Label>
+                                        </div>
+                                    </div>
+                                    {settings.sitemap_include_categories && (
+                                        <div className="grid grid-cols-2 gap-4 pl-8">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="category-priority">Priority</Label>
+                                                <Select
+                                                    value={settings.category_priority}
+                                                    onValueChange={(value) => setSettings({ ...settings, category_priority: value })}
+                                                >
+                                                    <SelectTrigger id="category-priority">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {priorityOptions.map(opt => (
+                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="category-changefreq">Change Frequency</Label>
+                                                <Select
+                                                    value={settings.category_changefreq}
+                                                    onValueChange={(value) => setSettings({ ...settings, category_changefreq: value })}
+                                                >
+                                                    <SelectTrigger id="category-changefreq">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {changefreqOptions.map(opt => (
+                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                    <Switch
-                                        id="include-categories"
-                                        checked={settings.sitemap_include_categories}
-                                        onCheckedChange={(checked) => {
-                                            setSettings({ ...settings, sitemap_include_categories: checked });
-                                        }}
-                                    />
-                                    <Label htmlFor="include-products">Include Categories</Label>
+
+                                {/* Products Settings */}
+                                <div className="border rounded-lg p-4 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-2">
+                                            <Switch
+                                                id="include-products"
+                                                checked={settings.sitemap_include_products}
+                                                onCheckedChange={(checked) => {
+                                                    setSettings({ ...settings, sitemap_include_products: checked });
+                                                }}
+                                            />
+                                            <Label htmlFor="include-products" className="font-medium">Include Products</Label>
+                                        </div>
+                                    </div>
+                                    {settings.sitemap_include_products && (
+                                        <div className="grid grid-cols-2 gap-4 pl-8">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="product-priority">Priority</Label>
+                                                <Select
+                                                    value={settings.product_priority}
+                                                    onValueChange={(value) => setSettings({ ...settings, product_priority: value })}
+                                                >
+                                                    <SelectTrigger id="product-priority">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {priorityOptions.map(opt => (
+                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="product-changefreq">Change Frequency</Label>
+                                                <Select
+                                                    value={settings.product_changefreq}
+                                                    onValueChange={(value) => setSettings({ ...settings, product_changefreq: value })}
+                                                >
+                                                    <SelectTrigger id="product-changefreq">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {changefreqOptions.map(opt => (
+                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                    <Switch
-                                        id="include-pages"
-                                        checked={settings.sitemap_include_pages}
-                                        onCheckedChange={(checked) => {
-                                            setSettings({ ...settings, sitemap_include_pages: checked });
-                                        }}
-                                    />
-                                    <Label htmlFor="include-products">Include CMS Pages</Label>
+
+                                {/* CMS Pages Settings */}
+                                <div className="border rounded-lg p-4 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-2">
+                                            <Switch
+                                                id="include-pages"
+                                                checked={settings.sitemap_include_pages}
+                                                onCheckedChange={(checked) => {
+                                                    setSettings({ ...settings, sitemap_include_pages: checked });
+                                                }}
+                                            />
+                                            <Label htmlFor="include-pages" className="font-medium">Include CMS Pages</Label>
+                                        </div>
+                                    </div>
+                                    {settings.sitemap_include_pages && (
+                                        <div className="grid grid-cols-2 gap-4 pl-8">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="page-priority">Priority</Label>
+                                                <Select
+                                                    value={settings.page_priority}
+                                                    onValueChange={(value) => setSettings({ ...settings, page_priority: value })}
+                                                >
+                                                    <SelectTrigger id="page-priority">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {priorityOptions.map(opt => (
+                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="page-changefreq">Change Frequency</Label>
+                                                <Select
+                                                    value={settings.page_changefreq}
+                                                    onValueChange={(value) => setSettings({ ...settings, page_changefreq: value })}
+                                                >
+                                                    <SelectTrigger id="page-changefreq">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {changefreqOptions.map(opt => (
+                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </CardContent>
