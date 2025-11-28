@@ -445,7 +445,6 @@ const LayeredNavigation = createSlotComponent({
         filterContents?.forEach(filterContent => {
           const maxVisibleAttr = filterContent.getAttribute('data-max-visible');
           const maxVisible = parseInt(maxVisibleAttr);
-          const attributeCode = filterContent.getAttribute('data-attribute-code');
 
           // Only apply if maxVisible is a valid number and > 0
           // If not set or invalid, don't limit (show all)
@@ -454,7 +453,10 @@ const LayeredNavigation = createSlotComponent({
           }
 
           const allOptions = filterContent.querySelectorAll('.filter-option');
-          const showMoreBtn = filterContent.querySelector('.show-more-btn');
+          // The show-more-btn is a sibling element, not a child
+          const showMoreBtn = filterContent.nextElementSibling?.classList?.contains('show-more-btn')
+            ? filterContent.nextElementSibling
+            : null;
 
           // Hide options beyond max visible
           let hiddenCount = 0;

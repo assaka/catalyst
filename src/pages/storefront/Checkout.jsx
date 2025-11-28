@@ -1700,9 +1700,9 @@ export default function Checkout() {
                 </div>
               ) : (
                 user ? (
-                  <p className="text-sm text-gray-600 mb-4">{t('checkout.no_saved_addresses', 'No saved addresses')}</p>
+                  <p className="text-sm mb-4" style={{ color: checkoutSectionTextColor }}>{t('checkout.no_saved_addresses', 'No saved addresses')}</p>
                 ) : (
-                  <p className="text-sm text-gray-600 mb-4">{t('checkout.enter_shipping_address', 'Enter shipping address')}</p>
+                  <p className="text-sm mb-4" style={{ color: checkoutSectionTextColor }}>{t('checkout.enter_shipping_address', 'Enter shipping address')}</p>
                 )
               )}
 
@@ -2158,7 +2158,7 @@ export default function Checkout() {
                       <div className="flex-1">
                         <p className="font-medium">{getPaymentMethodName(method, getCurrentLanguage()) || method.name}</p>
                         {(getPaymentMethodDescription(method, getCurrentLanguage()) || method.description) && (
-                          <p className="text-sm text-gray-500">{getPaymentMethodDescription(method, getCurrentLanguage()) || method.description}</p>
+                          <p className="text-sm" style={{ color: checkoutSectionTextColor }}>{getPaymentMethodDescription(method, getCurrentLanguage()) || method.description}</p>
                         )}
                         {method.fee_type !== 'none' && method.fee_amount > 0 && (
                           <p className="text-sm text-gray-600">
@@ -2316,7 +2316,7 @@ export default function Checkout() {
                 <Accordion type="single" collapsible>
                   <AccordionItem value="item-1">
                     <AccordionTrigger>
-                      <h3 className="font-medium text-gray-900">{t('checkout.items_in_cart', 'Items in Cart')} ({cartItems.length})</h3>
+                      <h3 className="font-medium" style={{ color: checkoutSectionTextColor }}>{t('checkout.items_in_cart', 'Items in Cart')} ({cartItems.length})</h3>
                     </AccordionTrigger>
                     <AccordionContent>
                       {cartItems.map((item) => {
