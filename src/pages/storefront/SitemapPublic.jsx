@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { StorefrontCategory, StorefrontProduct, StorefrontSeoSetting } from '@/api/storefront-entities';
-import { CmsPage } from '@/api/entities';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
-import { createCmsPageUrl } from '@/utils/urlUtils';
+import { useParams, Link } from 'react-router-dom';
+import { StorefrontCategory, StorefrontProduct, StorefrontSeoSetting, StorefrontCmsPage } from '@/api/storefront-entities';
+import { createCmsPageUrl, createProductUrl, createCategoryUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { Layout, FileText, ChevronRight, Package } from 'lucide-react';
 import { getPageTitle, getProductName, getCategoryName } from '@/utils/translationUtils';
@@ -70,7 +67,7 @@ export default function SitemapPublic() {
                 if (htmlSitemapSettings.include_pages) {
                     promises.push(
                         store?.id
-                            ? CmsPage.filter({ is_active: true, store_id: store.id })
+                            ? StorefrontCmsPage.filter({ is_active: true, store_id: store.id })
                             : Promise.resolve([])
                     );
                 } else {
@@ -110,7 +107,7 @@ export default function SitemapPublic() {
             <ul className={parentId ? "pl-6" : ""}>
                 {children.map(category => (
                     <li key={category.id} className="my-2">
-                        <Link to={createPageUrl(`Storefront?category=${category.slug}`)} className="flex items-center text-blue-600 hover:underline">
+                        <Link to={createCategoryUrl(store?.slug || storeCode, category.slug)} className="flex items-center text-blue-600 hover:underline">
                             <ChevronRight className="w-4 h-4 mr-2" />
                             {getCategoryName(category)}
                         </Link>
@@ -163,7 +160,7 @@ export default function SitemapPublic() {
                         <ul>
                             {products.map(product => (
                                 <li key={product.id} className="my-2">
-                                    <Link to={createPageUrl(`ProductDetail?id=${product.id}`)} className="flex items-center text-blue-600 hover:underline">
+                                    <Link to={createProductUrl(store?.slug || storeCode, product.slug)} className="flex items-center text-blue-600 hover:underline">
                                         <ChevronRight className="w-4 h-4 mr-2" />
                                         {getProductName(product)}
                                     </Link>
