@@ -24,10 +24,10 @@ const validatePasswordStrength = (password) => {
   return null;
 };
 
-// @route   POST /api/public/customer-auth/forgot-password
+// @route   POST /api/public/auth/customer/forgot-password
 // @desc    Send password reset email to customer
 // @access  Public (no authentication required)
-router.post('/forgot-password', [
+router.post('/customer/forgot-password', [
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
   body('store_id').notEmpty().withMessage('Store ID is required')
 ], async (req, res) => {
@@ -134,10 +134,10 @@ router.post('/forgot-password', [
   }
 });
 
-// @route   POST /api/public/customer-auth/reset-password
+// @route   POST /api/public/auth/customer/reset-password
 // @desc    Reset customer password with token
 // @access  Public
-router.post('/reset-password', [
+router.post('/customer/reset-password', [
   body('token').trim().notEmpty().withMessage('Reset token is required'),
   body('password').custom(value => {
     const error = validatePasswordStrength(value);
@@ -210,6 +210,6 @@ router.post('/reset-password', [
   }
 });
 
-console.log('[PUBLIC-CUSTOMER-AUTH] Routes loaded: forgot-password, reset-password');
+console.log('[PUBLIC-CUSTOMER-AUTH] Routes loaded: customer/forgot-password, customer/reset-password');
 
 module.exports = router;

@@ -462,7 +462,7 @@ app.use('/api/cache-test', cacheTestRoutes);
 
 // Public routes for guest access
 app.use('/api/public/auth', authRoutes);
-app.use('/api/public/customer-auth', publicCustomerAuthRoutes); // Forgot password, reset password
+app.use('/api/public/auth', publicCustomerAuthRoutes); // Forgot password, reset password (separate router)
 app.use('/api/public/storefront/bootstrap', storefrontBootstrapRoutes); // Unified storefront initialization endpoint
 app.use('/api/public/page-bootstrap', pageBootstrapRoutes); // Page-specific bootstrap (product, category, checkout, homepage)
 app.use('/api/public/stores', storeRoutes);
