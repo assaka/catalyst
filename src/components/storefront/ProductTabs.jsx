@@ -124,6 +124,10 @@ export default function ProductTabs({ productTabs = [], product = null, settings
     });
   }, [product, tabsData, activeTabIndex, settings]);
 
+  // Store theme settings in ref for click handler access
+  const themeSettingsRef = useRef(settings?.theme || {});
+  themeSettingsRef.current = settings?.theme || {};
+
   // Attach tab click handlers
   useEffect(() => {
     if (!containerRef.current) return;
@@ -138,17 +142,20 @@ export default function ProductTabs({ productTabs = [], product = null, settings
         if (tabIndex !== -1) {
           setActiveTabIndex(tabIndex);
 
-          // Update UI immediately
+          // Update UI immediately using theme settings
           const allTabs = containerRef.current.querySelectorAll('[data-action="switch-tab"]');
           const allContents = containerRef.current.querySelectorAll('[data-tab-content]');
+          const theme = themeSettingsRef.current;
 
           allTabs.forEach((btn, idx) => {
             if (idx === tabIndex) {
-              btn.classList.add('border-blue-500', 'text-blue-600');
-              btn.classList.remove('text-gray-600');
+              // Active tab styles
+              btn.style.color = theme.product_tabs_title_color || '#1F2937';
+              btn.style.backgroundColor = theme.product_tabs_active_bg || 'transparent';
             } else {
-              btn.classList.remove('border-blue-500', 'text-blue-600');
-              btn.classList.add('text-gray-600');
+              // Inactive tab styles
+              btn.style.color = theme.product_tabs_inactive_color || '#6B7280';
+              btn.style.backgroundColor = theme.product_tabs_inactive_bg || 'transparent';
             }
           });
 
