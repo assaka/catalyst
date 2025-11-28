@@ -1562,8 +1562,8 @@ export default function Checkout() {
   const renderSection = (sectionName) => {
     switch (sectionName) {
       case 'Shipping Address':
-        // Only show shipping address if require_shipping_address setting is enabled (default: true)
-        return isSectionVisible('shipping') && settings?.require_shipping_address !== false && (
+        // Show login/account section always when visible, but shipping address card only when required
+        return isSectionVisible('shipping') && (
           <>
             {/* Logged-in User Banner */}
             {user && (
@@ -1653,6 +1653,8 @@ export default function Checkout() {
               </div>
             )}
 
+            {/* Only show shipping address card if require_shipping_address is enabled (default: true) */}
+            {settings?.require_shipping_address !== false && (
             <Card key="shipping-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
               <CardHeader>
                 <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.shipping_address', 'Shipping Address')}</CardTitle>
@@ -1842,6 +1844,7 @@ export default function Checkout() {
               )}
             </CardContent>
           </Card>
+            )}
           </>
         );
 
