@@ -260,10 +260,11 @@ const ProductGallery = createSlotComponent({
       // Use state for active image in editor too
       const [editorActiveIndex, setEditorActiveIndex] = useState(0);
 
-      // For vertical: left = thumbnails first (flex-row), right = main image first (flex-row-reverse)
+      // For vertical layout: DOM order controls position (left=thumbnails first, right=main first)
+      // Always use flex-row since render order already handles left/right positioning
       const containerClass = isVertical
-        ? `flex ${verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse'} gap-4`
-        : `flex flex-col space-y-4`;
+        ? 'flex flex-row gap-4'
+        : 'flex flex-col space-y-4';
 
       const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
 
@@ -370,11 +371,11 @@ const ProductGallery = createSlotComponent({
 
     const currentImage = getImageUrl(images[activeImageIndex]) || getImageUrl(images[0]) || 'https://placehold.co/600x600?text=No+Image';
 
-    // Use same layout logic as editor
-    // For vertical: left = thumbnails first (flex-row), right = main image first (flex-row-reverse)
+    // For vertical layout: DOM order controls position (left=thumbnails first, right=main first)
+    // Always use flex-row since render order already handles left/right positioning
     const containerClass = isVertical
-      ? `flex ${verticalPosition === 'left' ? 'flex-row' : 'flex-row-reverse'} gap-4`
-      : `flex flex-col space-y-4`;
+      ? 'flex flex-row gap-4'
+      : 'flex flex-col space-y-4';
 
     // Apply className if provided
     const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
