@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages, Upload, Trash2, Type } from 'lucide-react';
+import { Palette, Eye, Navigation, ShoppingBag, Filter, Home, CreditCard, GripVertical, Languages, Trash2, Type } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import TranslationFields from '@/components/admin/TranslationFields';
 import FlashMessage from '@/components/storefront/FlashMessage';
@@ -122,7 +122,8 @@ export default function ThemeLayout() {
     const [deliverySettings, setDeliverySettings] = useState(null);
     const [showStepTranslations, setShowStepTranslations] = useState(false);
     const [stepTranslations, setStepTranslations] = useState({});
-    const [fontUploading, setFontUploading] = useState(false);
+    const [newFontName, setNewFontName] = useState('');
+    const [newFontUrl, setNewFontUrl] = useState('');
 
     // Drag and drop sensors
     const sensors = useSensors(
@@ -647,82 +648,56 @@ export default function ThemeLayout() {
         }));
     };
 
-    // Handle custom font upload
-    const handleFontUpload = async (event) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        // Validate file extension
-        const validExtensions = ['.ttf', '.otf', '.woff', '.woff2'];
-        const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-        if (!validExtensions.includes(ext)) {
-            setFlashMessage({ type: 'error', message: 'Invalid font format. Please upload .ttf, .otf, .woff, or .woff2 files.' });
+    // Add custom font via URL
+    const handleAddCustomFont = () => {
+        if (!newFontName.trim()) {
+            setFlashMessage({ type: 'error', message: 'Please enter a font name.' });
+            return;
+        }
+        if (!newFontUrl.trim()) {
+            setFlashMessage({ type: 'error', message: 'Please enter a font URL.' });
             return;
         }
 
-        // Extract font name from filename (remove extension)
-        const fontName = file.name.substring(0, file.name.lastIndexOf('.')).replace(/[-_]/g, ' ');
+        // Detect format from URL
+        const urlLower = newFontUrl.toLowerCase();
+        let format = 'woff2'; // default
+        if (urlLower.includes('.ttf')) format = 'ttf';
+        else if (urlLower.includes('.otf')) format = 'otf';
+        else if (urlLower.includes('.woff2')) format = 'woff2';
+        else if (urlLower.includes('.woff')) format = 'woff';
 
-        setFontUploading(true);
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('folder', 'fonts');
+        const newFont = {
+            name: newFontName.trim(),
+            url: newFontUrl.trim(),
+            format
+        };
 
-            const response = await api.post('/storage/upload', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-
-            if (response.data.success) {
-                const fontUrl = response.data.data.url;
-                const newFont = {
-                    name: fontName,
-                    url: fontUrl,
-                    format: ext.replace('.', ''),
-                    originalFilename: file.name
-                };
-
-                // Add to custom_fonts array in theme settings
-                const currentFonts = store.settings.theme?.custom_fonts || [];
-                handleThemeChange('custom_fonts', [...currentFonts, newFont]);
-
-                setFlashMessage({ type: 'success', message: `Font "${fontName}" uploaded successfully.` });
-            } else {
-                throw new Error(response.data.error || 'Upload failed');
-            }
-        } catch (error) {
-            console.error('Font upload error:', error);
-            setFlashMessage({ type: 'error', message: error.response?.data?.error || error.message || 'Failed to upload font.' });
-        } finally {
-            setFontUploading(false);
-            // Reset input
-            event.target.value = '';
+        // Check for duplicates
+        const currentFonts = store.settings.theme?.custom_fonts || [];
+        if (currentFonts.some(f => f.name.toLowerCase() === newFont.name.toLowerCase())) {
+            setFlashMessage({ type: 'error', message: 'A font with this name already exists.' });
+            return;
         }
+
+        handleThemeChange('custom_fonts', [...currentFonts, newFont]);
+        setNewFontName('');
+        setNewFontUrl('');
+        setFlashMessage({ type: 'success', message: `Font "${newFont.name}" added successfully.` });
     };
 
-    // Handle custom font delete
-    const handleFontDelete = async (fontToDelete) => {
-        try {
-            // Remove from storage
-            await api.delete('/storage/delete', {
-                data: { imagePath: fontToDelete.url }
-            });
+    // Remove custom font
+    const handleFontDelete = (fontToDelete) => {
+        const currentFonts = store.settings.theme?.custom_fonts || [];
+        const updatedFonts = currentFonts.filter(f => f.url !== fontToDelete.url);
+        handleThemeChange('custom_fonts', updatedFonts);
 
-            // Remove from custom_fonts array
-            const currentFonts = store.settings.theme?.custom_fonts || [];
-            const updatedFonts = currentFonts.filter(f => f.url !== fontToDelete.url);
-            handleThemeChange('custom_fonts', updatedFonts);
-
-            // If this was the selected font, reset to default
-            if (store.settings.theme?.font_family === fontToDelete.name) {
-                handleThemeChange('font_family', 'Inter');
-            }
-
-            setFlashMessage({ type: 'success', message: `Font "${fontToDelete.name}" deleted.` });
-        } catch (error) {
-            console.error('Font delete error:', error);
-            setFlashMessage({ type: 'error', message: 'Failed to delete font.' });
+        // If this was the selected font, reset to default
+        if (store.settings.theme?.font_family === fontToDelete.name) {
+            handleThemeChange('font_family', 'Inter');
         }
+
+        setFlashMessage({ type: 'success', message: `Font "${fontToDelete.name}" removed.` });
     };
 
     // Unified drag handler - supports cross-column and cross-step dragging
@@ -971,7 +946,9 @@ export default function ThemeLayout() {
                             {/* Typography Section */}
                             <div className="space-y-4">
                                 <h4 className="font-medium flex items-center gap-2"><Type className="w-4 h-4" /> Typography</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                                {/* Font Selection and Preview */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     <div>
                                         <Label htmlFor="font_family">Font Family</Label>
                                         <Select value={store.settings.theme.font_family} onValueChange={(value) => handleThemeChange('font_family', value)}>
@@ -996,45 +973,92 @@ export default function ThemeLayout() {
                                             </SelectContent>
                                         </Select>
                                     </div>
+
+                                    {/* Font Preview */}
                                     <div>
-                                        <Label>Upload Custom Font</Label>
-                                        <div className="mt-1">
-                                            <label className="flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                                                <Upload className="w-4 h-4 text-gray-500" />
-                                                <span className="text-sm text-gray-600">
-                                                    {fontUploading ? 'Uploading...' : 'Upload .ttf, .otf, .woff, .woff2'}
-                                                </span>
-                                                <input
-                                                    type="file"
-                                                    accept=".ttf,.otf,.woff,.woff2"
-                                                    onChange={handleFontUpload}
-                                                    disabled={fontUploading}
-                                                    className="hidden"
+                                        <Label>Font Preview</Label>
+                                        <div className="mt-1 p-4 border rounded-lg bg-white min-h-[80px]">
+                                            {/* Load custom font for preview */}
+                                            {(store.settings.theme?.custom_fonts || []).map((font, idx) => (
+                                                <style key={idx}>{`
+                                                    @font-face {
+                                                        font-family: '${font.name}';
+                                                        src: url('${font.url}') format('${font.format === 'ttf' ? 'truetype' : font.format === 'otf' ? 'opentype' : font.format}');
+                                                        font-display: swap;
+                                                    }
+                                                `}</style>
+                                            ))}
+                                            {/* Load Google Font for preview if needed */}
+                                            {!store.settings.theme?.custom_fonts?.some(f => f.name === store.settings.theme.font_family) && (
+                                                <link
+                                                    href={`https://fonts.googleapis.com/css2?family=${(store.settings.theme.font_family || 'Inter').replace(/ /g, '+')}:wght@400;700&display=swap`}
+                                                    rel="stylesheet"
                                                 />
-                                            </label>
+                                            )}
+                                            <p
+                                                className="text-2xl mb-1"
+                                                style={{ fontFamily: `'${store.settings.theme.font_family || 'Inter'}', sans-serif` }}
+                                            >
+                                                The quick brown fox
+                                            </p>
+                                            <p
+                                                className="text-base text-gray-600"
+                                                style={{ fontFamily: `'${store.settings.theme.font_family || 'Inter'}', sans-serif` }}
+                                            >
+                                                jumps over the lazy dog. 0123456789
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Add Custom Font */}
+                                <div className="p-4 border rounded-lg bg-gray-50">
+                                    <Label className="mb-3 block font-medium">Add Custom Font (via URL)</Label>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <div>
+                                            <Label className="text-xs text-gray-500 mb-1 block">Font Name</Label>
+                                            <Input
+                                                placeholder="e.g. My Custom Font"
+                                                value={newFontName}
+                                                onChange={(e) => setNewFontName(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <Label className="text-xs text-gray-500 mb-1 block">Font URL (.ttf, .otf, .woff, .woff2)</Label>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    placeholder="https://example.com/fonts/myfont.woff2"
+                                                    value={newFontUrl}
+                                                    onChange={(e) => setNewFontUrl(e.target.value)}
+                                                    className="flex-1"
+                                                />
+                                                <Button onClick={handleAddCustomFont} variant="outline">
+                                                    Add Font
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Custom Fonts List */}
                                 {(store.settings.theme?.custom_fonts || []).length > 0 && (
-                                    <div className="mt-4">
-                                        <Label className="mb-2 block">Uploaded Custom Fonts</Label>
+                                    <div>
+                                        <Label className="mb-2 block">Custom Fonts</Label>
                                         <div className="space-y-2">
                                             {(store.settings.theme?.custom_fonts || []).map((font, idx) => (
-                                                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                                                    <div className="flex items-center gap-3">
-                                                        <Type className="w-5 h-5 text-gray-400" />
-                                                        <div>
+                                                <div key={idx} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        <Type className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                                        <div className="min-w-0 flex-1">
                                                             <p className="font-medium text-sm">{font.name}</p>
-                                                            <p className="text-xs text-gray-500">{font.originalFilename} ({font.format.toUpperCase()})</p>
+                                                            <p className="text-xs text-gray-500 truncate">{font.url}</p>
                                                         </div>
                                                     </div>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => handleFontDelete(font)}
-                                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </Button>
