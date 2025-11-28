@@ -1615,21 +1615,27 @@ export default function Checkout() {
 
             {/* Login Required - when guest checkout is disabled */}
             {!user && settings?.allow_guest_checkout === false && (
-              <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-6">
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="bg-amber-100 rounded-full p-3">
-                    <UserIcon className="w-8 h-8 text-amber-600" />
+              <div className="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-gray-100 rounded-full p-2">
+                      <UserIcon className="w-6 h-6 text-gray-600" />
+                    </div>
+                    <div>
+                      <div>
+                        <p className="font-medium text-gray-900">{t('checkout.login_required', 'Login Required')}</p>
+                        <p className="text-sm text-gray-600">{t('checkout.login_required_description', 'Please login or create an account to complete your purchase')}</p>
+                      </div>
+                      <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => setShowLoginModal(true)}
+                          className="mt-2"
+                      >
+                        {t('checkout.login_to_checkout', 'Login to Checkout')}
+                      </Button>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 text-lg">{t('checkout.login_required', 'Login Required')}</p>
-                    <p className="text-sm text-gray-600 mt-1">{t('checkout.login_required_description', 'Please login or create an account to complete your purchase')}</p>
-                  </div>
-                  <Button
-                      onClick={() => setShowLoginModal(true)}
-                      className="mt-2"
-                  >
-                    {t('checkout.login_to_checkout', 'Login to Checkout')}
-                  </Button>
                 </div>
               </div>
             )}
@@ -2632,6 +2638,7 @@ export default function Checkout() {
                     <Button
                       onClick={goToNextStep}
                       className="flex-1"
+                      disabled={!user && settings?.allow_guest_checkout === false}
                       style={{ backgroundColor: stepActiveColor, color: '#FFFFFF' }}
                     >
                       {t('checkout.continue', 'Continue')} →
