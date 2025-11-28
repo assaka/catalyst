@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import SaveButton from '@/components/ui/save-button';
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Download, RefreshCw, CheckCircle, AlertCircle, Upload, FileStack } from "lucide-react";
+import { FileText, Download, RefreshCw, CheckCircle, AlertCircle, Upload, Image, Video, Newspaper } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Product } from '@/api/entities';
@@ -24,7 +24,6 @@ export default function XmlSitemap() {
     const [generating, setGenerating] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [sitemapXml, setSitemapXml] = useState('');
-    const [sitemapIndexXml, setSitemapIndexXml] = useState('');
     const [flashMessage, setFlashMessage] = useState(null);
 
     // Statistics
@@ -44,7 +43,6 @@ export default function XmlSitemap() {
         sitemap_include_images: false,
         sitemap_include_videos: false,
         sitemap_enable_news: false,
-        sitemap_enable_index: false,
         sitemap_max_urls: 50000,
         google_search_console_api_key: '',
         sitemap_auto_submit: false,
@@ -105,7 +103,6 @@ export default function XmlSitemap() {
                         sitemap_include_images: xmlSettings.include_images ?? false,
                         sitemap_include_videos: xmlSettings.include_videos ?? false,
                         sitemap_enable_news: xmlSettings.enable_news ?? false,
-                        sitemap_enable_index: xmlSettings.enable_index ?? false,
                         sitemap_max_urls: xmlSettings.max_urls ?? 50000,
                         google_search_console_api_key: xmlSettings.google_search_console_api_key ?? '',
                         sitemap_auto_submit: xmlSettings.auto_submit ?? false,
@@ -175,12 +172,6 @@ export default function XmlSitemap() {
             // Generate standard sitemap (includes images, videos, news when enabled)
             const standardSitemap = generateStandardSitemap(products, categories, pages);
             setSitemapXml(standardSitemap.xml);
-
-            // Generate sitemap index if enabled
-            if (settings.sitemap_enable_index) {
-                const indexSitemap = generateSitemapIndex(standardSitemap.count);
-                setSitemapIndexXml(indexSitemap);
-            }
 
             setStats({
                 totalUrls: standardSitemap.stats.totalUrls,
@@ -376,20 +367,6 @@ export default function XmlSitemap() {
             .replace(/'/g, '&apos;');
     };
 
-    const generateSitemapIndex = (totalUrls) => {
-        const baseUrl = window.location.origin;
-
-        let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>${baseUrl}/sitemap.xml</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
-  </sitemap>
-</sitemapindex>`;
-
-        return xml;
-    };
-
     const submitToGoogle = async () => {
         if (!settings.google_search_console_api_key) {
             setFlashMessage({
@@ -438,7 +415,6 @@ export default function XmlSitemap() {
                 include_images: settings.sitemap_include_images,
                 include_videos: settings.sitemap_include_videos,
                 enable_news: settings.sitemap_enable_news,
-                enable_index: settings.sitemap_enable_index,
                 max_urls: settings.sitemap_max_urls,
                 google_search_console_api_key: settings.google_search_console_api_key,
                 auto_submit: settings.sitemap_auto_submit,
@@ -884,22 +860,6 @@ export default function XmlSitemap() {
                             </Alert>
 
                             <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label htmlFor="enable-index">Enable Sitemap Index</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Generate a sitemap index file for multiple sitemaps
-                                        </p>
-                                    </div>
-                                    <Switch
-                                        id="enable-index"
-                                        checked={settings.sitemap_enable_index}
-                                        onCheckedChange={(checked) => {
-                                            setSettings({ ...settings, sitemap_enable_index: checked });
-                                        }}
-                                    />
-                                </div>
-
                                 <div className="space-y-2">
                                     <Label htmlFor="max-urls">Maximum URLs Per Sitemap</Label>
                                     <Input
@@ -936,18 +896,8 @@ export default function XmlSitemap() {
                     variant="outline"
                 >
                     <Download className="mr-2 h-4 w-4" />
-                    Download Sitemap
+                    Download
                 </Button>
-                {settings.sitemap_enable_index && sitemapIndexXml && (
-                    <Button
-                        onClick={() => downloadSitemap(sitemapIndexXml, 'sitemap-index.xml')}
-                        disabled={generating}
-                        variant="outline"
-                    >
-                        <FileStack className="mr-2 h-4 w-4" />
-                        Download Index
-                    </Button>
-                )}
             </div>
 
             {/* Preview */}
@@ -963,21 +913,6 @@ export default function XmlSitemap() {
                     </div>
                 </CardContent>
             </Card>
-
-            {settings.sitemap_enable_index && sitemapIndexXml && (
-                <Card className="mt-4">
-                    <CardHeader>
-                        <CardTitle>Sitemap Index Preview</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="bg-muted p-4 rounded-md max-h-[400px] overflow-auto">
-                            <pre className="text-xs">
-                                {sitemapIndexXml || 'No sitemap index generated'}
-                            </pre>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
 
             {/* Save Button */}
             <div className="flex justify-end">
