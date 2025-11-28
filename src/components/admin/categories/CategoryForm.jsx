@@ -49,11 +49,13 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
     is_active: true,
     hide_in_menu: false,
     translations: {},
-    // New SEO fields
-    meta_title: "",
-    meta_description: "",
-    meta_keywords: "",
-    meta_robots_tag: "index, follow" // Default value
+    // SEO fields in nested seo object (matches SeoHeadManager expected format)
+    seo: {
+      meta_title: "",
+      meta_description: "",
+      meta_keywords: "",
+      meta_robots_tag: "index, follow"
+    }
   });
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -103,11 +105,13 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         is_active: category.is_active !== undefined ? category.is_active : true,
         hide_in_menu: category.hide_in_menu || false,
         translations: translations,
-        // New SEO fields
-        meta_title: category.meta_title || "",
-        meta_description: category.meta_description || "",
-        meta_keywords: category.meta_keywords || "",
-        meta_robots_tag: category.meta_robots_tag || "index, follow"
+        // SEO fields from nested seo object (matches SeoHeadManager expected format)
+        seo: {
+          meta_title: category.seo?.meta_title || "",
+          meta_description: category.seo?.meta_description || "",
+          meta_keywords: category.seo?.meta_keywords || "",
+          meta_robots_tag: category.seo?.meta_robots_tag || "index, follow"
+        }
       };
       setFormData(categoryData);
       setOriginalSlug(category.slug || "");
@@ -731,8 +735,11 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
               <Input
                 id="meta_title"
                 name="meta_title"
-                value={formData.meta_title || ''}
-                onChange={handleInputChange}
+                value={formData.seo?.meta_title || ''}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  seo: { ...prev.seo, meta_title: e.target.value }
+                }))}
                 placeholder="{{category_name}} - {{store_name}}"
               />
             </div>
@@ -741,8 +748,11 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
               <Textarea
                 id="meta_description"
                 name="meta_description"
-                value={formData.meta_description || ''}
-                onChange={handleInputChange}
+                value={formData.seo?.meta_description || ''}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  seo: { ...prev.seo, meta_description: e.target.value }
+                }))}
                 placeholder="Shop {{category_name}} at {{store_name}}. {{category_description}}"
                 rows={3}
               />
@@ -752,16 +762,22 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
               <Input
                 id="meta_keywords"
                 name="meta_keywords"
-                value={formData.meta_keywords || ''}
-                onChange={handleInputChange}
+                value={formData.seo?.meta_keywords || ''}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  seo: { ...prev.seo, meta_keywords: e.target.value }
+                }))}
                 placeholder="Comma-separated keywords"
               />
             </div>
             <div>
               <Label htmlFor="meta_robots_tag">Robots Meta Tag</Label>
               <Select
-                value={formData.meta_robots_tag || ""}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, meta_robots_tag: value }))}
+                value={formData.seo?.meta_robots_tag || ""}
+                onValueChange={(value) => setFormData(prev => ({
+                  ...prev,
+                  seo: { ...prev.seo, meta_robots_tag: value }
+                }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select robots tag" />
