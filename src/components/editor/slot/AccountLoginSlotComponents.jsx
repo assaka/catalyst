@@ -1,6 +1,7 @@
 /**
  * Account and Login Slot Components
  * Unified components for account and login pages
+ * Updated: Force rebuild
  */
 
 import React from 'react';
