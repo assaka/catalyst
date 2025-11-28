@@ -514,9 +514,11 @@ const LayeredNavigation = createSlotComponent({
 
         if (!filterContent) return;
 
-        const maxVisible = parseInt(filterContent.getAttribute('data-max-visible')) || 5;
-        const allOptions = filterContent.querySelectorAll('.filter-option');
-        const isShowingMore = button.textContent.trim() === 'Show More';
+        // The data-max-visible is on a child element inside filterContent
+        const maxVisibleContainer = filterContent.querySelector('[data-max-visible]');
+        const maxVisible = parseInt(maxVisibleContainer?.getAttribute('data-max-visible')) || 5;
+        const allOptions = maxVisibleContainer?.querySelectorAll('.filter-option') || [];
+        const isShowingMore = button.textContent.trim().toLowerCase().includes('more');
 
         allOptions.forEach((option, index) => {
           if (index >= maxVisible) {
