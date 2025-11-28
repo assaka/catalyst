@@ -56,7 +56,7 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { UnifiedSlotRenderer } from './UnifiedSlotRenderer';
 import { processVariables } from '@/utils/variableProcessor';
-import { formatPrice } from '@/utils/priceUtils';
+import { formatPrice, formatPriceNumber } from '@/utils/priceUtils';
 import { getStockLabel, getStockLabelStyle } from '@/utils/stockUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 
@@ -907,10 +907,16 @@ const ProductItemsGrid = createSlotComponent({
       // Format prices if not already formatted
       const products = rawProducts.map(p => {
         const isInStock = p.infinite_stock || (p.stock_quantity !== undefined && p.stock_quantity > 0);
+        const price = parseFloat(p.price || 0);
+        const comparePrice = parseFloat(p.compare_price || 0);
+        const hasComparePrice = comparePrice > 0 && comparePrice !== price;
         return {
           ...p,
           price_formatted: p.price_formatted || formatPrice(p.price || 0),
-          compare_price_formatted: p.compare_price ? formatPrice(p.compare_price) : null,
+          compare_price_formatted: hasComparePrice ? formatPrice(p.compare_price) : '',
+          // Price numbers without currency (for conditional currency display)
+          price_number: p.price_number || formatPriceNumber(price),
+          compare_price_number: p.compare_price_number || (hasComparePrice ? formatPriceNumber(comparePrice) : ''),
           image_url: p.image_url || p.images?.[0]?.url || p.images?.[0] || '/placeholder-product.jpg',
           in_stock: p.in_stock !== undefined ? p.in_stock : (p.stock_status === 'in_stock'),
           stock_label: isInStock ? 'In Stock' : 'Out of Stock',
@@ -1090,7 +1096,7 @@ const ProductItemsGrid = createSlotComponent({
                 context={context}
                 categoryData={{ ...categoryContext, product }}
                 productData={product}
-                variableContext={{ ...variableContext, product }}
+                variableContext={{ ...variableContext, this: product, product }}
                 mode={mode || "edit"}
                 showBorders={showBorders !== undefined ? showBorders : true}
                 viewMode={viewMode}
@@ -1251,7 +1257,7 @@ const ProductItemsGrid = createSlotComponent({
                   store: categoryContext?.store,
                   settings: variableContext?.settings
                 }}
-                variableContext={{ ...variableContext, product }}
+                variableContext={{ ...variableContext, this: product, product }}
                 viewMode={viewMode}
               />
             </div>
