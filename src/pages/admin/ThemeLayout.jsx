@@ -659,18 +659,25 @@ export default function ThemeLayout() {
             return;
         }
 
-        // Detect format from URL
         const urlLower = newFontUrl.toLowerCase();
+
+        // Check if it's a Google Fonts CSS URL
+        const isGoogleFont = urlLower.includes('fonts.googleapis.com') || urlLower.includes('fonts.gstatic.com');
+
+        // Detect format from URL for direct font files
         let format = 'woff2'; // default
-        if (urlLower.includes('.ttf')) format = 'ttf';
-        else if (urlLower.includes('.otf')) format = 'otf';
-        else if (urlLower.includes('.woff2')) format = 'woff2';
-        else if (urlLower.includes('.woff')) format = 'woff';
+        if (!isGoogleFont) {
+            if (urlLower.includes('.ttf')) format = 'ttf';
+            else if (urlLower.includes('.otf')) format = 'otf';
+            else if (urlLower.includes('.woff2')) format = 'woff2';
+            else if (urlLower.includes('.woff')) format = 'woff';
+        }
 
         const newFont = {
             name: newFontName.trim(),
             url: newFontUrl.trim(),
-            format
+            format,
+            isGoogleFont // Flag to indicate this is a Google Fonts stylesheet URL
         };
 
         // Check for duplicates
@@ -978,17 +985,21 @@ export default function ThemeLayout() {
                                     <div>
                                         <Label>Font Preview</Label>
                                         <div className="mt-1 p-4 border rounded-lg bg-white min-h-[80px]">
-                                            {/* Load custom font for preview */}
+                                            {/* Load custom fonts for preview */}
                                             {(store.settings.theme?.custom_fonts || []).map((font, idx) => (
-                                                <style key={idx}>{`
-                                                    @font-face {
-                                                        font-family: '${font.name}';
-                                                        src: url('${font.url}') format('${font.format === 'ttf' ? 'truetype' : font.format === 'otf' ? 'opentype' : font.format}');
-                                                        font-display: swap;
-                                                    }
-                                                `}</style>
+                                                font.isGoogleFont ? (
+                                                    <link key={idx} href={font.url} rel="stylesheet" />
+                                                ) : (
+                                                    <style key={idx}>{`
+                                                        @font-face {
+                                                            font-family: '${font.name}';
+                                                            src: url('${font.url}') format('${font.format === 'ttf' ? 'truetype' : font.format === 'otf' ? 'opentype' : font.format}');
+                                                            font-display: swap;
+                                                        }
+                                                    `}</style>
+                                                )
                                             ))}
-                                            {/* Load Google Font for preview if needed */}
+                                            {/* Load Google Font for built-in fonts preview */}
                                             {!store.settings.theme?.custom_fonts?.some(f => f.name === store.settings.theme.font_family) && (
                                                 <link
                                                     href={`https://fonts.googleapis.com/css2?family=${(store.settings.theme.font_family || 'Inter').replace(/ /g, '+')}:wght@400;700&display=swap`}
@@ -1013,21 +1024,27 @@ export default function ThemeLayout() {
 
                                 {/* Add Custom Font */}
                                 <div className="p-4 border rounded-lg bg-gray-50">
-                                    <Label className="mb-3 block font-medium">Add Custom Font (via URL)</Label>
+                                    <div className="flex justify-between items-start mb-3">
+                                        <Label className="font-medium">Add Custom Font (via URL)</Label>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-3">
+                                        Get fonts from <a href="https://fonts.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Fonts</a> (click a font → "Get embed code" → copy the CSS URL),
+                                        or use direct links to font files (.woff2, .woff, .ttf, .otf) from services like <a href="https://www.fontsquirrel.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Font Squirrel</a> or your own hosting.
+                                    </p>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                         <div>
-                                            <Label className="text-xs text-gray-500 mb-1 block">Font Name</Label>
+                                            <Label className="text-xs text-gray-500 mb-1 block">Font Name (must match exactly)</Label>
                                             <Input
-                                                placeholder="e.g. My Custom Font"
+                                                placeholder="e.g. Science Gothic"
                                                 value={newFontName}
                                                 onChange={(e) => setNewFontName(e.target.value)}
                                             />
                                         </div>
                                         <div className="md:col-span-2">
-                                            <Label className="text-xs text-gray-500 mb-1 block">Font URL (.ttf, .otf, .woff, .woff2)</Label>
+                                            <Label className="text-xs text-gray-500 mb-1 block">Font URL (Google Fonts CSS or direct file link)</Label>
                                             <div className="flex gap-2">
                                                 <Input
-                                                    placeholder="https://example.com/fonts/myfont.woff2"
+                                                    placeholder="https://fonts.googleapis.com/css2?family=..."
                                                     value={newFontUrl}
                                                     onChange={(e) => setNewFontUrl(e.target.value)}
                                                     className="flex-1"

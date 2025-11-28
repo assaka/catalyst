@@ -292,19 +292,23 @@ export default function StorefrontLayout({ children }) {
     // FIXED: Apply show permanent search setting
     const showPermanentSearch = settings?.show_permanent_search !== false;
 
-    // Check if selected font is a custom uploaded font
+    // Check if selected font is a custom font
     const customFonts = settings?.theme?.custom_fonts || [];
     const selectedFontFamily = settings?.theme?.font_family || 'Inter';
     const selectedCustomFont = customFonts.find(f => f.name === selectedFontFamily);
     const isCustomFont = !!selectedCustomFont;
 
-    // Only load Google Font if NOT using a custom font
+    // Separate Google Fonts URLs from direct font file URLs
+    const googleFontUrls = customFonts.filter(f => f.isGoogleFont).map(f => f.url);
+    const directFontFiles = customFonts.filter(f => !f.isGoogleFont);
+
+    // Only load built-in Google Font if NOT using a custom font
     const googleFontLink = (!isCustomFont && selectedFontFamily)
       ? `https://fonts.googleapis.com/css2?family=${selectedFontFamily.replace(/ /g, '+')}:wght@400;700&display=swap`
       : '';
 
-    // Generate @font-face rules for custom fonts
-    const customFontFaces = customFonts.map(font => {
+    // Generate @font-face rules for direct font file URLs only
+    const customFontFaces = directFontFiles.map(font => {
       const formatMap = {
         'ttf': 'truetype',
         'otf': 'opentype',
@@ -315,7 +319,7 @@ export default function StorefrontLayout({ children }) {
         @font-face {
           font-family: '${font.name}';
           src: url('${font.url}') format('${formatMap[font.format] || 'truetype'}');
-          font-weight: normal;
+          font-weight: 100 900;
           font-style: normal;
           font-display: swap;
         }
@@ -426,7 +430,11 @@ export default function StorefrontLayout({ children }) {
             {googleFontLink && (
               <link href={googleFontLink} rel="stylesheet" />
             )}
-            {settings?.theme?.font_script && ( 
+            {/* Load custom Google Fonts URLs */}
+            {googleFontUrls.map((url, idx) => (
+              <link key={`custom-google-font-${idx}`} href={url} rel="stylesheet" />
+            ))}
+            {settings?.theme?.font_script && (
               <div dangerouslySetInnerHTML={{ __html: settings.theme.font_script }} />
             )}
             {gtmScript && (
