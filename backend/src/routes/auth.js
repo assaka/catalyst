@@ -1515,7 +1515,7 @@ router.post('/customer/login', [
 
 // @route   POST /api/auth/customer/forgot-password
 // @desc    Send password reset email to customer
-// @access  Public
+// @access  Public (no authentication required)
 // @note    TENANT ONLY - requires store_id
 router.post('/customer/forgot-password', [
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
