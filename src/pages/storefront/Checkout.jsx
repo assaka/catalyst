@@ -1586,8 +1586,8 @@ export default function Checkout() {
               </div>
             )}
 
-            {/* Login Modal Trigger for Guest Users */}
-            {!user && (
+            {/* Login Modal Trigger for Guest Users - when guest checkout is allowed */}
+            {!user && settings?.allow_guest_checkout !== false && (
               <div className="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -1613,6 +1613,29 @@ export default function Checkout() {
               </div>
             )}
 
+            {/* Login Required - when guest checkout is disabled */}
+            {!user && settings?.allow_guest_checkout === false && (
+              <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-6">
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="bg-amber-100 rounded-full p-3">
+                    <UserIcon className="w-8 h-8 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 text-lg">{t('checkout.login_required', 'Login Required')}</p>
+                    <p className="text-sm text-gray-600 mt-1">{t('checkout.login_required_description', 'Please login or create an account to complete your purchase')}</p>
+                  </div>
+                  <Button
+                      onClick={() => setShowLoginModal(true)}
+                      className="mt-2"
+                  >
+                    {t('checkout.login_to_checkout', 'Login to Checkout')}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Only show checkout form when user is logged in OR guest checkout is allowed */}
+            {(user || settings?.allow_guest_checkout !== false) && (
             <Card key="shipping-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
               <CardHeader>
                 <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.shipping_address', 'Shipping Address')}</CardTitle>
@@ -1836,10 +1859,12 @@ export default function Checkout() {
               </div>
             </CardContent>
           </Card>
+            )}
+          </>
         );
 
       case 'Billing Address':
-        return isSectionVisible('billing') && (
+        return isSectionVisible('billing') && (user || settings?.allow_guest_checkout !== false) && (
           <Card key="billing-address" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.billing_address', 'Billing Address')}</CardTitle>
@@ -2028,7 +2053,7 @@ export default function Checkout() {
         );
 
       case 'Delivery Settings':
-        return isSectionVisible('delivery') && deliverySettings && (deliverySettings.enable_delivery_date || deliverySettings.enable_comments) && (
+        return isSectionVisible('delivery') && (user || settings?.allow_guest_checkout !== false) && deliverySettings && (deliverySettings.enable_delivery_date || deliverySettings.enable_comments) && (
           <Card key="delivery-settings" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('checkout.delivery_settings', 'Delivery Settings')}</CardTitle>
@@ -2104,7 +2129,7 @@ export default function Checkout() {
         );
 
       case 'Payment Method':
-        return isSectionVisible('payment') && eligiblePaymentMethods.length > 0 && (
+        return isSectionVisible('payment') && (user || settings?.allow_guest_checkout !== false) && eligiblePaymentMethods.length > 0 && (
           <Card key="payment-method" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('checkout.payment_method', 'Payment Method')}</CardTitle>
@@ -2415,7 +2440,7 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {isSectionVisible('review') && (
+              {isSectionVisible('review') && (user || settings?.allow_guest_checkout !== false) && (
                 <Button
                   onClick={handleCheckout}
                   disabled={isProcessing || cartItems.length === 0}
