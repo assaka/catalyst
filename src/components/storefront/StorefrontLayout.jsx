@@ -130,7 +130,7 @@ export default function StorefrontLayout({ children }) {
           root.style.setProperty('--theme-add-to-cart-button', theme.add_to_cart_button_color);
         }
         if (theme.font_family) {
-          root.style.setProperty('--theme-font-family', theme.font_family);
+          root.style.setProperty('--theme-font-family', `'${theme.font_family}', sans-serif`);
         }
 
         // Load custom fonts into <head>
