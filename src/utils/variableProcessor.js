@@ -330,11 +330,14 @@ function processConditionals(content, context, pageData) {
   while (hasMatches) {
     hasMatches = false;
 
-    // Find and process conditionals from inside out (deepest first)
+    // Find and process {{#if}} conditionals from inside out (deepest first)
     result = processConditionalsStep(result, context, pageData);
 
+    // Also process {{#unless}} conditionals (inverted logic)
+    result = processUnlessStep(result, context, pageData);
+
     // Continue until no more conditionals found
-    hasMatches = result.includes('{{#if');
+    hasMatches = result.includes('{{#if') || result.includes('{{#unless');
   }
 
   return result;
@@ -440,6 +443,115 @@ function processConditionalsStep(content, context, pageData) {
 
     // Replace the entire conditional block with the selected content
     result = result.substring(0, ifIndex) + selectedContent + result.substring(endIndex + 7);
+
+    // Continue from the beginning to handle any newly exposed conditionals
+    startIndex = 0;
+  }
+
+  return result;
+}
+
+/**
+ * processUnlessStep - Single pass of {{#unless}} processing (inverted conditional)
+ *
+ * Similar to processConditionalsStep but with inverted logic:
+ * - Shows content when condition is FALSE (or undefined/null)
+ * - {{#unless condition}}show this{{/unless}} → shows "show this" when condition is falsy
+ *
+ * @param {string} content - Content to process
+ * @param {Object} context - Data context
+ * @param {Object} pageData - Additional data
+ * @returns {string} Content with one level of unless blocks processed
+ * @private
+ */
+function processUnlessStep(content, context, pageData) {
+  let result = content;
+  let startIndex = 0;
+
+  while (true) {
+    // Find the next {{#unless
+    const unlessIndex = result.indexOf('{{#unless', startIndex);
+    if (unlessIndex === -1) break;
+
+    // Extract condition
+    const conditionStart = unlessIndex + 9; // after {{#unless
+    const conditionEnd = result.indexOf('}}', conditionStart);
+    if (conditionEnd === -1) break;
+
+    const condition = result.substring(conditionStart, conditionEnd).trim();
+
+    // Find matching {{/unless}} by counting brackets
+    let bracketCount = 1;
+    let searchIndex = conditionEnd + 2; // after }}
+    let elseIndex = -1;
+    let endIndex = -1;
+
+    while (bracketCount > 0 && searchIndex < result.length) {
+      // Find all potential tags from current position
+      const nextUnless = result.indexOf('{{#unless', searchIndex);
+      const nextElse = result.indexOf('{{else}}', searchIndex);
+      const nextEndunless = result.indexOf('{{/unless}}', searchIndex);
+
+      // Build candidates list with proper filtering
+      const candidates = [];
+      if (nextUnless !== -1) candidates.push({ pos: nextUnless, type: 'unless', len: 9 });
+      if (nextElse !== -1) candidates.push({ pos: nextElse, type: 'else', len: 8 });
+      if (nextEndunless !== -1) candidates.push({ pos: nextEndunless, type: 'endunless', len: 11 });
+
+      // If no candidates found, break out of the loop
+      if (candidates.length === 0) {
+        break;
+      }
+
+      // Sort by position to process in order
+      candidates.sort((a, b) => a.pos - b.pos);
+
+      const nextTag = candidates[0];
+
+      if (nextTag.type === 'unless') {
+        // Nested unless - increase bracket count
+        bracketCount++;
+        searchIndex = nextTag.pos + nextTag.len;
+      } else if (nextTag.type === 'else' && bracketCount === 1 && elseIndex === -1) {
+        // This else belongs to our current unless (not a nested one)
+        elseIndex = nextTag.pos;
+        searchIndex = nextTag.pos + nextTag.len;
+      } else if (nextTag.type === 'endunless') {
+        // Closing unless - decrease bracket count
+        bracketCount--;
+        if (bracketCount === 0) {
+          // This is our matching closing tag
+          endIndex = nextTag.pos;
+          break;
+        }
+        searchIndex = nextTag.pos + nextTag.len;
+      } else {
+        // else for a nested unless - skip it
+        searchIndex = nextTag.pos + nextTag.len;
+      }
+    }
+
+    if (endIndex === -1) {
+      startIndex = unlessIndex + 1;
+      continue;
+    }
+
+    // Extract content parts
+    let falseContent, trueContent = '';
+
+    if (elseIndex !== -1) {
+      falseContent = result.substring(conditionEnd + 2, elseIndex);
+      trueContent = result.substring(elseIndex + 8, endIndex);
+    } else {
+      falseContent = result.substring(conditionEnd + 2, endIndex);
+    }
+
+    // Evaluate condition and select content (INVERTED from #if - show falseContent when condition is falsy)
+    const isTrue = evaluateCondition(condition, context, pageData);
+    const selectedContent = isTrue ? trueContent : falseContent;
+
+    // Replace the entire unless block with the selected content
+    result = result.substring(0, unlessIndex) + selectedContent + result.substring(endIndex + 11);
 
     // Continue from the beginning to handle any newly exposed conditionals
     startIndex = 0;
