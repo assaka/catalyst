@@ -253,119 +253,108 @@ const ProductGallery = createSlotComponent({
 
     const galleryLayout = settings.product_gallery_layout || 'horizontal';
     const verticalPosition = settings.vertical_gallery_position || 'left';
-    const mobileLayout = settings.mobile_gallery_layout || 'below'; // 'above' or 'below'
+    const mobileLayout = settings.mobile_gallery_layout || 'below';
     const isVertical = galleryLayout === 'vertical';
 
-    // Build responsive container classes
-    // Mobile: always flex-col (vertical stack)
-    // Desktop: flex-row for vertical layout, flex-col for horizontal
-    const getContainerClass = () => {
-      if (isVertical) {
-        // Vertical layout: side-by-side on desktop, stacked on mobile
-        return 'flex flex-col sm:flex-row gap-4';
-      }
-      // Horizontal layout: always stacked
-      return 'flex flex-col space-y-4';
-    };
+    // For storefront, get state from productContext
+    const activeImageIndex = productContext?.activeImageIndex || 0;
+    const setActiveImageIndex = productContext?.setActiveImageIndex;
 
-    // Get thumbnail order classes based on position settings
-    // Mobile: controlled by mobileLayout (above/below)
-    // Desktop: controlled by verticalPosition (left/right) for vertical layout
-    const getThumbnailOrderClass = () => {
-      const mobileOrder = mobileLayout === 'above' ? 'order-first' : 'order-last';
-
-      if (isVertical) {
-        // Desktop: left = first, right = last
-        const desktopOrder = verticalPosition === 'left' ? 'sm:order-first' : 'sm:order-last';
-        return `${mobileOrder} ${desktopOrder}`;
-      }
-      // Horizontal layout: thumbnails always below main image on desktop
-      return `${mobileOrder} sm:order-last`;
-    };
-
-    // Get thumbnail container layout class
-    const getThumbnailContainerClass = () => {
-      if (isVertical) {
-        // Mobile: horizontal scroll, Desktop: vertical stack
-        return 'flex flex-row overflow-x-auto space-x-2 sm:flex-col sm:space-x-0 sm:space-y-2 sm:w-24 sm:overflow-visible';
-      }
-      // Horizontal: always horizontal thumbnails
-      return 'flex overflow-x-auto space-x-2';
-    };
-
-    // State for active image - must be at top level (React hooks rules)
-    // For editor: use local state; for storefront: use productContext state
-    const [editorActiveIndex, setEditorActiveIndex] = useState(0);
-
-    // Get active index and setter based on context
-    const activeIndex = context === 'editor' ? editorActiveIndex : (productContext?.activeImageIndex || 0);
-    const setActiveIndex = context === 'editor' ? setEditorActiveIndex : productContext?.setActiveImageIndex;
-
-    // Shared thumbnail button renderer
-    const renderThumbnail = (thumbUrl, index, altText) => (
-      <button
-        key={index}
-        onClick={() => setActiveIndex && setActiveIndex(index)}
-        className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
-          activeIndex === index
-            ? 'border-blue-500 ring-2 ring-blue-200'
-            : 'border-gray-300 hover:border-gray-400'
-        }`}
-      >
-        <img
-          src={thumbUrl}
-          alt={altText}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-          onError={(e) => {
-            e.target.src = 'https://placehold.co/100x100?text=Error';
-          }}
-        />
-        {activeIndex === index && (
-          <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
-        )}
-      </button>
-    );
-
-    if (context === 'editor') {
-      const containerClass = getContainerClass();
-      const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
+    // Thumbnail renderer
+    const renderThumbnails = (images, getImageUrl, productName, activeIdx, setActiveIdx) => {
+      const thumbContainerClass = isVertical
+        ? 'flex flex-col space-y-2 w-24 flex-shrink-0'
+        : 'flex overflow-x-auto space-x-2 mt-4';
 
       return (
-        <div className={finalContainerClass} style={styles}>
-          {/* Main Image - always order-none (natural position) */}
-          <div className={`order-none ${isVertical ? 'sm:flex-1' : ''}`}>
-            <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-              <img
-                src={`https://placehold.co/600x600?text=Product+Image+${activeIndex + 1}`}
-                alt="Product"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute top-2 left-2">
-                <Badge className="bg-blue-600 text-white">NEW</Badge>
-              </div>
-              <div className="absolute top-2 right-2">
-                <Badge variant="destructive" className="bg-red-600 text-white">SALE</Badge>
-              </div>
-            </div>
-          </div>
+        <div className={thumbContainerClass}>
+          {images.map((image, index) => {
+            const thumbUrl = typeof getImageUrl === 'function' ? getImageUrl(image) : image;
+            return (
+              <button
+                key={index}
+                onClick={() => setActiveIdx && setActiveIdx(index)}
+                className={`relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:shadow-md ${
+                  activeIdx === index
+                    ? 'border-blue-500 ring-2 ring-blue-200'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <img
+                  src={thumbUrl}
+                  alt={`${productName} ${index + 1}`}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  onError={(e) => { e.target.src = 'https://placehold.co/100x100?text=Error'; }}
+                />
+                {activeIdx === index && (
+                  <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      );
+    };
 
-          {/* Thumbnails - order controlled by CSS */}
-          <div className={`${getThumbnailOrderClass()} ${getThumbnailContainerClass()}`}>
-            {Array.from({ length: 4 }, (_, i) =>
-              renderThumbnail(
-                `https://placehold.co/100x100?text=Thumb+${i + 1}`,
-                i,
-                `Demo Thumbnail ${i + 1}`
-              )
-            )}
+    // Main image renderer
+    const renderMainImage = (imageSrc, altText, productLabels, product, flexClass = '') => (
+      <div className={flexClass}>
+        <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
+          <img src={imageSrc} alt={altText} className="w-full h-full object-cover" />
+          {productLabels && productLabels.length > 0 && (
+            <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-2 justify-between">
+              {productLabels.map((label, index) => (
+                <Badge
+                  key={index}
+                  variant="default"
+                  style={{
+                    backgroundColor: label.background_color || '#3B82F6',
+                    color: label.text_color || '#FFFFFF'
+                  }}
+                >
+                  {label.text || label}
+                </Badge>
+              ))}
+            </div>
+          )}
+          {product?.compare_price && parseFloat(product.compare_price) > parseFloat(product.price) && (
+            <div className="absolute top-2 right-2">
+              <Badge variant="destructive" className="bg-red-600 text-white">SALE</Badge>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+
+    // EDITOR VERSION
+    if (context === 'editor') {
+      const demoImages = Array.from({ length: 4 }, (_, i) => `https://placehold.co/100x100?text=Thumb+${i + 1}`);
+      const containerClass = isVertical ? 'flex flex-row gap-4' : 'flex flex-col space-y-4';
+      const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
+
+      // For vertical layout, render based on position
+      if (isVertical) {
+        return (
+          <div className={finalContainerClass} style={styles}>
+            {verticalPosition === 'left' && renderThumbnails(demoImages, (img) => img, 'Demo', 0, null)}
+            {renderMainImage('https://placehold.co/600x600?text=Product+Image', 'Product', null, null, 'flex-1')}
+            {verticalPosition === 'right' && renderThumbnails(demoImages, (img) => img, 'Demo', 0, null)}
           </div>
+        );
+      }
+
+      // Horizontal layout
+      return (
+        <div className={finalContainerClass} style={styles}>
+          {mobileLayout === 'above' && renderThumbnails(demoImages, (img) => img, 'Demo', 0, null)}
+          {renderMainImage('https://placehold.co/600x600?text=Product+Image', 'Product', null, null, '')}
+          {mobileLayout === 'below' && renderThumbnails(demoImages, (img) => img, 'Demo', 0, null)}
         </div>
       );
     }
 
-    // Storefront version
+    // STOREFRONT VERSION
     const { product } = productContext || {};
-
     if (!product) return null;
 
     const images = product.images || [];
@@ -379,62 +368,34 @@ const ProductGallery = createSlotComponent({
       return 'https://placehold.co/600x600?text=No+Image';
     };
 
-    const currentImage = getImageUrl(images[activeIndex]) || getImageUrl(images[0]) || 'https://placehold.co/600x600?text=No+Image';
-    const containerClass = getContainerClass();
+    const currentImage = getImageUrl(images[activeImageIndex]) || getImageUrl(images[0]) || 'https://placehold.co/600x600?text=No+Image';
+    const hasMultipleImages = images.length > 1;
+
+    // Container classes based on layout
+    const containerClass = isVertical ? 'flex flex-row gap-4' : 'flex flex-col space-y-4';
     const finalContainerClass = className ? `${containerClass} ${className}` : containerClass;
 
+    // For vertical layout
+    if (isVertical) {
+      return (
+        <div className={finalContainerClass} style={styles}>
+          {verticalPosition === 'left' && hasMultipleImages &&
+            renderThumbnails(images, getImageUrl, product.name, activeImageIndex, setActiveImageIndex)}
+          {renderMainImage(currentImage, product.name, productContext.productLabels, product, 'flex-1')}
+          {verticalPosition === 'right' && hasMultipleImages &&
+            renderThumbnails(images, getImageUrl, product.name, activeImageIndex, setActiveImageIndex)}
+        </div>
+      );
+    }
+
+    // Horizontal layout - thumbnails position based on mobile setting
     return (
       <div className={finalContainerClass} style={styles}>
-        {/* Main Image - always order-none (natural position) */}
-        <div className={`order-none ${isVertical ? 'sm:flex-1' : ''}`}>
-          <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-            <img
-              src={currentImage}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
-            {/* Product Labels */}
-            {productContext.productLabels && productContext.productLabels.length > 0 && (
-              <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-2 justify-between">
-                {productContext.productLabels.map((label, index) => {
-                  const labelText = label.text || label;
-                  return (
-                    <Badge
-                      key={index}
-                      variant="default"
-                      className="bg-blue-600 text-white"
-                      style={{
-                        backgroundColor: label.background_color || '#3B82F6',
-                        color: label.text_color || '#FFFFFF'
-                      }}
-                    >
-                      {labelText}
-                    </Badge>
-                  );
-                })}
-              </div>
-            )}
-            {/* Sale Badge */}
-            {product.compare_price && parseFloat(product.compare_price) > parseFloat(product.price) && (
-              <div className="absolute top-2 right-2">
-                <Badge variant="destructive" className="bg-red-600 text-white">SALE</Badge>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Thumbnails - order controlled by CSS */}
-        {images.length > 1 && (
-          <div className={`${getThumbnailOrderClass()} ${getThumbnailContainerClass()}`}>
-            {images.map((image, index) =>
-              renderThumbnail(
-                getImageUrl(image),
-                index,
-                `${product.name} ${index + 1}`
-              )
-            )}
-          </div>
-        )}
+        {mobileLayout === 'above' && hasMultipleImages &&
+          renderThumbnails(images, getImageUrl, product.name, activeImageIndex, setActiveImageIndex)}
+        {renderMainImage(currentImage, product.name, productContext.productLabels, product, '')}
+        {mobileLayout === 'below' && hasMultipleImages &&
+          renderThumbnails(images, getImageUrl, product.name, activeImageIndex, setActiveImageIndex)}
       </div>
     );
   }
