@@ -595,7 +595,10 @@ export default function Checkout() {
     const subtotal = calculateSubtotal();
     const optionsTotal = calculateOptionsTotal();
     const discount = calculateDiscount();
-    const shipping = isNaN(parseFloat(shippingCost)) ? 0 : parseFloat(shippingCost);
+    // Only include shipping cost if require_shipping_address is enabled (default: true)
+    const shipping = settings?.require_shipping_address !== false
+      ? (isNaN(parseFloat(shippingCost)) ? 0 : parseFloat(shippingCost))
+      : 0;
     const paymentMethodFee = isNaN(parseFloat(paymentFee)) ? 0 : parseFloat(paymentFee);
     const tax = taxCalculationResult.taxAmount;
     const total = subtotal + optionsTotal - discount + shipping + paymentMethodFee + tax;
@@ -1210,18 +1213,21 @@ export default function Checkout() {
       });
 
       // Determine which shipping address to use
-      let finalShippingAddress;
-      if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
-        // User selected an existing saved address
-        finalShippingAddress = userAddresses.find(a => a.id === selectedShippingAddress);
-      } else {
-        // Guest user or user entering new address
-        finalShippingAddress = shippingAddress;
+      // Skip shipping address if require_shipping_address is disabled
+      let finalShippingAddress = null;
+      if (settings?.require_shipping_address !== false) {
+        if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
+          // User selected an existing saved address
+          finalShippingAddress = userAddresses.find(a => a.id === selectedShippingAddress);
+        } else {
+          // Guest user or user entering new address
+          finalShippingAddress = shippingAddress;
+        }
       }
 
       // Determine which billing address to use
       let finalBillingAddress;
-      if (useShippingForBilling) {
+      if (useShippingForBilling && finalShippingAddress) {
         finalBillingAddress = finalShippingAddress;
       } else if (user && selectedBillingAddress && selectedBillingAddress !== 'new') {
         // User selected an existing saved billing address
@@ -1231,16 +1237,22 @@ export default function Checkout() {
         finalBillingAddress = billingAddress;
       }
 
+      // Determine shipping cost and method based on require_shipping_address setting
+      const requireShipping = settings?.require_shipping_address !== false;
+      const finalShippingCost = requireShipping ? shippingCost : 0;
+      const finalShippingMethod = requireShipping ? selectedMethod : null;
+      const finalSelectedShippingMethod = requireShipping ? selectedShippingMethod : null;
+
       const checkoutData = {
         cartItems: enrichedCartItems,
         shippingAddress: finalShippingAddress,
         billingAddress: finalBillingAddress,
         store,
         taxAmount: taxCalculationResult.taxAmount,
-        shippingCost,
+        shippingCost: finalShippingCost,
         paymentFee,
-        shippingMethod: selectedMethod,
-        selectedShippingMethod,
+        shippingMethod: finalShippingMethod,
+        selectedShippingMethod: finalSelectedShippingMethod,
         selectedPaymentMethod,
         selectedPaymentMethodName: selectedPaymentMethodObj?.name || selectedPaymentMethod,
         discountAmount: discount,
@@ -1248,8 +1260,8 @@ export default function Checkout() {
         deliveryDate: deliveryDate ? deliveryDate.toISOString().split('T')[0] : null,
         deliveryTimeSlot,
         deliveryComments,
-        // Use shipping address email first (what user just entered), fallback to user email for logged-in users
-        email: finalShippingAddress.email || user?.email,
+        // Use billing address email when shipping not required, otherwise shipping address email, fallback to user email
+        email: finalShippingAddress?.email || finalBillingAddress?.email || user?.email,
         userId: user?.id,
         sessionId: localStorage.getItem('guest_session_id')
       };
@@ -1550,7 +1562,8 @@ export default function Checkout() {
   const renderSection = (sectionName) => {
     switch (sectionName) {
       case 'Shipping Address':
-        return isSectionVisible('shipping') && (
+        // Only show shipping address if require_shipping_address setting is enabled (default: true)
+        return isSectionVisible('shipping') && settings?.require_shipping_address !== false && (
           <>
             {/* Logged-in User Banner */}
             {user && (
@@ -1833,7 +1846,8 @@ export default function Checkout() {
         );
 
       case 'Shipping Method':
-        return isSectionVisible('shipping') && eligibleShippingMethods.length > 0 && (
+        // Only show shipping method if require_shipping_address setting is enabled (default: true)
+        return isSectionVisible('shipping') && settings?.require_shipping_address !== false && eligibleShippingMethods.length > 0 && (
           <Card key="shipping-method" style={{ backgroundColor: checkoutSectionBgColor, borderColor: checkoutSectionBorderColor, color: checkoutSectionTextColor }}>
             <CardHeader>
               <CardTitle style={{ color: checkoutSectionTitleColor, fontSize: checkoutSectionTitleSize }}>{t('common.shipping_method', 'Shipping Method')}</CardTitle>
@@ -2400,7 +2414,7 @@ export default function Checkout() {
                   </div>
                 )}
 
-                {selectedShippingMethod && (
+                {selectedShippingMethod && settings?.require_shipping_address !== false && (
                   <div className="flex justify-between">
                     <span>{t('checkout.shipping', 'Shipping')}</span>
                     <span>{shippingCost > 0 ? formatPrice(shippingCost) : t('common.free', 'Free')}</span>
@@ -2485,20 +2499,22 @@ export default function Checkout() {
         items.push({ label: 'Account', value: user.email });
       }
 
-      // Shipping address (shown for both 2-step and 3-step)
-      if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
-        const address = userAddresses.find(a => a.id === selectedShippingAddress);
-        if (address) {
+      // Shipping address (shown for both 2-step and 3-step, only if shipping is required)
+      if (settings?.require_shipping_address !== false) {
+        if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
+          const address = userAddresses.find(a => a.id === selectedShippingAddress);
+          if (address) {
+            items.push({
+              label: t('common.shipping_address'),
+              value: `${address.full_name}, ${address.street}, ${address.city}, ${address.state} ${address.postal_code}, ${address.country}`
+            });
+          }
+        } else if (shippingAddress.full_name) {
           items.push({
             label: t('common.shipping_address'),
-            value: `${address.full_name}, ${address.street}, ${address.city}, ${address.state} ${address.postal_code}, ${address.country}`
+            value: `${shippingAddress.full_name}, ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postal_code}, ${shippingAddress.country}`
           });
         }
-      } else if (shippingAddress.full_name) {
-        items.push({
-          label: t('common.shipping_address'),
-          value: `${shippingAddress.full_name}, ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postal_code}, ${shippingAddress.country}`
-        });
       }
 
       // Billing address (if different from shipping)
@@ -2518,7 +2534,8 @@ export default function Checkout() {
     if (stepsCount === 3 && currentStep > 1) {
       const items = [];
 
-      if (selectedShippingMethod) {
+      // Only show shipping method if shipping is required
+      if (selectedShippingMethod && settings?.require_shipping_address !== false) {
         items.push({ label: t('common.shipping_method'), value: selectedShippingMethod });
       }
 
@@ -2542,7 +2559,8 @@ export default function Checkout() {
     if (stepsCount === 2 && currentStep > 0) {
       const items = [];
 
-      if (selectedShippingMethod) {
+      // Only show shipping method if shipping is required
+      if (selectedShippingMethod && settings?.require_shipping_address !== false) {
         items.push({ label: t('common.shipping_method'), value: selectedShippingMethod });
       }
 
