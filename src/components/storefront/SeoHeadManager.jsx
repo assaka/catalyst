@@ -107,6 +107,17 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             return;
         }
 
+        // Debug: Log SEO data being received
+        if (pageType === 'category') {
+            console.log('🔍 SeoHeadManager - Category SEO Debug:', {
+                pageType,
+                hasSeoObject: !!pageData?.seo,
+                seoData: pageData?.seo,
+                categoryName: pageData?.name,
+                categoryId: pageData?.id
+            });
+        }
+
         /**
          * SEO PRIORITY CASCADE SYSTEM
          * ===========================
