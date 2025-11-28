@@ -295,8 +295,26 @@ const TextSlotWithScript = ({ slot, processedContent, processedClassName, contex
   // Slots that should remain empty when there's no content (conditional slots)
   const conditionalSlots = ['product_labels', 'product_card_compare_price', 'compare_price'];
 
-  // Check if slot has conditionalDisplay metadata
-  const hasConditionalDisplay = slot.metadata?.conditionalDisplay;
+  // Check if slot has conditionalDisplay metadata and evaluate it
+  const conditionalDisplay = slot.metadata?.conditionalDisplay;
+  if (conditionalDisplay && context === 'storefront') {
+    // Evaluate the conditionalDisplay condition
+    // Format can be a path like 'product.compare_price_formatted' or 'this.compare_price_formatted'
+    // Wrap in {{}} to evaluate as a variable if it's not already a template
+    const isTemplate = conditionalDisplay.includes('{{');
+    const conditionToEvaluate = isTemplate ? conditionalDisplay : `{{${conditionalDisplay}}}`;
+    const evaluatedCondition = processVariables(conditionToEvaluate, variableContext || {});
+
+    // If the condition evaluates to empty/falsy, don't render the slot
+    if (!evaluatedCondition || evaluatedCondition.trim() === '' || evaluatedCondition === 'false') {
+      return null;
+    }
+    // If it's a template that should evaluate to 'show', check for that
+    if (isTemplate && evaluatedCondition.trim() !== 'show') {
+      return null;
+    }
+  }
+  const hasConditionalDisplay = !!conditionalDisplay;
 
   if (context === 'editor' && !processedContent) {
     if (isPriceSlot && !conditionalSlots.includes(slot.id)) {
