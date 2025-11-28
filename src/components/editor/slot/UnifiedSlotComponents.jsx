@@ -261,13 +261,13 @@ const ProductGallery = createSlotComponent({
     const setActiveImageIndex = productContext?.setActiveImageIndex;
 
     // Thumbnail renderer
-    const renderThumbnails = (images, getImageUrl, productName, activeIdx, setActiveIdx) => {
+    const renderThumbnails = (images, getImageUrl, productName, activeIdx, setActiveIdx, extraClass = '') => {
       const thumbContainerClass = isVertical
         ? 'flex flex-col space-y-2 w-24 flex-shrink-0'
         : 'flex overflow-x-auto space-x-2 mt-4';
 
       return (
-        <div className={thumbContainerClass}>
+        <div className={`${thumbContainerClass} ${extraClass}`.trim()}>
           {images.map((image, index) => {
             const thumbUrl = typeof getImageUrl === 'function' ? getImageUrl(image) : image;
             return (
@@ -297,8 +297,8 @@ const ProductGallery = createSlotComponent({
     };
 
     // Main image renderer
-    const renderMainImage = (imageSrc, altText, productLabels, product, flexClass = '') => (
-      <div className={flexClass}>
+    const renderMainImage = (imageSrc, altText, productLabels, product, extraClass = '') => (
+      <div className={extraClass}>
         <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
           <img src={imageSrc} alt={altText} className="w-full h-full object-cover" />
           {productLabels && productLabels.length > 0 && (
@@ -343,12 +343,13 @@ const ProductGallery = createSlotComponent({
         );
       }
 
-      // Horizontal layout
+      // Horizontal layout - use CSS order for mobile above/below
+      // Mobile: order-first puts thumbnails above, order-last puts below
+      const mobileOrderClass = mobileLayout === 'above' ? 'order-first sm:order-last' : 'order-last';
       return (
         <div className={finalContainerClass} style={styles}>
-          {mobileLayout === 'above' && renderThumbnails(demoImages, (img) => img, 'Demo', 0, null)}
-          {renderMainImage('https://placehold.co/600x600?text=Product+Image', 'Product', null, null, '')}
-          {mobileLayout === 'below' && renderThumbnails(demoImages, (img) => img, 'Demo', 0, null)}
+          {renderMainImage('https://placehold.co/600x600?text=Product+Image', 'Product', null, null, 'order-none')}
+          {renderThumbnails(demoImages, (img) => img, 'Demo', 0, null, mobileOrderClass)}
         </div>
       );
     }
@@ -388,14 +389,14 @@ const ProductGallery = createSlotComponent({
       );
     }
 
-    // Horizontal layout - thumbnails position based on mobile setting
+    // Horizontal layout - use CSS order for mobile above/below
+    // Mobile: order-first puts thumbnails above, order-last puts below
+    const mobileOrderClass = mobileLayout === 'above' ? 'order-first sm:order-last' : 'order-last';
     return (
       <div className={finalContainerClass} style={styles}>
-        {mobileLayout === 'above' && hasMultipleImages &&
-          renderThumbnails(images, getImageUrl, product.name, activeImageIndex, setActiveImageIndex)}
-        {renderMainImage(currentImage, product.name, productContext.productLabels, product, '')}
-        {mobileLayout === 'below' && hasMultipleImages &&
-          renderThumbnails(images, getImageUrl, product.name, activeImageIndex, setActiveImageIndex)}
+        {renderMainImage(currentImage, product.name, productContext.productLabels, product, 'order-none')}
+        {hasMultipleImages &&
+          renderThumbnails(images, getImageUrl, product.name, activeImageIndex, setActiveImageIndex, mobileOrderClass)}
       </div>
     );
   }
