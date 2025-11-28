@@ -1033,7 +1033,7 @@ export default function Checkout() {
     setForgotPasswordSuccess(false);
 
     try {
-      const response = await AuthService.forgotPassword(forgotPasswordEmail, store?.id);
+      const response = await CustomerAuth.forgotPassword(forgotPasswordEmail, store?.id);
 
       if (response?.success) {
         setForgotPasswordSuccess(true);

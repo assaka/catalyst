@@ -281,6 +281,29 @@ class CustomerAuthService {
   isAuthenticated() {
     return this.client.isCustomerAuthenticated();
   }
+
+  async forgotPassword(email, storeId) {
+    if (!storeId) {
+      throw new Error('Store ID is required for password reset');
+    }
+
+    return this.client.postCustomer('auth/customer/forgot-password', {
+      email,
+      store_id: storeId
+    });
+  }
+
+  async resetPassword(token, password, storeId) {
+    if (!storeId) {
+      throw new Error('Store ID is required for password reset');
+    }
+
+    return this.client.postCustomer('auth/customer/reset-password', {
+      token,
+      password,
+      store_id: storeId
+    });
+  }
 }
 
 // Store service (public)

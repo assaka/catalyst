@@ -12,7 +12,6 @@ import { createPublicUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { useTranslation } from '@/contexts/TranslationContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Auth as AuthService } from '@/api/entities';
 
 /**
  * UserProfileSlot - User profile display with avatar and info
@@ -287,7 +286,7 @@ const LoginFormSlotComponent = ({ slot, context, variableContext }) => {
     setForgotPasswordSuccess(false);
 
     try {
-      const response = await AuthService.forgotPassword(forgotPasswordEmail, store?.id);
+      const response = await CustomerAuth.forgotPassword(forgotPasswordEmail, store?.id);
 
       if (response?.success) {
         setForgotPasswordSuccess(true);
