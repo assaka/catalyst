@@ -1035,16 +1035,18 @@ const ProductItemsGrid = createSlotComponent({
               const isImageSlot = slotConfig.type === 'image';
 
               // Process template variables in content for text AND image slots
+              // CRITICAL: Use processVariables to handle {{#unless}} conditionals and all template variables
               let processedContent = slotConfig.content;
               if (isEditableButton) {
                 processedContent = savedSlotConfig?.content || slotConfig.content || 'Button';
               } else if (isTextSlot || isImageSlot) {
-                processedContent = slotConfig.content
-                  ?.replace(/\{\{this\.name\}\}/g, product.name)
-                  ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
-                  ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
-                  ?.replace(/\{\{this\.image_url\}\}/g, product.image_url)
-                  ?.replace(/\{\{product\.stock_label\}\}/g, product.stock_label);
+                // Build product context with 'this' alias for {{this.price_number}} etc.
+                const productContext = {
+                  ...variableContext,
+                  this: product,
+                  product
+                };
+                processedContent = processVariables(slotConfig.content || '', productContext);
               }
 
               // Add stock label inline styles dynamically for stock label slot
@@ -1203,16 +1205,18 @@ const ProductItemsGrid = createSlotComponent({
             const isImageSlot = slotConfig.type === 'image';
 
             // Process template variables in content for text AND image slots
+            // CRITICAL: Use processVariables to handle {{#unless}} conditionals and all template variables
             let processedContent = slotConfig.content;
             if (isEditableButton) {
               processedContent = savedSlotConfig?.content || slotConfig.content || 'Button';
             } else if (isTextSlot || isImageSlot) {
-              processedContent = slotConfig.content
-                ?.replace(/\{\{this\.name\}\}/g, product.name)
-                ?.replace(/\{\{this\.price_formatted\}\}/g, product.price_formatted)
-                ?.replace(/\{\{this\.compare_price_formatted\}\}/g, product.compare_price_formatted || '')
-                ?.replace(/\{\{this\.image_url\}\}/g, product.image_url)
-                ?.replace(/\{\{product\.stock_label\}\}/g, product.stock_label);
+              // Build product context with 'this' alias for {{this.price_number}} etc.
+              const productContext = {
+                ...variableContext,
+                this: product,
+                product
+              };
+              processedContent = processVariables(slotConfig.content || '', productContext);
             }
 
             // Add stock label inline styles dynamically for stock label slot

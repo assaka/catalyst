@@ -578,8 +578,31 @@ export function UnifiedSlotRenderer({
     }
   }
 
+  // Format single product with price_number fields (for product detail page)
+  // This ensures {{product.price_number}} and {{product.compare_price_number}} work in templates
+  const formatSingleProduct = (product) => {
+    if (!product) return null;
+    const price = parseFloat(product.price || 0);
+    const comparePrice = parseFloat(product.compare_price || 0);
+    const hasValidComparePrice = comparePrice > 0 && comparePrice !== price;
+
+    return {
+      ...product,
+      // Price numbers without currency (for conditional currency display)
+      price_number: formatPriceNumber(price),
+      compare_price_number: hasValidComparePrice ? formatPriceNumber(comparePrice) : '',
+      // Also add formatted prices for backward compatibility
+      price_formatted: formatPrice(price),
+      compare_price_formatted: hasValidComparePrice ? formatPrice(comparePrice) : ''
+    };
+  };
+
+  const formattedProduct = productData.product
+    ? formatSingleProduct(productData.product)
+    : (context === 'editor' ? generateDemoData('product', {}).product : null);
+
   const variableContext = {
-    product: productData.product || (context === 'editor' ? generateDemoData('product', {}).product : null),
+    product: formattedProduct,
     products: formattedProducts, // Use formatted products for category templates
     category: categoryData?.category || categoryData,
     cart: cartData,
