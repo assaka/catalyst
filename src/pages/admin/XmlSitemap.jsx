@@ -162,10 +162,11 @@ export default function XmlSitemap() {
 
         try {
             setGenerating(true);
+            // Use findAll for admin API access (not public API) to get all products
             const [products, categories, pages] = await Promise.all([
-                Product.filter({ status: 'active', store_id: store.id }),
-                Category.filter({ is_active: true, store_id: store.id }),
-                CmsPage.filter({ is_active: true, store_id: store.id })
+                Product.findAll({ status: 'active', store_id: store.id }),
+                Category.findAll({ is_active: true, store_id: store.id }),
+                CmsPage.findAll({ is_active: true, store_id: store.id })
             ]);
 
             // Generate standard sitemap
