@@ -1658,6 +1658,15 @@ router.put('/:id/settings', authMiddleware, async (req, res) => {
 
     console.log('✅ Store settings updated successfully');
 
+    // Clear Redis bootstrap cache so storefront gets fresh settings
+    try {
+      const { deletePattern } = require('../utils/cacheManager');
+      const deletedCount = await deletePattern(`bootstrap:${store.slug}:*`);
+      console.log(`✅ Cleared ${deletedCount} bootstrap cache keys for store:`, store.slug);
+    } catch (cacheError) {
+      console.warn('⚠️ Failed to clear bootstrap cache:', cacheError.message);
+    }
+
     res.json({
       success: true,
       message: 'Store settings updated successfully',
