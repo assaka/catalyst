@@ -24,6 +24,11 @@ export default function XmlSitemap() {
     const [sitemapXml, setSitemapXml] = useState('');
     const [flashMessage, setFlashMessage] = useState(null);
 
+    // Determine base URL: use custom domain if configured and active, otherwise use origin
+    const sitemapBaseUrl = (store?.custom_domain && store?.domain_status === 'active')
+        ? `https://${store.custom_domain}`
+        : window.location.origin;
+
     // Statistics
     const [stats, setStats] = useState({
         totalUrls: 0,
@@ -197,7 +202,7 @@ export default function XmlSitemap() {
         let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset ${namespaces}>
   <url>
-    <loc>${window.location.origin}</loc>
+    <loc>${sitemapBaseUrl}</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
@@ -214,7 +219,7 @@ export default function XmlSitemap() {
                 const lastmod = formatDate(category.updatedAt || category.updated_date || category.createdAt || category.created_date);
                 xml += `
   <url>
-    <loc>${window.location.origin}/category/${category.slug || category.id}</loc>
+    <loc>${sitemapBaseUrl}/category/${category.slug || category.id}</loc>
     <changefreq>${settings.category_changefreq}</changefreq>
     <priority>${settings.category_priority}</priority>
     <lastmod>${lastmod}</lastmod>`;
@@ -240,7 +245,7 @@ export default function XmlSitemap() {
                 const lastmod = formatDate(product.updatedAt || product.updated_date || product.createdAt || product.created_date);
                 xml += `
   <url>
-    <loc>${window.location.origin}/product/${product.slug || product.id}</loc>
+    <loc>${sitemapBaseUrl}/product/${product.slug || product.id}</loc>
     <changefreq>${settings.product_changefreq}</changefreq>
     <priority>${settings.product_priority}</priority>
     <lastmod>${lastmod}</lastmod>`;
@@ -291,7 +296,7 @@ export default function XmlSitemap() {
                 const lastmod = formatDate(page.updatedAt || page.updated_date || page.createdAt || page.created_date);
                 xml += `
   <url>
-    <loc>${window.location.origin}/page/${page.slug}</loc>
+    <loc>${sitemapBaseUrl}/page/${page.slug}</loc>
     <changefreq>${settings.page_changefreq}</changefreq>
     <priority>${settings.page_priority}</priority>
     <lastmod>${lastmod}</lastmod>`;
@@ -593,8 +598,11 @@ export default function XmlSitemap() {
                         <div className="p-3 border rounded-lg bg-muted/50 text-sm space-y-3">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <span className="font-medium">Your Sitemap URL:</span>
-                                <code className="px-2 py-1 bg-background rounded text-xs">{window.location.origin}/sitemap.xml</code>
+                                <code className="px-2 py-1 bg-background rounded text-xs">{sitemapBaseUrl}/sitemap.xml</code>
                             </div>
+                            {store?.custom_domain && store?.domain_status === 'active' && (
+                                <p className="text-xs text-green-600 dark:text-green-400">Using custom domain: {store.custom_domain}</p>
+                            )}
                             <div className="grid sm:grid-cols-2 gap-3 text-xs text-muted-foreground">
                                 <div>
                                     <p className="font-medium text-foreground mb-1">Google Search Console:</p>
