@@ -84,7 +84,7 @@ const Breadcrumbs = ({ items = [], config = {} }) => {
                 style={{
                   color: activeItemColor,
                   fontSize: `clamp(${mobileFontSize}, 2vw, ${fontSize})`,
-                  fontWeight: '500'
+                  fontWeight
                 }}
                 className="break-words"
                 data-breadcrumb-type={item.type || 'current'}
