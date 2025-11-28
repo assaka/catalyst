@@ -653,12 +653,38 @@ export default function ThemeLayout() {
         }));
     };
 
+    // Extract font name from Google Fonts URL
+    const extractFontNameFromGoogleUrl = (url) => {
+        try {
+            const urlObj = new URL(url);
+            const familyParam = urlObj.searchParams.get('family');
+            if (familyParam) {
+                // Handle format: "Noto+Sans+JP:wght@100..900" or "Noto+Sans+JP"
+                // Also handles multiple fonts: "Font1|Font2" - we take the first one
+                const firstFont = familyParam.split('|')[0].split('&')[0];
+                // Remove weight/style suffixes like ":wght@100..900" or ":ital,wght@0,400"
+                const fontName = firstFont.split(':')[0];
+                // Replace + with spaces
+                return fontName.replace(/\+/g, ' ');
+            }
+        } catch (e) {
+            console.error('Error parsing Google Fonts URL:', e);
+        }
+        return null;
+    };
+
+    // Auto-fill font name when URL changes (for Google Fonts)
+    useEffect(() => {
+        if (newFontUrl && newFontUrl.includes('fonts.googleapis.com')) {
+            const extractedName = extractFontNameFromGoogleUrl(newFontUrl);
+            if (extractedName && !newFontName) {
+                setNewFontName(extractedName);
+            }
+        }
+    }, [newFontUrl]);
+
     // Add custom font via URL
     const handleAddCustomFont = () => {
-        if (!newFontName.trim()) {
-            setFlashMessage({ type: 'error', message: 'Please enter a font name.' });
-            return;
-        }
         if (!newFontUrl.trim()) {
             setFlashMessage({ type: 'error', message: 'Please enter a font URL.' });
             return;
@@ -668,6 +694,21 @@ export default function ThemeLayout() {
 
         // Check if it's a Google Fonts CSS URL
         const isGoogleFont = urlLower.includes('fonts.googleapis.com') || urlLower.includes('fonts.gstatic.com');
+
+        // For Google Fonts, extract name from URL if not provided
+        let fontName = newFontName.trim();
+        if (isGoogleFont) {
+            const extractedName = extractFontNameFromGoogleUrl(newFontUrl.trim());
+            if (extractedName) {
+                fontName = extractedName; // Always use extracted name for Google Fonts
+            } else if (!fontName) {
+                setFlashMessage({ type: 'error', message: 'Could not extract font name from URL. Please enter it manually.' });
+                return;
+            }
+        } else if (!fontName) {
+            setFlashMessage({ type: 'error', message: 'Please enter a font name.' });
+            return;
+        }
 
         // Detect format from URL for direct font files
         let format = 'woff2'; // default
@@ -679,7 +720,7 @@ export default function ThemeLayout() {
         }
 
         const newFont = {
-            name: newFontName.trim(),
+            name: fontName,
             url: newFontUrl.trim(),
             format,
             isGoogleFont // Flag to indicate this is a Google Fonts stylesheet URL
@@ -1033,31 +1074,32 @@ export default function ThemeLayout() {
                                         <Label className="font-medium">Add Custom Font (via URL)</Label>
                                     </div>
                                     <p className="text-sm text-gray-600 mb-3">
-                                        Get fonts from <a href="https://fonts.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Fonts</a> (click a font → "Get embed code" → copy the CSS URL),
-                                        or use direct links to font files (.woff2, .woff, .ttf, .otf) from services like <a href="https://www.fontsquirrel.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Font Squirrel</a> or your own hosting.
+                                        Get fonts from <a href="https://fonts.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Fonts</a> (click a font → "Get embed code" → copy the CSS URL).
+                                        Font name is auto-detected from Google Fonts URLs.
                                     </p>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <div>
-                                            <Label className="text-xs text-gray-500 mb-1 block">Font Name (must match exactly)</Label>
+                                    <div className="flex gap-3">
+                                        <div className="flex-1">
+                                            <Label className="text-xs text-gray-500 mb-1 block">Font URL</Label>
                                             <Input
-                                                placeholder="e.g. Science Gothic"
-                                                value={newFontName}
-                                                onChange={(e) => setNewFontName(e.target.value)}
+                                                placeholder="https://fonts.googleapis.com/css2?family=..."
+                                                value={newFontUrl}
+                                                onChange={(e) => setNewFontUrl(e.target.value)}
                                             />
                                         </div>
-                                        <div className="md:col-span-2">
-                                            <Label className="text-xs text-gray-500 mb-1 block">Font URL (Google Fonts CSS or direct file link)</Label>
-                                            <div className="flex gap-2">
-                                                <Input
-                                                    placeholder="https://fonts.googleapis.com/css2?family=..."
-                                                    value={newFontUrl}
-                                                    onChange={(e) => setNewFontUrl(e.target.value)}
-                                                    className="flex-1"
-                                                />
-                                                <Button onClick={handleAddCustomFont} variant="outline">
-                                                    Add Font
-                                                </Button>
-                                            </div>
+                                        <div className="w-48">
+                                            <Label className="text-xs text-gray-500 mb-1 block">Font Name {newFontUrl.includes('fonts.googleapis.com') ? '(auto-detected)' : ''}</Label>
+                                            <Input
+                                                placeholder={newFontUrl.includes('fonts.googleapis.com') ? 'Auto-detected' : 'Enter font name'}
+                                                value={newFontName}
+                                                onChange={(e) => setNewFontName(e.target.value)}
+                                                disabled={newFontUrl.includes('fonts.googleapis.com')}
+                                                className={newFontUrl.includes('fonts.googleapis.com') ? 'bg-gray-100 cursor-not-allowed' : ''}
+                                            />
+                                        </div>
+                                        <div className="flex items-end">
+                                            <Button onClick={handleAddCustomFont} variant="outline">
+                                                Add Font
+                                            </Button>
                                         </div>
                                     </div>
                                 </div>
