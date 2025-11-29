@@ -570,7 +570,8 @@ export const productConfig = {
       viewMode: ['default'],
       metadata: {
         hierarchical: true,
-        // Out of stock styling applied dynamically in renderer
+        action: 'addToCart',
+        stockAware: true,
         outOfStockClassName: 'w-full h-12 text-lg bg-gray-400 text-white px-6 py-3 rounded font-medium cursor-not-allowed whitespace-nowrap flex items-center justify-center gap-2',
         outOfStockContent: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg> {{t "common.out_of_stock"}}`
       }
