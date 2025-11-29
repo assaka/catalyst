@@ -66,22 +66,74 @@ const COMPONENT_ICONS = {
  * Get display name for a slot
  */
 const getSlotDisplayName = (slot) => {
-  // Priority: displayName > component name > content preview > type
+  // Priority: displayName > component name > formatted ID
   if (slot.metadata?.displayName) {
     return slot.metadata.displayName;
   }
   if (slot.component) {
     return slot.component;
   }
-  if (slot.content && typeof slot.content === 'string' && slot.content.length > 0) {
-    // Strip HTML and truncate
-    const text = slot.content.replace(/<[^>]*>/g, '').trim();
-    if (text.length > 0) {
-      return text.length > 30 ? text.substring(0, 30) + '...' : text;
-    }
-  }
   // Fallback to formatted ID
   return slot.id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+};
+
+/**
+ * Get content preview for a slot (shows HTML/template content)
+ */
+const getContentPreview = (slot) => {
+  if (!slot.content || typeof slot.content !== 'string' || slot.content.length === 0) {
+    return null;
+  }
+
+  // For component slots, show component name instead of content
+  if (slot.type === 'component' && slot.component) {
+    return `<${slot.component} />`;
+  }
+
+  // Strip HTML tags but preserve template variables
+  let preview = slot.content
+    .replace(/<[^>]*>/g, ' ')  // Replace HTML tags with space
+    .replace(/\s+/g, ' ')       // Normalize whitespace
+    .trim();
+
+  // Truncate if too long
+  if (preview.length > 80) {
+    preview = preview.substring(0, 80) + '...';
+  }
+
+  return preview || null;
+};
+
+/**
+ * Parse colSpan value - handles number, object, or string formats
+ * Returns numeric value (1-12)
+ */
+const parseColSpan = (colSpan) => {
+  if (typeof colSpan === 'number') {
+    return Math.max(1, Math.min(12, colSpan));
+  }
+  if (typeof colSpan === 'object' && colSpan !== null) {
+    const defaultVal = colSpan.default;
+    if (typeof defaultVal === 'number') {
+      return Math.max(1, Math.min(12, defaultVal));
+    }
+    // Handle string like 'col-span-12 lg:col-span-6'
+    if (typeof defaultVal === 'string') {
+      const match = defaultVal.match(/col-span-(\d+)/);
+      if (match) {
+        return Math.max(1, Math.min(12, parseInt(match[1], 10)));
+      }
+    }
+    return 12;
+  }
+  if (typeof colSpan === 'string') {
+    // Handle class string like 'col-span-12 lg:col-span-6'
+    const match = colSpan.match(/col-span-(\d+)/);
+    if (match) {
+      return Math.max(1, Math.min(12, parseInt(match[1], 10)));
+    }
+  }
+  return 12;
 };
 
 /**
@@ -145,17 +197,11 @@ const EditableSlot = ({
     data: { containerId: slot.id }
   });
 
-  // Get colSpan value (handle both object and number formats)
-  const getColSpan = () => {
-    if (typeof slot.colSpan === 'object') {
-      return slot.colSpan.default || 12;
-    }
-    return slot.colSpan || 12;
-  };
-
-  const colSpan = getColSpan();
+  // Get colSpan value using the parser
+  const colSpan = parseColSpan(slot.colSpan);
   const Icon = getSlotIcon(slot);
   const displayName = getSlotDisplayName(slot);
+  const contentPreview = getContentPreview(slot);
 
   // Calculate column width
   const columnWidth = containerWidth ? containerWidth / 12 : 80;
@@ -168,11 +214,14 @@ const EditableSlot = ({
     startXRef.current = e.clientX;
     startColSpanRef.current = colSpan;
 
+    let currentPreview = colSpan;
+
     const handleMouseMove = (moveEvent) => {
       const deltaX = moveEvent.clientX - startXRef.current;
       const columnDelta = Math.round(deltaX / columnWidth);
       let newColSpan = startColSpanRef.current + columnDelta;
       newColSpan = Math.max(1, Math.min(12, newColSpan));
+      currentPreview = newColSpan;
       setResizePreview(newColSpan);
     };
 
@@ -183,8 +232,8 @@ const EditableSlot = ({
       document.body.style.userSelect = '';
 
       setIsResizing(false);
-      if (resizePreview && resizePreview !== colSpan) {
-        onResize(slot.id, resizePreview);
+      if (currentPreview !== colSpan) {
+        onResize(slot.id, currentPreview);
       }
       setResizePreview(null);
     };
@@ -193,7 +242,7 @@ const EditableSlot = ({
     document.addEventListener('mouseup', handleMouseUp);
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
-  }, [colSpan, columnWidth, onResize, slot.id, resizePreview]);
+  }, [colSpan, columnWidth, onResize, slot.id]);
 
   // Combined ref for sortable + droppable
   const combinedRef = useCallback((node) => {
@@ -206,7 +255,7 @@ const EditableSlot = ({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    gridColumn: level === 0 ? `span ${resizePreview || colSpan}` : undefined,
+    gridColumn: `span ${resizePreview || colSpan}`,
     opacity: isDragging ? 0.5 : 1
   };
 
@@ -231,7 +280,7 @@ const EditableSlot = ({
       data-level={level}
       className={cn(
         'relative group rounded-lg border-2 transition-all',
-        level === 0 ? 'min-h-[60px]' : 'min-h-[40px]',
+        'min-h-[48px]',
         getBgColor(),
         isSelected
           ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800'
@@ -293,12 +342,10 @@ const EditableSlot = ({
           {slot.type}
         </span>
 
-        {/* Column span indicator */}
-        {level === 0 && (
-          <span className="text-xs text-blue-500 font-mono">
-            {resizePreview || colSpan}/12
-          </span>
-        )}
+        {/* Column span indicator - show for all slots */}
+        <span className="text-xs text-blue-500 font-mono">
+          {resizePreview || colSpan}/12
+        </span>
 
         {/* Delete button */}
         <button
@@ -313,10 +360,27 @@ const EditableSlot = ({
         </button>
       </div>
 
+      {/* Content preview for non-container slots */}
+      {!isContainer && contentPreview && (
+        <div className="px-3 py-2 text-xs text-gray-600 dark:text-gray-400 font-mono bg-white/50 dark:bg-black/20 border-b border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="truncate" title={slot.content}>
+            {contentPreview}
+          </div>
+        </div>
+      )}
+
+      {/* className preview */}
+      {slot.className && (
+        <div className="px-3 py-1 text-xs text-gray-500 dark:text-gray-500 bg-gray-100/50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 overflow-hidden">
+          <span className="text-gray-400">class:</span>{' '}
+          <span className="font-mono truncate">{slot.className.length > 60 ? slot.className.substring(0, 60) + '...' : slot.className}</span>
+        </div>
+      )}
+
       {/* Children for containers */}
       {isContainer && isExpanded && (
         <div className={cn(
-          'p-2 space-y-2',
+          'p-2',
           hasChildren ? 'min-h-[40px]' : 'min-h-[60px]'
         )}>
           {hasChildren ? (
@@ -324,22 +388,24 @@ const EditableSlot = ({
               items={childSlots.map(s => s.id)}
               strategy={verticalListSortingStrategy}
             >
-              {childSlots.map((childSlot) => (
-                <EditableSlot
-                  key={childSlot.id}
-                  slot={childSlot}
-                  slots={slots}
-                  isSelected={selectedSlotId === childSlot.id}
-                  onSelect={onSelect}
-                  onResize={onResize}
-                  onDelete={onDelete}
-                  onMoveToContainer={onMoveToContainer}
-                  containerWidth={containerWidth}
-                  level={level + 1}
-                  selectedSlotId={selectedSlotId}
-                  dragOverContainerId={dragOverContainerId}
-                />
-              ))}
+              <div className="grid grid-cols-12 gap-2">
+                {childSlots.map((childSlot) => (
+                  <EditableSlot
+                    key={childSlot.id}
+                    slot={childSlot}
+                    slots={slots}
+                    isSelected={selectedSlotId === childSlot.id}
+                    onSelect={onSelect}
+                    onResize={onResize}
+                    onDelete={onDelete}
+                    onMoveToContainer={onMoveToContainer}
+                    containerWidth={containerWidth}
+                    level={level + 1}
+                    selectedSlotId={selectedSlotId}
+                    dragOverContainerId={dragOverContainerId}
+                  />
+                ))}
+              </div>
             </SortableContext>
           ) : (
             <div className="flex items-center justify-center h-12 text-gray-400 text-sm border-2 border-dashed border-gray-300 dark:border-gray-600 rounded">
@@ -349,24 +415,22 @@ const EditableSlot = ({
         </div>
       )}
 
-      {/* Resize handle (right edge) - only for root level */}
-      {level === 0 && (
-        <div
-          onMouseDown={handleResizeStart}
-          className={cn(
-            'absolute right-0 top-0 bottom-0 w-2 cursor-col-resize transition-colors',
-            'hover:bg-blue-500/30',
-            isResizing && 'bg-blue-500/50'
-          )}
-          title="Drag to resize"
-        >
-          <div className={cn(
-            'absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full',
-            'bg-gray-300 dark:bg-gray-600 group-hover:bg-blue-500',
-            isResizing && 'bg-blue-500'
-          )} />
-        </div>
-      )}
+      {/* Resize handle (right edge) - for all slots */}
+      <div
+        onMouseDown={handleResizeStart}
+        className={cn(
+          'absolute right-0 top-0 bottom-0 w-2 cursor-col-resize transition-colors',
+          'hover:bg-blue-500/30',
+          isResizing && 'bg-blue-500/50'
+        )}
+        title="Drag to resize"
+      >
+        <div className={cn(
+          'absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full',
+          'bg-gray-300 dark:bg-gray-600 group-hover:bg-blue-500',
+          isResizing && 'bg-blue-500'
+        )} />
+      </div>
 
       {/* Resize preview overlay */}
       {isResizing && resizePreview && (
