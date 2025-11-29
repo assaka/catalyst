@@ -557,64 +557,23 @@ export const productConfig = {
 
     add_to_cart_button: {
       id: 'add_to_cart_button',
-      type: 'html',
-      content: `
-        {{#if product.in_stock}}
-          <button class="w-full h-12 text-lg text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center gap-2 transition-colors duration-200"
-                  style="background-color: {{settings.theme.add_to_cart_button_color}};"
-                  data-add-to-cart>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
-              <circle cx="8" cy="21" r="1"></circle>
-              <circle cx="19" cy="21" r="1"></circle>
-              <path d="m2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43h-15.44"></path>
-            </svg>
-            {{t "product.add_to_cart"}}
-          </button>
-        {{else}}
-          <button class="w-full h-12 text-lg bg-gray-400 text-white px-6 py-3 rounded font-medium cursor-not-allowed whitespace-nowrap flex items-center justify-center gap-2" disabled>
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
-            </svg>
-            {{t "common.out_of_stock"}}
-          </button>
-        {{/if}}
-      `,
-      script: `
-        const button = element.querySelector('[data-add-to-cart]');
-        if (button) {
-          // Apply theme color from settings
-          if (variableContext?.settings?.theme?.add_to_cart_button_color) {
-            button.style.backgroundColor = variableContext.settings.theme.add_to_cart_button_color;
-
-            // Add hover effect
-            const originalColor = variableContext.settings.theme.add_to_cart_button_color;
-            button.addEventListener('mouseenter', () => {
-              button.style.filter = 'brightness(0.9)';
-            });
-            button.addEventListener('mouseleave', () => {
-              button.style.filter = 'brightness(1)';
-            });
-          }
-
-          if (productData?.handleAddToCart) {
-            const handleClick = (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              productData.handleAddToCart();
-            };
-            button.addEventListener('click', handleClick);
-            return () => button.removeEventListener('click', handleClick);
-          }
-        }
-      `,
-      className: 'add-to-cart-container',
+      type: 'button',
+      content: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="m2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43h-15.44"></path></svg> {{t "product.add_to_cart"}}`,
+      className: 'w-full h-12 text-lg text-white px-6 py-3 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center gap-2 transition-colors duration-200 hover:brightness-90',
       parentClassName: '',
-      styles: {},
+      styles: {
+        backgroundColor: '{{settings.theme.add_to_cart_button_color}}'
+      },
       parentId: 'buttons_container',
       position: { col: 1, row: 1 },
       colSpan: {},
       viewMode: ['default'],
-      metadata: { hierarchical: true }
+      metadata: {
+        hierarchical: true,
+        // Out of stock styling applied dynamically in renderer
+        outOfStockClassName: 'w-full h-12 text-lg bg-gray-400 text-white px-6 py-3 rounded font-medium cursor-not-allowed whitespace-nowrap flex items-center justify-center gap-2',
+        outOfStockContent: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg> {{t "common.out_of_stock"}}`
+      }
     },
 
     wishlist_button: {

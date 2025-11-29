@@ -1003,7 +1003,24 @@ export function UnifiedSlotRenderer({
 
     // Button Element
     if (type === 'button') {
-      const buttonContent = processedContent || 'Button';
+      // Handle out-of-stock state for add_to_cart_button
+      const isAddToCartButton = id === 'add_to_cart_button' || id === 'product_add_to_cart' || id === 'product_card_add_to_cart';
+      const isOutOfStock = isAddToCartButton && (productData?.in_stock === false || productData?.canAddToCart === false);
+
+      // Use out-of-stock content/className if available and product is out of stock
+      let buttonContent = processedContent || 'Button';
+      let buttonClassName = processedClassName;
+      let buttonStyles = processedStyles;
+
+      if (isOutOfStock && slot.metadata?.outOfStockContent) {
+        buttonContent = processVariables(slot.metadata.outOfStockContent, variableContext);
+      }
+      if (isOutOfStock && slot.metadata?.outOfStockClassName) {
+        buttonClassName = slot.metadata.outOfStockClassName;
+        // Clear the background color style for out-of-stock (uses class instead)
+        buttonStyles = { ...processedStyles };
+        delete buttonStyles.backgroundColor;
+      }
 
       // Check if button content contains HTML
       const isHtmlContent = buttonContent.includes('<') && buttonContent.includes('>');
@@ -1096,10 +1113,10 @@ export function UnifiedSlotRenderer({
 
         return (
           <Button
-            className={processedClassName}
-            style={processedStyles}
+            className={buttonClassName}
+            style={buttonStyles}
             onClick={handleButtonClick}
-            disabled={id === 'add_to_cart_button' && !productData.canAddToCart}
+            disabled={isOutOfStock}
           >
             {isHtmlContent ? (
               <span dangerouslySetInnerHTML={{ __html: buttonContent }} />
@@ -1112,10 +1129,11 @@ export function UnifiedSlotRenderer({
         // Editor: Visual preview only
         const buttonElement = (
           <button
-            className={processedClassName}
-            style={processedStyles}
+            className={buttonClassName}
+            style={buttonStyles}
             data-slot-id={id}
             data-editable="true"
+            disabled={isOutOfStock}
             onClick={(e) => {
               e.stopPropagation();
               if (onElementClick) {
