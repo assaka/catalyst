@@ -377,12 +377,21 @@ const EditableSlot = ({
         </button>
       </div>
 
-      {/* Raw HTML/Template content for non-container slots */}
+      {/* Rendered HTML content for non-container slots */}
       {!isContainer && rawContent && (
-        <div className="border-b border-gray-200 dark:border-gray-700">
-          <pre className="px-3 py-2 text-xs text-gray-700 dark:text-gray-300 font-mono bg-white/70 dark:bg-black/30 overflow-x-auto max-h-[120px] overflow-y-auto whitespace-pre-wrap break-all">
-            {rawContent}
-          </pre>
+        <div className="border-b border-gray-200 dark:border-gray-700 px-3 py-2 bg-white/70 dark:bg-black/30">
+          {/* Rendered preview */}
+          <div
+            className="text-sm text-gray-800 dark:text-gray-200 overflow-hidden max-h-[100px]"
+            dangerouslySetInnerHTML={{ __html: rawContent }}
+          />
+          {/* Raw code toggle - show code on hover */}
+          <details className="mt-1">
+            <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">View source</summary>
+            <pre className="mt-1 text-xs text-gray-600 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto max-h-[80px] overflow-y-auto whitespace-pre-wrap break-all">
+              {rawContent}
+            </pre>
+          </details>
         </div>
       )}
 
