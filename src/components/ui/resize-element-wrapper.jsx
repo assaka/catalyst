@@ -739,6 +739,11 @@ const ResizeWrapper = ({
           "resize-none select-none",
           isResizing && "cursor-se-resize"
         ),
+        // Preserve onClick handler from children for editor element selection
+        onClick: children.props.onClick,
+        // Preserve data attributes for editor
+        'data-slot-id': children.props['data-slot-id'],
+        'data-editable': children.props['data-editable'],
         style: (() => {
           // For text elements, remove any existing width property to avoid constraints
           const { width: existingWidth, ...baseStyles } = children.props.style || {};
