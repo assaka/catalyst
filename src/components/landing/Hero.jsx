@@ -31,11 +31,11 @@ export default function Hero() {
         "mobile first",
         "pixel perfect",
         "with analytics",
-        "secure & reliable",
-        "globally hosted",
-        "24/7 support",
         "with one click",
-        "your way"
+        "your way",
+        "with integrations",
+        "with AI chat",
+        "with pro editor"
     ];
 
     useEffect(() => {
