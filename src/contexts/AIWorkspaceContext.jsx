@@ -75,6 +75,9 @@ export const AIWorkspaceProvider = ({ children }) => {
   // Slot handlers (registered by editor components)
   const [slotHandlers, setSlotHandlers] = useState(null);
 
+  // Editor type toggle (legacy vs new stable editor)
+  const [useStableEditor, setUseStableEditor] = useState(true);
+
   /**
    * Select a page type and update view mode accordingly
    */
@@ -210,6 +213,8 @@ export const AIWorkspaceProvider = ({ children }) => {
     isProcessingAi,
     setIsProcessingAi,
     slotHandlers,
+    useStableEditor,
+    setUseStableEditor,
 
     // Actions
     selectPage,
@@ -244,6 +249,7 @@ export const AIWorkspaceProvider = ({ children }) => {
     chatMessages,
     isProcessingAi,
     slotHandlers,
+    useStableEditor,
     selectPage,
     toggleEditorMode,
     applyAiSlotChange,
