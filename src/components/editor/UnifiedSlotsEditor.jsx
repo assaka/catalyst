@@ -250,28 +250,40 @@ const UnifiedSlotsEditor = ({
 
   // Simple event delegation handler - captures all clicks on [data-slot-id] elements
   const handleContainerClick = useCallback((e) => {
+    console.log('🖱️ Container click:', e.target.tagName, e.target.className);
+
     // Don't handle if in preview mode or resizing
-    if (showPreview || isResizing) return;
+    if (showPreview || isResizing) {
+      console.log('🖱️ Skipped: preview or resizing');
+      return;
+    }
 
     // Check if resize just ended (debounce)
     const timeSinceResize = Date.now() - lastResizeEndTime.current;
-    if (timeSinceResize < 200) return;
+    if (timeSinceResize < 200) {
+      console.log('🖱️ Skipped: resize debounce');
+      return;
+    }
 
     // Find the closest element with data-slot-id
     const slotElement = e.target.closest('[data-slot-id]');
-    if (!slotElement) return;
+    console.log('🖱️ Found slot element:', slotElement?.getAttribute('data-slot-id'));
+
+    if (!slotElement) {
+      console.log('🖱️ No slot element found');
+      return;
+    }
 
     // Ignore clicks on resize handles
-    if (e.target.closest('.resize-handle') || e.target.closest('[class*="resize"]')) return;
+    if (e.target.closest('.resize-handle') || e.target.closest('[class*="resize"]')) {
+      console.log('🖱️ Skipped: resize handle');
+      return;
+    }
 
     const slotId = slotElement.getAttribute('data-slot-id');
     if (!slotId) return;
 
-    // Prevent selecting container slots when clicking on child elements
-    // Only select if this is the innermost slot element
-    const innerSlot = e.target.closest('[data-slot-id]');
-    if (innerSlot !== slotElement) return;
-
+    console.log('🖱️ Selecting:', slotId);
     e.stopPropagation();
     setSelectedElement(slotElement);
     setIsSidebarVisible(true);
