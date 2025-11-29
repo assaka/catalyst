@@ -26,6 +26,8 @@ import {
   FileText, ShoppingCart, CreditCard, User
 } from 'lucide-react';
 import { SlotManager } from '@/utils/slotUtils';
+import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
+import { processVariables, generateDemoData } from '@/utils/variableProcessor';
 
 /**
  * WorkspaceSlotEditor - A stable, hierarchical slot editor
@@ -78,23 +80,49 @@ const getSlotDisplayName = (slot) => {
 };
 
 /**
- * Get raw content for a slot (shows actual HTML/template)
+ * Get processed content for a slot (with variables replaced)
  */
-const getSlotContent = (slot) => {
-  if (!slot.content || typeof slot.content !== 'string') {
-    return null;
-  }
-
+const getSlotContent = (slot, demoContext) => {
   // For component slots, show component name
   if (slot.type === 'component' && slot.component) {
     return `<${slot.component} />`;
   }
 
-  // Return raw content (preserve HTML and templates)
+  if (!slot.content || typeof slot.content !== 'string') {
+    return null;
+  }
+
   const content = slot.content.trim();
   if (content.length === 0) return null;
 
+  // Process variables with demo context
+  if (demoContext) {
+    return processVariables(content, demoContext);
+  }
+
   return content;
+};
+
+/**
+ * Generate demo context for variable processing
+ */
+const getDemoContext = () => {
+  const demoData = generateDemoData('product', {});
+  return {
+    product: demoData.product,
+    settings: {
+      currency_symbol: '$',
+      store_name: 'Demo Store'
+    },
+    category: {
+      name: 'Sample Category',
+      description: 'Category description'
+    },
+    cart: {
+      total: '$99.99',
+      items_count: 3
+    }
+  };
 };
 
 /**
@@ -209,7 +237,10 @@ const EditableSlot = ({
   const colSpan = parseColSpan(slot.colSpan, slot.type);
   const Icon = getSlotIcon(slot);
   const displayName = getSlotDisplayName(slot);
-  const rawContent = getSlotContent(slot);
+
+  // Get demo context for variable processing
+  const demoContext = useMemo(() => getDemoContext(), []);
+  const processedContent = getSlotContent(slot, demoContext);
 
   // Calculate column width
   const columnWidth = containerWidth ? containerWidth / 12 : 80;
@@ -378,20 +409,22 @@ const EditableSlot = ({
       </div>
 
       {/* Rendered HTML content for non-container slots */}
-      {!isContainer && rawContent && (
+      {!isContainer && processedContent && (
         <div className="border-b border-gray-200 dark:border-gray-700 px-3 py-2 bg-white/70 dark:bg-black/30">
-          {/* Rendered preview */}
+          {/* Rendered preview with processed variables */}
           <div
-            className="text-sm text-gray-800 dark:text-gray-200 overflow-hidden max-h-[100px]"
-            dangerouslySetInnerHTML={{ __html: rawContent }}
+            className="text-sm text-gray-800 dark:text-gray-200 overflow-hidden max-h-[120px] [&_*]:max-w-full"
+            dangerouslySetInnerHTML={{ __html: processedContent }}
           />
-          {/* Raw code toggle - show code on hover */}
-          <details className="mt-1">
-            <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">View source</summary>
-            <pre className="mt-1 text-xs text-gray-600 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto max-h-[80px] overflow-y-auto whitespace-pre-wrap break-all">
-              {rawContent}
-            </pre>
-          </details>
+          {/* Show original template if different from processed */}
+          {slot.content && slot.content !== processedContent && (
+            <details className="mt-1">
+              <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">View template</summary>
+              <pre className="mt-1 text-xs text-gray-600 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto max-h-[80px] overflow-y-auto whitespace-pre-wrap break-all">
+                {slot.content}
+              </pre>
+            </details>
+          )}
         </div>
       )}
 
