@@ -25,6 +25,11 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
     const [layoutConfig, setLayoutConfig] = useState(null);
     const [configLoaded, setConfigLoaded] = useState(false);
 
+    // Check if we're in draft preview mode (AI Workspace preview)
+    const isPreviewDraftMode = typeof window !== 'undefined' &&
+        (new URLSearchParams(window.location.search).get('preview') === 'draft' ||
+         new URLSearchParams(window.location.search).get('workspace') === 'true');
+
     const loadLayoutConfig = useCallback(async () => {
         if (!store?.id) {
             return;
@@ -37,8 +42,25 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
         }
 
         try {
-            // Load published configuration using the new versioning API
-            const response = await slotConfigurationService.getPublishedConfiguration(store.id, pageType);
+            let response;
+
+            // In draft preview mode, load draft configuration instead of published
+            if (isPreviewDraftMode) {
+                response = await slotConfigurationService.getDraftConfiguration(store.id, pageType);
+                // Transform draft response to match published response structure
+                if (response.success && response.data?.configuration) {
+                    response = {
+                        success: true,
+                        data: {
+                            configuration: response.data.configuration,
+                            status: 'draft'
+                        }
+                    };
+                }
+            } else {
+                // Load published configuration using the new versioning API
+                response = await slotConfigurationService.getPublishedConfiguration(store.id, pageType);
+            }
 
             // Check for various "no published config" scenarios
             if (response.success && response.data &&
@@ -109,7 +131,7 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
                 setConfigLoaded(true);
             }
         }
-    }, [store?.id, pageType, fallbackConfig, shouldFetch]);
+    }, [store?.id, pageType, fallbackConfig, shouldFetch, isPreviewDraftMode]);
 
     useEffect(() => {
         loadLayoutConfig();
