@@ -151,6 +151,15 @@ const ResizeWrapper = ({
 
   // Check element types
   const isButton = isButtonElement(children);
+
+  // Debug: Log every element that goes through ResizeWrapper
+  console.log('🎯 ResizeWrapper received:', {
+    childType: children?.type,
+    slotId: children?.props?.['data-slot-id'],
+    isButton,
+    hasOnClick: !!children?.props?.onClick
+  });
+
   // Detect text elements: span, h1-h6, p, or has text/name/price/description in slot ID
   const isTextElement = ['span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'].includes(children?.type) ||
                         children?.props?.['data-slot-id']?.match(/(text|name|price|description|title|heading)/);
