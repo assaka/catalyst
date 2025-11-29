@@ -18,24 +18,24 @@ export default function Hero() {
     const titleVariants = [
         "you can imagine",
         "that converts",
-        "in any language",
-        "smarter than ever",
+        "AI translated",
+        "AI designed",
         "in minutes",
         "without coding",
         "that stands out",
         "lightning fast",
-        "that scales",
+        "AI plugin creator",
         "drag & drop ready",
         "fully responsive",
         "SEO optimized",
-        "mobile first",
+        "AI layout editor",
         "pixel perfect",
-        "analytics included",
+        "AI assisted",
         "in one click",
         "your way",
         "100+ integrations",
-        "chat assisted",
-        "easy to edit"
+        "AI chat built-in",
+        "AI powered"
     ];
 
     useEffect(() => {
