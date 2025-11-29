@@ -55,20 +55,34 @@ const WorkspaceStorefrontPreview = () => {
   // Load draft configurations for header and selected page
   useEffect(() => {
     const loadDraftConfigurations = async () => {
-      if (!storeId) return;
+      if (!storeId) {
+        // No store selected - use default configs
+        setHeaderSlots(headerConfig.slots);
+        setPageSlots(getDefaultConfigForPage(selectedPageType).slots);
+        setIsLoading(false);
+        return;
+      }
 
       setIsLoading(true);
       setError(null);
 
       try {
         // Load header draft config
-        const headerResponse = await slotConfigurationService.getDraftConfiguration(
-          storeId,
-          'header',
-          getHeaderConfig()
-        );
-        if (headerResponse?.data?.configuration?.slots) {
-          setHeaderSlots(headerResponse.data.configuration.slots);
+        try {
+          const headerResponse = await slotConfigurationService.getDraftConfiguration(
+            storeId,
+            'header',
+            headerConfig
+          );
+          if (headerResponse?.data?.configuration?.slots) {
+            setHeaderSlots(headerResponse.data.configuration.slots);
+          } else {
+            // Fallback to default header config
+            setHeaderSlots(headerConfig.slots);
+          }
+        } catch (headerErr) {
+          console.warn('Using default header config:', headerErr.message);
+          setHeaderSlots(headerConfig.slots);
         }
 
         // For page content, use currentConfiguration if available (from editor context)
@@ -76,18 +90,28 @@ const WorkspaceStorefrontPreview = () => {
         if (currentConfiguration?.slots && selectedPageType !== PAGE_TYPES.HEADER) {
           setPageSlots(currentConfiguration.slots);
         } else if (selectedPageType !== PAGE_TYPES.HEADER) {
-          const pageResponse = await slotConfigurationService.getDraftConfiguration(
-            storeId,
-            selectedPageType,
-            getDefaultConfigForPage(selectedPageType)
-          );
-          if (pageResponse?.data?.configuration?.slots) {
-            setPageSlots(pageResponse.data.configuration.slots);
+          try {
+            const pageResponse = await slotConfigurationService.getDraftConfiguration(
+              storeId,
+              selectedPageType,
+              getDefaultConfigForPage(selectedPageType)
+            );
+            if (pageResponse?.data?.configuration?.slots) {
+              setPageSlots(pageResponse.data.configuration.slots);
+            } else {
+              // Fallback to default page config
+              setPageSlots(getDefaultConfigForPage(selectedPageType).slots);
+            }
+          } catch (pageErr) {
+            console.warn('Using default page config:', pageErr.message);
+            setPageSlots(getDefaultConfigForPage(selectedPageType).slots);
           }
         }
       } catch (err) {
         console.error('Error loading draft configurations:', err);
-        setError('Failed to load preview configurations');
+        // Use default configs on error instead of showing error
+        setHeaderSlots(headerConfig.slots);
+        setPageSlots(getDefaultConfigForPage(selectedPageType).slots);
       } finally {
         setIsLoading(false);
       }
@@ -160,7 +184,9 @@ const WorkspaceStorefrontPreview = () => {
     );
   }
 
-  if (error) {
+  // Error is now handled gracefully with fallback to default configs
+  // Only show error if we have no slots at all
+  if (error && !headerSlots && !pageSlots) {
     return (
       <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
         <div className="text-center text-red-500">
