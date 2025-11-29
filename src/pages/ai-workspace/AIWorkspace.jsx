@@ -9,8 +9,7 @@ import WorkspaceCanvas from '@/components/ai-workspace/WorkspaceCanvas';
 import WorkspaceStorefrontPreview from '@/components/ai-workspace/WorkspaceStorefrontPreview';
 import DeveloperPluginEditor from '@/components/plugins/DeveloperPluginEditor';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { X, Bot, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bot, ChevronLeft } from 'lucide-react';
 
 /**
  * AIWorkspace - Unified Editor + AI workspace
@@ -55,26 +54,6 @@ const AIWorkspaceContent = () => {
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header with page selector, editor toggle, and controls */}
       <WorkspaceHeader />
-
-      {/* Plugin editing badge when plugin is open */}
-      {showPluginEditor && pluginToEdit && (
-        <div className="px-4 py-2 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-200 dark:border-purple-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300">
-              Editing Plugin: {pluginToEdit.name}
-            </Badge>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={closePluginEditor}
-            className="h-6 text-purple-700 hover:text-purple-900"
-          >
-            <X className="w-4 h-4 mr-1" />
-            Close Editor
-          </Button>
-        </div>
-      )}
 
       {/* Main content area with resizable panels */}
       <div className="flex-1 min-h-0 overflow-hidden">

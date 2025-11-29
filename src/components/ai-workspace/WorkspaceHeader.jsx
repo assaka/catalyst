@@ -1,25 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAIWorkspace, PAGE_TYPES, VIEWPORT_MODES } from '@/contexts/AIWorkspaceContext';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Button } from '@/components/ui/button';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
 import {
-  Monitor,
-  Tablet,
-  Smartphone,
   PanelLeftClose,
   PanelLeft,
   Save,
   Pencil,
   Eye,
-  Loader2
+  Loader2,
+  Plug,
+  ChevronDown,
+  Package,
+  Plus
 } from 'lucide-react';
 import { slotEnabledFiles } from '@/components/editor/slot/slotEnabledFiles';
+import apiClient from '@/api/client';
 
 /**
  * WorkspaceHeader - Header component for AI Workspace
@@ -32,21 +36,60 @@ const WorkspaceHeader = () => {
     selectPage,
     editorMode,
     toggleEditorMode,
-    viewportMode,
-    setViewportMode,
     hasUnsavedChanges,
     isLoading,
     aiPanelCollapsed,
-    toggleAiPanel
+    toggleAiPanel,
+    showPluginEditor,
+    pluginToEdit,
+    openPluginEditor,
+    closePluginEditor
   } = useAIWorkspace();
+
+  const { getSelectedStoreId } = useStoreSelection();
+  const [plugins, setPlugins] = useState([]);
+  const [loadingPlugins, setLoadingPlugins] = useState(false);
+
+  // Load user's plugins
+  useEffect(() => {
+    loadPlugins();
+  }, []);
+
+  const loadPlugins = async () => {
+    try {
+      setLoadingPlugins(true);
+      const storeId = getSelectedStoreId();
+      const response = await apiClient.get(`plugins/store/${storeId}`);
+      if (response.success && response.plugins) {
+        setPlugins(response.plugins);
+      }
+    } catch (error) {
+      console.error('Failed to load plugins:', error);
+    } finally {
+      setLoadingPlugins(false);
+    }
+  };
 
   // Get the current page info
   const currentPage = slotEnabledFiles.find(f => f.pageType === selectedPageType);
   const PageIcon = currentPage?.icon;
 
+  // Handle selecting a page from Editor dropdown
+  const handleSelectPage = (pageType) => {
+    selectPage(pageType);
+    if (!editorMode) {
+      toggleEditorMode();
+    }
+  };
+
+  // Handle selecting a plugin from Plugins dropdown
+  const handleSelectPlugin = (plugin) => {
+    openPluginEditor(plugin);
+  };
+
   return (
     <header className="h-14 border-b bg-white dark:bg-gray-800 flex items-center px-4 gap-4 shrink-0">
-      {/* Left section: AI Panel toggle + Page Selector */}
+      {/* Left section: AI Panel toggle */}
       <div className="flex items-center gap-3">
         {/* AI Panel toggle */}
         <Button
@@ -62,108 +105,175 @@ const WorkspaceHeader = () => {
             <PanelLeftClose className="h-4 w-4" />
           )}
         </Button>
-
-        {/* Page Selector - visible when in editor mode */}
-        {editorMode && (
-          <Select value={selectedPageType} onValueChange={selectPage}>
-            <SelectTrigger className="w-[180px] h-9">
-              <SelectValue>
-                <div className="flex items-center gap-2">
-                  {PageIcon && <PageIcon className={`h-4 w-4 ${currentPage?.color}`} />}
-                  <span>{currentPage?.name || 'Select Page'}</span>
-                </div>
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {slotEnabledFiles
-                .filter(file => !file.comingSoon)
-                .map((file) => {
-                  const Icon = file.icon;
-                  return (
-                    <SelectItem key={file.id} value={file.pageType}>
-                      <div className="flex items-center gap-2">
-                        {Icon && <Icon className={`h-4 w-4 ${file.color}`} />}
-                        <span>{file.name}</span>
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-            </SelectContent>
-          </Select>
-        )}
       </div>
 
-      {/* Center section: Title + Description */}
+      {/* Center section: Title + Context info */}
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             AI Workspace
           </h1>
-          {editorMode && currentPage && (
+          {editorMode && currentPage && !showPluginEditor && (
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {currentPage.description}
+              Editing: {currentPage.name}
+            </p>
+          )}
+          {showPluginEditor && pluginToEdit && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Plugin: {pluginToEdit.name}
+            </p>
+          )}
+          {!editorMode && !showPluginEditor && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Storefront Preview (Draft)
             </p>
           )}
         </div>
       </div>
 
-      {/* Right section: Viewport + Editor Toggle + Save */}
+      {/* Right section: Editor + Plugins buttons */}
       <div className="flex items-center gap-2">
-        {/* Viewport controls - visible in editor mode */}
-        {editorMode && (
-          <div className="flex items-center border rounded-md p-0.5 bg-gray-100 dark:bg-gray-700">
+        {/* Editor Dropdown */}
+        {editorMode && !showPluginEditor ? (
+          // In editor mode - show Exit Editor button + page selector
+          <div className="flex items-center gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="default" size="sm" className="h-8 gap-1.5">
+                  {PageIcon && <PageIcon className="h-3.5 w-3.5" />}
+                  <span>{currentPage?.name || 'Page'}</span>
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Select Page</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {slotEnabledFiles
+                  .filter(file => !file.comingSoon)
+                  .map((file) => {
+                    const Icon = file.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={file.id}
+                        onClick={() => selectPage(file.pageType)}
+                        className={selectedPageType === file.pageType ? 'bg-gray-100' : ''}
+                      >
+                        <div className="flex items-center gap-2">
+                          {Icon && <Icon className={`h-4 w-4 ${file.color}`} />}
+                          <span>{file.name}</span>
+                        </div>
+                      </DropdownMenuItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
-              variant={viewportMode === VIEWPORT_MODES.DESKTOP ? 'secondary' : 'ghost'}
+              variant="outline"
               size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => setViewportMode(VIEWPORT_MODES.DESKTOP)}
-              title="Desktop view"
+              onClick={toggleEditorMode}
+              className="h-8 gap-1.5"
             >
-              <Monitor className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant={viewportMode === VIEWPORT_MODES.TABLET ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => setViewportMode(VIEWPORT_MODES.TABLET)}
-              title="Tablet view"
-            >
-              <Tablet className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant={viewportMode === VIEWPORT_MODES.MOBILE ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => setViewportMode(VIEWPORT_MODES.MOBILE)}
-              title="Mobile view"
-            >
-              <Smartphone className="h-3.5 w-3.5" />
+              <Eye className="h-3.5 w-3.5" />
+              <span>Exit Editor</span>
             </Button>
           </div>
+        ) : !showPluginEditor ? (
+          // Not in editor mode - show Editor dropdown
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1.5">
+                <Pencil className="h-3.5 w-3.5" />
+                <span>Editor</span>
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Edit Page</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {slotEnabledFiles
+                .filter(file => !file.comingSoon)
+                .map((file) => {
+                  const Icon = file.icon;
+                  return (
+                    <DropdownMenuItem
+                      key={file.id}
+                      onClick={() => handleSelectPage(file.pageType)}
+                    >
+                      <div className="flex items-center gap-2">
+                        {Icon && <Icon className={`h-4 w-4 ${file.color}`} />}
+                        <span>{file.name}</span>
+                      </div>
+                    </DropdownMenuItem>
+                  );
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+
+        {/* Plugins Dropdown */}
+        {showPluginEditor ? (
+          // In plugin mode - show Exit Plugins button
+          <Button
+            variant="default"
+            size="sm"
+            onClick={closePluginEditor}
+            className="h-8 gap-1.5 bg-purple-600 hover:bg-purple-700"
+          >
+            <Package className="h-3.5 w-3.5" />
+            <span>Exit Plugins</span>
+          </Button>
+        ) : (
+          // Not in plugin mode - show Plugins dropdown
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1.5">
+                <Plug className="h-3.5 w-3.5" />
+                <span>Plugins</span>
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Your Plugins</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {loadingPlugins ? (
+                <DropdownMenuItem disabled>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Loading...
+                </DropdownMenuItem>
+              ) : plugins.length === 0 ? (
+                <DropdownMenuItem disabled>
+                  <span className="text-gray-500">No plugins yet</span>
+                </DropdownMenuItem>
+              ) : (
+                plugins.map((plugin) => (
+                  <DropdownMenuItem
+                    key={plugin.id}
+                    onClick={() => handleSelectPlugin(plugin)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-purple-500" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm truncate">{plugin.name}</div>
+                        <div className="text-xs text-gray-500 truncate">v{plugin.version}</div>
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                ))
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => {
+                // Create new plugin via AI
+                if (editorMode) toggleEditorMode();
+              }}>
+                <Plus className="h-4 w-4 mr-2 text-green-600" />
+                <span>Create New Plugin</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
-        {/* Editor Mode Toggle */}
-        <Button
-          variant={editorMode ? 'default' : 'outline'}
-          size="sm"
-          onClick={toggleEditorMode}
-          className="h-8 gap-1.5"
-        >
-          {editorMode ? (
-            <>
-              <Eye className="h-3.5 w-3.5" />
-              <span>Preview</span>
-            </>
-          ) : (
-            <>
-              <Pencil className="h-3.5 w-3.5" />
-              <span>Editor</span>
-            </>
-          )}
-        </Button>
-
         {/* Save indicator */}
-        {hasUnsavedChanges && (
+        {hasUnsavedChanges && !showPluginEditor && (
           <Button
             variant="outline"
             size="sm"
@@ -175,7 +285,7 @@ const WorkspaceHeader = () => {
             ) : (
               <Save className="h-3.5 w-3.5" />
             )}
-            <span>Save Draft</span>
+            <span>Save</span>
           </Button>
         )}
       </div>
