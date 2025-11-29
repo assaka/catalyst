@@ -6,27 +6,35 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragOverlay
+  DragOverlay,
+  useDroppable,
+  pointerWithin,
+  rectIntersection
 } from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  rectSortingStrategy,
+  verticalListSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
-import { GripVertical, Trash2, Settings, Type, Image, Box, Code, MousePointer } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import {
+  GripVertical, Trash2, Settings, Type, Image, Box, Code, MousePointer,
+  ChevronDown, ChevronRight, LayoutGrid, Layers, Link2, Navigation,
+  FileText, ShoppingCart, CreditCard, User
+} from 'lucide-react';
+import { SlotManager } from '@/utils/slotUtils';
 
 /**
- * WorkspaceSlotEditor - A stable, grid-based slot editor
+ * WorkspaceSlotEditor - A stable, hierarchical slot editor
  *
  * Features:
  * - @dnd-kit for reliable drag-drop
+ * - Nested drag-drop into containers
  * - Snap-to-grid resize (1-12 columns)
- * - Data attribute based event delegation
+ * - Hierarchical slot display with collapsible containers
  * - Auto-save position/size on changes
  */
 
@@ -35,23 +43,77 @@ const SLOT_ICONS = {
   text: Type,
   button: MousePointer,
   image: Image,
-  container: Box,
-  grid: Box,
+  container: Layers,
+  grid: LayoutGrid,
+  flex: Layers,
   html: Code,
-  component: Settings
+  component: Settings,
+  link: Link2,
+  nav: Navigation,
+  cms: FileText
+};
+
+// Component type icons for better visual distinction
+const COMPONENT_ICONS = {
+  Breadcrumbs: Navigation,
+  CmsBlockRenderer: FileText,
+  AddToCartButton: ShoppingCart,
+  BuyNowButton: CreditCard,
+  CustomerInfo: User
 };
 
 /**
- * EditableSlot - Individual slot with drag handle and resize
+ * Get display name for a slot
+ */
+const getSlotDisplayName = (slot) => {
+  // Priority: displayName > component name > content preview > type
+  if (slot.metadata?.displayName) {
+    return slot.metadata.displayName;
+  }
+  if (slot.component) {
+    return slot.component;
+  }
+  if (slot.content && typeof slot.content === 'string' && slot.content.length > 0) {
+    // Strip HTML and truncate
+    const text = slot.content.replace(/<[^>]*>/g, '').trim();
+    if (text.length > 0) {
+      return text.length > 30 ? text.substring(0, 30) + '...' : text;
+    }
+  }
+  // Fallback to formatted ID
+  return slot.id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+};
+
+/**
+ * Get icon for slot based on type and component
+ */
+const getSlotIcon = (slot) => {
+  if (slot.type === 'component' && slot.component && COMPONENT_ICONS[slot.component]) {
+    return COMPONENT_ICONS[slot.component];
+  }
+  return SLOT_ICONS[slot.type] || Box;
+};
+
+/**
+ * Check if slot is a container type
+ */
+const isContainerType = (type) => ['container', 'grid', 'flex'].includes(type);
+
+/**
+ * EditableSlot - Individual slot with drag handle, resize, and nested children
  */
 const EditableSlot = ({
   slot,
+  slots,
   isSelected,
   onSelect,
   onResize,
   onDelete,
-  children,
-  containerWidth
+  onMoveToContainer,
+  containerWidth,
+  level = 0,
+  selectedSlotId,
+  dragOverContainerId
 }) => {
   const {
     attributes,
@@ -64,8 +126,24 @@ const EditableSlot = ({
 
   const [isResizing, setIsResizing] = useState(false);
   const [resizePreview, setResizePreview] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(true);
   const startXRef = useRef(0);
   const startColSpanRef = useRef(0);
+
+  // Check if this is a container with children
+  const isContainer = isContainerType(slot.type);
+  const childSlots = useMemo(() => {
+    if (!isContainer) return [];
+    return SlotManager.getChildSlots(slots, slot.id);
+  }, [slots, slot.id, isContainer]);
+  const hasChildren = childSlots.length > 0;
+
+  // Droppable for containers
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: `droppable-${slot.id}`,
+    disabled: !isContainer,
+    data: { containerId: slot.id }
+  });
 
   // Get colSpan value (handle both object and number formats)
   const getColSpan = () => {
@@ -76,7 +154,8 @@ const EditableSlot = ({
   };
 
   const colSpan = getColSpan();
-  const Icon = SLOT_ICONS[slot.type] || Box;
+  const Icon = getSlotIcon(slot);
+  const displayName = getSlotDisplayName(slot);
 
   // Calculate column width
   const columnWidth = containerWidth ? containerWidth / 12 : 80;
@@ -116,54 +195,110 @@ const EditableSlot = ({
     document.body.style.userSelect = 'none';
   }, [colSpan, columnWidth, onResize, slot.id, resizePreview]);
 
+  // Combined ref for sortable + droppable
+  const combinedRef = useCallback((node) => {
+    setNodeRef(node);
+    if (isContainer) {
+      setDroppableRef(node);
+    }
+  }, [setNodeRef, setDroppableRef, isContainer]);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    gridColumn: `span ${resizePreview || colSpan}`,
+    gridColumn: level === 0 ? `span ${resizePreview || colSpan}` : undefined,
     opacity: isDragging ? 0.5 : 1
+  };
+
+  // Type-specific background colors
+  const getBgColor = () => {
+    if (isContainer) return 'bg-blue-50 dark:bg-blue-900/20';
+    if (slot.type === 'component') return 'bg-purple-50 dark:bg-purple-900/20';
+    if (slot.type === 'text' || slot.type === 'html') return 'bg-green-50 dark:bg-green-900/20';
+    if (slot.type === 'button' || slot.type === 'link') return 'bg-orange-50 dark:bg-orange-900/20';
+    return 'bg-gray-50 dark:bg-gray-800';
   };
 
   return (
     <div
-      ref={setNodeRef}
+      ref={combinedRef}
       style={style}
       data-slot-id={slot.id}
       data-slot-type={slot.type}
       data-col-span={resizePreview || colSpan}
       data-editable="true"
+      data-container={isContainer ? 'true' : undefined}
+      data-level={level}
       className={cn(
-        'relative group rounded-lg border-2 transition-all min-h-[60px]',
+        'relative group rounded-lg border-2 transition-all',
+        level === 0 ? 'min-h-[60px]' : 'min-h-[40px]',
+        getBgColor(),
         isSelected
-          ? 'border-blue-500 ring-2 ring-blue-200'
-          : 'border-transparent hover:border-gray-300',
-        isDragging && 'z-50 shadow-xl'
+          ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800'
+          : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600',
+        isDragging && 'z-50 shadow-xl',
+        isOver && 'border-green-500 ring-2 ring-green-200',
+        dragOverContainerId === slot.id && 'border-green-500 bg-green-50 dark:bg-green-900/30'
       )}
       onClick={(e) => {
         e.stopPropagation();
         onSelect(slot.id);
       }}
     >
-      {/* Slot toolbar - visible on hover or selection */}
+      {/* Slot header with drag handle and info */}
       <div className={cn(
-        'absolute -top-8 left-0 right-0 flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-800 rounded-t border shadow-sm z-10 transition-opacity',
-        (isSelected || isDragging) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        'flex items-center gap-1 px-2 py-1.5 border-b border-gray-200 dark:border-gray-700',
+        level > 0 && 'text-sm'
       )}>
+        {/* Expand/collapse for containers */}
+        {isContainer && hasChildren && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-3 w-3 text-gray-500" />
+            ) : (
+              <ChevronRight className="h-3 w-3 text-gray-500" />
+            )}
+          </button>
+        )}
+
         {/* Drag handle */}
         <button
           {...attributes}
           {...listeners}
-          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-grab active:cursor-grabbing"
-          title="Drag to reorder"
+          className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded cursor-grab active:cursor-grabbing"
+          title="Drag to reorder or into a container"
         >
           <GripVertical className="h-4 w-4 text-gray-400" />
         </button>
 
-        {/* Slot info */}
-        <div className="flex items-center gap-1 flex-1 min-w-0">
-          <Icon className="h-3 w-3 text-gray-400 shrink-0" />
-          <span className="text-xs text-gray-500 truncate">{slot.id}</span>
-          <span className="text-xs text-blue-500 font-mono ml-auto">{resizePreview || colSpan}/12</span>
-        </div>
+        {/* Slot icon and name */}
+        <Icon className="h-4 w-4 text-gray-500 shrink-0" />
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate flex-1">
+          {displayName}
+        </span>
+
+        {/* Slot type badge */}
+        <span className={cn(
+          'text-xs px-1.5 py-0.5 rounded',
+          isContainer ? 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200' :
+          slot.type === 'component' ? 'bg-purple-100 text-purple-700 dark:bg-purple-800 dark:text-purple-200' :
+          'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+        )}>
+          {slot.type}
+        </span>
+
+        {/* Column span indicator */}
+        {level === 0 && (
+          <span className="text-xs text-blue-500 font-mono">
+            {resizePreview || colSpan}/12
+          </span>
+        )}
 
         {/* Delete button */}
         <button
@@ -178,31 +313,60 @@ const EditableSlot = ({
         </button>
       </div>
 
-      {/* Slot content */}
-      <div className={cn('p-2', slot.className)}>
-        {children || (
-          <div className="text-sm text-gray-400 italic">
-            {slot.content || `[${slot.type}]`}
-          </div>
-        )}
-      </div>
-
-      {/* Resize handle (right edge) */}
-      <div
-        onMouseDown={handleResizeStart}
-        className={cn(
-          'absolute right-0 top-0 bottom-0 w-2 cursor-col-resize transition-colors',
-          'hover:bg-blue-500/30',
-          isResizing && 'bg-blue-500/50'
-        )}
-        title="Drag to resize"
-      >
+      {/* Children for containers */}
+      {isContainer && isExpanded && (
         <div className={cn(
-          'absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full',
-          'bg-gray-300 dark:bg-gray-600 group-hover:bg-blue-500',
-          isResizing && 'bg-blue-500'
-        )} />
-      </div>
+          'p-2 space-y-2',
+          hasChildren ? 'min-h-[40px]' : 'min-h-[60px]'
+        )}>
+          {hasChildren ? (
+            <SortableContext
+              items={childSlots.map(s => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {childSlots.map((childSlot) => (
+                <EditableSlot
+                  key={childSlot.id}
+                  slot={childSlot}
+                  slots={slots}
+                  isSelected={selectedSlotId === childSlot.id}
+                  onSelect={onSelect}
+                  onResize={onResize}
+                  onDelete={onDelete}
+                  onMoveToContainer={onMoveToContainer}
+                  containerWidth={containerWidth}
+                  level={level + 1}
+                  selectedSlotId={selectedSlotId}
+                  dragOverContainerId={dragOverContainerId}
+                />
+              ))}
+            </SortableContext>
+          ) : (
+            <div className="flex items-center justify-center h-12 text-gray-400 text-sm border-2 border-dashed border-gray-300 dark:border-gray-600 rounded">
+              Drop slots here
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Resize handle (right edge) - only for root level */}
+      {level === 0 && (
+        <div
+          onMouseDown={handleResizeStart}
+          className={cn(
+            'absolute right-0 top-0 bottom-0 w-2 cursor-col-resize transition-colors',
+            'hover:bg-blue-500/30',
+            isResizing && 'bg-blue-500/50'
+          )}
+          title="Drag to resize"
+        >
+          <div className={cn(
+            'absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full',
+            'bg-gray-300 dark:bg-gray-600 group-hover:bg-blue-500',
+            isResizing && 'bg-blue-500'
+          )} />
+        </div>
+      )}
 
       {/* Resize preview overlay */}
       {isResizing && resizePreview && (
@@ -214,6 +378,26 @@ const EditableSlot = ({
       )}
     </div>
   );
+};
+
+/**
+ * Custom collision detection that prefers droppable containers
+ */
+const customCollisionDetection = (args) => {
+  // First check for droppable containers (for nesting)
+  const pointerCollisions = pointerWithin(args);
+
+  // Find if we're over a droppable container
+  const droppableCollision = pointerCollisions.find(
+    c => c.id.toString().startsWith('droppable-')
+  );
+
+  if (droppableCollision) {
+    return [droppableCollision];
+  }
+
+  // Otherwise use rect intersection for sorting
+  return rectIntersection(args);
 };
 
 /**
@@ -230,6 +414,7 @@ const WorkspaceSlotEditor = ({
   const containerRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [activeId, setActiveId] = useState(null);
+  const [dragOverContainerId, setDragOverContainerId] = useState(null);
 
   // Get container width for resize calculations
   useEffect(() => {
@@ -243,21 +428,17 @@ const WorkspaceSlotEditor = ({
     return () => window.removeEventListener('resize', updateWidth);
   }, []);
 
-  // Convert slots object to sorted array
-  const slotArray = useMemo(() => {
-    return Object.values(slots || {})
-      .filter(slot => !slot.parentId) // Only root-level slots for now
-      .sort((a, b) => {
-        const rowA = a.position?.row || 0;
-        const rowB = b.position?.row || 0;
-        if (rowA !== rowB) return rowA - rowB;
-        const colA = a.position?.col || 0;
-        const colB = b.position?.col || 0;
-        return colA - colB;
-      });
+  // Get root slots (no parentId)
+  const rootSlots = useMemo(() => {
+    return SlotManager.getRootSlots(slots || {});
   }, [slots]);
 
-  const slotIds = useMemo(() => slotArray.map(s => s.id), [slotArray]);
+  const rootSlotIds = useMemo(() => rootSlots.map(s => s.id), [rootSlots]);
+
+  // Get all slot IDs for the sortable context (including nested)
+  const allSlotIds = useMemo(() => {
+    return Object.keys(slots || {});
+  }, [slots]);
 
   // DnD sensors
   const sensors = useSensors(
@@ -276,35 +457,100 @@ const WorkspaceSlotEditor = ({
     setActiveId(event.active.id);
   }, []);
 
-  // Handle drag end - save new positions
+  // Handle drag over - detect when hovering over a container
+  const handleDragOver = useCallback((event) => {
+    const { over } = event;
+
+    if (over && over.id.toString().startsWith('droppable-')) {
+      const containerId = over.data?.current?.containerId;
+      setDragOverContainerId(containerId);
+    } else {
+      setDragOverContainerId(null);
+    }
+  }, []);
+
+  // Handle drag end - save new positions or move into container
   const handleDragEnd = useCallback((event) => {
     const { active, over } = event;
     setActiveId(null);
+    setDragOverContainerId(null);
 
     if (!over || active.id === over.id) return;
 
-    const oldIndex = slotArray.findIndex(s => s.id === active.id);
-    const newIndex = slotArray.findIndex(s => s.id === over.id);
+    const draggedSlot = slots[active.id];
+    if (!draggedSlot) return;
 
-    if (oldIndex === -1 || newIndex === -1) return;
+    // Check if dropping into a container
+    if (over.id.toString().startsWith('droppable-')) {
+      const targetContainerId = over.data?.current?.containerId;
+
+      // Don't allow dropping a container into itself or its children
+      if (targetContainerId === active.id) return;
+
+      // Check if target is a child of the dragged slot
+      let parent = slots[targetContainerId];
+      while (parent) {
+        if (parent.parentId === active.id) return;
+        parent = slots[parent.parentId];
+      }
+
+      // Move slot into the container
+      const updatedSlots = {
+        ...slots,
+        [active.id]: {
+          ...draggedSlot,
+          parentId: targetContainerId,
+          position: { col: 1, row: SlotManager.getChildSlots(slots, targetContainerId).length + 1 }
+        }
+      };
+      onSlotsChange(updatedSlots);
+      return;
+    }
+
+    // Regular reordering within same level
+    const overSlot = slots[over.id];
+    if (!overSlot) return;
+
+    // Get slots at the same level
+    const parentId = draggedSlot.parentId;
+    const siblingSlots = parentId === null
+      ? rootSlots
+      : SlotManager.getChildSlots(slots, parentId);
+
+    const oldIndex = siblingSlots.findIndex(s => s.id === active.id);
+    const newIndex = siblingSlots.findIndex(s => s.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      // Moving to a different parent - check if target is in same parent
+      if (overSlot.parentId !== parentId) {
+        // Move to target's parent
+        const updatedSlots = {
+          ...slots,
+          [active.id]: {
+            ...draggedSlot,
+            parentId: overSlot.parentId,
+            position: { col: 1, row: (overSlot.position?.row || 0) + 1 }
+          }
+        };
+        onSlotsChange(updatedSlots);
+      }
+      return;
+    }
 
     // Reorder the array
-    const newArray = arrayMove(slotArray, oldIndex, newIndex);
+    const newArray = arrayMove(siblingSlots, oldIndex, newIndex);
 
     // Update positions based on new order
     const updatedSlots = { ...slots };
     newArray.forEach((slot, index) => {
-      const row = Math.floor(index / 2) + 1; // Approximate row
-      const col = (index % 2) * 6 + 1; // Alternate columns
-
       updatedSlots[slot.id] = {
         ...updatedSlots[slot.id],
-        position: { col, row }
+        position: { col: 1, row: index + 1 }
       };
     });
 
     onSlotsChange(updatedSlots);
-  }, [slotArray, slots, onSlotsChange]);
+  }, [slots, rootSlots, onSlotsChange]);
 
   // Handle resize - save new colSpan
   const handleResize = useCallback((slotId, newColSpan) => {
@@ -320,10 +566,26 @@ const WorkspaceSlotEditor = ({
     onSlotsChange(updatedSlots);
   }, [slots, onSlotsChange]);
 
-  // Handle delete
+  // Handle delete - use SlotManager for recursive delete
   const handleDelete = useCallback((slotId) => {
-    const { [slotId]: deleted, ...rest } = slots;
-    onSlotsChange(rest);
+    const updatedSlots = SlotManager.deleteSlot(slots, slotId);
+    onSlotsChange(updatedSlots);
+  }, [slots, onSlotsChange]);
+
+  // Handle move to container
+  const handleMoveToContainer = useCallback((slotId, containerId) => {
+    const slot = slots[slotId];
+    if (!slot) return;
+
+    const updatedSlots = {
+      ...slots,
+      [slotId]: {
+        ...slot,
+        parentId: containerId,
+        position: { col: 1, row: SlotManager.getChildSlots(slots, containerId).length + 1 }
+      }
+    };
+    onSlotsChange(updatedSlots);
   }, [slots, onSlotsChange]);
 
   // Handle slot selection
@@ -340,18 +602,20 @@ const WorkspaceSlotEditor = ({
 
   // Active slot for drag overlay
   const activeSlot = activeId ? slots[activeId] : null;
+  const activeDisplayName = activeSlot ? getSlotDisplayName(activeSlot) : '';
+  const ActiveIcon = activeSlot ? getSlotIcon(activeSlot) : Box;
 
   return (
     <div
       ref={containerRef}
       className={cn(
-        'min-h-[400px] p-4 bg-gray-50 dark:bg-gray-900 rounded-lg',
+        'min-h-[400px] p-4 bg-gray-50 dark:bg-gray-900 rounded-lg relative',
         className
       )}
       onClick={handleContainerClick}
     >
       {/* Grid overlay for visual reference */}
-      <div className="absolute inset-4 pointer-events-none grid grid-cols-12 gap-1 opacity-20">
+      <div className="absolute inset-4 pointer-events-none grid grid-cols-12 gap-1 opacity-10">
         {Array.from({ length: 12 }).map((_, i) => (
           <div key={i} className="h-full border-l border-dashed border-gray-400" />
         ))}
@@ -359,21 +623,27 @@ const WorkspaceSlotEditor = ({
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={customCollisionDetection}
         onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={slotIds} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-12 gap-4 relative pt-8">
-            {slotArray.map((slot) => (
+        <SortableContext items={allSlotIds} strategy={verticalListSortingStrategy}>
+          <div className="grid grid-cols-12 gap-4 relative pt-2">
+            {rootSlots.map((slot) => (
               <EditableSlot
                 key={slot.id}
                 slot={slot}
+                slots={slots}
                 isSelected={selectedSlotId === slot.id}
                 onSelect={handleSelect}
                 onResize={handleResize}
                 onDelete={handleDelete}
+                onMoveToContainer={handleMoveToContainer}
                 containerWidth={containerWidth}
+                level={0}
+                selectedSlotId={selectedSlotId}
+                dragOverContainerId={dragOverContainerId}
               />
             ))}
           </div>
@@ -382,14 +652,15 @@ const WorkspaceSlotEditor = ({
         {/* Drag overlay */}
         <DragOverlay>
           {activeSlot && (
-            <div
-              className="rounded-lg border-2 border-blue-500 bg-white dark:bg-gray-800 shadow-2xl p-2 opacity-90"
-              style={{
-                width: (containerWidth / 12) * (typeof activeSlot.colSpan === 'object' ? activeSlot.colSpan.default : activeSlot.colSpan || 12)
-              }}
-            >
-              <div className="text-sm text-gray-600">
-                {activeSlot.content || `[${activeSlot.type}]`}
+            <div className="rounded-lg border-2 border-blue-500 bg-white dark:bg-gray-800 shadow-2xl p-3 opacity-95">
+              <div className="flex items-center gap-2">
+                <ActiveIcon className="h-4 w-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {activeDisplayName}
+                </span>
+                <span className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
+                  {activeSlot.type}
+                </span>
               </div>
             </div>
           )}
@@ -397,7 +668,7 @@ const WorkspaceSlotEditor = ({
       </DndContext>
 
       {/* Empty state */}
-      {slotArray.length === 0 && (
+      {rootSlots.length === 0 && (
         <div className="flex items-center justify-center h-64 text-gray-400">
           <div className="text-center">
             <Box className="h-12 w-12 mx-auto mb-2 opacity-50" />
