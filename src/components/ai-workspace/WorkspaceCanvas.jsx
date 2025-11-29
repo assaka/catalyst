@@ -1,9 +1,9 @@
-import React, { useMemo, useEffect, useCallback, useRef, useState } from 'react';
+import React, { useMemo, useEffect, useCallback, useRef } from 'react';
 import { useAIWorkspace, PAGE_TYPES, DEFAULT_VIEW_MODES } from '@/contexts/AIWorkspaceContext';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import slotConfigurationService from '@/services/slotConfigurationService';
 
-// Import page-specific editors (legacy)
+// Import page-specific editors
 import HeaderSlotsEditor from '@/pages/editor/HeaderSlotsEditor';
 import CartSlotsEditor from '@/pages/editor/CartSlotsEditor';
 import CategorySlotsEditor from '@/pages/editor/CategorySlotsEditor';
@@ -13,121 +13,29 @@ import LoginSlotsEditor from '@/pages/editor/LoginSlotsEditor';
 import CheckoutSlotsEditor from '@/pages/editor/CheckoutSlotsEditor';
 import SuccessSlotsEditor from '@/pages/editor/SuccessSlotsEditor';
 
-// Import new stable editor
-import WorkspaceSlotEditor from './WorkspaceSlotEditor';
-
-// Import configs for default slots
-import { productConfig } from '@/components/editor/slot/configs/product-config';
-import { categoryConfig } from '@/components/editor/slot/configs/category-config';
-import { cartConfig } from '@/components/editor/slot/configs/cart-config';
-import { checkoutConfig } from '@/components/editor/slot/configs/checkout-config';
-import { accountConfig } from '@/components/editor/slot/configs/account-config';
-import { loginConfig } from '@/components/editor/slot/configs/login-config';
-import { successConfig } from '@/components/editor/slot/configs/success-config';
-import { headerConfig } from '@/components/editor/slot/configs/header-config';
-
 import { slotEnabledFiles } from '@/components/editor/slot/slotEnabledFiles';
-import { Package, Loader2 } from 'lucide-react';
+import { Package } from 'lucide-react';
 
-// Simple ID generator (no external dependencies)
+// Simple ID generator
 const generateSlotId = () => `slot_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 6)}`;
 
 /**
  * WorkspaceCanvas - Editor canvas component for AI Workspace
  * Renders the appropriate slot editor based on selected page type
  */
-
 const WorkspaceCanvas = () => {
   const {
     selectedPageType,
     editorMode,
     viewMode,
-    updateConfiguration,
     markAsSaved,
     setIsLoading,
     currentConfiguration,
-    registerSlotHandlers,
-    useStableEditor,
-    selectedSlotId,
-    setSelectedSlotId
+    registerSlotHandlers
   } = useAIWorkspace();
 
   const { getSelectedStoreId } = useStoreSelection();
   const slotsRef = useRef(currentConfiguration?.slots || {});
-  const [slots, setSlots] = useState({});
-  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
-  const storeId = getSelectedStoreId();
-
-  // Get default config for page type
-  const getDefaultConfigForPage = useCallback((pageType) => {
-    switch (pageType) {
-      case PAGE_TYPES.PRODUCT: return productConfig;
-      case PAGE_TYPES.CATEGORY: return categoryConfig;
-      case PAGE_TYPES.CART: return cartConfig;
-      case PAGE_TYPES.CHECKOUT: return checkoutConfig;
-      case PAGE_TYPES.ACCOUNT: return accountConfig;
-      case PAGE_TYPES.LOGIN: return loginConfig;
-      case PAGE_TYPES.SUCCESS: return successConfig;
-      case PAGE_TYPES.HEADER: return headerConfig;
-      default: return productConfig;
-    }
-  }, []);
-
-  // Load slots configuration when using stable editor
-  useEffect(() => {
-    const loadSlots = async () => {
-      if (!useStableEditor || !storeId) return;
-
-      setIsLoadingSlots(true);
-      try {
-        const defaultConfig = getDefaultConfigForPage(selectedPageType);
-        const response = await slotConfigurationService.getDraftConfiguration(
-          storeId,
-          selectedPageType,
-          defaultConfig
-        );
-
-        if (response?.data?.configuration?.slots) {
-          setSlots(response.data.configuration.slots);
-          updateConfiguration(response.data.configuration);
-        } else if (defaultConfig?.slots) {
-          setSlots(defaultConfig.slots);
-        }
-      } catch (error) {
-        console.error('Error loading slots:', error);
-        // Fall back to default config
-        const defaultConfig = getDefaultConfigForPage(selectedPageType);
-        if (defaultConfig?.slots) {
-          setSlots(defaultConfig.slots);
-        }
-      } finally {
-        setIsLoadingSlots(false);
-      }
-    };
-
-    loadSlots();
-  }, [selectedPageType, storeId, useStableEditor, getDefaultConfigForPage, updateConfiguration]);
-
-  // Handle slots change from the new editor - auto-save
-  const handleSlotsChange = useCallback(async (newSlots) => {
-    setSlots(newSlots);
-
-    // Update context
-    updateConfiguration({ slots: newSlots });
-
-    // Auto-save to draft
-    try {
-      const config = currentConfiguration || {};
-      await slotConfigurationService.updateDraftConfiguration(
-        config.id,
-        { ...config, slots: newSlots },
-        storeId
-      );
-      console.log('AI Workspace: Slots auto-saved');
-    } catch (error) {
-      console.error('Error auto-saving slots:', error);
-    }
-  }, [currentConfiguration, storeId, updateConfiguration]);
 
   // Keep slotsRef in sync with current configuration
   useEffect(() => {
@@ -325,22 +233,9 @@ const WorkspaceCanvas = () => {
         return <SuccessSlotsEditor {...editorProps} />;
 
       default:
-        // Fallback to product editor
         return <ProductSlotsEditor {...editorProps} />;
     }
   };
-
-  // Loading state for stable editor
-  if (useStableEditor && isLoadingSlots) {
-    return (
-      <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-500 mb-2" />
-          <p className="text-sm text-gray-500">Loading slots...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Empty state when no editor mode and showing preview
   if (!editorMode && !currentPage) {
@@ -358,41 +253,8 @@ const WorkspaceCanvas = () => {
     );
   }
 
-  // New stable editor
-  if (useStableEditor) {
-    return (
-      <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900 overflow-auto">
-        <div className="p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {currentPage?.name || selectedPageType} Layout
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Drag to reorder, resize from edges, click to select
-              </p>
-            </div>
-            <div className="text-xs text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
-              {Object.keys(slots).length} slots
-            </div>
-          </div>
-
-          <WorkspaceSlotEditor
-            slots={slots}
-            onSlotsChange={handleSlotsChange}
-            onSlotSelect={setSelectedSlotId}
-            selectedSlotId={selectedSlotId}
-            className="min-h-[600px]"
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Legacy editor
   return (
     <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900">
-      {/* Editor Content */}
       <div className="flex-1 overflow-hidden">
         {renderEditor()}
       </div>
