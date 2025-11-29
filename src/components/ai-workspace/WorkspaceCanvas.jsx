@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useCallback, useRef } from 'react';
 import { useAIWorkspace, PAGE_TYPES, DEFAULT_VIEW_MODES } from '@/contexts/AIWorkspaceContext';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import slotConfigurationService from '@/services/slotConfigurationService';
@@ -16,6 +16,9 @@ import SuccessSlotsEditor from '@/pages/editor/SuccessSlotsEditor';
 import { slotEnabledFiles } from '@/components/editor/slot/slotEnabledFiles';
 import { Package } from 'lucide-react';
 
+// Simple ID generator (no external dependencies)
+const generateSlotId = () => `slot_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 6)}`;
+
 /**
  * WorkspaceCanvas - Editor canvas component for AI Workspace
  * Renders the appropriate slot editor based on selected page type
@@ -28,15 +31,151 @@ const WorkspaceCanvas = () => {
     viewMode,
     updateConfiguration,
     markAsSaved,
-    setIsLoading
+    setIsLoading,
+    currentConfiguration,
+    registerSlotHandlers
   } = useAIWorkspace();
 
   const { getSelectedStoreId } = useStoreSelection();
+  const slotsRef = useRef(currentConfiguration?.slots || {});
+
+  // Keep slotsRef in sync with current configuration
+  useEffect(() => {
+    slotsRef.current = currentConfiguration?.slots || {};
+  }, [currentConfiguration]);
 
   // Get current page info for display
   const currentPage = useMemo(() => {
     return slotEnabledFiles.find(f => f.pageType === selectedPageType);
   }, [selectedPageType]);
+
+  /**
+   * Create a new slot with given properties
+   */
+  const createSlot = useCallback((type, content, parentId, options = {}, currentSlots) => {
+    const slots = currentSlots || slotsRef.current;
+    const newId = generateSlotId();
+
+    const newSlot = {
+      id: newId,
+      type,
+      content: content || '',
+      parentId: parentId || null,
+      className: options.className || '',
+      styles: options.styles || {},
+      colSpan: options.colSpan || 12,
+      rowSpan: options.rowSpan || 1,
+      position: options.position || { col: 1, row: 1 },
+      metadata: options.metadata || {}
+    };
+
+    return {
+      ...slots,
+      [newId]: newSlot
+    };
+  }, []);
+
+  /**
+   * Delete a slot by ID
+   */
+  const handleSlotDelete = useCallback((slotId, currentSlots) => {
+    const slots = currentSlots || slotsRef.current;
+    const newSlots = { ...slots };
+    delete newSlots[slotId];
+    return newSlots;
+  }, []);
+
+  /**
+   * Update slot classes and styles
+   */
+  const handleClassChange = useCallback((slotId, className, styles, metadata, merge = false, currentSlots) => {
+    const slots = currentSlots || slotsRef.current;
+    const slot = slots[slotId];
+    if (!slot) return slots;
+
+    return {
+      ...slots,
+      [slotId]: {
+        ...slot,
+        className: merge ? `${slot.className} ${className}`.trim() : className,
+        styles: merge ? { ...slot.styles, ...styles } : styles,
+        ...(metadata && { metadata: { ...slot.metadata, ...metadata } })
+      }
+    };
+  }, []);
+
+  /**
+   * Update slot text content
+   */
+  const handleTextChange = useCallback((slotId, newText, currentSlots) => {
+    const slots = currentSlots || slotsRef.current;
+    const slot = slots[slotId];
+    if (!slot) return slots;
+
+    return {
+      ...slots,
+      [slotId]: {
+        ...slot,
+        content: newText
+      }
+    };
+  }, []);
+
+  /**
+   * Handle slot drag and drop
+   */
+  const handleSlotDrop = useCallback((slotId, targetId, position, currentSlots) => {
+    const slots = currentSlots || slotsRef.current;
+    const slot = slots[slotId];
+    if (!slot) return slots;
+
+    const targetSlot = slots[targetId];
+
+    let newParentId;
+    if (position === 'inside') {
+      newParentId = targetId;
+    } else {
+      newParentId = targetSlot?.parentId || null;
+    }
+
+    return {
+      ...slots,
+      [slotId]: {
+        ...slot,
+        parentId: newParentId
+      }
+    };
+  }, []);
+
+  /**
+   * Update slot configuration properties
+   */
+  const updateSlotConfig = useCallback((slotId, updates, currentSlots) => {
+    const slots = currentSlots || slotsRef.current;
+    const slot = slots[slotId];
+    if (!slot) return slots;
+
+    return {
+      ...slots,
+      [slotId]: {
+        ...slot,
+        ...updates
+      }
+    };
+  }, []);
+
+  // Register slot handlers with context for AI access
+  useEffect(() => {
+    const handlers = {
+      createSlot,
+      handleSlotDelete,
+      handleClassChange,
+      handleTextChange,
+      handleSlotDrop,
+      updateSlotConfig
+    };
+    registerSlotHandlers(handlers);
+  }, [createSlot, handleSlotDelete, handleClassChange, handleTextChange, handleSlotDrop, updateSlotConfig, registerSlotHandlers]);
 
   // Handle save from editor
   const handleSave = async (configToSave) => {

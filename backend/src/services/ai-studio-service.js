@@ -68,6 +68,9 @@ class AIStudioService {
       case 'translate':
         response = await this._handleTranslation(message, intent, userId, storeId);
         break;
+      case 'layout':
+        response = await this._handleLayout(message, intent, userId, storeId, context);
+        break;
       case 'design':
         response = await this._handleDesign(message, intent, userId, storeId);
         break;
@@ -161,6 +164,15 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
     if (lowerMessage.includes('translate') || lowerMessage.includes('language') ||
         lowerMessage.includes('localize') || lowerMessage.includes('rtl')) {
       return { type: 'translate', action: this._parseTranslationIntent(message) };
+    }
+
+    // Layout/Slot intents (for AI Workspace - must come before design)
+    if (lowerMessage.includes('slot') || lowerMessage.includes('add slot') ||
+        lowerMessage.includes('remove slot') || lowerMessage.includes('resize') ||
+        lowerMessage.includes('add banner') || lowerMessage.includes('add section') ||
+        lowerMessage.includes('move') || lowerMessage.includes('reorder') ||
+        (lowerMessage.includes('layout') && (lowerMessage.includes('change') || lowerMessage.includes('modify')))) {
+      return { type: 'layout', action: this._parseLayoutIntent(message) };
     }
 
     // Design intents
@@ -376,6 +388,150 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
   }
 
   /**
+   * Handle layout/slot modification requests for AI Workspace
+   * Generates slot commands that the frontend can execute
+   */
+  async _handleLayout(message, intent, userId, storeId, context) {
+    const action = intent.action;
+
+    // Build slot commands based on the parsed action
+    const commands = [];
+
+    switch (action.operation) {
+      case 'add':
+        commands.push({
+          operation: 'add',
+          pageType: context || 'product',
+          targetSlot: {
+            parentId: action.parentId || 'main_layout'
+          },
+          payload: {
+            type: action.slotType || 'text',
+            content: action.content || '',
+            className: action.className || 'p-4',
+            colSpan: action.colSpan || 12,
+            rowSpan: action.rowSpan || 1,
+            position: action.position || { col: 1, row: 1 },
+            metadata: action.metadata || {}
+          }
+        });
+        break;
+
+      case 'modify':
+        commands.push({
+          operation: 'modify',
+          pageType: context || 'product',
+          targetSlot: {
+            id: action.slotId
+          },
+          payload: {
+            ...(action.content !== undefined && { content: action.content }),
+            ...(action.className !== undefined && { className: action.className }),
+            ...(action.styles !== undefined && { styles: action.styles }),
+            ...(action.colSpan !== undefined && { colSpan: action.colSpan }),
+            ...(action.rowSpan !== undefined && { rowSpan: action.rowSpan })
+          }
+        });
+        break;
+
+      case 'remove':
+        commands.push({
+          operation: 'remove',
+          pageType: context || 'product',
+          targetSlot: {
+            id: action.slotId
+          }
+        });
+        break;
+
+      case 'resize':
+        commands.push({
+          operation: 'resize',
+          pageType: context || 'product',
+          targetSlot: {
+            id: action.slotId
+          },
+          payload: {
+            colSpan: action.colSpan,
+            rowSpan: action.rowSpan
+          }
+        });
+        break;
+
+      case 'move':
+        commands.push({
+          operation: 'move',
+          pageType: context || 'product',
+          targetSlot: {
+            id: action.slotId
+          },
+          payload: {
+            targetContainerId: action.targetContainerId,
+            position: action.position || 'inside'
+          }
+        });
+        break;
+
+      case 'reorder':
+        commands.push({
+          operation: 'reorder',
+          pageType: context || 'product',
+          targetSlot: {
+            id: action.slotId
+          },
+          payload: {
+            newIndex: action.newIndex
+          }
+        });
+        break;
+
+      default:
+        // Provide helpful guidance for unclear requests
+        return {
+          message: `I can help you modify the page layout! Here's what I can do:\n\n` +
+                   `**Add elements:**\n` +
+                   `- "Add a banner at the top"\n` +
+                   `- "Add a text section"\n` +
+                   `- "Add a new button"\n\n` +
+                   `**Modify elements:**\n` +
+                   `- "Make the header larger"\n` +
+                   `- "Change the banner text to..."\n\n` +
+                   `**Resize elements:**\n` +
+                   `- "Make the sidebar narrower (4 columns)"\n` +
+                   `- "Expand this section to full width"\n\n` +
+                   `**Remove elements:**\n` +
+                   `- "Remove the sidebar"\n` +
+                   `- "Delete the promotional banner"\n\n` +
+                   `What would you like to change?`,
+          actions: [],
+          commands: []
+        };
+    }
+
+    // Generate human-readable response
+    const operationMessages = {
+      add: `I'll add a new ${action.slotType || 'element'} to the page.`,
+      modify: `I'll update the ${action.slotId || 'element'} with your changes.`,
+      remove: `I'll remove ${action.slotId || 'that element'} from the page.`,
+      resize: `I'll resize ${action.slotId || 'the element'} to ${action.colSpan || 12} columns.`,
+      move: `I'll move ${action.slotId || 'the element'} to its new location.`,
+      reorder: `I'll reorder ${action.slotId || 'the element'} to position ${action.newIndex}.`
+    };
+
+    return {
+      message: operationMessages[action.operation] || 'Processing your layout change...',
+      actions: [
+        { type: 'execute_slot_commands', commands }
+      ],
+      commands,
+      data: {
+        operation: action.operation,
+        affectedSlots: commands.map(c => c.targetSlot?.id || 'new_slot')
+      }
+    };
+  }
+
+  /**
    * Handle general queries
    */
   async _handleGeneral(message, history, systemPrompt) {
@@ -453,6 +609,157 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
    */
   _parseStorefrontIntent(message) {
     return { type: 'general' };
+  }
+
+  /**
+   * Parse layout intent details for AI Workspace slot commands
+   * Extracts operation type, target slot, and parameters from message
+   */
+  _parseLayoutIntent(message) {
+    const lowerMessage = message.toLowerCase();
+
+    // Detect ADD operations
+    if (lowerMessage.includes('add') || lowerMessage.includes('create') || lowerMessage.includes('insert')) {
+      // Detect slot type
+      let slotType = 'text';
+      if (lowerMessage.includes('button')) slotType = 'button';
+      else if (lowerMessage.includes('image') || lowerMessage.includes('picture')) slotType = 'image';
+      else if (lowerMessage.includes('banner')) slotType = 'text';
+      else if (lowerMessage.includes('section') || lowerMessage.includes('container')) slotType = 'container';
+      else if (lowerMessage.includes('grid')) slotType = 'grid';
+      else if (lowerMessage.includes('html') || lowerMessage.includes('code')) slotType = 'html';
+
+      // Detect position hints
+      let position = { col: 1, row: 1 };
+      if (lowerMessage.includes('top') || lowerMessage.includes('beginning')) {
+        position = { col: 1, row: 0 };
+      } else if (lowerMessage.includes('bottom') || lowerMessage.includes('end')) {
+        position = { col: 1, row: 999 }; // Will be adjusted by frontend
+      }
+
+      // Detect size hints
+      let colSpan = 12;
+      const colMatch = lowerMessage.match(/(\d+)\s*(column|col)/);
+      if (colMatch) {
+        colSpan = Math.min(12, Math.max(1, parseInt(colMatch[1])));
+      } else if (lowerMessage.includes('half')) {
+        colSpan = 6;
+      } else if (lowerMessage.includes('third')) {
+        colSpan = 4;
+      } else if (lowerMessage.includes('quarter')) {
+        colSpan = 3;
+      }
+
+      // Extract content if quoted
+      const contentMatch = message.match(/["']([^"']+)["']/);
+      const content = contentMatch ? contentMatch[1] : '';
+
+      return {
+        operation: 'add',
+        slotType,
+        content,
+        colSpan,
+        position,
+        className: slotType === 'button' ? 'bg-blue-600 text-white px-4 py-2 rounded' : 'p-4'
+      };
+    }
+
+    // Detect REMOVE operations
+    if (lowerMessage.includes('remove') || lowerMessage.includes('delete') ||
+        lowerMessage.includes('get rid of') || lowerMessage.includes('hide')) {
+      // Try to extract slot identifier
+      const slotMatch = message.match(/slot[_-]?(\w+)|#(\w+)|"([^"]+)"|'([^']+)'/i);
+      const slotId = slotMatch ? (slotMatch[1] || slotMatch[2] || slotMatch[3] || slotMatch[4]) : null;
+
+      return {
+        operation: 'remove',
+        slotId
+      };
+    }
+
+    // Detect RESIZE operations
+    if (lowerMessage.includes('resize') || lowerMessage.includes('wider') ||
+        lowerMessage.includes('narrower') || lowerMessage.includes('expand') ||
+        lowerMessage.includes('shrink') || lowerMessage.match(/(\d+)\s*(column|col)/)) {
+
+      let colSpan = null;
+      const colMatch = lowerMessage.match(/(\d+)\s*(column|col)/);
+      if (colMatch) {
+        colSpan = Math.min(12, Math.max(1, parseInt(colMatch[1])));
+      } else if (lowerMessage.includes('full width') || lowerMessage.includes('expand')) {
+        colSpan = 12;
+      } else if (lowerMessage.includes('half')) {
+        colSpan = 6;
+      } else if (lowerMessage.includes('narrower') || lowerMessage.includes('smaller')) {
+        colSpan = 4; // Default narrow
+      }
+
+      const slotMatch = message.match(/slot[_-]?(\w+)|#(\w+)|"([^"]+)"|'([^']+)'/i);
+      const slotId = slotMatch ? (slotMatch[1] || slotMatch[2] || slotMatch[3] || slotMatch[4]) : null;
+
+      return {
+        operation: 'resize',
+        slotId,
+        colSpan
+      };
+    }
+
+    // Detect MOVE operations
+    if (lowerMessage.includes('move') || lowerMessage.includes('relocate') ||
+        lowerMessage.includes('put') || lowerMessage.includes('place')) {
+
+      const slotMatch = message.match(/slot[_-]?(\w+)|#(\w+)|"([^"]+)"|'([^']+)'/i);
+      const slotId = slotMatch ? (slotMatch[1] || slotMatch[2] || slotMatch[3] || slotMatch[4]) : null;
+
+      // Try to detect target
+      let position = 'inside';
+      if (lowerMessage.includes('before') || lowerMessage.includes('above')) {
+        position = 'before';
+      } else if (lowerMessage.includes('after') || lowerMessage.includes('below')) {
+        position = 'after';
+      }
+
+      return {
+        operation: 'move',
+        slotId,
+        position
+      };
+    }
+
+    // Detect REORDER operations
+    if (lowerMessage.includes('reorder') || lowerMessage.includes('swap') ||
+        lowerMessage.includes('first') || lowerMessage.includes('last')) {
+
+      const slotMatch = message.match(/slot[_-]?(\w+)|#(\w+)|"([^"]+)"|'([^']+)'/i);
+      const slotId = slotMatch ? (slotMatch[1] || slotMatch[2] || slotMatch[3] || slotMatch[4]) : null;
+
+      let newIndex = 0;
+      if (lowerMessage.includes('last') || lowerMessage.includes('end')) {
+        newIndex = 999; // Will be adjusted by frontend
+      } else if (lowerMessage.includes('first') || lowerMessage.includes('beginning')) {
+        newIndex = 0;
+      }
+
+      return {
+        operation: 'reorder',
+        slotId,
+        newIndex
+      };
+    }
+
+    // Detect MODIFY operations (default for layout context)
+    const slotMatch = message.match(/slot[_-]?(\w+)|#(\w+)|"([^"]+)"|'([^']+)'/i);
+    const slotId = slotMatch ? (slotMatch[1] || slotMatch[2] || slotMatch[3] || slotMatch[4]) : null;
+
+    // Extract content if quoted
+    const contentMatch = message.match(/(?:text|content|say|to)\s*["']([^"']+)["']/i);
+    const content = contentMatch ? contentMatch[1] : undefined;
+
+    return {
+      operation: 'modify',
+      slotId,
+      content
+    };
   }
 
   /**

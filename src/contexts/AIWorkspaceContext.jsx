@@ -72,6 +72,9 @@ export const AIWorkspaceProvider = ({ children }) => {
   const [chatMessages, setChatMessages] = useState([]);
   const [isProcessingAi, setIsProcessingAi] = useState(false);
 
+  // Slot handlers (registered by editor components)
+  const [slotHandlers, setSlotHandlers] = useState(null);
+
   /**
    * Select a page type and update view mode accordingly
    */
@@ -94,15 +97,28 @@ export const AIWorkspaceProvider = ({ children }) => {
 
   /**
    * Apply an AI-generated slot change
-   * @param {object} operation - The slot operation from AI
+   * @param {object} updatedSlots - The updated slots object after applying the command
+   * @param {object} command - The original command that was executed
    */
-  const applyAiSlotChange = useCallback((operation) => {
-    setLastAiOperation(operation);
-    setAiCommandQueue(prev => [...prev, operation]);
-    setHasUnsavedChanges(true);
+  const applyAiSlotChange = useCallback((updatedSlots, command) => {
+    // Store the command for undo
+    setLastAiOperation({ command, previousSlots: currentConfiguration?.slots });
+    setAiCommandQueue(prev => [...prev, command]);
 
-    // The actual slot manipulation will be handled by the editor component
-    // This just queues the operation and triggers re-render
+    // Update the configuration with the new slots
+    setCurrentConfiguration(prev => ({
+      ...prev,
+      slots: updatedSlots
+    }));
+    setHasUnsavedChanges(true);
+  }, [currentConfiguration]);
+
+  /**
+   * Register slot handlers from editor component
+   * These handlers are used by AI to manipulate slots
+   */
+  const registerSlotHandlers = useCallback((handlers) => {
+    setSlotHandlers(handlers);
   }, []);
 
   /**
@@ -116,13 +132,16 @@ export const AIWorkspaceProvider = ({ children }) => {
    * Undo the last AI operation
    */
   const undoLastAiOperation = useCallback(() => {
-    if (lastAiOperation) {
-      // Store for potential redo
-      const undoneOperation = lastAiOperation;
+    if (lastAiOperation?.previousSlots) {
+      // Restore the previous slots
+      setCurrentConfiguration(prev => ({
+        ...prev,
+        slots: lastAiOperation.previousSlots
+      }));
       setLastAiOperation(null);
-      return undoneOperation;
+      return true;
     }
-    return null;
+    return false;
   }, [lastAiOperation]);
 
   /**
@@ -190,6 +209,7 @@ export const AIWorkspaceProvider = ({ children }) => {
     chatMessages,
     isProcessingAi,
     setIsProcessingAi,
+    slotHandlers,
 
     // Actions
     selectPage,
@@ -202,6 +222,7 @@ export const AIWorkspaceProvider = ({ children }) => {
     toggleAiPanel,
     addChatMessage,
     clearChatHistory,
+    registerSlotHandlers,
 
     // Constants
     pageTypes: PAGE_TYPES,
@@ -222,6 +243,7 @@ export const AIWorkspaceProvider = ({ children }) => {
     aiPanelCollapsed,
     chatMessages,
     isProcessingAi,
+    slotHandlers,
     selectPage,
     toggleEditorMode,
     applyAiSlotChange,
@@ -231,7 +253,8 @@ export const AIWorkspaceProvider = ({ children }) => {
     markAsSaved,
     toggleAiPanel,
     addChatMessage,
-    clearChatHistory
+    clearChatHistory,
+    registerSlotHandlers
   ]);
 
   return (

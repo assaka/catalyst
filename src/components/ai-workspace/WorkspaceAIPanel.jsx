@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAIWorkspace } from '@/contexts/AIWorkspaceContext';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -10,9 +11,13 @@ import {
   User,
   Sparkles,
   Trash2,
-  RotateCcw
+  RotateCcw,
+  AlertCircle,
+  CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import aiWorkspaceSlotProcessor from '@/services/aiWorkspaceSlotProcessor';
+import apiClient from '@/api/client';
 
 /**
  * WorkspaceAIPanel - AI Chat panel for the workspace
@@ -29,12 +34,19 @@ const WorkspaceAIPanel = () => {
     selectedPageType,
     applyAiSlotChange,
     undoLastAiOperation,
-    lastAiOperation
+    lastAiOperation,
+    currentConfiguration,
+    slotHandlers
   } = useAIWorkspace();
 
+  const { getSelectedStoreId } = useStoreSelection();
   const [inputValue, setInputValue] = useState('');
+  const [commandStatus, setCommandStatus] = useState(null); // 'success', 'error', null
   const scrollAreaRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Get storeId from context
+  const storeId = getSelectedStoreId();
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -46,12 +58,52 @@ const WorkspaceAIPanel = () => {
     }
   }, [chatMessages]);
 
+  // Execute slot commands from AI response
+  const executeSlotCommands = (commands) => {
+    if (!commands || commands.length === 0 || !slotHandlers) return { success: false, error: 'No commands to execute' };
+
+    let executedCount = 0;
+    const errors = [];
+
+    for (const command of commands) {
+      // Validate command against current configuration
+      const validation = aiWorkspaceSlotProcessor.validateCommand(command, currentConfiguration);
+      if (!validation.valid) {
+        errors.push(...validation.errors);
+        continue;
+      }
+
+      try {
+        // Execute the command using slot handlers
+        const currentSlots = currentConfiguration?.slots || {};
+        const updatedSlots = aiWorkspaceSlotProcessor.executeCommand(command, currentSlots, slotHandlers);
+
+        // Apply the change through context
+        if (updatedSlots && applyAiSlotChange) {
+          applyAiSlotChange(updatedSlots, command);
+          executedCount++;
+        }
+      } catch (err) {
+        console.error('Error executing slot command:', err);
+        errors.push(err.message);
+      }
+    }
+
+    return {
+      success: executedCount > 0,
+      executed: executedCount,
+      total: commands.length,
+      errors
+    };
+  };
+
   // Handle sending a message
   const handleSend = async () => {
     if (!inputValue.trim() || isProcessingAi) return;
 
     const userMessage = inputValue.trim();
     setInputValue('');
+    setCommandStatus(null);
 
     // Add user message to chat
     addChatMessage({
@@ -62,24 +114,76 @@ const WorkspaceAIPanel = () => {
     setIsProcessingAi(true);
 
     try {
-      // TODO: Integrate with backend AI service
-      // For now, simulate AI response
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Generate slot context for AI
+      const slotContext = aiWorkspaceSlotProcessor.generateSlotContext(
+        selectedPageType,
+        currentConfiguration
+      );
 
-      // Simulated AI response
+      // Call backend AI service
+      const response = await apiClient.post('ai-studio/chat', {
+        message: userMessage,
+        context: selectedPageType,
+        history: chatMessages.slice(-10).map(m => ({ role: m.role, content: m.content })),
+        capabilities: [
+          'Add slots', 'Modify slots', 'Remove slots',
+          'Resize slots', 'Move slots', 'Reorder slots'
+        ],
+        storeId: storeId,
+        slotContext // Pass current layout info
+      });
+
+      // Check if response contains slot commands
+      let commands = response.commands || [];
+
+      // Also try to parse commands from AI message (fallback)
+      if (commands.length === 0 && response.message) {
+        commands = aiWorkspaceSlotProcessor.parseAIResponse(response.message);
+      }
+
+      // Execute commands if any
+      let executionResult = null;
+      if (commands.length > 0) {
+        executionResult = executeSlotCommands(commands);
+        setCommandStatus(executionResult.success ? 'success' : 'error');
+
+        // Auto-clear status after 3 seconds
+        setTimeout(() => setCommandStatus(null), 3000);
+      }
+
+      // Add AI response to chat
       addChatMessage({
         role: 'assistant',
-        content: `I understand you want to modify the ${selectedPageType} page layout. This feature is being integrated. Soon I'll be able to:\n\n- Add new slots\n- Modify existing slots\n- Remove slots\n- Resize and reorder elements\n\nYour request: "${userMessage}"`,
-        slotCommand: null // Will contain actual slot commands when integrated
+        content: response.message || 'Processing complete.',
+        slotCommand: commands.length > 0 ? commands : null,
+        executionResult
       });
 
     } catch (error) {
       console.error('AI processing error:', error);
-      addChatMessage({
-        role: 'assistant',
-        content: 'Sorry, I encountered an error processing your request. Please try again.',
-        error: true
-      });
+      setCommandStatus('error');
+
+      // Fallback to local processing if backend fails
+      const localCommands = aiWorkspaceSlotProcessor.parseAIResponse(userMessage);
+
+      if (localCommands.length > 0) {
+        const result = executeSlotCommands(localCommands);
+        addChatMessage({
+          role: 'assistant',
+          content: result.success
+            ? `Applied ${result.executed} change(s) based on your request.`
+            : `Could not apply changes: ${result.errors.join(', ')}`,
+          slotCommand: localCommands,
+          executionResult: result,
+          error: !result.success
+        });
+      } else {
+        addChatMessage({
+          role: 'assistant',
+          content: error.message || 'Sorry, I encountered an error processing your request. Please try again.',
+          error: true
+        });
+      }
     } finally {
       setIsProcessingAi(false);
     }
@@ -192,11 +296,33 @@ const WorkspaceAIPanel = () => {
                 >
                   <p className="whitespace-pre-wrap">{message.content}</p>
 
+                  {/* Slot command execution result */}
+                  {message.executionResult && (
+                    <div className={cn(
+                      'mt-2 pt-2 border-t flex items-center gap-2 text-xs',
+                      message.executionResult.success
+                        ? 'border-green-200 dark:border-green-800 text-green-600 dark:text-green-400'
+                        : 'border-red-200 dark:border-red-800 text-red-600 dark:text-red-400'
+                    )}>
+                      {message.executionResult.success ? (
+                        <>
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span>Applied {message.executionResult.executed} change(s)</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="h-3.5 w-3.5" />
+                          <span>{message.executionResult.errors?.[0] || 'Failed to apply changes'}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   {/* Slot command preview (when AI returns a command) */}
-                  {message.slotCommand && (
+                  {message.slotCommand && !message.executionResult && (
                     <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
                       <p className="text-xs font-medium mb-1">Proposed change:</p>
-                      <pre className="text-xs bg-gray-200 dark:bg-gray-800 rounded p-2 overflow-x-auto">
+                      <pre className="text-xs bg-gray-200 dark:bg-gray-800 rounded p-2 overflow-x-auto max-h-32">
                         {JSON.stringify(message.slotCommand, null, 2)}
                       </pre>
                     </div>
