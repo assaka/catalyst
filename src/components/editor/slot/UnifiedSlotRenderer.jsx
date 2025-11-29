@@ -864,9 +864,8 @@ export function UnifiedSlotRenderer({
       if (context === 'editor') {
         const handleEditorClick = (e) => {
           e.stopPropagation();
-          e.preventDefault();
-          console.log('🖱️ HTML slot clicked:', id, 'onElementClick:', !!onElementClick, 'currentDragInfo:', currentDragInfo);
-          if (!currentDragInfo && onElementClick) {
+          // Match button type behavior - don't check currentDragInfo
+          if (onElementClick) {
             onElementClick(id, e.currentTarget);
           }
         };
