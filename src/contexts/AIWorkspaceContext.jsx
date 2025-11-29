@@ -72,6 +72,10 @@ export const AIWorkspaceProvider = ({ children }) => {
   const [chatMessages, setChatMessages] = useState([]);
   const [isProcessingAi, setIsProcessingAi] = useState(false);
 
+  // Plugin editing state
+  const [pluginToEdit, setPluginToEdit] = useState(null);
+  const [showPluginEditor, setShowPluginEditor] = useState(false);
+
   // Slot handlers (registered by editor components)
   const [slotHandlers, setSlotHandlers] = useState(null);
 
@@ -188,6 +192,22 @@ export const AIWorkspaceProvider = ({ children }) => {
     setChatMessages([]);
   }, []);
 
+  /**
+   * Open plugin for editing
+   */
+  const openPluginEditor = useCallback((plugin) => {
+    setPluginToEdit(plugin);
+    setShowPluginEditor(true);
+  }, []);
+
+  /**
+   * Close plugin editor
+   */
+  const closePluginEditor = useCallback(() => {
+    setPluginToEdit(null);
+    setShowPluginEditor(false);
+  }, []);
+
   // Memoized value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     // Page/Editor State
@@ -216,6 +236,12 @@ export const AIWorkspaceProvider = ({ children }) => {
     slotHandlers,
     useStableEditor,
     setUseStableEditor,
+
+    // Plugin Editing
+    pluginToEdit,
+    showPluginEditor,
+    openPluginEditor,
+    closePluginEditor,
 
     // Actions
     selectPage,
@@ -251,6 +277,8 @@ export const AIWorkspaceProvider = ({ children }) => {
     isProcessingAi,
     slotHandlers,
     useStableEditor,
+    pluginToEdit,
+    showPluginEditor,
     selectPage,
     toggleEditorMode,
     applyAiSlotChange,
@@ -261,7 +289,9 @@ export const AIWorkspaceProvider = ({ children }) => {
     toggleAiPanel,
     addChatMessage,
     clearChatHistory,
-    registerSlotHandlers
+    registerSlotHandlers,
+    openPluginEditor,
+    closePluginEditor
   ]);
 
   return (

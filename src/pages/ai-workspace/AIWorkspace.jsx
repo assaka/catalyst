@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { AIWorkspaceProvider, useAIWorkspace } from '@/contexts/AIWorkspaceContext';
 import { StoreProvider } from '@/components/storefront/StoreProvider';
@@ -7,6 +7,10 @@ import WorkspaceHeader from '@/components/ai-workspace/WorkspaceHeader';
 import WorkspaceAIPanel from '@/components/ai-workspace/WorkspaceAIPanel';
 import WorkspaceCanvas from '@/components/ai-workspace/WorkspaceCanvas';
 import WorkspaceStorefrontPreview from '@/components/ai-workspace/WorkspaceStorefrontPreview';
+import DeveloperPluginEditor from '@/components/plugins/DeveloperPluginEditor';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { X, Bot, ChevronLeft, ChevronRight } from 'lucide-react';
 
 /**
  * AIWorkspace - Unified Editor + AI workspace
@@ -18,50 +22,174 @@ import WorkspaceStorefrontPreview from '@/components/ai-workspace/WorkspaceStore
  */
 
 const AIWorkspaceContent = () => {
-  const { aiPanelCollapsed, editorMode } = useAIWorkspace();
+  const { aiPanelCollapsed, editorMode, pluginToEdit, showPluginEditor, closePluginEditor } = useAIWorkspace();
+
+  // Panel minimize states for plugin editor
+  const [chatMinimized, setChatMinimized] = useState(false);
+  const [fileTreeMinimized, setFileTreeMinimized] = useState(false);
+  const [editorMinimized, setEditorMinimized] = useState(false);
+
+  // Calculate sizes for plugin editor mode
+  const calculateChatSize = () => {
+    if (chatMinimized) return 4;
+    if (fileTreeMinimized && editorMinimized) return 92;
+    if (editorMinimized) return 81;
+    if (fileTreeMinimized) return 47;
+    return 35;
+  };
+
+  const calculateFileTreeSize = () => {
+    if (fileTreeMinimized) return 4;
+    return 15;
+  };
+
+  const calculateEditorSize = () => {
+    if (editorMinimized) return 4;
+    if (chatMinimized && fileTreeMinimized) return 92;
+    if (chatMinimized) return 81;
+    if (fileTreeMinimized) return 49;
+    return 50;
+  };
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header with page selector, editor toggle, and controls */}
       <WorkspaceHeader />
 
+      {/* Plugin editing badge when plugin is open */}
+      {showPluginEditor && pluginToEdit && (
+        <div className="px-4 py-2 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-200 dark:border-purple-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300">
+              Editing Plugin: {pluginToEdit.name}
+            </Badge>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={closePluginEditor}
+            className="h-6 text-purple-700 hover:text-purple-900"
+          >
+            <X className="w-4 h-4 mr-1" />
+            Close Editor
+          </Button>
+        </div>
+      )}
+
       {/* Main content area with resizable panels */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          {/* AI Panel (left) - resizable and collapsible */}
-          {!aiPanelCollapsed && (
-            <>
-              <ResizablePanel
-                defaultSize={28}
-                minSize={20}
-                maxSize={45}
-                className="bg-white dark:bg-gray-800"
-              >
-                <WorkspaceAIPanel />
-              </ResizablePanel>
+        {showPluginEditor && pluginToEdit ? (
+          // Plugin Editor Mode - AI Chat + Developer Editor
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            {/* AI Chat Assistant (Left) - Minimizable */}
+            <ResizablePanel
+              defaultSize={calculateChatSize()}
+              minSize={4}
+              maxSize={chatMinimized ? 4 : 90}
+              collapsible={false}
+            >
+              <div className="h-full flex flex-col border-r bg-white dark:bg-gray-900">
+                {!chatMinimized ? (
+                  <>
+                    <div className="h-10 px-3 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4 text-blue-600" />
+                        <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                          AI Assistant
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setChatMinimized(true)}
+                        title="Minimize chat"
+                        className="h-6 w-6 p-0"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <WorkspaceAIPanel />
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full flex pt-2 justify-center border-r bg-gray-50 dark:bg-gray-800" style={{ minWidth: '50px' }}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setChatMinimized(false)}
+                      title="Expand AI chat"
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      <Bot className="w-5 h-5 text-blue-600" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </ResizablePanel>
 
-              <ResizableHandle withHandle />
-            </>
-          )}
+            <ResizableHandle />
 
-          {/* Content Panel (right) - Editor or Storefront Preview */}
-          <ResizablePanel
-            defaultSize={aiPanelCollapsed ? 100 : 72}
-            minSize={55}
-          >
-            {editorMode ? (
-              // Editor Mode: Show full page editor (includes EditorSidebar built-in)
-              <WorkspaceCanvas />
-            ) : (
-              // Preview Mode: Show full storefront with header, content, footer
-              <StoreProvider>
-                <PriceUtilsProvider>
-                  <WorkspaceStorefrontPreview />
-                </PriceUtilsProvider>
-              </StoreProvider>
+            {/* Developer Plugin Editor (Right) */}
+            <ResizablePanel
+              defaultSize={calculateFileTreeSize() + calculateEditorSize()}
+              minSize={8}
+            >
+              <DeveloperPluginEditor
+                plugin={pluginToEdit}
+                onSave={(updated) => {
+                  console.log('Plugin saved:', updated);
+                }}
+                onClose={closePluginEditor}
+                initialContext="editing"
+                chatMinimized={chatMinimized}
+                fileTreeMinimized={fileTreeMinimized}
+                setFileTreeMinimized={setFileTreeMinimized}
+                editorMinimized={editorMinimized}
+                setEditorMinimized={setEditorMinimized}
+                fileTreeTargetSize={calculateFileTreeSize()}
+                editorTargetSize={calculateEditorSize()}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : (
+          // Normal Mode - AI Panel + Editor/Preview
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            {/* AI Panel (left) - resizable and collapsible */}
+            {!aiPanelCollapsed && (
+              <>
+                <ResizablePanel
+                  defaultSize={28}
+                  minSize={20}
+                  maxSize={45}
+                  className="bg-white dark:bg-gray-800"
+                >
+                  <WorkspaceAIPanel />
+                </ResizablePanel>
+
+                <ResizableHandle withHandle />
+              </>
             )}
-          </ResizablePanel>
-        </ResizablePanelGroup>
+
+            {/* Content Panel (right) - Editor or Storefront Preview */}
+            <ResizablePanel
+              defaultSize={aiPanelCollapsed ? 100 : 72}
+              minSize={55}
+            >
+              {editorMode ? (
+                // Editor Mode: Show full page editor (includes EditorSidebar built-in)
+                <WorkspaceCanvas />
+              ) : (
+                // Preview Mode: Show full storefront with header, content, footer
+                <StoreProvider>
+                  <PriceUtilsProvider>
+                    <WorkspaceStorefrontPreview />
+                  </PriceUtilsProvider>
+                </StoreProvider>
+              )}
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        )}
       </div>
     </div>
   );
