@@ -260,10 +260,16 @@ const EditableSlot = ({
     }
   }, [setNodeRef, setDroppableRef, isContainer]);
 
+  // Get position values
+  const posCol = slot.position?.col || 1;
+  const posRow = slot.position?.row || 1;
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    gridColumn: `span ${resizePreview || colSpan}`,
+    // Use position.col for start, colSpan for width
+    gridColumn: `${posCol} / span ${resizePreview || colSpan}`,
+    gridRow: posRow,
     opacity: isDragging ? 0.5 : 1
   };
 
@@ -350,9 +356,12 @@ const EditableSlot = ({
           {slot.type}
         </span>
 
-        {/* Column span indicator - show for all slots */}
-        <span className="text-xs text-blue-500 font-mono">
-          {resizePreview || colSpan}/12
+        {/* Position and size indicator */}
+        <span className="text-xs text-gray-400 font-mono" title={`Position: col ${posCol}, row ${posRow}`}>
+          c{posCol}
+        </span>
+        <span className="text-xs text-blue-500 font-mono" title={`Width: ${resizePreview || colSpan} columns`}>
+          w{resizePreview || colSpan}
         </span>
 
         {/* Delete button */}
@@ -396,7 +405,7 @@ const EditableSlot = ({
               items={childSlots.map(s => s.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="grid grid-cols-12 gap-2">
+              <div className="grid grid-cols-12 gap-2" style={{ gridAutoRows: 'min-content' }}>
                 {childSlots.map((childSlot) => (
                   <EditableSlot
                     key={childSlot.id}
@@ -701,7 +710,7 @@ const WorkspaceSlotEditor = ({
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={allSlotIds} strategy={verticalListSortingStrategy}>
-          <div className="grid grid-cols-12 gap-4 relative pt-2">
+          <div className="grid grid-cols-12 gap-4 relative pt-2" style={{ gridAutoRows: 'min-content' }}>
             {rootSlots.map((slot) => (
               <EditableSlot
                 key={slot.id}
