@@ -78,40 +78,35 @@ const getSlotDisplayName = (slot) => {
 };
 
 /**
- * Get content preview for a slot (shows HTML/template content)
+ * Get raw content for a slot (shows actual HTML/template)
  */
-const getContentPreview = (slot) => {
-  if (!slot.content || typeof slot.content !== 'string' || slot.content.length === 0) {
+const getSlotContent = (slot) => {
+  if (!slot.content || typeof slot.content !== 'string') {
     return null;
   }
 
-  // For component slots, show component name instead of content
+  // For component slots, show component name
   if (slot.type === 'component' && slot.component) {
     return `<${slot.component} />`;
   }
 
-  // Strip HTML tags but preserve template variables
-  let preview = slot.content
-    .replace(/<[^>]*>/g, ' ')  // Replace HTML tags with space
-    .replace(/\s+/g, ' ')       // Normalize whitespace
-    .trim();
+  // Return raw content (preserve HTML and templates)
+  const content = slot.content.trim();
+  if (content.length === 0) return null;
 
-  // Truncate if too long
-  if (preview.length > 80) {
-    preview = preview.substring(0, 80) + '...';
-  }
-
-  return preview || null;
+  return content;
 };
 
 /**
  * Parse colSpan value - handles number, object, or string formats
- * Returns numeric value (1-12)
+ * Returns numeric value (1-12) or null if not defined
  */
-const parseColSpan = (colSpan) => {
+const parseColSpan = (colSpan, slotType) => {
+  // If colSpan is explicitly defined, parse it
   if (typeof colSpan === 'number') {
     return Math.max(1, Math.min(12, colSpan));
   }
+
   if (typeof colSpan === 'object' && colSpan !== null) {
     const defaultVal = colSpan.default;
     if (typeof defaultVal === 'number') {
@@ -124,8 +119,9 @@ const parseColSpan = (colSpan) => {
         return Math.max(1, Math.min(12, parseInt(match[1], 10)));
       }
     }
-    return 12;
+    // Empty object like colSpan: {} - use type-based default
   }
+
   if (typeof colSpan === 'string') {
     // Handle class string like 'col-span-12 lg:col-span-6'
     const match = colSpan.match(/col-span-(\d+)/);
@@ -133,7 +129,19 @@ const parseColSpan = (colSpan) => {
       return Math.max(1, Math.min(12, parseInt(match[1], 10)));
     }
   }
-  return 12;
+
+  // Type-based defaults for undefined colSpan
+  if (slotType === 'container' || slotType === 'grid' || slotType === 'flex') {
+    return 12; // Containers span full width
+  }
+  if (slotType === 'button' || slotType === 'link') {
+    return 4; // Buttons are smaller
+  }
+  if (slotType === 'text') {
+    return 6; // Text is medium
+  }
+
+  return 6; // Default to half width for other types
 };
 
 /**
@@ -197,11 +205,11 @@ const EditableSlot = ({
     data: { containerId: slot.id }
   });
 
-  // Get colSpan value using the parser
-  const colSpan = parseColSpan(slot.colSpan);
+  // Get colSpan value using the parser (pass slot type for smart defaults)
+  const colSpan = parseColSpan(slot.colSpan, slot.type);
   const Icon = getSlotIcon(slot);
   const displayName = getSlotDisplayName(slot);
-  const contentPreview = getContentPreview(slot);
+  const rawContent = getSlotContent(slot);
 
   // Calculate column width
   const columnWidth = containerWidth ? containerWidth / 12 : 80;
@@ -360,20 +368,20 @@ const EditableSlot = ({
         </button>
       </div>
 
-      {/* Content preview for non-container slots */}
-      {!isContainer && contentPreview && (
-        <div className="px-3 py-2 text-xs text-gray-600 dark:text-gray-400 font-mono bg-white/50 dark:bg-black/20 border-b border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="truncate" title={slot.content}>
-            {contentPreview}
-          </div>
+      {/* Raw HTML/Template content for non-container slots */}
+      {!isContainer && rawContent && (
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <pre className="px-3 py-2 text-xs text-gray-700 dark:text-gray-300 font-mono bg-white/70 dark:bg-black/30 overflow-x-auto max-h-[120px] overflow-y-auto whitespace-pre-wrap break-all">
+            {rawContent}
+          </pre>
         </div>
       )}
 
-      {/* className preview */}
+      {/* className display */}
       {slot.className && (
-        <div className="px-3 py-1 text-xs text-gray-500 dark:text-gray-500 bg-gray-100/50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 overflow-hidden">
-          <span className="text-gray-400">class:</span>{' '}
-          <span className="font-mono truncate">{slot.className.length > 60 ? slot.className.substring(0, 60) + '...' : slot.className}</span>
+        <div className="px-3 py-1.5 text-xs bg-gray-100/50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+          <span className="text-gray-400 dark:text-gray-500">class: </span>
+          <code className="text-blue-600 dark:text-blue-400 font-mono break-all">{slot.className}</code>
         </div>
       )}
 
