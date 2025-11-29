@@ -248,47 +248,6 @@ const UnifiedSlotsEditor = ({
     setIsSidebarVisible
   );
 
-  // Simple event delegation handler - captures all clicks on [data-slot-id] elements
-  const handleContainerClick = useCallback((e) => {
-    console.log('🖱️ Container click:', e.target.tagName, e.target.className);
-
-    // Don't handle if in preview mode or resizing
-    if (showPreview || isResizing) {
-      console.log('🖱️ Skipped: preview or resizing');
-      return;
-    }
-
-    // Check if resize just ended (debounce)
-    const timeSinceResize = Date.now() - lastResizeEndTime.current;
-    if (timeSinceResize < 200) {
-      console.log('🖱️ Skipped: resize debounce');
-      return;
-    }
-
-    // Find the closest element with data-slot-id
-    const slotElement = e.target.closest('[data-slot-id]');
-    console.log('🖱️ Found slot element:', slotElement?.getAttribute('data-slot-id'));
-
-    if (!slotElement) {
-      console.log('🖱️ No slot element found');
-      return;
-    }
-
-    // Ignore clicks on resize handles
-    if (e.target.closest('.resize-handle') || e.target.closest('[class*="resize"]')) {
-      console.log('🖱️ Skipped: resize handle');
-      return;
-    }
-
-    const slotId = slotElement.getAttribute('data-slot-id');
-    if (!slotId) return;
-
-    console.log('🖱️ Selecting:', slotId);
-    e.stopPropagation();
-    setSelectedElement(slotElement);
-    setIsSidebarVisible(true);
-  }, [showPreview, isResizing, lastResizeEndTime]);
-
   // Create handler factory with page-specific dependencies
   const handlerFactory = createHandlerFactory(setLayoutConfig, saveConfiguration);
 
@@ -467,7 +426,6 @@ const UnifiedSlotsEditor = ({
           <ResponsiveIframe
             viewport={currentViewport}
             className="bg-white"
-            onContentClick={handleContainerClick}
           >
             <div className="px-4 sm:px-6 lg:px-8 pb-12">
               {/* Flash Messages Area */}

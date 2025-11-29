@@ -860,7 +860,7 @@ export function UnifiedSlotRenderer({
       // Don't wrap gallery container to prevent width constraints
       const isGalleryContainer = id === 'product_gallery_container';
 
-      // In editor mode - simple approach with data-slot-id for event delegation
+      // In editor mode - add click handler for element selection
       if (context === 'editor') {
         const htmlElement = (
           <div
@@ -868,6 +868,12 @@ export function UnifiedSlotRenderer({
             style={{ ...processedStyles, cursor: 'pointer' }}
             data-slot-id={id}
             data-editable="true"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onElementClick) {
+                onElementClick(id, e.currentTarget);
+              }
+            }}
             dangerouslySetInnerHTML={{ __html: processedContent }}
           />
         );
@@ -915,7 +921,7 @@ export function UnifiedSlotRenderer({
           return null;
         }
 
-        // Simple approach - just add data-slot-id for event delegation
+        // Add click handler for element selection
         const textElement = React.createElement(
           HtmlTag,
           {
@@ -925,6 +931,12 @@ export function UnifiedSlotRenderer({
               cursor: 'pointer',
               display: 'inline-block',
               width: shouldUseStoredWidth ? storedWidth : 'fit-content'
+            },
+            onClick: (e) => {
+              e.stopPropagation();
+              if (onElementClick) {
+                onElementClick(id, e.currentTarget);
+              }
             },
             'data-slot-id': id,
             'data-editable': 'true',
@@ -1095,13 +1107,19 @@ export function UnifiedSlotRenderer({
           </Button>
         );
       } else {
-        // Editor: Visual preview only - simple approach with data-slot-id for event delegation
+        // Editor: Visual preview only - add click handler for element selection
         const buttonElement = (
           <button
             className={buttonClassName}
             style={{ ...buttonStyles, cursor: 'pointer' }}
             data-slot-id={id}
             data-editable="true"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onElementClick) {
+                onElementClick(id, e.currentTarget);
+              }
+            }}
           >
             {isHtmlContent ? (
               <span dangerouslySetInnerHTML={{ __html: buttonContent }} />
