@@ -19,7 +19,7 @@ export default function Hero() {
         "you can imagine",
         "that converts",
         "in any language",
-        "AI powered",
+        "smarter than ever",
         "in minutes",
         "without coding",
         "that stands out",
@@ -33,9 +33,9 @@ export default function Hero() {
         "analytics included",
         "in one click",
         "your way",
-        "fully integrated",
-        "AI chat enabled",
-        "pro editor built-in"
+        "100+ integrations",
+        "chat assisted",
+        "easy to edit"
     ];
 
     useEffect(() => {
