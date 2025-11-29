@@ -19,23 +19,23 @@ export default function Hero() {
         "you can imagine",
         "that converts",
         "in any language",
-        "with AI plugins",
+        "AI powered",
         "in minutes",
         "without coding",
         "that stands out",
         "lightning fast",
         "that scales",
-        "with drag & drop",
+        "drag & drop ready",
         "fully responsive",
         "SEO optimized",
         "mobile first",
         "pixel perfect",
-        "with analytics",
-        "with one click",
+        "analytics included",
+        "in one click",
         "your way",
-        "with integrations",
-        "with AI chat",
-        "with pro editor"
+        "fully integrated",
+        "AI chat enabled",
+        "pro editor built-in"
     ];
 
     useEffect(() => {
