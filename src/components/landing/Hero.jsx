@@ -23,7 +23,7 @@ export default function Hero() {
         "in minutes",
         "without coding",
         "that stands out",
-        "your customers love"
+        "with powerful features"
     ];
 
     useEffect(() => {
