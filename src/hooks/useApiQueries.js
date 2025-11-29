@@ -397,9 +397,20 @@ export const useSlotConfiguration = (storeId, pageType, options = {}) => {
     (new URLSearchParams(window.location.search).get('preview') === 'draft' ||
      new URLSearchParams(window.location.search).get('workspace') === 'true');
 
-  // Debug logging in development
-  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
-    console.log('[useSlotConfiguration]', { pageType, isPreviewDraftMode, url: window.location.href });
+  // Debug logging when preview param is present (helps debug preview issues)
+  if (typeof window !== 'undefined') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const previewParam = urlParams.get('preview');
+    const workspaceParam = urlParams.get('workspace');
+    if (previewParam || workspaceParam || isPreviewDraftMode) {
+      console.log('[useSlotConfiguration]', {
+        pageType,
+        isPreviewDraftMode,
+        previewParam,
+        workspaceParam,
+        url: window.location.href
+      });
+    }
   }
 
   return useQuery({
@@ -411,13 +422,12 @@ export const useSlotConfiguration = (storeId, pageType, options = {}) => {
       const { default: slotConfigurationService } = await import('@/services/slotConfigurationService');
 
       // Load draft or published configuration based on preview mode
+      console.log('[useSlotConfiguration] Fetching:', { pageType, mode: isPreviewDraftMode ? 'DRAFT' : 'PUBLISHED' });
       const response = isPreviewDraftMode
         ? await slotConfigurationService.getDraftConfiguration(storeId, pageType)
         : await slotConfigurationService.getPublishedConfiguration(storeId, pageType);
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[useSlotConfiguration] Response:', { pageType, isPreviewDraftMode, success: response.success });
-      }
+      console.log('[useSlotConfiguration] Response:', { pageType, isPreviewDraftMode, success: response.success, hasData: !!response.data });
 
       if (response.success && response.data &&
           response.data.configuration &&

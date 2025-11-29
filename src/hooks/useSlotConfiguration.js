@@ -30,9 +30,21 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
         (new URLSearchParams(window.location.search).get('preview') === 'draft' ||
          new URLSearchParams(window.location.search).get('workspace') === 'true');
 
-    // Debug logging in development
-    if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
-        console.log('[useLayoutConfig]', { pageType, isPreviewDraftMode, shouldFetch, url: window.location.href });
+    // Debug logging when preview param is present
+    if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const previewParam = urlParams.get('preview');
+        const workspaceParam = urlParams.get('workspace');
+        if (previewParam || workspaceParam || isPreviewDraftMode) {
+            console.log('[useLayoutConfig]', {
+                pageType,
+                isPreviewDraftMode,
+                shouldFetch,
+                previewParam,
+                workspaceParam,
+                url: window.location.href
+            });
+        }
     }
 
     const loadLayoutConfig = useCallback(async () => {
@@ -51,10 +63,9 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
 
             // In draft preview mode, load draft configuration instead of published
             if (isPreviewDraftMode) {
-                if (process.env.NODE_ENV === 'development') {
-                    console.log('[useLayoutConfig] Loading DRAFT config for:', pageType);
-                }
+                console.log('[useLayoutConfig] Loading DRAFT config for:', pageType);
                 response = await slotConfigurationService.getDraftConfiguration(store.id, pageType);
+                console.log('[useLayoutConfig] DRAFT response:', { pageType, success: response.success, hasData: !!response.data });
                 // Transform draft response to match published response structure
                 if (response.success && response.data?.configuration) {
                     response = {
@@ -66,9 +77,7 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
                     };
                 }
             } else {
-                if (process.env.NODE_ENV === 'development') {
-                    console.log('[useLayoutConfig] Loading PUBLISHED config for:', pageType);
-                }
+                console.log('[useLayoutConfig] Loading PUBLISHED config for:', pageType);
                 // Load published configuration using the new versioning API
                 response = await slotConfigurationService.getPublishedConfiguration(store.id, pageType);
             }
