@@ -127,6 +127,96 @@ const getDemoContext = () => {
 };
 
 /**
+ * ComponentPreview - Renders a component slot using UnifiedSlotRenderer
+ * Wrapped in error boundary to handle rendering failures gracefully
+ */
+const ComponentPreview = ({ slot, demoContext }) => {
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Create a minimal slots object for rendering
+  const slotsForRender = useMemo(() => ({
+    [slot.id]: { ...slot, parentId: null }
+  }), [slot]);
+
+  if (hasError) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400">
+        <Code className="h-4 w-4" />
+        <span className="font-mono">&lt;{slot.component || slot.metadata?.component || 'Component'} /&gt;</span>
+        {errorMessage && (
+          <span className="text-xs text-red-500 ml-2">({errorMessage})</span>
+        )}
+      </div>
+    );
+  }
+
+  try {
+    return (
+      <div className="component-preview overflow-hidden max-h-[200px] pointer-events-none">
+        <ErrorBoundary onError={(error) => {
+          setHasError(true);
+          setErrorMessage(error?.message || 'Render error');
+        }}>
+          <UnifiedSlotRenderer
+            slots={slotsForRender}
+            parentId={null}
+            context="editor"
+            mode="preview"
+            viewMode="default"
+            viewportMode="desktop"
+            productData={{
+              product: demoContext.product,
+              settings: demoContext.settings,
+              productLabels: demoContext.productLabels
+            }}
+            categoryData={{
+              category: demoContext.category,
+              products: demoContext.products,
+              settings: demoContext.settings
+            }}
+          />
+        </ErrorBoundary>
+      </div>
+    );
+  } catch (error) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400">
+        <Code className="h-4 w-4" />
+        <span className="font-mono">&lt;{slot.component || slot.metadata?.component || 'Component'} /&gt;</span>
+      </div>
+    );
+  }
+};
+
+/**
+ * Simple Error Boundary component
+ */
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    if (this.props.onError) {
+      this.props.onError(error);
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return null;
+    }
+    return this.props.children;
+  }
+}
+
+/**
  * Parse colSpan value - handles number, object, or string formats
  * Returns numeric value (1-12) or null if not defined
  */
@@ -412,12 +502,9 @@ const EditableSlot = ({
       {/* Rendered content for non-container slots */}
       {!isContainer && (
         <div className="border-b border-gray-200 dark:border-gray-700 px-3 py-2 bg-white/70 dark:bg-black/30">
-          {/* Component slots - show component info */}
+          {/* Component slots - render actual component preview */}
           {slot.type === 'component' && (
-            <div className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400">
-              <Code className="h-4 w-4" />
-              <span className="font-mono">&lt;{slot.component || slot.metadata?.component || 'Component'} /&gt;</span>
-            </div>
+            <ComponentPreview slot={slot} demoContext={demoContext} />
           )}
 
           {/* Button slots - show button preview */}
