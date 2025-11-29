@@ -260,16 +260,16 @@ const EditableSlot = ({
     }
   }, [setNodeRef, setDroppableRef, isContainer]);
 
-  // Get position values
+  // Get position values (for display, not CSS positioning)
   const posCol = slot.position?.col || 1;
-  const posRow = slot.position?.row || 1;
+  const posRow = slot.position?.row ?? 0;
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    // Use position.col for start, colSpan for width
-    gridColumn: `${posCol} / span ${resizePreview || colSpan}`,
-    gridRow: posRow,
+    // Just use colSpan for width - let grid flow handle positioning
+    // Slots are already sorted by row, so natural order works
+    gridColumn: `span ${resizePreview || colSpan}`,
     opacity: isDragging ? 0.5 : 1
   };
 
