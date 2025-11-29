@@ -192,6 +192,9 @@ export default function ProductDetail() {
     }
   }, [productData, categories, settings, wishlistData]);
 
+  // Check if we're in draft preview mode (AI Workspace preview)
+  const isPreviewDraftMode = searchParams.get('preview') === 'draft' || searchParams.get('workspace') === 'true';
+
   // Load product layout configuration directly
   useEffect(() => {
     const loadProductLayoutConfig = async () => {
@@ -200,8 +203,10 @@ export default function ProductDetail() {
       }
 
       try {
-        // Load published configuration using the new versioning API
-        const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'product');
+        // Load draft or published configuration based on preview mode
+        const response = isPreviewDraftMode
+          ? await slotConfigurationService.getDraftConfiguration(store.id, 'product')
+          : await slotConfigurationService.getPublishedConfiguration(store.id, 'product');
         // Check for various "no published config" scenarios
         if (response.success && response.data &&
             response.data.configuration &&
@@ -261,7 +266,7 @@ export default function ProductDetail() {
     if (!storeLoading) {
       loadProductLayoutConfig();
     }
-  }, [store?.id, storeLoading]);
+  }, [store?.id, storeLoading, isPreviewDraftMode]);
 
   // Apply A/B test overrides to loaded config
   useEffect(() => {

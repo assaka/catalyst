@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { CustomerAuth as CustomerAuthAPI } from "@/api/storefront-entities";
 import storefrontApiClient from "@/api/storefront-client";
 import { createPublicUrl } from "@/utils/urlUtils";
@@ -18,12 +18,16 @@ export default function CustomerAuth() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const { storeCode } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { store, loading: storeLoading } = useStore();
 
   // Slot configuration state
   const [loginLayoutConfig, setLoginLayoutConfig] = useState(null);
   const [configLoaded, setConfigLoaded] = useState(false);
+
+  // Check if we're in draft preview mode (AI Workspace preview)
+  const isPreviewDraftMode = searchParams.get('preview') === 'draft' || searchParams.get('workspace') === 'true';
 
   // Load login layout configuration
   useEffect(() => {
@@ -33,7 +37,10 @@ export default function CustomerAuth() {
       }
 
       try {
-        const response = await slotConfigurationService.getPublishedConfiguration(store.id, 'login');
+        // Load draft or published configuration based on preview mode
+        const response = isPreviewDraftMode
+          ? await slotConfigurationService.getDraftConfiguration(store.id, 'login')
+          : await slotConfigurationService.getPublishedConfiguration(store.id, 'login');
 
         // Check for valid published config
         if (response.success && response.data &&
@@ -78,7 +85,7 @@ export default function CustomerAuth() {
     };
 
     loadLoginLayoutConfig();
-  }, [store]);
+  }, [store, isPreviewDraftMode]);
 
   useEffect(() => {
     checkAuthStatus();

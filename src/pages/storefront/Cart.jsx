@@ -98,6 +98,9 @@ export default function Cart() {
     const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
     const [configLoaded, setConfigLoaded] = useState(false);
 
+    // Check if we're in draft preview mode (AI Workspace preview)
+    const isPreviewDraftMode = searchParams.get('preview') === 'draft' || searchParams.get('workspace') === 'true';
+
     // Load cart layout configuration directly
     useEffect(() => {
         const loadCartLayoutConfig = async () => {
@@ -105,18 +108,18 @@ export default function Cart() {
                 return;
             }
 
-            // Priority 1: Use page bootstrap if available (no API call!)
-            if (pageBootstrap?.cartSlotConfig) {
+            // Priority 1: Use page bootstrap if available (no API call!) - only if NOT in draft preview mode
+            if (!isPreviewDraftMode && pageBootstrap?.cartSlotConfig) {
                 setCartLayoutConfig(pageBootstrap.cartSlotConfig);
                 setConfigLoaded(true);
                 return;
             }
 
-            // Priority 2: Check global cache
+            // Priority 2: Check global cache - use different cache key for draft mode
             if (!window.__slotConfigCache) window.__slotConfigCache = {};
             if (!window.__slotConfigFetching) window.__slotConfigFetching = {};
 
-            const cacheKey = `cart:${store.id}`;
+            const cacheKey = isPreviewDraftMode ? `cart:draft:${store.id}` : `cart:${store.id}`;
             const cached = window.__slotConfigCache[cacheKey];
 
             if (cached && Date.now() - cached.timestamp < 300000) { // 5 min cache
@@ -138,8 +141,10 @@ export default function Cart() {
                 return;
             }
 
-            // Start fetching (store the result in cache, not the promise)
-            const fetchPromise = slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
+            // Start fetching - use draft or published based on preview mode
+            const fetchPromise = isPreviewDraftMode
+                ? slotConfigurationService.getDraftConfiguration(store.id, 'cart')
+                : slotConfigurationService.getPublishedConfiguration(store.id, 'cart');
             window.__slotConfigFetching[cacheKey] = fetchPromise;
 
             try {
@@ -219,7 +224,7 @@ export default function Cart() {
         return () => {
             window.removeEventListener('storage', handleStorageChange);
         };
-    }, [store?.id, pageBootstrap]);
+    }, [store?.id, pageBootstrap, isPreviewDraftMode]);
     
     const [taxRules, setTaxRules] = useState([]);
     
