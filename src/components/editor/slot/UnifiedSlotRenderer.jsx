@@ -855,6 +855,36 @@ export function UnifiedSlotRenderer({
         );
       }
 
+      // Don't wrap absolute positioned elements with ResizeWrapper as it interferes with positioning
+      const isAbsolutePositioned = processedClassName?.includes('absolute') || processedStyles?.position === 'absolute';
+      // Don't wrap gallery container to prevent width constraints
+      const isGalleryContainer = id === 'product_gallery_container';
+
+      // In editor mode, add click handler for element selection
+      if (context === 'editor') {
+        const htmlElement = (
+          <div
+            className={processedClassName}
+            style={{ ...processedStyles, cursor: 'pointer' }}
+            dangerouslySetInnerHTML={{ __html: processedContent }}
+            data-slot-id={id}
+            data-editable="true"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!currentDragInfo && onElementClick) {
+                onElementClick(id, e.currentTarget);
+              }
+            }}
+          />
+        );
+
+        if (!isAbsolutePositioned && !isGalleryContainer) {
+          return wrapWithResize(htmlElement, slot, 20, 16);
+        }
+        return htmlElement;
+      }
+
+      // Storefront mode - no click handler needed
       const htmlElement = (
         <div
           className={processedClassName}
@@ -862,13 +892,6 @@ export function UnifiedSlotRenderer({
           dangerouslySetInnerHTML={{ __html: processedContent }}
         />
       );
-      // Don't wrap absolute positioned elements with ResizeWrapper as it interferes with positioning
-      const isAbsolutePositioned = processedClassName?.includes('absolute') || processedStyles?.position === 'absolute';
-      // Don't wrap gallery container to prevent width constraints
-      const isGalleryContainer = id === 'product_gallery_container';
-      if (context === 'editor' && !isAbsolutePositioned && !isGalleryContainer) {
-        return wrapWithResize(htmlElement, slot, 20, 16);
-      }
       return htmlElement;
     }
 
