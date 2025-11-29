@@ -388,13 +388,26 @@ export const useCategory = (slug, storeId, options = {}) => {
 
 /**
  * Hook to fetch slot configuration for a page type
+ * In draft preview mode (AI Workspace), loads draft configuration instead of published
  */
 export const useSlotConfiguration = (storeId, pageType, options = {}) => {
+  // Check if we're in draft preview mode (AI Workspace preview)
+  const isPreviewDraftMode = typeof window !== 'undefined' &&
+    (new URLSearchParams(window.location.search).get('preview') === 'draft' ||
+     new URLSearchParams(window.location.search).get('workspace') === 'true');
+
   return useQuery({
-    queryKey: queryKeys.slot.config(storeId, pageType),
+    // Use different query key for draft mode to avoid cache conflicts
+    queryKey: isPreviewDraftMode
+      ? [...queryKeys.slot.config(storeId, pageType), 'draft']
+      : queryKeys.slot.config(storeId, pageType),
     queryFn: async () => {
       const { default: slotConfigurationService } = await import('@/services/slotConfigurationService');
-      const response = await slotConfigurationService.getPublishedConfiguration(storeId, pageType);
+
+      // Load draft or published configuration based on preview mode
+      const response = isPreviewDraftMode
+        ? await slotConfigurationService.getDraftConfiguration(storeId, pageType)
+        : await slotConfigurationService.getPublishedConfiguration(storeId, pageType);
 
       if (response.success && response.data &&
           response.data.configuration &&
@@ -403,11 +416,12 @@ export const useSlotConfiguration = (storeId, pageType, options = {}) => {
         return response.data.configuration;
       }
 
-      return null; // No published config
+      return null; // No config found
     },
     enabled: !!(storeId && pageType),
-    staleTime: 300000, // 5 minutes - slot configs rarely change
-    gcTime: 600000, // 10 minutes cache
+    // In draft preview mode, use shorter cache to pick up changes faster
+    staleTime: isPreviewDraftMode ? 30000 : 300000, // 30s for draft, 5 min for published
+    gcTime: isPreviewDraftMode ? 60000 : 600000, // 1 min for draft, 10 min for published
     retry: 2,
     ...options
   });
