@@ -18,9 +18,17 @@ const WorkspaceStorefrontPreview = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUrl, setCurrentUrl] = useState('');
   const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(Date.now()); // Force refresh on mount
 
   const storeId = getSelectedStoreId();
   const storeSlug = selectedStore?.slug || selectedStore?.code || 'store';
+
+  // Auto-refresh on component mount (when switching from Editor to Preview)
+  useEffect(() => {
+    // Generate new refresh key to bust cache
+    setRefreshKey(Date.now());
+    setIsLoading(true);
+  }, []); // Only on mount
 
   // Build the storefront URL
   const storefrontUrl = useMemo(() => {
@@ -30,9 +38,9 @@ const WorkspaceStorefrontPreview = () => {
     // Build the full storefront URL with draft mode parameter
     const url = getExternalStoreUrl(storeSlug, '', baseUrl);
 
-    // Add draft preview parameter to show draft configurations
-    return `${url}?preview=draft&workspace=true`;
-  }, [storeSlug, selectedStore]);
+    // Add draft preview parameter and cache-busting timestamp
+    return `${url}?preview=draft&workspace=true&_t=${refreshKey}`;
+  }, [storeSlug, selectedStore, refreshKey]);
 
   // Map page types to storefront paths
   const getPagePath = (pageType) => {
@@ -58,13 +66,13 @@ const WorkspaceStorefrontPreview = () => {
     }
   };
 
-  // Update iframe URL when page type changes
+  // Update iframe URL when page type changes or refresh key changes
   useEffect(() => {
     const path = getPagePath(selectedPageType);
     const baseUrl = getStoreBaseUrl(selectedStore);
     const newUrl = getExternalStoreUrl(storeSlug, path, baseUrl);
-    setCurrentUrl(`${newUrl}?preview=draft&workspace=true`);
-  }, [selectedPageType, storeSlug, selectedStore]);
+    setCurrentUrl(`${newUrl}?preview=draft&workspace=true&_t=${refreshKey}`);
+  }, [selectedPageType, storeSlug, selectedStore, refreshKey]);
 
   // Viewport dimensions
   const viewportStyles = useMemo(() => {
@@ -90,12 +98,10 @@ const WorkspaceStorefrontPreview = () => {
     setError('Failed to load storefront preview');
   };
 
-  // Refresh iframe
+  // Refresh iframe with new cache-busting key
   const handleRefresh = () => {
     setIsLoading(true);
-    if (iframeRef.current) {
-      iframeRef.current.src = currentUrl || storefrontUrl;
-    }
+    setRefreshKey(Date.now()); // This will update currentUrl via useEffect
   };
 
   // Open in new tab

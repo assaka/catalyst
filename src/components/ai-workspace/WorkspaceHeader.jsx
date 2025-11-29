@@ -54,6 +54,7 @@ const WorkspaceHeader = () => {
   const [loadingPlugins, setLoadingPlugins] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
+  const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(false);
 
   const storeId = getSelectedStoreId();
 
@@ -61,6 +62,36 @@ const WorkspaceHeader = () => {
   useEffect(() => {
     loadPlugins();
   }, []);
+
+  // Check for unpublished changes on mount and when exiting editor
+  useEffect(() => {
+    checkUnpublishedChanges();
+  }, [storeId, editorMode]);
+
+  const checkUnpublishedChanges = async () => {
+    if (!storeId) return;
+
+    try {
+      const pageTypes = Object.values(PAGE_TYPES);
+      let hasChanges = false;
+
+      for (const pageType of pageTypes) {
+        try {
+          const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, pageType);
+          if (draftResponse?.data?.has_unpublished_changes) {
+            hasChanges = true;
+            break; // At least one page has unpublished changes
+          }
+        } catch (err) {
+          // Ignore errors for individual page types
+        }
+      }
+
+      setHasUnpublishedChanges(hasChanges);
+    } catch (error) {
+      console.error('Failed to check unpublished changes:', error);
+    }
+  };
 
   const loadPlugins = async () => {
     try {
@@ -112,6 +143,7 @@ const WorkspaceHeader = () => {
       await Promise.all(publishPromises);
 
       setPublishSuccess(true);
+      setHasUnpublishedChanges(false);
 
       // Clear success indicator after 3 seconds
       setTimeout(() => setPublishSuccess(false), 3000);
@@ -328,15 +360,18 @@ const WorkspaceHeader = () => {
         {/* Publish Button */}
         {!showPluginEditor && (
           <Button
-            variant={publishSuccess ? 'default' : 'outline'}
+            variant={publishSuccess || hasUnpublishedChanges ? 'default' : 'outline'}
             size="sm"
-            className={publishSuccess
-              ? 'h-8 gap-1.5 bg-green-600 hover:bg-green-700'
-              : 'h-8 gap-1.5'
+            className={
+              publishSuccess
+                ? 'h-8 gap-1.5 bg-green-600 hover:bg-green-700'
+                : hasUnpublishedChanges
+                  ? 'h-8 gap-1.5 bg-orange-500 hover:bg-orange-600'
+                  : 'h-8 gap-1.5'
             }
             onClick={handlePublish}
             disabled={isPublishing}
-            title="Publish all draft changes to production"
+            title={hasUnpublishedChanges ? 'You have unpublished changes' : 'Publish all draft changes to production'}
           >
             {isPublishing ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -345,7 +380,7 @@ const WorkspaceHeader = () => {
             ) : (
               <Rocket className="h-3.5 w-3.5" />
             )}
-            <span>{publishSuccess ? 'Published!' : 'Publish'}</span>
+            <span>{publishSuccess ? 'Published!' : hasUnpublishedChanges ? 'Publish Changes' : 'Publish'}</span>
           </Button>
         )}
       </div>
