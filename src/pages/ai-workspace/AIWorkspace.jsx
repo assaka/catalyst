@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { AIWorkspaceProvider, useAIWorkspace } from '@/contexts/AIWorkspaceContext';
 import { StoreProvider } from '@/components/storefront/StoreProvider';
@@ -7,6 +7,7 @@ import WorkspaceHeader from '@/components/ai-workspace/WorkspaceHeader';
 import WorkspaceAIPanel from '@/components/ai-workspace/WorkspaceAIPanel';
 import WorkspaceCanvas from '@/components/ai-workspace/WorkspaceCanvas';
 import WorkspaceStorefrontPreview from '@/components/ai-workspace/WorkspaceStorefrontPreview';
+import WorkspaceSlotSidebar from '@/components/ai-workspace/WorkspaceSlotSidebar';
 
 /**
  * AIWorkspace - Unified Editor + AI workspace
@@ -18,7 +19,47 @@ import WorkspaceStorefrontPreview from '@/components/ai-workspace/WorkspaceStore
  */
 
 const AIWorkspaceContent = () => {
-  const { aiPanelCollapsed, editorMode } = useAIWorkspace();
+  const {
+    aiPanelCollapsed,
+    editorMode,
+    selectedSlotId,
+    setSelectedSlotId,
+    currentConfiguration,
+    updateConfiguration
+  } = useAIWorkspace();
+
+  // Get selected slot from configuration
+  const selectedSlot = selectedSlotId && currentConfiguration?.slots
+    ? currentConfiguration.slots[selectedSlotId]
+    : null;
+
+  // Handle slot change from sidebar
+  const handleSlotChange = useCallback((slotId, updatedSlot) => {
+    if (!currentConfiguration?.slots) return;
+
+    const updatedSlots = {
+      ...currentConfiguration.slots,
+      [slotId]: updatedSlot
+    };
+
+    updateConfiguration({ ...currentConfiguration, slots: updatedSlots });
+  }, [currentConfiguration, updateConfiguration]);
+
+  // Handle slot delete from sidebar
+  const handleSlotDelete = useCallback((slotId) => {
+    if (!currentConfiguration?.slots) return;
+
+    const updatedSlots = { ...currentConfiguration.slots };
+    delete updatedSlots[slotId];
+
+    updateConfiguration({ ...currentConfiguration, slots: updatedSlots });
+    setSelectedSlotId(null);
+  }, [currentConfiguration, updateConfiguration, setSelectedSlotId]);
+
+  // Close sidebar
+  const handleCloseSidebar = useCallback(() => {
+    setSelectedSlotId(null);
+  }, [setSelectedSlotId]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -44,10 +85,10 @@ const AIWorkspaceContent = () => {
             </>
           )}
 
-          {/* Content Panel (right) - Editor or Storefront Preview */}
+          {/* Content Panel (center) - Editor or Storefront Preview */}
           <ResizablePanel
-            defaultSize={aiPanelCollapsed ? 100 : 72}
-            minSize={55}
+            defaultSize={aiPanelCollapsed ? (selectedSlot ? 75 : 100) : (selectedSlot ? 52 : 72)}
+            minSize={40}
           >
             {editorMode ? (
               // Editor Mode: Show slot editor canvas
@@ -61,6 +102,26 @@ const AIWorkspaceContent = () => {
               </StoreProvider>
             )}
           </ResizablePanel>
+
+          {/* Slot Editor Sidebar (right) - only in editor mode when slot selected */}
+          {editorMode && selectedSlot && (
+            <>
+              <ResizableHandle withHandle />
+              <ResizablePanel
+                defaultSize={20}
+                minSize={15}
+                maxSize={35}
+              >
+                <WorkspaceSlotSidebar
+                  slot={selectedSlot}
+                  slots={currentConfiguration?.slots || {}}
+                  onSlotChange={handleSlotChange}
+                  onClose={handleCloseSidebar}
+                  onDelete={handleSlotDelete}
+                />
+              </ResizablePanel>
+            </>
+          )}
         </ResizablePanelGroup>
       </div>
     </div>
