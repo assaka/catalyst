@@ -640,6 +640,13 @@ const ResizeWrapper = ({
       'data-editable': children.props['data-editable']
     });
 
+    // Debug: log what props we have
+    console.log('🔧 ResizeWrapper button props:', {
+      slotId: children.props['data-slot-id'],
+      hasOnClick: !!children.props.onClick,
+      type: children.type
+    });
+
     return (
       <div
         className={cn("relative w-full", isHovered && "ring-2 ring-blue-300")}
@@ -647,6 +654,8 @@ const ResizeWrapper = ({
         data-slot-id={children.props['data-slot-id']}
         data-editable={children.props['data-editable']}
         onClick={(e) => {
+          console.log('🔧 ResizeWrapper wrapper clicked, slotId:', children.props['data-slot-id']);
+          e.stopPropagation();
           // Also handle clicks on wrapper area (not just button)
           if (children.props.onClick) {
             children.props.onClick(e);
