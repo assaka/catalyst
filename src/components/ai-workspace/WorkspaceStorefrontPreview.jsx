@@ -66,13 +66,12 @@ const WorkspaceStorefrontPreview = () => {
     }
   };
 
-  // Update iframe URL when page type changes or refresh key changes
+  // Update iframe URL - always show homepage, let users navigate from there
   useEffect(() => {
-    const path = getPagePath(selectedPageType);
     const baseUrl = getStoreBaseUrl(selectedStore);
-    const newUrl = getExternalStoreUrl(storeSlug, path, baseUrl);
+    const newUrl = getExternalStoreUrl(storeSlug, '', baseUrl); // Always homepage
     setCurrentUrl(`${newUrl}?preview=draft&workspace=true&_t=${refreshKey}`);
-  }, [selectedPageType, storeSlug, selectedStore, refreshKey]);
+  }, [storeSlug, selectedStore, refreshKey]);
 
   // Viewport dimensions
   const viewportStyles = useMemo(() => {

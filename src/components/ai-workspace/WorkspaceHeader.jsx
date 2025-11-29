@@ -19,14 +19,28 @@ import {
   Loader2,
   Plug,
   ChevronDown,
+  ChevronUp,
   Package,
   Plus,
   Rocket,
-  CheckCircle2
+  CheckCircle2,
+  History,
+  Clock,
+  AlertCircle,
+  Check,
+  RotateCcw
 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 import { slotEnabledFiles } from '@/components/editor/slot/slotEnabledFiles';
 import apiClient from '@/api/client';
 import slotConfigurationService from '@/services/slotConfigurationService';
+import PublishPanel from '@/components/editor/slot/PublishPanel';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 /**
  * WorkspaceHeader - Header component for AI Workspace
@@ -52,9 +66,9 @@ const WorkspaceHeader = () => {
   const { getSelectedStoreId } = useStoreSelection();
   const [plugins, setPlugins] = useState([]);
   const [loadingPlugins, setLoadingPlugins] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [publishSuccess, setPublishSuccess] = useState(false);
   const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(false);
+  const [draftConfig, setDraftConfig] = useState(null);
+  const [publishPopoverOpen, setPublishPopoverOpen] = useState(false);
 
   const storeId = getSelectedStoreId();
 
@@ -67,6 +81,24 @@ const WorkspaceHeader = () => {
   useEffect(() => {
     checkUnpublishedChanges();
   }, [storeId, editorMode]);
+
+  // Load draft config for selected page type
+  useEffect(() => {
+    loadDraftConfig();
+  }, [storeId, selectedPageType]);
+
+  const loadDraftConfig = async () => {
+    if (!storeId || !selectedPageType) return;
+
+    try {
+      const response = await slotConfigurationService.getDraftConfiguration(storeId, selectedPageType);
+      if (response?.data) {
+        setDraftConfig(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load draft config:', error);
+    }
+  };
 
   const checkUnpublishedChanges = async () => {
     if (!storeId) return;
@@ -107,52 +139,17 @@ const WorkspaceHeader = () => {
     }
   };
 
-  // Publish all draft configurations to production
-  const handlePublish = async () => {
-    if (!storeId || isPublishing) return;
+  // Handle publish complete - refresh state
+  const handlePublished = () => {
+    setHasUnpublishedChanges(false);
+    loadDraftConfig();
+    checkUnpublishedChanges();
+  };
 
-    setIsPublishing(true);
-    setPublishSuccess(false);
-
-    try {
-      // Get all page types that can be published
-      const pageTypes = Object.values(PAGE_TYPES);
-      const publishPromises = [];
-
-      for (const pageType of pageTypes) {
-        try {
-          // First get the draft configuration to get its ID
-          const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, pageType);
-
-          if (draftResponse?.data?.id) {
-            // Publish the draft directly to production
-            publishPromises.push(
-              slotConfigurationService.publishDraft(draftResponse.data.id, storeId)
-                .catch(err => {
-                  console.warn(`Failed to publish ${pageType}:`, err.message);
-                  return null;
-                })
-            );
-          }
-        } catch (err) {
-          console.warn(`No draft found for ${pageType}:`, err.message);
-        }
-      }
-
-      // Wait for all publish operations
-      await Promise.all(publishPromises);
-
-      setPublishSuccess(true);
-      setHasUnpublishedChanges(false);
-
-      // Clear success indicator after 3 seconds
-      setTimeout(() => setPublishSuccess(false), 3000);
-
-    } catch (error) {
-      console.error('Failed to publish configurations:', error);
-    } finally {
-      setIsPublishing(false);
-    }
+  // Handle revert complete - refresh state
+  const handleReverted = () => {
+    loadDraftConfig();
+    checkUnpublishedChanges();
   };
 
   // Get the current page info
@@ -357,31 +354,36 @@ const WorkspaceHeader = () => {
           </DropdownMenu>
         )}
 
-        {/* Publish Button */}
+        {/* Publish Button with Panel */}
         {!showPluginEditor && (
-          <Button
-            variant={publishSuccess || hasUnpublishedChanges ? 'default' : 'outline'}
-            size="sm"
-            className={
-              publishSuccess
-                ? 'h-8 gap-1.5 bg-green-600 hover:bg-green-700'
-                : hasUnpublishedChanges
-                  ? 'h-8 gap-1.5 bg-orange-500 hover:bg-orange-600'
-                  : 'h-8 gap-1.5'
-            }
-            onClick={handlePublish}
-            disabled={isPublishing}
-            title={hasUnpublishedChanges ? 'You have unpublished changes' : 'Publish all draft changes to production'}
-          >
-            {isPublishing ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : publishSuccess ? (
-              <CheckCircle2 className="h-3.5 w-3.5" />
-            ) : (
-              <Rocket className="h-3.5 w-3.5" />
-            )}
-            <span>{publishSuccess ? 'Published!' : hasUnpublishedChanges ? 'Publish Changes' : 'Publish'}</span>
-          </Button>
+          <Popover open={publishPopoverOpen} onOpenChange={setPublishPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant={hasUnpublishedChanges ? 'default' : 'outline'}
+                size="sm"
+                className={
+                  hasUnpublishedChanges
+                    ? 'h-8 gap-1.5 bg-green-600 hover:bg-green-700'
+                    : 'h-8 gap-1.5'
+                }
+                title={hasUnpublishedChanges ? 'Publish draft changes to production' : 'No unpublished changes'}
+              >
+                <Rocket className="h-3.5 w-3.5" />
+                <span>Publish</span>
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-96 p-0">
+              <PublishPanel
+                draftConfig={draftConfig}
+                storeId={storeId}
+                pageType={selectedPageType}
+                onPublished={handlePublished}
+                onReverted={handleReverted}
+                hasUnsavedChanges={hasUnpublishedChanges}
+              />
+            </PopoverContent>
+          </Popover>
         )}
       </div>
     </header>
