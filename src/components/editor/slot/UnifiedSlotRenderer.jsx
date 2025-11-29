@@ -756,6 +756,11 @@ export function UnifiedSlotRenderer({
   const renderBasicSlot = (slot) => {
     const { id, type, content, className, styles, metadata } = slot;
 
+    // Debug: Log slot processing
+    if (id === 'add_to_cart_button' || id === 'wishlist_button') {
+      console.log('🟡 renderBasicSlot:', id, 'type:', type);
+    }
+
     // Process variables in content and className
     let processedContent = processVariables(content, variableContext);
 
@@ -1003,6 +1008,8 @@ export function UnifiedSlotRenderer({
 
     // Button Element
     if (type === 'button') {
+      console.log('🔵 Processing button slot:', id, 'context:', context);
+
       // Handle out-of-stock state for add_to_cart_button
       const isAddToCartButton = id === 'add_to_cart_button' || id === 'product_add_to_cart' || id === 'product_card_add_to_cart';
       const isOutOfStock = isAddToCartButton && (productData?.in_stock === false || productData?.canAddToCart === false);
