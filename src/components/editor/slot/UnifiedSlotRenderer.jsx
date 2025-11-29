@@ -862,18 +862,22 @@ export function UnifiedSlotRenderer({
 
       // In editor mode, add click handler for element selection
       if (context === 'editor') {
+        const handleEditorClick = (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          console.log('🖱️ HTML slot clicked:', id, 'onElementClick:', !!onElementClick, 'currentDragInfo:', currentDragInfo);
+          if (!currentDragInfo && onElementClick) {
+            onElementClick(id, e.currentTarget);
+          }
+        };
+
         const htmlElement = (
           <div
             className={processedClassName}
             style={{ ...processedStyles, cursor: 'pointer', position: 'relative' }}
             data-slot-id={id}
             data-editable="true"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!currentDragInfo && onElementClick) {
-                onElementClick(id, e.currentTarget);
-              }
-            }}
+            onClick={handleEditorClick}
           >
             {/* Inner content with pointer-events: none so clicks pass through to wrapper */}
             {/* This is needed because disabled buttons block click events */}
