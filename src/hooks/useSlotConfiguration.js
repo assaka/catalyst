@@ -30,6 +30,11 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
         (new URLSearchParams(window.location.search).get('preview') === 'draft' ||
          new URLSearchParams(window.location.search).get('workspace') === 'true');
 
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+        console.log('[useLayoutConfig]', { pageType, isPreviewDraftMode, shouldFetch, url: window.location.href });
+    }
+
     const loadLayoutConfig = useCallback(async () => {
         if (!store?.id) {
             return;
@@ -46,6 +51,9 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
 
             // In draft preview mode, load draft configuration instead of published
             if (isPreviewDraftMode) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('[useLayoutConfig] Loading DRAFT config for:', pageType);
+                }
                 response = await slotConfigurationService.getDraftConfiguration(store.id, pageType);
                 // Transform draft response to match published response structure
                 if (response.success && response.data?.configuration) {
@@ -58,6 +66,9 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
                     };
                 }
             } else {
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('[useLayoutConfig] Loading PUBLISHED config for:', pageType);
+                }
                 // Load published configuration using the new versioning API
                 response = await slotConfigurationService.getPublishedConfiguration(store.id, pageType);
             }

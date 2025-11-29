@@ -392,9 +392,15 @@ export const useCategory = (slug, storeId, options = {}) => {
  */
 export const useSlotConfiguration = (storeId, pageType, options = {}) => {
   // Check if we're in draft preview mode (AI Workspace preview)
+  // Check both window.location and URL params for maximum compatibility
   const isPreviewDraftMode = typeof window !== 'undefined' &&
     (new URLSearchParams(window.location.search).get('preview') === 'draft' ||
      new URLSearchParams(window.location.search).get('workspace') === 'true');
+
+  // Debug logging in development
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+    console.log('[useSlotConfiguration]', { pageType, isPreviewDraftMode, url: window.location.href });
+  }
 
   return useQuery({
     // Use different query key for draft mode to avoid cache conflicts
@@ -409,6 +415,10 @@ export const useSlotConfiguration = (storeId, pageType, options = {}) => {
         ? await slotConfigurationService.getDraftConfiguration(storeId, pageType)
         : await slotConfigurationService.getPublishedConfiguration(storeId, pageType);
 
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[useSlotConfiguration] Response:', { pageType, isPreviewDraftMode, success: response.success });
+      }
+
       if (response.success && response.data &&
           response.data.configuration &&
           response.data.configuration.slots &&
@@ -419,9 +429,10 @@ export const useSlotConfiguration = (storeId, pageType, options = {}) => {
       return null; // No config found
     },
     enabled: !!(storeId && pageType),
-    // In draft preview mode, use shorter cache to pick up changes faster
-    staleTime: isPreviewDraftMode ? 30000 : 300000, // 30s for draft, 5 min for published
-    gcTime: isPreviewDraftMode ? 60000 : 600000, // 1 min for draft, 10 min for published
+    // In draft preview mode, always fetch fresh to pick up editor changes
+    staleTime: isPreviewDraftMode ? 0 : 300000, // Always stale in draft mode, 5 min for published
+    gcTime: isPreviewDraftMode ? 30000 : 600000, // 30s cache in draft mode, 10 min for published
+    refetchOnMount: isPreviewDraftMode ? 'always' : true, // Always refetch in draft mode
     retry: 2,
     ...options
   });
