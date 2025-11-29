@@ -19,14 +19,11 @@ export default function Hero() {
         "you can imagine",
         "that converts",
         "in any language",
-        "with AI plugins"
-    ];
-
-    const sampleStores = [
-        { image: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=500&fit=crop&q=80", title: "Wireframe Layout" },
-        { image: "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=400&h=500&fit=crop&q=80", title: "UI Sketch" },
-        { image: "https://images.unsplash.com/photo-1586717791821-3f44a5638d0f?w=400&h=500&fit=crop&q=80", title: "Grid Structure" },
-        { image: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=400&h=500&fit=crop&q=80", title: "Component Map" },
+        "with AI plugins",
+        "in minutes",
+        "without coding",
+        "that stands out",
+        "your customers love"
     ];
 
     useEffect(() => {
@@ -55,40 +52,6 @@ export default function Hero() {
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-50 blur-3xl opacity-60" />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-50 blur-3xl opacity-60" />
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-            </div>
-
-            {/* Left side floating images */}
-            <div className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 xl:-translate-x-0">
-                <motion.div
-                    initial={{ opacity: 0, x: -50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
-                    className="relative w-64 h-80"
-                >
-                    <div className="absolute top-0 left-0 w-56 h-72 bg-white rounded-2xl shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden z-10 transform -rotate-3 hover:rotate-0 transition-transform duration-500">
-                        <img src={sampleStores[0].image} alt={sampleStores[0].title} className="w-full h-full object-cover opacity-90 hover:opacity-100 hover:scale-105 transition-all duration-700" />
-                    </div>
-                    <div className="absolute bottom-0 right-0 w-48 h-64 bg-white rounded-2xl shadow-xl shadow-slate-200 border border-slate-100 overflow-hidden transform translate-y-12 translate-x-8 hover:-translate-y-2 transition-transform duration-500">
-                        <img src={sampleStores[1].image} alt={sampleStores[1].title} className="w-full h-full object-cover opacity-90 hover:opacity-100" />
-                    </div>
-                </motion.div>
-            </div>
-
-            {/* Right side floating images */}
-            <div className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 xl:translate-x-0">
-                <motion.div
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
-                    className="relative w-64 h-80"
-                >
-                    <div className="absolute top-0 right-0 w-56 h-72 bg-white rounded-2xl shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden z-10 transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                        <img src={sampleStores[2].image} alt={sampleStores[2].title} className="w-full h-full object-cover opacity-90 hover:opacity-100 hover:scale-105 transition-all duration-700" />
-                    </div>
-                    <div className="absolute bottom-0 left-0 w-48 h-64 bg-white rounded-2xl shadow-xl shadow-slate-200 border border-slate-100 overflow-hidden transform translate-y-12 -translate-x-8 hover:-translate-y-2 transition-transform duration-500">
-                        <img src={sampleStores[3].image} alt={sampleStores[3].title} className="w-full h-full object-cover opacity-90 hover:opacity-100" />
-                    </div>
-                </motion.div>
             </div>
 
             {/* Content */}
