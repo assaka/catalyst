@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GrowingTree } from '@/components/animations';
 
 export default function Hero() {
     const [prompt, setPrompt] = useState('');
@@ -66,7 +67,9 @@ export default function Hero() {
             </div>
 
             {/* Content */}
-            <div className="relative z-10 max-w-3xl mx-auto px-6 py-12 text-center">
+            <div className="relative z-10 w-full max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                {/* Left side - Text content */}
+                <div className="text-center lg:text-left">
                 <motion.h1
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -151,7 +154,7 @@ export default function Hero() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.4 }}
-                    className="flex flex-wrap justify-center gap-2"
+                    className="flex flex-wrap justify-center lg:justify-start gap-2"
                 >
                     {examplePrompts.slice(0, 3).map((example, i) => (
                         <button
@@ -163,6 +166,23 @@ export default function Hero() {
                             {example}
                         </button>
                     ))}
+                </motion.div>
+                </div>
+
+                {/* Right side - Growing Tree Animation */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.8, delay: 0.3 }}
+                    className="hidden lg:flex justify-center items-center"
+                >
+                    <GrowingTree
+                        className="w-full max-w-lg"
+                        duration={5000}
+                        leafColor="#4f46e5"
+                        trunkColor="#64748b"
+                        groundColor="#475569"
+                    />
                 </motion.div>
             </div>
         </section>
