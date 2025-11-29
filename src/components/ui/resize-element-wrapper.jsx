@@ -632,7 +632,9 @@ const ResizeWrapper = ({
         if (children.props.onMouseLeave) {
           children.props.onMouseLeave(e);
         }
-      }
+      },
+      // Preserve onClick handler for editor element selection
+      onClick: children.props.onClick
       // Note: Don't override children or dangerouslySetInnerHTML - let them be handled by the original element
     });
 
