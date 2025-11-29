@@ -634,8 +634,10 @@ const ResizeWrapper = ({
         }
       },
       // Preserve onClick handler for editor element selection
-      onClick: children.props.onClick
-      // Note: Don't override children or dangerouslySetInnerHTML - let them be handled by the original element
+      onClick: children.props.onClick,
+      // Preserve data attributes for editor
+      'data-slot-id': children.props['data-slot-id'],
+      'data-editable': children.props['data-editable']
     });
 
     return (
