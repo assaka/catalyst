@@ -865,8 +865,7 @@ export function UnifiedSlotRenderer({
         const htmlElement = (
           <div
             className={processedClassName}
-            style={{ ...processedStyles, cursor: 'pointer' }}
-            dangerouslySetInnerHTML={{ __html: processedContent }}
+            style={{ ...processedStyles, cursor: 'pointer', position: 'relative' }}
             data-slot-id={id}
             data-editable="true"
             onClick={(e) => {
@@ -875,7 +874,14 @@ export function UnifiedSlotRenderer({
                 onElementClick(id, e.currentTarget);
               }
             }}
-          />
+          >
+            {/* Inner content with pointer-events: none so clicks pass through to wrapper */}
+            {/* This is needed because disabled buttons block click events */}
+            <div
+              style={{ pointerEvents: 'none' }}
+              dangerouslySetInnerHTML={{ __html: processedContent }}
+            />
+          </div>
         );
 
         if (!isAbsolutePositioned && !isGalleryContainer) {
