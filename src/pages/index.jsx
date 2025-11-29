@@ -74,6 +74,9 @@ export { default as CartSlotsEditor } from './editor/CartSlotsEditor';
 export { default as CategorySlotsEditor } from './editor/CategorySlotsEditor';
 export { default as ProductSlotsEditor } from './editor/ProductSlotsEditor';
 
+// AI Workspace (Unified Editor + AI)
+export { default as AIWorkspace } from './ai-workspace/AIWorkspace';
+
 // Storefront Pages
 export { default as Homepage } from './storefront/Homepage';
 export { default as Category } from './storefront/Category';

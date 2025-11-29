@@ -528,6 +528,9 @@ function App() {
           <Route path="/editor/category" element={<PageWrapper Component={Pages.CategorySlotsEditor} pageName="CategorySlotsEditor" />} />
           <Route path="/editor/cart" element={<PageWrapper Component={Pages.CartSlotsEditor} pageName="CartSlotsEditor" />} />
 
+          {/* AI Workspace - Unified Editor + AI */}
+          <Route path="/ai-workspace" element={<PageWrapper Component={Pages.AIWorkspace} pageName="AIWorkspace" />} />
+
           {/* Custom Domain Routes (when accessed via custom domain like www.myshop.com) */}
           {/* These routes match when NOT on platform domains (vercel.app, localhost, etc.) */}
           {!window.location.hostname.includes('vercel.app') &&
