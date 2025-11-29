@@ -240,13 +240,42 @@ const UnifiedSlotsEditor = ({
     }
   );
 
-  // Handle element selection using generic factory
+  // Handle element selection using generic factory (kept for backward compatibility)
   const handleElementClick = createElementClickHandler(
     isResizing,
     lastResizeEndTime,
     setSelectedElement,
     setIsSidebarVisible
   );
+
+  // Simple event delegation handler - captures all clicks on [data-slot-id] elements
+  const handleContainerClick = useCallback((e) => {
+    // Don't handle if in preview mode or resizing
+    if (showPreview || isResizing) return;
+
+    // Check if resize just ended (debounce)
+    const timeSinceResize = Date.now() - lastResizeEndTime.current;
+    if (timeSinceResize < 200) return;
+
+    // Find the closest element with data-slot-id
+    const slotElement = e.target.closest('[data-slot-id]');
+    if (!slotElement) return;
+
+    // Ignore clicks on resize handles
+    if (e.target.closest('.resize-handle') || e.target.closest('[class*="resize"]')) return;
+
+    const slotId = slotElement.getAttribute('data-slot-id');
+    if (!slotId) return;
+
+    // Prevent selecting container slots when clicking on child elements
+    // Only select if this is the innermost slot element
+    const innerSlot = e.target.closest('[data-slot-id]');
+    if (innerSlot !== slotElement) return;
+
+    e.stopPropagation();
+    setSelectedElement(slotElement);
+    setIsSidebarVisible(true);
+  }, [showPreview, isResizing, lastResizeEndTime]);
 
   // Create handler factory with page-specific dependencies
   const handlerFactory = createHandlerFactory(setLayoutConfig, saveConfiguration);
@@ -438,8 +467,11 @@ const UnifiedSlotsEditor = ({
                 )
               )}
 
-              {/* Main Grid Layout */}
-              <div className="grid grid-cols-12 gap-2 auto-rows-min">
+              {/* Main Grid Layout - Event delegation for element selection */}
+              <div
+                className="grid grid-cols-12 gap-2 auto-rows-min"
+                onClick={handleContainerClick}
+              >
                 {layoutConfig && layoutConfig.slots && Object.keys(layoutConfig.slots).length > 0 ? (
                   <UnifiedSlotRenderer
                     slots={layoutConfig.slots}

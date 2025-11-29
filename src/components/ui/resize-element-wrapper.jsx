@@ -152,14 +152,6 @@ const ResizeWrapper = ({
   // Check element types
   const isButton = isButtonElement(children);
 
-  // Debug: Log every element that goes through ResizeWrapper
-  console.log('🎯 ResizeWrapper received:', {
-    childType: children?.type,
-    slotId: children?.props?.['data-slot-id'],
-    isButton,
-    hasOnClick: !!children?.props?.onClick
-  });
-
   // Detect text elements: span, h1-h6, p, or has text/name/price/description in slot ID
   const isTextElement = ['span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'].includes(children?.type) ||
                         children?.props?.['data-slot-id']?.match(/(text|name|price|description|title|heading)/);
@@ -649,27 +641,13 @@ const ResizeWrapper = ({
       'data-editable': children.props['data-editable']
     });
 
-    // Debug: log what props we have
-    console.log('🔧 ResizeWrapper button props:', {
-      slotId: children.props['data-slot-id'],
-      hasOnClick: !!children.props.onClick,
-      type: children.type
-    });
-
+    // Simple wrapper - clicks bubble up for event delegation
     return (
       <div
         className={cn("relative w-full", isHovered && "ring-2 ring-blue-300")}
         style={wrapperStyle}
         data-slot-id={children.props['data-slot-id']}
         data-editable={children.props['data-editable']}
-        onClick={(e) => {
-          console.log('🔧 ResizeWrapper wrapper clicked, slotId:', children.props['data-slot-id']);
-          e.stopPropagation();
-          // Also handle clicks on wrapper area (not just button)
-          if (children.props.onClick) {
-            children.props.onClick(e);
-          }
-        }}
         onMouseEnter={() => !disabled && setIsHovered(true)}
         onMouseLeave={() => !disabled && setIsHovered(false)}
       >

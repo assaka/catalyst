@@ -756,11 +756,6 @@ export function UnifiedSlotRenderer({
   const renderBasicSlot = (slot) => {
     const { id, type, content, className, styles, metadata } = slot;
 
-    // Debug: Log slot processing
-    if (id === 'add_to_cart_button' || id === 'wishlist_button') {
-      console.log('🟡 renderBasicSlot:', id, 'type:', type);
-    }
-
     // Process variables in content and className
     let processedContent = processVariables(content, variableContext);
 
@@ -865,43 +860,16 @@ export function UnifiedSlotRenderer({
       // Don't wrap gallery container to prevent width constraints
       const isGalleryContainer = id === 'product_gallery_container';
 
-      // In editor mode, add click handler for element selection
+      // In editor mode - simple approach with data-slot-id for event delegation
       if (context === 'editor') {
-        const handleEditorClick = (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          // Match button type behavior - call onElementClick directly
-          if (onElementClick) {
-            onElementClick(id, e.currentTarget.closest('[data-slot-id]') || e.currentTarget);
-          }
-        };
-
         const htmlElement = (
           <div
             className={processedClassName}
-            style={{ ...processedStyles, cursor: 'pointer', position: 'relative' }}
+            style={{ ...processedStyles, cursor: 'pointer' }}
             data-slot-id={id}
             data-editable="true"
-          >
-            {/* Inner content with pointer-events: none so clicks pass through */}
-            <div
-              style={{ pointerEvents: 'none' }}
-              dangerouslySetInnerHTML={{ __html: processedContent }}
-            />
-            {/* Invisible click overlay to capture all clicks */}
-            <div
-              onClick={handleEditorClick}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                cursor: 'pointer',
-                zIndex: 10
-              }}
-            />
-          </div>
+            dangerouslySetInnerHTML={{ __html: processedContent }}
+          />
         );
 
         if (!isAbsolutePositioned && !isGalleryContainer) {
@@ -947,6 +915,7 @@ export function UnifiedSlotRenderer({
           return null;
         }
 
+        // Simple approach - just add data-slot-id for event delegation
         const textElement = React.createElement(
           HtmlTag,
           {
@@ -956,12 +925,6 @@ export function UnifiedSlotRenderer({
               cursor: 'pointer',
               display: 'inline-block',
               width: shouldUseStoredWidth ? storedWidth : 'fit-content'
-            },
-            onClick: (e) => {
-              e.stopPropagation();
-              if (!currentDragInfo && onElementClick) {
-                onElementClick(id, e.currentTarget);
-              }
             },
             'data-slot-id': id,
             'data-editable': 'true',
@@ -1008,7 +971,6 @@ export function UnifiedSlotRenderer({
 
     // Button Element
     if (type === 'button') {
-      console.log('🔵 Processing button slot:', id, 'context:', context);
 
       // Handle out-of-stock state for add_to_cart_button
       const isAddToCartButton = id === 'add_to_cart_button' || id === 'product_add_to_cart' || id === 'product_card_add_to_cart';
@@ -1133,20 +1095,13 @@ export function UnifiedSlotRenderer({
           </Button>
         );
       } else {
-        // Editor: Visual preview only - DON'T disable in editor, just show visual state
+        // Editor: Visual preview only - simple approach with data-slot-id for event delegation
         const buttonElement = (
           <button
             className={buttonClassName}
-            style={buttonStyles}
+            style={{ ...buttonStyles, cursor: 'pointer' }}
             data-slot-id={id}
             data-editable="true"
-            onClick={(e) => {
-              e.stopPropagation();
-              console.log('🔘 Button clicked:', id);
-              if (onElementClick) {
-                onElementClick(id, e.currentTarget);
-              }
-            }}
           >
             {isHtmlContent ? (
               <span dangerouslySetInnerHTML={{ __html: buttonContent }} />
