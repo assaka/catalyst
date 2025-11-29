@@ -23,7 +23,19 @@ export default function Hero() {
         "in minutes",
         "without coding",
         "that stands out",
-        "lightning fast"
+        "lightning fast",
+        "that scales",
+        "with drag & drop",
+        "fully responsive",
+        "SEO optimized",
+        "mobile first",
+        "pixel perfect",
+        "with analytics",
+        "secure & reliable",
+        "globally hosted",
+        "24/7 support",
+        "with one click",
+        "your way"
     ];
 
     useEffect(() => {
