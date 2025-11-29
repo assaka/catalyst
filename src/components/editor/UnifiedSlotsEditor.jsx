@@ -455,6 +455,7 @@ const UnifiedSlotsEditor = ({
           <ResponsiveIframe
             viewport={currentViewport}
             className="bg-white"
+            onContentClick={handleContainerClick}
           >
             <div className="px-4 sm:px-6 lg:px-8 pb-12">
               {/* Flash Messages Area */}
@@ -467,11 +468,8 @@ const UnifiedSlotsEditor = ({
                 )
               )}
 
-              {/* Main Grid Layout - Event delegation for element selection */}
-              <div
-                className="grid grid-cols-12 gap-2 auto-rows-min"
-                onClick={handleContainerClick}
-              >
+              {/* Main Grid Layout */}
+              <div className="grid grid-cols-12 gap-2 auto-rows-min">
                 {layoutConfig && layoutConfig.slots && Object.keys(layoutConfig.slots).length > 0 ? (
                   <UnifiedSlotRenderer
                     slots={layoutConfig.slots}

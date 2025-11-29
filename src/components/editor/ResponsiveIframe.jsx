@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
  * ResponsiveIframe - Renders content in an iframe with viewport constraints
  * This enables true responsive behavior without transforming classes
  */
-export function ResponsiveIframe({ viewport = 'desktop', children, className = '' }) {
+export function ResponsiveIframe({ viewport = 'desktop', children, className = '', onContentClick }) {
   const iframeRef = useRef(null);
   const [iframeDocument, setIframeDocument] = useState(null);
   const isInitialized = useRef(false);
@@ -106,7 +106,9 @@ export function ResponsiveIframe({ viewport = 'desktop', children, className = '
         title="Responsive Preview"
       />
       {iframeDocument && createPortal(
-        children,
+        <div onClick={onContentClick} style={{ minHeight: '100%' }}>
+          {children}
+        </div>,
         iframeDocument.getElementById('root')
       )}
     </div>
