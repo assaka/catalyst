@@ -20,10 +20,13 @@ import {
   Plug,
   ChevronDown,
   Package,
-  Plus
+  Plus,
+  Rocket,
+  CheckCircle2
 } from 'lucide-react';
 import { slotEnabledFiles } from '@/components/editor/slot/slotEnabledFiles';
 import apiClient from '@/api/client';
+import slotConfigurationService from '@/services/slotConfigurationService';
 
 /**
  * WorkspaceHeader - Header component for AI Workspace
@@ -49,6 +52,10 @@ const WorkspaceHeader = () => {
   const { getSelectedStoreId } = useStoreSelection();
   const [plugins, setPlugins] = useState([]);
   const [loadingPlugins, setLoadingPlugins] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState(false);
+
+  const storeId = getSelectedStoreId();
 
   // Load user's plugins
   useEffect(() => {
@@ -58,7 +65,6 @@ const WorkspaceHeader = () => {
   const loadPlugins = async () => {
     try {
       setLoadingPlugins(true);
-      const storeId = getSelectedStoreId();
       const response = await apiClient.get(`plugins/store/${storeId}`);
       if (response.success && response.plugins) {
         setPlugins(response.plugins);
@@ -67,6 +73,53 @@ const WorkspaceHeader = () => {
       console.error('Failed to load plugins:', error);
     } finally {
       setLoadingPlugins(false);
+    }
+  };
+
+  // Publish all draft configurations to production
+  const handlePublish = async () => {
+    if (!storeId || isPublishing) return;
+
+    setIsPublishing(true);
+    setPublishSuccess(false);
+
+    try {
+      // Get all page types that can be published
+      const pageTypes = Object.values(PAGE_TYPES);
+      const publishPromises = [];
+
+      for (const pageType of pageTypes) {
+        try {
+          // First get the draft configuration to get its ID
+          const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, pageType);
+
+          if (draftResponse?.data?.id) {
+            // Publish the draft directly to production
+            publishPromises.push(
+              slotConfigurationService.publishDraft(draftResponse.data.id, storeId)
+                .catch(err => {
+                  console.warn(`Failed to publish ${pageType}:`, err.message);
+                  return null;
+                })
+            );
+          }
+        } catch (err) {
+          console.warn(`No draft found for ${pageType}:`, err.message);
+        }
+      }
+
+      // Wait for all publish operations
+      await Promise.all(publishPromises);
+
+      setPublishSuccess(true);
+
+      // Clear success indicator after 3 seconds
+      setTimeout(() => setPublishSuccess(false), 3000);
+
+    } catch (error) {
+      console.error('Failed to publish configurations:', error);
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -272,20 +325,27 @@ const WorkspaceHeader = () => {
           </DropdownMenu>
         )}
 
-        {/* Save indicator */}
-        {hasUnsavedChanges && !showPluginEditor && (
+        {/* Publish Button */}
+        {!showPluginEditor && (
           <Button
-            variant="outline"
+            variant={publishSuccess ? 'default' : 'outline'}
             size="sm"
-            className="h-8 gap-1.5"
-            disabled={isLoading}
+            className={publishSuccess
+              ? 'h-8 gap-1.5 bg-green-600 hover:bg-green-700'
+              : 'h-8 gap-1.5'
+            }
+            onClick={handlePublish}
+            disabled={isPublishing}
+            title="Publish all draft changes to production"
           >
-            {isLoading ? (
+            {isPublishing ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : publishSuccess ? (
+              <CheckCircle2 className="h-3.5 w-3.5" />
             ) : (
-              <Save className="h-3.5 w-3.5" />
+              <Rocket className="h-3.5 w-3.5" />
             )}
-            <span>Save</span>
+            <span>{publishSuccess ? 'Published!' : 'Publish'}</span>
           </Button>
         )}
       </div>
