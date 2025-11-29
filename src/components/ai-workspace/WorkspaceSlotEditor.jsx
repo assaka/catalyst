@@ -279,7 +279,7 @@ const getSlotIcon = (slot) => {
 const isContainerType = (type) => ['container', 'grid', 'flex'].includes(type);
 
 /**
- * EditableSlot - Individual slot with drag handle, resize, and nested children
+ * EditableSlot - Compact visual slot editor focused on layout preview
  */
 const EditableSlot = ({
   slot,
@@ -326,8 +326,6 @@ const EditableSlot = ({
 
   // Get colSpan value using the parser (pass slot type for smart defaults)
   const colSpan = parseColSpan(slot.colSpan, slot.type);
-  const Icon = getSlotIcon(slot);
-  const displayName = getSlotDisplayName(slot);
 
   // Get demo context for variable processing
   const demoContext = useMemo(() => getDemoContext(), []);
@@ -382,26 +380,11 @@ const EditableSlot = ({
     }
   }, [setNodeRef, setDroppableRef, isContainer]);
 
-  // Get position values (for display, not CSS positioning)
-  const posCol = slot.position?.col || 1;
-  const posRow = slot.position?.row ?? 0;
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    // Just use colSpan for width - let grid flow handle positioning
-    // Slots are already sorted by row, so natural order works
     gridColumn: `span ${resizePreview || colSpan}`,
     opacity: isDragging ? 0.5 : 1
-  };
-
-  // Type-specific background colors
-  const getBgColor = () => {
-    if (isContainer) return 'bg-blue-50 dark:bg-blue-900/20';
-    if (slot.type === 'component') return 'bg-purple-50 dark:bg-purple-900/20';
-    if (slot.type === 'text' || slot.type === 'html') return 'bg-green-50 dark:bg-green-900/20';
-    if (slot.type === 'button' || slot.type === 'link') return 'bg-orange-50 dark:bg-orange-900/20';
-    return 'bg-gray-50 dark:bg-gray-800';
   };
 
   return (
@@ -415,14 +398,13 @@ const EditableSlot = ({
       data-container={isContainer ? 'true' : undefined}
       data-level={level}
       className={cn(
-        'relative group rounded-lg border-2 transition-all',
-        'min-h-[48px]',
-        getBgColor(),
+        'relative group rounded border transition-all',
+        isContainer ? 'min-h-[40px] bg-gray-50/50 dark:bg-gray-800/50 border-dashed' : 'min-h-[24px] bg-white dark:bg-gray-900',
         isSelected
-          ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800'
-          : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600',
-        isDragging && 'z-50 shadow-xl',
-        isOver && 'border-green-500 ring-2 ring-green-200',
+          ? 'border-blue-500 ring-1 ring-blue-300 dark:ring-blue-700'
+          : 'border-gray-200 dark:border-gray-700 hover:border-blue-300',
+        isDragging && 'z-50 shadow-lg',
+        isOver && 'border-green-500 bg-green-50/50',
         dragOverContainerId === slot.id && 'border-green-500 bg-green-50 dark:bg-green-900/30'
       )}
       onClick={(e) => {
@@ -430,11 +412,22 @@ const EditableSlot = ({
         onSelect(slot.id);
       }}
     >
-      {/* Slot header with drag handle and info */}
+      {/* Hover controls - only visible on hover */}
       <div className={cn(
-        'flex items-center gap-1 px-2 py-1.5 border-b border-gray-200 dark:border-gray-700',
-        level > 0 && 'text-sm'
+        'absolute -top-2 left-1 z-10 flex items-center gap-0.5 bg-white dark:bg-gray-800 rounded shadow-sm border border-gray-200 dark:border-gray-600 px-0.5',
+        'opacity-0 group-hover:opacity-100 transition-opacity',
+        isSelected && 'opacity-100'
       )}>
+        {/* Drag handle */}
+        <button
+          {...attributes}
+          {...listeners}
+          className="p-0.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-grab active:cursor-grabbing"
+          title="Drag"
+        >
+          <GripVertical className="h-3 w-3 text-gray-400" />
+        </button>
+
         {/* Expand/collapse for containers */}
         {isContainer && hasChildren && (
           <button
@@ -442,49 +435,18 @@ const EditableSlot = ({
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
-            className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+            className="p-0.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
           >
             {isExpanded ? (
-              <ChevronDown className="h-3 w-3 text-gray-500" />
+              <ChevronDown className="h-3 w-3 text-gray-400" />
             ) : (
-              <ChevronRight className="h-3 w-3 text-gray-500" />
+              <ChevronRight className="h-3 w-3 text-gray-400" />
             )}
           </button>
         )}
 
-        {/* Drag handle */}
-        <button
-          {...attributes}
-          {...listeners}
-          className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded cursor-grab active:cursor-grabbing"
-          title="Drag to reorder or into a container"
-        >
-          <GripVertical className="h-4 w-4 text-gray-400" />
-        </button>
-
-        {/* Slot icon and name */}
-        <Icon className="h-4 w-4 text-gray-500 shrink-0" />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate flex-1">
-          {displayName}
-        </span>
-
-        {/* Slot type badge */}
-        <span className={cn(
-          'text-xs px-1.5 py-0.5 rounded',
-          isContainer ? 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200' :
-          slot.type === 'component' ? 'bg-purple-100 text-purple-700 dark:bg-purple-800 dark:text-purple-200' :
-          'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-        )}>
-          {slot.type}
-        </span>
-
-        {/* Position and size indicator */}
-        <span className="text-xs text-gray-400 font-mono" title={`Position: col ${posCol}, row ${posRow}`}>
-          c{posCol}
-        </span>
-        <span className="text-xs text-blue-500 font-mono" title={`Width: ${resizePreview || colSpan} columns`}>
-          w{resizePreview || colSpan}
-        </span>
+        {/* Width indicator */}
+        <span className="text-[10px] text-gray-400 px-1">{resizePreview || colSpan}</span>
 
         {/* Delete button */}
         <button
@@ -492,81 +454,69 @@ const EditableSlot = ({
             e.stopPropagation();
             onDelete(slot.id);
           }}
-          className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-gray-400 hover:text-red-500"
-          title="Delete slot"
+          className="p-0.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-gray-400 hover:text-red-500"
+          title="Delete"
         >
           <Trash2 className="h-3 w-3" />
         </button>
       </div>
 
-      {/* Rendered content for non-container slots */}
+      {/* Rendered content - compact visual preview */}
       {!isContainer && (
-        <div className="border-b border-gray-200 dark:border-gray-700 px-3 py-2 bg-white/70 dark:bg-black/30">
+        <div className="p-1.5">
           {/* Component slots - render actual component preview */}
           {slot.type === 'component' && (
             <ComponentPreview slot={slot} demoContext={demoContext} />
           )}
 
-          {/* Button slots - show button preview */}
-          {slot.type === 'button' && processedContent && (
+          {/* Button slots - show styled button */}
+          {slot.type === 'button' && (
             <button
+              className={slot.className || "bg-blue-500 text-white px-4 py-2 rounded text-sm"}
+              style={{
+                backgroundColor: slot.styles?.backgroundColor || (slot.id.includes('cart') ? '#3B82F6' : undefined),
+                ...slot.styles
+              }}
+              dangerouslySetInnerHTML={{ __html: processedContent || 'Button' }}
+            />
+          )}
+
+          {/* Text/HTML slots - rendered with proper styling */}
+          {(slot.type === 'text' || slot.type === 'html') && (
+            <div
               className={cn(
-                "text-sm px-3 py-1.5 rounded pointer-events-none",
-                slot.className || "bg-blue-500 text-white"
+                "overflow-hidden",
+                slot.className
               )}
               style={slot.styles}
-              dangerouslySetInnerHTML={{ __html: processedContent }}
+              dangerouslySetInnerHTML={{ __html: processedContent || `<span class="text-gray-400 text-xs">${slot.id}</span>` }}
             />
           )}
 
-          {/* Text/HTML slots - rendered preview with processed variables */}
-          {(slot.type === 'text' || slot.type === 'html') && processedContent && (
-            <div
-              className="text-sm text-gray-800 dark:text-gray-200 overflow-hidden max-h-[120px] [&_*]:max-w-full"
-              dangerouslySetInnerHTML={{ __html: processedContent }}
-            />
-          )}
-
-          {/* Image slots */}
+          {/* Image slots - show actual demo image */}
           {slot.type === 'image' && (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Image className="h-4 w-4" />
-              <span>{processedContent || slot.content || 'Image'}</span>
-            </div>
+            <img
+              src={demoContext.product?.images?.[0] || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&h=200&fit=crop"}
+              alt="Product"
+              className={cn("w-full h-auto object-cover rounded", slot.className)}
+              style={{ maxHeight: '120px', ...slot.styles }}
+            />
           )}
-
-          {/* Show original template if different from processed */}
-          {slot.content && slot.content !== processedContent && slot.type !== 'component' && (
-            <details className="mt-2">
-              <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">View template</summary>
-              <pre className="mt-1 text-xs text-gray-600 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto max-h-[80px] overflow-y-auto whitespace-pre-wrap break-all">
-                {slot.content}
-              </pre>
-            </details>
-          )}
-        </div>
-      )}
-
-      {/* className display */}
-      {slot.className && (
-        <div className="px-3 py-1.5 text-xs bg-gray-100/50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
-          <span className="text-gray-400 dark:text-gray-500">class: </span>
-          <code className="text-blue-600 dark:text-blue-400 font-mono break-all">{slot.className}</code>
         </div>
       )}
 
       {/* Children for containers */}
       {isContainer && isExpanded && (
         <div className={cn(
-          'p-2',
-          hasChildren ? 'min-h-[40px]' : 'min-h-[60px]'
+          'p-1',
+          hasChildren ? 'min-h-[30px]' : 'min-h-[40px]'
         )}>
           {hasChildren ? (
             <SortableContext
               items={childSlots.map(s => s.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="grid grid-cols-12 gap-2" style={{ gridAutoRows: 'min-content' }}>
+              <div className="grid grid-cols-12 gap-1" style={{ gridAutoRows: 'min-content' }}>
                 {childSlots.map((childSlot) => (
                   <EditableSlot
                     key={childSlot.id}
@@ -586,36 +536,28 @@ const EditableSlot = ({
               </div>
             </SortableContext>
           ) : (
-            <div className="flex items-center justify-center h-12 text-gray-400 text-sm border-2 border-dashed border-gray-300 dark:border-gray-600 rounded">
-              Drop slots here
+            <div className="flex items-center justify-center h-8 text-gray-400 text-xs border border-dashed border-gray-300 dark:border-gray-600 rounded">
+              Drop here
             </div>
           )}
         </div>
       )}
 
-      {/* Resize handle (right edge) - for all slots */}
+      {/* Resize handle (right edge) */}
       <div
         onMouseDown={handleResizeStart}
         className={cn(
-          'absolute right-0 top-0 bottom-0 w-2 cursor-col-resize transition-colors',
-          'hover:bg-blue-500/30',
-          isResizing && 'bg-blue-500/50'
+          'absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize',
+          'opacity-0 group-hover:opacity-100 hover:bg-blue-500/50',
+          isResizing && 'opacity-100 bg-blue-500/50'
         )}
-        title="Drag to resize"
-      >
-        <div className={cn(
-          'absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full',
-          'bg-gray-300 dark:bg-gray-600 group-hover:bg-blue-500',
-          isResizing && 'bg-blue-500'
-        )} />
-      </div>
+        title="Resize"
+      />
 
-      {/* Resize preview overlay */}
+      {/* Resize preview */}
       {isResizing && resizePreview && (
-        <div className="fixed inset-0 z-40 pointer-events-none flex items-center justify-center">
-          <div className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg text-sm font-mono">
-            {resizePreview}/12 columns
-          </div>
+        <div className="absolute -top-6 right-0 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded">
+          {resizePreview}/12
         </div>
       )}
     </div>
@@ -851,15 +793,15 @@ const WorkspaceSlotEditor = ({
     <div
       ref={containerRef}
       className={cn(
-        'min-h-[400px] p-4 bg-gray-50 dark:bg-gray-900 rounded-lg relative',
+        'min-h-[300px] p-2 bg-white dark:bg-gray-900 rounded-lg relative border border-gray-200 dark:border-gray-700',
         className
       )}
       onClick={handleContainerClick}
     >
       {/* Grid overlay for visual reference */}
-      <div className="absolute inset-4 pointer-events-none grid grid-cols-12 gap-1 opacity-10">
+      <div className="absolute inset-2 pointer-events-none grid grid-cols-12 gap-1 opacity-5">
         {Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} className="h-full border-l border-dashed border-gray-400" />
+          <div key={i} className="h-full bg-gray-400" />
         ))}
       </div>
 
@@ -871,7 +813,7 @@ const WorkspaceSlotEditor = ({
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={allSlotIds} strategy={verticalListSortingStrategy}>
-          <div className="grid grid-cols-12 gap-4 relative pt-2" style={{ gridAutoRows: 'min-content' }}>
+          <div className="grid grid-cols-12 gap-1.5 relative pt-3" style={{ gridAutoRows: 'min-content' }}>
             {rootSlots.map((slot) => (
               <EditableSlot
                 key={slot.id}
@@ -894,16 +836,10 @@ const WorkspaceSlotEditor = ({
         {/* Drag overlay */}
         <DragOverlay>
           {activeSlot && (
-            <div className="rounded-lg border-2 border-blue-500 bg-white dark:bg-gray-800 shadow-2xl p-3 opacity-95">
-              <div className="flex items-center gap-2">
-                <ActiveIcon className="h-4 w-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {activeDisplayName}
-                </span>
-                <span className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
-                  {activeSlot.type}
-                </span>
-              </div>
+            <div className="rounded border border-blue-500 bg-white dark:bg-gray-800 shadow-lg p-2 opacity-95">
+              <span className="text-xs text-gray-600 dark:text-gray-300">
+                {activeDisplayName}
+              </span>
             </div>
           )}
         </DragOverlay>
@@ -911,10 +847,10 @@ const WorkspaceSlotEditor = ({
 
       {/* Empty state */}
       {rootSlots.length === 0 && (
-        <div className="flex items-center justify-center h-64 text-gray-400">
+        <div className="flex items-center justify-center h-40 text-gray-400">
           <div className="text-center">
-            <Box className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p>No slots yet. Add slots to start editing.</p>
+            <Box className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No slots yet</p>
           </div>
         </div>
       )}
