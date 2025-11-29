@@ -644,6 +644,14 @@ const ResizeWrapper = ({
       <div
         className={cn("relative w-full", isHovered && "ring-2 ring-blue-300")}
         style={wrapperStyle}
+        data-slot-id={children.props['data-slot-id']}
+        data-editable={children.props['data-editable']}
+        onClick={(e) => {
+          // Also handle clicks on wrapper area (not just button)
+          if (children.props.onClick) {
+            children.props.onClick(e);
+          }
+        }}
         onMouseEnter={() => !disabled && setIsHovered(true)}
         onMouseLeave={() => !disabled && setIsHovered(false)}
       >
