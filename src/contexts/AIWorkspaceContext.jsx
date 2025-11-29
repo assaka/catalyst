@@ -76,7 +76,8 @@ export const AIWorkspaceProvider = ({ children }) => {
   const [slotHandlers, setSlotHandlers] = useState(null);
 
   // Editor type toggle (legacy vs new stable editor)
-  const [useStableEditor, setUseStableEditor] = useState(true);
+  // Default to false to use the legacy editors with full component rendering
+  const [useStableEditor, setUseStableEditor] = useState(false);
 
   /**
    * Select a page type and update view mode accordingly
