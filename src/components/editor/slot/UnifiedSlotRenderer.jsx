@@ -1126,16 +1126,16 @@ export function UnifiedSlotRenderer({
           </Button>
         );
       } else {
-        // Editor: Visual preview only
+        // Editor: Visual preview only - DON'T disable in editor, just show visual state
         const buttonElement = (
           <button
             className={buttonClassName}
             style={buttonStyles}
             data-slot-id={id}
             data-editable="true"
-            disabled={isOutOfStock}
             onClick={(e) => {
               e.stopPropagation();
+              console.log('🔘 Button clicked:', id);
               if (onElementClick) {
                 onElementClick(id, e.currentTarget);
               }
