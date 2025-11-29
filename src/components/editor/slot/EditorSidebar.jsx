@@ -690,7 +690,17 @@ const EditorSidebar = ({
               }
             }
 
-            const finalStyles = { ...storedStyles, ...elementStyles };
+            // Filter out template variables from stored styles before merging
+            const cleanStoredStyles = {};
+            Object.entries(storedStyles).forEach(([key, value]) => {
+              if (typeof value === 'string' && value.includes('{{')) {
+                // Skip template variables - use computed style instead
+                return;
+              }
+              cleanStoredStyles[key] = value;
+            });
+
+            const finalStyles = { ...cleanStoredStyles, ...elementStyles };
 
             return finalStyles;
           } catch (error) {
@@ -2071,16 +2081,23 @@ const EditorSidebar = ({
                       type="color"
                       value={(() => {
                         const bgColor = elementProperties.styles.backgroundColor;
+                        // Skip template variables, use computed color if possible
+                        if (bgColor && bgColor.includes('{{')) return '#ffffff';
                         return bgColor && bgColor.startsWith('#') ? bgColor : '#ffffff';
                       })()}
                       onChange={(e) => handlePropertyChange('backgroundColor', e.target.value)}
                       className="w-8 h-7 rounded border border-gray-300"
                     />
                     <Input
-                      value={elementProperties.styles.backgroundColor || ''}
+                      value={(() => {
+                        const bgColor = elementProperties.styles.backgroundColor || '';
+                        // Show hex color, not template variables
+                        if (bgColor.includes('{{')) return '';
+                        return bgColor;
+                      })()}
                       onChange={(e) => handlePropertyChange('backgroundColor', e.target.value)}
                       className="text-xs h-7"
-                      placeholder={elementProperties.styles.backgroundColor || 'No background set'}
+                      placeholder="Enter hex color"
                     />
                   </div>
                 </div>
