@@ -105,23 +105,24 @@ const getSlotContent = (slot, demoContext) => {
 
 /**
  * Generate demo context for variable processing
+ * Uses the full demo data structure from generateDemoData
  */
 const getDemoContext = () => {
-  const demoData = generateDemoData('product', {});
+  const demoData = generateDemoData('product', {
+    currency_symbol: '$',
+    store_name: 'Demo Store',
+    theme: {
+      add_to_cart_button_color: '#3B82F6'
+    }
+  });
+
   return {
     product: demoData.product,
-    settings: {
-      currency_symbol: '$',
-      store_name: 'Demo Store'
-    },
-    category: {
-      name: 'Sample Category',
-      description: 'Category description'
-    },
-    cart: {
-      total: '$99.99',
-      items_count: 3
-    }
+    products: demoData.products || [],
+    category: demoData.category || { name: 'Sample Category' },
+    cart: demoData.cart || { total: '$99.99', items_count: 3 },
+    settings: demoData.settings,
+    productLabels: demoData.productLabels
   };
 };
 
@@ -408,17 +409,48 @@ const EditableSlot = ({
         </button>
       </div>
 
-      {/* Rendered HTML content for non-container slots */}
-      {!isContainer && processedContent && (
+      {/* Rendered content for non-container slots */}
+      {!isContainer && (
         <div className="border-b border-gray-200 dark:border-gray-700 px-3 py-2 bg-white/70 dark:bg-black/30">
-          {/* Rendered preview with processed variables */}
-          <div
-            className="text-sm text-gray-800 dark:text-gray-200 overflow-hidden max-h-[120px] [&_*]:max-w-full"
-            dangerouslySetInnerHTML={{ __html: processedContent }}
-          />
+          {/* Component slots - show component info */}
+          {slot.type === 'component' && (
+            <div className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400">
+              <Code className="h-4 w-4" />
+              <span className="font-mono">&lt;{slot.component || slot.metadata?.component || 'Component'} /&gt;</span>
+            </div>
+          )}
+
+          {/* Button slots - show button preview */}
+          {slot.type === 'button' && processedContent && (
+            <button
+              className={cn(
+                "text-sm px-3 py-1.5 rounded pointer-events-none",
+                slot.className || "bg-blue-500 text-white"
+              )}
+              style={slot.styles}
+              dangerouslySetInnerHTML={{ __html: processedContent }}
+            />
+          )}
+
+          {/* Text/HTML slots - rendered preview with processed variables */}
+          {(slot.type === 'text' || slot.type === 'html') && processedContent && (
+            <div
+              className="text-sm text-gray-800 dark:text-gray-200 overflow-hidden max-h-[120px] [&_*]:max-w-full"
+              dangerouslySetInnerHTML={{ __html: processedContent }}
+            />
+          )}
+
+          {/* Image slots */}
+          {slot.type === 'image' && (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Image className="h-4 w-4" />
+              <span>{processedContent || slot.content || 'Image'}</span>
+            </div>
+          )}
+
           {/* Show original template if different from processed */}
-          {slot.content && slot.content !== processedContent && (
-            <details className="mt-1">
+          {slot.content && slot.content !== processedContent && slot.type !== 'component' && (
+            <details className="mt-2">
               <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">View template</summary>
               <pre className="mt-1 text-xs text-gray-600 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto max-h-[80px] overflow-y-auto whitespace-pre-wrap break-all">
                 {slot.content}
