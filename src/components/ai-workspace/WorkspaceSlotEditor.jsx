@@ -306,6 +306,7 @@ const EditableSlot = ({
   const [isResizing, setIsResizing] = useState(false);
   const [resizePreview, setResizePreview] = useState(null);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
   const startXRef = useRef(0);
   const startColSpanRef = useRef(0);
 
@@ -380,10 +381,16 @@ const EditableSlot = ({
     }
   }, [setNodeRef, setDroppableRef, isContainer]);
 
+  // Get position for grid placement
+  const posCol = slot.position?.col || 1;
+  const posRow = slot.position?.row ?? 0;
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    gridColumn: `span ${resizePreview || colSpan}`,
+    // Use gridColumn for positioning: start at posCol, span colSpan columns
+    gridColumn: `${posCol} / span ${resizePreview || colSpan}`,
+    gridRow: posRow + 1, // CSS grid rows are 1-indexed
     opacity: isDragging ? 0.5 : 1
   };
 
@@ -398,7 +405,7 @@ const EditableSlot = ({
       data-container={isContainer ? 'true' : undefined}
       data-level={level}
       className={cn(
-        'relative group rounded border transition-all',
+        'relative rounded border transition-all',
         isContainer ? 'min-h-[40px] bg-gray-50/50 dark:bg-gray-800/50 border-dashed' : 'min-h-[24px] bg-white dark:bg-gray-900',
         isSelected
           ? 'border-blue-500 ring-1 ring-blue-300 dark:ring-blue-700'
@@ -411,12 +418,14 @@ const EditableSlot = ({
         e.stopPropagation();
         onSelect(slot.id);
       }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Hover controls - only visible on hover */}
+      {/* Hover controls - only visible on this specific slot's hover */}
       <div className={cn(
         'absolute -top-2 left-1 z-10 flex items-center gap-0.5 bg-white dark:bg-gray-800 rounded shadow-sm border border-gray-200 dark:border-gray-600 px-0.5',
-        'opacity-0 group-hover:opacity-100 transition-opacity',
-        isSelected && 'opacity-100'
+        'transition-opacity',
+        (isHovered || isSelected) ? 'opacity-100' : 'opacity-0 pointer-events-none'
       )}>
         {/* Drag handle */}
         <button
@@ -516,7 +525,7 @@ const EditableSlot = ({
               items={childSlots.map(s => s.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="grid grid-cols-12 gap-1" style={{ gridAutoRows: 'min-content' }}>
+              <div className="grid grid-cols-12 gap-1" style={{ gridAutoRows: 'minmax(min-content, auto)' }}>
                 {childSlots.map((childSlot) => (
                   <EditableSlot
                     key={childSlot.id}
@@ -543,13 +552,13 @@ const EditableSlot = ({
         </div>
       )}
 
-      {/* Resize handle (right edge) */}
+      {/* Resize handle (right edge) - only on hover */}
       <div
         onMouseDown={handleResizeStart}
         className={cn(
-          'absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize',
-          'opacity-0 group-hover:opacity-100 hover:bg-blue-500/50',
-          isResizing && 'opacity-100 bg-blue-500/50'
+          'absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize transition-opacity',
+          (isHovered || isSelected || isResizing) ? 'opacity-100 bg-blue-500/30 hover:bg-blue-500/50' : 'opacity-0',
+          isResizing && 'bg-blue-500/50'
         )}
         title="Resize"
       />
@@ -813,7 +822,7 @@ const WorkspaceSlotEditor = ({
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={allSlotIds} strategy={verticalListSortingStrategy}>
-          <div className="grid grid-cols-12 gap-1.5 relative pt-3" style={{ gridAutoRows: 'min-content' }}>
+          <div className="grid grid-cols-12 gap-1.5 relative pt-3" style={{ gridAutoRows: 'minmax(min-content, auto)' }}>
             {rootSlots.map((slot) => (
               <EditableSlot
                 key={slot.id}
