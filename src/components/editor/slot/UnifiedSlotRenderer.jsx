@@ -864,9 +864,10 @@ export function UnifiedSlotRenderer({
       if (context === 'editor') {
         const handleEditorClick = (e) => {
           e.stopPropagation();
-          // Match button type behavior - don't check currentDragInfo
+          e.preventDefault();
+          // Match button type behavior - call onElementClick directly
           if (onElementClick) {
-            onElementClick(id, e.currentTarget);
+            onElementClick(id, e.currentTarget.closest('[data-slot-id]') || e.currentTarget);
           }
         };
 
@@ -876,13 +877,24 @@ export function UnifiedSlotRenderer({
             style={{ ...processedStyles, cursor: 'pointer', position: 'relative' }}
             data-slot-id={id}
             data-editable="true"
-            onClick={handleEditorClick}
           >
-            {/* Inner content with pointer-events: none so clicks pass through to wrapper */}
-            {/* This is needed because disabled buttons block click events */}
+            {/* Inner content with pointer-events: none so clicks pass through */}
             <div
               style={{ pointerEvents: 'none' }}
               dangerouslySetInnerHTML={{ __html: processedContent }}
+            />
+            {/* Invisible click overlay to capture all clicks */}
+            <div
+              onClick={handleEditorClick}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                cursor: 'pointer',
+                zIndex: 10
+              }}
             />
           </div>
         );
