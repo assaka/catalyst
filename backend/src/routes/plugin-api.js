@@ -157,23 +157,23 @@ router.get('/widgets/:widgetId', async (req, res) => {
  */
 router.get('/starters', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
 
-    const starters = await sequelize.query(`
-      SELECT
-        id, name, slug, version, description,
-        starter_icon, starter_description, starter_prompt, starter_order
-      FROM plugin_registry
-      WHERE is_starter_template = true AND status = 'active'
-      ORDER BY starter_order ASC, name ASC
-    `, {
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: starters, error } = await tenantDb
+      .from('plugin_registry')
+      .select('id, name, slug, version, description, starter_icon, starter_description, starter_prompt, starter_order')
+      .eq('is_starter_template', true)
+      .eq('status', 'active')
+      .order('starter_order', { ascending: true })
+      .order('name', { ascending: true });
+
+    if (error) {
+      throw new Error(error.message);
+    }
 
     res.json({
       success: true,
-      starters: starters.map(s => ({
+      starters: (starters || []).map(s => ({
         id: s.id,
         name: s.name,
         slug: s.slug,
