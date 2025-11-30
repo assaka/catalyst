@@ -74,8 +74,10 @@ const WorkspaceHeader = () => {
 
   // Load user's plugins
   useEffect(() => {
-    loadPlugins();
-  }, []);
+    if (storeId) {
+      loadPlugins();
+    }
+  }, [storeId]);
 
   // Check for unpublished changes on mount and when exiting editor
   useEffect(() => {
@@ -128,9 +130,9 @@ const WorkspaceHeader = () => {
   const loadPlugins = async () => {
     try {
       setLoadingPlugins(true);
-      const response = await apiClient.get(`plugins/store/${storeId}`);
-      if (response.success && response.plugins) {
-        setPlugins(response.plugins);
+      const response = await apiClient.get(`stores/${storeId}/plugins`);
+      if (response.success && response.data?.plugins) {
+        setPlugins(response.data.plugins);
       }
     } catch (error) {
       console.error('Failed to load plugins:', error);
