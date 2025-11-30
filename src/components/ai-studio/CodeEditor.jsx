@@ -227,10 +227,69 @@ const CodeEditor = ({
     };
   }, []);
 
+  // Character-based diff stats
+  const getCharDiffStats = useCallback((oldCode, newCode) => {
+    if (oldCode == null || newCode == null) {
+      return { added: 0, removed: 0, changed: 0 };
+    }
+
+    const oldChars = oldCode.split('');
+    const newChars = newCode.split('');
+
+    // Simple character diff using longest common subsequence approach
+    let added = 0;
+    let removed = 0;
+
+    // Count characters that are in new but not in old (simplified approach)
+    // For a more accurate diff, we compare character by character
+    const oldLen = oldChars.length;
+    const newLen = newChars.length;
+
+    if (oldLen === newLen) {
+      // Same length - count changed characters
+      let changed = 0;
+      for (let i = 0; i < oldLen; i++) {
+        if (oldChars[i] !== newChars[i]) {
+          changed++;
+        }
+      }
+      return { added: 0, removed: 0, changed };
+    } else if (newLen > oldLen) {
+      // More characters in new - count additions
+      added = newLen - oldLen;
+      // Also count changes in the overlapping portion
+      let changed = 0;
+      for (let i = 0; i < oldLen; i++) {
+        if (oldChars[i] !== newChars[i]) {
+          changed++;
+        }
+      }
+      return { added, removed: 0, changed };
+    } else {
+      // Fewer characters in new - count deletions
+      removed = oldLen - newLen;
+      // Also count changes in the overlapping portion
+      let changed = 0;
+      for (let i = 0; i < newLen; i++) {
+        if (oldChars[i] !== newChars[i]) {
+          changed++;
+        }
+      }
+      return { added: 0, removed, changed };
+    }
+  }, []);
+
   // Compute diff stats synchronously on every render when localCode or originalCode changes
   const diffStats = useMemo(() => {
-    return getDiffStats(originalCode || '', localCode);
-  }, [localCode, originalCode, getDiffStats]);
+    const lineStats = getDiffStats(originalCode || '', localCode);
+    const charStats = getCharDiffStats(originalCode || '', localCode);
+    return {
+      ...lineStats,
+      charAdded: charStats.added,
+      charRemoved: charStats.removed,
+      charChanged: charStats.changed
+    };
+  }, [localCode, originalCode, getDiffStats, getCharDiffStats]);
 
   // Helper function to process code for collapsed view
   const getCollapsedCode = useCallback((originalCode, modifiedCode) => {
@@ -1296,10 +1355,19 @@ const CodeEditor = ({
                     Collapsed
                   </Badge>
                 )}
-                <div className="flex items-center space-x-2 text-xs">
-                  <span className="text-green-600">+{diffStats.additions}</span>
-                  <span className="text-red-600">-{diffStats.deletions}</span>
-                  <span className="text-orange-600">{diffStats.linesChanged} modified</span>
+                <div className="flex items-center space-x-3 text-xs">
+                  <div className="flex items-center space-x-1" title="Lines">
+                    <span className="text-muted-foreground">Lines:</span>
+                    <span className="text-green-600">+{diffStats.additions}</span>
+                    <span className="text-red-600">-{diffStats.deletions}</span>
+                    <span className="text-orange-600">~{diffStats.linesChanged}</span>
+                  </div>
+                  <div className="border-l pl-3 flex items-center space-x-1" title="Characters">
+                    <span className="text-muted-foreground">Chars:</span>
+                    <span className="text-green-600">+{diffStats.charAdded}</span>
+                    <span className="text-red-600">-{diffStats.charRemoved}</span>
+                    <span className="text-orange-600">~{diffStats.charChanged}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1399,10 +1467,19 @@ const CodeEditor = ({
                     Collapsed
                   </Badge>
                 )}
-                <div className="flex items-center space-x-2 text-xs">
-                  <span className="text-green-600">+{diffStats.additions}</span>
-                  <span className="text-red-600">-{diffStats.deletions}</span>
-                  <span className="text-orange-600">{diffStats.linesChanged} modified</span>
+                <div className="flex items-center space-x-3 text-xs">
+                  <div className="flex items-center space-x-1" title="Lines">
+                    <span className="text-muted-foreground">Lines:</span>
+                    <span className="text-green-600">+{diffStats.additions}</span>
+                    <span className="text-red-600">-{diffStats.deletions}</span>
+                    <span className="text-orange-600">~{diffStats.linesChanged}</span>
+                  </div>
+                  <div className="border-l pl-3 flex items-center space-x-1" title="Characters">
+                    <span className="text-muted-foreground">Chars:</span>
+                    <span className="text-green-600">+{diffStats.charAdded}</span>
+                    <span className="text-red-600">-{diffStats.charRemoved}</span>
+                    <span className="text-orange-600">~{diffStats.charChanged}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1550,7 +1627,8 @@ const CodeEditor = ({
             ) : showDiffView ? (
               <>
                 <span>Inline Diff View</span>
-                <span>+{diffStats.additions} -{diffStats.deletions} ~{diffStats.linesChanged}</span>
+                <span>Lines: +{diffStats.additions} -{diffStats.deletions} ~{diffStats.linesChanged}</span>
+                <span>Chars: +{diffStats.charAdded} -{diffStats.charRemoved} ~{diffStats.charChanged}</span>
               </>
             ) : (
               <>
