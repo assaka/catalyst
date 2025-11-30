@@ -11,13 +11,14 @@
  * - Page-specific behavior through configuration
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import EditorSidebar from "@/components/editor/slot/EditorSidebar";
 import PublishPanel from "@/components/editor/slot/PublishPanel";
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import AIWorkspaceContext from '@/contexts/AIWorkspaceContext';
 import {
   useSlotConfiguration,
   useTimestampFormatting,
@@ -94,6 +95,12 @@ const UnifiedSlotsEditor = ({
 
   // Store context for database operations
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+
+  // Get configuration refresh trigger from AIWorkspace context (if available)
+  // This triggers a reload when user reverts to a previous version
+  const aiWorkspaceContext = useContext(AIWorkspaceContext);
+  const configurationRefreshTrigger = aiWorkspaceContext?.configurationRefreshTrigger || 0;
+
   const [currentDragInfo, setCurrentDragInfo] = useState(null);
 
   // State management - Initialize with empty config
@@ -185,6 +192,21 @@ const UnifiedSlotsEditor = ({
 
   // Use generic editor initialization with createDefaultSlots if provided
   useEditorInitialization(initializeConfig, setLayoutConfig, createDefaultSlots);
+
+  // Reload configuration when triggered (e.g., after revert to previous version)
+  useEffect(() => {
+    if (configurationRefreshTrigger > 0) {
+      // Reset the loaded flag so initializeConfig will run
+      configurationLoadedRef.current = false;
+      // Re-initialize configuration
+      initializeConfig().then(config => {
+        if (config) {
+          setLayoutConfig(config);
+          loadDraftStatus();
+        }
+      });
+    }
+  }, [configurationRefreshTrigger, initializeConfig, loadDraftStatus, setLayoutConfig]);
 
   // Configuration change detection
   const { updateLastSavedConfig } = useConfigurationChangeDetection(

@@ -67,7 +67,8 @@ const WorkspaceHeader = () => {
     closeAiStudio,
     chatMinimized,
     toggleChatMinimized,
-    registerPublishStatusRefresh
+    registerPublishStatusRefresh,
+    triggerConfigurationRefresh
   } = useAIWorkspace();
 
   const { getSelectedStoreId } = useStoreSelection();
@@ -186,10 +187,11 @@ const WorkspaceHeader = () => {
     checkUnpublishedStatus();
   };
 
-  // Handle revert complete - refresh state
+  // Handle revert complete - refresh state and trigger editor reload
   const handleReverted = () => {
     loadDraftConfig();
     checkUnpublishedStatus();
+    triggerConfigurationRefresh(); // Signal editors to reload configuration
   };
 
   // Get the current page info

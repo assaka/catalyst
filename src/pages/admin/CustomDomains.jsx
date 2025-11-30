@@ -44,8 +44,10 @@ import {
   Copy,
   Check,
   RefreshCw,
-  Info
+  Info,
+  ArrowRight
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import apiClient from '@/api/client';
 import { toast } from 'sonner';
 import { getStoreBaseUrl, getExternalStoreUrl } from '@/utils/urlUtils';
@@ -74,6 +76,47 @@ const CustomDomains = () => {
   const [availableDomainsForPrimary, setAvailableDomainsForPrimary] = useState([]);
   const [selectedNewPrimary, setSelectedNewPrimary] = useState(null);
   const [copiedText, setCopiedText] = useState(null);
+
+  // Companion domain state
+  const [companionDomain, setCompanionDomain] = useState('');
+  const [includeCompanion, setIncludeCompanion] = useState(true);
+  const [showCompanionOption, setShowCompanionOption] = useState(false);
+
+  // Helper to detect domain type and get companion
+  const getDomainInfo = (domain) => {
+    const normalized = domain.trim().toLowerCase();
+    const isWww = normalized.startsWith('www.');
+    const isRootDomain = !normalized.startsWith('www.') && normalized.split('.').length === 2;
+
+    if (isWww) {
+      return {
+        type: 'www',
+        companion: normalized.replace(/^www\./, ''),
+        hasCompanion: true
+      };
+    } else if (isRootDomain) {
+      return {
+        type: 'root',
+        companion: `www.${normalized}`,
+        hasCompanion: true
+      };
+    } else {
+      return {
+        type: 'subdomain',
+        companion: null,
+        hasCompanion: false
+      };
+    }
+  };
+
+  // Update companion when domain changes
+  const handleDomainChange = (value) => {
+    setNewDomain(value);
+    const domainInfo = getDomainInfo(value);
+    setShowCompanionOption(domainInfo.hasCompanion);
+    setCompanionDomain(domainInfo.companion || '');
+    setIncludeCompanion(domainInfo.hasCompanion);
+  };
 
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {
@@ -113,16 +156,23 @@ const CustomDomains = () => {
       setAdding(true);
       const response = await apiClient.post('/custom-domains/add', {
         domain: newDomain.trim().toLowerCase(),
+        redirect_from: includeCompanion && companionDomain ? companionDomain : null,
         isPrimary,
         verificationMethod: 'txt',
         sslProvider: 'letsencrypt'
       });
 
       if (response.success) {
-        toast.success('Domain added successfully! Please configure DNS records.');
+        const message = includeCompanion && companionDomain
+          ? `Domains added: ${newDomain} (primary) and ${companionDomain} (redirects)`
+          : 'Domain added successfully! Please configure DNS records.';
+        toast.success(message);
         setAddDialogOpen(false);
         setNewDomain('');
         setIsPrimary(false);
+        setCompanionDomain('');
+        setIncludeCompanion(true);
+        setShowCompanionOption(false);
         loadDomains();
 
         // Show DNS instructions
@@ -508,9 +558,15 @@ const CustomDomains = () => {
                 {domains.map((domain) => (
                   <TableRow key={domain.id}>
                     <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Globe className="w-4 h-4 text-muted-foreground" />
                         {domain.domain}
+                        {domain.is_redirect && (
+                          <Badge variant="secondary" className="text-orange-600 bg-orange-50">
+                            <ArrowRight className="w-3 h-3 mr-1" />
+                            Redirects to {domain.redirect_to}
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -663,14 +719,44 @@ const CustomDomains = () => {
               <Label htmlFor="domain">Domain Name</Label>
               <Input
                 id="domain"
-                placeholder="www.myshop.com"
+                placeholder="www.myshop.com or myshop.com"
                 value={newDomain}
-                onChange={(e) => setNewDomain(e.target.value)}
+                onChange={(e) => handleDomainChange(e.target.value)}
               />
               <p className="text-sm text-muted-foreground">
-                Enter your full domain (e.g., www.myshop.com or shop.example.com)
+                Enter your full domain (e.g., www.myshop.com or myshop.com)
               </p>
             </div>
+
+            {/* Companion domain option */}
+            {showCompanionOption && companionDomain && (
+              <div className="p-4 border rounded-lg bg-muted/50 space-y-3">
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="include-companion"
+                    checked={includeCompanion}
+                    onCheckedChange={setIncludeCompanion}
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="include-companion" className="font-medium cursor-pointer">
+                      Also add <code className="px-1 py-0.5 bg-background rounded text-sm">{companionDomain}</code>
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Visitors to <strong>{companionDomain}</strong> will be automatically redirected to <strong>{newDomain.trim().toLowerCase()}</strong>
+                    </p>
+                  </div>
+                </div>
+
+                {includeCompanion && (
+                  <Alert className="bg-blue-50 border-blue-200">
+                    <Info className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-sm text-blue-800">
+                      You'll need to add DNS records for <strong>both</strong> domains in your DNS provider.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
 
             <div className="flex items-center space-x-2">
               <input

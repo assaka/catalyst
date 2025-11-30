@@ -43,6 +43,8 @@ class CustomDomainService {
         verification_token: verification_token,
         verification_status: 'pending',
         is_primary: options.isPrimary || false,
+        is_redirect: options.isRedirect || false,
+        redirect_to: options.redirectTo ? options.redirectTo.toLowerCase() : null,
         ssl_provider: 'vercel',
         ssl_status: 'pending',
         dns_provider: options.dnsProvider || 'manual',
@@ -692,6 +694,8 @@ class CustomDomainService {
         is_verified: domain.verification_status === 'verified',
         is_active: domain.is_active || true,
         is_primary: domain.is_primary || false,
+        is_redirect: domain.is_redirect || false,
+        redirect_to: domain.redirect_to || null,
         ssl_status: domain.ssl_status || 'pending',
         verified_at: domain.verified_at || null,
         updated_at: new Date().toISOString()

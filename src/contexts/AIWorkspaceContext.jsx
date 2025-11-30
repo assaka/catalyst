@@ -93,6 +93,9 @@ export const AIWorkspaceProvider = ({ children }) => {
   // Publish status refresh callback (registered by WorkspaceHeader)
   const [onPublishStatusRefresh, setOnPublishStatusRefresh] = useState(null);
 
+  // Configuration refresh trigger (increments to signal editors to reload)
+  const [configurationRefreshTrigger, setConfigurationRefreshTrigger] = useState(0);
+
   /**
    * Select a page type and update view mode accordingly
    */
@@ -272,6 +275,13 @@ export const AIWorkspaceProvider = ({ children }) => {
     }
   }, [onPublishStatusRefresh]);
 
+  /**
+   * Trigger configuration refresh (called after revert to reload editor content)
+   */
+  const triggerConfigurationRefresh = useCallback(() => {
+    setConfigurationRefreshTrigger(prev => prev + 1);
+  }, []);
+
   // Memoized value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     // Page/Editor State
@@ -332,6 +342,8 @@ export const AIWorkspaceProvider = ({ children }) => {
     registerSlotHandlers,
     registerPublishStatusRefresh,
     triggerPublishStatusRefresh,
+    configurationRefreshTrigger,
+    triggerConfigurationRefresh,
 
     // Constants
     pageTypes: PAGE_TYPES,
@@ -377,7 +389,9 @@ export const AIWorkspaceProvider = ({ children }) => {
     chatMaximized,
     toggleChatMaximized,
     registerPublishStatusRefresh,
-    triggerPublishStatusRefresh
+    triggerPublishStatusRefresh,
+    configurationRefreshTrigger,
+    triggerConfigurationRefresh
   ]);
 
   return (

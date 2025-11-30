@@ -27,7 +27,7 @@ const creditService = require('../services/credit-service');
  */
 router.post('/add', authMiddleware, storeResolver(), requireActiveSubscription, async (req, res) => {
   try {
-    const { domain, subdomain, isPrimary, verificationMethod, sslProvider, dnsProvider } = req.body;
+    const { domain, redirect_from, subdomain, isPrimary, verificationMethod, sslProvider, dnsProvider } = req.body;
 
     if (!domain) {
       return res.status(400).json({
@@ -36,19 +36,21 @@ router.post('/add', authMiddleware, storeResolver(), requireActiveSubscription, 
       });
     }
 
-    // Check credit balance (need at least 0.5 credits for 1 day)
+    // Check credit balance (need at least 0.5 credits for 1 day, or 1 credit if adding redirect domain)
     const userId = req.user.id;
     const balance = await creditService.getBalance(userId);
+    const requiredCredits = redirect_from ? 1 : 0.5; // 0.5 per domain
 
-    if (balance < 0.5) {
+    if (balance < requiredCredits) {
       return res.status(402).json({
         success: false,
-        message: 'Insufficient credits. Custom domains cost 0.5 credits per day. Please purchase credits to continue.',
+        message: `Insufficient credits. ${redirect_from ? 'Two domains cost' : 'Custom domains cost'} ${requiredCredits} credits per day. Please purchase credits to continue.`,
         current_balance: balance,
-        required_balance: 0.5
+        required_balance: requiredCredits
       });
     }
 
+    // Add the primary domain
     const result = await CustomDomainService.addDomain(req.storeId, domain, {
       subdomain,
       isPrimary,
@@ -57,12 +59,35 @@ router.post('/add', authMiddleware, storeResolver(), requireActiveSubscription, 
       dnsProvider: dnsProvider || 'manual'
     });
 
+    // If redirect_from is provided, add the companion redirect domain
+    let redirectResult = null;
+    if (redirect_from) {
+      try {
+        redirectResult = await CustomDomainService.addDomain(req.storeId, redirect_from, {
+          subdomain: null,
+          isPrimary: false,
+          isRedirect: true,
+          redirectTo: domain.toLowerCase(),
+          verificationMethod: verificationMethod || 'txt',
+          sslProvider: sslProvider || 'letsencrypt',
+          dnsProvider: dnsProvider || 'manual'
+        });
+        console.log(`✓ Added redirect domain ${redirect_from} -> ${domain}`);
+      } catch (redirectError) {
+        console.error('Error adding redirect domain:', redirectError);
+        // Don't fail the whole request if redirect domain fails
+      }
+    }
+
     res.json({
       ...result,
+      redirect_domain: redirectResult?.domain || null,
       credit_info: {
         current_balance: balance,
-        daily_cost: 0.5,
-        message: '0.5 credits will be deducted daily while domain is active'
+        daily_cost: redirect_from ? 1 : 0.5,
+        message: redirect_from
+          ? '1 credit will be deducted daily (0.5 per domain) while domains are active'
+          : '0.5 credits will be deducted daily while domain is active'
       }
     });
   } catch (error) {

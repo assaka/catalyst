@@ -1534,6 +1534,8 @@ CREATE TABLE IF NOT EXISTS custom_domains (
   cname_target VARCHAR(255),
   redirect_to_https BOOLEAN DEFAULT true,
   redirect_to_primary BOOLEAN DEFAULT false,
+  is_redirect BOOLEAN DEFAULT false,
+  redirect_to VARCHAR(255),
   custom_headers JSONB DEFAULT '{}'::jsonb,
   custom_rewrites JSONB DEFAULT '[]'::jsonb,
   cdn_enabled BOOLEAN DEFAULT false,
