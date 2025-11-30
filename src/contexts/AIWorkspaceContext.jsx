@@ -76,10 +76,8 @@ export const AIWorkspaceProvider = ({ children }) => {
   const [pluginToEdit, setPluginToEdit] = useState(null);
   const [showPluginEditor, setShowPluginEditor] = useState(false);
 
-  // AI Studio state (FileTree + CodeEditor)
+  // AI Studio state (ChatInterface for creating plugins)
   const [showAiStudio, setShowAiStudio] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [fileContent, setFileContent] = useState('');
 
   // Slot handlers (registered by editor components)
   const [slotHandlers, setSlotHandlers] = useState(null);
@@ -227,23 +225,6 @@ export const AIWorkspaceProvider = ({ children }) => {
    */
   const closeAiStudio = useCallback(() => {
     setShowAiStudio(false);
-    setSelectedFile(null);
-    setFileContent('');
-  }, []);
-
-  /**
-   * Select a file in AI Studio
-   */
-  const selectStudioFile = useCallback((file, content) => {
-    setSelectedFile(file);
-    setFileContent(content || '');
-  }, []);
-
-  /**
-   * Update file content in AI Studio
-   */
-  const updateStudioFileContent = useCallback((content) => {
-    setFileContent(content);
   }, []);
 
   // Memoized value to prevent unnecessary re-renders
@@ -283,12 +264,8 @@ export const AIWorkspaceProvider = ({ children }) => {
 
     // AI Studio
     showAiStudio,
-    selectedFile,
-    fileContent,
     openAiStudio,
     closeAiStudio,
-    selectStudioFile,
-    updateStudioFileContent,
 
     // Actions
     selectPage,
@@ -340,12 +317,8 @@ export const AIWorkspaceProvider = ({ children }) => {
     openPluginEditor,
     closePluginEditor,
     showAiStudio,
-    selectedFile,
-    fileContent,
     openAiStudio,
-    closeAiStudio,
-    selectStudioFile,
-    updateStudioFileContent
+    closeAiStudio
   ]);
 
   return (
