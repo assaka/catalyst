@@ -52,10 +52,6 @@ const DeveloperPluginEditor = ({
   onSwitchMode,
   initialContext,
   chatMinimized = false,
-  fileTreeMinimized: externalFileTreeMinimized,
-  setFileTreeMinimized: externalSetFileTreeMinimized,
-  editorMinimized: externalEditorMinimized,
-  setEditorMinimized: externalSetEditorMinimized,
   fileTreeTargetSize = 20, // Absolute % of total viewport
   editorTargetSize = 50 // Absolute % of total viewport
 }) => {
@@ -101,30 +97,17 @@ const DeveloperPluginEditor = ({
   const [restoreVersionId, setRestoreVersionId] = useState(null);
   const [currentVersionId, setCurrentVersionId] = useState(null);
 
-  // Use external state if provided, otherwise use local state
-  const fileTreeMinimized = externalFileTreeMinimized ?? false;
-  const setFileTreeMinimized = externalSetFileTreeMinimized ?? (() => {});
-  const editorMinimized = externalEditorMinimized ?? false;
-  const setEditorMinimized = externalSetEditorMinimized ?? (() => {});
-
   // Convert absolute viewport percentages to relative percentages within this component
   // This component gets (fileTreeTargetSize + editorTargetSize) of the viewport
   const totalSpace = fileTreeTargetSize + editorTargetSize;
 
   const calculateFileTreeRelativeSize = () => {
-    if (fileTreeMinimized) {
-      // Calculate relative: if minimized to 4% of viewport, what % is that of our space?
-      return (4 / totalSpace) * 100;
-    }
-    // File tree target (15% of viewport) as % of our space
+    // File tree target as % of our space
     return (fileTreeTargetSize / totalSpace) * 100;
   };
 
   const calculateEditorRelativeSize = () => {
-    if (editorMinimized) {
-      return (4 / totalSpace) * 100;
-    }
-    // Editor target (40% of viewport) as % of our space
+    // Editor target as % of our space
     return (editorTargetSize / totalSpace) * 100;
   };
 
@@ -1111,54 +1094,43 @@ const DeveloperPluginEditor = ({
   return (
     <div className="h-full flex flex-col">
       <ResizablePanelGroup direction="horizontal" className="flex-1">
-        {/* File Tree Sidebar - Minimizable */}
+        {/* File Tree Sidebar */}
         <ResizablePanel
           defaultSize={calculateFileTreeRelativeSize()}
-          minSize={4}
-          maxSize={fileTreeMinimized ? 5 : 50}
+          minSize={10}
+          maxSize={50}
           collapsible={false}
         >
           <div className="h-full bg-white border-r overflow-hidden flex flex-col">
-            {!fileTreeMinimized ? (
-              <>
-                <div className="h-12 px-3 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
-                  <div className="flex-1 flex items-center gap-2">
-                    <FolderTree className="w-5 h-5 text-blue-600" />
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                      Files
-                    </h3>
-                    <Badge className="bg-blue-100 text-blue-700 text-xs">
-                      v{plugin.version}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowMigrationsPanel(!showMigrationsPanel)}
-                      title="View migration status"
-                      className="h-6 w-6 p-0 relative"
-                    >
-                      <Database className={`w-4 h-4 ${
-                        allMigrations.some(m => m.status === 'pending')
-                          ? 'text-orange-500'
-                          : 'text-gray-700'
-                      }`} />
-                      {allMigrations.some(m => m.status === 'pending') && (
-                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setFileTreeMinimized(true)}
-                      title="Minimize file tree"
-                      className="h-6 w-6 p-0"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
+            <div className="h-12 px-3 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+              <div className="flex-1 flex items-center gap-2">
+                <FolderTree className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                  Files
+                </h3>
+                <Badge className="bg-blue-100 text-blue-700 text-xs">
+                  v{plugin.version}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowMigrationsPanel(!showMigrationsPanel)}
+                  title="View migration status"
+                  className="h-6 w-6 p-0 relative"
+                >
+                  <Database className={`w-4 h-4 ${
+                    allMigrations.some(m => m.status === 'pending')
+                      ? 'text-orange-500'
+                      : 'text-gray-700'
+                  }`} />
+                  {allMigrations.some(m => m.status === 'pending') && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
+                  )}
+                </Button>
+              </div>
+            </div>
                 {/* Migrations Status Panel */}
                 {showMigrationsPanel && (
                   <div className="border-b bg-blue-50 p-3">
@@ -1254,35 +1226,19 @@ const DeveloperPluginEditor = ({
                     New File
                   </Button>
                 </div>
-              </>
-            ) : (
-              <div className="h-full flex pt-2 justify-center bg-gray-50" style={{ minWidth: '50px' }}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setFileTreeMinimized(false)}
-                  title="Expand file tree"
-                  className="p-2 hover:bg-gray-100"
-                >
-                  <FolderTree className="w-5 h-5 text-blue-600" />
-                </Button>
-              </div>
-            )}
           </div>
         </ResizablePanel>
 
         <ResizableHandle />
 
-        {/* Main Editor Area - Minimizable */}
+        {/* Main Editor Area */}
         <ResizablePanel
           defaultSize={calculateEditorRelativeSize()}
-          minSize={4}
-          maxSize={editorMinimized ? 5 : 100}
+          minSize={20}
+          maxSize={100}
           collapsible={false}
         >
           <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden">
-            {!editorMinimized ? (
-              <>
                 {/* Editor Header */}
                 <div className="h-12 px-3 border-b bg-gray-50 flex items-center justify-between">
                     {selectedFile ? (
@@ -1456,15 +1412,6 @@ const DeveloperPluginEditor = ({
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditorMinimized(true)}
-                        title="Minimize editor"
-                        className="h-6 w-6 p-0"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </Button>
                     </div>
                   </div>
                 </div>
@@ -1505,20 +1452,6 @@ const DeveloperPluginEditor = ({
                     ))}
                   </div>
                 )}
-              </>
-            ) : (
-              <div className="h-full flex items-center justify-center bg-gray-50" style={{ minWidth: '50px' }}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditorMinimized(false)}
-                  title="Expand editor"
-                  className="p-2 hover:bg-gray-100"
-                >
-                  <Code2 className="w-5 h-5 text-blue-600" />
-                </Button>
-              </div>
-            )}
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>

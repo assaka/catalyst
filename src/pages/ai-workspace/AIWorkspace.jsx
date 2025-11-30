@@ -33,10 +33,8 @@ const AIWorkspaceContent = () => {
     closeAiStudio
   } = useAIWorkspace();
 
-  // Panel minimize states for plugin editor
+  // Panel minimize state for AI chat only (Files and Editor panels don't minimize)
   const [chatMinimized, setChatMinimized] = useState(false);
-  const [fileTreeMinimized, setFileTreeMinimized] = useState(false);
-  const [editorMinimized, setEditorMinimized] = useState(false);
 
   // Handle plugin cloned from ChatInterface (Create New Plugin)
   const handlePluginCloned = (clonedPlugin) => {
@@ -52,25 +50,18 @@ const AIWorkspaceContent = () => {
     closeAiStudio();
   };
 
-  // Calculate sizes for plugin editor mode
+  // Calculate sizes for plugin editor mode (simplified - no minimize for Files/Editor)
   const calculateChatSize = () => {
     if (chatMinimized) return 4;
-    if (fileTreeMinimized && editorMinimized) return 92;
-    if (editorMinimized) return 81;
-    if (fileTreeMinimized) return 47;
     return 35;
   };
 
   const calculateFileTreeSize = () => {
-    if (fileTreeMinimized) return 4;
     return 15;
   };
 
   const calculateEditorSize = () => {
-    if (editorMinimized) return 4;
-    if (chatMinimized && fileTreeMinimized) return 92;
     if (chatMinimized) return 81;
-    if (fileTreeMinimized) return 49;
     return 50;
   };
 
@@ -146,10 +137,6 @@ const AIWorkspaceContent = () => {
                 onClose={closePluginEditor}
                 initialContext="editing"
                 chatMinimized={chatMinimized}
-                fileTreeMinimized={fileTreeMinimized}
-                setFileTreeMinimized={setFileTreeMinimized}
-                editorMinimized={editorMinimized}
-                setEditorMinimized={setEditorMinimized}
                 fileTreeTargetSize={calculateFileTreeSize()}
                 editorTargetSize={calculateEditorSize()}
               />
