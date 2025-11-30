@@ -477,15 +477,29 @@ router.post('/:pluginId/versions', async (req, res) => {
 
 /**
  * POST /api/plugins/:pluginId/versions/:versionId/restore
- * Restore plugin to a specific version
+ * Restore plugin to a specific version by creating a NEW version with the restored state
+ * (Similar to git revert - creates new commit, doesn't rewrite history)
  */
 router.post('/:pluginId/versions/:versionId/restore', async (req, res) => {
   try {
     const db = await getTenantDb(req);
     const { pluginId, versionId } = req.params;
-    const { create_backup = true, created_by, created_by_name } = req.body;
+    const { created_by, created_by_name } = req.body;
 
     console.log(`🔄 Restoring plugin ${pluginId} to version ${versionId}`);
+
+    // Get the target version info
+    const { data: targetVersion } = await db.from('plugin_version_history')
+      .select('*')
+      .eq('id', versionId)
+      .maybeSingle();
+
+    if (!targetVersion) {
+      return res.status(404).json({
+        success: false,
+        error: 'Target version not found'
+      });
+    }
 
     // Reconstruct plugin state at target version
     const targetState = await reconstructPluginState(db, versionId);
@@ -497,24 +511,72 @@ router.post('/:pluginId/versions/:versionId/restore', async (req, res) => {
       });
     }
 
-    // Apply restored state to database
+    // Get current version to determine new version number
+    const { data: currentVersion } = await db.from('plugin_version_history')
+      .select('*')
+      .eq('plugin_id', pluginId)
+      .eq('is_current', true)
+      .maybeSingle();
+
+    // Calculate new version number
+    const newVersionNumber = incrementVersion(
+      currentVersion?.version_number || '1.0.0',
+      'patch'
+    );
+
+    // Unmark current version
+    if (currentVersion) {
+      await db.from('plugin_version_history')
+        .update({ is_current: false })
+        .eq('id', currentVersion.id);
+    }
+
+    // Create NEW version with the restored state (always as snapshot for clarity)
+    const { data: newVersion, error: insertError } = await db.from('plugin_version_history')
+      .insert({
+        plugin_id: pluginId,
+        version_number: newVersionNumber,
+        version_type: 'snapshot',
+        parent_version_id: currentVersion?.id || null,
+        commit_message: `Restored to version ${targetVersion.version_number}`,
+        created_by: created_by || null,
+        created_by_name: created_by_name || 'System',
+        is_current: true,
+        is_published: false,
+        files_changed: 0,
+        lines_added: 0,
+        lines_deleted: 0,
+        snapshot_distance: 0
+      })
+      .select()
+      .single();
+
+    if (insertError) throw new Error(insertError.message);
+
+    // Create snapshot for the new version
+    await createSnapshot(db, newVersion.id, pluginId, targetState);
+
+    // Add restore tag
+    await db.from('plugin_version_tags')
+      .insert({
+        version_id: newVersion.id,
+        plugin_id: pluginId,
+        tag_name: `restored-from-${targetVersion.version_number}`,
+        tag_type: 'restore',
+        created_by: created_by,
+        created_by_name: created_by_name || 'System'
+      });
+
+    // Apply restored state to the actual plugin tables
     await applyPluginState(db, pluginId, targetState);
 
-    // Mark all versions as not current, then set the target as current
-    await db.from('plugin_version_history')
-      .update({ is_current: false })
-      .eq('plugin_id', pluginId);
-
-    await db.from('plugin_version_history')
-      .update({ is_current: true })
-      .eq('id', versionId);
-
-    console.log(`  ✅ Restored successfully`);
+    console.log(`  ✅ Created new version ${newVersionNumber} with restored state from ${targetVersion.version_number}`);
 
     res.json({
       success: true,
-      message: 'Plugin restored successfully',
-      version_id: versionId
+      message: `Restored to version ${targetVersion.version_number}`,
+      version: newVersion,
+      restored_from: targetVersion.version_number
     });
   } catch (error) {
     console.error('Failed to restore version:', error);
