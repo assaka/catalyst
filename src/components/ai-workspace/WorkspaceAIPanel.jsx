@@ -402,7 +402,7 @@ const WorkspaceAIPanel = () => {
   return (
     <div className="h-full flex flex-col">
       {/* Panel Header */}
-      <div className="px-4 py-3 border-b bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between shrink-0">
+      <div className="px-4 py-3 h-12 border-b bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-purple-500" />
           <span className="font-medium text-sm">AI Assistant</span>

@@ -66,12 +66,13 @@ const WorkspaceStorefrontPreview = () => {
     }
   };
 
-  // Update iframe URL - always show homepage, let users navigate from there
+  // Update iframe URL based on selected page type being edited
   useEffect(() => {
     const baseUrl = getStoreBaseUrl(selectedStore);
-    const newUrl = getExternalStoreUrl(storeSlug, '', baseUrl); // Always homepage
+    const pagePath = getPagePath(selectedPageType);
+    const newUrl = getExternalStoreUrl(storeSlug, pagePath, baseUrl);
     setCurrentUrl(`${newUrl}?preview=draft&workspace=true&_t=${refreshKey}`);
-  }, [storeSlug, selectedStore, refreshKey]);
+  }, [storeSlug, selectedStore, refreshKey, selectedPageType]);
 
   // Viewport dimensions
   const viewportStyles = useMemo(() => {
