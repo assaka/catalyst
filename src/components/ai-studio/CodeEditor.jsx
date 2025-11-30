@@ -318,16 +318,16 @@ const CodeEditor = ({
   // Handle line-specific reverts
   const handleRevertLine = useCallback((lineIndex) => {
     if (!originalCode) return;
-    
+
     const currentLines = localCode.split('\n');
     const originalLines = originalCode.split('\n');
-    
+
     if (originalLines[lineIndex] !== undefined) {
       currentLines[lineIndex] = originalLines[lineIndex];
       const newCode = currentLines.join('\n');
-      
+
       setLocalCode(newCode);
-      
+
       // Apply hooks
       hookSystem.do('codeEditor.lineReverted', {
         fileName,
@@ -335,37 +335,37 @@ const CodeEditor = ({
         originalLine: originalLines[lineIndex],
         newCode
       });
-      
+
       // Check if all changes have been reverted, if so switch to Editor mode
-      if (newCode === originalCode) {
+      const stats = getDiffStats(originalCode, newCode);
+      if (stats.changes === 0) {
         setShowSplitView(false);
         setShowDiffView(false);
-        setShowPreviewFrame(false);
       }
-      
+
       if (onChange) {
         onChange(newCode);
       }
     }
-  }, [localCode, originalCode, fileName, onChange]);
+  }, [localCode, originalCode, fileName, onChange, getDiffStats]);
   
   // Handle block-level reverts (for multiple consecutive lines)
   const handleRevertBlock = useCallback((startLine, endLine) => {
     if (!originalCode) return;
-    
+
     const currentLines = localCode.split('\n');
     const originalLines = originalCode.split('\n');
-    
+
     // Revert all lines in the block
     for (let i = startLine; i <= endLine; i++) {
       if (originalLines[i] !== undefined) {
         currentLines[i] = originalLines[i];
       }
     }
-    
+
     const newCode = currentLines.join('\n');
     setLocalCode(newCode);
-    
+
     // Apply hooks
     hookSystem.do('codeEditor.blockReverted', {
       fileName,
@@ -373,18 +373,18 @@ const CodeEditor = ({
       endLine,
       newCode
     });
-    
+
     // Check if all changes have been reverted, if so switch to Editor mode
-    if (newCode === originalCode) {
+    const stats = getDiffStats(originalCode, newCode);
+    if (stats.changes === 0) {
       setShowSplitView(false);
       setShowDiffView(false);
-      setShowPreviewFrame(false);
     }
-    
+
     if (onChange) {
       onChange(newCode);
     }
-  }, [localCode, originalCode, fileName, onChange]);
+  }, [localCode, originalCode, fileName, onChange, getDiffStats]);
   
   // Get changed line blocks for revert functionality
   const getChangedBlocks = useCallback(() => {
@@ -669,17 +669,22 @@ const CodeEditor = ({
   useEffect(() => {
     if (enableDiffDetection && (initialContent || originalCode)) {
       const contentToCompare = initialContent || originalCode || '';
-      if (localCode !== contentToCompare) {
+
+      // Use getDiffStats to check for meaningful changes (handles whitespace/newline edge cases)
+      const stats = getDiffStats(contentToCompare, localCode);
+      const hasChanges = stats.changes > 0;
+
+      if (hasChanges) {
         const diffResult = diffServiceRef.current.createDiff(contentToCompare, localCode);
-        
+
         if (diffResult.success) {
           // Generate full file display lines for rich diff view
           const displayLines = generateFullFileDisplayLines(
-            diffResult.parsedDiff, 
-            contentToCompare, 
+            diffResult.parsedDiff,
+            contentToCompare,
             localCode
           );
-          
+
           setDiffData({
             ...diffResult,
             diff: diffResult.parsedDiff // Map parsedDiff to expected diff property
@@ -690,11 +695,14 @@ const CodeEditor = ({
           setFullFileDisplayLines([]);
         }
       } else {
+        // No meaningful changes - clear diff data and switch to code view
         setDiffData(null);
         setFullFileDisplayLines([]);
+        setShowSplitView(false);
+        setShowDiffView(false);
       }
     }
-  }, [localCode, initialContent, originalCode, enableDiffDetection, generateFullFileDisplayLines]);
+  }, [localCode, initialContent, originalCode, enableDiffDetection, generateFullFileDisplayLines, getDiffStats]);
 
   // Switch theme when view or theme mode changes
   useEffect(() => {
@@ -942,7 +950,9 @@ const CodeEditor = ({
         }
 
         // Check if all changes have been undone - if so, switch back to code view
-        if (newValue === originalCode) {
+        // Use getDiffStats to handle edge cases like whitespace/newline differences
+        const stats = getDiffStats(originalCode || '', newValue);
+        if (stats.changes === 0) {
           setShowSplitView(false);
           setShowDiffView(false);
         }
