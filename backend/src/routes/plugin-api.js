@@ -935,157 +935,106 @@ ${m.down_sql || '-- No down SQL'}`,
  */
 router.get('/:id/export', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const { id } = req.params;
 
     // Get plugin metadata
-    const plugin = await sequelize.query(`
-      SELECT * FROM plugin_registry WHERE id = $1
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: pluginInfo, error: pluginError } = await tenantDb
+      .from('plugin_registry')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (plugin.length === 0) {
+    if (pluginError || !pluginInfo) {
       return res.status(404).json({
         success: false,
         error: 'Plugin not found'
       });
     }
 
-    const pluginInfo = plugin[0];
-
     // Get scripts
-    const scripts = await sequelize.query(`
-      SELECT file_name, file_content, script_type, scope, load_priority
-      FROM plugin_scripts
-      WHERE plugin_id = $1
-      ORDER BY file_name ASC
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: scripts } = await tenantDb
+      .from('plugin_scripts')
+      .select('file_name, file_content, script_type, scope, load_priority')
+      .eq('plugin_id', id)
+      .order('file_name', { ascending: true });
 
     // Get events
-    const events = await sequelize.query(`
-      SELECT event_name, file_name, listener_function, priority
-      FROM plugin_events
-      WHERE plugin_id = $1
-      ORDER BY event_name ASC
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: events } = await tenantDb
+      .from('plugin_events')
+      .select('event_name, file_name, listener_function, priority')
+      .eq('plugin_id', id)
+      .order('event_name', { ascending: true });
 
     // Get hooks
-    const hooks = await sequelize.query(`
-      SELECT hook_name, hook_type, handler_function, priority
-      FROM plugin_hooks
-      WHERE plugin_id = $1
-      ORDER BY hook_name ASC
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: hooks } = await tenantDb
+      .from('plugin_hooks')
+      .select('hook_name, hook_type, handler_function, priority')
+      .eq('plugin_id', id)
+      .order('hook_name', { ascending: true });
 
     // Get widgets
-    const widgets = await sequelize.query(`
-      SELECT widget_id, widget_name, description, component_code, default_config, category, icon
-      FROM plugin_widgets
-      WHERE plugin_id = $1
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: widgets } = await tenantDb
+      .from('plugin_widgets')
+      .select('widget_id, widget_name, description, component_code, default_config, category, icon')
+      .eq('plugin_id', id);
 
     // Get entities
-    const entities = await sequelize.query(`
-      SELECT entity_name as name, table_name, model_code as code, schema_definition, description
-      FROM plugin_entities
-      WHERE plugin_id = $1
-      ORDER BY entity_name ASC
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: entities } = await tenantDb
+      .from('plugin_entities')
+      .select('entity_name, table_name, model_code, schema_definition, description')
+      .eq('plugin_id', id)
+      .order('entity_name', { ascending: true });
 
     // Get migrations
-    const migrations = await sequelize.query(`
-      SELECT migration_name as name, plugin_name, migration_version, up_sql as code
-      FROM plugin_migrations
-      WHERE plugin_id = $1
-      ORDER BY migration_name ASC
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: migrations } = await tenantDb
+      .from('plugin_migrations')
+      .select('migration_name, plugin_name, migration_version, up_sql')
+      .eq('plugin_id', id)
+      .order('migration_name', { ascending: true });
 
     // Get controllers
-    const controllers = await sequelize.query(`
-      SELECT controller_name as name, method, path, handler_code as code, description
-      FROM plugin_controllers
-      WHERE plugin_id = $1
-      ORDER BY controller_name ASC
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: controllers } = await tenantDb
+      .from('plugin_controllers')
+      .select('controller_name, method, path, handler_code, description')
+      .eq('plugin_id', id)
+      .order('controller_name', { ascending: true });
 
     // Get plugin data (key-value storage)
-    const pluginDataKV = await sequelize.query(`
-      SELECT data_key, data_value
-      FROM plugin_data
-      WHERE plugin_id = $1
-      ORDER BY data_key ASC
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: pluginDataKV } = await tenantDb
+      .from('plugin_data')
+      .select('data_key, data_value')
+      .eq('plugin_id', id)
+      .order('data_key', { ascending: true });
 
     // Get plugin dependencies
-    const pluginDependencies = await sequelize.query(`
-      SELECT package_name, version, bundled_code
-      FROM plugin_dependencies
-      WHERE plugin_id = $1
-      ORDER BY package_name ASC
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: pluginDependencies } = await tenantDb
+      .from('plugin_dependencies')
+      .select('package_name, version, bundled_code')
+      .eq('plugin_id', id)
+      .order('package_name', { ascending: true });
 
     // Get plugin docs
-    const pluginDocs = await sequelize.query(`
-      SELECT title, content, doc_type as category, display_order as order_position, file_name
-      FROM plugin_docs
-      WHERE plugin_id = $1
-      ORDER BY display_order ASC, title ASC
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: pluginDocs } = await tenantDb
+      .from('plugin_docs')
+      .select('title, content, doc_type, display_order, file_name')
+      .eq('plugin_id', id)
+      .order('display_order', { ascending: true })
+      .order('title', { ascending: true });
 
     // Get admin pages
-    const adminPages = await sequelize.query(`
-      SELECT page_key, page_name, route, component_code, description, icon, category, order_position
-      FROM plugin_admin_pages
-      WHERE plugin_id = $1
-      ORDER BY order_position ASC
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: adminPages } = await tenantDb
+      .from('plugin_admin_pages')
+      .select('page_key, page_name, route, component_code, description, icon, category, order_position')
+      .eq('plugin_id', id)
+      .order('order_position', { ascending: true });
 
     // Get admin scripts
-    const adminScripts = await sequelize.query(`
-      SELECT script_name, script_code, description, load_order
-      FROM plugin_admin_scripts
-      WHERE plugin_id = $1
-      ORDER BY load_order ASC
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: adminScripts } = await tenantDb
+      .from('plugin_admin_scripts')
+      .select('script_name, script_code, description, load_order')
+      .eq('plugin_id', id)
+      .order('load_order', { ascending: true });
 
     // Build package
     const packageData = {
@@ -1107,7 +1056,7 @@ router.get('/:id/export', async (req, res) => {
         tags: pluginInfo.tags
       },
 
-      files: scripts.map(s => ({
+      files: (scripts || []).map(s => ({
         name: s.file_name,
         content: s.file_content,
         type: s.script_type,
@@ -1115,21 +1064,21 @@ router.get('/:id/export', async (req, res) => {
         priority: s.load_priority
       })),
 
-      events: events.map(e => ({
+      events: (events || []).map(e => ({
         eventName: e.event_name,
-        fileName: e.file_name,  // Include custom filename
+        fileName: e.file_name,
         listenerCode: e.listener_function,
         priority: e.priority
       })),
 
-      hooks: hooks.map(h => ({
+      hooks: (hooks || []).map(h => ({
         hookName: h.hook_name,
         hookType: h.hook_type,
         handlerCode: h.handler_function,
         priority: h.priority
       })),
 
-      widgets: widgets.map(w => ({
+      widgets: (widgets || []).map(w => ({
         widgetId: w.widget_id,
         widgetName: w.widget_name,
         description: w.description,
@@ -1139,49 +1088,49 @@ router.get('/:id/export', async (req, res) => {
         icon: w.icon
       })),
 
-      entities: entities.map(e => ({
-        name: e.name,
+      entities: (entities || []).map(e => ({
+        name: e.entity_name,
         tableName: e.table_name,
-        code: e.code,
+        code: e.model_code,
         schemaDefinition: e.schema_definition,
         description: e.description
       })),
 
-      migrations: migrations.map(m => ({
-        name: m.name,
+      migrations: (migrations || []).map(m => ({
+        name: m.migration_name,
         pluginName: m.plugin_name,
         migrationVersion: m.migration_version,
-        code: m.code
+        code: m.up_sql
       })),
 
-      controllers: controllers.map(c => ({
-        name: c.name,
+      controllers: (controllers || []).map(c => ({
+        name: c.controller_name,
         method: c.method,
         path: c.path,
-        code: c.code,
+        code: c.handler_code,
         description: c.description
       })),
 
-      pluginData: pluginDataKV.map(d => ({
+      pluginData: (pluginDataKV || []).map(d => ({
         dataKey: d.data_key,
         dataValue: d.data_value
       })),
 
-      pluginDependencies: pluginDependencies.map(d => ({
+      pluginDependencies: (pluginDependencies || []).map(d => ({
         packageName: d.package_name,
         version: d.version,
         bundledCode: d.bundled_code
       })),
 
-      pluginDocs: pluginDocs.map(d => ({
+      pluginDocs: (pluginDocs || []).map(d => ({
         title: d.title,
         content: d.content,
-        category: d.category,
-        orderPosition: d.order_position,
+        category: d.doc_type,
+        orderPosition: d.display_order,
         fileName: d.file_name
       })),
 
-      adminPages: adminPages.map(p => ({
+      adminPages: (adminPages || []).map(p => ({
         pageKey: p.page_key,
         pageName: p.page_name,
         route: p.route,
@@ -1192,7 +1141,7 @@ router.get('/:id/export', async (req, res) => {
         orderPosition: p.order_position
       })),
 
-      adminScripts: adminScripts.map(s => ({
+      adminScripts: (adminScripts || []).map(s => ({
         scriptName: s.script_name,
         scriptCode: s.script_code,
         description: s.description,
@@ -1214,13 +1163,8 @@ router.get('/:id/export', async (req, res) => {
  * Import a plugin from package file
  */
 router.post('/import', async (req, res) => {
-  let transaction;
-
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
-    transaction = await sequelize.transaction();
-
+    const tenantDb = await getTenantConnection(req);
     const packageData = req.body;
 
     // Generate new UUID
@@ -1232,12 +1176,11 @@ router.post('/import', async (req, res) => {
 
     // If still no creator, get first user as fallback
     if (!creatorId) {
-      const [firstUser] = await sequelize.query(`
-        SELECT id FROM users LIMIT 1
-      `, {
-        type: sequelize.QueryTypes.SELECT,
-        transaction
-      });
+      const { data: firstUser } = await tenantDb
+        .from('users')
+        .select('id')
+        .limit(1)
+        .single();
       creatorId = firstUser?.id;
     }
 
@@ -1247,146 +1190,95 @@ router.post('/import', async (req, res) => {
     let counter = 1;
 
     while (true) {
-      // Check if name or slug already exists
-      const [existing] = await sequelize.query(`
-        SELECT id FROM plugin_registry
-        WHERE name = $1 OR slug = $2
-        LIMIT 1
-      `, {
-        bind: [uniqueName, uniqueSlug],
-        type: sequelize.QueryTypes.SELECT,
-        transaction
-      });
+      const { data: existing } = await tenantDb
+        .from('plugin_registry')
+        .select('id')
+        .or(`name.eq.${uniqueName},slug.eq.${uniqueSlug}`)
+        .limit(1);
 
-      if (!existing) break; // Name and slug are unique
+      if (!existing || existing.length === 0) break;
 
-      // Add/increment counter
       counter++;
       uniqueName = `${packageData.plugin.name} (${counter})`;
       uniqueSlug = `${packageData.plugin.slug}-${counter}`;
     }
 
     // Create plugin_registry entry
-    await sequelize.query(`
-      INSERT INTO plugin_registry (
-        id, name, slug, version, description, author, category, type, framework,
-        status, creator_id, is_installed, is_enabled,
-        manifest, permissions, dependencies, tags,
-        created_at, updated_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())
-    `, {
-      bind: [
-        pluginId,
-        uniqueName,
-        uniqueSlug,
-        packageData.plugin.version,
-        packageData.plugin.description,
-        packageData.plugin.author,
-        packageData.plugin.category,
-        packageData.plugin.type,
-        packageData.plugin.framework || 'react',
-        'active',
-        creatorId,
-        true,
-        true,
-        JSON.stringify(packageData.plugin.manifest),
-        JSON.stringify(packageData.plugin.permissions),
-        JSON.stringify(packageData.plugin.dependencies),
-        JSON.stringify(packageData.plugin.tags)
-      ],
-      type: sequelize.QueryTypes.INSERT,
-      transaction
-    });
+    const { error: registryError } = await tenantDb
+      .from('plugin_registry')
+      .insert({
+        id: pluginId,
+        name: uniqueName,
+        slug: uniqueSlug,
+        version: packageData.plugin.version,
+        description: packageData.plugin.description,
+        author: packageData.plugin.author,
+        category: packageData.plugin.category,
+        type: packageData.plugin.type,
+        framework: packageData.plugin.framework || 'react',
+        status: 'active',
+        creator_id: creatorId,
+        is_installed: true,
+        is_enabled: true,
+        manifest: packageData.plugin.manifest,
+        permissions: packageData.plugin.permissions,
+        dependencies: packageData.plugin.dependencies,
+        tags: packageData.plugin.tags
+      });
+
+    if (registryError) throw new Error(registryError.message);
 
     // Import files
     for (const file of packageData.files || []) {
-      await sequelize.query(`
-        INSERT INTO plugin_scripts (
-          plugin_id, file_name, file_content, script_type, scope, load_priority, is_enabled
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, true)
-      `, {
-        bind: [
-          pluginId,
-          file.name,
-          file.content,
-          file.type || 'js',
-          file.scope || 'frontend',
-          file.priority || 0
-        ],
-        type: sequelize.QueryTypes.INSERT,
-        transaction
+      await tenantDb.from('plugin_scripts').insert({
+        plugin_id: pluginId,
+        file_name: file.name,
+        file_content: file.content,
+        script_type: file.type || 'js',
+        scope: file.scope || 'frontend',
+        load_priority: file.priority || 0,
+        is_enabled: true
       });
     }
 
     // Import events
     for (const event of packageData.events || []) {
-      // Use custom filename if provided, otherwise generate from event name
       const fileName = event.fileName || `${event.eventName.replace(/\./g, '_')}.js`;
-
-      await sequelize.query(`
-        INSERT INTO plugin_events (
-          plugin_id, event_name, file_name, listener_function, priority, is_enabled
-        )
-        VALUES ($1, $2, $3, $4, $5, true)
-      `, {
-        bind: [
-          pluginId,
-          event.eventName,
-          fileName,
-          event.listenerCode,
-          event.priority || 10
-        ],
-        type: sequelize.QueryTypes.INSERT,
-        transaction
+      await tenantDb.from('plugin_events').insert({
+        plugin_id: pluginId,
+        event_name: event.eventName,
+        file_name: fileName,
+        listener_function: event.listenerCode,
+        priority: event.priority || 10,
+        is_enabled: true
       });
     }
 
     // Import hooks
     for (const hook of packageData.hooks || []) {
-      await sequelize.query(`
-        INSERT INTO plugin_hooks (
-          plugin_id, hook_name, hook_type, handler_function, priority, is_enabled
-        )
-        VALUES ($1, $2, $3, $4, $5, true)
-      `, {
-        bind: [
-          pluginId,
-          hook.hookName,
-          hook.hookType || 'filter',
-          hook.handlerCode,
-          hook.priority || 10
-        ],
-        type: sequelize.QueryTypes.INSERT,
-        transaction
+      await tenantDb.from('plugin_hooks').insert({
+        plugin_id: pluginId,
+        hook_name: hook.hookName,
+        hook_type: hook.hookType || 'filter',
+        handler_function: hook.handlerCode,
+        priority: hook.priority || 10,
+        is_enabled: true
       });
     }
 
-    // Import widgets with unique widget_ids
+    // Import widgets
     for (const widget of packageData.widgets || []) {
-      // Generate unique widget_id (append plugin UUID suffix to ensure uniqueness)
       const uniqueWidgetId = `${widget.widgetId}-${pluginId.substring(0, 8)}`;
-
-      await sequelize.query(`
-        INSERT INTO plugin_widgets (
-          plugin_id, widget_id, widget_name, description, component_code,
-          default_config, category, icon, is_enabled
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
-      `, {
-        bind: [
-          pluginId,
-          uniqueWidgetId,
-          widget.widgetName,
-          widget.description,
-          widget.componentCode,
-          JSON.stringify(widget.defaultConfig || {}),
-          widget.category || 'functional',
-          widget.icon || 'Box'
-        ],
-        type: sequelize.QueryTypes.INSERT,
-        transaction
+      await tenantDb.from('plugin_widgets').insert({
+        plugin_id: pluginId,
+        widget_id: uniqueWidgetId,
+        widget_name: widget.widgetName,
+        description: widget.description,
+        component_code: widget.componentCode,
+        default_config: widget.defaultConfig || {},
+        category: widget.category || 'functional',
+        icon: widget.icon || 'Box',
+        is_enabled: true
       });
     }
 
@@ -1394,135 +1286,81 @@ router.post('/import', async (req, res) => {
     const tableNameMap = {};
     const uniqueSuffix = counter > 1 ? `_${counter}` : '';
 
-    // Import entities with unique suffixes to avoid conflicts
+    // Import entities
     for (const entity of packageData.entities || []) {
-      // Add counter suffix to entity_name and table_name if this is a clone
       const uniqueEntityName = `${entity.name}${uniqueSuffix}`;
       const baseTableName = entity.tableName || entity.name.toLowerCase().replace(/\s+/g, '_');
       const uniqueTableName = `${baseTableName}${uniqueSuffix}`;
 
-      // Store mapping for migration SQL replacement
       if (uniqueSuffix) {
         tableNameMap[baseTableName] = uniqueTableName;
       }
 
-      await sequelize.query(`
-        INSERT INTO plugin_entities (
-          plugin_id, entity_name, table_name, model_code, schema_definition, description
-        )
-        VALUES ($1, $2, $3, $4, $5, $6)
-      `, {
-        bind: [
-          pluginId,
-          uniqueEntityName,
-          uniqueTableName,
-          entity.code,
-          entity.schemaDefinition || {},
-          entity.description || null
-        ],
-        type: sequelize.QueryTypes.INSERT,
-        transaction
+      await tenantDb.from('plugin_entities').insert({
+        plugin_id: pluginId,
+        entity_name: uniqueEntityName,
+        table_name: uniqueTableName,
+        model_code: entity.code,
+        schema_definition: entity.schemaDefinition || {},
+        description: entity.description || null
       });
     }
 
-    // Import migrations with updated table names
+    // Import migrations
     for (const migration of packageData.migrations || []) {
       let migrationSql = migration.code;
 
-      // Replace table names in SQL if this is a clone
       if (uniqueSuffix && Object.keys(tableNameMap).length > 0) {
-        // Sort by length descending to replace longer names first (avoid partial replacements)
         const sortedTableNames = Object.keys(tableNameMap).sort((a, b) => b.length - a.length);
-
         for (const originalTable of sortedTableNames) {
-          const uniqueTable = tableNameMap[originalTable];
-          // Replace table name in various SQL contexts (CREATE TABLE, ALTER TABLE, DROP TABLE, INSERT INTO, etc.)
-          // Using word boundaries to avoid partial matches
           const regex = new RegExp(`\\b${originalTable}\\b`, 'gi');
-          migrationSql = migrationSql.replace(regex, uniqueTable);
+          migrationSql = migrationSql.replace(regex, tableNameMap[originalTable]);
         }
       }
 
-      await sequelize.query(`
-        INSERT INTO plugin_migrations (
-          plugin_id, plugin_name, migration_name, migration_version, up_sql
-        )
-        VALUES ($1, $2, $3, $4, $5)
-      `, {
-        bind: [
-          pluginId,
-          migration.pluginName || uniqueName,
-          migration.name,
-          migration.migrationVersion || `v${Date.now()}`,
-          migrationSql
-        ],
-        type: sequelize.QueryTypes.INSERT,
-        transaction
+      await tenantDb.from('plugin_migrations').insert({
+        plugin_id: pluginId,
+        plugin_name: migration.pluginName || uniqueName,
+        migration_name: migration.name,
+        migration_version: migration.migrationVersion || `v${Date.now()}`,
+        up_sql: migrationSql
       });
     }
 
     // Import controllers
     for (const controller of packageData.controllers || []) {
-      await sequelize.query(`
-        INSERT INTO plugin_controllers (
-          plugin_id, controller_name, method, path, handler_code, description
-        )
-        VALUES ($1, $2, $3, $4, $5, $6)
-      `, {
-        bind: [
-          pluginId,
-          controller.name,
-          controller.method || 'GET',
-          controller.path || `/api/plugins/${uniqueSlug}/${controller.name}`,
-          controller.code,
-          controller.description || null
-        ],
-        type: sequelize.QueryTypes.INSERT,
-        transaction
+      await tenantDb.from('plugin_controllers').insert({
+        plugin_id: pluginId,
+        controller_name: controller.name,
+        method: controller.method || 'GET',
+        path: controller.path || `/api/plugins/${uniqueSlug}/${controller.name}`,
+        handler_code: controller.code,
+        description: controller.description || null
       });
     }
 
-    // Import plugin data (key-value storage)
+    // Import plugin data
     for (const data of packageData.pluginData || []) {
-      await sequelize.query(`
-        INSERT INTO plugin_data (
-          plugin_id, data_key, data_value
-        )
-        VALUES ($1, $2, $3)
-      `, {
-        bind: [
-          pluginId,
-          data.dataKey,
-          JSON.stringify(data.dataValue)
-        ],
-        type: sequelize.QueryTypes.INSERT,
-        transaction
+      await tenantDb.from('plugin_data').insert({
+        plugin_id: pluginId,
+        data_key: data.dataKey,
+        data_value: data.dataValue
       });
     }
 
     // Import plugin dependencies
     for (const dependency of packageData.pluginDependencies || []) {
-      await sequelize.query(`
-        INSERT INTO plugin_dependencies (
-          plugin_id, package_name, version, bundled_code
-        )
-        VALUES ($1, $2, $3, $4)
-      `, {
-        bind: [
-          pluginId,
-          dependency.packageName,
-          dependency.version,
-          dependency.bundledCode
-        ],
-        type: sequelize.QueryTypes.INSERT,
-        transaction
+      await tenantDb.from('plugin_dependencies').insert({
+        plugin_id: pluginId,
+        package_name: dependency.packageName,
+        version: dependency.version,
+        bundled_code: dependency.bundledCode
       });
     }
 
     // Import plugin docs
     for (const doc of packageData.pluginDocs || []) {
-      // Generate file_name from doc_type if not provided
-      const docType = doc.category || 'readme'; // category is actually doc_type from export
+      const docType = doc.category || 'readme';
       const fileName = doc.fileName || (() => {
         switch(docType) {
           case 'readme': return 'README.md';
@@ -1533,86 +1371,55 @@ router.post('/import', async (req, res) => {
           default: return `${docType}.md`;
         }
       })();
-      const format = docType === 'manifest' ? 'json' : 'markdown';
 
-      await sequelize.query(`
-        INSERT INTO plugin_docs (
-          plugin_id, doc_type, file_name, title, content, format, display_order
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-      `, {
-        bind: [
-          pluginId,
-          docType,
-          fileName,
-          doc.title || docType.toUpperCase(),
-          doc.content,
-          format,
-          doc.orderPosition || 0
-        ],
-        type: sequelize.QueryTypes.INSERT,
-        transaction
+      await tenantDb.from('plugin_docs').insert({
+        plugin_id: pluginId,
+        doc_type: docType,
+        file_name: fileName,
+        title: doc.title || docType.toUpperCase(),
+        content: doc.content,
+        format: docType === 'manifest' ? 'json' : 'markdown',
+        display_order: doc.orderPosition || 0
       });
     }
 
     // Import admin pages
     for (const page of packageData.adminPages || []) {
-      await sequelize.query(`
-        INSERT INTO plugin_admin_pages (
-          plugin_id, page_key, page_name, route, component_code, description, icon, category, order_position, is_enabled
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
-      `, {
-        bind: [
-          pluginId,
-          page.pageKey,
-          page.pageName,
-          page.route,
-          page.componentCode,
-          page.description,
-          page.icon,
-          page.category,
-          page.orderPosition || 100
-        ],
-        type: sequelize.QueryTypes.INSERT,
-        transaction
+      await tenantDb.from('plugin_admin_pages').insert({
+        plugin_id: pluginId,
+        page_key: page.pageKey,
+        page_name: page.pageName,
+        route: page.route,
+        component_code: page.componentCode,
+        description: page.description,
+        icon: page.icon,
+        category: page.category,
+        order_position: page.orderPosition || 100,
+        is_enabled: true
       });
     }
 
     // Import admin scripts
     for (const script of packageData.adminScripts || []) {
-      await sequelize.query(`
-        INSERT INTO plugin_admin_scripts (
-          plugin_id, script_name, script_code, description, load_order, is_enabled
-        )
-        VALUES ($1, $2, $3, $4, $5, true)
-      `, {
-        bind: [
-          pluginId,
-          script.scriptName,
-          script.scriptCode,
-          script.description,
-          script.loadOrder || 100
-        ],
-        type: sequelize.QueryTypes.INSERT,
-        transaction
+      await tenantDb.from('plugin_admin_scripts').insert({
+        plugin_id: pluginId,
+        script_name: script.scriptName,
+        script_code: script.scriptCode,
+        description: script.description,
+        load_order: script.loadOrder || 100,
+        is_enabled: true
       });
     }
-
-    // Commit transaction
-    await transaction.commit();
 
     res.json({
       success: true,
       message: 'Plugin imported successfully',
       plugin: {
         id: pluginId,
-        name: packageData.plugin.name
+        name: uniqueName
       }
     });
   } catch (error) {
-    // Rollback transaction on error
-    await transaction.rollback();
     res.status(500).json({
       success: false,
       error: error.message
@@ -1626,415 +1433,142 @@ router.post('/import', async (req, res) => {
  */
 router.put('/registry/:id/files', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const { id } = req.params;
     const { path, content } = req.body;
 
     // Get current plugin
-    const plugin = await sequelize.query(`
-      SELECT * FROM plugin_registry WHERE id = $1
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: plugin, error: pluginError } = await tenantDb
+      .from('plugin_registry')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!plugin[0]) {
-      return res.status(404).json({
-        success: false,
-        error: 'Plugin not found'
-      });
+    if (pluginError || !plugin) {
+      return res.status(404).json({ success: false, error: 'Plugin not found' });
     }
 
-    // Normalize paths for comparison
     const normalizePath = (p) => p.replace(/^\/+/, '').replace(/^src\//, '');
     const normalizedRequestPath = normalizePath(path);
 
-    // Handle manifest.json - save to plugin_registry.manifest column
+    // Handle manifest.json
     if (normalizedRequestPath === 'manifest.json') {
       try {
-        const manifestData = JSON.parse(content); // Validate JSON
-
-        await sequelize.query(`
-          UPDATE plugin_registry
-          SET manifest = $1, updated_at = NOW()
-          WHERE id = $2
-        `, {
-          bind: [JSON.stringify(manifestData), id],
-          type: sequelize.QueryTypes.UPDATE
-        });
-
-        return res.json({
-          success: true,
-          message: 'Manifest saved successfully to plugin_registry.manifest'
-        });
+        const manifestData = JSON.parse(content);
+        await tenantDb.from('plugin_registry').update({ manifest: manifestData }).eq('id', id);
+        return res.json({ success: true, message: 'Manifest saved successfully' });
       } catch (error) {
-        return res.status(400).json({
-          success: false,
-          error: `Failed to save manifest: ${error.message}`
-        });
+        return res.status(400).json({ success: false, error: `Failed to save manifest: ${error.message}` });
       }
     }
 
-    // Handle documentation files - save to plugin_docs table
-    if (normalizedRequestPath === 'README.md' || normalizedRequestPath === 'CHANGELOG.md' ||
-        normalizedRequestPath === 'LICENSE' || normalizedRequestPath === 'CONTRIBUTING.md') {
-
-      const docTypeMap = {
-        'README.md': 'readme',
-        'CHANGELOG.md': 'changelog',
-        'LICENSE': 'license',
-        'CONTRIBUTING.md': 'contributing'
-      };
-
+    // Handle documentation files
+    const docTypeMap = { 'README.md': 'readme', 'CHANGELOG.md': 'changelog', 'LICENSE': 'license', 'CONTRIBUTING.md': 'contributing' };
+    if (docTypeMap[normalizedRequestPath]) {
       const docType = docTypeMap[normalizedRequestPath];
-      const format = 'markdown';
-
       try {
-        // Check if doc exists
-        const existing = await sequelize.query(`
-          SELECT id FROM plugin_docs
-          WHERE plugin_id = $1 AND doc_type = $2
-        `, {
-          bind: [id, docType],
-          type: sequelize.QueryTypes.SELECT
-        });
-
-        if (existing.length > 0) {
-          // Update existing doc
-          await sequelize.query(`
-            UPDATE plugin_docs
-            SET content = $1, format = $2, updated_at = NOW()
-            WHERE plugin_id = $3 AND doc_type = $4
-          `, {
-            bind: [content, format, id, docType],
-            type: sequelize.QueryTypes.UPDATE
-          });
+        const { data: existing } = await tenantDb.from('plugin_docs').select('id').eq('plugin_id', id).eq('doc_type', docType);
+        if (existing && existing.length > 0) {
+          await tenantDb.from('plugin_docs').update({ content, format: 'markdown' }).eq('plugin_id', id).eq('doc_type', docType);
         } else {
-          // Insert new doc
-          await sequelize.query(`
-            INSERT INTO plugin_docs (plugin_id, doc_type, file_name, content, format, is_visible)
-            VALUES ($1, $2, $3, $4, $5, true)
-          `, {
-            bind: [id, docType, normalizedRequestPath, content, format],
-            type: sequelize.QueryTypes.INSERT
-          });
+          await tenantDb.from('plugin_docs').insert({ plugin_id: id, doc_type: docType, file_name: normalizedRequestPath, content, format: 'markdown', is_visible: true });
         }
-
-        return res.json({
-          success: true,
-          message: 'Documentation saved successfully in plugin_docs table'
-        });
+        return res.json({ success: true, message: 'Documentation saved successfully' });
       } catch (error) {
-        return res.status(400).json({
-          success: false,
-          error: `Failed to save documentation: ${error.message}`
-        });
+        return res.status(400).json({ success: false, error: `Failed to save documentation: ${error.message}` });
       }
     }
 
-    // Handle event files - update plugin_events table
+    // Handle event files
     if (normalizedRequestPath.startsWith('events/')) {
-      // Extract filename from path
       const fileName = normalizedRequestPath.replace('events/', '');
-
       try {
-        // Look up event by filename (supports custom filenames)
-        const existing = await sequelize.query(`
-          SELECT event_name FROM plugin_events
-          WHERE plugin_id = $1 AND file_name = $2
-        `, {
-          bind: [id, fileName],
-          type: sequelize.QueryTypes.SELECT
-        });
-
-        if (existing.length > 0) {
-          // Update existing event by filename
-          const eventName = existing[0].event_name;
-          await sequelize.query(`
-            UPDATE plugin_events
-            SET listener_function = $1, updated_at = NOW()
-            WHERE plugin_id = $2 AND file_name = $3
-          `, {
-            bind: [content, id, fileName],
-            type: sequelize.QueryTypes.UPDATE
-          });
+        const { data: existing } = await tenantDb.from('plugin_events').select('event_name').eq('plugin_id', id).eq('file_name', fileName);
+        if (existing && existing.length > 0) {
+          await tenantDb.from('plugin_events').update({ listener_function: content }).eq('plugin_id', id).eq('file_name', fileName);
         } else {
-          // Fallback: Try to derive event name from filename for legacy files
           const eventName = fileName.replace('.js', '').replace(/_/g, '.');
-          await sequelize.query(`
-            INSERT INTO plugin_events (plugin_id, event_name, file_name, listener_function, priority, is_enabled)
-            VALUES ($1, $2, $3, $4, 10, true)
-          `, {
-            bind: [id, eventName, fileName, content],
-            type: sequelize.QueryTypes.INSERT
-          });
+          await tenantDb.from('plugin_events').insert({ plugin_id: id, event_name: eventName, file_name: fileName, listener_function: content, priority: 10, is_enabled: true });
         }
-
-        return res.json({
-          success: true,
-          message: 'Event file saved successfully in plugin_events table'
-        });
+        return res.json({ success: true, message: 'Event file saved successfully' });
       } catch (eventError) {
-        return res.status(500).json({
-          success: false,
-          error: `Failed to save event in plugin_events table: ${eventError.message}`
-        });
+        return res.status(500).json({ success: false, error: `Failed to save event: ${eventError.message}` });
       }
     }
 
-    // Special handling for hook files - update plugin_hooks table (normalized structure)
+    // Handle hook files
     if (normalizedRequestPath.startsWith('hooks/')) {
       const hookName = normalizedRequestPath.replace('hooks/', '').replace('.js', '').replace(/_/g, '.');
-
       try {
-        // Check if hook exists
-        const existing = await sequelize.query(`
-          SELECT id FROM plugin_hooks
-          WHERE plugin_id = $1 AND hook_name = $2
-        `, {
-          bind: [id, hookName],
-          type: sequelize.QueryTypes.SELECT
-        });
-
-        if (existing.length > 0) {
-          // Update existing hook
-          await sequelize.query(`
-            UPDATE plugin_hooks
-            SET handler_function = $1, updated_at = NOW()
-            WHERE plugin_id = $2 AND hook_name = $3
-          `, {
-            bind: [content, id, hookName],
-            type: sequelize.QueryTypes.UPDATE
-          });
+        const { data: existing } = await tenantDb.from('plugin_hooks').select('id').eq('plugin_id', id).eq('hook_name', hookName);
+        if (existing && existing.length > 0) {
+          await tenantDb.from('plugin_hooks').update({ handler_function: content }).eq('plugin_id', id).eq('hook_name', hookName);
         } else {
-          // Insert new hook
-          await sequelize.query(`
-            INSERT INTO plugin_hooks (plugin_id, hook_name, handler_function, priority, is_enabled, created_at, updated_at)
-            VALUES ($1, $2, $3, 10, true, NOW(), NOW())
-          `, {
-            bind: [id, hookName, content],
-            type: sequelize.QueryTypes.INSERT
-          });
+          await tenantDb.from('plugin_hooks').insert({ plugin_id: id, hook_name: hookName, handler_function: content, priority: 10, is_enabled: true });
         }
-
-        return res.json({
-          success: true,
-          message: 'Hook file saved successfully in plugin_hooks table'
-        });
+        return res.json({ success: true, message: 'Hook file saved successfully' });
       } catch (hookError) {
-        return res.status(500).json({
-          success: false,
-          error: `Failed to save hook in plugin_hooks table: ${hookError.message}`
-        });
+        return res.status(500).json({ success: false, error: `Failed to save hook: ${hookError.message}` });
       }
     }
 
-    // Handle entity files - update plugin_entities table
+    // Handle entity files
     if (normalizedRequestPath.startsWith('entities/')) {
       const entityFileName = normalizedRequestPath.replace('entities/', '').replace('.json', '');
-
       try {
-        // Parse entity JSON
         const entityData = JSON.parse(content);
         const entityName = entityData.entity_name || entityFileName;
         const tableName = entityData.table_name;
+        if (!tableName) return res.status(400).json({ success: false, error: 'Entity JSON must include table_name field' });
 
-        if (!tableName) {
-          return res.status(400).json({
-            success: false,
-            error: 'Entity JSON must include table_name field'
-          });
-        }
-
-        // Check if entity exists
-        const existing = await sequelize.query(`
-          SELECT id FROM plugin_entities
-          WHERE plugin_id = $1 AND entity_name = $2
-        `, {
-          bind: [id, entityName],
-          type: sequelize.QueryTypes.SELECT
-        });
-
-        if (existing.length > 0) {
-          // Update existing entity
-          await sequelize.query(`
-            UPDATE plugin_entities
-            SET schema_definition = $1,
-                table_name = $2,
-                description = $3,
-                updated_at = NOW()
-            WHERE plugin_id = $4 AND entity_name = $5
-          `, {
-            bind: [
-              entityData.schema_definition,
-              tableName,
-              entityData.description || '',
-              id,
-              entityName
-            ],
-            type: sequelize.QueryTypes.UPDATE
-          });
+        const { data: existing } = await tenantDb.from('plugin_entities').select('id').eq('plugin_id', id).eq('entity_name', entityName);
+        if (existing && existing.length > 0) {
+          await tenantDb.from('plugin_entities').update({ schema_definition: entityData.schema_definition, table_name: tableName, description: entityData.description || '' }).eq('plugin_id', id).eq('entity_name', entityName);
         } else {
-          // Insert new entity
-          await sequelize.query(`
-            INSERT INTO plugin_entities (
-              plugin_id, entity_name, table_name, description,
-              schema_definition, migration_status, is_enabled
-            ) VALUES ($1, $2, $3, $4, $5, 'pending', true)
-          `, {
-            bind: [
-              id,
-              entityName,
-              tableName,
-              entityData.description || '',
-              entityData.schema_definition
-            ],
-            type: sequelize.QueryTypes.INSERT
-          });
+          await tenantDb.from('plugin_entities').insert({ plugin_id: id, entity_name: entityName, table_name: tableName, description: entityData.description || '', schema_definition: entityData.schema_definition, migration_status: 'pending', is_enabled: true });
         }
-
-        return res.json({
-          success: true,
-          message: 'Entity saved successfully in plugin_entities table'
-        });
+        return res.json({ success: true, message: 'Entity saved successfully' });
       } catch (entityError) {
-        return res.status(500).json({
-          success: false,
-          error: `Failed to save entity: ${entityError.message}`
-        });
+        return res.status(500).json({ success: false, error: `Failed to save entity: ${entityError.message}` });
       }
     }
 
-    // Handle controller files - update plugin_controllers table
+    // Handle controller files
     if (normalizedRequestPath.startsWith('controllers/')) {
       const controllerFileName = normalizedRequestPath.replace('controllers/', '').replace('.js', '');
-
       try {
-        // Look up controller by controller_name (filename without extension)
-        const existing = await sequelize.query(`
-          SELECT controller_name, method, path FROM plugin_controllers
-          WHERE plugin_id = $1 AND controller_name = $2
-        `, {
-          bind: [id, controllerFileName],
-          type: sequelize.QueryTypes.SELECT
-        });
-
-        if (existing.length > 0) {
-          // Update existing controller handler code
-          const controller = existing[0];
-          await sequelize.query(`
-            UPDATE plugin_controllers
-            SET handler_code = $1, updated_at = NOW()
-            WHERE plugin_id = $2 AND controller_name = $3
-          `, {
-            bind: [content, id, controllerFileName],
-            type: sequelize.QueryTypes.UPDATE
-          });
+        const { data: existing } = await tenantDb.from('plugin_controllers').select('controller_name').eq('plugin_id', id).eq('controller_name', controllerFileName);
+        if (existing && existing.length > 0) {
+          await tenantDb.from('plugin_controllers').update({ handler_code: content }).eq('plugin_id', id).eq('controller_name', controllerFileName);
+          return res.json({ success: true, message: 'Controller handler code updated successfully' });
         } else {
-          // Controller not found - cannot create without metadata
-          return res.status(404).json({
-            success: false,
-            error: `Controller '${controllerFileName}' not found. Controllers must be created with metadata (method, path, etc.) before they can be edited.`
-          });
+          return res.status(404).json({ success: false, error: `Controller '${controllerFileName}' not found` });
         }
-
-        return res.json({
-          success: true,
-          message: 'Controller handler code updated successfully in plugin_controllers table'
-        });
       } catch (controllerError) {
-        return res.status(500).json({
-          success: false,
-          error: `Failed to save controller: ${controllerError.message}`
-        });
+        return res.status(500).json({ success: false, error: `Failed to save controller: ${controllerError.message}` });
       }
     }
 
-    // Block files that belong in specialized tables
-    if (normalizedRequestPath.startsWith('migrations/')) {
-      return res.status(400).json({
-        success: false,
-        error: 'Migrations belong in plugin_migrations table, not plugin_scripts'
-      });
-    }
-    if (normalizedRequestPath.startsWith('hooks/')) {
-      return res.status(400).json({
-        success: false,
-        error: 'Hooks belong in plugin_hooks table, not plugin_scripts'
-      });
-    }
-    if (normalizedRequestPath.startsWith('admin/')) {
-      return res.status(400).json({
-        success: false,
-        error: 'Admin pages have special handling, not saved to plugin_scripts'
-      });
-    }
-    if (normalizedRequestPath.startsWith('models/')) {
-      return res.status(400).json({
-        success: false,
-        error: 'Models/entities belong in plugin_entities table, not plugin_scripts'
-      });
-    }
+    // Block specialized files
+    if (normalizedRequestPath.startsWith('migrations/')) return res.status(400).json({ success: false, error: 'Migrations belong in plugin_migrations table' });
+    if (normalizedRequestPath.startsWith('admin/')) return res.status(400).json({ success: false, error: 'Admin pages have special handling' });
+    if (normalizedRequestPath.startsWith('models/')) return res.status(400).json({ success: false, error: 'Models belong in plugin_entities table' });
 
-    // For executable frontend files ONLY (components, utils, services, styles)
-
+    // Default: save to plugin_scripts
     try {
-      // Check if file exists in plugin_scripts
-      const existing = await sequelize.query(`
-        SELECT id FROM plugin_scripts
-        WHERE plugin_id = $1 AND file_name = $2
-      `, {
-        bind: [id, normalizedRequestPath],
-        type: sequelize.QueryTypes.SELECT
-      });
-
-      if (existing.length > 0) {
-        // Update existing file
-        await sequelize.query(`
-          UPDATE plugin_scripts
-          SET file_content = $1, updated_at = NOW()
-          WHERE plugin_id = $2 AND file_name = $3
-        `, {
-          bind: [content, id, normalizedRequestPath],
-          type: sequelize.QueryTypes.UPDATE
-        });
+      const { data: existing } = await tenantDb.from('plugin_scripts').select('id').eq('plugin_id', id).eq('file_name', normalizedRequestPath);
+      if (existing && existing.length > 0) {
+        await tenantDb.from('plugin_scripts').update({ file_content: content }).eq('plugin_id', id).eq('file_name', normalizedRequestPath);
       } else {
-        // Insert new file
-        await sequelize.query(`
-          INSERT INTO plugin_scripts (plugin_id, file_name, file_content, script_type, scope, load_priority, is_enabled)
-          VALUES ($1, $2, $3, 'js', 'frontend', 0, true)
-        `, {
-          bind: [id, normalizedRequestPath, content],
-          type: sequelize.QueryTypes.INSERT
-        });
+        await tenantDb.from('plugin_scripts').insert({ plugin_id: id, file_name: normalizedRequestPath, file_content: content, script_type: 'js', scope: 'frontend', load_priority: 0, is_enabled: true });
       }
-
-      // Update plugin_registry timestamp
-      await sequelize.query(`
-        UPDATE plugin_registry
-        SET updated_at = NOW()
-        WHERE id = $1
-      `, {
-        bind: [id],
-        type: sequelize.QueryTypes.UPDATE
-      });
-
-      res.json({
-        success: true,
-        message: 'File saved successfully in plugin_scripts table'
-      });
+      await tenantDb.from('plugin_registry').update({ updated_at: new Date().toISOString() }).eq('id', id);
+      res.json({ success: true, message: 'File saved successfully' });
     } catch (scriptError) {
-      res.status(500).json({
-        success: false,
-        error: `Failed to save file in plugin_scripts table: ${scriptError.message}`
-      });
+      res.status(500).json({ success: false, error: `Failed to save file: ${scriptError.message}` });
     }
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -2044,19 +1578,11 @@ router.put('/registry/:id/files', async (req, res) => {
  */
 router.patch('/registry/:id/status', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const { id } = req.params;
     const { status } = req.body;
 
-    await sequelize.query(`
-      UPDATE plugin_registry
-      SET status = $1, updated_at = NOW()
-      WHERE id = $2
-    `, {
-      bind: [status, id],
-      type: sequelize.QueryTypes.UPDATE
-    });
+    await tenantDb.from('plugin_registry').update({ status }).eq('id', id);
 
     res.json({
       success: true,
@@ -2064,10 +1590,7 @@ router.patch('/registry/:id/status', async (req, res) => {
     });
   } catch (error) {
     console.error('Failed to update plugin status:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -2077,27 +1600,15 @@ router.patch('/registry/:id/status', async (req, res) => {
  */
 router.delete('/registry/:id', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const { id } = req.params;
 
-    await sequelize.query(`
-      DELETE FROM plugin_registry WHERE id = $1
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.DELETE
-    });
+    await tenantDb.from('plugin_registry').delete().eq('id', id);
 
-    res.json({
-      success: true,
-      message: 'Plugin deleted successfully'
-    });
+    res.json({ success: true, message: 'Plugin deleted successfully' });
   } catch (error) {
     console.error('Failed to delete plugin:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -2107,21 +1618,14 @@ router.delete('/registry/:id', async (req, res) => {
  */
 router.post('/registry', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const pluginData = req.body;
 
-    // Generate proper UUID for plugin_registry
     const { randomUUID } = require('crypto');
     const id = randomUUID();
-
-    // Generate slug from name
     const slug = pluginData.name.toLowerCase().replace(/\s+/g, '-');
-
-    // Get creator_id from authenticated user (if available)
     const creatorId = req.user?.id || null;
 
-    // Build manifest
     const manifest = {
       name: pluginData.name,
       version: pluginData.version || '1.0.0',
@@ -2130,116 +1634,60 @@ router.post('/registry', async (req, res) => {
       ...pluginData
     };
 
-    // Insert into plugin_registry
-    await sequelize.query(`
-      INSERT INTO plugin_registry (
-        id, name, slug, version, description, author, category, status, type, framework,
-        manifest, creator_id, is_installed, is_enabled,
-        created_at, updated_at
-      )
-      VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW()
-      )
-    `, {
-      bind: [
-        id,
-        pluginData.name,
-        slug,
-        pluginData.version || '1.0.0',
-        pluginData.description,
-        pluginData.author || 'Unknown',
-        pluginData.category || 'utility',
-        pluginData.status || 'active',
-        pluginData.generated_by_ai ? 'ai-generated' : 'custom',
-        'react',
-        JSON.stringify(manifest),
-        creatorId,
-        true,  // is_installed
-        true   // is_enabled
-      ],
-      type: sequelize.QueryTypes.INSERT
+    await tenantDb.from('plugin_registry').insert({
+      id,
+      name: pluginData.name,
+      slug,
+      version: pluginData.version || '1.0.0',
+      description: pluginData.description,
+      author: pluginData.author || 'Unknown',
+      category: pluginData.category || 'utility',
+      status: pluginData.status || 'active',
+      type: pluginData.generated_by_ai ? 'ai-generated' : 'custom',
+      framework: 'react',
+      manifest,
+      creator_id: creatorId,
+      is_installed: true,
+      is_enabled: true
     });
 
-    // If plugin has generated files, store them in plugin_scripts table
-    if (pluginData.generatedFiles && pluginData.generatedFiles.length > 0) {
-      for (const file of pluginData.generatedFiles) {
-        const fileName = file.name || file.filename || '';
-        const fileContent = file.code || file.content || '';
-
-        if (fileName && fileContent) {
-          await sequelize.query(`
-            INSERT INTO plugin_scripts (
-              plugin_id, file_name, file_content, script_type, scope, load_priority, is_enabled
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-          `, {
-            bind: [
-              id,
-              fileName,
-              fileContent,
-              'js',
-              'frontend',
-              0,
-              true
-            ],
-            type: sequelize.QueryTypes.INSERT
-          });
-        }
-      }
-    }
-
-    // If plugin has hooks, store them in plugin_hooks table
-    if (pluginData.hooks && pluginData.hooks.length > 0) {
-      for (const hook of pluginData.hooks) {
-        await sequelize.query(`
-          INSERT INTO plugin_hooks (
-            plugin_id, hook_name, handler_function, priority, is_enabled
-          )
-          VALUES ($1, $2, $3, $4, $5)
-        `, {
-          bind: [
-            id,
-            hook.hook_name || hook.name,
-            hook.handler_code || hook.code || hook.handler,
-            hook.priority || 10,
-            hook.enabled !== false
-          ],
-          type: sequelize.QueryTypes.INSERT
+    // Store generated files
+    for (const file of pluginData.generatedFiles || []) {
+      const fileName = file.name || file.filename || '';
+      const fileContent = file.code || file.content || '';
+      if (fileName && fileContent) {
+        await tenantDb.from('plugin_scripts').insert({
+          plugin_id: id, file_name: fileName, file_content: fileContent,
+          script_type: 'js', scope: 'frontend', load_priority: 0, is_enabled: true
         });
       }
     }
 
-    // If plugin has events, store them in plugin_events table
-    if (pluginData.events && pluginData.events.length > 0) {
-      for (const event of pluginData.events) {
-        await sequelize.query(`
-          INSERT INTO plugin_events (
-            plugin_id, event_name, listener_function, priority, is_enabled
-          )
-          VALUES ($1, $2, $3, $4, $5)
-        `, {
-          bind: [
-            id,
-            event.event_name || event.name,
-            event.listener_code || event.code || event.handler,
-            event.priority || 10,
-            event.enabled !== false
-          ],
-          type: sequelize.QueryTypes.INSERT
-        });
-      }
+    // Store hooks
+    for (const hook of pluginData.hooks || []) {
+      await tenantDb.from('plugin_hooks').insert({
+        plugin_id: id,
+        hook_name: hook.hook_name || hook.name,
+        handler_function: hook.handler_code || hook.code || hook.handler,
+        priority: hook.priority || 10,
+        is_enabled: hook.enabled !== false
+      });
     }
 
-    res.json({
-      success: true,
-      message: 'Plugin created successfully',
-      id
-    });
+    // Store events
+    for (const event of pluginData.events || []) {
+      await tenantDb.from('plugin_events').insert({
+        plugin_id: id,
+        event_name: event.event_name || event.name,
+        listener_function: event.listener_code || event.code || event.handler,
+        priority: event.priority || 10,
+        is_enabled: event.enabled !== false
+      });
+    }
+
+    res.json({ success: true, message: 'Plugin created successfully', id });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -2249,8 +1697,7 @@ router.post('/registry', async (req, res) => {
  */
 router.get('/:pluginId/scripts', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const { pluginId } = req.params;
     const { scope } = req.query; // 'frontend', 'backend', 'admin'
 
@@ -2260,29 +1707,23 @@ router.get('/:pluginId/scripts', async (req, res) => {
     res.set('Expires', '0');
 
     // Build query
-    let query = `
-      SELECT file_name, file_content, script_type, scope, load_priority
-      FROM plugin_scripts
-      WHERE plugin_id = $1 AND is_enabled = true
-    `;
-
-    const params = [pluginId];
+    let query = tenantDb
+      .from('plugin_scripts')
+      .select('file_name, file_content, script_type, scope, load_priority')
+      .eq('plugin_id', pluginId)
+      .eq('is_enabled', true);
 
     if (scope) {
-      query += ` AND scope = $2`;
-      params.push(scope);
+      query = query.eq('scope', scope);
     }
 
-    query += ` ORDER BY load_priority ASC`;
+    const { data: scripts, error } = await query.order('load_priority', { ascending: true });
 
-    const scripts = await sequelize.query(query, {
-      bind: params,
-      type: sequelize.QueryTypes.SELECT
-    });
+    if (error) throw error;
 
     res.json({
       success: true,
-      data: scripts.map(s => ({
+      data: (scripts || []).map(s => ({
         name: s.file_name,
         content: s.file_content,
         type: s.script_type,
@@ -2304,8 +1745,7 @@ router.get('/:pluginId/scripts', async (req, res) => {
  */
 router.post('/:pluginId/event-listeners', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const { pluginId } = req.params;
     const { file_name, old_file_name, file_path, event_name, old_event_name, listener_function, priority = 10, description } = req.body;
 
@@ -2325,48 +1765,55 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
 
     if (old_file_name) {
       // Look up by old filename (most reliable for renames)
-      existing = await sequelize.query(`
-        SELECT id, event_name FROM plugin_events
-        WHERE plugin_id = $1 AND file_name = $2
-      `, {
-        bind: [pluginId, old_file_name],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data } = await tenantDb
+        .from('plugin_events')
+        .select('id, event_name')
+        .eq('plugin_id', pluginId)
+        .eq('file_name', old_file_name);
+      existing = data || [];
     } else if (old_event_name) {
       // Fall back to old_event_name for backwards compatibility
-      existing = await sequelize.query(`
-        SELECT id, event_name FROM plugin_events
-        WHERE plugin_id = $1 AND event_name = $2
-      `, {
-        bind: [pluginId, old_event_name],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data } = await tenantDb
+        .from('plugin_events')
+        .select('id, event_name')
+        .eq('plugin_id', pluginId)
+        .eq('event_name', old_event_name);
+      existing = data || [];
     }
     // else: New event creation - don't check for duplicates
     // Multiple listeners can listen to the same event with different handlers/files
 
     if (existing.length > 0) {
       // Update existing event (filename, event_name, and code)
-      const oldEventName = existing[0].event_name;
-      await sequelize.query(`
-        UPDATE plugin_events
-        SET event_name = $1, file_name = $2, listener_function = $3, priority = $4, updated_at = NOW()
-        WHERE plugin_id = $5 AND id = $6
-      `, {
-        bind: [event_name, fileName, listener_function, priority, pluginId, existing[0].id],
-        type: sequelize.QueryTypes.UPDATE
-      });
+      const { error } = await tenantDb
+        .from('plugin_events')
+        .update({
+          event_name,
+          file_name: fileName,
+          listener_function,
+          priority,
+          updated_at: new Date().toISOString()
+        })
+        .eq('plugin_id', pluginId)
+        .eq('id', existing[0].id);
 
+      if (error) throw error;
     } else {
       // Insert new event with custom filename
-      await sequelize.query(`
-        INSERT INTO plugin_events
-        (plugin_id, event_name, file_name, listener_function, priority, is_enabled, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, true, NOW(), NOW())
-      `, {
-        bind: [pluginId, event_name, fileName, listener_function, priority],
-        type: sequelize.QueryTypes.INSERT
-      });
+      const { error } = await tenantDb
+        .from('plugin_events')
+        .insert({
+          plugin_id: pluginId,
+          event_name,
+          file_name: fileName,
+          listener_function,
+          priority,
+          is_enabled: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
     }
 
     res.json({
@@ -2392,8 +1839,7 @@ router.post('/:pluginId/event-listeners', async (req, res) => {
  */
 router.post('/:pluginId/controllers', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const { pluginId } = req.params;
     const { controller_name, method, path, handler_code, description, requires_auth = false } = req.body;
 
@@ -2405,14 +1851,22 @@ router.post('/:pluginId/controllers', async (req, res) => {
     }
 
     // Insert new controller
-    await sequelize.query(`
-      INSERT INTO plugin_controllers
-      (plugin_id, controller_name, method, path, handler_code, description, requires_auth, is_enabled, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, true, NOW(), NOW())
-    `, {
-      bind: [pluginId, controller_name, method, path, handler_code, description || `${method} ${path}`, requires_auth],
-      type: sequelize.QueryTypes.INSERT
-    });
+    const { error } = await tenantDb
+      .from('plugin_controllers')
+      .insert({
+        plugin_id: pluginId,
+        controller_name,
+        method,
+        path,
+        handler_code,
+        description: description || `${method} ${path}`,
+        requires_auth,
+        is_enabled: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -2433,8 +1887,7 @@ router.post('/:pluginId/controllers', async (req, res) => {
  */
 router.put('/:pluginId/controllers/:controllerName', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const { pluginId, controllerName } = req.params;
     const { controller_name, old_controller_name, method, path, handler_code, description, requires_auth } = req.body;
 
@@ -2442,23 +1895,21 @@ router.put('/:pluginId/controllers/:controllerName', async (req, res) => {
     const lookupName = old_controller_name || controllerName;
 
     // Update controller
-    await sequelize.query(`
-      UPDATE plugin_controllers
-      SET controller_name = $1, method = $2, path = $3, handler_code = $4, description = $5, requires_auth = $6, updated_at = NOW()
-      WHERE plugin_id = $7 AND controller_name = $8
-    `, {
-      bind: [
-        controller_name || lookupName,
+    const { error } = await tenantDb
+      .from('plugin_controllers')
+      .update({
+        controller_name: controller_name || lookupName,
         method,
         path,
         handler_code,
-        description || `${method} ${path}`,
-        requires_auth !== undefined ? requires_auth : false,
-        pluginId,
-        lookupName
-      ],
-      type: sequelize.QueryTypes.UPDATE
-    });
+        description: description || `${method} ${path}`,
+        requires_auth: requires_auth !== undefined ? requires_auth : false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('plugin_id', pluginId)
+      .eq('controller_name', lookupName);
+
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -2483,8 +1934,7 @@ router.put('/:pluginId/controllers/:controllerName', async (req, res) => {
  */
 router.all('/:pluginId/exec/*', optionalAuthMiddleware, storeResolver(), async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const { pluginId } = req.params;
     const controllerPath = '/' + (req.params[0] || '');
     const method = req.method;
@@ -2502,17 +1952,16 @@ router.all('/:pluginId/exec/*', optionalAuthMiddleware, storeResolver(), async (
       req.user?.storeId;
 
     // First check if the plugin is enabled for this store
-    const [pluginConfig] = await sequelize.query(`
-      SELECT pc.is_enabled, pr.status, pr.name
-      FROM plugin_registry pr
-      LEFT JOIN plugin_configurations pc ON pc.plugin_id = pr.id AND pc.store_id = $2
-      WHERE ${isUUID ? 'pr.id = $1' : 'pr.slug = $1'}
-    `, {
-      bind: [pluginId, store_id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    // Need to do separate queries since Supabase doesn't support raw SQL joins easily
+    let pluginQuery = tenantDb.from('plugin_registry').select('id, status, name, slug');
+    if (isUUID) {
+      pluginQuery = pluginQuery.eq('id', pluginId);
+    } else {
+      pluginQuery = pluginQuery.eq('slug', pluginId);
+    }
+    const { data: pluginData, error: pluginError } = await pluginQuery.maybeSingle();
 
-    if (!pluginConfig) {
+    if (pluginError || !pluginData) {
       return res.status(404).json({
         success: false,
         error: `Plugin not found: ${pluginId}`
@@ -2520,34 +1969,39 @@ router.all('/:pluginId/exec/*', optionalAuthMiddleware, storeResolver(), async (
     }
 
     // Check if plugin is active in registry
-    if (pluginConfig.status !== 'active') {
+    if (pluginData.status !== 'active') {
       return res.status(403).json({
         success: false,
-        error: `Plugin "${pluginConfig.name || pluginId}" is not active (status: ${pluginConfig.status})`
+        error: `Plugin "${pluginData.name || pluginId}" is not active (status: ${pluginData.status})`
       });
     }
 
-    // Check if plugin is enabled for this store
-    if (pluginConfig.is_enabled === false) {
-      return res.status(403).json({
-        success: false,
-        error: `Plugin "${pluginConfig.name || pluginId}" is disabled for this store`
-      });
+    // Check plugin configuration for this store
+    if (store_id) {
+      const { data: configData } = await tenantDb
+        .from('plugin_configurations')
+        .select('is_enabled')
+        .eq('plugin_id', pluginData.id)
+        .eq('store_id', store_id)
+        .maybeSingle();
+
+      if (configData && configData.is_enabled === false) {
+        return res.status(403).json({
+          success: false,
+          error: `Plugin "${pluginData.name || pluginId}" is disabled for this store`
+        });
+      }
     }
 
     // Find matching controller in plugin_controllers table
-    // Get all controllers for this plugin and method to do pattern matching
-    const controllers = await sequelize.query(`
-      SELECT pc.*, pr.slug, pr.id as plugin_uuid
-      FROM plugin_controllers pc
-      JOIN plugin_registry pr ON pc.plugin_id = pr.id
-      WHERE (${isUUID ? 'pc.plugin_id = $1' : 'pr.slug = $1'})
-        AND pc.method = $2
-        AND pc.is_enabled = true
-    `, {
-      bind: [pluginId, method],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: controllers, error: ctrlError } = await tenantDb
+      .from('plugin_controllers')
+      .select('*, plugin_registry!inner(slug, id)')
+      .eq('plugin_id', pluginData.id)
+      .eq('method', method)
+      .eq('is_enabled', true);
+
+    if (ctrlError) throw ctrlError;
 
     // Find matching controller by pattern (supports :id, :userId, etc.)
     const matchPath = (pattern, actual) => {
@@ -2572,7 +2026,7 @@ router.all('/:pluginId/exec/*', optionalAuthMiddleware, storeResolver(), async (
     };
 
     // Sort controllers: exact matches first, then parameterized routes
-    const sortedControllers = [...controllers].sort((a, b) => {
+    const sortedControllers = [...(controllers || [])].sort((a, b) => {
       const aHasParams = a.path.includes(':');
       const bHasParams = b.path.includes(':');
       if (aHasParams && !bHasParams) return 1;  // b (exact) before a (param)
@@ -2597,7 +2051,7 @@ router.all('/:pluginId/exec/*', optionalAuthMiddleware, storeResolver(), async (
         success: false,
         error: `Controller not found: ${method} ${controllerPath}`,
         pluginId,
-        availableControllers: controllers.map(c => `${c.method} ${c.path}`)
+        availableControllers: (controllers || []).map(c => `${c.method} ${c.path}`)
       });
     }
 
@@ -2631,13 +2085,13 @@ router.all('/:pluginId/exec/*', optionalAuthMiddleware, storeResolver(), async (
           };
         }
       },
-      sequelize
+      supabase: tenantDb  // Pass Supabase client instead of sequelize
     };
 
     // Execute the controller handler code
     const handlerFunc = new Function('req', 'res', 'context', `
-      const { sequelize } = context;
-      return (${controller.handler_code})(req, res, { sequelize });
+      const { supabase } = context;
+      return (${controller.handler_code})(req, res, { supabase });
     `);
 
     await handlerFunc(context.req, context.res, context);
@@ -2663,8 +2117,7 @@ router.all('/:pluginId/exec/*', optionalAuthMiddleware, storeResolver(), async (
  */
 router.delete('/registry/:id/files', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const { id } = req.params;
     const { path } = req.body;
 
@@ -2700,14 +2153,12 @@ router.delete('/registry/:id/files', async (req, res) => {
       attemptedTable = 'plugin_docs';
 
       try {
-        await sequelize.query(`
-          DELETE FROM plugin_docs
-          WHERE plugin_id = $1 AND doc_type = $2
-        `, {
-          bind: [id, docType],
-          type: sequelize.QueryTypes.DELETE
-        });
-        deleted = true;
+        const { error } = await tenantDb
+          .from('plugin_docs')
+          .delete()
+          .eq('plugin_id', id)
+          .eq('doc_type', docType);
+        if (!error) deleted = true;
       } catch (err) {
         // Silently fail
       }
@@ -2724,15 +2175,13 @@ router.delete('/registry/:id/files', async (req, res) => {
       const fileName = normalizedPath.replace('events/', '');
       attemptedTable = 'plugin_events';
       try {
-        const result = await sequelize.query(`
-          DELETE FROM plugin_events
-          WHERE plugin_id = $1 AND file_name = $2
-        `, {
-          bind: [id, fileName],
-          type: sequelize.QueryTypes.DELETE
-        });
-        const rowCount = result[1]?.rowCount || result[0]?.affectedRows || 0;
-        if (rowCount > 0) {
+        const { data, error } = await tenantDb
+          .from('plugin_events')
+          .delete()
+          .eq('plugin_id', id)
+          .eq('file_name', fileName)
+          .select();
+        if (!error && data && data.length > 0) {
           deleted = true;
         }
       } catch (err) {
@@ -2744,15 +2193,13 @@ router.delete('/registry/:id/files', async (req, res) => {
       const fileName = normalizedPath.replace('entities/', '').replace('.json', '');
       attemptedTable = 'plugin_entities';
       try {
-        const result = await sequelize.query(`
-          DELETE FROM plugin_entities
-          WHERE plugin_id = $1 AND entity_name = $2
-        `, {
-          bind: [id, fileName],
-          type: sequelize.QueryTypes.DELETE
-        });
-        const rowCount = result[1]?.rowCount || result[0]?.affectedRows || 0;
-        if (rowCount > 0) {
+        const { data, error } = await tenantDb
+          .from('plugin_entities')
+          .delete()
+          .eq('plugin_id', id)
+          .eq('entity_name', fileName)
+          .select();
+        if (!error && data && data.length > 0) {
           deleted = true;
         }
       } catch (err) {
@@ -2764,15 +2211,13 @@ router.delete('/registry/:id/files', async (req, res) => {
       const fileName = normalizedPath.replace('controllers/', '').replace('.js', '');
       attemptedTable = 'plugin_controllers';
       try {
-        const result = await sequelize.query(`
-          DELETE FROM plugin_controllers
-          WHERE plugin_id = $1 AND controller_name = $2
-        `, {
-          bind: [id, fileName],
-          type: sequelize.QueryTypes.DELETE
-        });
-        const rowCount = result[1]?.rowCount || result[0]?.affectedRows || 0;
-        if (rowCount > 0) {
+        const { data, error } = await tenantDb
+          .from('plugin_controllers')
+          .delete()
+          .eq('plugin_id', id)
+          .eq('controller_name', fileName)
+          .select();
+        if (!error && data && data.length > 0) {
           deleted = true;
         }
       } catch (err) {
@@ -2798,18 +2243,14 @@ router.delete('/registry/:id/files', async (req, res) => {
 
       for (const pathVariation of uniquePathVariations) {
         try {
-          const result = await sequelize.query(`
-            DELETE FROM plugin_scripts
-            WHERE plugin_id = $1 AND file_name = $2
-          `, {
-            bind: [id, pathVariation],
-            type: sequelize.QueryTypes.DELETE
-          });
+          const { data, error } = await tenantDb
+            .from('plugin_scripts')
+            .delete()
+            .eq('plugin_id', id)
+            .eq('file_name', pathVariation)
+            .select();
 
-          // Check if any rows were actually deleted
-          const rowCount = result[1]?.rowCount || result[0]?.affectedRows || 0;
-
-          if (rowCount > 0) {
+          if (!error && data && data.length > 0) {
             deleted = true;
             break;
           }
@@ -2829,16 +2270,15 @@ router.delete('/registry/:id/files', async (req, res) => {
     // ALSO delete from JSON fields (manifest.generatedFiles and source_code)
     // This ensures files don't reappear after deletion from normalized tables
     try {
-      const plugin = await sequelize.query(`
-        SELECT manifest, source_code FROM plugin_registry WHERE id = $1
-      `, {
-        bind: [id],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: pluginData } = await tenantDb
+        .from('plugin_registry')
+        .select('manifest, source_code')
+        .eq('id', id)
+        .maybeSingle();
 
-      if (plugin.length > 0) {
-        let manifest = plugin[0].manifest || {};
-        let sourceCode = plugin[0].source_code || [];
+      if (pluginData) {
+        let manifest = pluginData.manifest || {};
+        let sourceCode = pluginData.source_code || [];
 
         // Remove from manifest.generatedFiles
         if (manifest.generatedFiles && Array.isArray(manifest.generatedFiles)) {
@@ -2857,14 +2297,14 @@ router.delete('/registry/:id/files', async (req, res) => {
         }
 
         // Update plugin_registry
-        await sequelize.query(`
-          UPDATE plugin_registry
-          SET manifest = $1, source_code = $2, updated_at = NOW()
-          WHERE id = $3
-        `, {
-          bind: [JSON.stringify(manifest), JSON.stringify(sourceCode), id],
-          type: sequelize.QueryTypes.UPDATE
-        });
+        await tenantDb
+          .from('plugin_registry')
+          .update({
+            manifest,
+            source_code: sourceCode,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id);
       }
     } catch (jsonError) {
       // Don't fail the request if JSON cleanup fails
@@ -2886,27 +2326,26 @@ router.delete('/registry/:id/files', async (req, res) => {
 /**
  * POST /api/plugins/:id/run-migration
  * Execute an existing migration for a plugin
+ * NOTE: Raw SQL execution requires RPC function 'execute_sql' in database
  */
 router.post('/:id/run-migration', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const { id } = req.params;
     const { migration_version, migration_name } = req.body;
 
     const startTime = Date.now();
 
     // Get migration from database
-    const migrations = await sequelize.query(`
-      SELECT id, up_sql, migration_description, status
-      FROM plugin_migrations
-      WHERE plugin_id = $1 AND migration_version = $2
-    `, {
-      bind: [id, migration_version],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: migrations, error: fetchError } = await tenantDb
+      .from('plugin_migrations')
+      .select('id, up_sql, migration_description, status')
+      .eq('plugin_id', id)
+      .eq('migration_version', migration_version);
 
-    if (migrations.length === 0) {
+    if (fetchError) throw fetchError;
+
+    if (!migrations || migrations.length === 0) {
       return res.status(404).json({
         success: false,
         error: 'Migration not found'
@@ -2937,17 +2376,21 @@ router.post('/:id/run-migration', async (req, res) => {
       warnings.push(`⚠️ DROPS TABLE - All data will be permanently deleted!`);
     }
 
-    // Execute migration
-    await sequelize.query(migration.up_sql);
+    // Execute migration via RPC (requires execute_sql function in Supabase)
+    const { error: execError } = await tenantDb.rpc('execute_sql', { sql: migration.up_sql });
+    if (execError) throw execError;
 
     // Update status
-    await sequelize.query(`
-      UPDATE plugin_migrations
-      SET status = 'completed', completed_at = NOW(), execution_time_ms = $1
-      WHERE id = $2
-    `, {
-      bind: [Date.now() - startTime, migration.id]
-    });
+    const { error: updateError } = await tenantDb
+      .from('plugin_migrations')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        execution_time_ms: Date.now() - startTime
+      })
+      .eq('id', migration.id);
+
+    if (updateError) throw updateError;
 
     const executionTime = Date.now() - startTime;
 
@@ -2971,45 +2414,40 @@ router.post('/:id/run-migration', async (req, res) => {
 /**
  * POST /api/plugins/:id/generate-entity-migration
  * Generate a pending migration for an entity (CREATE or ALTER TABLE)
+ * NOTE: Table existence check requires RPC function 'check_table_exists' in database
  */
 router.post('/:id/generate-entity-migration', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const { id } = req.params;
     const { entity_name, table_name, schema_definition, is_update } = req.body;
 
     // Get plugin name from database
-    const pluginData = await sequelize.query(`
-      SELECT name FROM plugin_registry WHERE id = $1
-    `, {
-      bind: [id],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: pluginData, error: pluginError } = await tenantDb
+      .from('plugin_registry')
+      .select('name')
+      .eq('id', id)
+      .maybeSingle();
 
-    if (pluginData.length === 0) {
+    if (pluginError || !pluginData) {
       return res.status(404).json({
         success: false,
         error: 'Plugin not found'
       });
     }
 
-    const pluginName = pluginData[0].name;
+    const pluginName = pluginData.name;
     const migrationVersion = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
 
-    // Check if table actually exists in database
-    const tableExists = await sequelize.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables
-        WHERE table_schema = 'public'
-        AND table_name = $1
-      )
-    `, {
-      bind: [table_name],
-      type: sequelize.QueryTypes.SELECT
-    });
-
-    const tableExistsInDB = tableExists[0].exists;
+    // Check if table actually exists in database via RPC
+    let tableExistsInDB = false;
+    try {
+      const { data: tableCheck } = await tenantDb.rpc('check_table_exists', { p_table_name: table_name });
+      tableExistsInDB = tableCheck === true;
+    } catch (rpcError) {
+      // If RPC doesn't exist, assume table doesn't exist (safer)
+      console.warn('check_table_exists RPC not available, assuming table does not exist');
+    }
 
     // Generate SQL based on whether table exists in database
     let upSQL, downSQL, migrationDescription;
@@ -3018,22 +2456,21 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
     if (tableExistsInDB) {
 
       // Get existing entity schema from database to compare
-      const existingEntity = await sequelize.query(`
-        SELECT schema_definition FROM plugin_entities
-        WHERE plugin_id = $1 AND entity_name = $2
-      `, {
-        bind: [id, entity_name],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: existingEntityData } = await tenantDb
+        .from('plugin_entities')
+        .select('schema_definition')
+        .eq('plugin_id', id)
+        .eq('entity_name', entity_name)
+        .maybeSingle();
 
-      if (existingEntity.length === 0) {
+      if (!existingEntityData) {
         return res.status(404).json({
           success: false,
           error: 'Entity not found in database. Cannot generate ALTER TABLE migration. Use CREATE TABLE instead.'
         });
       }
 
-      const oldSchema = existingEntity[0].schema_definition;
+      const oldSchema = existingEntityData.schema_definition;
       const oldColumns = oldSchema.columns || [];
       const newColumns = schema_definition.columns || [];
 
@@ -3202,16 +2639,15 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
       // Generate descriptive name for ALTER TABLE based on changes
       let migrationNameParts = ['alter', table_name, 'table'];
 
-      const oldSchema = await sequelize.query(`
-        SELECT schema_definition FROM plugin_entities
-        WHERE plugin_id = $1 AND entity_name = $2
-      `, {
-        bind: [id, entity_name],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: oldSchemaData } = await tenantDb
+        .from('plugin_entities')
+        .select('schema_definition')
+        .eq('plugin_id', id)
+        .eq('entity_name', entity_name)
+        .maybeSingle();
 
-      if (oldSchema.length > 0) {
-        const oldColumns = (oldSchema[0].schema_definition.columns || []).map(c => c.name);
+      if (oldSchemaData) {
+        const oldColumns = (oldSchemaData.schema_definition.columns || []).map(c => c.name);
         const newColumns = (schema_definition.columns || []).map(c => c.name);
         const addedCols = newColumns.filter(c => !oldColumns.includes(c));
         const removedCols = oldColumns.filter(c => !newColumns.includes(c));
@@ -3236,22 +2672,20 @@ router.post('/:id/generate-entity-migration', async (req, res) => {
     }
 
     // Create PENDING migration (don't execute)
-    await sequelize.query(`
-      INSERT INTO plugin_migrations (
-        plugin_id, plugin_name, migration_name, migration_version,
-        migration_description, status, up_sql, down_sql
-      ) VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7)
-    `, {
-      bind: [
-        id,
-        pluginName,
-        migrationFileName,
-        migrationVersion,
-        migrationDescription,
-        upSQL,
-        downSQL
-      ]
-    });
+    const { error: insertError } = await tenantDb
+      .from('plugin_migrations')
+      .insert({
+        plugin_id: id,
+        plugin_name: pluginName,
+        migration_name: migrationFileName,
+        migration_version: migrationVersion,
+        migration_description: migrationDescription,
+        status: 'pending',
+        up_sql: upSQL,
+        down_sql: downSQL
+      });
+
+    if (insertError) throw insertError;
 
     res.json({
       success: true,
