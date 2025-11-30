@@ -77,7 +77,7 @@ const AIWorkspaceContent = () => {
               <>
                 <ResizablePanel
                   defaultSize={chatMaximized ? 100 : calculateChatSize()}
-                  minSize={20}
+                  minSize={chatMaximized ? 100 : 20}
                   maxSize={chatMaximized ? 100 : 50}
                   collapsible={false}
                 >
@@ -86,29 +86,28 @@ const AIWorkspaceContent = () => {
                   </div>
                 </ResizablePanel>
 
-                {!chatMaximized && <ResizableHandle withHandle />}
+                <ResizableHandle withHandle className={chatMaximized ? 'hidden' : ''} />
               </>
             )}
 
-            {/* Developer Plugin Editor (Right) - hidden when chat is maximized */}
-            {!chatMaximized && (
-              <ResizablePanel
-                defaultSize={chatMinimized ? 100 : calculateFileTreeSize() + calculateEditorSize()}
-                minSize={8}
-              >
-                <DeveloperPluginEditor
-                  plugin={pluginToEdit}
-                  onSave={(updated) => {
-                    console.log('Plugin saved:', updated);
-                  }}
-                  onClose={closePluginEditor}
-                  initialContext="editing"
-                  chatMinimized={chatMinimized}
-                  fileTreeTargetSize={calculateFileTreeSize()}
-                  editorTargetSize={calculateEditorSize()}
-                />
-              </ResizablePanel>
-            )}
+            {/* Developer Plugin Editor (Right) - collapsed when chat is maximized */}
+            <ResizablePanel
+              defaultSize={chatMinimized ? 100 : (chatMaximized ? 0 : calculateFileTreeSize() + calculateEditorSize())}
+              minSize={chatMaximized ? 0 : 8}
+              className={chatMaximized ? 'hidden' : ''}
+            >
+              <DeveloperPluginEditor
+                plugin={pluginToEdit}
+                onSave={(updated) => {
+                  console.log('Plugin saved:', updated);
+                }}
+                onClose={closePluginEditor}
+                initialContext="editing"
+                chatMinimized={chatMinimized}
+                fileTreeTargetSize={calculateFileTreeSize()}
+                editorTargetSize={calculateEditorSize()}
+              />
+            </ResizablePanel>
           </ResizablePanelGroup>
         ) : showAiStudio ? (
           // AI Studio Mode - Full ChatInterface for creating plugins

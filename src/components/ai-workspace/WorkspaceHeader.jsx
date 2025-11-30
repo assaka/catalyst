@@ -28,9 +28,7 @@ import {
   Clock,
   AlertCircle,
   Check,
-  RotateCcw,
-  Maximize2,
-  Minimize2
+  RotateCcw
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -68,9 +66,7 @@ const WorkspaceHeader = () => {
     openAiStudio,
     closeAiStudio,
     chatMinimized,
-    toggleChatMinimized,
-    chatMaximized,
-    toggleChatMaximized
+    toggleChatMinimized
   } = useAIWorkspace();
 
   const { getSelectedStoreId } = useStoreSelection();
@@ -205,36 +201,19 @@ const WorkspaceHeader = () => {
       <div className="flex items-center gap-1">
         {/* AI Panel toggle - different behavior for plugin editor vs normal mode */}
         {showPluginEditor ? (
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleChatMinimized}
-              className="h-8 w-8 p-0"
-              title={chatMinimized ? 'Show AI Chat' : 'Hide AI Chat'}
-            >
-              {chatMinimized ? (
-                <PanelLeft className="h-4 w-4" />
-              ) : (
-                <PanelLeftClose className="h-4 w-4" />
-              )}
-            </Button>
-            {!chatMinimized && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleChatMaximized}
-                className="h-8 w-8 p-0"
-                title={chatMaximized ? 'Restore AI Chat' : 'Maximize AI Chat'}
-              >
-                {chatMaximized ? (
-                  <Minimize2 className="h-4 w-4" />
-                ) : (
-                  <Maximize2 className="h-4 w-4" />
-                )}
-              </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleChatMinimized}
+            className="h-8 w-8 p-0"
+            title={chatMinimized ? 'Show AI Chat' : 'Hide AI Chat'}
+          >
+            {chatMinimized ? (
+              <PanelLeft className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
             )}
-          </>
+          </Button>
         ) : (
           <Button
             variant="ghost"
