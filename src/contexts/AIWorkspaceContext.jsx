@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 /**
  * AIWorkspaceContext - Shared state management for the AI Workspace
@@ -51,6 +52,8 @@ export const AI_OPERATIONS = {
 };
 
 export const AIWorkspaceProvider = ({ children }) => {
+  const location = useLocation();
+
   // Page/Editor State
   const [selectedPageType, setSelectedPageType] = useState(PAGE_TYPES.PRODUCT);
   const [editorMode, setEditorMode] = useState(false);
@@ -95,6 +98,16 @@ export const AIWorkspaceProvider = ({ children }) => {
 
   // Configuration refresh trigger (increments to signal editors to reload)
   const [configurationRefreshTrigger, setConfigurationRefreshTrigger] = useState(0);
+
+  // Check for plugin passed via location state (from Plugins page Edit button)
+  useEffect(() => {
+    if (location.state?.plugin) {
+      setPluginToEdit(location.state.plugin);
+      setShowPluginEditor(true);
+      // Clear the state to prevent re-opening on navigation
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   /**
    * Select a page type and update view mode accordingly
