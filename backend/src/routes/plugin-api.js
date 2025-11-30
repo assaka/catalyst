@@ -660,12 +660,11 @@ router.get('/active/:pluginId', async (req, res) => {
 /**
  * GET /api/plugins/registry/:pluginId
  * Get a specific plugin with its hooks and events (for UnifiedPluginManager)
- * LEGACY ENDPOINT - updated to use normalized tables
+ * Updated to use Supabase client
  */
 router.get('/registry/:pluginId', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
 
     // Prevent caching - always get fresh plugin data
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -675,34 +674,30 @@ router.get('/registry/:pluginId', async (req, res) => {
     const { pluginId } = req.params;
 
     // Get plugin details from plugin_registry
-    const plugin = await sequelize.query(`
-      SELECT * FROM plugin_registry WHERE id = $1
-    `, {
-      bind: [pluginId],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: plugin, error: pluginError } = await tenantDb
+      .from('plugin_registry')
+      .select('*')
+      .eq('id', pluginId)
+      .single();
 
-    if (!plugin[0]) {
+    if (pluginError || !plugin) {
       return res.status(404).json({
         success: false,
         error: 'Plugin not found'
       });
     }
 
-    // Load hooks from plugin_hooks table (normalized structure)
+    // Load hooks from plugin_hooks table
     let hooks = [];
     try {
-      const hooksResult = await sequelize.query(`
-        SELECT hook_name, handler_function, priority, is_enabled
-        FROM plugin_hooks
-        WHERE plugin_id = $1 AND is_enabled = true
-        ORDER BY priority ASC
-      `, {
-        bind: [pluginId],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: hooksResult } = await tenantDb
+        .from('plugin_hooks')
+        .select('hook_name, handler_function, priority, is_enabled')
+        .eq('plugin_id', pluginId)
+        .eq('is_enabled', true)
+        .order('priority', { ascending: true });
 
-      hooks = hooksResult.map(h => ({
+      hooks = (hooksResult || []).map(h => ({
         hook_name: h.hook_name,
         handler_code: h.handler_function,
         priority: h.priority || 10,
@@ -711,22 +706,17 @@ router.get('/registry/:pluginId', async (req, res) => {
     } catch (hookError) {
     }
 
-    // Note: plugin_event_listeners table has been dropped - all events now in plugin_events
-
     // Load plugin_scripts from normalized table
     let pluginScripts = [];
     try {
-      const scriptsResult = await sequelize.query(`
-        SELECT id, script_type, scope, file_name, file_content, load_priority, is_enabled
-        FROM plugin_scripts
-        WHERE plugin_id = $1 AND is_enabled = true
-        ORDER BY file_name ASC
-      `, {
-        bind: [pluginId],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: scriptsResult } = await tenantDb
+        .from('plugin_scripts')
+        .select('id, script_type, scope, file_name, file_content, load_priority, is_enabled')
+        .eq('plugin_id', pluginId)
+        .eq('is_enabled', true)
+        .order('file_name', { ascending: true });
 
-      pluginScripts = scriptsResult.map(s => ({
+      pluginScripts = (scriptsResult || []).map(s => ({
         name: s.file_name,
         code: s.file_content,
         script_type: s.script_type,
@@ -739,18 +729,16 @@ router.get('/registry/:pluginId', async (req, res) => {
     // Load plugin_events from normalized table
     let pluginEvents = [];
     try {
-      const eventsResult = await sequelize.query(`
-        SELECT id, event_name, file_name, listener_function, priority, is_enabled
-        FROM plugin_events
-        WHERE plugin_id = $1 AND is_enabled = true
-        ORDER BY event_name ASC, priority ASC
-      `, {
-        bind: [pluginId],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: eventsResult } = await tenantDb
+        .from('plugin_events')
+        .select('id, event_name, file_name, listener_function, priority, is_enabled')
+        .eq('plugin_id', pluginId)
+        .eq('is_enabled', true)
+        .order('event_name', { ascending: true })
+        .order('priority', { ascending: true });
 
-      pluginEvents = eventsResult.map(e => ({
-        name: e.file_name || `${e.event_name.replace(/\./g, '_')}.js`,  // Use custom filename or generate
+      pluginEvents = (eventsResult || []).map(e => ({
+        name: e.file_name || `${e.event_name.replace(/\./g, '_')}.js`,
         code: e.listener_function,
         event_name: e.event_name,
         priority: e.priority || 10
@@ -761,18 +749,14 @@ router.get('/registry/:pluginId', async (req, res) => {
     // Load plugin_entities from normalized table
     let pluginEntities = [];
     try {
-      const entitiesResult = await sequelize.query(`
-        SELECT id, entity_name, table_name, description, schema_definition,
-               migration_status, migration_version, create_table_sql, is_enabled
-        FROM plugin_entities
-        WHERE plugin_id = $1 AND is_enabled = true
-        ORDER BY entity_name ASC
-      `, {
-        bind: [pluginId],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: entitiesResult } = await tenantDb
+        .from('plugin_entities')
+        .select('id, entity_name, table_name, description, schema_definition, migration_status, migration_version, create_table_sql, is_enabled')
+        .eq('plugin_id', pluginId)
+        .eq('is_enabled', true)
+        .order('entity_name', { ascending: true });
 
-      pluginEntities = entitiesResult.map(e => ({
+      pluginEntities = (entitiesResult || []).map(e => ({
         name: `entities/${e.entity_name}.json`,
         code: JSON.stringify({
           entity_name: e.entity_name,
@@ -793,18 +777,14 @@ router.get('/registry/:pluginId', async (req, res) => {
     // Load plugin_controllers from normalized table
     let pluginControllers = [];
     try {
-      const controllersResult = await sequelize.query(`
-        SELECT id, controller_name, description, method, path, handler_code,
-               requires_auth, is_enabled
-        FROM plugin_controllers
-        WHERE plugin_id = $1 AND is_enabled = true
-        ORDER BY controller_name ASC
-      `, {
-        bind: [pluginId],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: controllersResult } = await tenantDb
+        .from('plugin_controllers')
+        .select('id, controller_name, description, method, path, handler_code, requires_auth, is_enabled')
+        .eq('plugin_id', pluginId)
+        .eq('is_enabled', true)
+        .order('controller_name', { ascending: true });
 
-      pluginControllers = controllersResult.map(c => ({
+      pluginControllers = (controllersResult || []).map(c => ({
         name: `controllers/${c.controller_name}.js`,
         code: c.handler_code,
         controller_name: c.controller_name,
@@ -819,18 +799,13 @@ router.get('/registry/:pluginId', async (req, res) => {
     // Load plugin_migrations from normalized table
     let pluginMigrations = [];
     try {
-      const migrationsResult = await sequelize.query(`
-        SELECT id, migration_name, migration_version, migration_description,
-               status, up_sql, down_sql, executed_at
-        FROM plugin_migrations
-        WHERE plugin_id = $1
-        ORDER BY migration_version DESC
-      `, {
-        bind: [pluginId],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: migrationsResult } = await tenantDb
+        .from('plugin_migrations')
+        .select('id, migration_name, migration_version, migration_description, status, up_sql, down_sql, executed_at')
+        .eq('plugin_id', pluginId)
+        .order('migration_version', { ascending: false });
 
-      pluginMigrations = migrationsResult.map(m => ({
+      pluginMigrations = (migrationsResult || []).map(m => ({
         name: `migrations/${m.migration_version}_${m.migration_name.replace(/[^a-zA-Z0-9_]/g, '_')}.sql`,
         code: `-- Migration: ${m.migration_description}
 -- Version: ${m.migration_version}
@@ -854,17 +829,16 @@ ${m.down_sql || '-- No down SQL'}`,
     let pluginDocs = [];
     let readme = '# Plugin Documentation';
     try {
-      const docsResult = await sequelize.query(`
-        SELECT doc_type, file_name, content, format
-        FROM plugin_docs
-        WHERE plugin_id = $1 AND is_visible = true AND doc_type != 'manifest'
-        ORDER BY display_order ASC, doc_type ASC
-      `, {
-        bind: [pluginId],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: docsResult } = await tenantDb
+        .from('plugin_docs')
+        .select('doc_type, file_name, content, format')
+        .eq('plugin_id', pluginId)
+        .eq('is_visible', true)
+        .neq('doc_type', 'manifest')
+        .order('display_order', { ascending: true })
+        .order('doc_type', { ascending: true });
 
-      pluginDocs = docsResult.map(d => ({
+      pluginDocs = (docsResult || []).map(d => ({
         name: d.file_name,
         code: d.content,
         doc_type: d.doc_type,
@@ -879,32 +853,21 @@ ${m.down_sql || '-- No down SQL'}`,
     } catch (docsError) {
     }
 
-    // Parse manifest from plugin_registry.manifest column (NOT from plugin_docs)
-    const manifest = typeof plugin[0].manifest === 'string' ? JSON.parse(plugin[0].manifest) : (plugin[0].manifest || {});
+    // Parse manifest from plugin_registry.manifest column
+    const manifest = typeof plugin.manifest === 'string' ? JSON.parse(plugin.manifest) : (plugin.manifest || {});
 
-    // Load files from NORMALIZED TABLES ONLY (no backward compatibility)
-    // Sources:
-    // 1. plugin_scripts table
-    // 2. plugin_events table
-    // 3. plugin_entities table
-    // 4. plugin_controllers table
-    // 5. plugin_migrations table
-    // 6. plugin_docs table
+    // Build allFiles from normalized tables
     let allFiles = [];
 
     // Add files from plugin_scripts table
     allFiles = allFiles.concat(pluginScripts);
 
-    // NOTE: Hooks are NOT added to allFiles/source_code
-    // They are sent separately via the 'hooks' property and handled specially by the frontend
-    // Adding them here would create duplicates in the FileTree
-
     // Add files from plugin_events table (as event files)
     const eventFiles = pluginEvents.map(e => ({
       name: `events/${e.name}`,
       code: e.code,
-      event_name: e.event_name,  // Preserve event name for Edit Event button
-      priority: e.priority        // Preserve priority
+      event_name: e.event_name,
+      priority: e.priority
     }));
     allFiles = allFiles.concat(eventFiles);
 
@@ -920,7 +883,7 @@ ${m.down_sql || '-- No down SQL'}`,
     // Add files from plugin_docs table
     allFiles = allFiles.concat(pluginDocs);
 
-    // Add manifest.json as a file (from plugin_registry.manifest column)
+    // Add manifest.json as a file
     allFiles.push({
       name: 'manifest.json',
       code: JSON.stringify(manifest, null, 2),
@@ -938,8 +901,6 @@ ${m.down_sql || '-- No down SQL'}`,
     generatedFiles.forEach(file => {
       const fileName = file.name || '';
       const code = file.code || '';
-
-      // Handle both "models/File.js" and "src/models/File.js" patterns
       const normalizedPath = fileName.replace(/^src\//, '');
 
       if (normalizedPath.includes('controllers/') || normalizedPath.endsWith('Controller.js')) {
@@ -963,28 +924,25 @@ ${m.down_sql || '-- No down SQL'}`,
       }
     });
 
-    // Add admin pages from plugin_admin_pages table if needed
+    // Add admin pages from plugin_admin_pages table
     let adminPages = [];
     try {
-      const adminPagesResult = await sequelize.query(`
-        SELECT page_key, page_name, route, component_code, icon, category, description
-        FROM plugin_admin_pages
-        WHERE plugin_id = $1 AND is_enabled = true
-        ORDER BY page_key ASC
-      `, {
-        bind: [pluginId],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: adminPagesResult } = await tenantDb
+        .from('plugin_admin_pages')
+        .select('page_key, page_name, route, component_code, icon, category, description')
+        .eq('plugin_id', pluginId)
+        .eq('is_enabled', true)
+        .order('page_key', { ascending: true });
 
-      adminPages = adminPagesResult;
+      adminPages = adminPagesResult || [];
     } catch (adminError) {
     }
 
     res.json({
       success: true,
       data: {
-        ...plugin[0],
-        generated_by_ai: manifest?.generated_by_ai || plugin[0].type === 'ai-generated',
+        ...plugin,
+        generated_by_ai: manifest?.generated_by_ai || plugin.type === 'ai-generated',
         hooks: hooks,
         controllers,
         models,
@@ -992,7 +950,7 @@ ${m.down_sql || '-- No down SQL'}`,
         adminPages,
         manifest,
         readme,
-        source_code: generatedFiles // All files from normalized tables only for FileTree
+        source_code: generatedFiles
       }
     });
   } catch (error) {
