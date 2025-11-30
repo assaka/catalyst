@@ -475,8 +475,8 @@ const PublishPanel = ({
                           </div>
                         </div>
 
-                        {/* Revert button */}
-                        {!isReverted && !isLatest && (
+                        {/* Revert button - show for any version that is not reverted and not current base */}
+                        {!isReverted && !isCurrent && (
                           <Button
                             size="sm"
                             variant="outline"
