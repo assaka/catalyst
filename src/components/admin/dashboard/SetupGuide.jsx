@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle, AlertCircle, CreditCard, RefreshCw, Settings, Mail, Globe } from 'lucide-react';
+import { CheckCircle, AlertCircle, CreditCard, RefreshCw, Settings, Unlink, Info, Mail, Globe } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus } from '@/api/functions';
 import brevoAPI from '@/api/brevo';
@@ -25,9 +25,9 @@ export const SetupGuide = ({ store }) => {
             setLoadingStripe(true);
             try {
                 const response = await checkStripeConnectStatus(store.id);
-                // response structure: { data: { connected: true, onboardingComplete: true, ... } }
-                const status = response.data?.data || response.data || null;
-                setStripeStatus(status);
+                if (response.success) {
+                    setStripeStatus(response.data);
+                }
             } catch (error) {
                 console.error('Error loading Stripe status:', error);
                 setStripeStatus(null);
@@ -47,7 +47,7 @@ export const SetupGuide = ({ store }) => {
     const needsPrimaryDomain = store.has_domains_without_primary && store.active_domain_count > 0;
     // Check if Stripe is connected from IntegrationConfig via API
     const isStripeConnected = stripeStatus?.connected && stripeStatus?.onboardingComplete;
-    const stripeAccountId = stripeStatus?.account_id; // API returns account_id not accountId
+    const stripeAccountId = stripeStatus?.accountId;
 
     // Load email configuration status
     useEffect(() => {
@@ -70,6 +70,16 @@ export const SetupGuide = ({ store }) => {
 
         loadEmailStatus();
     }, [store?.id]);
+
+    const handleChangeStripeAccount = async () => {
+        const confirmed = window.confirm(
+            "Are you sure you want to connect a different Stripe account? This will replace your current Stripe connection."
+        );
+        
+        if (confirmed) {
+            await handleConnectStripe();
+        }
+    };
 
     const handleConnectStripe = async () => {
         if (!store?.id) {
@@ -184,14 +194,34 @@ export const SetupGuide = ({ store }) => {
                                 <span className="text-sm text-gray-700">Email Configured</span>
                             </div>
                         </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate('/admin/payment-methods')}
-                        >
-                            <Settings className="w-4 h-4 mr-1" />
-                            Manage Payments
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(createPageUrl('Settings'))}
+                            >
+                                <Settings className="w-4 h-4 mr-1" />
+                                Settings
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleChangeStripeAccount}
+                                disabled={connecting}
+                            >
+                                {connecting ? (
+                                    <>
+                                        <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                                        Connecting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Unlink className="w-4 h-4 mr-1" />
+                                        Change Stripe
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -262,19 +292,40 @@ export const SetupGuide = ({ store }) => {
                         </div>
                         <div className="flex gap-2">
                             {isStripeConnected ? (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => navigate('/admin/payment-methods')}
-                                    title="Manage payment settings"
-                                >
-                                    <Settings className="w-4 h-4 mr-1" />
-                                    Manage
-                                </Button>
+                                <>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={() => navigate(createPageUrl('PaymentMethods'))}
+                                        title="Manage payment settings"
+                                    >
+                                        <Settings className="w-4 h-4 mr-1" />
+                                        Manage
+                                    </Button>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={handleChangeStripeAccount}
+                                        disabled={connecting}
+                                        title="Connect a different Stripe account"
+                                    >
+                                        {connecting ? (
+                                            <>
+                                                <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                                                Connecting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Unlink className="w-4 h-4 mr-1" />
+                                                Change
+                                            </>
+                                        )}
+                                    </Button>
+                                </>
                             ) : (
-                                <Button
+                                <Button 
                                     variant="default"
-                                    size="sm"
+                                    size="sm" 
                                     onClick={handleConnectStripe}
                                     disabled={connecting}
                                     className="bg-orange-600 hover:bg-orange-700 text-white"
