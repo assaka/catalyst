@@ -44,7 +44,55 @@ router.get('/test', async (req, res) => {
   }
 });
 
-// All plugin routes require authentication
+/**
+ * GET /api/plugins/marketplace
+ * Get marketplace plugins (hardcoded - no database or auth required)
+ */
+router.get('/marketplace', async (req, res) => {
+  try {
+    console.log('🔍 Marketplace API called (no auth)');
+
+    const marketplacePlugins = [
+      {
+        name: 'Google Analytics 4',
+        slug: 'google-analytics-4',
+        description: 'Integrate Google Analytics 4 for advanced tracking',
+        author: 'Catalyst Team',
+        category: 'analytics',
+        version: '1.0.0',
+        sourceType: 'github',
+        sourceUrl: 'https://github.com/catalyst-plugins/google-analytics-4',
+        status: 'available'
+      },
+      {
+        name: 'Stripe Payment Gateway',
+        slug: 'stripe-payment',
+        description: 'Accept payments through Stripe',
+        author: 'Catalyst Team',
+        category: 'payment',
+        version: '2.0.0',
+        sourceType: 'github',
+        sourceUrl: 'https://github.com/catalyst-plugins/stripe-payment',
+        status: 'available'
+      }
+    ];
+
+    console.log(`🏪 Returning ${marketplacePlugins.length} marketplace plugins`);
+
+    res.json({
+      success: true,
+      data: marketplacePlugins
+    });
+  } catch (error) {
+    console.error('❌ Marketplace API error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// All plugin routes below require authentication
 router.use(authMiddleware);
 
 /**
@@ -79,57 +127,6 @@ router.get('/', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Plugin API error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-/**
- * GET /api/plugins/marketplace
- * Get marketplace plugins (hardcoded - no database required)
- */
-router.get('/marketplace', async (req, res) => {
-  try {
-    console.log('🔍 Marketplace API called');
-
-    // Return hardcoded marketplace plugins directly - no initialization needed
-    // This avoids database connection issues during plugin manager init
-    const marketplacePlugins = [
-      {
-        name: 'Google Analytics 4',
-        slug: 'google-analytics-4',
-        description: 'Integrate Google Analytics 4 for advanced tracking',
-        author: 'Catalyst Team',
-        category: 'analytics',
-        version: '1.0.0',
-        sourceType: 'github',
-        sourceUrl: 'https://github.com/catalyst-plugins/google-analytics-4',
-        status: 'available'
-      },
-      {
-        name: 'Stripe Payment Gateway',
-        slug: 'stripe-payment',
-        description: 'Accept payments through Stripe',
-        author: 'Catalyst Team',
-        category: 'payment',
-        version: '2.0.0',
-        sourceType: 'github',
-        sourceUrl: 'https://github.com/catalyst-plugins/stripe-payment',
-        status: 'available'
-      }
-    ];
-
-    console.log(`🏪 Returning ${marketplacePlugins.length} marketplace plugins`);
-
-    res.json({
-      success: true,
-      data: marketplacePlugins
-    });
-  } catch (error) {
-    console.error('❌ Marketplace API error:', error.message);
-    console.error('❌ Marketplace error stack:', error.stack);
     res.status(500).json({
       success: false,
       error: error.message
