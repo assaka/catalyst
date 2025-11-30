@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { AIWorkspaceProvider, useAIWorkspace } from '@/contexts/AIWorkspaceContext';
 import { StoreProvider } from '@/components/storefront/StoreProvider';
@@ -9,8 +9,6 @@ import WorkspaceCanvas from '@/components/ai-workspace/WorkspaceCanvas';
 import WorkspaceStorefrontPreview from '@/components/ai-workspace/WorkspaceStorefrontPreview';
 import DeveloperPluginEditor from '@/components/plugins/DeveloperPluginEditor';
 import ChatInterface from '@/components/ai-studio/ChatInterface';
-import { Button } from '@/components/ui/button';
-import { Bot, ChevronLeft } from 'lucide-react';
 
 /**
  * AIWorkspace - Unified Editor + AI workspace
@@ -30,11 +28,9 @@ const AIWorkspaceContent = () => {
     closePluginEditor,
     openPluginEditor,
     showAiStudio,
-    closeAiStudio
+    closeAiStudio,
+    chatMinimized
   } = useAIWorkspace();
-
-  // Panel minimize state for AI chat only (Files and Editor panels don't minimize)
-  const [chatMinimized, setChatMinimized] = useState(false);
 
   // Handle plugin cloned from ChatInterface (Create New Plugin)
   const handlePluginCloned = (clonedPlugin) => {
@@ -75,40 +71,27 @@ const AIWorkspaceContent = () => {
         {showPluginEditor && pluginToEdit ? (
           // Plugin Editor Mode - AI Chat + Developer Editor
           <ResizablePanelGroup direction="horizontal" className="h-full">
-            {/* AI Chat Assistant (Left) - Minimizable */}
-            <ResizablePanel
-              defaultSize={calculateChatSize()}
-              minSize={4}
-              maxSize={chatMinimized ? 4 : 90}
-              collapsible={false}
-            >
-              <div className="h-full flex flex-col border-r bg-white dark:bg-gray-900">
-                {!chatMinimized ? (
-                  <WorkspaceAIPanel
-                    showMinimize={true}
-                    onMinimize={() => setChatMinimized(true)}
-                  />
-                ) : (
-                  <div className="h-full flex pt-2 justify-center border-r bg-gray-50 dark:bg-gray-800" style={{ minWidth: '50px' }}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setChatMinimized(false)}
-                      title="Expand AI chat"
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <Bot className="w-5 h-5 text-blue-600" />
-                    </Button>
+            {/* AI Chat Assistant (Left) */}
+            {!chatMinimized && (
+              <>
+                <ResizablePanel
+                  defaultSize={calculateChatSize()}
+                  minSize={20}
+                  maxSize={50}
+                  collapsible={false}
+                >
+                  <div className="h-full flex flex-col border-r bg-white dark:bg-gray-900">
+                    <WorkspaceAIPanel />
                   </div>
-                )}
-              </div>
-            </ResizablePanel>
+                </ResizablePanel>
 
-            <ResizableHandle withHandle />
+                <ResizableHandle withHandle />
+              </>
+            )}
 
             {/* Developer Plugin Editor (Right) */}
             <ResizablePanel
-              defaultSize={calculateFileTreeSize() + calculateEditorSize()}
+              defaultSize={chatMinimized ? 100 : calculateFileTreeSize() + calculateEditorSize()}
               minSize={8}
             >
               <DeveloperPluginEditor

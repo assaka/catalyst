@@ -79,6 +79,9 @@ export const AIWorkspaceProvider = ({ children }) => {
   // AI Studio state (ChatInterface for creating plugins)
   const [showAiStudio, setShowAiStudio] = useState(false);
 
+  // Chat panel minimize state (for plugin editor mode)
+  const [chatMinimized, setChatMinimized] = useState(false);
+
   // Slot handlers (registered by editor components)
   const [slotHandlers, setSlotHandlers] = useState(null);
 
@@ -227,6 +230,13 @@ export const AIWorkspaceProvider = ({ children }) => {
     setShowAiStudio(false);
   }, []);
 
+  /**
+   * Toggle chat panel minimized state
+   */
+  const toggleChatMinimized = useCallback(() => {
+    setChatMinimized(prev => !prev);
+  }, []);
+
   // Memoized value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     // Page/Editor State
@@ -266,6 +276,10 @@ export const AIWorkspaceProvider = ({ children }) => {
     showAiStudio,
     openAiStudio,
     closeAiStudio,
+
+    // Chat panel minimize
+    chatMinimized,
+    toggleChatMinimized,
 
     // Actions
     selectPage,
@@ -318,7 +332,9 @@ export const AIWorkspaceProvider = ({ children }) => {
     closePluginEditor,
     showAiStudio,
     openAiStudio,
-    closeAiStudio
+    closeAiStudio,
+    chatMinimized,
+    toggleChatMinimized
   ]);
 
   return (

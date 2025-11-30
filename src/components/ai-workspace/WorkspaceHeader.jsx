@@ -66,7 +66,9 @@ const WorkspaceHeader = () => {
     closePluginEditor,
     showAiStudio,
     openAiStudio,
-    closeAiStudio
+    closeAiStudio,
+    chatMinimized,
+    toggleChatMinimized
   } = useAIWorkspace();
 
   const { getSelectedStoreId } = useStoreSelection();
@@ -199,20 +201,36 @@ const WorkspaceHeader = () => {
     <header className="h-14 border-b bg-white dark:bg-gray-800 flex items-center px-4 gap-4 shrink-0">
       {/* Left section: AI Panel toggle */}
       <div className="flex items-center gap-3">
-        {/* AI Panel toggle */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleAiPanel}
-          className="h-8 w-8 p-0"
-          title={aiPanelCollapsed ? 'Show AI Panel' : 'Hide AI Panel'}
-        >
-          {aiPanelCollapsed ? (
-            <PanelLeft className="h-4 w-4" />
-          ) : (
-            <PanelLeftClose className="h-4 w-4" />
-          )}
-        </Button>
+        {/* AI Panel toggle - different behavior for plugin editor vs normal mode */}
+        {showPluginEditor ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleChatMinimized}
+            className="h-8 w-8 p-0"
+            title={chatMinimized ? 'Show AI Chat' : 'Hide AI Chat'}
+          >
+            {chatMinimized ? (
+              <PanelLeft className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleAiPanel}
+            className="h-8 w-8 p-0"
+            title={aiPanelCollapsed ? 'Show AI Panel' : 'Hide AI Panel'}
+          >
+            {aiPanelCollapsed ? (
+              <PanelLeft className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
+          </Button>
+        )}
       </div>
 
       {/* Center section: Title + Context info */}

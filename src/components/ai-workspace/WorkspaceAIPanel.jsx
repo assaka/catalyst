@@ -18,8 +18,7 @@ import {
   Package,
   Code,
   Eye,
-  Download,
-  ChevronLeft
+  Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import aiWorkspaceSlotProcessor from '@/services/aiWorkspaceSlotProcessor';
@@ -31,7 +30,7 @@ import { User as UserEntity } from '@/api/entities';
  * Handles AI conversations and slot manipulation commands
  */
 
-const WorkspaceAIPanel = ({ showMinimize = false, onMinimize }) => {
+const WorkspaceAIPanel = () => {
   const {
     chatMessages,
     addChatMessage,
@@ -429,17 +428,6 @@ const WorkspaceAIPanel = ({ showMinimize = false, onMinimize }) => {
               title="Clear chat"
             >
               <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          {showMinimize && onMinimize && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={onMinimize}
-              title="Minimize chat"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
