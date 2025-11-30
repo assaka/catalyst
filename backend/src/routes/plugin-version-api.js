@@ -906,11 +906,137 @@ function calculateDetailedDiff(fromState, toState) {
 
 /**
  * Apply plugin state to database
+ * Restores all plugin components from a saved state
  */
 async function applyPluginState(db, pluginId, state) {
-  // TODO: Implement applying state to all plugin tables
-  // This is a complex operation that needs transaction support
-  console.warn('applyPluginState not fully implemented yet');
+  console.log(`🔄 Applying plugin state for ${pluginId}`);
+
+  if (!state) {
+    console.warn('No state to apply');
+    return;
+  }
+
+  // Update registry if present
+  if (state.registry) {
+    console.log('  📦 Updating registry...');
+    const { error: registryError } = await db.from('plugin_registry')
+      .update({
+        name: state.registry.name,
+        description: state.registry.description,
+        manifest: state.registry.manifest,
+        config: state.registry.config,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', pluginId);
+
+    if (registryError) console.error('  ❌ Registry update error:', registryError.message);
+  }
+
+  // Restore hooks
+  if (state.hooks) {
+    console.log(`  🪝 Restoring ${state.hooks.length} hooks...`);
+    // Delete existing hooks
+    await db.from('plugin_hooks').delete().eq('plugin_id', pluginId);
+    // Insert restored hooks
+    if (state.hooks.length > 0) {
+      const hooksToInsert = state.hooks.map(h => ({
+        ...h,
+        plugin_id: pluginId,
+        id: undefined, // Let DB generate new IDs
+        created_at: undefined,
+        updated_at: undefined
+      }));
+      const { error } = await db.from('plugin_hooks').insert(hooksToInsert);
+      if (error) console.error('  ❌ Hooks insert error:', error.message);
+    }
+  }
+
+  // Restore events
+  if (state.events) {
+    console.log(`  📡 Restoring ${state.events.length} events...`);
+    await db.from('plugin_events').delete().eq('plugin_id', pluginId);
+    if (state.events.length > 0) {
+      const eventsToInsert = state.events.map(e => ({
+        ...e,
+        plugin_id: pluginId,
+        id: undefined,
+        created_at: undefined,
+        updated_at: undefined
+      }));
+      const { error } = await db.from('plugin_events').insert(eventsToInsert);
+      if (error) console.error('  ❌ Events insert error:', error.message);
+    }
+  }
+
+  // Restore scripts
+  if (state.scripts) {
+    console.log(`  📜 Restoring ${state.scripts.length} scripts...`);
+    await db.from('plugin_scripts').delete().eq('plugin_id', pluginId);
+    if (state.scripts.length > 0) {
+      const scriptsToInsert = state.scripts.map(s => ({
+        ...s,
+        plugin_id: pluginId,
+        id: undefined,
+        created_at: undefined,
+        updated_at: undefined
+      }));
+      const { error } = await db.from('plugin_scripts').insert(scriptsToInsert);
+      if (error) console.error('  ❌ Scripts insert error:', error.message);
+    }
+  }
+
+  // Restore widgets
+  if (state.widgets) {
+    console.log(`  🧩 Restoring ${state.widgets.length} widgets...`);
+    await db.from('plugin_widgets').delete().eq('plugin_id', pluginId);
+    if (state.widgets.length > 0) {
+      const widgetsToInsert = state.widgets.map(w => ({
+        ...w,
+        plugin_id: pluginId,
+        id: undefined,
+        created_at: undefined,
+        updated_at: undefined
+      }));
+      const { error } = await db.from('plugin_widgets').insert(widgetsToInsert);
+      if (error) console.error('  ❌ Widgets insert error:', error.message);
+    }
+  }
+
+  // Restore controllers
+  if (state.controllers) {
+    console.log(`  🎮 Restoring ${state.controllers.length} controllers...`);
+    await db.from('plugin_controllers').delete().eq('plugin_id', pluginId);
+    if (state.controllers.length > 0) {
+      const controllersToInsert = state.controllers.map(c => ({
+        ...c,
+        plugin_id: pluginId,
+        id: undefined,
+        created_at: undefined,
+        updated_at: undefined
+      }));
+      const { error } = await db.from('plugin_controllers').insert(controllersToInsert);
+      if (error) console.error('  ❌ Controllers insert error:', error.message);
+    }
+  }
+
+  // Restore entities
+  if (state.entities) {
+    console.log(`  📊 Restoring ${state.entities.length} entities...`);
+    await db.from('plugin_entities').delete().eq('plugin_id', pluginId);
+    if (state.entities.length > 0) {
+      const entitiesToInsert = state.entities.map(e => ({
+        ...e,
+        plugin_id: pluginId,
+        id: undefined,
+        created_at: undefined,
+        updated_at: undefined
+      }));
+      const { error } = await db.from('plugin_entities').insert(entitiesToInsert);
+      if (error) console.error('  ❌ Entities insert error:', error.message);
+    }
+  }
+
+  console.log(`  ✅ Plugin state applied successfully`);
 }
 
 /**
