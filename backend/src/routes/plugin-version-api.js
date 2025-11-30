@@ -648,93 +648,91 @@ async function getPluginCurrentState(db, pluginId) {
  * Reconstruct plugin state at a specific version
  * Uses snapshots and patches
  */
-async function reconstructPluginState(sequelize, versionId) {
+async function reconstructPluginState(db, versionId) {
   try {
     // Get version info
-    const [version] = await sequelize.query(
-      'SELECT * FROM plugin_version_history WHERE id = $1',
-      { bind: [versionId], type: QueryTypes.SELECT }
-    );
+    const { data: version } = await db.from('plugin_version_history')
+      .select('*')
+      .eq('id', versionId)
+      .maybeSingle();
 
     if (!version) {
       console.warn(`⚠ Version ${versionId} not found`);
       return null;
     }
 
-  // If snapshot, return snapshot data
-  if (version.version_type === 'snapshot') {
-    const [snapshot] = await sequelize.query(
-      'SELECT * FROM plugin_version_snapshots WHERE version_id = $1',
-      { bind: [versionId], type: QueryTypes.SELECT }
-    );
+    // If snapshot, return snapshot data
+    if (version.version_type === 'snapshot') {
+      const { data: snapshot } = await db.from('plugin_version_snapshots')
+        .select('*')
+        .eq('version_id', versionId)
+        .maybeSingle();
 
-    console.log(`  🔍 Snapshot found for version ${versionId}:`, {
-      has_snapshot: !!snapshot,
-      has_snapshot_data: !!snapshot?.snapshot_data,
-      snapshot_data_type: typeof snapshot?.snapshot_data,
-      snapshot_data_keys: snapshot?.snapshot_data ? Object.keys(snapshot.snapshot_data) : []
-    });
+      console.log(`  🔍 Snapshot found for version ${versionId}:`, {
+        has_snapshot: !!snapshot,
+        has_snapshot_data: !!snapshot?.snapshot_data,
+        snapshot_data_type: typeof snapshot?.snapshot_data,
+        snapshot_data_keys: snapshot?.snapshot_data ? Object.keys(snapshot.snapshot_data) : []
+      });
 
-    return snapshot?.snapshot_data;
-  }
-
-  // Find nearest snapshot by walking backwards
-  let currentVersionId = version.parent_version_id;
-  let snapshotData = null;
-  const patchChain = [];
-
-  while (currentVersionId && !snapshotData) {
-    const [parentVersion] = await sequelize.query(
-      'SELECT * FROM plugin_version_history WHERE id = $1',
-      { bind: [currentVersionId], type: QueryTypes.SELECT }
-    );
-
-    if (!parentVersion) break;
-
-    if (parentVersion.version_type === 'snapshot') {
-      const [snapshot] = await sequelize.query(
-        'SELECT * FROM plugin_version_snapshots WHERE version_id = $1',
-        { bind: [parentVersion.id], type: QueryTypes.SELECT }
-      );
-      snapshotData = snapshot?.snapshot_data;
-    } else {
-      // Add patches to chain (will apply in reverse order)
-      const patches = await sequelize.query(
-        'SELECT * FROM plugin_version_patches WHERE version_id = $1',
-        { bind: [parentVersion.id], type: QueryTypes.SELECT }
-      );
-      patchChain.unshift(...patches);
+      return snapshot?.snapshot_data;
     }
 
-    currentVersionId = parentVersion.parent_version_id;
-  }
+    // Find nearest snapshot by walking backwards
+    let currentVersionId = version.parent_version_id;
+    let snapshotData = null;
+    const patchChain = [];
 
-  // Apply patches to snapshot
-  let state = snapshotData || {};
+    while (currentVersionId && !snapshotData) {
+      const { data: parentVersion } = await db.from('plugin_version_history')
+        .select('*')
+        .eq('id', currentVersionId)
+        .maybeSingle();
 
-  for (const patch of patchChain) {
-    if (patch.patch_operations) {
-      const document = state[patch.component_type] || [];
-      const result = jsonpatch.applyPatch(document, patch.patch_operations, false, false);
-      state[patch.component_type] = result.newDocument;
+      if (!parentVersion) break;
+
+      if (parentVersion.version_type === 'snapshot') {
+        const { data: snapshot } = await db.from('plugin_version_snapshots')
+          .select('*')
+          .eq('version_id', parentVersion.id)
+          .maybeSingle();
+        snapshotData = snapshot?.snapshot_data;
+      } else {
+        // Add patches to chain (will apply in reverse order)
+        const { data: patches } = await db.from('plugin_version_patches')
+          .select('*')
+          .eq('version_id', parentVersion.id);
+        if (patches) patchChain.unshift(...patches);
+      }
+
+      currentVersionId = parentVersion.parent_version_id;
     }
-  }
 
-  // Apply final version patches
-  const finalPatches = await sequelize.query(
-    'SELECT * FROM plugin_version_patches WHERE version_id = $1',
-    { bind: [versionId], type: QueryTypes.SELECT }
-  );
+    // Apply patches to snapshot
+    let state = snapshotData || {};
 
-  for (const patch of finalPatches) {
-    if (patch.patch_operations) {
-      const document = state[patch.component_type] || [];
-      const result = jsonpatch.applyPatch(document, patch.patch_operations, false, false);
-      state[patch.component_type] = result.newDocument;
+    for (const patch of patchChain) {
+      if (patch.patch_operations) {
+        const document = state[patch.component_type] || [];
+        const result = jsonpatch.applyPatch(document, patch.patch_operations, false, false);
+        state[patch.component_type] = result.newDocument;
+      }
     }
-  }
 
-  return state;
+    // Apply final version patches
+    const { data: finalPatches } = await db.from('plugin_version_patches')
+      .select('*')
+      .eq('version_id', versionId);
+
+    for (const patch of finalPatches || []) {
+      if (patch.patch_operations) {
+        const document = state[patch.component_type] || [];
+        const result = jsonpatch.applyPatch(document, patch.patch_operations, false, false);
+        state[patch.component_type] = result.newDocument;
+      }
+    }
+
+    return state;
   } catch (error) {
     console.error('❌ Error reconstructing plugin state:', error);
     console.error('   Version ID:', versionId);
@@ -797,54 +795,42 @@ function calculatePatches(oldState, newState) {
 /**
  * Store patches in database
  */
-async function storePatches(sequelize, versionId, pluginId, patches) {
+async function storePatches(db, versionId, pluginId, patches) {
   for (const patch of patches) {
-    await sequelize.query(`
-      INSERT INTO plugin_version_patches (
-        version_id, plugin_id, component_type, patch_operations, operations_count
-      ) VALUES ($1, $2, $3, $4, $5)
-    `, {
-      bind: [
-        versionId,
-        pluginId,
-        patch.component_type,
-        JSON.stringify(patch.patch_operations),
-        patch.operations_count
-      ],
-      type: QueryTypes.INSERT
-    });
+    await db.from('plugin_version_patches')
+      .insert({
+        version_id: versionId,
+        plugin_id: pluginId,
+        component_type: patch.component_type,
+        patch_operations: patch.patch_operations,
+        operations_count: patch.operations_count
+      });
   }
 }
 
 /**
  * Create snapshot in database
  */
-async function createSnapshot(sequelize, versionId, pluginId, state) {
+async function createSnapshot(db, versionId, pluginId, state) {
   try {
     // Safely extract manifest and registry data
     const registryData = state?.registry || null;
     const manifestData = registryData?.manifest || null;
 
-    await sequelize.query(`
-      INSERT INTO plugin_version_snapshots (
-        version_id, plugin_id, snapshot_data, hooks, events, scripts, widgets, controllers, entities, manifest, registry
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    `, {
-      bind: [
-        versionId,
-        pluginId,
-        JSON.stringify(state || {}),
-        JSON.stringify(state?.hooks || []),
-        JSON.stringify(state?.events || []),
-        JSON.stringify(state?.scripts || []),
-        JSON.stringify(state?.widgets || []),
-        JSON.stringify(state?.controllers || []),
-        JSON.stringify(state?.entities || []),
-        JSON.stringify(manifestData),
-        JSON.stringify(registryData)
-      ],
-      type: QueryTypes.INSERT
-    });
+    await db.from('plugin_version_snapshots')
+      .insert({
+        version_id: versionId,
+        plugin_id: pluginId,
+        snapshot_data: state || {},
+        hooks: state?.hooks || [],
+        events: state?.events || [],
+        scripts: state?.scripts || [],
+        widgets: state?.widgets || [],
+        controllers: state?.controllers || [],
+        entities: state?.entities || [],
+        manifest: manifestData,
+        registry: registryData
+      });
   } catch (error) {
     console.error('Error creating snapshot:', error);
     console.error('State data:', JSON.stringify(state, null, 2));
@@ -921,7 +907,7 @@ function calculateDetailedDiff(fromState, toState) {
 /**
  * Apply plugin state to database
  */
-async function applyPluginState(sequelize, pluginId, state) {
+async function applyPluginState(db, pluginId, state) {
   // TODO: Implement applying state to all plugin tables
   // This is a complex operation that needs transaction support
   console.warn('applyPluginState not fully implemented yet');
