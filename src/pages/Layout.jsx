@@ -90,8 +90,8 @@ import { StoreProvider } from "@/components/storefront/StoreProvider";
 import { PriceUtilsProvider } from "@/utils/PriceUtilsProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext";
-import { AIStudioProvider, useAIStudio, AI_STUDIO_MODES } from "@/contexts/AIStudioContext";
-import AIStudio from "@/components/ai-studio/AIStudio";
+import { AIWorkspaceProvider, useAIWorkspace, AI_WORKSPACE_MODES } from "@/contexts/AIWorkspaceGlobalContext";
+import GlobalAIPanel from "@/components/ai-workspace/GlobalAIPanel";
 import { Sparkles } from "lucide-react";
 
 
@@ -133,13 +133,13 @@ function getIconComponent(iconName) {
 
 // Floating AI Button Component
 const FloatingAIButton = () => {
-  const { openAI, toggleAI } = useAIStudio();
+  const { openAI, toggleAI } = useAIWorkspace();
 
   return (
     <button
       onClick={toggleAI}
       className="fixed bottom-6 right-6 z-[998] w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110 flex items-center justify-center group"
-      title="Open AI Studio (Ctrl+K)"
+      title="Open AI Workspace (Ctrl+K)"
     >
       <Sparkles className="w-6 h-6 text-white group-hover:rotate-12 transition-transform" />
     </button>
@@ -150,7 +150,7 @@ function LayoutInner({ children, currentPageName }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedStore } = useStoreSelection();
-  const { openAI, toggleAI } = useAIStudio();
+  const { openAI, toggleAI } = useAIWorkspace();
 
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -345,7 +345,6 @@ function LayoutInner({ children, currentPageName }) {
   const storefrontPages = ['Storefront', 'Category', 'ProductDetail', 'Cart', 'Checkout', 'CustomerAuth', 'CustomerDashboard', 'CmsPageViewer', 'OrderSuccess', 'SitemapPublic', 'NotFound', 'EmailVerification'];
   const editorPages = ['AIContextWindow']; // Pages that use the editor mode
   const pluginPages = ['Plugins']; // Pages that use the plugins mode
-  const aiStudioPages = ['AIStudio']; // Pages that use the AI Studio mode
   const aiWorkspacePages = ['AIWorkspace']; // Pages that use the AI Workspace mode (full-screen editor)
   const isPublicPage = publicPages.includes(currentPageName);
   const isStorefrontPage = storefrontPages.includes(currentPageName);
@@ -842,8 +841,8 @@ function LayoutInner({ children, currentPageName }) {
         </div>
       </div>
 
-      {/* AI Studio - Global AI Assistant */}
-      <AIStudio />
+      {/* Global AI Panel */}
+      <GlobalAIPanel />
 
       {/* Floating AI Button */}
       {(isAdminPage || isEditorPage) && <FloatingAIButton />}
@@ -854,12 +853,12 @@ function LayoutInner({ children, currentPageName }) {
   );
 }
 
-// Wrap LayoutInner with AIStudioProvider
+// Wrap LayoutInner with AIWorkspaceProvider
 export default function Layout(props) {
   return (
-    <AIStudioProvider>
+    <AIWorkspaceProvider>
       <LayoutInner {...props} />
-    </AIStudioProvider>
+    </AIWorkspaceProvider>
   );
 }
 

@@ -74,8 +74,7 @@ const allNavItems = [
   { key: 'team', label: 'Team', icon: 'Users', route: '/admin/team', order: 83, category: 'advanced' },
   { key: 'onboarding', label: 'Onboarding', icon: 'BookOpen', route: '/admin/onboarding', order: 84, category: 'advanced' },
   { key: 'ai_context_window', label: 'AI Context', icon: 'Bot', route: '/admin/ai-context-window', order: 85, category: 'advanced' },
-  { key: 'translations', label: 'Translations', icon: 'Globe', route: '/admin/translations', order: 86, category: 'advanced' },
-  { key: 'ai_studio', label: 'AI Studio', icon: 'Bot', route: '/admin/ai-studio', order: 87, category: 'advanced' }
+  { key: 'translations', label: 'Translations', icon: 'Globe', route: '/admin/translations', order: 86, category: 'advanced' }
 ];
 
 async function seedNavigation() {

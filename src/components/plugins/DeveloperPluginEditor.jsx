@@ -36,14 +36,14 @@ import {
   Clock
 } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
-import CodeEditor from '@/components/ai-studio/CodeEditor.jsx';
-import { useAIStudio, AI_STUDIO_MODES } from '@/contexts/AIStudioContext';
+import CodeEditor from '@/components/ai-workspace/CodeEditor.jsx';
+import { useAIWorkspace, AI_WORKSPACE_MODES } from '@/contexts/AIWorkspaceGlobalContext';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import apiClient from '@/api/client';
 import EventSelector from '@/components/plugins/EventSelector';
-import VersionHistoryPanel from '@/components/ai-studio/VersionHistoryPanel';
-import VersionCompareModal from '@/components/ai-studio/VersionCompareModal';
-import VersionRestoreModal from '@/components/ai-studio/VersionRestoreModal';
+import VersionHistoryPanel from '@/components/ai-workspace/VersionHistoryPanel';
+import VersionCompareModal from '@/components/ai-workspace/VersionCompareModal';
+import VersionRestoreModal from '@/components/ai-workspace/VersionRestoreModal';
 
 const DeveloperPluginEditor = ({
   plugin,
@@ -55,7 +55,7 @@ const DeveloperPluginEditor = ({
   fileTreeTargetSize = 20, // Absolute % of total viewport
   editorTargetSize = 50 // Absolute % of total viewport
 }) => {
-  const { openAI } = useAIStudio();
+  const { openAI } = useAIWorkspace();
   const [fileTree, setFileTree] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');

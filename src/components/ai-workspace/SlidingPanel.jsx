@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { AI_STUDIO_SIZES } from '@/contexts/AIStudioContext';
+import { AI_WORKSPACE_SIZES } from '@/contexts/AIWorkspaceGlobalContext';
 
 /**
  * SlidingPanel - Animated sliding panel with three states
@@ -8,7 +8,7 @@ import { AI_STUDIO_SIZES } from '@/contexts/AIStudioContext';
  */
 const SlidingPanel = ({
   isOpen,
-  size = AI_STUDIO_SIZES.PARTIAL,
+  size = AI_WORKSPACE_SIZES.PARTIAL,
   position = 'right',
   onClose,
   children,
@@ -18,7 +18,7 @@ const SlidingPanel = ({
 
   // Handle click outside to close (only in partial mode)
   useEffect(() => {
-    if (!isOpen || size === AI_STUDIO_SIZES.FULLSCREEN) return;
+    if (!isOpen || size === AI_WORKSPACE_SIZES.FULLSCREEN) return;
 
     const handleClickOutside = (event) => {
       if (panelRef.current && !panelRef.current.contains(event.target)) {
@@ -53,7 +53,7 @@ const SlidingPanel = ({
 
   // Prevent body scroll when fullscreen
   useEffect(() => {
-    if (isOpen && size === AI_STUDIO_SIZES.FULLSCREEN) {
+    if (isOpen && size === AI_WORKSPACE_SIZES.FULLSCREEN) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -64,7 +64,7 @@ const SlidingPanel = ({
     };
   }, [isOpen, size]);
 
-  if (!isOpen && size === AI_STUDIO_SIZES.COLLAPSED) {
+  if (!isOpen && size === AI_WORKSPACE_SIZES.COLLAPSED) {
     return null;
   }
 
@@ -78,13 +78,13 @@ const SlidingPanel = ({
     }
 
     switch (size) {
-      case AI_STUDIO_SIZES.COLLAPSED:
+      case AI_WORKSPACE_SIZES.COLLAPSED:
         return { width: '0%', height: '0%' };
-      case AI_STUDIO_SIZES.PARTIAL:
+      case AI_WORKSPACE_SIZES.PARTIAL:
         return position === 'right' || position === 'left'
           ? { width: '50%', height: '100%' }
           : { width: '100%', height: '50%' };
-      case AI_STUDIO_SIZES.FULLSCREEN:
+      case AI_WORKSPACE_SIZES.FULLSCREEN:
         return { width: '100%', height: '100%' };
       default:
         return { width: '50%', height: '100%' };
@@ -116,7 +116,7 @@ const SlidingPanel = ({
   return (
     <>
       {/* Backdrop overlay (only for partial mode) */}
-      {isOpen && size === AI_STUDIO_SIZES.PARTIAL && (
+      {isOpen && size === AI_WORKSPACE_SIZES.PARTIAL && (
         <div
           className={cn(
             'fixed inset-0 bg-black/20 dark:bg-black/40 z-[999]',
@@ -137,11 +137,11 @@ const SlidingPanel = ({
           'transition-all duration-300 ease-in-out',
           getPositionClasses(),
           isOpen ? getShadowDirection() : '',
-          size === AI_STUDIO_SIZES.FULLSCREEN && 'border-0',
-          size === AI_STUDIO_SIZES.PARTIAL && position === 'right' && 'border-l',
-          size === AI_STUDIO_SIZES.PARTIAL && position === 'left' && 'border-r',
-          size === AI_STUDIO_SIZES.PARTIAL && position === 'top' && 'border-b',
-          size === AI_STUDIO_SIZES.PARTIAL && position === 'bottom' && 'border-t',
+          size === AI_WORKSPACE_SIZES.FULLSCREEN && 'border-0',
+          size === AI_WORKSPACE_SIZES.PARTIAL && position === 'right' && 'border-l',
+          size === AI_WORKSPACE_SIZES.PARTIAL && position === 'left' && 'border-r',
+          size === AI_WORKSPACE_SIZES.PARTIAL && position === 'top' && 'border-b',
+          size === AI_WORKSPACE_SIZES.PARTIAL && position === 'bottom' && 'border-t',
           'border-gray-200 dark:border-gray-700',
           className
         )}

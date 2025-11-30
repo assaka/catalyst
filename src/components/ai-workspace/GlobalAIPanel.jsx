@@ -1,22 +1,22 @@
 import React from 'react';
 import { X, Minimize2, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAIStudio, AI_STUDIO_SIZES } from '@/contexts/AIStudioContext';
+import { useAIWorkspace, AI_WORKSPACE_SIZES } from '@/contexts/AIWorkspaceGlobalContext';
 import SlidingPanel from './SlidingPanel';
 import ChatInterface from './ChatInterface';
 
 /**
- * AIStudio - Universal AI-powered creation tool
+ * GlobalAIPanel - Universal AI-powered creation tool
  * Chat-first interface (like Bolt, Lovable, v0)
  * AI understands intent and executes: plugins, translations, layouts, code
  */
-const AIStudio = () => {
+const GlobalAIPanel = () => {
   const {
     isOpen,
     size,
     closeAI,
     toggleFullscreen
-  } = useAIStudio();
+  } = useAIWorkspace();
 
   // Don't render if not open
   if (!isOpen) {
@@ -40,7 +40,7 @@ const AIStudio = () => {
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  AI Studio
+                  AI Workspace
                 </h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Powered by Claude
@@ -59,9 +59,9 @@ const AIStudio = () => {
                 "text-gray-600 dark:text-gray-400",
                 "transition-colors"
               )}
-              title={size === AI_STUDIO_SIZES.FULLSCREEN ? "Exit Fullscreen" : "Fullscreen"}
+              title={size === AI_WORKSPACE_SIZES.FULLSCREEN ? "Exit Fullscreen" : "Fullscreen"}
             >
-              {size === AI_STUDIO_SIZES.FULLSCREEN ? (
+              {size === AI_WORKSPACE_SIZES.FULLSCREEN ? (
                 <Minimize2 className="w-5 h-5" />
               ) : (
                 <Maximize2 className="w-5 h-5" />
@@ -93,4 +93,4 @@ const AIStudio = () => {
   );
 };
 
-export default AIStudio;
+export default GlobalAIPanel;

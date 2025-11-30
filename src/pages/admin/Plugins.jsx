@@ -845,7 +845,7 @@ export default function Plugins() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => navigate('/admin/ai-studio', { state: { plugin } })}
+                            onClick={() => navigate('/ai-workspace', { state: { plugin } })}
                           >
                             <Edit3 className="w-4 h-4 mr-2" />
                             Edit
@@ -934,7 +934,7 @@ export default function Plugins() {
                     Use AI to create your first plugin in minutes
                   </p>
                   <Button
-                    onClick={() => navigate('/admin/ai-studio')}
+                    onClick={() => navigate('/ai-workspace')}
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />

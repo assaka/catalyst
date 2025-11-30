@@ -1,35 +1,35 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
 /**
- * AIStudioContext - Global state management for the unified AI Studio
+ * AIWorkspaceGlobalContext - Global state management for the floating AI panel
  * Provides access to AI features from anywhere in the application
  */
 
-const AIStudioContext = createContext();
+const AIWorkspaceGlobalContext = createContext();
 
-export const AI_STUDIO_MODES = {
+export const AI_WORKSPACE_MODES = {
   PLUGIN: 'plugin',
   TRANSLATION: 'translation',
   LAYOUT: 'layout',
   CODE: 'code'
 };
 
-export const AI_STUDIO_SIZES = {
+export const AI_WORKSPACE_SIZES = {
   COLLAPSED: 'collapsed',
   PARTIAL: 'partial',
   FULLSCREEN: 'fullscreen'
 };
 
-export const AIStudioProvider = ({ children }) => {
+export const AIWorkspaceProvider = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState(null);
   const [context, setContext] = useState({});
-  const [size, setSize] = useState(AI_STUDIO_SIZES.PARTIAL);
+  const [size, setSize] = useState(AI_WORKSPACE_SIZES.PARTIAL);
   const [history, setHistory] = useState([]);
 
   /**
-   * Open AI Studio with specific mode and context
-   * @param {string} mode - One of AI_STUDIO_MODES
+   * Open AI panel with specific mode and context
+   * @param {string} mode - One of AI_WORKSPACE_MODES
    * @param {object} contextData - Context data for the mode
    */
   const openAI = useCallback((mode, contextData = {}) => {
@@ -46,22 +46,22 @@ export const AIStudioProvider = ({ children }) => {
   }, []);
 
   /**
-   * Close AI Studio
+   * Close AI panel
    */
   const closeAI = useCallback(() => {
     setIsOpen(false);
   }, []);
 
   /**
-   * Toggle AI Studio open/closed
+   * Toggle AI panel open/closed
    */
   const toggleAI = useCallback(() => {
     setIsOpen(prev => !prev);
   }, []);
 
   /**
-   * Change AI Studio size
-   * @param {string} newSize - One of AI_STUDIO_SIZES
+   * Change AI panel size
+   * @param {string} newSize - One of AI_WORKSPACE_SIZES
    */
   const changeSize = useCallback((newSize) => {
     setSize(newSize);
@@ -72,15 +72,15 @@ export const AIStudioProvider = ({ children }) => {
    */
   const toggleFullscreen = useCallback(() => {
     setSize(prev =>
-      prev === AI_STUDIO_SIZES.FULLSCREEN
-        ? AI_STUDIO_SIZES.PARTIAL
-        : AI_STUDIO_SIZES.FULLSCREEN
+      prev === AI_WORKSPACE_SIZES.FULLSCREEN
+        ? AI_WORKSPACE_SIZES.PARTIAL
+        : AI_WORKSPACE_SIZES.FULLSCREEN
     );
   }, []);
 
   /**
-   * Change mode while keeping AI Studio open
-   * @param {string} newMode - One of AI_STUDIO_MODES
+   * Change mode while keeping AI panel open
+   * @param {string} newMode - One of AI_WORKSPACE_MODES
    * @param {object} contextData - Optional new context data
    */
   const changeMode = useCallback((newMode, contextData = null) => {
@@ -124,26 +124,26 @@ export const AIStudioProvider = ({ children }) => {
     clearHistory,
 
     // Constants
-    modes: AI_STUDIO_MODES,
-    sizes: AI_STUDIO_SIZES
+    modes: AI_WORKSPACE_MODES,
+    sizes: AI_WORKSPACE_SIZES
   };
 
   return (
-    <AIStudioContext.Provider value={value}>
+    <AIWorkspaceGlobalContext.Provider value={value}>
       {children}
-    </AIStudioContext.Provider>
+    </AIWorkspaceGlobalContext.Provider>
   );
 };
 
 /**
- * Hook to access AI Studio context
+ * Hook to access AI Workspace global context
  */
-export const useAIStudio = () => {
-  const context = useContext(AIStudioContext);
+export const useAIWorkspace = () => {
+  const context = useContext(AIWorkspaceGlobalContext);
   if (!context) {
-    throw new Error('useAIStudio must be used within AIStudioProvider');
+    throw new Error('useAIWorkspace must be used within AIWorkspaceProvider');
   }
   return context;
 };
 
-export default AIStudioContext;
+export default AIWorkspaceGlobalContext;

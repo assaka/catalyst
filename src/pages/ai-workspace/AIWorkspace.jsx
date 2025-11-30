@@ -8,7 +8,7 @@ import WorkspaceAIPanel from '@/components/ai-workspace/WorkspaceAIPanel';
 import WorkspaceCanvas from '@/components/ai-workspace/WorkspaceCanvas';
 import WorkspaceStorefrontPreview from '@/components/ai-workspace/WorkspaceStorefrontPreview';
 import DeveloperPluginEditor from '@/components/plugins/DeveloperPluginEditor';
-import ChatInterface from '@/components/ai-studio/ChatInterface';
+import ChatInterface from '@/components/ai-workspace/ChatInterface';
 
 /**
  * AIWorkspace - Unified Editor + AI workspace

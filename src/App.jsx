@@ -509,10 +509,9 @@ function App() {
           <Route path="/admin/store-onboarding" element={<PageWrapper Component={Pages.StoreOnboarding} pageName="StoreOnboarding" />} />
           <Route path="/admin/ai-context-window" element={<PageWrapper Component={Pages.AIContextWindow} pageName="AIContextWindow" />} />
           <Route path="/admin/translations" element={<PageWrapper Component={Pages.Translations} pageName="Translations" />} />
-          <Route path="/admin/ai-studio" element={<PageWrapper Component={Pages.AIStudio} pageName="AIStudio" />} />
           <Route path="/admin/auth" element={<PageWrapper Component={Auth} pageName="Auth" />} />
 
-          {/* Plugins Section - New unified AI Studio integrated */}
+          {/* Plugins Section */}
           <Route path="/plugins" element={<PageWrapper Component={Pages.Plugins} pageName="Plugins" />} />
           <Route path="/plugins/*" element={<PageWrapper Component={Pages.Plugins} pageName="Plugins" />} />
           <Route path="/admin/plugins" element={<PageWrapper Component={Pages.Plugins} pageName="Plugins" />} />
