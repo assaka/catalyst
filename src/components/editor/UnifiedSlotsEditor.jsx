@@ -355,7 +355,7 @@ const UnifiedSlotsEditor = ({
       {/* Main Editor Area */}
       <div className="flex flex-col">
         {/* Editor Header */}
-        <div className="bg-white border-b px-6 py-4 h-12">
+        <div className="bg-white border-b px-6 py-1 h-12">
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-between gap-4">
               {/* View Mode Tabs */}
