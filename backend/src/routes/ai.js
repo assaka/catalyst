@@ -650,7 +650,7 @@ router.post('/chat', authMiddleware, async (req, res) => {
         // User confirmed - update the translations
         const { translations, matchingKeys, original } = lastAssistantMessage.data;
         const ConnectionManager = require('../services/database/ConnectionManager');
-        const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
+        const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id || req.body.storeId;
 
         if (!store_id) {
           return res.status(400).json({
@@ -789,7 +789,18 @@ Return ONLY valid JSON.`;
       const ConnectionManager = require('../services/database/ConnectionManager');
       const translationService = require('../services/translation-service');
 
-      const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id;
+      // Debug: Log all store_id sources
+      console.log('🔍 AI Chat Translation - Store ID sources:', {
+        header: req.headers['x-store-id'],
+        query: req.query.store_id,
+        body_snake: req.body.store_id,
+        body_camel: req.body.storeId,
+        user_store_id: req.user?.store_id
+      });
+
+      const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id || req.body.storeId;
+      console.log('🎯 AI Chat Translation - Using store_id:', store_id);
+
       if (!store_id) {
         return res.status(400).json({
           success: false,
