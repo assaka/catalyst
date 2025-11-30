@@ -135,14 +135,15 @@ const DnsManager = ({ storeId, storeDomain }) => {
       return;
     }
 
-    // Basic domain validation
-    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.([a-zA-Z]{2,})+$/;
+    // Basic domain validation - supports subdomains like www.example.com, shop.example.com
+    const domainRegex = /^([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
     if (!domainRegex.test(newDomain.trim())) {
       toast.error('Please enter a valid domain name');
       return;
     }
 
     const domainInfo = getDomainInfo(newDomain);
+    console.log('Domain info:', domainInfo); // Debug log
 
     if (domainInfo.hasCompanion) {
       // Show dialog to ask about companion domain
