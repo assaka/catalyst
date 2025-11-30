@@ -375,7 +375,7 @@ router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) 
             if (authorized) {
               resolve('active');
             } else {
-              resolve('error');
+              resolve('failed');
             }
           });
 
@@ -387,7 +387,7 @@ router.post('/:id/check-ssl', authMiddleware, storeResolver(), async (req, res) 
             if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
               resolve('pending');
             } else if (err.message.includes('certificate')) {
-              resolve('error');
+              resolve('failed');
             } else {
               resolve('pending');
             }
