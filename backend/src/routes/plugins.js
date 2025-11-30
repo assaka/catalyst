@@ -88,35 +88,39 @@ router.get('/', async (req, res) => {
 
 /**
  * GET /api/plugins/marketplace
- * Get marketplace plugins
+ * Get marketplace plugins (hardcoded - no database required)
  */
 router.get('/marketplace', async (req, res) => {
   try {
     console.log('🔍 Marketplace API called');
 
-    // Ensure plugin manager is initialized
-    if (!pluginManager.isInitialized) {
-      console.log('⚠️ Plugin manager not initialized, initializing now...');
-      try {
-        await pluginManager.initialize();
-        console.log('✅ Plugin manager initialized successfully');
-      } catch (initError) {
-        console.error('❌ Plugin manager initialization failed:', initError.message);
-        console.error('❌ Init error stack:', initError.stack);
-        // Continue anyway - marketplace might still work
+    // Return hardcoded marketplace plugins directly - no initialization needed
+    // This avoids database connection issues during plugin manager init
+    const marketplacePlugins = [
+      {
+        name: 'Google Analytics 4',
+        slug: 'google-analytics-4',
+        description: 'Integrate Google Analytics 4 for advanced tracking',
+        author: 'Catalyst Team',
+        category: 'analytics',
+        version: '1.0.0',
+        sourceType: 'github',
+        sourceUrl: 'https://github.com/catalyst-plugins/google-analytics-4',
+        status: 'available'
+      },
+      {
+        name: 'Stripe Payment Gateway',
+        slug: 'stripe-payment',
+        description: 'Accept payments through Stripe',
+        author: 'Catalyst Team',
+        category: 'payment',
+        version: '2.0.0',
+        sourceType: 'github',
+        sourceUrl: 'https://github.com/catalyst-plugins/stripe-payment',
+        status: 'available'
       }
-    }
+    ];
 
-    // Check if marketplace exists
-    if (!pluginManager.marketplace) {
-      console.error('❌ pluginManager.marketplace is undefined!');
-      return res.json({
-        success: true,
-        data: []
-      });
-    }
-
-    const marketplacePlugins = Array.from(pluginManager.marketplace.values());
     console.log(`🏪 Returning ${marketplacePlugins.length} marketplace plugins`);
 
     res.json({
