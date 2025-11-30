@@ -47,7 +47,7 @@ const cartRoutes = require('./routes/cart');
 const wishlistRoutes = require('./routes/wishlist');
 const languageRoutes = require('./routes/languages');
 const translationRoutes = require('./routes/translations');
-const aiStudioRoutes = require('./routes/ai-studio');
+const aiWorkspaceRoutes = require('./routes/ai-workspace');
 const aiPluginAssistantRoutes = require('./routes/ai-plugin-assistant');
 const aiRoutes = require('./routes/ai'); // Centralized AI service
 const migrationsRoutes = require('./routes/migrations');
@@ -1052,7 +1052,7 @@ app.use('/api/translations', translationRoutes);
 // app.use('/api/diagnostic', diagnosticRoutes); // Temporarily disabled
 app.use('/api/migrations', migrationsRoutes); // Database migrations
 app.use('/api/ai', aiRoutes); // Centralized AI service (new unified system)
-app.use('/api/ai', aiStudioRoutes);
+app.use('/api/ai', aiWorkspaceRoutes);
 app.use('/api/ai', aiPluginAssistantRoutes); // AI Plugin Assistant for no-code and developer modes
 app.use('/api/plugins/ai', pluginAIRoutes); // Claude API integration for plugin generation
 app.use('/api/customer-activity', customerActivityRoutes);

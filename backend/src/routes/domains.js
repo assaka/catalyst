@@ -158,11 +158,13 @@ router.get('/', async (req, res) => {
 /**
  * POST /api/stores/:store_id/domains
  * Add a custom domain
+ * @param {string} domain - Primary domain (e.g., www.example.com or example.com)
+ * @param {string} redirect_from - Optional companion domain that redirects to primary (e.g., example.com or www.example.com)
  */
 router.post('/', async (req, res) => {
   try {
     const storeId = req.params.store_id;
-    const { domain, auto_setup_dns = false, ssl_enabled = true } = req.body;
+    const { domain, redirect_from = null, auto_setup_dns = false, ssl_enabled = true } = req.body;
 
     if (!storeId) {
       return res.status(400).json({
@@ -187,6 +189,14 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Validate redirect_from domain if provided
+    if (redirect_from && !domainRegex.test(redirect_from)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid redirect domain format'
+      });
+    }
+
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
     // Query by is_active since storeId is tenant identifier, not store UUID
@@ -205,14 +215,24 @@ router.post('/', async (req, res) => {
 
     // Check if domain already exists
     const existingDomains = store.settings?.custom_domains || [];
-    if (existingDomains.some(d => d.domain === domain)) {
+    if (existingDomains.some(d => d.domain === domain.toLowerCase())) {
       return res.status(400).json({
         success: false,
         error: 'Domain already exists'
       });
     }
 
-    // Create new domain entry
+    // Check if redirect_from domain already exists
+    if (redirect_from && existingDomains.some(d => d.domain === redirect_from.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        error: `Redirect domain ${redirect_from} already exists`
+      });
+    }
+
+    const domainsToAdd = [];
+
+    // Create primary domain entry
     const newDomain = {
       id: uuidv4(),
       domain: domain.toLowerCase(),
@@ -223,9 +243,28 @@ router.post('/', async (req, res) => {
       created_at: new Date().toISOString(),
       verification_token: generateVerificationToken()
     };
+    domainsToAdd.push(newDomain);
 
-    // Add to store settings
-    const updatedDomains = [...existingDomains, newDomain];
+    // Create redirect domain entry if provided
+    let redirectDomain = null;
+    if (redirect_from) {
+      redirectDomain = {
+        id: uuidv4(),
+        domain: redirect_from.toLowerCase(),
+        status: 'pending',
+        ssl_enabled,
+        is_primary: false,
+        is_redirect: true, // Mark as redirect domain
+        redirect_to: domain.toLowerCase(), // Target domain to redirect to
+        auto_setup_dns,
+        created_at: new Date().toISOString(),
+        verification_token: generateVerificationToken()
+      };
+      domainsToAdd.push(redirectDomain);
+    }
+
+    // Add all domains to store settings
+    const updatedDomains = [...existingDomains, ...domainsToAdd];
     await tenantDb
       .from('stores')
       .update({
@@ -242,16 +281,30 @@ router.post('/', async (req, res) => {
       try {
         await setupCloudflareRecords(storeId, domain);
         newDomain.dns_status = 'configured';
+        if (redirect_from) {
+          await setupCloudflareRecords(storeId, redirect_from);
+          redirectDomain.dns_status = 'configured';
+        }
       } catch (dnsError) {
         console.error('Auto DNS setup failed:', dnsError);
         newDomain.dns_status = 'manual_required';
+        if (redirectDomain) {
+          redirectDomain.dns_status = 'manual_required';
+        }
       }
     }
 
+    const responseData = {
+      primary: newDomain,
+      redirect: redirectDomain
+    };
+
     res.json({
       success: true,
-      message: 'Domain added successfully',
-      data: newDomain
+      message: redirect_from
+        ? `Domains added: ${domain} (primary) and ${redirect_from} (redirects to primary)`
+        : 'Domain added successfully',
+      data: responseData
     });
   } catch (error) {
     console.error('Add domain error:', error);

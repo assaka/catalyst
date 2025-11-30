@@ -1,7 +1,7 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { storeResolver } = require('../middleware/storeResolver');
-const aiStudioService = require('../services/ai-studio-service');
+const aiWorkspaceService = require('../services/ai-workspace-service');
 
 const router = express.Router();
 
@@ -23,7 +23,7 @@ router.post('/chat', async (req, res) => {
       });
     }
 
-    const response = await aiStudioService.processMessage({
+    const response = await aiWorkspaceService.processMessage({
       message,
       context,
       history,
@@ -37,7 +37,7 @@ router.post('/chat', async (req, res) => {
       data: response
     });
   } catch (error) {
-    console.error('AI Studio chat error:', error);
+    console.error('AI Workspace chat error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'AI processing failed'
@@ -59,14 +59,14 @@ router.post('/execute', async (req, res) => {
       });
     }
 
-    const result = await aiStudioService.executeAction(action, params, req.user.id, req.storeId);
+    const result = await aiWorkspaceService.executeAction(action, params, req.user.id, req.storeId);
 
     res.json({
       success: true,
       data: result
     });
   } catch (error) {
-    console.error('AI Studio execute error:', error);
+    console.error('AI Workspace execute error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Action execution failed'
@@ -81,7 +81,7 @@ router.get('/history', async (req, res) => {
   try {
     const { context, limit = 50 } = req.query;
 
-    const history = await aiStudioService.getHistory(req.user.id, req.storeId, context, limit);
+    const history = await aiWorkspaceService.getHistory(req.user.id, req.storeId, context, limit);
 
     res.json({
       success: true,
@@ -103,7 +103,7 @@ router.delete('/history', async (req, res) => {
   try {
     const { context } = req.query;
 
-    await aiStudioService.clearHistory(req.user.id, req.storeId, context);
+    await aiWorkspaceService.clearHistory(req.user.id, req.storeId, context);
 
     res.json({
       success: true,
@@ -125,7 +125,7 @@ router.get('/suggestions', async (req, res) => {
   try {
     const { context } = req.query;
 
-    const suggestions = await aiStudioService.getSuggestions(context);
+    const suggestions = await aiWorkspaceService.getSuggestions(context);
 
     res.json({
       success: true,

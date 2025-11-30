@@ -298,7 +298,7 @@ const WorkspaceAIPanel = () => {
       );
 
       // Call backend AI service
-      const response = await apiClient.post('ai-studio/chat', {
+      const response = await apiClient.post('ai/chat', {
         message: userMessage,
         context: selectedPageType,
         history: chatMessages.slice(-10).map(m => ({ role: m.role, content: m.content })),

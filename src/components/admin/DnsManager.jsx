@@ -7,6 +7,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Globe,
   Plus,
@@ -23,7 +32,8 @@ import {
   Zap,
   Database,
   Route,
-  Key
+  Key,
+  ArrowRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
@@ -37,6 +47,42 @@ const DnsManager = ({ storeId, storeDomain }) => {
   const [sslStatus, setSslStatus] = useState({});
   const [verificationStatus, setVerificationStatus] = useState({});
   const [copiedText, setCopiedText] = useState(null);
+
+  // Companion domain dialog state
+  const [showCompanionDialog, setShowCompanionDialog] = useState(false);
+  const [pendingDomain, setPendingDomain] = useState('');
+  const [companionDomain, setCompanionDomain] = useState('');
+  const [includeCompanion, setIncludeCompanion] = useState(true);
+
+  // Helper to detect domain type and get companion
+  const getDomainInfo = (domain) => {
+    const normalized = domain.trim().toLowerCase();
+    const isWww = normalized.startsWith('www.');
+    const isRootDomain = !normalized.startsWith('www.') && normalized.split('.').length === 2;
+
+    if (isWww) {
+      // www.example.com -> companion is example.com
+      return {
+        type: 'www',
+        companion: normalized.replace(/^www\./, ''),
+        hasCompanion: true
+      };
+    } else if (isRootDomain) {
+      // example.com -> companion is www.example.com
+      return {
+        type: 'root',
+        companion: `www.${normalized}`,
+        hasCompanion: true
+      };
+    } else {
+      // subdomain.example.com -> no companion needed
+      return {
+        type: 'subdomain',
+        companion: null,
+        hasCompanion: false
+      };
+    }
+  };
 
   useEffect(() => {
     loadDomainData();
@@ -83,7 +129,7 @@ const DnsManager = ({ storeId, storeDomain }) => {
     }
   };
 
-  const addCustomDomain = async () => {
+  const handleAddDomainClick = () => {
     if (!newDomain.trim()) {
       toast.error('Please enter a domain name');
       return;
@@ -96,16 +142,42 @@ const DnsManager = ({ storeId, storeDomain }) => {
       return;
     }
 
+    const domainInfo = getDomainInfo(newDomain);
+
+    if (domainInfo.hasCompanion) {
+      // Show dialog to ask about companion domain
+      setPendingDomain(newDomain.trim().toLowerCase());
+      setCompanionDomain(domainInfo.companion);
+      setIncludeCompanion(true);
+      setShowCompanionDialog(true);
+    } else {
+      // Subdomain - add directly without prompt
+      addCustomDomain(newDomain.trim().toLowerCase(), null);
+    }
+  };
+
+  const handleCompanionDialogConfirm = () => {
+    setShowCompanionDialog(false);
+    addCustomDomain(pendingDomain, includeCompanion ? companionDomain : null);
+  };
+
+  const addCustomDomain = async (domain, redirectFrom = null) => {
     try {
       const response = await apiClient.post(`/stores/${storeId}/domains`, {
-        domain: newDomain.trim().toLowerCase(),
+        domain: domain,
+        redirect_from: redirectFrom, // companion domain that redirects to main
         auto_setup_dns: cloudflareStatus?.connected || false,
         ssl_enabled: true
       });
 
       if (response.data.success) {
-        toast.success('Custom domain added successfully');
+        const message = redirectFrom
+          ? `Domains added: ${domain} (primary) and ${redirectFrom} (redirects to primary)`
+          : 'Custom domain added successfully';
+        toast.success(message);
         setNewDomain('');
+        setPendingDomain('');
+        setCompanionDomain('');
         loadDomainData();
       }
     } catch (error) {
@@ -255,9 +327,9 @@ const DnsManager = ({ storeId, storeDomain }) => {
                   placeholder="Enter your custom domain (e.g., shop.yourdomain.com)"
                   value={newDomain}
                   onChange={(e) => setNewDomain(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addCustomDomain()}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddDomainClick()}
                 />
-                <Button onClick={addCustomDomain} disabled={!newDomain.trim()}>
+                <Button onClick={handleAddDomainClick} disabled={!newDomain.trim()}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Domain
                 </Button>
@@ -302,11 +374,18 @@ const DnsManager = ({ storeId, storeDomain }) => {
                         <div className="flex items-start gap-3">
                           {getStatusIcon(domain.status)}
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span className="font-medium">{domain.domain}</span>
-                              <Badge variant={domain.is_primary ? 'default' : 'outline'}>
-                                {domain.is_primary ? 'Primary' : 'Secondary'}
-                              </Badge>
+                              {domain.is_redirect ? (
+                                <Badge variant="secondary" className="text-orange-600 bg-orange-50">
+                                  <ArrowRight className="w-3 h-3 mr-1" />
+                                  Redirects to {domain.redirect_to}
+                                </Badge>
+                              ) : (
+                                <Badge variant={domain.is_primary ? 'default' : 'outline'}>
+                                  {domain.is_primary ? 'Primary' : 'Secondary'}
+                                </Badge>
+                              )}
                               {domain.ssl_enabled && (
                                 <Badge variant="outline" className="text-green-600">
                                   <Shield className="w-3 h-3 mr-1" />
@@ -534,6 +613,75 @@ const DnsManager = ({ storeId, storeDomain }) => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Companion Domain Dialog */}
+      <Dialog open={showCompanionDialog} onOpenChange={setShowCompanionDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Globe className="w-5 h-5" />
+              Domain Redirect Setup
+            </DialogTitle>
+            <DialogDescription>
+              Configure how visitors access your store
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Show which domain they entered and companion */}
+            <div className="p-4 bg-muted rounded-lg space-y-3">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-medium">Primary domain:</span>
+                <code className="px-2 py-1 bg-background rounded">{pendingDomain}</code>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <ArrowRight className="w-4 h-4" />
+                <span>Your store will be accessible at this URL</span>
+              </div>
+            </div>
+
+            {/* Checkbox option for companion domain */}
+            <div className="flex items-start space-x-3 p-4 border rounded-lg">
+              <Checkbox
+                id="include-companion"
+                checked={includeCompanion}
+                onCheckedChange={setIncludeCompanion}
+              />
+              <div className="space-y-1">
+                <Label htmlFor="include-companion" className="font-medium cursor-pointer">
+                  Also add <code className="px-1 py-0.5 bg-muted rounded text-sm">{companionDomain}</code>
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Visitors to <strong>{companionDomain}</strong> will be automatically redirected to <strong>{pendingDomain}</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* DNS instructions if companion is selected */}
+            {includeCompanion && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  <strong>DNS Setup Required:</strong> You'll need to add DNS records for both <code>{pendingDomain}</code> and <code>{companionDomain}</code> in your DNS provider settings.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowCompanionDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCompanionDialogConfirm}>
+              <Plus className="w-4 h-4 mr-2" />
+              {includeCompanion ? 'Add Both Domains' : 'Add Domain'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

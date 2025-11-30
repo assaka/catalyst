@@ -95,7 +95,7 @@ async function getActiveStorefront(tenantDb, storeId, storefrontSlug = null) {
  * - We use master for routing (slug/domain -> store_id), then fetch all data from tenant
  *
  * @param {string} slug - Store slug OR custom domain to look up
- * @returns {Promise<Object>} { storeId, store, tenantDb }
+ * @returns {Promise<Object>} { storeId, store, tenantDb, redirectTo? }
  */
 async function getStoreBySlug(slug) {
   const { masterDbClient } = require('../database/masterConnection');
@@ -164,9 +164,22 @@ async function getStoreBySlug(slug) {
   // Override published field from master DB (master is authoritative for published status)
   store.published = masterStore.published;
 
+  // Step 4: Check if the incoming domain is a redirect domain
+  // If the slug looks like a domain, check custom_domains for redirect info
+  let redirectTo = null;
+  if (slug.includes('.')) {
+    const customDomains = store.settings?.custom_domains || [];
+    const matchingDomain = customDomains.find(d => d.domain === slug.toLowerCase());
+
+    if (matchingDomain && matchingDomain.is_redirect && matchingDomain.redirect_to) {
+      console.log(`↪️ Domain "${slug}" is a redirect domain -> redirecting to "${matchingDomain.redirect_to}"`);
+      redirectTo = matchingDomain.redirect_to;
+    }
+  }
+
   console.log(`✅ Loaded full store data from tenant DB:`, store.name);
 
-  return { storeId: masterStore.id, store, tenantDb };
+  return { storeId: masterStore.id, store, tenantDb, redirectTo };
 }
 
 /**
@@ -246,18 +259,31 @@ router.get('/', cacheMiddleware({
 
     // Get store by slug - uses master for routing, tenant for data
     console.log('🔍 Looking up store by slug:', slug);
-    let storeId, store, tenantDb;
+    let storeId, store, tenantDb, redirectTo;
 
     try {
       const result = await getStoreBySlug(slug);
       storeId = result.storeId;
       store = result.store;
       tenantDb = result.tenantDb;
+      redirectTo = result.redirectTo;
     } catch (err) {
       console.log('❌ Store not found for slug:', slug, err.message);
       return res.status(404).json({
         success: false,
         message: 'Store not found'
+      });
+    }
+
+    // If this domain should redirect to another domain, return redirect info
+    // The frontend will handle the actual redirect to preserve SEO
+    if (redirectTo) {
+      console.log(`↪️ Returning redirect response: ${slug} -> ${redirectTo}`);
+      return res.json({
+        success: true,
+        redirect: true,
+        redirectTo: `https://${redirectTo}`,
+        message: `This domain redirects to ${redirectTo}`
       });
     }
 

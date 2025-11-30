@@ -9,7 +9,7 @@
  * WHEN TO USE:
  * - Plugin generation (pluginAIService.js)
  * - Translations (translation-service.js)
- * - AI Studio (ai-studio-service.js)
+ * - AI Workspace (ai-workspace-service.js)
  * - Any AI feature that needs contextual knowledge
  *
  * WHEN NOT TO USE:

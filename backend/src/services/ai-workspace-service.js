@@ -123,7 +123,7 @@ class AIStudioService {
    * 4. Available capabilities list
    *
    * @example
-   * const prompt = await aiStudioService._buildSystemPrompt(
+   * const prompt = await aiWorkspaceService._buildSystemPrompt(
    *   'design',
    *   ['Generate color schemes', 'Create layouts'],
    *   'help me design a modern homepage'
