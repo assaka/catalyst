@@ -1229,7 +1229,7 @@ const DeveloperPluginEditor = ({
           </div>
         </ResizablePanel>
 
-        <ResizableHandle />
+        <ResizableHandle withHandle />
 
         {/* Main Editor Area */}
         <ResizablePanel
@@ -1276,7 +1276,7 @@ const DeveloperPluginEditor = ({
                         <div className="flex items-center gap-3">
                           <Code2 className="w-4 h-4 text-blue-600" />
                           <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                            Code Editor
+                            Code
                           </h3>
                         </div>
                     )}

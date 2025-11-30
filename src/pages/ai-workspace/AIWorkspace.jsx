@@ -122,7 +122,7 @@ const AIWorkspaceContent = () => {
               </div>
             </ResizablePanel>
 
-            <ResizableHandle />
+            <ResizableHandle withHandle />
 
             {/* Developer Plugin Editor (Right) */}
             <ResizablePanel
