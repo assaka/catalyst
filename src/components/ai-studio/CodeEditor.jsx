@@ -1042,12 +1042,7 @@ const CodeEditor = ({
 
             // Check if all changes have been undone - if so, switch back to code view
             const stats = getDiffStats(originalCode || '', newValue);
-            // Also do a direct comparison (normalized) as a fallback
-            const normalizedOriginal = (originalCode || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-            const normalizedNew = newValue.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-            const noChanges = stats.changes === 0 || normalizedOriginal === normalizedNew;
-
-            if (noChanges) {
+            if (stats.changes === 0) {
               setShowSplitView(false);
               setShowDiffView(false);
               // Now that we're switching out of diff mode, sync the state
