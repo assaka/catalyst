@@ -2725,7 +2725,8 @@ CREATE TABLE IF NOT EXISTS slot_configurations (
   parent_version_id UUID,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-  has_unpublished_changes BOOLEAN DEFAULT false NOT NULL
+  has_unpublished_changes BOOLEAN DEFAULT false NOT NULL,
+  metadata JSONB DEFAULT '{}'::jsonb
 );
 
 -- NOTE: store_teams table moved to MASTER database
