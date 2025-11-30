@@ -127,7 +127,9 @@ const AIWorkspaceContent = () => {
                   maxSize={chatMaximized ? 100 : 45}
                   className="bg-white dark:bg-gray-800"
                 >
-                  <WorkspaceAIPanel />
+                  <div className="h-full">
+                    <WorkspaceAIPanel />
+                  </div>
                 </ResizablePanel>
 
                 <ResizableHandle withHandle className={chatMaximized ? 'hidden' : ''} />

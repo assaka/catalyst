@@ -459,9 +459,11 @@ const CodeEditor = ({
     }
     setLocalCode(value);
     setIsModified(false);
-    // Update the stable ref for DiffEditor
-    diffModifiedContentRef.current = value;
-  }, [value]);
+    // Only update the ref when NOT in diff mode
+    if (!showSplitView && !showDiffView) {
+      diffModifiedContentRef.current = value;
+    }
+  }, [value, showSplitView, showDiffView]);
 
   // Sync the ref when switching TO diff mode (so DiffEditor has current content)
   useEffect(() => {

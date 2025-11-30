@@ -404,7 +404,7 @@ const WorkspaceAIPanel = () => {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Panel Header */}
       <div className="px-4 py-3 h-12 border-b bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
@@ -451,7 +451,7 @@ const WorkspaceAIPanel = () => {
       </div>
 
       {/* Chat Messages */}
-      <ScrollArea ref={scrollAreaRef} className="flex-1 px-4">
+      <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0 px-4">
         <div className="py-4 space-y-4">
           {chatMessages.length === 0 ? (
             // Empty state with suggestions
