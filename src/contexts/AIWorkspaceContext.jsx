@@ -90,6 +90,9 @@ export const AIWorkspaceProvider = ({ children }) => {
   // Default to false to use the legacy editors with full component rendering
   const [useStableEditor, setUseStableEditor] = useState(false);
 
+  // Publish status refresh callback (registered by WorkspaceHeader)
+  const [onPublishStatusRefresh, setOnPublishStatusRefresh] = useState(null);
+
   /**
    * Select a page type and update view mode accordingly
    */
@@ -253,6 +256,22 @@ export const AIWorkspaceProvider = ({ children }) => {
     }
   }, [chatMaximized]);
 
+  /**
+   * Register publish status refresh callback (called by WorkspaceHeader)
+   */
+  const registerPublishStatusRefresh = useCallback((callback) => {
+    setOnPublishStatusRefresh(() => callback);
+  }, []);
+
+  /**
+   * Trigger publish status refresh (called after saves)
+   */
+  const triggerPublishStatusRefresh = useCallback(() => {
+    if (onPublishStatusRefresh) {
+      onPublishStatusRefresh();
+    }
+  }, [onPublishStatusRefresh]);
+
   // Memoized value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     // Page/Editor State
@@ -311,6 +330,8 @@ export const AIWorkspaceProvider = ({ children }) => {
     addChatMessage,
     clearChatHistory,
     registerSlotHandlers,
+    registerPublishStatusRefresh,
+    triggerPublishStatusRefresh,
 
     // Constants
     pageTypes: PAGE_TYPES,
@@ -354,7 +375,9 @@ export const AIWorkspaceProvider = ({ children }) => {
     chatMinimized,
     toggleChatMinimized,
     chatMaximized,
-    toggleChatMaximized
+    toggleChatMaximized,
+    registerPublishStatusRefresh,
+    triggerPublishStatusRefresh
   ]);
 
   return (

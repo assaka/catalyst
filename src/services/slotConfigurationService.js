@@ -235,6 +235,12 @@ class SlotConfigurationService {
 
       // Update the draft with new configuration (now includes storeId)
       const updateResponse = await this.updateDraftConfiguration(draftConfig.id, apiConfiguration, storeId, isReset);
+
+      // Dispatch event to notify that configuration was saved (for Publish button update)
+      window.dispatchEvent(new CustomEvent('slot-configuration-saved', {
+        detail: { storeId, pageType }
+      }));
+
       return updateResponse;
     } catch (error) {
       console.error('❌ Error saving configuration:', error);

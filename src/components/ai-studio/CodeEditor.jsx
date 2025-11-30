@@ -702,10 +702,7 @@ const CodeEditor = ({
 
       // Use getDiffStats to check for meaningful changes (handles whitespace/newline edge cases)
       const stats = getDiffStats(contentToCompare, localCode);
-      // Also do a direct normalized comparison as a fallback
-      const normalizedCompare = contentToCompare.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-      const normalizedLocal = localCode.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-      const hasChanges = stats.changes > 0 && normalizedCompare !== normalizedLocal;
+      const hasChanges = stats.changes > 0;
 
       if (hasChanges) {
         const diffResult = diffServiceRef.current.createDiff(contentToCompare, localCode);

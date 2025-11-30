@@ -66,7 +66,8 @@ const WorkspaceHeader = () => {
     openAiStudio,
     closeAiStudio,
     chatMinimized,
-    toggleChatMinimized
+    toggleChatMinimized,
+    registerPublishStatusRefresh
   } = useAIWorkspace();
 
   const { getSelectedStoreId } = useStoreSelection();
@@ -92,6 +93,23 @@ const WorkspaceHeader = () => {
     if (storeId) {
       checkUnpublishedStatus();
     }
+  }, [storeId]);
+
+  // Register the refresh callback so editors can trigger status updates
+  useEffect(() => {
+    registerPublishStatusRefresh(checkUnpublishedStatus);
+  }, [registerPublishStatusRefresh, storeId]);
+
+  // Listen for configuration saves to refresh publish status
+  useEffect(() => {
+    const handleConfigSaved = () => {
+      checkUnpublishedStatus();
+    };
+
+    window.addEventListener('slot-configuration-saved', handleConfigSaved);
+    return () => {
+      window.removeEventListener('slot-configuration-saved', handleConfigSaved);
+    };
   }, [storeId]);
 
   // Load draft config for selected page type

@@ -31,7 +31,8 @@ const WorkspaceCanvas = () => {
     markAsSaved,
     setIsLoading,
     currentConfiguration,
-    registerSlotHandlers
+    registerSlotHandlers,
+    triggerPublishStatusRefresh
   } = useAIWorkspace();
 
   const { getSelectedStoreId } = useStoreSelection();
@@ -187,6 +188,8 @@ const WorkspaceCanvas = () => {
       );
       console.log('AI Workspace: Configuration saved successfully:', response);
       markAsSaved();
+      // Refresh publish status to update the Publish button
+      triggerPublishStatusRefresh();
       return response;
     } catch (error) {
       console.error(`AI Workspace: Failed to save ${selectedPageType} configuration:`, error);
