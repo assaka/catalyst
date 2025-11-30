@@ -163,6 +163,8 @@ const CodeEditor = ({
   const appUndoStack = useRef([]);
   const appRedoStack = useRef([]);
   const lastSavedContent = useRef(value);
+  // Ref to hold the latest handleCodeChange to avoid stale closures in event listeners
+  const handleCodeChangeRef = useRef(null);
   
   // Helper function to get diff stats
   // Enhanced diff statistics
@@ -847,6 +849,9 @@ const CodeEditor = ({
     }, 100);
   };
 
+  // Keep the ref updated with the latest handleCodeChange
+  handleCodeChangeRef.current = handleCodeChange;
+
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
 
@@ -1345,11 +1350,14 @@ const CodeEditor = ({
                       editorRef.current = modifiedEditor;
 
                       // Set up change listener on the modified editor
+                      // Use ref to avoid stale closure issues
                       const model = modifiedEditor.getModel();
                       if (model) {
                         model.onDidChangeContent(() => {
                           const newValue = model.getValue();
-                          handleCodeChange(newValue);
+                          if (handleCodeChangeRef.current) {
+                            handleCodeChangeRef.current(newValue);
+                          }
                         });
                       }
                     }}
@@ -1450,11 +1458,14 @@ const CodeEditor = ({
                       editorRef.current = modifiedEditor;
 
                       // Set up change listener on the modified editor
+                      // Use ref to avoid stale closure issues
                       const model = modifiedEditor.getModel();
                       if (model) {
                         model.onDidChangeContent(() => {
                           const newValue = model.getValue();
-                          handleCodeChange(newValue);
+                          if (handleCodeChangeRef.current) {
+                            handleCodeChangeRef.current(newValue);
+                          }
                         });
                       }
                     }}
