@@ -34,6 +34,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { slotEnabledFiles } from '@/components/editor/slot/slotEnabledFiles';
 import apiClient from '@/api/client';
+import { User } from '@/api/entities';
 import slotConfigurationService from '@/services/slotConfigurationService';
 import PublishPanel from '@/components/editor/slot/PublishPanel';
 import {
@@ -69,6 +70,7 @@ const WorkspaceHeader = () => {
   const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(false);
   const [draftConfig, setDraftConfig] = useState(null);
   const [publishPopoverOpen, setPublishPopoverOpen] = useState(false);
+  const [user, setUser] = useState(null);
 
   const storeId = getSelectedStoreId();
 
@@ -130,10 +132,25 @@ const WorkspaceHeader = () => {
   const loadPlugins = async () => {
     try {
       setLoadingPlugins(true);
-      const response = await apiClient.get(`stores/${storeId}/plugins`);
-      if (response.success && response.data?.plugins) {
-        setPlugins(response.data.plugins);
-      }
+
+      // Fetch user and plugins in parallel
+      const [userData, pluginsResponse] = await Promise.all([
+        User.me(),
+        apiClient.get(`stores/${storeId}/plugins`)
+      ]);
+
+      setUser(userData);
+
+      // Get plugins from response
+      const allPlugins = pluginsResponse?.data?.plugins || pluginsResponse?.plugins || [];
+
+      // Filter to only show user's own plugins (matching "My Plugins" tab behavior)
+      // Also filter out starter templates
+      const myPlugins = allPlugins.filter(plugin =>
+        plugin.creator_id === userData?.id && !plugin.is_starter_template
+      );
+
+      setPlugins(myPlugins);
     } catch (error) {
       console.error('Failed to load plugins:', error);
     } finally {
