@@ -421,16 +421,15 @@ const WorkspaceHeader = () => {
             <Button
               variant="outline"
               size="sm"
-              disabled={!hasUnpublishedChanges}
               className={
                 hasUnpublishedChanges
                   ? 'h-8 gap-1.5 bg-green-600 hover:bg-green-700 text-white border-green-600'
-                  : 'h-8 gap-1.5 bg-white opacity-50 cursor-not-allowed'
+                  : 'h-8 gap-1.5 bg-white hover:bg-gray-50 text-gray-700 border-gray-300'
               }
-              title={hasUnpublishedChanges ? 'Publish draft changes to production' : 'No unpublished changes'}
+              title={hasUnpublishedChanges ? 'Publish draft changes to production' : 'View versions and history'}
             >
               <Rocket className="h-3.5 w-3.5" />
-              <span>Publish</span>
+              <span>{hasUnpublishedChanges ? 'Publish' : 'Versions'}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-96 p-0">
