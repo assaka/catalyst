@@ -84,28 +84,10 @@ const AIWorkspaceContent = () => {
             >
               <div className="h-full flex flex-col border-r bg-white dark:bg-gray-900">
                 {!chatMinimized ? (
-                  <>
-                    <div className="h-10 px-3 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Bot className="w-4 h-4 text-blue-600" />
-                        <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                          AI Assistant
-                        </span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setChatMinimized(true)}
-                        title="Minimize chat"
-                        className="h-6 w-6 p-0"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                      <WorkspaceAIPanel />
-                    </div>
-                  </>
+                  <WorkspaceAIPanel
+                    showMinimize={true}
+                    onMinimize={() => setChatMinimized(true)}
+                  />
                 ) : (
                   <div className="h-full flex pt-2 justify-center border-r bg-gray-50 dark:bg-gray-800" style={{ minWidth: '50px' }}>
                     <Button
