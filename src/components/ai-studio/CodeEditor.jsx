@@ -941,6 +941,12 @@ const CodeEditor = ({
           onChange(newValue);
         }
 
+        // Check if all changes have been undone - if so, switch back to code view
+        if (newValue === originalCode) {
+          setShowSplitView(false);
+          setShowDiffView(false);
+        }
+
         // Update button states
         setTimeout(() => {
           try {
