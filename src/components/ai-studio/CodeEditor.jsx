@@ -143,7 +143,7 @@ const CodeEditor = ({
   const [diffData, setDiffData] = useState(null);
   const [showDiffView, setShowDiffView] = useState(false);
   const [showSplitView, setShowSplitView] = useState(false);
-  const [diffStats, setDiffStats] = useState({ additions: 0, deletions: 0, linesChanged: 0, changes: 0 });
+  // diffStats will be computed via useMemo below after getDiffStats is defined
   const [collapseUnchanged, setCollapseUnchanged] = useState(false);
   const [fullFileDisplayLines, setFullFileDisplayLines] = useState([]);
   const [canUndo, setCanUndo] = useState(false);
@@ -226,7 +226,12 @@ const CodeEditor = ({
       totalLines: maxLines
     };
   }, []);
-  
+
+  // Compute diff stats synchronously on every render when localCode or originalCode changes
+  const diffStats = useMemo(() => {
+    return getDiffStats(originalCode || '', localCode);
+  }, [localCode, originalCode, getDiffStats]);
+
   // Helper function to process code for collapsed view
   const getCollapsedCode = useCallback((originalCode, modifiedCode) => {
     if (!collapseUnchanged || !originalCode || !modifiedCode) {
@@ -471,12 +476,6 @@ const CodeEditor = ({
       diffModifiedContentRef.current = value;
     }
   }, [value, showSplitView, showDiffView]);
-
-  // Update diff stats whenever localCode or originalCode changes
-  useEffect(() => {
-    const stats = getDiffStats(originalCode || '', localCode);
-    setDiffStats(stats);
-  }, [localCode, originalCode, getDiffStats]);
 
   // Sync the ref when switching TO diff mode (so DiffEditor has current content)
   useEffect(() => {

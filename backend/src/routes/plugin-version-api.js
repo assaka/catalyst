@@ -2,19 +2,17 @@
 const express = require('express');
 const router = express.Router();
 const ConnectionManager = require('../services/database/ConnectionManager');
-const { QueryTypes } = require('sequelize');
 const jsonpatch = require('fast-json-patch');
 
 /**
- * Get tenant-specific sequelize instance
+ * Get tenant-specific Supabase client
+ * Uses getStoreConnection which returns a SupabaseAdapter
  */
-async function getTenantSequelize(req) {
+async function getTenantDb(req) {
   const storeId = req.headers['x-store-id'] || req.query.store_id;
   if (!storeId) throw new Error('Store ID is required for plugin operations');
-  // Use getConnection() which returns { sequelize, models, type }
-  // Not getStoreConnection() which returns an adapter without sequelize
-  const connection = await ConnectionManager.getConnection(storeId);
-  return connection.sequelize;
+  // getStoreConnection returns a SupabaseAdapter with .from() method
+  return await ConnectionManager.getStoreConnection(storeId);
 }
 
 /**
@@ -32,79 +30,68 @@ async function getTenantSequelize(req) {
  */
 router.get('/:pluginId/versions', async (req, res) => {
   try {
-    const sequelize = await getTenantSequelize(req);
+    const db = await getTenantDb(req);
     const { pluginId } = req.params;
     const { page = 1, limit = 20, filter = 'all' } = req.query;
     const offset = (page - 1) * limit;
 
     console.log(`📚 Loading versions for plugin: ${pluginId}`);
 
-    // Build filter query
-    let filterClause = '';
+    // Build query with filters
+    let query = db.from('plugin_version_history')
+      .select('*')
+      .eq('plugin_id', pluginId);
+
+    // Apply filters
     if (filter === 'snapshots') {
-      filterClause = `AND version_type = 'snapshot'`;
+      query = query.eq('version_type', 'snapshot');
     } else if (filter === 'patches') {
-      filterClause = `AND version_type = 'patch'`;
+      query = query.eq('version_type', 'patch');
     } else if (filter === 'published') {
-      filterClause = `AND is_published = true`;
+      query = query.eq('is_published', true);
     }
 
     // Get total count
-    const [countResult] = await sequelize.query(`
-      SELECT COUNT(*) as total
-      FROM plugin_version_history
-      WHERE plugin_id = $1 ${filterClause}
-    `, {
-      bind: [pluginId],
-      type: QueryTypes.SELECT
-    });
+    const { count, error: countError } = await db.from('plugin_version_history')
+      .select('*', { count: 'exact', head: true })
+      .eq('plugin_id', pluginId);
 
-    // Get versions with tags
-    const versions = await sequelize.query(`
-      SELECT
-        vh.id,
-        vh.plugin_id,
-        vh.version_number,
-        vh.version_type,
-        vh.parent_version_id,
-        vh.commit_message,
-        vh.changelog,
-        vh.created_by_name,
-        vh.is_current,
-        vh.is_published,
-        vh.snapshot_distance,
-        vh.files_changed,
-        vh.lines_added,
-        vh.lines_deleted,
-        vh.created_at,
-        vh.published_at,
-        COALESCE(
-          json_agg(
-            json_build_object('name', vt.tag_name, 'type', vt.tag_type)
-          ) FILTER (WHERE vt.id IS NOT NULL),
-          '[]'::json
-        ) as tags
-      FROM plugin_version_history vh
-      LEFT JOIN plugin_version_tags vt ON vh.id = vt.version_id
-      WHERE vh.plugin_id = $1 ${filterClause}
-      GROUP BY vh.id
-      ORDER BY vh.created_at DESC
-      LIMIT $2 OFFSET $3
-    `, {
-      bind: [pluginId, parseInt(limit), offset],
-      type: QueryTypes.SELECT
-    });
+    if (countError) throw new Error(countError.message);
 
-    console.log(`  ✅ Found ${versions.length} versions (total: ${countResult.total})`);
+    // Get versions with pagination
+    const { data: versions, error: versionsError } = await query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + parseInt(limit) - 1);
+
+    if (versionsError) throw new Error(versionsError.message);
+
+    // Get tags for these versions
+    const versionIds = versions.map(v => v.id);
+    let tags = [];
+    if (versionIds.length > 0) {
+      const { data: tagsData, error: tagsError } = await db.from('plugin_version_tags')
+        .select('*')
+        .in('version_id', versionIds);
+
+      if (!tagsError) tags = tagsData || [];
+    }
+
+    // Attach tags to versions
+    const versionsWithTags = versions.map(v => ({
+      ...v,
+      tags: tags.filter(t => t.version_id === v.id).map(t => ({ name: t.tag_name, type: t.tag_type }))
+    }));
+
+    console.log(`  ✅ Found ${versions.length} versions (total: ${count})`);
 
     res.json({
       success: true,
-      versions,
+      versions: versionsWithTags,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: parseInt(countResult.total),
-        totalPages: Math.ceil(countResult.total / limit)
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit)
       }
     });
   } catch (error) {
@@ -123,7 +110,7 @@ router.get('/:pluginId/versions', async (req, res) => {
  */
 router.get('/:pluginId/versions/compare', async (req, res) => {
   try {
-    const sequelize = await getTenantSequelize(req);
+    const db = await getTenantDb(req);
     const { pluginId } = req.params;
     const { from, to } = req.query;
 
@@ -136,16 +123,19 @@ router.get('/:pluginId/versions/compare', async (req, res) => {
 
     console.log(`🔍 Comparing versions: ${from} -> ${to}`);
 
-    // Check cache first
-    const [cached] = await sequelize.query(`
-      SELECT * FROM plugin_version_comparisons
-      WHERE from_version_id = $1 AND to_version_id = $2
-        AND computed_at > NOW() - INTERVAL '1 hour'
-      LIMIT 1
-    `, {
-      bind: [from, to],
-      type: QueryTypes.SELECT
-    });
+    // Check cache first (skip cache check if table doesn't exist)
+    let cached = null;
+    try {
+      const { data: cachedData } = await db.from('plugin_version_comparisons')
+        .select('*')
+        .eq('from_version_id', from)
+        .eq('to_version_id', to)
+        .gte('computed_at', new Date(Date.now() - 3600000).toISOString())
+        .maybeSingle();
+      cached = cachedData;
+    } catch (e) {
+      // Cache table might not exist, continue without cache
+    }
 
     if (cached) {
       console.log('  ✅ Using cached comparison');
@@ -157,8 +147,8 @@ router.get('/:pluginId/versions/compare', async (req, res) => {
     }
 
     // Reconstruct both states
-    const fromState = await reconstructPluginState(sequelize, from);
-    const toState = await reconstructPluginState(sequelize, to);
+    const fromState = await reconstructPluginState(db, from);
+    const toState = await reconstructPluginState(db, to);
 
     console.log(`  ✓ States reconstructed:`, {
       fromState_keys: fromState ? Object.keys(fromState) : null,
@@ -184,27 +174,26 @@ router.get('/:pluginId/versions/compare', async (req, res) => {
       summary_length: diff.summary?.length || 0
     });
 
-    // Cache the result
-    await sequelize.query(`
-      INSERT INTO plugin_version_comparisons (
-        plugin_id, from_version_id, to_version_id,
-        files_changed, lines_added, lines_deleted,
-        components_added, components_modified, components_deleted,
-        diff_summary
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      ON CONFLICT (from_version_id, to_version_id)
-      DO UPDATE SET
-        diff_summary = EXCLUDED.diff_summary,
-        computed_at = NOW()
-    `, {
-      bind: [
-        pluginId, from, to,
-        diff.files_changed, diff.lines_added, diff.lines_deleted,
-        diff.components_added, diff.components_modified, diff.components_deleted,
-        JSON.stringify(diff.summary)
-      ],
-      type: QueryTypes.INSERT
-    });
+    // Try to cache the result (skip if table doesn't exist)
+    try {
+      await db.from('plugin_version_comparisons')
+        .upsert({
+          plugin_id: pluginId,
+          from_version_id: from,
+          to_version_id: to,
+          files_changed: diff.files_changed,
+          lines_added: diff.lines_added,
+          lines_deleted: diff.lines_deleted,
+          components_added: diff.components_added,
+          components_modified: diff.components_modified,
+          components_deleted: diff.components_deleted,
+          diff_summary: diff.summary,
+          computed_at: new Date().toISOString()
+        }, { onConflict: 'from_version_id,to_version_id' });
+    } catch (e) {
+      // Cache table might not exist, continue without caching
+      console.warn('Could not cache comparison:', e.message);
+    }
 
     console.log(`  ✅ Comparison complete: ${diff.files_changed} files changed`);
 
@@ -233,17 +222,16 @@ router.get('/:pluginId/versions/compare', async (req, res) => {
  */
 router.get('/:pluginId/versions/current', async (req, res) => {
   try {
-    const sequelize = await getTenantSequelize(req);
+    const db = await getTenantDb(req);
     const { pluginId } = req.params;
 
-    const [version] = await sequelize.query(`
-      SELECT * FROM plugin_versions_with_tags
-      WHERE plugin_id = $1 AND is_current = true
-      LIMIT 1
-    `, {
-      bind: [pluginId],
-      type: QueryTypes.SELECT
-    });
+    const { data: version, error } = await db.from('plugin_version_history')
+      .select('*')
+      .eq('plugin_id', pluginId)
+      .eq('is_current', true)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
 
     if (!version) {
       return res.status(404).json({
@@ -271,20 +259,19 @@ router.get('/:pluginId/versions/current', async (req, res) => {
  */
 router.get('/:pluginId/versions/:versionId', async (req, res) => {
   try {
-    const sequelize = await getTenantSequelize(req);
+    const db = await getTenantDb(req);
     const { pluginId, versionId } = req.params;
 
     console.log(`📖 Loading version: ${versionId}`);
 
     // Get version metadata
-    const [version] = await sequelize.query(`
-      SELECT * FROM plugin_versions_with_tags
-      WHERE plugin_id = $1 AND id = $2
-      LIMIT 1
-    `, {
-      bind: [pluginId, versionId],
-      type: QueryTypes.SELECT
-    });
+    const { data: version, error: versionError } = await db.from('plugin_version_history')
+      .select('*')
+      .eq('plugin_id', pluginId)
+      .eq('id', versionId)
+      .maybeSingle();
+
+    if (versionError) throw new Error(versionError.message);
 
     if (!version) {
       return res.status(404).json({
@@ -296,31 +283,27 @@ router.get('/:pluginId/versions/:versionId', async (req, res) => {
     // Get patches for this version (if patch type)
     let patches = [];
     if (version.version_type === 'patch') {
-      patches = await sequelize.query(`
-        SELECT * FROM plugin_version_patches
-        WHERE version_id = $1
-        ORDER BY component_type, component_name
-      `, {
-        bind: [versionId],
-        type: QueryTypes.SELECT
-      });
+      const { data: patchData, error: patchError } = await db.from('plugin_version_patches')
+        .select('*')
+        .eq('version_id', versionId)
+        .order('component_type', { ascending: true });
+
+      if (!patchError) patches = patchData || [];
     }
 
     // Get snapshot data (if snapshot type)
     let snapshot = null;
     if (version.version_type === 'snapshot') {
-      [snapshot] = await sequelize.query(`
-        SELECT * FROM plugin_version_snapshots
-        WHERE version_id = $1
-        LIMIT 1
-      `, {
-        bind: [versionId],
-        type: QueryTypes.SELECT
-      });
+      const { data: snapshotData, error: snapshotError } = await db.from('plugin_version_snapshots')
+        .select('*')
+        .eq('version_id', versionId)
+        .maybeSingle();
+
+      if (!snapshotError) snapshot = snapshotData;
     }
 
     // Reconstruct full plugin state at this version
-    const reconstructedState = await reconstructPluginState(sequelize, versionId);
+    const reconstructedState = await reconstructPluginState(db, versionId);
 
     console.log(`  ✓ Version details loaded:`, {
       version_type: version.version_type,
@@ -354,7 +337,7 @@ router.get('/:pluginId/versions/:versionId', async (req, res) => {
  */
 router.post('/:pluginId/versions', async (req, res) => {
   try {
-    const sequelize = await getTenantSequelize(req);
+    const db = await getTenantDb(req);
     const { pluginId } = req.params;
     const {
       commit_message,
@@ -367,17 +350,14 @@ router.post('/:pluginId/versions', async (req, res) => {
     console.log(`📝 Creating new version for plugin: ${pluginId}`);
 
     // Get current version
-    const [currentVersion] = await sequelize.query(`
-      SELECT * FROM plugin_version_history
-      WHERE plugin_id = $1 AND is_current = true
-      LIMIT 1
-    `, {
-      bind: [pluginId],
-      type: QueryTypes.SELECT
-    });
+    const { data: currentVersion } = await db.from('plugin_version_history')
+      .select('*')
+      .eq('plugin_id', pluginId)
+      .eq('is_current', true)
+      .maybeSingle();
 
     // Get current plugin state from database
-    const pluginState = await getPluginCurrentState(sequelize, pluginId);
+    const pluginState = await getPluginCurrentState(db, pluginId);
 
     if (!pluginState) {
       console.error(`  ❌ Plugin ${pluginId} not found in database`);
@@ -412,7 +392,7 @@ router.post('/:pluginId/versions', async (req, res) => {
 
     if (!shouldSnapshot && currentVersion) {
       // Get previous plugin state
-      const previousState = await reconstructPluginState(sequelize, currentVersion.id);
+      const previousState = await reconstructPluginState(db, currentVersion.id);
 
       if (!previousState) {
         console.warn(`  ⚠ Could not reconstruct previous state for version ${currentVersion.id}, forcing snapshot`);
@@ -425,63 +405,60 @@ router.post('/:pluginId/versions', async (req, res) => {
       }
     }
 
+    // Unmark current version
+    if (currentVersion) {
+      await db.from('plugin_version_history')
+        .update({ is_current: false })
+        .eq('id', currentVersion.id);
+    }
+
     // Create version record
-    const [newVersion] = await sequelize.query(`
-      INSERT INTO plugin_version_history (
-        plugin_id,
-        version_number,
-        version_type,
-        parent_version_id,
-        commit_message,
-        created_by,
-        created_by_name,
-        is_current,
-        is_published,
-        files_changed,
-        lines_added,
-        lines_deleted
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8, $9, $10, $11)
-      RETURNING *
-    `, {
-      bind: [
-        pluginId,
-        newVersionNumber,
-        shouldSnapshot ? 'snapshot' : 'patch',
-        currentVersion?.id || null,
-        commit_message || 'Auto-save',
-        created_by || null,
-        created_by_name || 'System',
-        !!tag_name,
-        stats.files_changed,
-        stats.lines_added,
-        stats.lines_deleted
-      ],
-      type: QueryTypes.INSERT
-    });
+    const { data: newVersion, error: insertError } = await db.from('plugin_version_history')
+      .insert({
+        plugin_id: pluginId,
+        version_number: newVersionNumber,
+        version_type: shouldSnapshot ? 'snapshot' : 'patch',
+        parent_version_id: currentVersion?.id || null,
+        commit_message: commit_message || 'Auto-save',
+        created_by: created_by || null,
+        created_by_name: created_by_name || 'System',
+        is_current: true,
+        is_published: !!tag_name,
+        files_changed: stats.files_changed,
+        lines_added: stats.lines_added,
+        lines_deleted: stats.lines_deleted,
+        snapshot_distance: shouldSnapshot ? 0 : (currentVersion?.snapshot_distance || 0) + 1
+      })
+      .select()
+      .single();
+
+    if (insertError) throw new Error(insertError.message);
 
     // Store snapshot or patches
     if (shouldSnapshot) {
-      await createSnapshot(sequelize, newVersion[0].id, pluginId, pluginState);
+      await createSnapshot(db, newVersion.id, pluginId, pluginState);
     } else {
-      await storePatches(sequelize, newVersion[0].id, pluginId, patches);
+      await storePatches(db, newVersion.id, pluginId, patches);
     }
 
     // Create tag if provided
     if (tag_name) {
-      await sequelize.query(`
-        INSERT INTO plugin_version_tags (version_id, plugin_id, tag_name, tag_type, created_by, created_by_name)
-        VALUES ($1, $2, $3, 'custom', $4, $5)
-      `, {
-        bind: [newVersion[0].id, pluginId, tag_name, created_by, created_by_name],
-        type: QueryTypes.INSERT
-      });
+      await db.from('plugin_version_tags')
+        .insert({
+          version_id: newVersion.id,
+          plugin_id: pluginId,
+          tag_name: tag_name,
+          tag_type: 'custom',
+          created_by: created_by,
+          created_by_name: created_by_name
+        });
     }
 
     console.log(`  ✅ Created version ${newVersionNumber} (${shouldSnapshot ? 'snapshot' : 'patch'})`);
 
     res.json({
       success: true,
-      version: newVersion[0],
+      version: newVersion,
       type: shouldSnapshot ? 'snapshot' : 'patch',
       patches_count: patches.length
     });
@@ -504,28 +481,14 @@ router.post('/:pluginId/versions', async (req, res) => {
  */
 router.post('/:pluginId/versions/:versionId/restore', async (req, res) => {
   try {
-    const sequelize = await getTenantSequelize(req);
+    const db = await getTenantDb(req);
     const { pluginId, versionId } = req.params;
     const { create_backup = true, created_by, created_by_name } = req.body;
 
     console.log(`🔄 Restoring plugin ${pluginId} to version ${versionId}`);
 
-    // Create backup of current state if requested
-    if (create_backup) {
-      console.log('  💾 Creating backup...');
-      await router.stack.find(r => r.route?.path === '/:pluginId/versions').route.stack[0].handle(
-        { params: { pluginId }, body: {
-          commit_message: `Backup before restore to ${versionId}`,
-          created_by,
-          created_by_name,
-          tag_name: 'backup'
-        }},
-        { json: () => {} }
-      );
-    }
-
     // Reconstruct plugin state at target version
-    const targetState = await reconstructPluginState(sequelize, versionId);
+    const targetState = await reconstructPluginState(db, versionId);
 
     if (!targetState) {
       return res.status(404).json({
@@ -535,17 +498,16 @@ router.post('/:pluginId/versions/:versionId/restore', async (req, res) => {
     }
 
     // Apply restored state to database
-    await applyPluginState(sequelize, pluginId, targetState);
+    await applyPluginState(db, pluginId, targetState);
 
-    // Mark version as current
-    await sequelize.query(`
-      UPDATE plugin_version_history
-      SET is_current = CASE WHEN id = $1 THEN true ELSE false END
-      WHERE plugin_id = $2
-    `, {
-      bind: [versionId, pluginId],
-      type: QueryTypes.UPDATE
-    });
+    // Mark all versions as not current, then set the target as current
+    await db.from('plugin_version_history')
+      .update({ is_current: false })
+      .eq('plugin_id', pluginId);
+
+    await db.from('plugin_version_history')
+      .update({ is_current: true })
+      .eq('id', versionId);
 
     console.log(`  ✅ Restored successfully`);
 
@@ -569,7 +531,7 @@ router.post('/:pluginId/versions/:versionId/restore', async (req, res) => {
  */
 router.post('/:pluginId/versions/:versionId/tag', async (req, res) => {
   try {
-    const sequelize = await getTenantSequelize(req);
+    const db = await getTenantDb(req);
     const { pluginId, versionId } = req.params;
     const { tag_name, tag_type = 'custom', description, created_by, created_by_name } = req.body;
 
@@ -580,18 +542,16 @@ router.post('/:pluginId/versions/:versionId/tag', async (req, res) => {
       });
     }
 
-    await sequelize.query(`
-      INSERT INTO plugin_version_tags (
-        version_id, plugin_id, tag_name, tag_type, description, created_by, created_by_name
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT (plugin_id, tag_name)
-      DO UPDATE SET
-        version_id = EXCLUDED.version_id,
-        description = EXCLUDED.description
-    `, {
-      bind: [versionId, pluginId, tag_name, tag_type, description, created_by, created_by_name],
-      type: QueryTypes.INSERT
-    });
+    await db.from('plugin_version_tags')
+      .upsert({
+        version_id: versionId,
+        plugin_id: pluginId,
+        tag_name: tag_name,
+        tag_type: tag_type,
+        description: description,
+        created_by: created_by,
+        created_by_name: created_by_name
+      }, { onConflict: 'plugin_id,tag_name' });
 
     res.json({
       success: true,
@@ -612,16 +572,14 @@ router.post('/:pluginId/versions/:versionId/tag', async (req, res) => {
  */
 router.delete('/:pluginId/versions/:versionId/tag/:tagName', async (req, res) => {
   try {
-    const sequelize = await getTenantSequelize(req);
+    const db = await getTenantDb(req);
     const { pluginId, versionId, tagName } = req.params;
 
-    await sequelize.query(`
-      DELETE FROM plugin_version_tags
-      WHERE version_id = $1 AND plugin_id = $2 AND tag_name = $3
-    `, {
-      bind: [versionId, pluginId, tagName],
-      type: QueryTypes.DELETE
-    });
+    await db.from('plugin_version_tags')
+      .delete()
+      .eq('version_id', versionId)
+      .eq('plugin_id', pluginId)
+      .eq('tag_name', tagName);
 
     res.json({
       success: true,
@@ -643,52 +601,46 @@ router.delete('/:pluginId/versions/:versionId/tag/:tagName', async (req, res) =>
 /**
  * Get current plugin state from all tables
  */
-async function getPluginCurrentState(sequelize, pluginId) {
-  const [registry] = await sequelize.query(
-    'SELECT * FROM plugin_registry WHERE id = $1',
-    { bind: [pluginId], type: QueryTypes.SELECT }
-  );
+async function getPluginCurrentState(db, pluginId) {
+  const { data: registry } = await db.from('plugin_registry')
+    .select('*')
+    .eq('id', pluginId)
+    .maybeSingle();
 
   if (!registry) return null;
 
-  const hooks = await sequelize.query(
-    'SELECT * FROM plugin_hooks WHERE plugin_id = $1',
-    { bind: [pluginId], type: QueryTypes.SELECT }
-  );
+  const { data: hooks } = await db.from('plugin_hooks')
+    .select('*')
+    .eq('plugin_id', pluginId);
 
-  const events = await sequelize.query(
-    'SELECT * FROM plugin_events WHERE plugin_id = $1',
-    { bind: [pluginId], type: QueryTypes.SELECT }
-  );
+  const { data: events } = await db.from('plugin_events')
+    .select('*')
+    .eq('plugin_id', pluginId);
 
-  const scripts = await sequelize.query(
-    'SELECT * FROM plugin_scripts WHERE plugin_id = $1',
-    { bind: [pluginId], type: QueryTypes.SELECT }
-  );
+  const { data: scripts } = await db.from('plugin_scripts')
+    .select('*')
+    .eq('plugin_id', pluginId);
 
-  const widgets = await sequelize.query(
-    'SELECT * FROM plugin_widgets WHERE plugin_id = $1',
-    { bind: [pluginId], type: QueryTypes.SELECT }
-  );
+  const { data: widgets } = await db.from('plugin_widgets')
+    .select('*')
+    .eq('plugin_id', pluginId);
 
-  const controllers = await sequelize.query(
-    'SELECT * FROM plugin_controllers WHERE plugin_id = $1',
-    { bind: [pluginId], type: QueryTypes.SELECT }
-  );
+  const { data: controllers } = await db.from('plugin_controllers')
+    .select('*')
+    .eq('plugin_id', pluginId);
 
-  const entities = await sequelize.query(
-    'SELECT * FROM plugin_entities WHERE plugin_id = $1',
-    { bind: [pluginId], type: QueryTypes.SELECT }
-  );
+  const { data: entities } = await db.from('plugin_entities')
+    .select('*')
+    .eq('plugin_id', pluginId);
 
   return {
     registry,
-    hooks,
-    events,
-    scripts,
-    widgets,
-    controllers,
-    entities
+    hooks: hooks || [],
+    events: events || [],
+    scripts: scripts || [],
+    widgets: widgets || [],
+    controllers: controllers || [],
+    entities: entities || []
   };
 }
 
