@@ -484,12 +484,15 @@ const DeveloperPluginEditor = ({
     setFileContent(newCode);
   }, []);
 
-  // Memoize CodeEditor to prevent unnecessary reloads when unrelated state changes
-  const memoizedCodeEditor = useMemo(() => {
+  // Render CodeEditor directly - no useMemo needed
+  // CodeEditor manages its own internal state, parent re-renders won't cause remounting
+  // Use key to force remount only when switching files
+  const renderCodeEditor = () => {
     if (!selectedFile) return null;
 
     return (
       <CodeEditor
+        key={selectedFile.path}
         value={fileContent}
         onChange={handleCodeChange}
         fileName={selectedFile.name}
@@ -499,7 +502,7 @@ const DeveloperPluginEditor = ({
         className="h-full"
       />
     );
-  }, [fileContent, selectedFile, originalContent, handleCodeChange]);
+  };
 
   const handleSave = async () => {
     if (!selectedFile) {
@@ -1419,7 +1422,7 @@ const DeveloperPluginEditor = ({
                 {/* Code Editor */}
                 <div className="flex-1 overflow-hidden">
                   {selectedFile ? (
-                    memoizedCodeEditor
+                    renderCodeEditor()
                   ) : (
                     <div className="h-full flex items-center justify-center text-gray-500">
                       <div className="text-center">
