@@ -522,7 +522,7 @@ export default function Plugins() {
           </div>
         </div>
 
-        <Tabs defaultValue="marketplace" className="space-y-6">
+        <Tabs defaultValue="my-plugins" className="space-y-6">
           {/*
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="marketplace" className="flex items-center gap-2">
