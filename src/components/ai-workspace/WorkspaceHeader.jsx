@@ -402,36 +402,34 @@ const WorkspaceHeader = () => {
         )}
 
         {/* Publish Button with Panel */}
-        {!showPluginEditor && !showAiStudio && (
-          <Popover open={publishPopoverOpen} onOpenChange={setPublishPopoverOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant={hasUnpublishedChanges ? 'default' : 'outline'}
-                size="sm"
-                className={
-                  hasUnpublishedChanges
-                    ? 'h-8 gap-1.5 bg-green-600 hover:bg-green-700'
-                    : 'h-8 gap-1.5'
-                }
-                title={hasUnpublishedChanges ? 'Publish draft changes to production' : 'No unpublished changes'}
-              >
-                <Rocket className="h-3.5 w-3.5" />
-                <span>Publish</span>
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-96 p-0">
-              <PublishPanel
-                draftConfig={draftConfig}
-                storeId={storeId}
-                pageType={selectedPageType}
-                onPublished={handlePublished}
-                onReverted={handleReverted}
-                hasUnsavedChanges={hasUnpublishedChanges}
-              />
-            </PopoverContent>
-          </Popover>
-        )}
+        <Popover open={publishPopoverOpen} onOpenChange={setPublishPopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant={hasUnpublishedChanges ? 'default' : 'outline'}
+              size="sm"
+              className={
+                hasUnpublishedChanges
+                  ? 'h-8 gap-1.5 bg-green-600 hover:bg-green-700'
+                  : 'h-8 gap-1.5'
+              }
+              title={hasUnpublishedChanges ? 'Publish draft changes to production' : 'No unpublished changes'}
+            >
+              <Rocket className="h-3.5 w-3.5" />
+              <span>Publish</span>
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-96 p-0">
+            <PublishPanel
+              draftConfig={draftConfig}
+              storeId={storeId}
+              pageType={selectedPageType}
+              onPublished={handlePublished}
+              onReverted={handleReverted}
+              hasUnsavedChanges={hasUnpublishedChanges}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
     </header>
   );

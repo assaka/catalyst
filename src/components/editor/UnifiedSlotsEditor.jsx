@@ -44,7 +44,6 @@ import {
   FilePickerModalWrapper,
   EditModeControls,
   CodeModal,
-  PublishPanelToggle,
   TimestampsRow,
   ResponsiveContainer
 } from '@/components/editor/slot/SlotComponents';
@@ -386,15 +385,6 @@ const UnifiedSlotsEditor = ({
                 {showPreview ? "Exit Preview" : "Preview"}
               </Button>
 
-              <PublishPanelToggle
-                hasUnsavedChanges={hasUnsavedChanges}
-                showPublishPanel={showPublishPanel}
-                onTogglePublishPanel={setShowPublishPanel}
-                onClosePublishPanel={() => {
-                  setIsSidebarVisible(false);
-                  setSelectedElement(null);
-                }}
-              />
             </div>
           </div>
         </div>
