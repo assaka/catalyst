@@ -156,6 +156,7 @@ const CodeEditor = ({
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const diffServiceRef = useRef(new UnifiedDiffFrontendService());
+  const isUndoRedoInProgress = useRef(false);
   
   // Helper function to get diff stats
   // Enhanced diff statistics
@@ -749,16 +750,21 @@ const CodeEditor = ({
   }, []);
 
   const handleCodeChange = (newCode) => {
+    // Skip processing if undo/redo is in progress - let handleUndo/handleRedo manage state
+    if (isUndoRedoInProgress.current) {
+      return;
+    }
+
     // Apply hooks before processing change
     const processedCode = hookSystem.apply('codeEditor.beforeChange', newCode, {
       fileName,
       language,
       originalCode: value
     });
-    
+
     setLocalCode(processedCode);
     setIsModified(processedCode !== value);
-    
+
     // Emit event for extensions
     eventSystem.emit('codeEditor.codeChanged', {
       fileName,
@@ -766,16 +772,16 @@ const CodeEditor = ({
       newCode: processedCode,
       language
     });
-    
+
     // Version history removed for simplicity
-    
+
     // Always call onManualEdit to let the parent handle change detection
     if (onManualEdit) {
       onManualEdit(processedCode, value, { enableDiffDetection });
     }
-    
+
     onChange && onChange(processedCode);
-    
+
     // Update undo/redo button states
     setTimeout(() => {
       if (editorRef.current) {
@@ -946,11 +952,17 @@ const CodeEditor = ({
   const handleUndo = () => {
     if (editorRef.current) {
       try {
+        // Set flag to prevent handleCodeChange from interfering
+        isUndoRedoInProgress.current = true;
+
         editorRef.current.trigger('keyboard', 'undo');
 
         // Wait for Monaco to process the undo, then update state
         setTimeout(() => {
-          if (!editorRef.current) return;
+          if (!editorRef.current) {
+            isUndoRedoInProgress.current = false;
+            return;
+          }
 
           try {
             const newValue = editorRef.current.getValue();
@@ -976,11 +988,15 @@ const CodeEditor = ({
             }
           } catch (error) {
             console.warn('Could not update state after undo:', error);
+          } finally {
+            // Clear flag after all updates
+            isUndoRedoInProgress.current = false;
           }
         }, 50);
 
       } catch (error) {
         console.error('❌ [CodeEditor] Error during undo operation:', error);
+        isUndoRedoInProgress.current = false;
       }
     }
   };
@@ -988,32 +1004,44 @@ const CodeEditor = ({
   const handleRedo = () => {
     if (editorRef.current) {
       try {
+        // Set flag to prevent handleCodeChange from interfering
+        isUndoRedoInProgress.current = true;
+
         editorRef.current.trigger('keyboard', 'redo');
 
-        // Update local state and call onChange
-        const newValue = editorRef.current.getValue();
-        setLocalCode(newValue);
-        setIsModified(newValue !== value);
-
-        if (onChange) {
-          onChange(newValue);
-        }
-
-        // Update button states
+        // Wait for Monaco to process the redo, then update state
         setTimeout(() => {
+          if (!editorRef.current) {
+            isUndoRedoInProgress.current = false;
+            return;
+          }
+
           try {
+            const newValue = editorRef.current.getValue();
+            setLocalCode(newValue);
+            setIsModified(newValue !== value);
+
+            if (onChange) {
+              onChange(newValue);
+            }
+
+            // Update button states
             const model = editorRef.current.getModel();
             if (model) {
               setCanUndo(model.canUndo());
               setCanRedo(model.canRedo());
             }
           } catch (error) {
-            console.warn('Could not update undo/redo state:', error);
+            console.warn('Could not update state after redo:', error);
+          } finally {
+            // Clear flag after all updates
+            isUndoRedoInProgress.current = false;
           }
-        }, 100);
+        }, 50);
 
       } catch (error) {
         console.error('❌ [CodeEditor] Error during redo operation:', error);
+        isUndoRedoInProgress.current = false;
       }
     }
   };
