@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAIWorkspace, PAGE_TYPES, VIEWPORT_MODES } from '@/contexts/AIWorkspaceContext';
+import { useAIWorkspace } from '@/contexts/AIWorkspaceContext';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -86,12 +86,7 @@ const WorkspaceHeader = () => {
     }
   }, [storeId]);
 
-  // Check for unpublished changes only on mount
-  useEffect(() => {
-    checkUnpublishedChanges();
-  }, [storeId]);
-
-  // Load draft config for selected page type
+  // Load draft config for selected page type and check for unpublished changes
   useEffect(() => {
     loadDraftConfig();
   }, [storeId, selectedPageType]);
@@ -103,34 +98,12 @@ const WorkspaceHeader = () => {
       const response = await slotConfigurationService.getDraftConfiguration(storeId, selectedPageType);
       if (response?.data) {
         setDraftConfig(response.data);
+        // Only set unpublished changes based on the current page's draft status
+        setHasUnpublishedChanges(response.data.has_unpublished_changes || false);
       }
     } catch (error) {
       console.error('Failed to load draft config:', error);
-    }
-  };
-
-  const checkUnpublishedChanges = async () => {
-    if (!storeId) return;
-
-    try {
-      const pageTypes = Object.values(PAGE_TYPES);
-      let hasChanges = false;
-
-      for (const pageType of pageTypes) {
-        try {
-          const draftResponse = await slotConfigurationService.getDraftConfiguration(storeId, pageType);
-          if (draftResponse?.data?.has_unpublished_changes) {
-            hasChanges = true;
-            break; // At least one page has unpublished changes
-          }
-        } catch (err) {
-          // Ignore errors for individual page types
-        }
-      }
-
-      setHasUnpublishedChanges(hasChanges);
-    } catch (error) {
-      console.error('Failed to check unpublished changes:', error);
+      setHasUnpublishedChanges(false);
     }
   };
 
