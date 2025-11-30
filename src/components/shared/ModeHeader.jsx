@@ -24,18 +24,21 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
 
   const switchToAdmin = () => {
     if (currentMode !== 'admin') {
+      currentMode = 'admin';
       navigate('/admin/dashboard');
     }
   };
 
   const switchToPlugins = () => {
     if (currentMode !== 'plugins') {
+      currentMode = 'plugins';
       navigate('/plugins');
     }
   };
 
   const switchToAIWorkspace = () => {
     if (currentMode !== 'aiworkspace') {
+      currentMode = 'aiworkspace';
       navigate('/ai-workspace');
     }
   };
