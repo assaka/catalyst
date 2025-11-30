@@ -122,22 +122,23 @@ const AIWorkspaceContent = () => {
             {!aiPanelCollapsed && (
               <>
                 <ResizablePanel
-                  defaultSize={28}
-                  minSize={20}
-                  maxSize={45}
+                  defaultSize={chatMaximized ? 100 : 28}
+                  minSize={chatMaximized ? 100 : 20}
+                  maxSize={chatMaximized ? 100 : 45}
                   className="bg-white dark:bg-gray-800"
                 >
                   <WorkspaceAIPanel />
                 </ResizablePanel>
 
-                <ResizableHandle withHandle />
+                <ResizableHandle withHandle className={chatMaximized ? 'hidden' : ''} />
               </>
             )}
 
             {/* Content Panel (right) - Editor or Storefront Preview */}
             <ResizablePanel
-              defaultSize={aiPanelCollapsed ? 100 : 72}
-              minSize={55}
+              defaultSize={aiPanelCollapsed ? 100 : (chatMaximized ? 0 : 72)}
+              minSize={chatMaximized ? 0 : 55}
+              className={chatMaximized ? 'hidden' : ''}
             >
               {editorMode ? (
                 // Editor Mode: Show full page editor (includes EditorSidebar built-in)

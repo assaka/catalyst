@@ -46,7 +46,6 @@ const WorkspaceAIPanel = () => {
     currentConfiguration,
     slotHandlers,
     openPluginEditor,
-    showPluginEditor,
     chatMaximized,
     toggleChatMaximized
   } = useAIWorkspace();
@@ -411,21 +410,6 @@ const WorkspaceAIPanel = () => {
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-purple-500" />
           <span className="font-medium text-sm">AI Assistant</span>
-          {showPluginEditor && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 ml-1"
-              onClick={toggleChatMaximized}
-              title={chatMaximized ? 'Restore' : 'Maximize'}
-            >
-              {chatMaximized ? (
-                <Minimize2 className="h-3.5 w-3.5" />
-              ) : (
-                <Maximize2 className="h-3.5 w-3.5" />
-              )}
-            </Button>
-          )}
         </div>
         <div className="flex items-center gap-1">
           {lastAiOperation && (
@@ -450,6 +434,19 @@ const WorkspaceAIPanel = () => {
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={toggleChatMaximized}
+            title={chatMaximized ? 'Restore' : 'Maximize'}
+          >
+            {chatMaximized ? (
+              <Minimize2 className="h-3.5 w-3.5" />
+            ) : (
+              <Maximize2 className="h-3.5 w-3.5" />
+            )}
+          </Button>
         </div>
       </div>
 
