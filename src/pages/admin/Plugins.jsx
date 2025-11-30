@@ -447,7 +447,7 @@ export default function Plugins() {
     });
   };
 
-  const filteredPlugins = getFilteredPlugins('marketplace');
+  const filteredPlugins = getFilteredPlugins('my-plugins');
 
   const isPluginInstalled = (plugin) => {
     return plugin.isInstalled;
@@ -491,11 +491,11 @@ export default function Plugins() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Plugins</h1>
-            <p className="text-gray-600 mt-1">Create, discover, and manage plugins for your store</p>
+            <p className="text-gray-600 mt-1">Create and manage plugins for your store</p>
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={() => navigate('/admin/ai-studio')}
+              onClick={() => navigate('/ai-workspace')}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
               <Sparkles className="w-4 h-4 mr-2" />
@@ -504,6 +504,8 @@ export default function Plugins() {
             <Button
               onClick={() => setShowImportDialog(true)}
               variant="outline"
+              disabled
+              className="opacity-50 cursor-not-allowed"
             >
               <Upload className="w-4 h-4 mr-2" />
               Import Plugin
@@ -521,6 +523,7 @@ export default function Plugins() {
         </div>
 
         <Tabs defaultValue="marketplace" className="space-y-6">
+          {/*
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="marketplace" className="flex items-center gap-2">
               <ShoppingCart className="w-4 h-4" />
@@ -535,6 +538,7 @@ export default function Plugins() {
               My Plugins ({getFilteredPlugins('my-plugins').length})
             </TabsTrigger>
           </TabsList>
+          */}
 
           {/* Marketplace Tab */}
           <TabsContent value="marketplace">
