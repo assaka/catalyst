@@ -157,6 +157,8 @@ const CodeEditor = ({
   const monacoRef = useRef(null);
   const diffServiceRef = useRef(new UnifiedDiffFrontendService());
   const isUndoRedoInProgress = useRef(false);
+  // Stable ref for DiffEditor's modified content - prevents model reset during undo/redo
+  const diffModifiedContentRef = useRef(value);
   
   // Helper function to get diff stats
   // Enhanced diff statistics
@@ -451,8 +453,14 @@ const CodeEditor = ({
   }, [originalCode, localCode]);
 
   useEffect(() => {
+    // Don't update during undo/redo to prevent interference
+    if (isUndoRedoInProgress.current) {
+      return;
+    }
     setLocalCode(value);
     setIsModified(false);
+    // Update the stable ref for DiffEditor
+    diffModifiedContentRef.current = value;
   }, [value]);
 
   // Generate full file display lines with changes highlighted
@@ -765,6 +773,9 @@ const CodeEditor = ({
     setLocalCode(processedCode);
     setIsModified(processedCode !== value);
 
+    // Update the stable ref for DiffEditor (only when not undo/redo)
+    diffModifiedContentRef.current = processedCode;
+
     // Emit event for extensions
     eventSystem.emit('codeEditor.codeChanged', {
       fileName,
@@ -988,10 +999,12 @@ const CodeEditor = ({
             }
           } catch (error) {
             console.warn('Could not update state after undo:', error);
-          } finally {
-            // Clear flag after all updates
-            isUndoRedoInProgress.current = false;
           }
+
+          // Clear flag after a delay to allow parent state updates to propagate
+          setTimeout(() => {
+            isUndoRedoInProgress.current = false;
+          }, 100);
         }, 50);
 
       } catch (error) {
@@ -1033,10 +1046,12 @@ const CodeEditor = ({
             }
           } catch (error) {
             console.warn('Could not update state after redo:', error);
-          } finally {
-            // Clear flag after all updates
-            isUndoRedoInProgress.current = false;
           }
+
+          // Clear flag after a delay to allow parent state updates to propagate
+          setTimeout(() => {
+            isUndoRedoInProgress.current = false;
+          }, 100);
         }, 50);
 
       } catch (error) {
@@ -1196,7 +1211,7 @@ const CodeEditor = ({
                 height="100%"
                 language={getMonacoLanguage()}
                 original={originalCode || ''}
-                modified={localCode}
+                modified={diffModifiedContentRef.current}
                     onMount={(editor, monaco) => {
                       // Store monaco instance for theme switching
                       monacoRef.current = monaco;
@@ -1301,7 +1316,7 @@ const CodeEditor = ({
                 height="100%"
                 language={getMonacoLanguage()}
                 original={originalCode || ''}
-                modified={localCode}
+                modified={diffModifiedContentRef.current}
                     onMount={(editor, monaco) => {
                       // Store monaco instance for theme switching
                       monacoRef.current = monaco;
