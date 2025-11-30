@@ -501,7 +501,6 @@ function App() {
           <Route path="/admin/custom-domains" element={<PageWrapper Component={Pages.CustomDomains} pageName="custom-domains" />} />
           <Route path="/admin/database-integrations" element={<PageWrapper Component={Pages.DatabaseIntegrations} pageName="database-integrations" />} />
           <Route path="/admin/stores" element={<PageWrapper Component={Pages.Stores} pageName="STORES" />} />
-          <Route path="/admin/scheduled-jobs" element={<PageWrapper Component={Pages.ScheduledJobs} pageName="scheduled-jobs" />} />
           <Route path="/admin/billing" element={<PageWrapper Component={Pages.Billing} pageName="Billing" />} />
           <Route path="/admin/uptime-report" element={<PageWrapper Component={Pages.UptimeReport} pageName="UptimeReport" />} />
           <Route path="/admin/team" element={<PageWrapper Component={Pages.TeamPage} pageName="TeamPage" />} />

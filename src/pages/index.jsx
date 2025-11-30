@@ -51,7 +51,6 @@ export { default as RobotsTxt } from './admin/RobotsTxt';
 export { default as HtmlSitemap } from './admin/HtmlSitemap';
 export { default as AnalyticsSettings } from './admin/AnalyticsSettings';
 export { default as HeatmapAnalytics } from './admin/HeatmapAnalytics';
-export { default as ScheduledJobs } from './admin/ScheduledJobs';
 export { default as ABTesting } from './admin/ABTesting';
 export { default as Billing } from './admin/Billing';
 export { default as UptimeReport } from './admin/UptimeReport';
