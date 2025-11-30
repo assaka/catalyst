@@ -26,7 +26,9 @@ const PublishPanel = ({
   pageType = 'cart',
   onPublished,
   onReverted,
-  hasUnsavedChanges = false
+  hasUnsavedChanges = false,
+  unpublishedStatus = null,
+  globalPublish = false
 }) => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -67,19 +69,37 @@ const PublishPanel = ({
     }
   }, [storeId, pageType]);
 
-  // Publish draft configuration
+  // Publish draft configuration (global or single page)
   const handlePublish = async () => {
-    if (!draftConfig?.id) {
-      toast.error('No draft configuration to publish');
-      return;
-    }
-
     setIsPublishing(true);
     try {
-      const response = await slotConfigurationService.publishDraft(draftConfig.id, storeId);
-      if (response.success) {
-        toast.success('Configuration published successfully!');
+      let response;
 
+      if (globalPublish) {
+        // Publish all pages with unpublished changes
+        response = await slotConfigurationService.publishAll(storeId);
+        if (response.success) {
+          const count = response.data?.publishedCount || 0;
+          if (count > 0) {
+            toast.success(`Successfully published ${count} page(s)!`);
+          } else {
+            toast.info('No changes to publish');
+          }
+        }
+      } else {
+        // Single page publish (legacy behavior)
+        if (!draftConfig?.id) {
+          toast.error('No draft configuration to publish');
+          setIsPublishing(false);
+          return;
+        }
+        response = await slotConfigurationService.publishDraft(draftConfig.id, storeId);
+        if (response.success) {
+          toast.success('Configuration published successfully!');
+        }
+      }
+
+      if (response.success) {
         // Reload version history
         await loadVersionHistory();
 
@@ -243,9 +263,24 @@ const PublishPanel = ({
   };
 
   const status = getStatusDisplay();
-  const canPublish = draftConfig &&
-    draftConfig.status === 'draft' &&
-    (hasUnsavedChanges || draftConfig.has_unpublished_changes);
+
+  // For global publish, check if any page has unpublished changes
+  // For single page, check the current draft
+  const canPublish = globalPublish
+    ? (unpublishedStatus?.hasAnyUnpublishedChanges || hasUnsavedChanges)
+    : (draftConfig && draftConfig.status === 'draft' && (hasUnsavedChanges || draftConfig.has_unpublished_changes));
+
+  // Get list of pages with unpublished changes for global mode
+  const pagesWithChanges = globalPublish && unpublishedStatus?.pageTypes
+    ? Object.entries(unpublishedStatus.pageTypes)
+        .filter(([_, status]) => status.hasUnpublishedChanges)
+        .map(([pageType]) => pageType)
+    : [];
+
+  // Format page type for display
+  const formatPageType = (type) => {
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  };
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
@@ -253,14 +288,33 @@ const PublishPanel = ({
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-semibold">Publish Settings</h3>
-          <div className={`flex items-center gap-1 ${status.color}`}>
-            {status.icon}
-            <span className="text-sm">{status.label}</span>
-          </div>
+          {!globalPublish && (
+            <div className={`flex items-center gap-1 ${status.color}`}>
+              {status.icon}
+              <span className="text-sm">{status.label}</span>
+            </div>
+          )}
         </div>
 
-        {/* Current version info */}
-        {draftConfig && (
+        {/* Global publish: show pages with changes */}
+        {globalPublish && pagesWithChanges.length > 0 && (
+          <div className="mt-2">
+            <p className="text-sm text-gray-600 mb-2">Pages with unpublished changes:</p>
+            <div className="flex flex-wrap gap-1">
+              {pagesWithChanges.map(pageType => (
+                <span
+                  key={pageType}
+                  className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full"
+                >
+                  {formatPageType(pageType)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Single page: show current version info */}
+        {!globalPublish && draftConfig && (
           <div className="text-sm text-gray-600 mt-2">
             <div>Version: {draftConfig.version_number || 1}</div>
             {draftConfig.updated_at && (
@@ -274,7 +328,7 @@ const PublishPanel = ({
 
       {/* Publish Button */}
       <div className="p-4 border-b border-gray-200">
-        {status.isRevertDraft && (
+        {status.isRevertDraft && !globalPublish && (
           <div className="mb-3 p-3 bg-orange-50 border border-orange-200 rounded-md">
             <div className="flex items-start gap-2">
               <RotateCcw className="w-4 h-4 text-orange-600 mt-0.5" />
@@ -305,12 +359,14 @@ const PublishPanel = ({
             ) : (
               <>
                 <Rocket className="w-4 h-4 mr-2" />
-                {canPublish ? 'Publish Changes' : 'No Changes to Publish'}
+                {canPublish
+                  ? (globalPublish ? `Publish All (${pagesWithChanges.length})` : 'Publish Changes')
+                  : 'No Changes to Publish'}
               </>
             )}
           </Button>
 
-          {status.isRevertDraft && (
+          {status.isRevertDraft && !globalPublish && (
             <Button
               onClick={handleUndoRevert}
               disabled={undoingRevert}
@@ -331,7 +387,9 @@ const PublishPanel = ({
 
         {canPublish && !status.isRevertDraft && (
           <p className="text-xs text-gray-500 mt-2 text-center">
-            This will make your changes live on the storefront
+            {globalPublish
+              ? 'This will publish all pages with changes to production'
+              : 'This will make your changes live on the storefront'}
           </p>
         )}
 

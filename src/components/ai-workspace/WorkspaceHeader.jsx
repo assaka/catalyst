@@ -73,6 +73,7 @@ const WorkspaceHeader = () => {
   const [plugins, setPlugins] = useState([]);
   const [loadingPlugins, setLoadingPlugins] = useState(false);
   const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(false);
+  const [unpublishedStatus, setUnpublishedStatus] = useState(null);
   const [draftConfig, setDraftConfig] = useState(null);
   const [publishPopoverOpen, setPublishPopoverOpen] = useState(false);
   const [user, setUser] = useState(null);
@@ -86,10 +87,32 @@ const WorkspaceHeader = () => {
     }
   }, [storeId]);
 
-  // Load draft config for selected page type and check for unpublished changes
+  // Check global unpublished status on mount and when storeId changes
+  useEffect(() => {
+    if (storeId) {
+      checkUnpublishedStatus();
+    }
+  }, [storeId]);
+
+  // Load draft config for selected page type
   useEffect(() => {
     loadDraftConfig();
   }, [storeId, selectedPageType]);
+
+  const checkUnpublishedStatus = async () => {
+    if (!storeId) return;
+
+    try {
+      const response = await slotConfigurationService.getUnpublishedStatus(storeId);
+      if (response?.success && response?.data) {
+        setUnpublishedStatus(response.data);
+        setHasUnpublishedChanges(response.data.hasAnyUnpublishedChanges || false);
+      }
+    } catch (error) {
+      console.error('Failed to check unpublished status:', error);
+      setHasUnpublishedChanges(false);
+    }
+  };
 
   const loadDraftConfig = async () => {
     if (!storeId || !selectedPageType) return;
@@ -98,12 +121,9 @@ const WorkspaceHeader = () => {
       const response = await slotConfigurationService.getDraftConfiguration(storeId, selectedPageType);
       if (response?.data) {
         setDraftConfig(response.data);
-        // Only set unpublished changes based on the current page's draft status
-        setHasUnpublishedChanges(response.data.has_unpublished_changes || false);
       }
     } catch (error) {
       console.error('Failed to load draft config:', error);
-      setHasUnpublishedChanges(false);
     }
   };
 
@@ -141,14 +161,17 @@ const WorkspaceHeader = () => {
   // Handle publish complete - refresh state
   const handlePublished = () => {
     setHasUnpublishedChanges(false);
+    setUnpublishedStatus(null);
     setPublishPopoverOpen(false);
     loadDraftConfig();
+    // Re-check status after publish
+    checkUnpublishedStatus();
   };
 
   // Handle revert complete - refresh state
   const handleReverted = () => {
     loadDraftConfig();
-    checkUnpublishedChanges();
+    checkUnpublishedStatus();
   };
 
   // Get the current page info
@@ -400,6 +423,8 @@ const WorkspaceHeader = () => {
               onPublished={handlePublished}
               onReverted={handleReverted}
               hasUnsavedChanges={hasUnpublishedChanges}
+              unpublishedStatus={unpublishedStatus}
+              globalPublish={true}
             />
           </PopoverContent>
         </Popover>

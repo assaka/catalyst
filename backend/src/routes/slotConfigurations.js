@@ -621,6 +621,116 @@ router.post('/draft/:storeId/:pageType?', authMiddleware, async (req, res) => {
   }
 });
 
+// Get unpublished changes status for all page types (read-only, no draft creation)
+router.get('/unpublished-status/:storeId', authMiddleware, async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const userId = req.user.id;
+    const pageTypes = ['cart', 'product', 'category', 'checkout', 'success', 'header', 'account', 'login'];
+
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Get all drafts for this user/store in one query
+    const { data: drafts, error } = await tenantDb
+      .from('slot_configurations')
+      .select('id, page_type, has_unpublished_changes, updated_at, status')
+      .eq('user_id', userId)
+      .eq('store_id', storeId)
+      .in('status', ['init', 'draft']);
+
+    if (error) throw error;
+
+    // Build status map
+    const statusMap = {};
+    let hasAnyUnpublishedChanges = false;
+
+    for (const pageType of pageTypes) {
+      const draft = drafts?.find(d => d.page_type === pageType);
+      statusMap[pageType] = {
+        hasDraft: !!draft,
+        hasUnpublishedChanges: draft?.has_unpublished_changes || false,
+        draftId: draft?.id || null,
+        updatedAt: draft?.updated_at || null
+      };
+      if (draft?.has_unpublished_changes) {
+        hasAnyUnpublishedChanges = true;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        hasAnyUnpublishedChanges,
+        pageTypes: statusMap
+      }
+    });
+  } catch (error) {
+    console.error('Error getting unpublished status:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Publish all drafts with unpublished changes
+router.post('/publish-all/:storeId', authMiddleware, async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const userId = req.user.id;
+
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    // Get all drafts with unpublished changes
+    const { data: drafts, error: fetchError } = await tenantDb
+      .from('slot_configurations')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('store_id', storeId)
+      .eq('status', 'draft')
+      .eq('has_unpublished_changes', true);
+
+    if (fetchError) throw fetchError;
+
+    if (!drafts || drafts.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          publishedCount: 0,
+          published: []
+        },
+        message: 'No drafts with unpublished changes found'
+      });
+    }
+
+    // Publish all drafts
+    const publishedResults = [];
+    for (const draft of drafts) {
+      const published = await publishDraft(draft.id, userId, storeId);
+      publishedResults.push({
+        pageType: draft.page_type,
+        id: published.id,
+        versionNumber: published.version_number
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        publishedCount: publishedResults.length,
+        published: publishedResults
+      },
+      message: `Successfully published ${publishedResults.length} page(s)`
+    });
+  } catch (error) {
+    console.error('Error publishing all drafts:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Public endpoint to get active slot configurations for storefront (matches old API)
 router.get('/public/slot-configurations', async (req, res) => {
   try {

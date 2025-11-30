@@ -104,6 +104,28 @@ class SlotConfigurationService {
     }
   }
 
+  // Get unpublished changes status for all page types (read-only, no draft creation)
+  async getUnpublishedStatus(storeId) {
+    try {
+      const response = await apiClient.get(`${API_BASE}/unpublished-status/${storeId}`);
+      return response;
+    } catch (error) {
+      console.error('Error getting unpublished status:', error);
+      throw error;
+    }
+  }
+
+  // Publish all drafts with unpublished changes
+  async publishAll(storeId) {
+    try {
+      const response = await apiClient.post(`${API_BASE}/publish-all/${storeId}`);
+      return response;
+    } catch (error) {
+      console.error('Error publishing all drafts:', error);
+      throw error;
+    }
+  }
+
   // Get version history
   async getVersionHistory(storeId, pageType = 'cart', limit = 20) {
     try {
