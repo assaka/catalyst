@@ -160,13 +160,16 @@ const CodeEditor = ({
   // Helper function to get diff stats
   // Enhanced diff statistics
   const getDiffStats = useCallback((oldCode, newCode) => {
-    if (!oldCode || !newCode) {
+    // Handle null/undefined but allow empty strings
+    if (oldCode == null || newCode == null) {
       return { additions: 0, deletions: 0, changes: 0, linesChanged: 0, unchanged: 0 };
     }
 
-    // Normalize: trim trailing empty lines to avoid false positives
+    // Normalize: trim trailing empty lines and normalize line endings
     const normalizeCode = (code) => {
-      const lines = code.split('\n');
+      // Normalize line endings to \n
+      const normalized = code.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const lines = normalized.split('\n');
       // Remove trailing empty lines
       while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
         lines.pop();
@@ -176,6 +179,11 @@ const CodeEditor = ({
 
     const oldLines = normalizeCode(oldCode);
     const newLines = normalizeCode(newCode);
+
+    // Quick check: if both are empty after normalization, no changes
+    if (oldLines.length === 0 && newLines.length === 0) {
+      return { additions: 0, deletions: 0, changes: 0, linesChanged: 0, unchanged: 0, totalLines: 0 };
+    }
 
     let additions = 0;
     let deletions = 0;
@@ -940,35 +948,36 @@ const CodeEditor = ({
       try {
         editorRef.current.trigger('keyboard', 'undo');
 
-        // Update local state and call onChange
-        const newValue = editorRef.current.getValue();
-        setLocalCode(newValue);
-        setIsModified(newValue !== value);
-
-        if (onChange) {
-          onChange(newValue);
-        }
-
-        // Check if all changes have been undone - if so, switch back to code view
-        // Use getDiffStats to handle edge cases like whitespace/newline differences
-        const stats = getDiffStats(originalCode || '', newValue);
-        if (stats.changes === 0) {
-          setShowSplitView(false);
-          setShowDiffView(false);
-        }
-
-        // Update button states
+        // Wait for Monaco to process the undo, then update state
         setTimeout(() => {
+          if (!editorRef.current) return;
+
           try {
+            const newValue = editorRef.current.getValue();
+            setLocalCode(newValue);
+            setIsModified(newValue !== value);
+
+            if (onChange) {
+              onChange(newValue);
+            }
+
+            // Check if all changes have been undone - if so, switch back to code view
+            const stats = getDiffStats(originalCode || '', newValue);
+            if (stats.changes === 0) {
+              setShowSplitView(false);
+              setShowDiffView(false);
+            }
+
+            // Update button states
             const model = editorRef.current.getModel();
             if (model) {
               setCanUndo(model.canUndo());
               setCanRedo(model.canRedo());
             }
           } catch (error) {
-            console.warn('Could not update undo/redo state:', error);
+            console.warn('Could not update state after undo:', error);
           }
-        }, 100);
+        }, 50);
 
       } catch (error) {
         console.error('❌ [CodeEditor] Error during undo operation:', error);
