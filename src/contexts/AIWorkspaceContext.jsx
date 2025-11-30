@@ -76,6 +76,11 @@ export const AIWorkspaceProvider = ({ children }) => {
   const [pluginToEdit, setPluginToEdit] = useState(null);
   const [showPluginEditor, setShowPluginEditor] = useState(false);
 
+  // AI Studio state (FileTree + CodeEditor)
+  const [showAiStudio, setShowAiStudio] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [fileContent, setFileContent] = useState('');
+
   // Slot handlers (registered by editor components)
   const [slotHandlers, setSlotHandlers] = useState(null);
 
@@ -208,6 +213,39 @@ export const AIWorkspaceProvider = ({ children }) => {
     setShowPluginEditor(false);
   }, []);
 
+  /**
+   * Open AI Studio mode
+   */
+  const openAiStudio = useCallback(() => {
+    setShowAiStudio(true);
+    setShowPluginEditor(false);
+    setEditorMode(false);
+  }, []);
+
+  /**
+   * Close AI Studio mode
+   */
+  const closeAiStudio = useCallback(() => {
+    setShowAiStudio(false);
+    setSelectedFile(null);
+    setFileContent('');
+  }, []);
+
+  /**
+   * Select a file in AI Studio
+   */
+  const selectStudioFile = useCallback((file, content) => {
+    setSelectedFile(file);
+    setFileContent(content || '');
+  }, []);
+
+  /**
+   * Update file content in AI Studio
+   */
+  const updateStudioFileContent = useCallback((content) => {
+    setFileContent(content);
+  }, []);
+
   // Memoized value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     // Page/Editor State
@@ -242,6 +280,15 @@ export const AIWorkspaceProvider = ({ children }) => {
     showPluginEditor,
     openPluginEditor,
     closePluginEditor,
+
+    // AI Studio
+    showAiStudio,
+    selectedFile,
+    fileContent,
+    openAiStudio,
+    closeAiStudio,
+    selectStudioFile,
+    updateStudioFileContent,
 
     // Actions
     selectPage,
@@ -291,7 +338,14 @@ export const AIWorkspaceProvider = ({ children }) => {
     clearChatHistory,
     registerSlotHandlers,
     openPluginEditor,
-    closePluginEditor
+    closePluginEditor,
+    showAiStudio,
+    selectedFile,
+    fileContent,
+    openAiStudio,
+    closeAiStudio,
+    selectStudioFile,
+    updateStudioFileContent
   ]);
 
   return (

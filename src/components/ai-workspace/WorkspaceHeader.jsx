@@ -28,7 +28,9 @@ import {
   Clock,
   AlertCircle,
   Check,
-  RotateCcw
+  RotateCcw,
+  Code2,
+  FolderCode
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -61,7 +63,10 @@ const WorkspaceHeader = () => {
     showPluginEditor,
     pluginToEdit,
     openPluginEditor,
-    closePluginEditor
+    closePluginEditor,
+    showAiStudio,
+    openAiStudio,
+    closeAiStudio
   } = useAIWorkspace();
 
   const { getSelectedStoreId } = useStoreSelection();
@@ -239,7 +244,12 @@ const WorkspaceHeader = () => {
               Plugin: {pluginToEdit.name}
             </p>
           )}
-          {!editorMode && !showPluginEditor && (
+          {showAiStudio && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              AI Studio - Code Editor
+            </p>
+          )}
+          {!editorMode && !showPluginEditor && !showAiStudio && (
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Storefront Preview (Draft)
             </p>
@@ -250,7 +260,7 @@ const WorkspaceHeader = () => {
       {/* Right section: Editor + Plugins buttons */}
       <div className="flex items-center gap-2">
         {/* Editor Dropdown */}
-        {editorMode && !showPluginEditor ? (
+        {editorMode && !showPluginEditor && !showAiStudio ? (
           // In editor mode - show Exit Editor button + page selector
           <div className="flex items-center gap-1">
             <DropdownMenu>
@@ -293,7 +303,7 @@ const WorkspaceHeader = () => {
               <span>Exit Editor</span>
             </Button>
           </div>
-        ) : !showPluginEditor ? (
+        ) : !showPluginEditor && !showAiStudio ? (
           // Not in editor mode - show Editor dropdown
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -326,6 +336,31 @@ const WorkspaceHeader = () => {
           </DropdownMenu>
         ) : null}
 
+        {/* AI Studio Button */}
+        {showAiStudio ? (
+          // In AI Studio mode - show Exit button
+          <Button
+            variant="default"
+            size="sm"
+            onClick={closeAiStudio}
+            className="h-8 gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+          >
+            <Code2 className="h-3.5 w-3.5" />
+            <span>Exit AI Studio</span>
+          </Button>
+        ) : !showPluginEditor && (
+          // Not in AI Studio or Plugin mode - show AI Studio button
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={openAiStudio}
+            className="h-8 gap-1.5"
+          >
+            <FolderCode className="h-3.5 w-3.5" />
+            <span>AI Studio</span>
+          </Button>
+        )}
+
         {/* Plugins Dropdown */}
         {showPluginEditor ? (
           // In plugin mode - show Exit Plugins button
@@ -338,7 +373,7 @@ const WorkspaceHeader = () => {
             <Package className="h-3.5 w-3.5" />
             <span>Exit Plugins</span>
           </Button>
-        ) : (
+        ) : !showAiStudio && (
           // Not in plugin mode - show Plugins dropdown
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -389,7 +424,7 @@ const WorkspaceHeader = () => {
         )}
 
         {/* Publish Button with Panel */}
-        {!showPluginEditor && (
+        {!showPluginEditor && !showAiStudio && (
           <Popover open={publishPopoverOpen} onOpenChange={setPublishPopoverOpen}>
             <PopoverTrigger asChild>
               <Button
