@@ -79,8 +79,9 @@ export const AIWorkspaceProvider = ({ children }) => {
   // AI Studio state (ChatInterface for creating plugins)
   const [showAiStudio, setShowAiStudio] = useState(false);
 
-  // Chat panel minimize state (for plugin editor mode)
+  // Chat panel minimize/maximize state (for plugin editor mode)
   const [chatMinimized, setChatMinimized] = useState(false);
+  const [chatMaximized, setChatMaximized] = useState(false);
 
   // Slot handlers (registered by editor components)
   const [slotHandlers, setSlotHandlers] = useState(null);
@@ -235,7 +236,22 @@ export const AIWorkspaceProvider = ({ children }) => {
    */
   const toggleChatMinimized = useCallback(() => {
     setChatMinimized(prev => !prev);
-  }, []);
+    // If minimizing, also un-maximize
+    if (!chatMinimized) {
+      setChatMaximized(false);
+    }
+  }, [chatMinimized]);
+
+  /**
+   * Toggle chat panel maximized state
+   */
+  const toggleChatMaximized = useCallback(() => {
+    setChatMaximized(prev => !prev);
+    // If maximizing, also un-minimize
+    if (!chatMaximized) {
+      setChatMinimized(false);
+    }
+  }, [chatMaximized]);
 
   // Memoized value to prevent unnecessary re-renders
   const value = useMemo(() => ({
@@ -277,9 +293,11 @@ export const AIWorkspaceProvider = ({ children }) => {
     openAiStudio,
     closeAiStudio,
 
-    // Chat panel minimize
+    // Chat panel minimize/maximize
     chatMinimized,
     toggleChatMinimized,
+    chatMaximized,
+    toggleChatMaximized,
 
     // Actions
     selectPage,
@@ -334,7 +352,9 @@ export const AIWorkspaceProvider = ({ children }) => {
     openAiStudio,
     closeAiStudio,
     chatMinimized,
-    toggleChatMinimized
+    toggleChatMinimized,
+    chatMaximized,
+    toggleChatMaximized
   ]);
 
   return (

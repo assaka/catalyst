@@ -133,7 +133,7 @@ const WorkspaceStorefrontPreview = () => {
   return (
     <div className="h-full flex flex-col bg-gray-100 dark:bg-gray-900">
       {/* Preview Controls */}
-      <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-800 border-b shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-800 border-b shrink-0 h-12">
         <div className="flex items-center gap-2">
           {/* Viewport toggles */}
           <div className="flex items-center border rounded-lg overflow-hidden">

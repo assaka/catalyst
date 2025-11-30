@@ -29,8 +29,8 @@ import {
   AlertCircle,
   Check,
   RotateCcw,
-  Code2,
-  FolderCode
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -68,7 +68,9 @@ const WorkspaceHeader = () => {
     openAiStudio,
     closeAiStudio,
     chatMinimized,
-    toggleChatMinimized
+    toggleChatMinimized,
+    chatMaximized,
+    toggleChatMaximized
   } = useAIWorkspace();
 
   const { getSelectedStoreId } = useStoreSelection();
@@ -200,22 +202,39 @@ const WorkspaceHeader = () => {
   return (
     <header className="h-14 border-b bg-white dark:bg-gray-800 flex items-center px-4 gap-4 shrink-0">
       {/* Left section: AI Panel toggle */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1">
         {/* AI Panel toggle - different behavior for plugin editor vs normal mode */}
         {showPluginEditor ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleChatMinimized}
-            className="h-8 w-8 p-0"
-            title={chatMinimized ? 'Show AI Chat' : 'Hide AI Chat'}
-          >
-            {chatMinimized ? (
-              <PanelLeft className="h-4 w-4" />
-            ) : (
-              <PanelLeftClose className="h-4 w-4" />
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleChatMinimized}
+              className="h-8 w-8 p-0"
+              title={chatMinimized ? 'Show AI Chat' : 'Hide AI Chat'}
+            >
+              {chatMinimized ? (
+                <PanelLeft className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+            </Button>
+            {!chatMinimized && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleChatMaximized}
+                className="h-8 w-8 p-0"
+                title={chatMaximized ? 'Restore AI Chat' : 'Maximize AI Chat'}
+              >
+                {chatMaximized ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
             )}
-          </Button>
+          </>
         ) : (
           <Button
             variant="ghost"
@@ -340,31 +359,6 @@ const WorkspaceHeader = () => {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
-
-        {/* AI Studio Button */}
-        {showAiStudio ? (
-          // In AI Studio mode - show Exit button
-          <Button
-            variant="default"
-            size="sm"
-            onClick={closeAiStudio}
-            className="h-8 gap-1.5 bg-emerald-600 hover:bg-emerald-700"
-          >
-            <Code2 className="h-3.5 w-3.5" />
-            <span>Exit AI Studio</span>
-          </Button>
-        ) : !showPluginEditor && (
-          // Not in AI Studio or Plugin mode - show AI Studio button
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={openAiStudio}
-            className="h-8 gap-1.5"
-          >
-            <FolderCode className="h-3.5 w-3.5" />
-            <span>AI Studio</span>
-          </Button>
-        )}
 
         {/* Plugins Dropdown */}
         {showPluginEditor ? (
