@@ -5,6 +5,7 @@ import { Loader2, RefreshCw, ExternalLink, Monitor, Tablet, Smartphone } from 'l
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { getExternalStoreUrl, getStoreBaseUrl, createPublicUrl } from '@/utils/urlUtils';
+import { StorefrontProduct } from '@/api/storefront-entities';
 
 /**
  * WorkspaceStorefrontPreview - Interactive storefront preview in iframe
@@ -19,9 +20,26 @@ const WorkspaceStorefrontPreview = () => {
   const [currentUrl, setCurrentUrl] = useState('');
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(Date.now()); // Force refresh on mount
+  const [firstProductSlug, setFirstProductSlug] = useState(null);
 
   const storeId = getSelectedStoreId();
   const storeSlug = selectedStore?.slug || selectedStore?.code || 'store';
+
+  // Fetch first product from store for product page preview
+  useEffect(() => {
+    const fetchFirstProduct = async () => {
+      if (!storeId) return;
+      try {
+        const products = await StorefrontProduct.findAll({ limit: 1, status: 'active' });
+        if (products && products.length > 0) {
+          setFirstProductSlug(products[0].slug || products[0].id);
+        }
+      } catch (err) {
+        console.error('Failed to fetch first product:', err);
+      }
+    };
+    fetchFirstProduct();
+  }, [storeId]);
 
   // Auto-refresh on component mount (when switching from Editor to Preview)
   useEffect(() => {
@@ -46,7 +64,8 @@ const WorkspaceStorefrontPreview = () => {
   const getPagePath = (pageType) => {
     switch (pageType) {
       case PAGE_TYPES.PRODUCT:
-        return 'product/sample-product'; // Will show sample product or first product
+        // Use actual product from store collection
+        return firstProductSlug ? `product/${firstProductSlug}` : null;
       case PAGE_TYPES.CATEGORY:
         return 'category/all';
       case PAGE_TYPES.CART:
@@ -70,9 +89,11 @@ const WorkspaceStorefrontPreview = () => {
   useEffect(() => {
     const baseUrl = getStoreBaseUrl(selectedStore);
     const pagePath = getPagePath(selectedPageType);
-    const newUrl = getExternalStoreUrl(storeSlug, pagePath, baseUrl);
+    // If pagePath is null (e.g., product page but product not loaded yet), show homepage
+    const effectivePath = pagePath === null ? '' : pagePath;
+    const newUrl = getExternalStoreUrl(storeSlug, effectivePath, baseUrl);
     setCurrentUrl(`${newUrl}?preview=draft&workspace=true&_t=${refreshKey}`);
-  }, [storeSlug, selectedStore, refreshKey, selectedPageType]);
+  }, [storeSlug, selectedStore, refreshKey, selectedPageType, firstProductSlug]);
 
   // Viewport dimensions
   const viewportStyles = useMemo(() => {
