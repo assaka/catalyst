@@ -33,19 +33,18 @@ async function getTenantConnection(req) {
  */
 router.get('/', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
 
-    const plugins = await sequelize.query(`
-      SELECT * FROM plugin_registry
-      ORDER BY created_at DESC
-    `, {
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: plugins, error } = await tenantDb
+      .from('plugin_registry')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(error.message);
 
     res.json({
       success: true,
-      plugins
+      plugins: plugins || []
     });
   } catch (error) {
     console.error('Failed to get plugins:', error);
@@ -62,33 +61,32 @@ router.get('/', async (req, res) => {
  */
 router.get('/widgets', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
 
-    // Query plugin_widgets table (exclude starter templates)
-    const widgets = await sequelize.query(`
-      SELECT w.widget_id, w.widget_name, w.description, w.category, w.icon,
-             p.name as plugin_name, p.id as plugin_id
-      FROM plugin_widgets w
-      JOIN plugin_registry p ON w.plugin_id = p.id
-      WHERE w.is_enabled = true
-        AND p.status = 'active'
-        AND (p.is_starter_template = false OR p.is_starter_template IS NULL)
-      ORDER BY w.widget_name ASC
-    `, {
-      type: sequelize.QueryTypes.SELECT
-    });
+    // Query plugin_widgets with join to plugin_registry
+    const { data: widgets, error } = await tenantDb
+      .from('plugin_widgets')
+      .select(`
+        widget_id, widget_name, description, category, icon,
+        plugin_registry!inner(id, name, status, is_starter_template)
+      `)
+      .eq('is_enabled', true)
+      .eq('plugin_registry.status', 'active')
+      .or('is_starter_template.eq.false,is_starter_template.is.null', { foreignTable: 'plugin_registry' })
+      .order('widget_name', { ascending: true });
+
+    if (error) throw new Error(error.message);
 
     res.json({
       success: true,
-      widgets: widgets.map(w => ({
+      widgets: (widgets || []).map(w => ({
         id: w.widget_id,
         name: w.widget_name,
         description: w.description,
         category: w.category || 'functional',
         icon: w.icon || 'Box',
-        pluginName: w.plugin_name,
-        pluginId: w.plugin_id
+        pluginName: w.plugin_registry?.name,
+        pluginId: w.plugin_registry?.id
       }))
     });
   } catch (error) {
@@ -106,29 +104,22 @@ router.get('/widgets', async (req, res) => {
  */
 router.get('/widgets/:widgetId', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
     const { widgetId } = req.params;
 
-    // Query plugin_widgets table directly
-    const widgets = await sequelize.query(`
-      SELECT widget_id, widget_name, description, component_code, default_config, category, icon
-      FROM plugin_widgets
-      WHERE widget_id = $1 AND is_enabled = true
-      LIMIT 1
-    `, {
-      bind: [widgetId],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: widget, error } = await tenantDb
+      .from('plugin_widgets')
+      .select('widget_id, widget_name, description, component_code, default_config, category, icon')
+      .eq('widget_id', widgetId)
+      .eq('is_enabled', true)
+      .single();
 
-    if (widgets.length === 0) {
+    if (error || !widget) {
       return res.status(404).json({
         success: false,
         error: 'Widget not found'
       });
     }
-
-    const widget = widgets[0];
 
     res.json({
       success: true,
@@ -198,25 +189,19 @@ router.get('/starters', async (req, res) => {
  */
 router.get('/marketplace', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
 
-    const plugins = await sequelize.query(`
-      SELECT
-        id, name, slug, version, description, author_id, category,
-        pricing_model, base_price, monthly_price, yearly_price, currency,
-        license_type, downloads, active_installations, rating, reviews_count,
-        icon_url, screenshots
-      FROM plugin_marketplace
-      WHERE status = 'approved'
-      ORDER BY downloads DESC
-    `, {
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: plugins, error } = await tenantDb
+      .from('plugin_marketplace')
+      .select('id, name, slug, version, description, author_id, category, pricing_model, base_price, monthly_price, yearly_price, currency, license_type, downloads, active_installations, rating, reviews_count, icon_url, screenshots')
+      .eq('status', 'approved')
+      .order('downloads', { ascending: false });
+
+    if (error) throw new Error(error.message);
 
     res.json({
       success: true,
-      plugins
+      plugins: plugins || []
     });
   } catch (error) {
     console.error('Failed to get marketplace plugins:', error);
@@ -264,22 +249,19 @@ router.post('/purchase', async (req, res) => {
  */
 router.get('/installed', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
-    // TODO: Get tenantId from authenticated session
-    const tenantId = req.user?.tenantId || 'default-tenant';
+    const tenantDb = await getTenantConnection(req);
 
-    const plugins = await sequelize.query(`
-      SELECT * FROM plugins
-      WHERE status = 'active'
-      ORDER BY installed_at DESC
-    `, {
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: plugins, error } = await tenantDb
+      .from('plugins')
+      .select('*')
+      .eq('status', 'active')
+      .order('installed_at', { ascending: false });
+
+    if (error) throw new Error(error.message);
 
     res.json({
       success: true,
-      plugins
+      plugins: plugins || []
     });
   } catch (error) {
     console.error('Failed to get installed plugins:', error);
@@ -450,12 +432,11 @@ router.get('/active', async (req, res) => {
 /**
  * GET /api/plugins/registry
  * Get all active plugins with their hooks and events (for App.jsx initialization)
- * LEGACY ENDPOINT - kept for backward compatibility, now uses normalized tables
+ * Updated to use Supabase
  */
 router.get('/registry', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
 
     // Prevent caching - always get fresh plugin data
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -464,35 +445,32 @@ router.get('/registry', async (req, res) => {
 
     const { status } = req.query;
 
-    // Get plugins from plugin_registry table (removed config column - doesn't exist in normalized structure)
-    const whereClause = status === 'active' ? `WHERE status = 'active'` : '';
-    const plugins = await sequelize.query(`
-      SELECT
-        id, name, slug, version, description, author, category, status, type,
-        manifest, created_at, updated_at
-      FROM plugin_registry
-      ${whereClause}
-      ORDER BY created_at DESC
-    `, {
-      type: sequelize.QueryTypes.SELECT
-    });
+    // Get plugins from plugin_registry table
+    let query = tenantDb
+      .from('plugin_registry')
+      .select('id, name, slug, version, description, author, category, status, type, manifest, created_at, updated_at')
+      .order('created_at', { ascending: false });
 
-    // Load hooks and events from normalized tables (same as /active endpoint)
-    const pluginsWithData = await Promise.all(plugins.map(async (plugin) => {
+    if (status === 'active') {
+      query = query.eq('status', 'active');
+    }
+
+    const { data: plugins, error: pluginsError } = await query;
+    if (pluginsError) throw new Error(pluginsError.message);
+
+    // Load hooks and events from normalized tables
+    const pluginsWithData = await Promise.all((plugins || []).map(async (plugin) => {
       // Load hooks from plugin_hooks table
       let hooks = [];
       try {
-        const hooksResult = await sequelize.query(`
-          SELECT hook_name, handler_function, priority, is_enabled
-          FROM plugin_hooks
-          WHERE plugin_id = $1 AND is_enabled = true
-          ORDER BY priority ASC
-        `, {
-          bind: [plugin.id],
-          type: sequelize.QueryTypes.SELECT
-        });
+        const { data: hooksResult } = await tenantDb
+          .from('plugin_hooks')
+          .select('hook_name, handler_function, priority, is_enabled')
+          .eq('plugin_id', plugin.id)
+          .eq('is_enabled', true)
+          .order('priority', { ascending: true });
 
-        hooks = hooksResult.map(h => ({
+        hooks = (hooksResult || []).map(h => ({
           hook_name: h.hook_name,
           handler_code: h.handler_function,
           priority: h.priority || 10,
@@ -504,17 +482,14 @@ router.get('/registry', async (req, res) => {
       // Load events from plugin_events table
       let events = [];
       try {
-        const eventsResult = await sequelize.query(`
-          SELECT event_name, listener_function, priority, is_enabled
-          FROM plugin_events
-          WHERE plugin_id = $1 AND is_enabled = true
-          ORDER BY priority ASC
-        `, {
-          bind: [plugin.id],
-          type: sequelize.QueryTypes.SELECT
-        });
+        const { data: eventsResult } = await tenantDb
+          .from('plugin_events')
+          .select('event_name, listener_function, priority, is_enabled')
+          .eq('plugin_id', plugin.id)
+          .eq('is_enabled', true)
+          .order('priority', { ascending: true });
 
-        events = eventsResult.map(e => ({
+        events = (eventsResult || []).map(e => ({
           event_name: e.event_name,
           listener_code: e.listener_function,
           priority: e.priority || 10,
@@ -559,8 +534,7 @@ router.get('/registry', async (req, res) => {
  */
 router.get('/active/:pluginId', async (req, res) => {
   try {
-    const connection = await getTenantConnection(req);
-    const sequelize = connection.sequelize;
+    const tenantDb = await getTenantConnection(req);
 
     // Prevent caching - always get fresh plugin data
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -570,34 +544,31 @@ router.get('/active/:pluginId', async (req, res) => {
     const { pluginId } = req.params;
 
     // Get plugin details from plugin_registry
-    const plugin = await sequelize.query(`
-      SELECT * FROM plugin_registry WHERE id = $1 AND status = 'active'
-    `, {
-      bind: [pluginId],
-      type: sequelize.QueryTypes.SELECT
-    });
+    const { data: plugin, error: pluginError } = await tenantDb
+      .from('plugin_registry')
+      .select('*')
+      .eq('id', pluginId)
+      .eq('status', 'active')
+      .single();
 
-    if (!plugin[0]) {
+    if (pluginError || !plugin) {
       return res.status(404).json({
         success: false,
         error: 'Plugin not found or not active'
       });
     }
 
-    // Load hooks from plugin_hooks table (normalized structure)
+    // Load hooks from plugin_hooks table
     let hooks = [];
     try {
-      const hooksResult = await sequelize.query(`
-        SELECT hook_name, handler_function, priority, is_enabled
-        FROM plugin_hooks
-        WHERE plugin_id = $1 AND is_enabled = true
-        ORDER BY priority ASC
-      `, {
-        bind: [pluginId],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: hooksResult } = await tenantDb
+        .from('plugin_hooks')
+        .select('hook_name, handler_function, priority, is_enabled')
+        .eq('plugin_id', pluginId)
+        .eq('is_enabled', true)
+        .order('priority', { ascending: true });
 
-      hooks = hooksResult.map(h => ({
+      hooks = (hooksResult || []).map(h => ({
         hook_name: h.hook_name,
         handler_code: h.handler_function,
         priority: h.priority || 10,
@@ -606,20 +577,17 @@ router.get('/active/:pluginId', async (req, res) => {
     } catch (hookError) {
     }
 
-    // Load events from plugin_events table (normalized structure)
+    // Load events from plugin_events table
     let events = [];
     try {
-      const eventsResult = await sequelize.query(`
-        SELECT event_name, listener_function, priority, is_enabled
-        FROM plugin_events
-        WHERE plugin_id = $1 AND is_enabled = true
-        ORDER BY priority ASC
-      `, {
-        bind: [pluginId],
-        type: sequelize.QueryTypes.SELECT
-      });
+      const { data: eventsResult } = await tenantDb
+        .from('plugin_events')
+        .select('event_name, listener_function, priority, is_enabled')
+        .eq('plugin_id', pluginId)
+        .eq('is_enabled', true)
+        .order('priority', { ascending: true });
 
-      events = eventsResult.map(e => ({
+      events = (eventsResult || []).map(e => ({
         event_name: e.event_name,
         listener_code: e.listener_function,
         priority: e.priority || 10,
@@ -629,20 +597,20 @@ router.get('/active/:pluginId', async (req, res) => {
     }
 
     // Parse JSON fields
-    const manifest = typeof plugin[0].manifest === 'string' ? JSON.parse(plugin[0].manifest) : plugin[0].manifest;
+    const manifest = typeof plugin.manifest === 'string' ? JSON.parse(plugin.manifest) : plugin.manifest;
 
     res.json({
       success: true,
       data: {
-        id: plugin[0].id,
-        name: plugin[0].name,
-        version: plugin[0].version,
-        description: plugin[0].description,
-        author: plugin[0].author,
-        category: plugin[0].category,
-        status: plugin[0].status,
-        type: plugin[0].type,
-        generated_by_ai: manifest?.generated_by_ai || plugin[0].type === 'ai-generated',
+        id: plugin.id,
+        name: plugin.name,
+        version: plugin.version,
+        description: plugin.description,
+        author: plugin.author,
+        category: plugin.category,
+        status: plugin.status,
+        type: plugin.type,
+        generated_by_ai: manifest?.generated_by_ai || plugin.type === 'ai-generated',
         hooks: hooks,
         events: events,
         manifest: manifest
