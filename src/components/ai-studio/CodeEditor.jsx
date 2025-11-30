@@ -463,6 +463,13 @@ const CodeEditor = ({
     diffModifiedContentRef.current = value;
   }, [value]);
 
+  // Sync the ref when switching TO diff mode (so DiffEditor has current content)
+  useEffect(() => {
+    if (showSplitView || showDiffView) {
+      diffModifiedContentRef.current = localCode;
+    }
+  }, [showSplitView, showDiffView]);
+
   // Generate full file display lines with changes highlighted
   const generateFullFileDisplayLines = useCallback((parsedDiff, originalContent, modifiedContent) => {
 
@@ -773,8 +780,11 @@ const CodeEditor = ({
     setLocalCode(processedCode);
     setIsModified(processedCode !== value);
 
-    // Update the stable ref for DiffEditor (only when not undo/redo)
-    diffModifiedContentRef.current = processedCode;
+    // Only update the ref when NOT in diff mode - let DiffEditor manage its own content
+    // This prevents the model from being reset and losing the undo stack
+    if (!showSplitView && !showDiffView) {
+      diffModifiedContentRef.current = processedCode;
+    }
 
     // Emit event for extensions
     eventSystem.emit('codeEditor.codeChanged', {

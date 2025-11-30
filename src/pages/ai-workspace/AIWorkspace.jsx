@@ -63,7 +63,7 @@ const AIWorkspaceContent = () => {
   };
 
   return (
-    <div className="h-screend flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header with page selector, editor toggle, and controls */}
       <WorkspaceHeader />
 
