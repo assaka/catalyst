@@ -144,15 +144,19 @@ const DnsManager = ({ storeId, storeDomain }) => {
 
     const domainInfo = getDomainInfo(newDomain);
     console.log('Domain info:', domainInfo); // Debug log
+    console.log('hasCompanion:', domainInfo.hasCompanion); // Debug log
 
     if (domainInfo.hasCompanion) {
       // Show dialog to ask about companion domain
+      console.log('Opening companion dialog...'); // Debug log
       setPendingDomain(newDomain.trim().toLowerCase());
       setCompanionDomain(domainInfo.companion);
       setIncludeCompanion(true);
       setShowCompanionDialog(true);
+      console.log('Dialog state should be true now'); // Debug log
     } else {
       // Subdomain - add directly without prompt
+      console.log('No companion, adding directly'); // Debug log
       addCustomDomain(newDomain.trim().toLowerCase(), null);
     }
   };
@@ -614,6 +618,11 @@ const DnsManager = ({ storeId, storeDomain }) => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Debug: show dialog state - REMOVE AFTER TESTING */}
+      <div className="fixed bottom-4 right-4 bg-black text-white p-2 rounded text-xs z-[9999]">
+        Dialog: {showCompanionDialog ? 'OPEN' : 'closed'} | Pending: {pendingDomain || 'none'}
+      </div>
 
       {/* Companion Domain Dialog */}
       <Dialog open={showCompanionDialog} onOpenChange={setShowCompanionDialog}>
