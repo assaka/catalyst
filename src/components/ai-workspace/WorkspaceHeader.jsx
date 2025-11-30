@@ -168,8 +168,8 @@ const WorkspaceHeader = () => {
   // Handle publish complete - refresh state
   const handlePublished = () => {
     setHasUnpublishedChanges(false);
+    setPublishPopoverOpen(false);
     loadDraftConfig();
-    checkUnpublishedChanges();
   };
 
   // Handle revert complete - refresh state
@@ -407,16 +407,16 @@ const WorkspaceHeader = () => {
             <Button
               variant="outline"
               size="sm"
+              disabled={!hasUnpublishedChanges}
               className={
                 hasUnpublishedChanges
                   ? 'h-8 gap-1.5 bg-green-600 hover:bg-green-700 text-white border-green-600'
-                  : 'h-8 gap-1.5 bg-white'
+                  : 'h-8 gap-1.5 bg-white opacity-50 cursor-not-allowed'
               }
               title={hasUnpublishedChanges ? 'Publish draft changes to production' : 'No unpublished changes'}
             >
               <Rocket className="h-3.5 w-3.5" />
               <span>Publish</span>
-              <ChevronDown className="h-3 w-3" />
             </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-96 p-0">
