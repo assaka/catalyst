@@ -159,6 +159,10 @@ const CodeEditor = ({
   const isUndoRedoInProgress = useRef(false);
   // Stable ref for DiffEditor's modified content - prevents model reset during undo/redo
   const diffModifiedContentRef = useRef(value);
+  // Application-level undo/redo stacks for cross-mode undo support
+  const appUndoStack = useRef([]);
+  const appRedoStack = useRef([]);
+  const lastSavedContent = useRef(value);
   
   // Helper function to get diff stats
   // Enhanced diff statistics
@@ -779,6 +783,23 @@ const CodeEditor = ({
       originalCode: value
     });
 
+    // Track changes in app-level undo stack (for cross-mode undo)
+    // Only push if content actually changed and differs from last saved
+    if (lastSavedContent.current !== processedCode) {
+      // Push previous state to undo stack
+      if (appUndoStack.current.length === 0 ||
+          appUndoStack.current[appUndoStack.current.length - 1] !== lastSavedContent.current) {
+        appUndoStack.current.push(lastSavedContent.current);
+        // Limit stack size to prevent memory issues
+        if (appUndoStack.current.length > 100) {
+          appUndoStack.current.shift();
+        }
+      }
+      // Clear redo stack on new changes
+      appRedoStack.current = [];
+      lastSavedContent.current = processedCode;
+    }
+
     setLocalCode(processedCode);
     setIsModified(processedCode !== value);
 
@@ -980,17 +1001,22 @@ const CodeEditor = ({
 
         const model = editorRef.current.getModel();
         const currentValue = editorRef.current.getValue();
-
-        // In diff mode, if Monaco has nothing to undo but we have changes from original,
-        // revert to the original code (handles changes made in code mode before switching)
         const canMonacoUndo = model && model.canUndo && model.canUndo();
         const inDiffMode = showSplitView || showDiffView;
 
-        if (inDiffMode && !canMonacoUndo && originalCode && currentValue !== originalCode) {
-          // Monaco can't undo, but we have changes - revert to original
-          editorRef.current.setValue(originalCode);
-          // Update ref so DiffEditor stays in sync
-          diffModifiedContentRef.current = originalCode;
+        // In diff mode, if Monaco has nothing to undo, use app-level undo stack
+        if (inDiffMode && !canMonacoUndo) {
+          if (appUndoStack.current.length > 0) {
+            // Pop from app undo stack for incremental undo
+            const previousState = appUndoStack.current.pop();
+            // Push current state to redo stack
+            appRedoStack.current.push(currentValue);
+            // Apply the previous state
+            editorRef.current.setValue(previousState);
+            diffModifiedContentRef.current = previousState;
+            lastSavedContent.current = previousState;
+          }
+          // If no app undo stack either, nothing to undo
         } else if (model && typeof model.undo === 'function') {
           model.undo();
         } else {
@@ -1025,11 +1051,15 @@ const CodeEditor = ({
               }
             }
 
-            // Update button states
+            // Update button states - consider both Monaco and app-level stacks
             const currentModel = editorRef.current.getModel();
+            const inDiffModeNow = showSplitView || showDiffView;
             if (currentModel) {
-              setCanUndo(currentModel.canUndo());
-              setCanRedo(currentModel.canRedo());
+              const monacoCanUndo = currentModel.canUndo();
+              const monacoCanRedo = currentModel.canRedo();
+              // In diff mode, also check app-level stacks
+              setCanUndo(monacoCanUndo || (inDiffModeNow && appUndoStack.current.length > 0));
+              setCanRedo(monacoCanRedo || (inDiffModeNow && appRedoStack.current.length > 0));
             }
           } catch (error) {
             console.warn('Could not update state after undo:', error);
@@ -1054,9 +1084,25 @@ const CodeEditor = ({
         // Set flag to prevent handleCodeChange from interfering
         isUndoRedoInProgress.current = true;
 
-        // In diff mode, use the model's redo directly for more reliable behavior
         const model = editorRef.current.getModel();
-        if (model && typeof model.redo === 'function') {
+        const currentValue = editorRef.current.getValue();
+        const canMonacoRedo = model && model.canRedo && model.canRedo();
+        const inDiffMode = showSplitView || showDiffView;
+
+        // In diff mode, if Monaco has nothing to redo, use app-level redo stack
+        if (inDiffMode && !canMonacoRedo) {
+          if (appRedoStack.current.length > 0) {
+            // Pop from app redo stack
+            const nextState = appRedoStack.current.pop();
+            // Push current state to undo stack
+            appUndoStack.current.push(currentValue);
+            // Apply the next state
+            editorRef.current.setValue(nextState);
+            diffModifiedContentRef.current = nextState;
+            lastSavedContent.current = nextState;
+          }
+          // If no app redo stack either, nothing to redo
+        } else if (model && typeof model.redo === 'function') {
           model.redo();
         } else {
           editorRef.current.trigger('keyboard', 'redo');
@@ -1079,11 +1125,15 @@ const CodeEditor = ({
               onChange(newValue);
             }
 
-            // Update button states
+            // Update button states - consider both Monaco and app-level stacks
             const currentModel = editorRef.current.getModel();
+            const inDiffModeNow = showSplitView || showDiffView;
             if (currentModel) {
-              setCanUndo(currentModel.canUndo());
-              setCanRedo(currentModel.canRedo());
+              const monacoCanUndo = currentModel.canUndo();
+              const monacoCanRedo = currentModel.canRedo();
+              // In diff mode, also check app-level stacks
+              setCanUndo(monacoCanUndo || (inDiffModeNow && appUndoStack.current.length > 0));
+              setCanRedo(monacoCanRedo || (inDiffModeNow && appRedoStack.current.length > 0));
             }
           } catch (error) {
             console.warn('Could not update state after redo:', error);
