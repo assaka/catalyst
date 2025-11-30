@@ -2729,10 +2729,6 @@ CREATE TABLE IF NOT EXISTS slot_configurations (
   metadata JSONB DEFAULT '{}'::jsonb
 );
 
--- Add metadata column for existing databases (used for revert undo functionality)
-ALTER TABLE slot_configurations
-ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
-
 -- NOTE: store_teams table moved to MASTER database
 
 CREATE TABLE IF NOT EXISTS store_uptime (
