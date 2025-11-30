@@ -86,10 +86,10 @@ const WorkspaceHeader = () => {
     }
   }, [storeId]);
 
-  // Check for unpublished changes on mount and when exiting editor
+  // Check for unpublished changes only on mount
   useEffect(() => {
     checkUnpublishedChanges();
-  }, [storeId, editorMode]);
+  }, [storeId]);
 
   // Load draft config for selected page type
   useEffect(() => {
