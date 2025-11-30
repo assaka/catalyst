@@ -110,8 +110,13 @@ export const StoreSelectionProvider = ({ children }) => {
               window.location.href = '/admin/auth?error=no_active_store';
             }
           }
-        } else if (!selectedStore) {
-          // No saved store or not found - use first ACTIVE store
+        } else {
+          // Saved store not found in user's stores list - clear stale localStorage and select first active store
+          console.warn('⚠️ StoreSelection: Saved store not found in user stores, clearing stale selection');
+          localStorage.removeItem('selectedStoreId');
+          localStorage.removeItem('selectedStoreName');
+          localStorage.removeItem('selectedStoreSlug');
+
           const firstActiveStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
 
           if (firstActiveStore) {
