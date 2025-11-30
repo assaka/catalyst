@@ -27,12 +27,6 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
       navigate('/admin/dashboard');
     }
   };
-  
-  const switchToEditor = () => {
-    if (currentMode !== 'editor') {
-      navigate('/editor/ai-context');
-    }
-  };
 
   const switchToPlugins = () => {
     if (currentMode !== 'plugins') {
@@ -40,9 +34,9 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
     }
   };
 
-  const switchToAIStudio = () => {
-    if (currentMode !== 'aistudio') {
-      navigate('/admin/ai-studio');
+  const switchToAIWorkspace = () => {
+    if (currentMode !== 'aiworkspace') {
+      navigate('/ai-workspace');
     }
   };
 
@@ -77,18 +71,6 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={switchToEditor}
-                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                  currentMode === 'editor'
-                    ? 'bg-white shadow-sm text-gray-900'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                Editor
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
                 onClick={switchToPlugins}
                 className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
                   currentMode === 'plugins'
@@ -101,14 +83,14 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={switchToAIStudio}
+                onClick={switchToAIWorkspace}
                 className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                  currentMode === 'aistudio'
+                  currentMode === 'aiworkspace'
                     ? 'bg-white shadow-sm text-gray-900'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
-                AI Studio
+                AI Workspace
               </Button>
             </div>
           )}
@@ -150,18 +132,6 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={switchToEditor}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  currentMode === 'editor'
-                    ? 'bg-white shadow-sm text-gray-900'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                Editor
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
                 onClick={switchToPlugins}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                   currentMode === 'plugins'
@@ -174,14 +144,14 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={switchToAIStudio}
+                onClick={switchToAIWorkspace}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  currentMode === 'aistudio'
+                  currentMode === 'aiworkspace'
                     ? 'bg-white shadow-sm text-gray-900'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
-                AI Studio
+                AI Workspace
               </Button>
             </div>
           )}
