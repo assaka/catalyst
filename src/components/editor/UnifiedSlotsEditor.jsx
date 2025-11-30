@@ -355,7 +355,7 @@ const UnifiedSlotsEditor = ({
       {/* Main Editor Area */}
       <div className="flex flex-col">
         {/* Editor Header */}
-        <div className="bg-white border-b px-6 py-4">
+        <div className="bg-white border-b px-6 py-4 h-12">
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-between gap-4">
               {/* View Mode Tabs */}
@@ -404,12 +404,12 @@ const UnifiedSlotsEditor = ({
           className={`bg-gray-50 ${pageType}-page overflow-y-auto max-h-[calc(100vh-80px)]`}
           style={{ backgroundColor: '#f9fafb' }}
         >
-          {/* Timestamps Row */}
-          <TimestampsRow
+          {/* Timestamps Row - Hidden */}
+          {/* <TimestampsRow
             draftConfig={draftConfig}
             latestPublished={latestPublished}
             formatTimeAgo={formatTimeAgo}
-          />
+          /> */}
 
           {!showPreview && (
             <EditorToolbar
