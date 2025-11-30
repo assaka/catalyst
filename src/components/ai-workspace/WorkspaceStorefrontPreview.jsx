@@ -5,7 +5,7 @@ import { Loader2, RefreshCw, ExternalLink, Monitor, Tablet, Smartphone } from 'l
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { getExternalStoreUrl, getStoreBaseUrl, createPublicUrl } from '@/utils/urlUtils';
-import { StorefrontProduct } from '@/api/storefront-entities';
+import { StorefrontProduct, StorefrontCategory } from '@/api/storefront-entities';
 
 /**
  * WorkspaceStorefrontPreview - Interactive storefront preview in iframe
@@ -21,11 +21,12 @@ const WorkspaceStorefrontPreview = () => {
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(Date.now()); // Force refresh on mount
   const [firstProductSlug, setFirstProductSlug] = useState(null);
+  const [firstCategorySlug, setFirstCategorySlug] = useState(null);
 
   const storeId = getSelectedStoreId();
   const storeSlug = selectedStore?.slug || selectedStore?.code || 'store';
 
-  // Fetch first product from store for product page preview
+  // Fetch first product and category from store for page previews
   useEffect(() => {
     const fetchFirstProduct = async () => {
       if (!storeId) return;
@@ -38,7 +39,21 @@ const WorkspaceStorefrontPreview = () => {
         console.error('Failed to fetch first product:', err);
       }
     };
+
+    const fetchFirstCategory = async () => {
+      if (!storeId) return;
+      try {
+        const categories = await StorefrontCategory.findAll({ limit: 1 });
+        if (categories && categories.length > 0) {
+          setFirstCategorySlug(categories[0].slug || categories[0].id);
+        }
+      } catch (err) {
+        console.error('Failed to fetch first category:', err);
+      }
+    };
+
     fetchFirstProduct();
+    fetchFirstCategory();
   }, [storeId]);
 
   // Auto-refresh on component mount (when switching from Editor to Preview)
@@ -53,11 +68,11 @@ const WorkspaceStorefrontPreview = () => {
     // Get the base URL for the store
     const baseUrl = getStoreBaseUrl(selectedStore);
 
-    // Build the full storefront URL
+    // Build the full storefront URL with draft mode parameter
     const url = getExternalStoreUrl(storeSlug, '', baseUrl);
 
-    // Add cache-busting timestamp for refresh
-    return `${url}?_t=${refreshKey}`;
+    // Add draft preview parameter and cache-busting timestamp
+    return `${url}?preview=draft&workspace=true&_t=${refreshKey}`;
   }, [storeSlug, selectedStore, refreshKey]);
 
   // Map page types to storefront paths
@@ -67,7 +82,8 @@ const WorkspaceStorefrontPreview = () => {
         // Use actual product from store collection
         return firstProductSlug ? `product/${firstProductSlug}` : null;
       case PAGE_TYPES.CATEGORY:
-        return 'category/all';
+        // Use actual category from store collection
+        return firstCategorySlug ? `category/${firstCategorySlug}` : null;
       case PAGE_TYPES.CART:
         return 'cart';
       case PAGE_TYPES.CHECKOUT:
@@ -92,8 +108,8 @@ const WorkspaceStorefrontPreview = () => {
     // If pagePath is null (e.g., product page but product not loaded yet), show homepage
     const effectivePath = pagePath === null ? '' : pagePath;
     const newUrl = getExternalStoreUrl(storeSlug, effectivePath, baseUrl);
-    setCurrentUrl(`${newUrl}?_t=${refreshKey}`);
-  }, [storeSlug, selectedStore, refreshKey, selectedPageType, firstProductSlug]);
+    setCurrentUrl(`${newUrl}?preview=draft&workspace=true&_t=${refreshKey}`);
+  }, [storeSlug, selectedStore, refreshKey, selectedPageType, firstProductSlug, firstCategorySlug]);
 
   // Viewport dimensions
   const viewportStyles = useMemo(() => {
