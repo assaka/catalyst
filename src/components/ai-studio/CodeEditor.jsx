@@ -978,9 +978,20 @@ const CodeEditor = ({
         // Set flag to prevent handleCodeChange from interfering
         isUndoRedoInProgress.current = true;
 
-        // In diff mode, use the model's undo directly for more reliable behavior
         const model = editorRef.current.getModel();
-        if (model && typeof model.undo === 'function') {
+        const currentValue = editorRef.current.getValue();
+
+        // In diff mode, if Monaco has nothing to undo but we have changes from original,
+        // revert to the original code (handles changes made in code mode before switching)
+        const canMonacoUndo = model && model.canUndo && model.canUndo();
+        const inDiffMode = showSplitView || showDiffView;
+
+        if (inDiffMode && !canMonacoUndo && originalCode && currentValue !== originalCode) {
+          // Monaco can't undo, but we have changes - revert to original
+          editorRef.current.setValue(originalCode);
+          // Update ref so DiffEditor stays in sync
+          diffModifiedContentRef.current = originalCode;
+        } else if (model && typeof model.undo === 'function') {
           model.undo();
         } else {
           editorRef.current.trigger('keyboard', 'undo');
