@@ -227,56 +227,47 @@ const CodeEditor = ({
     };
   }, []);
 
-  // Character-based diff stats
+  // Character-based diff stats using Longest Common Subsequence
   const getCharDiffStats = useCallback((oldCode, newCode) => {
     if (oldCode == null || newCode == null) {
-      return { added: 0, removed: 0, changed: 0 };
+      return { added: 0, removed: 0 };
     }
 
-    const oldChars = oldCode.split('');
-    const newChars = newCode.split('');
-
-    // Simple character diff using longest common subsequence approach
-    let added = 0;
-    let removed = 0;
-
-    // Count characters that are in new but not in old (simplified approach)
-    // For a more accurate diff, we compare character by character
-    const oldLen = oldChars.length;
-    const newLen = newChars.length;
-
-    if (oldLen === newLen) {
-      // Same length - count changed characters
-      let changed = 0;
-      for (let i = 0; i < oldLen; i++) {
-        if (oldChars[i] !== newChars[i]) {
-          changed++;
-        }
-      }
-      return { added: 0, removed: 0, changed };
-    } else if (newLen > oldLen) {
-      // More characters in new - count additions
-      added = newLen - oldLen;
-      // Also count changes in the overlapping portion
-      let changed = 0;
-      for (let i = 0; i < oldLen; i++) {
-        if (oldChars[i] !== newChars[i]) {
-          changed++;
-        }
-      }
-      return { added, removed: 0, changed };
-    } else {
-      // Fewer characters in new - count deletions
-      removed = oldLen - newLen;
-      // Also count changes in the overlapping portion
-      let changed = 0;
-      for (let i = 0; i < newLen; i++) {
-        if (oldChars[i] !== newChars[i]) {
-          changed++;
-        }
-      }
-      return { added: 0, removed, changed };
+    if (oldCode === newCode) {
+      return { added: 0, removed: 0 };
     }
+
+    const oldLen = oldCode.length;
+    const newLen = newCode.length;
+
+    // For very long strings, use a simpler approximation to avoid performance issues
+    if (oldLen > 10000 || newLen > 10000) {
+      const added = Math.max(0, newLen - oldLen);
+      const removed = Math.max(0, oldLen - newLen);
+      return { added, removed };
+    }
+
+    // Calculate LCS length using space-optimized DP
+    // We only need the length, not the actual LCS
+    let prev = new Array(newLen + 1).fill(0);
+    let curr = new Array(newLen + 1).fill(0);
+
+    for (let i = 1; i <= oldLen; i++) {
+      for (let j = 1; j <= newLen; j++) {
+        if (oldCode[i - 1] === newCode[j - 1]) {
+          curr[j] = prev[j - 1] + 1;
+        } else {
+          curr[j] = Math.max(prev[j], curr[j - 1]);
+        }
+      }
+      [prev, curr] = [curr, prev];
+    }
+
+    const lcsLength = prev[newLen];
+    const removed = oldLen - lcsLength;  // Characters in old but not in LCS
+    const added = newLen - lcsLength;    // Characters in new but not in LCS
+
+    return { added, removed };
   }, []);
 
   // Compute diff stats synchronously on every render when localCode or originalCode changes
@@ -286,8 +277,7 @@ const CodeEditor = ({
     return {
       ...lineStats,
       charAdded: charStats.added,
-      charRemoved: charStats.removed,
-      charChanged: charStats.changed
+      charRemoved: charStats.removed
     };
   }, [localCode, originalCode, getDiffStats, getCharDiffStats]);
 
@@ -1366,7 +1356,6 @@ const CodeEditor = ({
                     <span className="text-muted-foreground">Chars:</span>
                     <span className="text-green-600">+{diffStats.charAdded}</span>
                     <span className="text-red-600">-{diffStats.charRemoved}</span>
-                    <span className="text-orange-600">~{diffStats.charChanged}</span>
                   </div>
                 </div>
               </div>
@@ -1478,7 +1467,6 @@ const CodeEditor = ({
                     <span className="text-muted-foreground">Chars:</span>
                     <span className="text-green-600">+{diffStats.charAdded}</span>
                     <span className="text-red-600">-{diffStats.charRemoved}</span>
-                    <span className="text-orange-600">~{diffStats.charChanged}</span>
                   </div>
                 </div>
               </div>
@@ -1628,7 +1616,7 @@ const CodeEditor = ({
               <>
                 <span>Inline Diff View</span>
                 <span>Lines: +{diffStats.additions} -{diffStats.deletions} ~{diffStats.linesChanged}</span>
-                <span>Chars: +{diffStats.charAdded} -{diffStats.charRemoved} ~{diffStats.charChanged}</span>
+                <span>Chars: +{diffStats.charAdded} -{diffStats.charRemoved}</span>
               </>
             ) : (
               <>
