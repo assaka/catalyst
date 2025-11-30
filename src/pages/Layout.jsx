@@ -478,7 +478,7 @@ function LayoutInner({ children, currentPageName }) {
   return (
     <StoreProvider>
       <PriceUtilsProvider>
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="h-screen bg-gray-50 flex overflow-hidden">
         <RoleSwitcher />
       <style>{`
         :root {
@@ -817,7 +817,7 @@ function LayoutInner({ children, currentPageName }) {
       </div>
       )}
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         <ModeHeader
           user={user}
           currentMode={currentMode}
@@ -838,7 +838,7 @@ function LayoutInner({ children, currentPageName }) {
           }
         />
 
-        <div className="flex-1">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {children}
         </div>
       </div>

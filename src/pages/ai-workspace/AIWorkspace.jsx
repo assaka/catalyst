@@ -63,12 +63,12 @@ const AIWorkspaceContent = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header with page selector, editor toggle, and controls */}
       <WorkspaceHeader />
 
       {/* Main content area with resizable panels */}
-      <div className="h-[calc(100vh-3.5rem)] overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden">
         {showPluginEditor && pluginToEdit ? (
           // Plugin Editor Mode - AI Chat + Developer Editor
           <ResizablePanelGroup direction="horizontal" className="h-full">
