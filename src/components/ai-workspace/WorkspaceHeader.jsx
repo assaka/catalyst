@@ -405,12 +405,12 @@ const WorkspaceHeader = () => {
         <Popover open={publishPopoverOpen} onOpenChange={setPublishPopoverOpen}>
           <PopoverTrigger asChild>
             <Button
-              variant={hasUnpublishedChanges ? 'default' : 'outline'}
+              variant="outline"
               size="sm"
               className={
                 hasUnpublishedChanges
-                  ? 'h-8 gap-1.5 bg-green-600 hover:bg-green-700'
-                  : 'h-8 gap-1.5'
+                  ? 'h-8 gap-1.5 bg-green-600 hover:bg-green-700 text-white border-green-600'
+                  : 'h-8 gap-1.5 bg-white'
               }
               title={hasUnpublishedChanges ? 'Publish draft changes to production' : 'No unpublished changes'}
             >
