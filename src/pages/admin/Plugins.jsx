@@ -99,7 +99,11 @@ export default function Plugins() {
         User.me()
       ]);
 
-      const currentStoreId = storesData[0]?.id;
+      // Use selected store from localStorage, fallback to first store
+      const selectedStoreId = localStorage.getItem('selectedStoreId');
+      const currentStoreId = selectedStoreId && storesData.find(s => s.id === selectedStoreId)
+        ? selectedStoreId
+        : storesData[0]?.id;
 
       // Load modern plugin system with store-specific status
       const [pluginsResponse, marketplaceResponse] = await Promise.all([
