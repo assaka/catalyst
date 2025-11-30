@@ -622,6 +622,7 @@ router.post('/draft/:storeId/:pageType?', authMiddleware, async (req, res) => {
 });
 
 // Get unpublished changes status for all page types (read-only, no draft creation)
+// Compares draft configuration with published configuration to detect actual differences
 router.get('/unpublished-status/:storeId', authMiddleware, async (req, res) => {
   try {
     const { storeId } = req.params;
@@ -630,29 +631,56 @@ router.get('/unpublished-status/:storeId', authMiddleware, async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    // Get all drafts for this user/store in one query
-    const { data: drafts, error } = await tenantDb
+    // Get all drafts for this user/store
+    const { data: drafts, error: draftsError } = await tenantDb
       .from('slot_configurations')
-      .select('id, page_type, has_unpublished_changes, updated_at, status')
+      .select('id, page_type, configuration, updated_at, status')
       .eq('user_id', userId)
       .eq('store_id', storeId)
       .in('status', ['init', 'draft']);
 
-    if (error) throw error;
+    if (draftsError) throw draftsError;
 
-    // Build status map
+    // Get all published versions for this store
+    const { data: published, error: publishedError } = await tenantDb
+      .from('slot_configurations')
+      .select('id, page_type, configuration')
+      .eq('store_id', storeId)
+      .eq('status', 'published')
+      .order('version_number', { ascending: false });
+
+    if (publishedError) throw publishedError;
+
+    // Build status map by comparing draft vs published configurations
     const statusMap = {};
     let hasAnyUnpublishedChanges = false;
 
     for (const pageType of pageTypes) {
       const draft = drafts?.find(d => d.page_type === pageType);
+      const latestPublished = published?.find(p => p.page_type === pageType);
+
+      let hasChanges = false;
+
+      if (draft && draft.configuration) {
+        if (!latestPublished) {
+          // Draft exists but no published version = has changes
+          hasChanges = true;
+        } else {
+          // Compare configurations (stringify for deep comparison)
+          const draftConfig = JSON.stringify(draft.configuration);
+          const publishedConfig = JSON.stringify(latestPublished.configuration);
+          hasChanges = draftConfig !== publishedConfig;
+        }
+      }
+
       statusMap[pageType] = {
         hasDraft: !!draft,
-        hasUnpublishedChanges: draft?.has_unpublished_changes || false,
+        hasUnpublishedChanges: hasChanges,
         draftId: draft?.id || null,
         updatedAt: draft?.updated_at || null
       };
-      if (draft?.has_unpublished_changes) {
+
+      if (hasChanges) {
         hasAnyUnpublishedChanges = true;
       }
     }
@@ -674,6 +702,7 @@ router.get('/unpublished-status/:storeId', authMiddleware, async (req, res) => {
 });
 
 // Publish all drafts with unpublished changes
+// Compares draft vs published to find actual differences
 router.post('/publish-all/:storeId', authMiddleware, async (req, res) => {
   try {
     const { storeId } = req.params;
@@ -681,18 +710,48 @@ router.post('/publish-all/:storeId', authMiddleware, async (req, res) => {
 
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-    // Get all drafts with unpublished changes
-    const { data: drafts, error: fetchError } = await tenantDb
+    // Get all drafts for this user/store
+    const { data: drafts, error: draftsError } = await tenantDb
       .from('slot_configurations')
       .select('*')
       .eq('user_id', userId)
       .eq('store_id', storeId)
-      .eq('status', 'draft')
-      .eq('has_unpublished_changes', true);
+      .eq('status', 'draft');
 
-    if (fetchError) throw fetchError;
+    if (draftsError) throw draftsError;
 
-    if (!drafts || drafts.length === 0) {
+    // Get all published versions for this store
+    const { data: published, error: publishedError } = await tenantDb
+      .from('slot_configurations')
+      .select('id, page_type, configuration')
+      .eq('store_id', storeId)
+      .eq('status', 'published')
+      .order('version_number', { ascending: false });
+
+    if (publishedError) throw publishedError;
+
+    // Find drafts that differ from their published versions
+    const draftsToPublish = [];
+    for (const draft of (drafts || [])) {
+      const latestPublished = published?.find(p => p.page_type === draft.page_type);
+
+      let hasChanges = false;
+      if (!latestPublished) {
+        // No published version = has changes
+        hasChanges = true;
+      } else {
+        // Compare configurations
+        const draftConfig = JSON.stringify(draft.configuration);
+        const publishedConfig = JSON.stringify(latestPublished.configuration);
+        hasChanges = draftConfig !== publishedConfig;
+      }
+
+      if (hasChanges) {
+        draftsToPublish.push(draft);
+      }
+    }
+
+    if (draftsToPublish.length === 0) {
       return res.json({
         success: true,
         data: {
@@ -703,14 +762,14 @@ router.post('/publish-all/:storeId', authMiddleware, async (req, res) => {
       });
     }
 
-    // Publish all drafts
+    // Publish all drafts with changes
     const publishedResults = [];
-    for (const draft of drafts) {
-      const published = await publishDraft(draft.id, userId, storeId);
+    for (const draft of draftsToPublish) {
+      const result = await publishDraft(draft.id, userId, storeId);
       publishedResults.push({
         pageType: draft.page_type,
-        id: published.id,
-        versionNumber: published.version_number
+        id: result.id,
+        versionNumber: result.version_number
       });
     }
 
