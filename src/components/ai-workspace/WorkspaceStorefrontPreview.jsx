@@ -31,9 +31,12 @@ const WorkspaceStorefrontPreview = () => {
     const fetchFirstProduct = async () => {
       if (!storeId) return;
       try {
-        const products = await StorefrontProduct.findAll({ limit: 1, status: 'active' });
+        const products = await StorefrontProduct.findAll({ limit: 1 });
         if (products && products.length > 0) {
-          setFirstProductSlug(products[0].slug || products[0].id);
+          // Use the product slug for preview
+          const product = products[0];
+          console.log('First product for preview:', product);
+          setFirstProductSlug(product.slug || product.id);
         }
       } catch (err) {
         console.error('Failed to fetch first product:', err);
