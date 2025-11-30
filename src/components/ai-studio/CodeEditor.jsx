@@ -978,7 +978,13 @@ const CodeEditor = ({
         // Set flag to prevent handleCodeChange from interfering
         isUndoRedoInProgress.current = true;
 
-        editorRef.current.trigger('keyboard', 'undo');
+        // In diff mode, use the model's undo directly for more reliable behavior
+        const model = editorRef.current.getModel();
+        if (model && typeof model.undo === 'function') {
+          model.undo();
+        } else {
+          editorRef.current.trigger('keyboard', 'undo');
+        }
 
         // Wait for Monaco to process the undo, then update state
         setTimeout(() => {
@@ -992,7 +998,8 @@ const CodeEditor = ({
             setLocalCode(newValue);
             setIsModified(newValue !== value);
 
-            if (onChange) {
+            // In diff mode, don't call onChange to prevent parent from resetting state
+            if (onChange && !showSplitView && !showDiffView) {
               onChange(newValue);
             }
 
@@ -1001,13 +1008,17 @@ const CodeEditor = ({
             if (stats.changes === 0) {
               setShowSplitView(false);
               setShowDiffView(false);
+              // Now that we're switching out of diff mode, sync the state
+              if (onChange) {
+                onChange(newValue);
+              }
             }
 
             // Update button states
-            const model = editorRef.current.getModel();
-            if (model) {
-              setCanUndo(model.canUndo());
-              setCanRedo(model.canRedo());
+            const currentModel = editorRef.current.getModel();
+            if (currentModel) {
+              setCanUndo(currentModel.canUndo());
+              setCanRedo(currentModel.canRedo());
             }
           } catch (error) {
             console.warn('Could not update state after undo:', error);
@@ -1032,7 +1043,13 @@ const CodeEditor = ({
         // Set flag to prevent handleCodeChange from interfering
         isUndoRedoInProgress.current = true;
 
-        editorRef.current.trigger('keyboard', 'redo');
+        // In diff mode, use the model's redo directly for more reliable behavior
+        const model = editorRef.current.getModel();
+        if (model && typeof model.redo === 'function') {
+          model.redo();
+        } else {
+          editorRef.current.trigger('keyboard', 'redo');
+        }
 
         // Wait for Monaco to process the redo, then update state
         setTimeout(() => {
@@ -1046,15 +1063,16 @@ const CodeEditor = ({
             setLocalCode(newValue);
             setIsModified(newValue !== value);
 
-            if (onChange) {
+            // In diff mode, don't call onChange to prevent parent from resetting state
+            if (onChange && !showSplitView && !showDiffView) {
               onChange(newValue);
             }
 
             // Update button states
-            const model = editorRef.current.getModel();
-            if (model) {
-              setCanUndo(model.canUndo());
-              setCanRedo(model.canRedo());
+            const currentModel = editorRef.current.getModel();
+            if (currentModel) {
+              setCanUndo(currentModel.canUndo());
+              setCanRedo(currentModel.canRedo());
             }
           } catch (error) {
             console.warn('Could not update state after redo:', error);
