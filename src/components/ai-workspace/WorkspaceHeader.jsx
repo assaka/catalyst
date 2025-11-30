@@ -139,6 +139,13 @@ const WorkspaceHeader = () => {
         apiClient.get(`stores/${storeId}/plugins`)
       ]);
 
+      console.log('🔍 WorkspaceHeader Debug:', {
+        userData,
+        userId: userData?.id,
+        pluginsResponse,
+        rawPlugins: pluginsResponse?.data?.plugins || pluginsResponse?.plugins || []
+      });
+
       setUser(userData);
 
       // Get plugins from response
@@ -146,10 +153,18 @@ const WorkspaceHeader = () => {
 
       // Filter to only show user's own plugins (matching "My Plugins" tab behavior)
       // Also filter out starter templates
-      const myPlugins = allPlugins.filter(plugin =>
-        plugin.creator_id === userData?.id && !plugin.is_starter_template
-      );
+      const myPlugins = allPlugins.filter(plugin => {
+        console.log('🔍 Plugin check:', {
+          name: plugin.name,
+          creator_id: plugin.creator_id,
+          userId: userData?.id,
+          matches: plugin.creator_id === userData?.id,
+          isStarter: plugin.is_starter_template
+        });
+        return plugin.creator_id === userData?.id && !plugin.is_starter_template;
+      });
 
+      console.log('🔍 Filtered myPlugins:', myPlugins);
       setPlugins(myPlugins);
     } catch (error) {
       console.error('Failed to load plugins:', error);
