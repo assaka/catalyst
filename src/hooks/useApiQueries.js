@@ -397,20 +397,19 @@ export const useSlotConfiguration = (storeId, pageType, options = {}) => {
     (new URLSearchParams(window.location.search).get('preview') === 'draft' ||
      new URLSearchParams(window.location.search).get('workspace') === 'true');
 
-  // Debug logging when preview param is present (helps debug preview issues)
+  // ALWAYS log URL info to debug preview mode detection
   if (typeof window !== 'undefined') {
     const urlParams = new URLSearchParams(window.location.search);
     const previewParam = urlParams.get('preview');
     const workspaceParam = urlParams.get('workspace');
-    if (previewParam || workspaceParam || isPreviewDraftMode) {
-      console.log('[useSlotConfiguration]', {
-        pageType,
-        isPreviewDraftMode,
-        previewParam,
-        workspaceParam,
-        url: window.location.href
-      });
-    }
+    console.log('[useSlotConfiguration] URL Check:', {
+      pageType,
+      isPreviewDraftMode,
+      previewParam,
+      workspaceParam,
+      search: window.location.search,
+      href: window.location.href
+    });
   }
 
   return useQuery({
