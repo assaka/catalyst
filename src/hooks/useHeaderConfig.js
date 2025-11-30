@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLayoutConfig } from './useSlotConfiguration';
 import { headerConfig } from '@/components/editor/slot/configs/header-config';
 import { useStore } from '@/components/storefront/StoreProvider';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
 
 /**
  * Custom hook for loading header configuration
@@ -13,10 +14,15 @@ import { useStore } from '@/components/storefront/StoreProvider';
 export function useHeaderConfig(store) {
   const { headerSlotConfig: bootstrapHeaderConfig } = useStore() || {};
 
-  // Check if we're in draft preview mode (AI Workspace preview)
-  const isPreviewDraftMode = typeof window !== 'undefined' &&
+  // Use context for preview mode (persists across navigation)
+  const { isPreviewDraftMode: contextPreviewMode } = usePreviewMode();
+
+  // Also check URL as fallback
+  const urlPreviewMode = typeof window !== 'undefined' &&
     (new URLSearchParams(window.location.search).get('preview') === 'draft' ||
      new URLSearchParams(window.location.search).get('workspace') === 'true');
+
+  const isPreviewDraftMode = contextPreviewMode || urlPreviewMode;
 
   // In draft preview mode, always fetch fresh draft config (skip bootstrap)
   // Otherwise, only fetch if bootstrap didn't provide config

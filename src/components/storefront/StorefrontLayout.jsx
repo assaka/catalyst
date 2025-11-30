@@ -35,6 +35,7 @@ import { HeaderSlotRenderer } from './HeaderSlotRenderer';
 import { useHeaderConfig } from '@/hooks/useHeaderConfig';
 import LanguageSelector from '@/components/shared/LanguageSelector';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { PreviewModeProvider } from '@/contexts/PreviewModeContext';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -393,6 +394,7 @@ export default function StorefrontLayout({ children }) {
     const isStorePaused = store?.published === false && !isStoreOwnerViewingOwnStore;
 
     return (
+        <PreviewModeProvider>
         <SeoSettingsProvider>
             <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800 relative">
                 <StorefrontPreviewBanner />
@@ -830,5 +832,6 @@ export default function StorefrontLayout({ children }) {
             )}
             </div>
         </SeoSettingsProvider>
+        </PreviewModeProvider>
     );
 }

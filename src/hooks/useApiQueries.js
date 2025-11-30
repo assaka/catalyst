@@ -21,6 +21,7 @@ import {
 } from '@/api/storefront-entities';
 import api from '@/utils/api';
 import { getCurrentLanguage } from '@/utils/translationUtils';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
 
 /**
  * Hook to fetch current user (auth/me)
@@ -391,25 +392,20 @@ export const useCategory = (slug, storeId, options = {}) => {
  * In draft preview mode (AI Workspace), loads draft configuration instead of published
  */
 export const useSlotConfiguration = (storeId, pageType, options = {}) => {
-  // Check if we're in draft preview mode (AI Workspace preview)
-  // Check both window.location and URL params for maximum compatibility
-  const isPreviewDraftMode = typeof window !== 'undefined' &&
+  // Use context for preview mode (persists across navigation)
+  const { isPreviewDraftMode: contextPreviewMode } = usePreviewMode();
+
+  // Also check URL as fallback (for initial load before context is ready)
+  const urlPreviewMode = typeof window !== 'undefined' &&
     (new URLSearchParams(window.location.search).get('preview') === 'draft' ||
      new URLSearchParams(window.location.search).get('workspace') === 'true');
 
-  // ALWAYS log URL info to debug preview mode detection
-  if (typeof window !== 'undefined') {
-    const urlParams = new URLSearchParams(window.location.search);
-    const previewParam = urlParams.get('preview');
-    const workspaceParam = urlParams.get('workspace');
-    console.log('[useSlotConfiguration] URL Check:', {
-      pageType,
-      isPreviewDraftMode,
-      previewParam,
-      workspaceParam,
-      search: window.location.search,
-      href: window.location.href
-    });
+  // Use context if available, otherwise fall back to URL check
+  const isPreviewDraftMode = contextPreviewMode || urlPreviewMode;
+
+  // Log for debugging
+  if (isPreviewDraftMode) {
+    console.log('[useSlotConfiguration] DRAFT MODE:', { pageType, contextPreviewMode, urlPreviewMode });
   }
 
   return useQuery({

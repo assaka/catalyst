@@ -5,6 +5,7 @@
 
 import { useCallback, useState, useRef, useEffect } from 'react';
 import slotConfigurationService from '@/services/slotConfigurationService';
+import { usePreviewMode } from '@/contexts/PreviewModeContext';
 import { SlotManager } from '@/utils/slotUtils';
 import { createDefaultConfiguration, hasDefaultSlots } from '@/utils/defaultSlotConfigurations';
 import { processVariables, generateDemoData } from '@/utils/variableProcessor';
@@ -25,26 +26,20 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
     const [layoutConfig, setLayoutConfig] = useState(null);
     const [configLoaded, setConfigLoaded] = useState(false);
 
-    // Check if we're in draft preview mode (AI Workspace preview)
-    const isPreviewDraftMode = typeof window !== 'undefined' &&
+    // Use context for preview mode (persists across navigation)
+    const { isPreviewDraftMode: contextPreviewMode } = usePreviewMode();
+
+    // Also check URL as fallback
+    const urlPreviewMode = typeof window !== 'undefined' &&
         (new URLSearchParams(window.location.search).get('preview') === 'draft' ||
          new URLSearchParams(window.location.search).get('workspace') === 'true');
 
-    // Debug logging when preview param is present
-    if (typeof window !== 'undefined') {
-        const urlParams = new URLSearchParams(window.location.search);
-        const previewParam = urlParams.get('preview');
-        const workspaceParam = urlParams.get('workspace');
-        if (previewParam || workspaceParam || isPreviewDraftMode) {
-            console.log('[useLayoutConfig]', {
-                pageType,
-                isPreviewDraftMode,
-                shouldFetch,
-                previewParam,
-                workspaceParam,
-                url: window.location.href
-            });
-        }
+    // Use context if available, otherwise fall back to URL check
+    const isPreviewDraftMode = contextPreviewMode || urlPreviewMode;
+
+    // Log when in preview mode
+    if (isPreviewDraftMode) {
+        console.log('[useLayoutConfig] DRAFT MODE:', { pageType, contextPreviewMode, urlPreviewMode, shouldFetch });
     }
 
     const loadLayoutConfig = useCallback(async () => {
