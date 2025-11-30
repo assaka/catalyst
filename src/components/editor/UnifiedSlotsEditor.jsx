@@ -409,8 +409,6 @@ const UnifiedSlotsEditor = ({
             draftConfig={draftConfig}
             latestPublished={latestPublished}
             formatTimeAgo={formatTimeAgo}
-            currentViewport={currentViewport}
-            onViewportChange={setCurrentViewport}
           />
 
           {!showPreview && (
@@ -420,6 +418,8 @@ const UnifiedSlotsEditor = ({
               onResetLayout={() => setShowResetModal(true)}
               onShowCode={() => setShowCodeModal(true)}
               onAddSlot={() => setShowAddSlotModal(true)}
+              currentViewport={currentViewport}
+              onViewportChange={setCurrentViewport}
             />
           )}
 

@@ -1888,7 +1888,7 @@ export function BorderToggleButton({ showSlotBorders, onToggle }) {
 }
 
 // EditorToolbar Component
-export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBorders, onToggleBorders }) {
+export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBorders, onToggleBorders, currentViewport, onViewportChange }) {
   return (
     <div className="flex mx-6 mb-3 justify-between">
       <BorderToggleButton
@@ -1896,7 +1896,16 @@ export function EditorToolbar({ onResetLayout, onAddSlot, onShowCode, showSlotBo
         onToggle={onToggleBorders}
       />
 
-      <div className="flex gap-2 ml-3">
+      <div className="flex gap-2 ml-3 items-center">
+        {/* Viewport Mode Selector */}
+        {currentViewport && onViewportChange && (
+          <ViewportModeSelector
+            currentViewport={currentViewport}
+            onViewportChange={onViewportChange}
+            className="mr-2"
+          />
+        )}
+
         <Button
           onClick={onAddSlot}
           variant="outline"
@@ -2248,9 +2257,7 @@ export function FilePickerModalWrapper({
 export function TimestampsRow({
   draftConfig,
   latestPublished,
-  formatTimeAgo,
-  currentViewport,
-  onViewportChange
+  formatTimeAgo
 }) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-2">
@@ -2258,17 +2265,6 @@ export function TimestampsRow({
         <div className="flex items-center">
           {draftConfig?.updated_at && (
             <span>Last modified: {formatTimeAgo(draftConfig.updated_at)}</span>
-          )}
-        </div>
-
-        {/* Centered Viewport Mode Selector */}
-        <div className="flex items-center">
-          {currentViewport && onViewportChange && (
-            <ViewportModeSelector
-              currentViewport={currentViewport}
-              onViewportChange={onViewportChange}
-              className=""
-            />
           )}
         </div>
 
