@@ -143,6 +143,7 @@ const CodeEditor = ({
   const [diffData, setDiffData] = useState(null);
   const [showDiffView, setShowDiffView] = useState(false);
   const [showSplitView, setShowSplitView] = useState(false);
+  const [diffStats, setDiffStats] = useState({ additions: 0, deletions: 0, linesChanged: 0, changes: 0 });
   const [collapseUnchanged, setCollapseUnchanged] = useState(false);
   const [fullFileDisplayLines, setFullFileDisplayLines] = useState([]);
   const [canUndo, setCanUndo] = useState(false);
@@ -470,6 +471,12 @@ const CodeEditor = ({
       diffModifiedContentRef.current = value;
     }
   }, [value, showSplitView, showDiffView]);
+
+  // Update diff stats whenever localCode or originalCode changes
+  useEffect(() => {
+    const stats = getDiffStats(originalCode || '', localCode);
+    setDiffStats(stats);
+  }, [localCode, originalCode, getDiffStats]);
 
   // Sync the ref when switching TO diff mode (so DiffEditor has current content)
   useEffect(() => {
@@ -1290,16 +1297,11 @@ const CodeEditor = ({
                     Collapsed
                   </Badge>
                 )}
-                {(() => {
-                  const stats = getDiffStats(originalCode || '', localCode);
-                  return (
-                    <div className="flex items-center space-x-2 text-xs">
-                      <span className="text-green-600">+{stats.additions}</span>
-                      <span className="text-red-600">-{stats.deletions}</span>
-                      <span className="text-orange-600">{stats.linesChanged} modified</span>
-                    </div>
-                  );
-                })()}
+                <div className="flex items-center space-x-2 text-xs">
+                  <span className="text-green-600">+{diffStats.additions}</span>
+                  <span className="text-red-600">-{diffStats.deletions}</span>
+                  <span className="text-orange-600">{diffStats.linesChanged} modified</span>
+                </div>
               </div>
             </div>
             <div className="flex-1">
@@ -1398,16 +1400,11 @@ const CodeEditor = ({
                     Collapsed
                   </Badge>
                 )}
-                {(() => {
-                  const stats = getDiffStats(originalCode || '', localCode);
-                  return (
-                    <div className="flex items-center space-x-2 text-xs">
-                      <span className="text-green-600">+{stats.additions}</span>
-                      <span className="text-red-600">-{stats.deletions}</span>
-                      <span className="text-orange-600">{stats.linesChanged} modified</span>
-                    </div>
-                  );
-                })()}
+                <div className="flex items-center space-x-2 text-xs">
+                  <span className="text-green-600">+{diffStats.additions}</span>
+                  <span className="text-red-600">-{diffStats.deletions}</span>
+                  <span className="text-orange-600">{diffStats.linesChanged} modified</span>
+                </div>
               </div>
             </div>
             <div className="flex-1">
@@ -1554,10 +1551,7 @@ const CodeEditor = ({
             ) : showDiffView ? (
               <>
                 <span>Inline Diff View</span>
-                {(() => {
-                  const stats = getDiffStats(originalCode || '', localCode);
-                  return <span>+{stats.additions} -{stats.deletions} ~{stats.linesChanged}</span>;
-                })()}
+                <span>+{diffStats.additions} -{diffStats.deletions} ~{diffStats.linesChanged}</span>
               </>
             ) : (
               <>
