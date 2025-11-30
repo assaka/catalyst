@@ -358,7 +358,7 @@ function LayoutInner({ children, currentPageName }) {
   const isAdminPage = !isPublicPage && !isStorefrontPage && !isCustomerDashboard && !isEditorPage && !isPluginPage && !isAIStudioPage && !isAIWorkspacePage && !isOnboardingPage;
 
   // Determine current mode for ModeHeader
-  const currentMode = isEditorPage ? 'editor' : isPluginPage ? 'plugins' : isAIStudioPage ? 'aistudio' : 'admin';
+  const currentMode = isEditorPage ? 'editor' : isPluginPage ? 'plugins' : isAIWorkspacePage ? 'aiworkspace' : isAIStudioPage ? 'aistudio' : 'admin';
   
   // Apply role-based access control for admin, editor, plugin, AI Studio, and AI Workspace pages
   useRoleProtection(isAdminPage || isEditorPage || isPluginPage || isAIStudioPage || isAIWorkspacePage);
