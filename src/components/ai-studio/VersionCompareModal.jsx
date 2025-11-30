@@ -50,12 +50,17 @@ const VersionCompareModal = ({
   const loadComparison = async () => {
     try {
       setLoading(true);
+      const storeId = localStorage.getItem('selectedStoreId');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(storeId && storeId !== 'undefined' ? { 'x-store-id': storeId } : {})
+      };
 
       // Load both version details with full reconstructed state
       const [fromResponse, toResponse, comparisonResponse] = await Promise.all([
-        fetch(`/api/plugins/${pluginId}/versions/${fromVersionId}`),
-        fetch(`/api/plugins/${pluginId}/versions/${toVersionId}`),
-        fetch(`/api/plugins/${pluginId}/versions/compare?from=${fromVersionId}&to=${toVersionId}`)
+        fetch(`/api/plugins/${pluginId}/versions/${fromVersionId}`, { headers }),
+        fetch(`/api/plugins/${pluginId}/versions/${toVersionId}`, { headers }),
+        fetch(`/api/plugins/${pluginId}/versions/compare?from=${fromVersionId}&to=${toVersionId}`, { headers })
       ]);
 
       if (!fromResponse.ok || !toResponse.ok || !comparisonResponse.ok) {

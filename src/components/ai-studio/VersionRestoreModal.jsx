@@ -53,9 +53,14 @@ const VersionRestoreModal = ({
     try {
       setLoading(true);
       setError(null);
+      const storeId = localStorage.getItem('selectedStoreId');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(storeId && storeId !== 'undefined' ? { 'x-store-id': storeId } : {})
+      };
 
       // Load version details first
-      const versionResponse = await fetch(`/api/plugins/${pluginId}/versions/${versionId}`);
+      const versionResponse = await fetch(`/api/plugins/${pluginId}/versions/${versionId}`, { headers });
 
       if (!versionResponse.ok) {
         throw new Error('Failed to load version data');
@@ -68,7 +73,7 @@ const VersionRestoreModal = ({
       // Load current version (or get from API if not provided)
       let actualCurrentVersionId = currentVersionId;
       if (!actualCurrentVersionId) {
-        const currentResponse = await fetch(`/api/plugins/${pluginId}/versions/current`);
+        const currentResponse = await fetch(`/api/plugins/${pluginId}/versions/current`, { headers });
         if (currentResponse.ok) {
           const currentData = await currentResponse.json();
           actualCurrentVersionId = currentData.version?.id;
@@ -76,7 +81,7 @@ const VersionRestoreModal = ({
           setCurrentState(currentData.version.reconstructed_state || currentData.version.snapshot?.snapshot_data || {});
         }
       } else {
-        const currentResponse = await fetch(`/api/plugins/${pluginId}/versions/${actualCurrentVersionId}`);
+        const currentResponse = await fetch(`/api/plugins/${pluginId}/versions/${actualCurrentVersionId}`, { headers });
         if (currentResponse.ok) {
           const currentData = await currentResponse.json();
           setCurrentVersion(currentData.version);
@@ -87,7 +92,8 @@ const VersionRestoreModal = ({
       // Load comparison
       if (actualCurrentVersionId && actualCurrentVersionId !== versionId) {
         const comparisonResponse = await fetch(
-          `/api/plugins/${pluginId}/versions/compare?from=${actualCurrentVersionId}&to=${versionId}`
+          `/api/plugins/${pluginId}/versions/compare?from=${actualCurrentVersionId}&to=${versionId}`,
+          { headers }
         );
         if (comparisonResponse.ok) {
           const comparisonData = await comparisonResponse.json();
@@ -112,13 +118,15 @@ const VersionRestoreModal = ({
     try {
       setRestoring(true);
       setError(null);
+      const storeId = localStorage.getItem('selectedStoreId');
 
       const response = await fetch(
         `/api/plugins/${pluginId}/versions/${versionId}/restore`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...(storeId && storeId !== 'undefined' ? { 'x-store-id': storeId } : {})
           },
           body: JSON.stringify({
             create_backup: createBackup,

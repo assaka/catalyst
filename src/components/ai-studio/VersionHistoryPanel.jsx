@@ -52,11 +52,13 @@ const VersionHistoryPanel = ({
   const loadVersions = async () => {
     try {
       setLoading(true);
+      const storeId = localStorage.getItem('selectedStoreId');
       const response = await fetch(
         `/api/plugins/${pluginId}/versions?page=${currentPage}&limit=20&filter=${filter}`,
         {
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...(storeId && storeId !== 'undefined' ? { 'x-store-id': storeId } : {})
           }
         }
       );
