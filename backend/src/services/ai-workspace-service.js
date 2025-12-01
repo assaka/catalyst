@@ -36,6 +36,156 @@ const aiPrompts = require('../config/ai-prompts');
 class AIStudioService {
   constructor() {
     this.conversationHistory = new Map(); // In-memory storage (will move to DB later)
+
+    // Slot name mappings for natural language to slot ID conversion
+    // This allows users to say "sku" instead of "product_sku"
+    this.slotNameMappings = {
+      product: {
+        // Direct matches
+        'sku': 'product_sku',
+        'product sku': 'product_sku',
+        'price': 'price_container',
+        'product price': 'product_price',
+        'main price': 'product_price',
+        'original price': 'original_price',
+        'compare price': 'original_price',
+        'title': 'product_title',
+        'product title': 'product_title',
+        'name': 'product_title',
+        'product name': 'product_title',
+        'description': 'product_short_description',
+        'short description': 'product_short_description',
+        'stock': 'stock_status',
+        'stock status': 'stock_status',
+        'availability': 'stock_status',
+        'gallery': 'product_gallery_container',
+        'images': 'product_gallery_container',
+        'product images': 'product_gallery_container',
+        'add to cart': 'add_to_cart_button',
+        'cart button': 'add_to_cart_button',
+        'buy button': 'add_to_cart_button',
+        'wishlist': 'wishlist_button',
+        'wishlist button': 'wishlist_button',
+        'quantity': 'quantity_selector',
+        'qty': 'quantity_selector',
+        'tabs': 'product_tabs',
+        'product tabs': 'product_tabs',
+        'breadcrumbs': 'breadcrumbs',
+        'related products': 'related_products_container',
+        'related': 'related_products_container',
+        'options': 'options_container',
+        'custom options': 'custom_options',
+        'configurable options': 'configurable_product_selector'
+      },
+      category: {
+        'filters': 'filters_container',
+        'filter': 'filters_container',
+        'layered navigation': 'layered_navigation',
+        'sidebar': 'filters_container',
+        'products': 'products_container',
+        'product grid': 'product_items',
+        'grid': 'product_items',
+        'sorting': 'sorting_controls',
+        'sort': 'sort_selector',
+        'pagination': 'pagination_container',
+        'category title': 'category_title',
+        'title': 'category_title',
+        'description': 'category_description',
+        'product card': 'product_card_template',
+        'card': 'product_card_template'
+      },
+      header: {
+        'logo': 'store_logo',
+        'search': 'search_bar',
+        'search bar': 'search_bar',
+        'navigation': 'navigation_bar',
+        'nav': 'navigation_bar',
+        'menu': 'navigation_bar',
+        'cart': 'cart_icon',
+        'cart icon': 'cart_icon',
+        'user menu': 'user_account_menu',
+        'account': 'user_account_menu',
+        'sign in': 'user_account_menu',
+        'wishlist': 'desktop_wishlist',
+        'mobile menu': 'mobile_menu'
+      }
+    };
+  }
+
+  /**
+   * Resolve natural language slot name to actual slot ID
+   * @param {string} name - Natural language slot name (e.g., "sku", "price")
+   * @param {string} pageType - Page type context (product, category, header)
+   * @returns {string|null} - Actual slot ID or null if not found
+   */
+  resolveSlotName(name, pageType = 'product') {
+    if (!name) return null;
+
+    const lowerName = name.toLowerCase().trim();
+
+    // Check direct slot ID match first (e.g., user said "product_sku")
+    if (lowerName.includes('_') || lowerName.includes('-')) {
+      return lowerName.replace(/-/g, '_');
+    }
+
+    // Check page-specific mappings
+    const pageMappings = this.slotNameMappings[pageType] || {};
+    if (pageMappings[lowerName]) {
+      return pageMappings[lowerName];
+    }
+
+    // Check all page mappings as fallback
+    for (const [page, mappings] of Object.entries(this.slotNameMappings)) {
+      if (mappings[lowerName]) {
+        return mappings[lowerName];
+      }
+    }
+
+    // Fuzzy match - check if any mapping contains the name
+    for (const [page, mappings] of Object.entries(this.slotNameMappings)) {
+      for (const [key, slotId] of Object.entries(mappings)) {
+        if (key.includes(lowerName) || lowerName.includes(key)) {
+          return slotId;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Extract slot references from natural language message
+   * @param {string} message - User message
+   * @param {string} pageType - Page type context
+   * @returns {Object} - { sourceSlot, targetSlot, position }
+   */
+  extractSlotReferences(message, pageType = 'product') {
+    const lowerMessage = message.toLowerCase();
+
+    // Patterns to detect slot references
+    // "move X above/below/before/after Y"
+    const movePattern = /(?:move|put|place)\s+(?:the\s+)?(.+?)\s+(?:above|before|on top of)\s+(?:the\s+)?(.+?)(?:\s|$|\.)/i;
+    const moveAfterPattern = /(?:move|put|place)\s+(?:the\s+)?(.+?)\s+(?:below|after|under)\s+(?:the\s+)?(.+?)(?:\s|$|\.)/i;
+
+    let sourceSlot = null;
+    let targetSlot = null;
+    let position = 'before'; // default
+
+    let match = message.match(movePattern);
+    if (match) {
+      sourceSlot = this.resolveSlotName(match[1].trim(), pageType);
+      targetSlot = this.resolveSlotName(match[2].trim(), pageType);
+      position = 'before';
+    } else {
+      match = message.match(moveAfterPattern);
+      if (match) {
+        sourceSlot = this.resolveSlotName(match[1].trim(), pageType);
+        targetSlot = this.resolveSlotName(match[2].trim(), pageType);
+        position = 'after';
+      }
+    }
+
+    return { sourceSlot, targetSlot, position };
   }
 
   /**
@@ -459,6 +609,21 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
         break;
 
       case 'move':
+        // Check if we need clarification
+        if (action.needsClarification) {
+          return {
+            message: action.clarificationPrompt,
+            actions: [],
+            commands: [],
+            needsClarification: true,
+            suggestions: [
+              'Move the SKU above the price',
+              'Move stock status below description',
+              'Move add to cart button to the top'
+            ]
+          };
+        }
+
         commands.push({
           operation: 'move',
           pageType: context || 'product',
@@ -466,8 +631,9 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
             id: action.slotId
           },
           payload: {
+            targetSlotId: action.targetSlotId, // The slot to move relative to
             targetContainerId: action.targetContainerId,
-            position: action.position || 'inside'
+            position: action.position || 'before'
           }
         });
         break;
@@ -509,12 +675,15 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
     }
 
     // Generate human-readable response
+    const positionWord = action.position === 'before' ? 'above' : 'below';
     const operationMessages = {
       add: `I'll add a new ${action.slotType || 'element'} to the page.`,
       modify: `I'll update the ${action.slotId || 'element'} with your changes.`,
       remove: `I'll remove ${action.slotId || 'that element'} from the page.`,
       resize: `I'll resize ${action.slotId || 'the element'} to ${action.colSpan || 12} columns.`,
-      move: `I'll move ${action.slotId || 'the element'} to its new location.`,
+      move: action.targetSlotId
+        ? `I'll move **${action.slotId}** ${positionWord} **${action.targetSlotId}**.`
+        : `I'll move ${action.slotId || 'the element'} to its new location.`,
       reorder: `I'll reorder ${action.slotId || 'the element'} to position ${action.newIndex}.`
     };
 
@@ -704,12 +873,39 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
       };
     }
 
-    // Detect MOVE operations
+    // Detect MOVE operations - use smart slot reference extraction
     if (lowerMessage.includes('move') || lowerMessage.includes('relocate') ||
         lowerMessage.includes('put') || lowerMessage.includes('place')) {
 
+      // Try to extract slot references using natural language processing
+      const slotRefs = this.extractSlotReferences(message, 'product');
+
+      if (slotRefs.sourceSlot && slotRefs.targetSlot) {
+        // Successfully parsed "move X above/below Y" pattern
+        return {
+          operation: 'move',
+          slotId: slotRefs.sourceSlot,
+          targetSlotId: slotRefs.targetSlot,
+          position: slotRefs.position
+        };
+      }
+
+      // Fallback to old regex pattern for direct slot IDs
       const slotMatch = message.match(/slot[_-]?(\w+)|#(\w+)|"([^"]+)"|'([^']+)'/i);
-      const slotId = slotMatch ? (slotMatch[1] || slotMatch[2] || slotMatch[3] || slotMatch[4]) : null;
+      let slotId = slotMatch ? (slotMatch[1] || slotMatch[2] || slotMatch[3] || slotMatch[4]) : null;
+
+      // Try to resolve slot name if regex didn't find slot ID format
+      if (!slotId) {
+        // Extract words that might be slot names
+        const words = message.toLowerCase().split(/\s+/);
+        for (const word of words) {
+          const resolved = this.resolveSlotName(word, 'product');
+          if (resolved) {
+            slotId = resolved;
+            break;
+          }
+        }
+      }
 
       // Try to detect target
       let position = 'inside';
@@ -717,6 +913,20 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
         position = 'before';
       } else if (lowerMessage.includes('after') || lowerMessage.includes('below')) {
         position = 'after';
+      }
+
+      // If we couldn't identify slots, return with needsClarification flag
+      if (!slotId) {
+        return {
+          operation: 'move',
+          slotId: null,
+          position,
+          needsClarification: true,
+          clarificationPrompt: 'I want to help you move elements, but I need more details. Which element would you like to move? For example:\n' +
+            '- "Move the SKU above the price"\n' +
+            '- "Move stock status below description"\n' +
+            '- "Move add to cart button to the top"'
+        };
       }
 
       return {
@@ -730,8 +940,22 @@ ${capabilities ? capabilities.map(c => `- ${c}`).join('\n') : 'General assistanc
     if (lowerMessage.includes('reorder') || lowerMessage.includes('swap') ||
         lowerMessage.includes('first') || lowerMessage.includes('last')) {
 
+      // Try to extract slot name from message
+      let slotId = null;
       const slotMatch = message.match(/slot[_-]?(\w+)|#(\w+)|"([^"]+)"|'([^']+)'/i);
-      const slotId = slotMatch ? (slotMatch[1] || slotMatch[2] || slotMatch[3] || slotMatch[4]) : null;
+      if (slotMatch) {
+        slotId = slotMatch[1] || slotMatch[2] || slotMatch[3] || slotMatch[4];
+      } else {
+        // Try natural language slot resolution
+        const words = message.toLowerCase().split(/\s+/);
+        for (const word of words) {
+          const resolved = this.resolveSlotName(word, 'product');
+          if (resolved) {
+            slotId = resolved;
+            break;
+          }
+        }
+      }
 
       let newIndex = 0;
       if (lowerMessage.includes('last') || lowerMessage.includes('end')) {

@@ -1290,11 +1290,47 @@ Suggest helpful next steps. Be friendly and actionable.`;
       console.log('[AI Chat] Available slots:', Object.keys(slots));
       console.log('[AI Chat] Current slot order:', slotOrder);
 
+      // Build hierarchical slot info for better AI understanding
+      const slotsByParent = {};
+      Object.entries(slots).forEach(([id, slot]) => {
+        const parentId = slot.parentId || 'root';
+        if (!slotsByParent[parentId]) {
+          slotsByParent[parentId] = [];
+        }
+        slotsByParent[parentId].push({
+          id,
+          type: slot.type,
+          row: slot.position?.row,
+          name: slot.name || slot.metadata?.displayName || id
+        });
+      });
+
+      // Sort each parent's children by row
+      Object.keys(slotsByParent).forEach(parentId => {
+        slotsByParent[parentId].sort((a, b) => (a.row ?? 999) - (b.row ?? 999));
+      });
+
+      // Format hierarchical structure for prompt
+      const hierarchyText = Object.entries(slotsByParent).map(([parentId, children]) => {
+        const childList = children.map((c, idx) => `    ${idx + 1}. ${c.id} (row ${c.row}): ${c.name}`).join('\n');
+        return `Container: ${parentId}\n${childList}`;
+      }).join('\n\n');
+
       // Use AI to analyze the current layout and determine the changes
       const layoutAnalysisPrompt = `Analyze this slot configuration and help modify it.
 
-CURRENT SLOTS (in order):
-${slotOrder.map((id, idx) => `${idx + 1}. ${id}: ${slots[id]?.name || slots[id]?.type || id}`).join('\n')}
+SLOT HIERARCHY (slots grouped by parent container):
+${hierarchyText}
+
+SLOT NAME ALIASES:
+- "sku" = product_sku
+- "price" = price_container or product_price
+- "title" = product_title
+- "description" = product_short_description
+- "stock" = stock_status
+- "gallery" = product_gallery_container
+- "add to cart" = add_to_cart_button
+- "tabs" = product_tabs
 
 USER REQUEST: "${message}"
 
@@ -1303,28 +1339,29 @@ SOURCE ELEMENT: ${sourceElement || 'not specified'}
 TARGET ELEMENT: ${targetElement || 'not specified'}
 POSITION: ${position}
 
-Based on the user's request and current slot order, determine:
-1. Which slot(s) need to be modified
-2. The new order after the modification
+Based on the user's request and slot hierarchy, determine:
+1. Which slot to move (sourceSlotId)
+2. Which slot to move it relative to (targetSlotId)
+3. Whether to place it before or after the target
 
 Return JSON:
 {
   "understood": true/false,
-  "sourceSlotId": "exact slot id from the list",
-  "targetSlotId": "exact slot id from the list (for move/swap)",
+  "sourceSlotId": "exact slot id",
+  "targetSlotId": "exact slot id to move relative to",
   "action": "move|swap|remove",
-  "newOrder": ["slot_id_1", "slot_id_2", ...],
+  "position": "before|after",
+  "newOrder": ["all_slot_ids_in_affected_container_in_new_order"],
   "description": "human-readable description of what changed",
   "error": "error message if understood is false"
 }
 
 IMPORTANT:
-- Match slot IDs exactly from the list above
-- For "move X above/before Y": place X directly before Y in the array
-- For "move X below/after Y": place X directly after Y in the array
-- For "swap X and Y": exchange their positions
-- For "remove X": exclude X from the new order
-- Return the complete newOrder array with all slot IDs
+- Match slot IDs exactly from the hierarchy above
+- Slots can only be reordered within the same parent container
+- "above" or "before" means place before (lower row number)
+- "below" or "after" means place after (higher row number)
+- Return newOrder as the new sequence for slots in the affected container
 
 Return ONLY valid JSON.`;
 
@@ -1382,9 +1419,66 @@ Return ONLY valid JSON.`;
         analysis.newOrder = analysis.newOrder.filter(id => validSlotIds.includes(id));
       }
 
-      // Build the updated configuration with new order
+      // CRITICAL FIX: Update position.row values for hierarchical slot ordering
+      // Slots are sorted by position.row, not by slotOrder array
+      const sourceSlotId = analysis.sourceSlotId;
+      const targetSlotId = analysis.targetSlotId;
+      const sourceSlot = slots[sourceSlotId];
+      const targetSlot = slots[targetSlotId];
+
+      if (sourceSlot && targetSlot && sourceSlot.parentId === targetSlot.parentId) {
+        // Both slots are in the same container - update position.row values
+        const parentId = sourceSlot.parentId;
+        console.log('[AI Chat] Reordering slots within parent:', parentId);
+
+        // Get all sibling slots (same parent)
+        const siblingSlots = Object.entries(slots)
+          .filter(([id, slot]) => slot.parentId === parentId)
+          .sort((a, b) => {
+            const rowA = a[1].position?.row ?? 999;
+            const rowB = b[1].position?.row ?? 999;
+            return rowA - rowB;
+          });
+
+        console.log('[AI Chat] Current sibling order:', siblingSlots.map(([id]) => id));
+
+        // Determine new order based on action
+        const currentOrder = siblingSlots.map(([id]) => id);
+        const sourceIndex = currentOrder.indexOf(sourceSlotId);
+        const targetIndex = currentOrder.indexOf(targetSlotId);
+
+        if (sourceIndex !== -1 && targetIndex !== -1) {
+          // Remove source from current position
+          currentOrder.splice(sourceIndex, 1);
+
+          // Calculate new target index (adjusted if source was before target)
+          let newTargetIndex = currentOrder.indexOf(targetSlotId);
+          if (analysis.action === 'move' && analysis.position === 'after') {
+            newTargetIndex += 1;
+          }
+
+          // Insert source at new position
+          currentOrder.splice(newTargetIndex, 0, sourceSlotId);
+
+          console.log('[AI Chat] New sibling order:', currentOrder);
+
+          // Update position.row for all siblings based on new order
+          currentOrder.forEach((slotId, index) => {
+            if (slots[slotId] && slots[slotId].position) {
+              const newRow = index + 1; // 1-indexed rows
+              console.log(`[AI Chat] Updating ${slotId} row: ${slots[slotId].position.row} -> ${newRow}`);
+              slots[slotId].position.row = newRow;
+            }
+          });
+        }
+      } else if (sourceSlot && targetSlot) {
+        console.log('[AI Chat] Slots have different parents - cross-container move not yet supported');
+      }
+
+      // Build the updated configuration with new order and updated positions
       const updatedConfiguration = {
         ...configuration,
+        slots: slots, // Updated slots with new position.row values
         slotOrder: analysis.newOrder,
         metadata: {
           ...configuration.metadata,
