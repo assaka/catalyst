@@ -563,41 +563,6 @@ router.delete('/:id', async (req, res) => {
     // Delete from plugin_registry
     await tenantDb.from('plugin_registry').delete().eq('id', id);
 
-    // Also check and delete from UUID-based plugins table if exists
-    try {
-      const { data: uuidPlugin } = await tenantDb
-        .from('plugins')
-        .select('id')
-        .eq('slug', id)
-        .maybeSingle();
-
-      if (uuidPlugin) {
-        const uuidTables = [
-          'plugin_configurations',
-          'plugin_data',
-          'plugin_routes',
-          'plugin_admin_pages',
-          'plugin_widgets',
-          'plugin_events',
-          'plugin_event_listeners',
-          'plugin_hooks'
-        ];
-
-        for (const table of uuidTables) {
-          try {
-            await tenantDb.from(table).delete().eq('plugin_id', uuidPlugin.id);
-          } catch (error) {
-            console.warn(`Warning during UUID plugin deletion from ${table}:`, error.message);
-          }
-        }
-
-        // Delete from plugins table
-        await tenantDb.from('plugins').delete().eq('id', uuidPlugin.id);
-      }
-    } catch (error) {
-      console.warn(`Could not check UUID plugins table:`, error.message);
-    }
-
     res.json({
       success: true,
       message: `Plugin "${pluginResult.name}" has been permanently deleted from all plugin_* tables.`

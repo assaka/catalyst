@@ -252,10 +252,10 @@ router.get('/installed', async (req, res) => {
     const tenantDb = await getTenantConnection(req);
 
     const { data: plugins, error } = await tenantDb
-      .from('plugins')
+      .from('plugin_registry')
       .select('*')
       .eq('status', 'active')
-      .order('installed_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);
 

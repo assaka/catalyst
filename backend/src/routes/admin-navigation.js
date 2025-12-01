@@ -89,16 +89,7 @@ router.put('/plugins/:pluginId/navigation', authMiddleware, authorize(['admin', 
 
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
-    // 1. Update the manifest in the plugins table
-    await tenantDb
-      .from('plugins')
-      .update({
-        manifest: tenantDb.raw(`jsonb_set(COALESCE(manifest, '{}'::jsonb), '{adminNavigation}', ?::jsonb)`, [JSON.stringify(adminNavigation)]),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', pluginId);
-
-    // Also update plugin_registry table
+    // 1. Update the manifest in the plugin_registry table
     await tenantDb
       .from('plugin_registry')
       .update({
@@ -111,7 +102,7 @@ router.put('/plugins/:pluginId/navigation', authMiddleware, authorize(['admin', 
     if (adminNavigation.enabled) {
       // Get plugin info for navigation entry
       const { data: pluginInfo, error: pluginError } = await tenantDb
-        .from('plugins')
+        .from('plugin_registry')
         .select('name, manifest')
         .eq('id', pluginId)
         .maybeSingle();
