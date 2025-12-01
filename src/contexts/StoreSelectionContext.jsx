@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Store } from '@/api/entities';
 import { useLocation } from 'react-router-dom';
 
@@ -26,6 +26,7 @@ export const StoreSelectionProvider = ({ children }) => {
     return null;
   });
   const [loading, setLoading] = useState(true);
+  const storesLoadedRef = useRef(false);
 
   // Check if we're on an admin page (exclude auth and onboarding)
   const isAdminPage = () => {
@@ -43,6 +44,11 @@ export const StoreSelectionProvider = ({ children }) => {
   // Load available stores on mount only if on admin pages
   useEffect(() => {
     if (isAdminPage()) {
+      // Skip loading if stores are already loaded - prevents extra API calls on navigation
+      if (storesLoadedRef.current && selectedStore?.id) {
+        setLoading(false);
+        return;
+      }
       loadStores();
     } else {
       // Not on admin page, skip loading
@@ -56,6 +62,7 @@ export const StoreSelectionProvider = ({ children }) => {
       setAvailableStores([]);
       setSelectedStore(null);
       setLoading(true);
+      storesLoadedRef.current = false;
     };
 
     window.addEventListener('userLoggedOut', handleLogout);
@@ -65,16 +72,18 @@ export const StoreSelectionProvider = ({ children }) => {
   const loadStores = async () => {
     try {
       setLoading(true);
-      
+
       const stores = await Store.findAll();
-      
+
       // Always keep existing selection if we have one and no stores were loaded
       if (stores.length === 0 && selectedStore) {
         setAvailableStores([selectedStore]); // Keep the current store in the list
+        storesLoadedRef.current = true;
         return; // Don't change selection
       }
-      
+
       setAvailableStores(stores);
+      storesLoadedRef.current = true;
       
       // Auto-select first ACTIVE store or load from localStorage
       if (stores.length > 0) {
@@ -84,8 +93,8 @@ export const StoreSelectionProvider = ({ children }) => {
         if (savedStore) {
           // Found the saved store - but check if it's actually active
           if (savedStore.is_active && savedStore.status !== 'pending_database') {
-            // Store is valid - use it
-            setSelectedStore(savedStore);
+            // Store is valid - only update if the ID changed to avoid unnecessary re-renders
+            setSelectedStore(prev => prev?.id === savedStore.id ? prev : savedStore);
             localStorage.setItem('selectedStoreId', savedStore.id);
             localStorage.setItem('selectedStoreName', savedStore.name);
             localStorage.setItem('selectedStoreSlug', savedStore.slug || savedStore.code);
@@ -98,7 +107,7 @@ export const StoreSelectionProvider = ({ children }) => {
             const firstActiveStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
 
             if (firstActiveStore) {
-              setSelectedStore(firstActiveStore);
+              setSelectedStore(prev => prev?.id === firstActiveStore.id ? prev : firstActiveStore);
               localStorage.setItem('selectedStoreId', firstActiveStore.id);
               localStorage.setItem('selectedStoreName', firstActiveStore.name);
               localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);
@@ -120,7 +129,7 @@ export const StoreSelectionProvider = ({ children }) => {
           const firstActiveStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
 
           if (firstActiveStore) {
-            setSelectedStore(firstActiveStore);
+            setSelectedStore(prev => prev?.id === firstActiveStore.id ? prev : firstActiveStore);
             localStorage.setItem('selectedStoreId', firstActiveStore.id);
             localStorage.setItem('selectedStoreName', firstActiveStore.name);
             localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);
