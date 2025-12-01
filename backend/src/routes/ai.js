@@ -792,7 +792,7 @@ Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}
 
 Determine the intent and respond with JSON:
 {
-  "intent": "plugin|translation|layout|styling|code|chat",
+  "intent": "plugin|translation|layout|layout_modify|styling|code|chat",
   "action": "generate|modify|chat",
   "details": { ... }
 }
@@ -806,25 +806,39 @@ INTENT DEFINITIONS:
    - "increase the font size of the title" → styling
    Details: { pageType, element, property, value }
 
-2. **layout** - Adding, removing, or reordering SECTIONS/COMPONENTS on a page:
-   - "add a hero section to the homepage" → layout
-   - "remove the related products section" → layout
-   - "move the breadcrumbs below the title" → layout
-   Details: { configType, description }
+2. **layout** - Adding NEW sections/components OR generating a new page layout from scratch:
+   - "add a hero section to the homepage" → layout (action: "generate")
+   - "create a new layout for the product page" → layout (action: "generate")
+   - "generate a modern homepage layout" → layout (action: "generate")
+   Details: { configType, description, action: "generate" }
 
-3. **translation** - Translating text to other languages:
+3. **layout_modify** - Reordering, moving, swapping, or removing EXISTING elements within a page:
+   - "move the sku above the stock label" → layout_modify
+   - "swap the price and title positions" → layout_modify
+   - "reorder the product info section" → layout_modify
+   - "remove the breadcrumbs from the product page" → layout_modify
+   - "put the add to cart button before the price" → layout_modify
+   Details: {
+     pageType: "product|category|homepage|cart|checkout|account|login|success",
+     action: "move|swap|reorder|remove",
+     sourceElement: "element to move",
+     targetElement: "element to move relative to (for move/swap)",
+     position: "before|after|above|below" (for move operations)
+   }
+
+4. **translation** - Translating text to other languages:
    - "translate add to cart to French" → translation
    Details: { text, targetLanguages, entities }
 
-4. **plugin** - Creating new functionality/features:
+5. **plugin** - Creating new functionality/features:
    - "create a wishlist plugin" → plugin
    Details: { description, category }
 
-5. **code** - Modifying source code directly:
+6. **code** - Modifying source code directly:
    - "add error handling to this function" → code
    Details: { operation }
 
-6. **chat** - General questions or conversation
+7. **chat** - General questions or conversation
 
 STYLING DETAILS FORMAT (supports multiple changes):
 {
@@ -1187,6 +1201,259 @@ Suggest helpful next steps. Be friendly and actionable.`;
         data: responseData,
         creditsDeducted: creditsUsed
       });
+
+    } else if (intent.intent === 'layout_modify') {
+      // Handle layout modifications (reorder, move, swap, remove elements)
+      console.log('[AI Chat] Entering layout_modify handler');
+      console.log('[AI Chat] Layout modify details:', JSON.stringify(intent.details));
+      const ConnectionManager = require('../services/database/ConnectionManager');
+
+      if (!resolvedStoreId) {
+        return res.status(400).json({
+          success: false,
+          message: 'store_id is required for layout modifications'
+        });
+      }
+
+      const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
+      const pageType = intent.details?.pageType || 'product';
+      const action = intent.details?.action || 'move';
+      const sourceElement = intent.details?.sourceElement;
+      const targetElement = intent.details?.targetElement;
+      const position = intent.details?.position || 'before';
+
+      // Fetch current slot configuration (draft first, then published)
+      let { data: slotConfig, error: fetchError } = await tenantDb
+        .from('slot_configurations')
+        .select('*')
+        .eq('store_id', resolvedStoreId)
+        .eq('page_type', pageType)
+        .eq('status', 'draft')
+        .order('version_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // If no draft found, try published
+      if (!slotConfig && !fetchError) {
+        const { data: publishedConfig, error: pubError } = await tenantDb
+          .from('slot_configurations')
+          .select('*')
+          .eq('store_id', resolvedStoreId)
+          .eq('page_type', pageType)
+          .eq('status', 'published')
+          .order('version_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        slotConfig = publishedConfig;
+        fetchError = pubError;
+        console.log('[AI Chat] No draft found, using published config for layout modify');
+      }
+
+      if (fetchError) {
+        console.error('[AI Chat] Failed to fetch slot configuration:', fetchError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to fetch current layout configuration'
+        });
+      }
+
+      if (!slotConfig) {
+        return res.json({
+          success: true,
+          message: `I couldn't find a layout configuration for the ${pageType} page. Please save a layout in the Editor first, then I can help you modify it.`,
+          data: { type: 'layout_error', reason: 'no_config_found' },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      // Parse the configuration
+      const configuration = slotConfig.configuration || {};
+      const slots = configuration.slots || {};
+      const slotOrder = configuration.slotOrder || Object.keys(slots);
+
+      console.log('[AI Chat] Available slots:', Object.keys(slots));
+      console.log('[AI Chat] Current slot order:', slotOrder);
+
+      // Use AI to analyze the current layout and determine the changes
+      const layoutAnalysisPrompt = `Analyze this slot configuration and help modify it.
+
+CURRENT SLOTS (in order):
+${slotOrder.map((id, idx) => `${idx + 1}. ${id}: ${slots[id]?.name || slots[id]?.type || id}`).join('\n')}
+
+USER REQUEST: "${message}"
+
+DETECTED ACTION: ${action}
+SOURCE ELEMENT: ${sourceElement || 'not specified'}
+TARGET ELEMENT: ${targetElement || 'not specified'}
+POSITION: ${position}
+
+Based on the user's request and current slot order, determine:
+1. Which slot(s) need to be modified
+2. The new order after the modification
+
+Return JSON:
+{
+  "understood": true/false,
+  "sourceSlotId": "exact slot id from the list",
+  "targetSlotId": "exact slot id from the list (for move/swap)",
+  "action": "move|swap|remove",
+  "newOrder": ["slot_id_1", "slot_id_2", ...],
+  "description": "human-readable description of what changed",
+  "error": "error message if understood is false"
+}
+
+IMPORTANT:
+- Match slot IDs exactly from the list above
+- For "move X above/before Y": place X directly before Y in the array
+- For "move X below/after Y": place X directly after Y in the array
+- For "swap X and Y": exchange their positions
+- For "remove X": exclude X from the new order
+- Return the complete newOrder array with all slot IDs
+
+Return ONLY valid JSON.`;
+
+      const analysisResult = await aiService.generate({
+        userId,
+        operationType: 'general',
+        prompt: layoutAnalysisPrompt,
+        systemPrompt: 'You are a layout configuration expert. Analyze slot configurations and determine how to reorder them. Return ONLY valid JSON.',
+        maxTokens: 512,
+        temperature: 0.2,
+        metadata: { type: 'layout-analysis', storeId: resolvedStoreId }
+      });
+      creditsUsed += analysisResult.creditsDeducted;
+
+      let analysis;
+      try {
+        const jsonMatch = analysisResult.content.match(/\{[\s\S]*\}/);
+        analysis = JSON.parse(jsonMatch ? jsonMatch[0] : analysisResult.content);
+      } catch (e) {
+        console.error('Failed to parse layout analysis:', e);
+        return res.json({
+          success: true,
+          message: "I couldn't understand how to modify the layout. Could you be more specific? For example: 'move the SKU above the stock label' or 'swap the price and title positions'.",
+          data: { type: 'layout_error', reason: 'parse_error' },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      console.log('[AI Chat] Layout analysis result:', JSON.stringify(analysis));
+
+      if (!analysis.understood || analysis.error) {
+        return res.json({
+          success: true,
+          message: analysis.error || "I couldn't determine how to modify the layout. Could you be more specific about which elements you want to move?",
+          data: { type: 'layout_error', reason: 'not_understood', analysis },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      if (!analysis.newOrder || !Array.isArray(analysis.newOrder)) {
+        return res.json({
+          success: true,
+          message: "I couldn't determine the new layout order. Please specify which elements you want to move and where.",
+          data: { type: 'layout_error', reason: 'no_new_order' },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      // Validate the new order contains valid slot IDs
+      const validSlotIds = Object.keys(slots);
+      const invalidIds = analysis.newOrder.filter(id => !validSlotIds.includes(id));
+      if (invalidIds.length > 0) {
+        console.warn('[AI Chat] Invalid slot IDs in new order:', invalidIds);
+        // Filter out invalid IDs
+        analysis.newOrder = analysis.newOrder.filter(id => validSlotIds.includes(id));
+      }
+
+      // Build the updated configuration with new order
+      const updatedConfiguration = {
+        ...configuration,
+        slotOrder: analysis.newOrder,
+        metadata: {
+          ...configuration.metadata,
+          lastModified: new Date().toISOString(),
+          lastModifiedBy: 'AI Assistant',
+          lastLayoutChange: analysis.description
+        }
+      };
+
+      // Update the slot configuration
+      console.log('[AI Chat] Updating layout order for config id:', slotConfig.id);
+      console.log('[AI Chat] New order:', analysis.newOrder);
+
+      const { data: updatedData, error: updateError } = await tenantDb
+        .from('slot_configurations')
+        .update({
+          configuration: updatedConfiguration,
+          updated_at: new Date().toISOString(),
+          metadata: {
+            ...slotConfig.metadata,
+            ai_generated: true,
+            last_ai_change: analysis.description,
+            last_ai_request: message
+          }
+        })
+        .eq('id', slotConfig.id)
+        .select('id, configuration')
+        .single();
+
+      if (updateError) {
+        console.error('[AI Chat] Failed to save layout change:', updateError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to save layout change: ' + updateError.message
+        });
+      }
+
+      if (!updatedData) {
+        console.error('[AI Chat] Update returned no data - row may not exist');
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to update layout - configuration not found'
+        });
+      }
+
+      console.log('[AI Chat] Successfully updated layout order:', updatedData.id);
+
+      // Generate natural AI response
+      const responsePrompt = `The user asked: "${message}"
+
+I modified the layout on the ${pageType} page:
+${analysis.description}
+
+Generate a brief, friendly confirmation message (1-2 sentences). Be conversational and helpful. Mention that the preview will refresh to show the changes.`;
+
+      const responseResult = await aiService.generate({
+        userId,
+        operationType: 'general',
+        prompt: responsePrompt,
+        systemPrompt: 'You are a helpful AI assistant. Generate brief, friendly responses. No markdown, no emojis, just natural text.',
+        maxTokens: 150,
+        temperature: 0.7,
+        metadata: { type: 'response-generation', storeId: resolvedStoreId }
+      });
+      creditsUsed += responseResult.creditsDeducted;
+
+      responseData = {
+        type: 'layout_modified',
+        pageType,
+        action: analysis.action,
+        sourceSlotId: analysis.sourceSlotId,
+        targetSlotId: analysis.targetSlotId,
+        newOrder: analysis.newOrder,
+        description: analysis.description,
+        configId: slotConfig.id
+      };
+
+      res.json({
+        success: true,
+        message: responseResult.content,
+        data: responseData,
+        creditsDeducted: creditsUsed
+      });
+      return;
 
     } else if (intent.intent === 'styling') {
       // Handle styling changes to slot configurations

@@ -241,8 +241,8 @@ const WorkspaceAIPanel = () => {
           credits: response.creditsDeducted
         });
 
-        // Auto-refresh preview and editor after styling changes
-        if (response.data?.type === 'styling_applied' || response.data?.type === 'styling_preview') {
+        // Auto-refresh preview and editor after styling or layout changes
+        if (response.data?.type === 'styling_applied' || response.data?.type === 'styling_preview' || response.data?.type === 'layout_modified') {
           setTimeout(() => {
             refreshPreview?.();
             triggerConfigurationRefresh?.();
@@ -359,8 +359,8 @@ const WorkspaceAIPanel = () => {
         data: response.data
       });
 
-      // Auto-refresh preview and editor after styling changes
-      if (response.data?.type === 'styling_applied' || response.data?.type === 'styling_preview') {
+      // Auto-refresh preview and editor after styling or layout changes
+      if (response.data?.type === 'styling_applied' || response.data?.type === 'styling_preview' || response.data?.type === 'layout_modified') {
         setTimeout(() => {
           refreshPreview?.();
           triggerConfigurationRefresh?.();
