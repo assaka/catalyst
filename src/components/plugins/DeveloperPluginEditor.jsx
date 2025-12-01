@@ -150,6 +150,20 @@ const DeveloperPluginEditor = ({
       // Build file tree structure
       const files = buildFileTree(response.data);
       setFileTree(files);
+
+      // Expand all folders by default when loading a plugin
+      const collectFolderPaths = (nodes, paths = new Set(['root'])) => {
+        nodes.forEach(node => {
+          if (node.type === 'folder') {
+            paths.add(node.path);
+            if (node.children) {
+              collectFolderPaths(node.children, paths);
+            }
+          }
+        });
+        return paths;
+      };
+      setExpandedFolders(collectFolderPaths(files));
     } catch (error) {
       console.error('Error loading plugin files:', error);
     }
