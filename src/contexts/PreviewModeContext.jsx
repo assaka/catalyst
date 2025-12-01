@@ -22,13 +22,6 @@ export function PreviewModeProvider({ children }) {
 
       const isDraftMode = previewParam === 'draft' || workspaceParam === 'true';
 
-      console.log('[PreviewModeContext] Initialized:', {
-        isDraftMode,
-        previewParam,
-        workspaceParam,
-        url: window.location.href
-      });
-
       setIsPreviewDraftMode(isDraftMode);
       setInitialized(true);
     }

@@ -984,12 +984,15 @@ const DeveloperPluginEditor = ({
 
         addTerminalOutput(`✓ Created controller ${newFileName} (${controllerMethod} ${controllerPath})`, 'success');
       } else if (newFileType === 'cron') {
-        // For cron files, create in plugin_cron table
+        // For cron files, create in plugin_cron table AND auto-generate handler file
+        const cronName = newFileName.replace(/\.json$/, '');
+
+        // 1. Create cron config in plugin_cron table
         await apiClient.post(`plugins/${plugin.id}/cron`, {
-          cron_name: newFileName.replace(/\.json$/, ''),
+          cron_name: cronName,
           cron_schedule: cronSchedule,
           handler_method: cronHandlerMethod,
-          description: cronDescription || `Scheduled task: ${newFileName}`,
+          description: cronDescription || `Scheduled task: ${cronName}`,
           handler_params: {},
           timezone: 'UTC',
           is_enabled: true,
@@ -997,7 +1000,57 @@ const DeveloperPluginEditor = ({
           max_failures: 5
         });
 
-        addTerminalOutput(`✓ Created cron job ${newFileName} (${cronSchedule} → ${cronHandlerMethod})`, 'success');
+        addTerminalOutput(`✓ Created cron job ${cronName} (${cronSchedule})`, 'success');
+
+        // 2. Auto-generate handler file with boilerplate code
+        const handlerCode = `/**
+ * Cron Handler: ${cronHandlerMethod}
+ * Schedule: ${cronSchedule}
+ * ${cronDescription || `Scheduled task for ${cronName}`}
+ *
+ * This handler is called automatically by the scheduler.
+ *
+ * @param {Object} params - Parameters from handler_params in cron config
+ * @param {Object} context - Execution context
+ * @param {string} context.cronJobId - ID of the cron job
+ * @param {string} context.storeId - Store ID
+ * @param {string} context.userId - User ID (if applicable)
+ * @param {Object} context.db - Database connection
+ * @returns {Object} Result object (stored in last_result)
+ */
+export default async function ${cronHandlerMethod}(params = {}, context = {}) {
+  const { storeId, db } = context;
+
+  console.log('🕐 Running ${cronHandlerMethod} for store:', storeId);
+
+  try {
+    // TODO: Implement your scheduled task logic here
+    // Example: Query data, send emails, cleanup records, etc.
+
+    // Access params from cron config
+    // const { reminderDelayHours = 24 } = params;
+
+    // Return result (will be stored in last_result column)
+    return {
+      success: true,
+      message: '${cronHandlerMethod} completed successfully',
+      timestamp: new Date().toISOString()
+    };
+
+  } catch (error) {
+    console.error('❌ ${cronHandlerMethod} failed:', error);
+    throw error; // Re-throw to mark job as failed
+  }
+}
+`;
+
+        // Save handler file to plugin_scripts
+        await apiClient.put(`plugins/registry/${plugin.id}/files`, {
+          path: `/handlers/${cronHandlerMethod}.js`,
+          content: handlerCode
+        });
+
+        addTerminalOutput(`✓ Created handler: /handlers/${cronHandlerMethod}.js`, 'success');
       } else {
         // For component, util, service, hook, and other files, use the file save endpoint
         // These will be saved to plugin_scripts table (for components/utils/services) or plugin_hooks table (for hooks)
