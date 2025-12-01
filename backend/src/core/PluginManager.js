@@ -7,6 +7,20 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 const execAsync = promisify(exec);
 
+// Lazy-loaded CronJob model for plugin cron registration
+let _CronJobModel = null;
+function getCronJobModel() {
+  if (!_CronJobModel) {
+    try {
+      _CronJobModel = require('../models/CronJob');
+    } catch (error) {
+      console.warn('⚠️ CronJob model not available:', error.message);
+      return null;
+    }
+  }
+  return _CronJobModel;
+}
+
 // Lazy-loaded PluginModel to avoid errors at module load time
 // The stub sequelize may fail with JSONB types on SQLite
 let _PluginModel = null;
@@ -311,21 +325,95 @@ class PluginManager {
       // Enable the plugin
       await plugin.enable();
 
+      // Register cron jobs from manifest
+      await this.registerPluginCronJobs(name, plugin);
+
       // Mark as enabled
       this.enabledPlugins.set(name, plugin);
-      
+
       // Save configuration
       await this.savePluginConfig();
 
       console.log(`✅ Plugin ${name} enabled successfully`);
-      
+
       // Emit hook
       await this.emitHook('plugin:enabled', { plugin, name });
-      
+
       return plugin;
     } catch (error) {
       console.error(`❌ Failed to enable plugin ${name}:`, error.message);
       throw error;
+    }
+  }
+
+  /**
+   * Register cron jobs from plugin manifest
+   * This integrates plugins with the unified scheduler via cron_jobs table
+   */
+  async registerPluginCronJobs(pluginSlug, plugin) {
+    const manifest = plugin.manifest;
+    if (!manifest?.cron || !Array.isArray(manifest.cron) || manifest.cron.length === 0) {
+      return; // No cron jobs defined
+    }
+
+    const CronJob = getCronJobModel();
+    if (!CronJob) {
+      console.warn(`⚠️ Cannot register cron jobs for plugin ${pluginSlug}: CronJob model not available`);
+      return;
+    }
+
+    console.log(`⏰ Registering ${manifest.cron.length} cron jobs for plugin ${pluginSlug}...`);
+
+    for (const cronConfig of manifest.cron) {
+      try {
+        await CronJob.syncFromIntegration({
+          sourceType: 'plugin',
+          sourceId: plugin.dbRecord?.id || null,
+          sourceName: pluginSlug,
+          name: cronConfig.name || `${pluginSlug} cron job`,
+          description: cronConfig.description || `Scheduled job from ${manifest.name || pluginSlug} plugin`,
+          cronExpression: cronConfig.schedule,
+          timezone: cronConfig.timezone || 'UTC',
+          jobType: 'plugin_job',
+          configuration: {
+            plugin_slug: pluginSlug,
+            plugin_name: manifest.name,
+            handler: cronConfig.handler,
+            params: cronConfig.params || {}
+          },
+          handler: cronConfig.handler,
+          storeId: null, // Plugin cron jobs are global unless specified
+          userId: null,
+          isActive: true,
+          metadata: {
+            plugin_version: manifest.version,
+            cron_name: cronConfig.name
+          }
+        });
+
+        console.log(`  ✅ Registered cron job: ${cronConfig.name} (${cronConfig.schedule})`);
+      } catch (error) {
+        console.error(`  ❌ Failed to register cron job ${cronConfig.name}:`, error.message);
+      }
+    }
+  }
+
+  /**
+   * Unregister cron jobs when plugin is disabled
+   */
+  async unregisterPluginCronJobs(pluginSlug) {
+    const CronJob = getCronJobModel();
+    if (!CronJob) {
+      return;
+    }
+
+    try {
+      const deleted = await CronJob.removeBySourceName(pluginSlug);
+      if (deleted > 0) {
+        console.log(`🗑️ Removed ${deleted} cron jobs for plugin ${pluginSlug}`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to unregister cron jobs for plugin ${pluginSlug}:`, error.message);
     }
   }
 
@@ -344,17 +432,20 @@ class PluginManager {
       // Disable the plugin
       await plugin.disable();
 
+      // Unregister cron jobs
+      await this.unregisterPluginCronJobs(name);
+
       // Remove from enabled plugins
       this.enabledPlugins.delete(name);
-      
+
       // Save configuration
       await this.savePluginConfig();
 
       console.log(`✅ Plugin ${name} disabled successfully`);
-      
+
       // Emit hook
       await this.emitHook('plugin:disabled', { plugin, name });
-      
+
     } catch (error) {
       console.error(`❌ Failed to disable plugin ${name}:`, error.message);
       throw error;

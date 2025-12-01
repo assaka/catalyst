@@ -37,11 +37,6 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
     // Use context if available, otherwise fall back to URL check
     const isPreviewDraftMode = contextPreviewMode || urlPreviewMode;
 
-    // Log when in preview mode
-    if (isPreviewDraftMode) {
-        console.log('[useLayoutConfig] DRAFT MODE:', { pageType, contextPreviewMode, urlPreviewMode, shouldFetch });
-    }
-
     const loadLayoutConfig = useCallback(async () => {
         if (!store?.id) {
             return;
@@ -58,9 +53,7 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
 
             // In draft preview mode, load draft configuration instead of published
             if (isPreviewDraftMode) {
-                console.log('[useLayoutConfig] Loading DRAFT config for:', pageType);
                 response = await slotConfigurationService.getDraftConfiguration(store.id, pageType);
-                console.log('[useLayoutConfig] DRAFT response:', { pageType, success: response.success, hasData: !!response.data });
                 // Transform draft response to match published response structure
                 if (response.success && response.data?.configuration) {
                     response = {
@@ -72,7 +65,6 @@ export function useLayoutConfig(store, pageType, fallbackConfig, shouldFetch = t
                     };
                 }
             } else {
-                console.log('[useLayoutConfig] Loading PUBLISHED config for:', pageType);
                 // Load published configuration using the new versioning API
                 response = await slotConfigurationService.getPublishedConfiguration(store.id, pageType);
             }

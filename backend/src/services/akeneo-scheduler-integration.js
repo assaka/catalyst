@@ -1,9 +1,20 @@
 const jobManager = require('../core/BackgroundJobManager');
 const AkeneoSchedule = require('../models/AkeneoSchedule');
+const CronJob = require('../models/CronJob');
 const Job = require('../models/Job');
 
 /**
- * Integration service to migrate Akeneo scheduler to use the unified background job system
+ * Akeneo Scheduler Integration
+ *
+ * This service bridges akeneo_schedules table to the unified cron_jobs system.
+ * Instead of running its own scheduler, it syncs Akeneo schedules to cron_jobs
+ * and lets the central CronScheduler handle all execution.
+ *
+ * Flow:
+ * 1. User creates/updates an Akeneo schedule via UI
+ * 2. This service syncs it to cron_jobs table with source_type='integration'
+ * 3. CronScheduler picks it up and executes via DynamicCronJob
+ * 4. DynamicCronJob detects job_type='akeneo_import' and runs the appropriate handler
  */
 class AkeneoSchedulerIntegration {
   constructor() {
@@ -12,6 +23,7 @@ class AkeneoSchedulerIntegration {
 
   /**
    * Initialize the scheduler integration
+   * NOTE: No longer starts its own scheduler - uses unified CronScheduler
    */
   async initialize() {
     if (this.initialized) return;
@@ -19,152 +31,207 @@ class AkeneoSchedulerIntegration {
     // Initialize the job manager
     await jobManager.initialize();
 
-    // Set up periodic check for scheduled Akeneo imports
-    this.startScheduleMonitoring();
+    // Sync existing Akeneo schedules to cron_jobs table
+    await this.syncAllSchedulesToCronJobs();
 
     this.initialized = true;
-    console.log('✅ Akeneo Scheduler Integration initialized');
+    console.log('✅ Akeneo Scheduler Integration initialized (using unified scheduler)');
   }
 
   /**
-   * Convert an AkeneoSchedule to a background job
+   * Sync all active Akeneo schedules to cron_jobs table
+   * Called on initialization to ensure all schedules are in the unified system
    */
-  async scheduleAkeneoImport(akeneoSchedule) {
-    console.log(`🔄 Scheduling Akeneo import: ${akeneoSchedule.import_type} for store ${akeneoSchedule.store_id}`);
-
+  async syncAllSchedulesToCronJobs() {
     try {
-      // Determine job type based on import type
-      const jobType = this.getJobTypeFromImportType(akeneoSchedule.import_type);
-      
-      // Prepare job payload
-      const jobPayload = {
-        storeId: akeneoSchedule.store_id,
-        locale: akeneoSchedule.options?.locale || 'en_US',
-        dryRun: akeneoSchedule.options?.dryRun || false,
-        filters: akeneoSchedule.filters || {},
-        downloadImages: akeneoSchedule.options?.downloadImages !== false,
-        batchSize: akeneoSchedule.options?.batchSize || 50,
-        customMappings: akeneoSchedule.options?.customMappings || {},
-        // Add reference to the original schedule
-        scheduleId: akeneoSchedule.id
-      };
-
-      // Calculate delay if needed
-      const delay = akeneoSchedule.next_run ? 
-        Math.max(0, new Date(akeneoSchedule.next_run).getTime() - Date.now()) : 0;
-
-      // Schedule the background job
-      const job = await jobManager.scheduleJob({
-        type: jobType,
-        payload: jobPayload,
-        priority: 'normal',
-        delay,
-        maxRetries: 3,
-        storeId: akeneoSchedule.store_id,
-        userId: null, // System scheduled job
-        metadata: {
-          source: 'akeneo_schedule',
-          schedule_id: akeneoSchedule.id,
-          schedule_type: akeneoSchedule.schedule_type,
-          import_type: akeneoSchedule.import_type
-        }
+      const activeSchedules = await AkeneoSchedule.findAll({
+        where: { is_active: true }
       });
 
-      // Update the schedule with the job reference
-      await akeneoSchedule.update({
-        status: 'scheduled',
-        metadata: {
-          ...akeneoSchedule.metadata,
-          background_job_id: job.id,
-          last_scheduled_at: new Date().toISOString()
+      console.log(`🔄 Syncing ${activeSchedules.length} Akeneo schedules to cron_jobs...`);
+
+      for (const schedule of activeSchedules) {
+        try {
+          await this.syncScheduleToCronJob(schedule);
+        } catch (error) {
+          console.error(`❌ Failed to sync Akeneo schedule ${schedule.id}:`, error.message);
         }
-      });
+      }
 
-      console.log(`✅ Scheduled background job ${job.id} for Akeneo schedule ${akeneoSchedule.id}`);
-      return job;
-
+      console.log('✅ Akeneo schedules synced to cron_jobs');
     } catch (error) {
-      console.error(`❌ Failed to schedule Akeneo import: ${error.message}`);
-      
-      // Update schedule status to reflect the error
-      await akeneoSchedule.update({
-        status: 'failed',
-        last_result: {
-          success: false,
-          error: error.message,
-          timestamp: new Date().toISOString()
-        }
-      });
-
-      throw error;
+      console.error('❌ Failed to sync Akeneo schedules:', error.message);
     }
   }
 
   /**
-   * Monitor active schedules and create background jobs as needed
+   * Sync a single Akeneo schedule to cron_jobs table
+   * This is the main integration point with the unified scheduler
    */
-  startScheduleMonitoring() {
-    console.log('🔍 Starting Akeneo schedule monitoring...');
+  async syncScheduleToCronJob(akeneoSchedule) {
+    const cronExpression = this.convertScheduleToCron(akeneoSchedule);
 
-    // Check every 5 minutes for schedules that need to run
-    setInterval(async () => {
-      try {
-        await this.processSchedules();
-      } catch (error) {
-        console.error('❌ Error in schedule monitoring:', error);
+    if (!cronExpression) {
+      console.warn(`⚠️ Could not convert Akeneo schedule ${akeneoSchedule.id} to cron expression`);
+      return null;
+    }
+
+    const cronJob = await CronJob.syncFromIntegration({
+      sourceType: 'integration',
+      sourceId: akeneoSchedule.id,
+      sourceName: 'akeneo',
+      name: `Akeneo ${akeneoSchedule.import_type} Import`,
+      description: `Scheduled ${akeneoSchedule.import_type} import from Akeneo PIM`,
+      cronExpression,
+      timezone: 'UTC',
+      jobType: 'akeneo_import',
+      configuration: {
+        import_type: akeneoSchedule.import_type,
+        akeneo_schedule_id: akeneoSchedule.id,
+        store_id: akeneoSchedule.store_id,
+        filters: akeneoSchedule.filters || {},
+        options: akeneoSchedule.options || {}
+      },
+      handler: 'executeAkeneoImport',
+      storeId: akeneoSchedule.store_id,
+      userId: null, // System scheduled job
+      isActive: akeneoSchedule.is_active && akeneoSchedule.status !== 'paused',
+      metadata: {
+        akeneo_schedule_id: akeneoSchedule.id,
+        schedule_type: akeneoSchedule.schedule_type,
+        credit_cost: akeneoSchedule.credit_cost
       }
-    }, 300000); // 5 minutes
+    });
+
+    // Update the akeneo_schedule with the cron_job reference
+    await akeneoSchedule.update({
+      metadata: {
+        ...akeneoSchedule.metadata,
+        cron_job_id: cronJob.id,
+        synced_at: new Date().toISOString()
+      }
+    });
+
+    return cronJob;
   }
 
   /**
-   * Process all active schedules that are due to run
+   * Convert Akeneo schedule settings to a cron expression
    */
-  async processSchedules() {
+  convertScheduleToCron(schedule) {
+    const { schedule_type, schedule_time } = schedule;
+
+    // Parse time (format: "HH:MM")
+    let hour = 0;
+    let minute = 0;
+    if (schedule_time) {
+      const [h, m] = schedule_time.split(':').map(Number);
+      hour = h || 0;
+      minute = m || 0;
+    }
+
+    switch (schedule_type) {
+      case 'once':
+        // One-time schedules - set to run at specific time
+        // The schedule will be deactivated after first run
+        return `${minute} ${hour} * * *`;
+
+      case 'daily':
+        return `${minute} ${hour} * * *`;
+
+      case 'weekly':
+        // Default to Monday if no day specified
+        return `${minute} ${hour} * * 1`;
+
+      case 'monthly':
+        // Default to 1st of month
+        return `${minute} ${hour} 1 * *`;
+
+      default:
+        console.warn(`Unknown schedule_type: ${schedule_type}`);
+        return null;
+    }
+  }
+
+  /**
+   * Called when an Akeneo schedule is created or updated
+   * Syncs the changes to the cron_jobs table
+   */
+  async onScheduleCreatedOrUpdated(akeneoSchedule) {
+    console.log(`🔄 Syncing Akeneo schedule ${akeneoSchedule.id} to cron_jobs...`);
+    return await this.syncScheduleToCronJob(akeneoSchedule);
+  }
+
+  /**
+   * Called when an Akeneo schedule is deleted
+   * Removes the corresponding cron_job
+   */
+  async onScheduleDeleted(akeneoScheduleId) {
+    console.log(`🗑️ Removing cron_job for deleted Akeneo schedule ${akeneoScheduleId}...`);
+    return await CronJob.removeBySource('integration', akeneoScheduleId);
+  }
+
+  /**
+   * Called when an Akeneo schedule is paused/resumed
+   */
+  async onSchedulePausedOrResumed(akeneoSchedule) {
+    const cronJob = await CronJob.findOne({
+      where: {
+        source_type: 'integration',
+        source_id: akeneoSchedule.id
+      }
+    });
+
+    if (cronJob) {
+      const isPaused = akeneoSchedule.status === 'paused' || !akeneoSchedule.is_active;
+      await cronJob.update({ is_paused: isPaused });
+      console.log(`${isPaused ? '⏸️' : '▶️'} Akeneo schedule ${akeneoSchedule.id} ${isPaused ? 'paused' : 'resumed'}`);
+    }
+
+    return cronJob;
+  }
+
+  /**
+   * Trigger an immediate Akeneo import (manual execution)
+   * This creates a background job directly without going through cron_jobs
+   */
+  async triggerImmediateImport(akeneoSchedule) {
+    console.log(`🚀 Triggering immediate Akeneo import: ${akeneoSchedule.import_type} for store ${akeneoSchedule.store_id}`);
+
     try {
-      // Find all active schedules that are due to run
-      const dueSchedules = await AkeneoSchedule.findAll({
-        where: {
-          is_active: true,
-          status: ['scheduled', 'completed'], // Include completed for recurring schedules
-          next_run: {
-            [AkeneoSchedule.sequelize.Sequelize.Op.lte]: new Date()
-          }
+      const jobType = this.getJobTypeFromImportType(akeneoSchedule.import_type);
+
+      const job = await jobManager.scheduleJob({
+        type: jobType,
+        payload: {
+          storeId: akeneoSchedule.store_id,
+          locale: akeneoSchedule.options?.locale || 'en_US',
+          dryRun: akeneoSchedule.options?.dryRun || false,
+          filters: akeneoSchedule.filters || {},
+          downloadImages: akeneoSchedule.options?.downloadImages !== false,
+          batchSize: akeneoSchedule.options?.batchSize || 50,
+          customMappings: akeneoSchedule.options?.customMappings || {},
+          scheduleId: akeneoSchedule.id
+        },
+        priority: 'high', // High priority for manual executions
+        delay: 0,
+        maxRetries: 3,
+        storeId: akeneoSchedule.store_id,
+        userId: null,
+        metadata: {
+          source: 'akeneo_schedule',
+          schedule_id: akeneoSchedule.id,
+          triggered_by: 'manual',
+          import_type: akeneoSchedule.import_type
         }
       });
 
-      console.log(`📅 Found ${dueSchedules.length} schedules due for execution`);
-
-      for (const schedule of dueSchedules) {
-        try {
-          // Check if there's already a running job for this schedule
-          const existingJob = await Job.findOne({
-            where: {
-              'metadata.schedule_id': schedule.id,
-              status: ['pending', 'running']
-            }
-          });
-
-          if (existingJob) {
-            console.log(`⏩ Skipping schedule ${schedule.id} - job ${existingJob.id} already running`);
-            continue;
-          }
-
-          // Schedule the import job
-          await this.scheduleAkeneoImport(schedule);
-
-          // Update next run time for recurring schedules
-          if (schedule.schedule_type !== 'once') {
-            const nextRun = this.calculateNextRun(schedule);
-            await schedule.update({ next_run: nextRun });
-          }
-
-        } catch (error) {
-          console.error(`❌ Failed to process schedule ${schedule.id}:`, error);
-        }
-      }
+      console.log(`✅ Triggered immediate import job ${job.id}`);
+      return job;
 
     } catch (error) {
-      console.error('❌ Error processing schedules:', error);
+      console.error(`❌ Failed to trigger immediate import: ${error.message}`);
+      throw error;
     }
   }
 
@@ -184,75 +251,12 @@ class AkeneoSchedulerIntegration {
   }
 
   /**
-   * Calculate next run time for recurring schedules
-   */
-  calculateNextRun(schedule) {
-    const now = new Date();
-    
-    switch (schedule.schedule_type) {
-      case 'daily':
-        return new Date(now.getTime() + 24 * 60 * 60 * 1000);
-      
-      case 'weekly':
-        return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      
-      case 'monthly':
-        const nextMonth = new Date(now);
-        nextMonth.setMonth(nextMonth.getMonth() + 1);
-        return nextMonth;
-      
-      default:
-        return null; // 'once' schedules don't get rescheduled
-    }
-  }
-
-  /**
-   * Migrate existing schedules to use background jobs
+   * Migrate existing schedules to unified cron_jobs system
+   * This is a one-time migration helper
    */
   async migrateExistingSchedules() {
-    console.log('🔄 Migrating existing Akeneo schedules to background job system...');
-
-    try {
-      const activeSchedules = await AkeneoSchedule.findAll({
-        where: { is_active: true }
-      });
-
-      console.log(`Found ${activeSchedules.length} active schedules to migrate`);
-
-      let migratedCount = 0;
-      let errorCount = 0;
-
-      for (const schedule of activeSchedules) {
-        try {
-          // Check if schedule already has a background job
-          if (schedule.metadata?.background_job_id) {
-            console.log(`⏩ Schedule ${schedule.id} already has background job ${schedule.metadata.background_job_id}`);
-            continue;
-          }
-
-          // Schedule the import job
-          await this.scheduleAkeneoImport(schedule);
-          migratedCount++;
-
-        } catch (error) {
-          console.error(`❌ Failed to migrate schedule ${schedule.id}:`, error);
-          errorCount++;
-        }
-      }
-
-      console.log(`✅ Migration completed: ${migratedCount} migrated, ${errorCount} errors`);
-
-      return {
-        success: true,
-        migrated: migratedCount,
-        errors: errorCount,
-        total: activeSchedules.length
-      };
-
-    } catch (error) {
-      console.error('❌ Migration failed:', error);
-      throw error;
-    }
+    console.log('🔄 Migrating existing Akeneo schedules to unified cron_jobs system...');
+    return await this.syncAllSchedulesToCronJobs();
   }
 
   /**

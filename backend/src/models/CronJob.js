@@ -45,13 +45,36 @@ const CronJob = sequelize.define('CronJob', {
     allowNull: false,
     validate: {
       notEmpty: true,
-      isIn: [['webhook', 'email', 'database_query', 'api_call', 'cleanup']]
+      isIn: [['webhook', 'email', 'database_query', 'api_call', 'cleanup', 'akeneo_import', 'plugin_job', 'shopify_sync', 'system_job']]
     }
   },
   configuration: {
     type: DataTypes.JSON,
     allowNull: false,
     defaultValue: {}
+  },
+
+  // Source tracking - enables unified scheduler
+  source_type: {
+    type: DataTypes.ENUM('user', 'plugin', 'integration', 'system'),
+    defaultValue: 'user',
+    allowNull: false,
+    comment: 'Source of the cron job: user, plugin, integration, or system'
+  },
+  source_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    comment: 'Reference ID to the source (plugin_id, akeneo_schedule_id, etc.)'
+  },
+  source_name: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    comment: 'Human-readable source name (plugin name, integration name)'
+  },
+  handler: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    comment: 'Handler method name for plugin/integration jobs'
   },
   
   // Ownership and access
@@ -320,6 +343,129 @@ CronJob.findByStore = function(storeId, options = {}) {
     order: options.order || [['created_at', 'DESC']],
     limit: options.limit
   });
+};
+
+/**
+ * Find cron jobs by source (plugin, integration, etc.)
+ */
+CronJob.findBySource = function(sourceType, sourceId = null, options = {}) {
+  const where = { source_type: sourceType };
+  if (sourceId) {
+    where.source_id = sourceId;
+  }
+  return this.findAll({
+    where: {
+      ...where,
+      ...options.where
+    },
+    include: options.include || [],
+    order: options.order || [['created_at', 'DESC']],
+    limit: options.limit
+  });
+};
+
+/**
+ * Find cron job by source name (e.g., plugin slug)
+ */
+CronJob.findBySourceName = function(sourceName, options = {}) {
+  return this.findAll({
+    where: {
+      source_name: sourceName,
+      ...options.where
+    },
+    include: options.include || [],
+    order: options.order || [['created_at', 'DESC']],
+    limit: options.limit
+  });
+};
+
+/**
+ * Create or update a cron job from an integration source (Akeneo, Shopify, etc.)
+ * This is the main method for unified scheduler integration
+ */
+CronJob.syncFromIntegration = async function(integrationData) {
+  const {
+    sourceType,
+    sourceId,
+    sourceName,
+    name,
+    description,
+    cronExpression,
+    timezone = 'UTC',
+    jobType,
+    configuration,
+    handler,
+    storeId,
+    userId,
+    isActive = true,
+    metadata = {}
+  } = integrationData;
+
+  // Look for existing cron job with same source
+  let cronJob = await this.findOne({
+    where: {
+      source_type: sourceType,
+      source_id: sourceId
+    }
+  });
+
+  const cronData = {
+    name,
+    description,
+    cron_expression: cronExpression,
+    timezone,
+    job_type: jobType,
+    configuration,
+    source_type: sourceType,
+    source_id: sourceId,
+    source_name: sourceName,
+    handler,
+    store_id: storeId,
+    user_id: userId,
+    is_active: isActive,
+    metadata
+  };
+
+  if (cronJob) {
+    // Update existing
+    await cronJob.update(cronData);
+    console.log(`🔄 Updated cron job for ${sourceName}: ${name}`);
+  } else {
+    // Create new
+    cronJob = await this.create(cronData);
+    console.log(`✅ Created cron job for ${sourceName}: ${name}`);
+  }
+
+  return cronJob;
+};
+
+/**
+ * Remove all cron jobs for a specific source
+ * Used when disabling a plugin or disconnecting an integration
+ */
+CronJob.removeBySource = async function(sourceType, sourceId) {
+  const deleted = await this.destroy({
+    where: {
+      source_type: sourceType,
+      source_id: sourceId
+    }
+  });
+  console.log(`🗑️ Removed ${deleted} cron jobs for ${sourceType}:${sourceId}`);
+  return deleted;
+};
+
+/**
+ * Remove all cron jobs for a source by name
+ * Used when uninstalling a plugin by slug
+ */
+CronJob.removeBySourceName = async function(sourceName) {
+  const deleted = await this.destroy({
+    where: {
+      source_name: sourceName
+    }
+  });
+  console.log(`🗑️ Removed ${deleted} cron jobs for source: ${sourceName}`);
+  return deleted;
 };
 
 CronJob.getStats = function(userId = null, storeId = null) {

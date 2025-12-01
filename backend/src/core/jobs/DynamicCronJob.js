@@ -3,6 +3,24 @@ const CronJob = require('../../models/CronJob');
 const axios = require('axios');
 const { sequelize } = require('../../database/connection');
 
+// Lazy-loaded modules for integration handlers
+let _jobManager = null;
+let _pluginManager = null;
+
+function getJobManager() {
+  if (!_jobManager) {
+    _jobManager = require('../BackgroundJobManager');
+  }
+  return _jobManager;
+}
+
+function getPluginManager() {
+  if (!_pluginManager) {
+    _pluginManager = require('../PluginManager');
+  }
+  return _pluginManager;
+}
+
 /**
  * Dynamic Cron Job Handler
  * Executes user-defined cron jobs stored in the database
@@ -80,27 +98,248 @@ class DynamicCronJob extends BaseJobHandler {
    * Execute job based on its type
    */
   async executeJobType(cronJob) {
-    const { job_type, configuration } = cronJob;
+    const { job_type, configuration, source_type, handler } = cronJob;
 
     switch (job_type) {
       case 'webhook':
         return await this.executeWebhook(configuration);
-      
+
       case 'email':
         return await this.executeEmail(configuration);
-      
+
       case 'database_query':
         return await this.executeDatabaseQuery(configuration);
-      
+
       case 'api_call':
         return await this.executeApiCall(configuration);
-      
+
       case 'cleanup':
         return await this.executeCleanup(configuration);
-      
+
+      // New unified scheduler job types
+      case 'akeneo_import':
+        return await this.executeAkeneoImport(cronJob);
+
+      case 'plugin_job':
+        return await this.executePluginJob(cronJob);
+
+      case 'shopify_sync':
+        return await this.executeShopifySync(cronJob);
+
+      case 'system_job':
+        return await this.executeSystemJob(cronJob);
+
       default:
         throw new Error(`Unsupported job type: ${job_type}`);
     }
+  }
+
+  /**
+   * Execute Akeneo import job type
+   * Delegates to the appropriate Akeneo import job handler
+   */
+  async executeAkeneoImport(cronJob) {
+    const { configuration, store_id } = cronJob;
+    const { import_type, akeneo_schedule_id, filters, options } = configuration;
+
+    console.log(`🔄 Executing Akeneo ${import_type} import for store ${store_id}`);
+
+    const jobManager = getJobManager();
+
+    // Map import_type to background job type
+    const typeMapping = {
+      'categories': 'akeneo:import:categories',
+      'products': 'akeneo:import:products',
+      'attributes': 'akeneo:import:attributes',
+      'families': 'akeneo:import:families',
+      'all': 'akeneo:import:all'
+    };
+
+    const jobType = typeMapping[import_type] || 'akeneo:import:products';
+
+    // Schedule the actual import job
+    const importJob = await jobManager.scheduleJob({
+      type: jobType,
+      payload: {
+        storeId: store_id || configuration.store_id,
+        locale: options?.locale || 'en_US',
+        dryRun: options?.dryRun || false,
+        filters: filters || {},
+        downloadImages: options?.downloadImages !== false,
+        batchSize: options?.batchSize || 50,
+        customMappings: options?.customMappings || {},
+        scheduleId: akeneo_schedule_id
+      },
+      priority: 'normal',
+      delay: 0,
+      maxRetries: 3,
+      storeId: store_id || configuration.store_id,
+      userId: null,
+      metadata: {
+        source: 'unified_cron_scheduler',
+        cron_job_id: cronJob.id,
+        import_type
+      }
+    });
+
+    // Handle one-time schedules - deactivate after execution
+    if (cronJob.metadata?.schedule_type === 'once') {
+      await cronJob.update({ is_active: false });
+      console.log(`⏹️ Deactivated one-time Akeneo schedule ${akeneo_schedule_id}`);
+    }
+
+    return {
+      import_type,
+      backgroundJobId: importJob.id,
+      storeId: store_id,
+      scheduleId: akeneo_schedule_id,
+      scheduled: true
+    };
+  }
+
+  /**
+   * Execute plugin job type
+   * Calls the appropriate handler method on the plugin
+   */
+  async executePluginJob(cronJob) {
+    const { configuration, handler } = cronJob;
+    const { plugin_slug, plugin_name, params = {} } = configuration;
+
+    console.log(`🔌 Executing plugin job: ${plugin_name || plugin_slug} -> ${handler}`);
+
+    const pluginManager = getPluginManager();
+    const plugin = pluginManager.getPlugin(plugin_slug);
+
+    if (!plugin) {
+      throw new Error(`Plugin not found: ${plugin_slug}`);
+    }
+
+    if (!plugin.isEnabled) {
+      throw new Error(`Plugin ${plugin_slug} is not enabled`);
+    }
+
+    // Check if handler method exists on the plugin
+    const handlerMethod = handler || configuration.handler;
+    if (!handlerMethod) {
+      throw new Error(`No handler specified for plugin job`);
+    }
+
+    if (typeof plugin[handlerMethod] !== 'function') {
+      throw new Error(`Handler method '${handlerMethod}' not found on plugin ${plugin_slug}`);
+    }
+
+    // Execute the plugin handler method
+    const result = await plugin[handlerMethod](params, {
+      cronJobId: cronJob.id,
+      storeId: cronJob.store_id,
+      userId: cronJob.user_id
+    });
+
+    return {
+      plugin: plugin_slug,
+      handler: handlerMethod,
+      result
+    };
+  }
+
+  /**
+   * Execute Shopify sync job type
+   */
+  async executeShopifySync(cronJob) {
+    const { configuration, store_id } = cronJob;
+    const { sync_type, direction = 'import' } = configuration;
+
+    console.log(`🛍️ Executing Shopify ${direction} ${sync_type} for store ${store_id}`);
+
+    const jobManager = getJobManager();
+
+    // Map sync_type to background job type
+    const typeMapping = {
+      'products': direction === 'import' ? 'shopify:import:products' : 'shopify:export:products',
+      'collections': direction === 'import' ? 'shopify:import:collections' : 'shopify:export:collections',
+      'orders': 'shopify:import:orders',
+      'all': 'shopify:import:all'
+    };
+
+    const jobType = typeMapping[sync_type];
+    if (!jobType) {
+      throw new Error(`Unknown Shopify sync type: ${sync_type}`);
+    }
+
+    const syncJob = await jobManager.scheduleJob({
+      type: jobType,
+      payload: {
+        storeId: store_id,
+        ...configuration.options
+      },
+      priority: 'normal',
+      delay: 0,
+      maxRetries: 3,
+      storeId: store_id,
+      userId: null,
+      metadata: {
+        source: 'unified_cron_scheduler',
+        cron_job_id: cronJob.id,
+        sync_type,
+        direction
+      }
+    });
+
+    return {
+      sync_type,
+      direction,
+      backgroundJobId: syncJob.id,
+      storeId: store_id,
+      scheduled: true
+    };
+  }
+
+  /**
+   * Execute system job type
+   * For internal system maintenance jobs
+   */
+  async executeSystemJob(cronJob) {
+    const { configuration, handler } = cronJob;
+    const { system_action, params = {} } = configuration;
+
+    console.log(`⚙️ Executing system job: ${system_action || handler}`);
+
+    const jobManager = getJobManager();
+    const action = system_action || handler;
+
+    // Map system actions to job types
+    const systemJobs = {
+      'cleanup': 'system:cleanup',
+      'backup': 'system:backup',
+      'daily_credit_deduction': 'system:daily_credit_deduction',
+      'finalize_pending_orders': 'system:finalize_pending_orders'
+    };
+
+    const jobType = systemJobs[action];
+    if (!jobType) {
+      throw new Error(`Unknown system action: ${action}`);
+    }
+
+    const systemJob = await jobManager.scheduleJob({
+      type: jobType,
+      payload: params,
+      priority: 'high',
+      delay: 0,
+      maxRetries: 1,
+      storeId: cronJob.store_id,
+      userId: null,
+      metadata: {
+        source: 'unified_cron_scheduler',
+        cron_job_id: cronJob.id,
+        system_action: action
+      }
+    });
+
+    return {
+      system_action: action,
+      backgroundJobId: systemJob.id,
+      scheduled: true
+    };
   }
 
   /**

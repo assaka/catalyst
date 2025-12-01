@@ -125,27 +125,11 @@ export default function Plugins() {
       // Unwrap the response objects
       const plugins = pluginsResponse?.data?.plugins || pluginsResponse?.plugins || pluginsResponse || [];
       const marketplacePlugins = marketplaceResponse?.plugins || marketplaceResponse || [];
-      
-      console.log('🔍 Debug: API responses:', {
-        plugins: plugins,
-        pluginsCount: plugins?.length,
-        marketplace: marketplacePlugins,
-        marketplaceCount: marketplacePlugins?.length,
-        user: userData,
-        userId: userData?.id
-      });
-
-      console.log('🔍 Debug: Raw plugin creator_ids:', plugins?.map(p => ({
-        name: p.name,
-        creator_id: p.creator_id,
-        has_creator_id: !!p.creator_id
-      })));
 
       // Filter out ALL starter templates (they're ONLY for cloning, never for editing)
       // Starter templates only appear in Create Plugin flow, not in dashboard
       const editablePlugins = (plugins || []).filter(plugin => {
         if (plugin.is_starter_template) {
-          console.log(`🔒 Hiding starter template: ${plugin.name} (core template - only for cloning)`);
           return false;
         }
         return true;
