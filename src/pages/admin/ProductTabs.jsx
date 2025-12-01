@@ -12,14 +12,13 @@ import {
   Search,
   Edit,
   Trash2,
-  Eye,
-  EyeOff,
   AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -293,10 +292,8 @@ export default function ProductTabs() {
 
         {/* Tabs Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {(() => {
-            return filteredTabs.map((tab) => {
-              return (
-            <Card key={tab.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
+          {filteredTabs.map((tab) => (
+            <Card key={tab.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300 flex flex-col">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -312,62 +309,33 @@ export default function ProductTabs() {
                         {tab.tab_type === 'attribute_sets' && 'Attribute Sets'}
                         {!tab.tab_type && 'Text Content'}
                       </p>
-                      <p className="text-sm text-gray-400">Sort Order: {tab.sort_order || 0}</p>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleToggleStatus(tab)}
-                    >
-                      {tab.is_active ? (
-                        <Eye className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <EyeOff className="w-4 h-4 text-gray-400" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(tab)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteTab(tab)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="flex-1 flex flex-col justify-between">
+                <div>
                   {tab.tab_type === 'text' && tab.content && (
-                    <div>
-                      <p className="text-sm text-gray-600 line-clamp-2">
-                        {tab.content}
-                      </p>
+                    <div className="text-sm mb-4">
+                      <p className="text-gray-600 line-clamp-2">{tab.content}</p>
                     </div>
                   )}
 
                   {tab.tab_type === 'description' && (
-                    <div className="bg-blue-50 p-2 rounded">
-                      <p className="text-xs text-blue-700">
-                        Displays product description automatically
-                      </p>
+                    <div className="text-sm mb-4">
+                      <div className="bg-blue-50 p-2 rounded">
+                        <p className="text-xs text-blue-700">
+                          Displays product description automatically
+                        </p>
+                      </div>
                     </div>
                   )}
 
                   {tab.tab_type === 'attributes' && (
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Selected Attributes:</p>
+                    <div className="text-sm mb-4">
+                      <span className="font-medium">Selected Attributes:</span>
                       {tab.attribute_ids && tab.attribute_ids.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1 mt-1">
                           {tab.attribute_ids.slice(0, 3).map((attrId, idx) => {
                             const attr = attributes.find(a => a.id === attrId);
                             return (
@@ -383,16 +351,16 @@ export default function ProductTabs() {
                           )}
                         </div>
                       ) : (
-                        <p className="text-xs text-gray-400">No attributes selected</p>
+                        <p className="text-xs text-gray-400 mt-1">No attributes selected</p>
                       )}
                     </div>
                   )}
 
                   {tab.tab_type === 'attribute_sets' && (
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Selected Attribute Sets:</p>
+                    <div className="text-sm mb-4">
+                      <span className="font-medium">Selected Attribute Sets:</span>
                       {tab.attribute_set_ids && tab.attribute_set_ids.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1 mt-1">
                           {tab.attribute_set_ids.slice(0, 2).map((setId, idx) => {
                             const attrSet = attributeSets.find(s => s.id === setId);
                             return (
@@ -408,25 +376,32 @@ export default function ProductTabs() {
                           )}
                         </div>
                       ) : (
-                        <p className="text-xs text-gray-400">No attribute sets selected</p>
+                        <p className="text-xs text-gray-400 mt-1">No attribute sets selected</p>
                       )}
                     </div>
                   )}
+                </div>
 
-                  <div className="flex items-center justify-between">
-                    <Badge variant={tab.is_active ? "default" : "secondary"}>
-                      {tab.is_active ? "Active" : "Inactive"}
-                    </Badge>
-                    <Badge variant="outline">
-                      Order: {tab.sort_order || 0}
-                    </Badge>
+                <div className="flex justify-between items-center pt-2">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={tab.is_active}
+                      onCheckedChange={() => handleToggleStatus(tab)}
+                    />
+                    <span className="text-sm font-medium">Active</span>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(tab)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleDeleteTab(tab)} className="text-red-600 hover:text-red-700">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
-              );
-            });
-          })()}
+          ))}
         </div>
 
         {filteredTabs.length === 0 && (

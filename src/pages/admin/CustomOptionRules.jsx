@@ -131,7 +131,7 @@ export default function CustomOptionRules() {
         ) : rules.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {rules.map(rule => (
-              <Card key={rule.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
+              <Card key={rule.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300 flex flex-col">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -147,47 +147,54 @@ export default function CustomOptionRules() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Active</span>
-                    <Switch
-                      checked={rule.is_active}
-                      onCheckedChange={() => handleToggleActive(rule)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div>
-                      <span className="text-sm font-medium">Display Label:</span>
-                      <p className="text-sm text-gray-600">{rule.display_label}</p>
-                    </div>
+                <CardContent className="flex-1 flex flex-col justify-between">
+                  <div>
+                    {rule.display_label && (
+                      <div className="text-sm mb-4">
+                        <span className="font-medium">Display Label:</span>
+                        <p className="text-gray-600 mt-1">{rule.display_label}</p>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(rule)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50 hover:text-red-600" onClick={() => handleDelete(rule.id)}>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </Button>
+                  <div className="flex justify-between items-center pt-2">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={rule.is_active}
+                        onCheckedChange={() => handleToggleActive(rule)}
+                      />
+                      <span className="text-sm font-medium">Active</span>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(rule)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleDelete(rule.id)} className="text-red-600 hover:text-red-700">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 bg-white rounded-lg material-elevation-1">
-            <Settings className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-lg font-medium text-gray-900">No Custom Option Rules</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating your first rule.</p>
-            <div className="mt-6">
-              <Button onClick={() => handleEdit(null)} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple">
-                <Plus className="mr-2 h-4 w-4" /> Add Rule
+          <Card className="material-elevation-1 border-0">
+            <CardContent className="text-center py-12">
+              <Settings className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No custom option rules found</h3>
+              <p className="text-gray-600 mb-6">
+                Create rules to configure which custom options are available for different products.
+              </p>
+              <Button
+                onClick={() => handleEdit(null)}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Rule
               </Button>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         <Dialog open={showForm} onOpenChange={closeForm}>
