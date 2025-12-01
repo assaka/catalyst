@@ -5,6 +5,12 @@
 -- AI CONTEXT DOCUMENTS - Knowledge Base
 -- ============================================
 
+TRUNCATE TABLE ai_code_patterns cascade;
+TRUNCATE TABLE ai_context_documents cascade;
+TRUNCATE TABLE ai_context_usage cascade;
+TRUNCATE TABLE ai_entity_definitions cascade;
+TRUNCATE TABLE ai_plugin_examples cascade;
+
 -- Styling Intent Documents
 INSERT INTO ai_context_documents (type, title, content, category, tags, priority, mode, is_active) VALUES
 ('intent_guide', 'Styling Intent - Colors',
@@ -989,7 +995,352 @@ PRODUCT CARD TEMPLATE:
 The product_card_template is repeated for each product.
 Child slots get instance IDs: product_card_name_0, product_card_name_1, etc.
 Edit template slots to change all product cards.',
-'core', '["category", "hierarchy", "structure", "product card", "filters"]', 90, 'developer', true);
+'core', '["category", "hierarchy", "structure", "product card", "filters"]', 90, 'developer', true),
+
+-- ============================================
+-- EDITOR SIDEBAR DOCUMENTATION
+-- ============================================
+
+('architecture', 'Editor Sidebar - Overview',
+'The EditorSidebar is a fixed-position panel (320px wide) that appears when a slot element is selected in the visual editor.
+
+LOCATION: src/components/editor/slot/EditorSidebar.jsx
+
+KEY FEATURES:
+- Real-time property editing
+- XSS-protected HTML content editing
+- Translation support with auto-translate
+- Tailwind CSS class management
+- Inline style application
+- Dynamic specialized sidebars
+
+SIDEBAR SECTIONS:
+1. Content - Text and HTML editing
+2. Size - Width/Height controls
+3. Typography - Font size, bold, italic, alignment
+4. Appearance - Text color, background color
+5. Border - Border width, style, radius, color
+6. Spacing - Padding and margin controls
+
+VISIBILITY:
+- Only shows when isSlotElement is true
+- Checks for data-slot-id or data-editable attributes
+- Specialized sidebars override default for specific slots
+
+PROPS:
+- selectedElement: DOM element being edited
+- onClassChange: Callback for class/style changes
+- onTextChange: Callback for content changes
+- slotConfig: Current slot configuration from DB
+- allSlots: All slots for context access',
+'core', '["editor", "sidebar", "properties", "styling"]', 95, 'developer', true),
+
+('architecture', 'Editor Sidebar - Specialized Sidebars',
+'Specialized sidebars provide custom editing UI for specific slot types.
+
+SIDEBAR REGISTRY (EditorSidebar.jsx):
+```javascript
+const SIDEBAR_COMPONENTS = {
+  LayeredNavigationSidebar: () => import(''./sidebars/LayeredNavigationSidebar''),
+  HeaderEditorSidebar: () => import(''./sidebars/HeaderEditorSidebar''),
+};
+```
+
+ENABLING FOR A SLOT:
+Set metadata.editorSidebar in slot config:
+```javascript
+layered_navigation: {
+  id: ''layered_navigation'',
+  type: ''component'',
+  metadata: {
+    editorSidebar: ''LayeredNavigationSidebar''
+  }
+}
+```
+
+HEADER EDITOR SIDEBAR:
+- Sections: Header Container, Logo, Search Bar, Navigation, User Actions, Mobile Menu
+- Controls: Logo upload, search styling, nav link colors, cart badge, mobile menu
+- Target slots: header_main, store_logo, search_bar, navigation_bar, user_account_menu
+
+LAYERED NAVIGATION SIDEBAR:
+- Sections: Filter Heading, Filter Labels, Filter Options, Active Filters, Container
+- Controls: Heading text/color, label styling, checkbox color, active filter badges
+- Target slots: filter_heading, attribute_filter_label, filter_option_styles
+
+CREATING NEW SPECIALIZED SIDEBAR:
+1. Create component in ./sidebars/YourSidebar.jsx
+2. Add to SIDEBAR_COMPONENTS map
+3. Set metadata.editorSidebar in slot config
+4. Component receives: slotId, slotConfig, allSlots, onClassChange, onTextChange',
+'core', '["sidebar", "specialized", "header", "filters", "custom"]', 90, 'developer', true),
+
+('architecture', 'Editor Sidebar - Content Section',
+'Content section for editing text and HTML within slots.
+
+TEXT CONTENT EDITING:
+- Uncontrolled textarea for performance (no re-render lag)
+- Auto-save on blur via handleTextContentSave
+- Translation detection for i18n keys
+- Auto-translate to all active languages
+
+TRANSLATION SUPPORT:
+```javascript
+// Detects patterns like: {t("key")}, t("key"), or common.button.label
+const detectTranslationKey = async (content) => {
+  const tPattern = /\{?t\(["\"]([^"\"]+)["\"]\)\}?/;
+  // Also does reverse lookup - text value → key
+};
+```
+
+HTML CONTENT EDITING:
+- XSS protection via parseEditorHtml()
+- Security level: Editor (allows common HTML elements)
+- Shows validation warnings if HTML was sanitized
+- Extracts className, styles, and metadata from HTML
+
+HIDE FOR SPECIAL SLOTS:
+- styleOnly metadata hides content section
+- readOnly metadata hides content section
+- Used for product card slots where content is dynamic
+
+TRANSLATABLE INDICATOR:
+- Green border and Globe icon when content is translatable
+- "Make Translatable" button converts text to translation key
+- Auto-translates to all active languages on save',
+'core', '["content", "text", "html", "translation", "xss"]', 85, 'developer', true),
+
+('architecture', 'Editor Sidebar - Typography Section',
+'Typography controls for font styling.
+
+FONT SIZE:
+Uses Tailwind text-* classes:
+- text-xs, text-sm, text-base, text-lg
+- text-xl, text-2xl, text-3xl, text-4xl
+
+```javascript
+const getCurrentFontSize = (className) => {
+  const sizes = [''text-xs'', ''text-sm'', ''text-base'', ''text-lg'', ''text-xl'', ''text-2xl'', ''text-3xl'', ''text-4xl''];
+  const found = sizes.find(size => className.includes(size));
+  return found ? found.replace(''text-'', '''') : ''base'';
+};
+```
+
+BOLD/ITALIC:
+- Toggle buttons for font-bold/font-semibold
+- Toggle for italic class
+- Reads current state from className
+
+TEXT ALIGNMENT:
+- Left, Center, Right buttons
+- Applies text-left, text-center, text-right
+- Uses surgical class replacement (only changes alignment classes)
+
+ALIGNMENT PERSISTENCE:
+- Alignment stored in parentClassName for wrapper elements
+- handleAlignmentChange finds correct target element
+- Preserves inline styles and color classes during alignment changes
+
+CLASS REPLACEMENT:
+```javascript
+const replaceSpecificClass = (classString, newClass, removePattern) => {
+  const classes = classString.split('' '').filter(Boolean);
+  const filteredClasses = classes.filter(cls => !removePattern.test(cls));
+  if (newClass) filteredClasses.push(newClass);
+  return filteredClasses.join('' '');
+};
+```',
+'core', '["typography", "font", "alignment", "tailwind", "classes"]', 85, 'developer', true),
+
+('architecture', 'Editor Sidebar - Appearance Section',
+'Color and visual appearance controls.
+
+TEXT COLOR:
+- Color picker input (type="color")
+- Hex input for precise values
+- Converts RGB to hex for color picker compatibility
+
+BACKGROUND COLOR:
+- Same controls as text color
+- Skips template variables ({{...}})
+- Falls back to #ffffff for color picker
+
+COLOR CONVERSION:
+```javascript
+// RGB to Hex conversion
+if (computedValue.startsWith(''rgb'')) {
+  const rgbMatch = computedValue.match(/\d+/g);
+  if (rgbMatch && rgbMatch.length >= 3) {
+    const hex = ''#'' + rgbMatch.slice(0, 3)
+      .map(x => parseInt(x).toString(16).padStart(2, ''0''))
+      .join('''');
+  }
+}
+```
+
+TAILWIND COLOR DETECTION:
+- Explicit mapping for text-white, text-black
+- Falls back to computed styles for other colors
+- Preserves Tailwind color classes during edits
+
+STYLE SOURCES (priority order):
+1. Inline styles on element
+2. Stored styles from slotConfig
+3. Computed styles from DOM
+4. Tailwind class detection',
+'core', '["appearance", "color", "background", "hex", "rgb"]', 80, 'developer', true),
+
+('architecture', 'Editor Sidebar - Border & Effects Section',
+'Border styling and visual effects controls.
+
+BORDER CONTROLS:
+- Width: 0-10px numeric input
+- Style: none, solid, dashed, dotted, double, groove, ridge, inset, outset
+- Radius: 0-50px numeric input
+- Color: Color picker + hex input
+
+EFFECTS:
+- Opacity: 0-1 with 0.1 step
+- Z-Index: Numeric for layering
+- Box Shadow: Preset options (none, small, medium, large, x-large)
+
+LAYOUT CONTROLS:
+- Display: block, inline, inline-block, flex, grid, none
+- Position: static, relative, absolute, fixed, sticky
+
+FLEX CONTROLS (when display=flex):
+- Flex Direction: row, column, row-reverse, column-reverse
+- Justify Content: start, center, end, space-between, space-around, space-evenly
+- Align Items: stretch, start, center, end, baseline
+
+BORDER PERSISTENCE:
+```javascript
+// Auto-set border style/color when width > 0
+if (property === ''borderWidth'' && parseInt(formattedValue) > 0) {
+  if (!saveStyles.borderStyle) saveStyles.borderStyle = targetElement.style.borderStyle;
+  if (!saveStyles.borderColor) saveStyles.borderColor = targetElement.style.borderColor;
+}
+```',
+'core', '["border", "effects", "shadow", "flex", "layout"]', 80, 'developer', true),
+
+('architecture', 'Editor Sidebar - Size & Spacing Section',
+'Dimension and spacing controls.
+
+SIZE CONTROLS:
+- Width: Numeric input with % unit
+- Height: Numeric input with px unit (min-height)
+- Quick Width buttons: Fit, 50%, 75%, 100%, 150%, 200%, 250%
+- Auto Size: Resets to auto
+- Fill: Sets width=100%, maxWidth=100%
+
+SPECIAL WIDTH HANDLING:
+- fit-content displays as read-only "fit-content"
+- Percentage widths show numeric input with % suffix
+
+PADDING CONTROLS:
+- Visual grid layout (top, right, bottom, left, all)
+- Center input sets padding (all sides)
+- Individual inputs for each side
+
+MARGIN CONTROLS:
+- Same visual grid as padding
+- Center input sets margin (all sides)
+- Individual inputs for each side
+
+PROPERTY FORMAT:
+```javascript
+// Numeric properties get unit suffix
+if ([''width'', ''maxWidth'', ''minWidth''].includes(property)) {
+  if (!value.includes(''%'') && !value.includes(''px'') && value !== ''auto'' && value !== ''fit-content'') {
+    formattedValue = value + ''%'';
+  }
+}
+```',
+'core', '["size", "width", "height", "padding", "margin", "spacing"]', 80, 'developer', true),
+
+('architecture', 'Editor Sidebar - Style Manager Integration',
+'How EditorSidebar works with SimpleStyleManager for DOM updates.
+
+STYLE MANAGER LOCATION:
+src/components/editor/slot/SimpleStyleManager.js
+
+PROPERTY CHANGE FLOW:
+1. User changes property in sidebar
+2. handlePropertyChange called
+3. For Tailwind classes: styleManager.applyStyle()
+4. For inline styles: direct DOM manipulation
+5. onInlineClassChange callback to save to DB
+
+CLASS-BASED PROPERTIES:
+- fontSize → text-{size} class
+- fontWeight → font-{weight} class
+- fontStyle → italic class
+
+INLINE STYLE PROPERTIES:
+- color, backgroundColor, borderColor
+- width, height, padding, margin
+- borderWidth, borderStyle, borderRadius
+- opacity, zIndex, boxShadow
+
+SAVE FLOW:
+```javascript
+// EditorSidebar saves via callbacks
+onInlineClassChange(slotId, className, styles, isAlignmentChange);
+onTextChange(slotId, content);
+
+// Parent (CartSlotsEditor) handles DB save
+// Uses SaveManager for batching
+```
+
+WRAPPER CLASS FILTERING:
+```javascript
+// Classes that should NOT be saved
+const isWrapperOrEditorClass = (cls) => {
+  if ([''border-2'', ''border-blue-500'', ''border-dashed''].includes(cls)) return true;
+  if ([''cursor-grab'', ''transition-all''].includes(cls)) return true;
+  if (cls.match(/^p-\d+$/)) return true; // Wrapper padding
+  return false;
+};
+```',
+'core', '["style manager", "dom", "save", "callbacks", "tailwind"]', 85, 'developer', true),
+
+('architecture', 'Editor Sidebar - Product Card Template Mirroring',
+'How changes to product card instances sync with the template.
+
+TEMPLATE MIRRORING:
+When editing a product card instance (product_card_name_0), changes mirror to template.
+
+DETECTION:
+```javascript
+// Check if slot ID has instance suffix (_N)
+let baseTemplateId = elementSlotId.replace(/_\d+$/, '''');
+
+// Special case: product_card_N → product_card_template
+if (baseTemplateId === ''product_card'') {
+  baseTemplateId = ''product_card_template'';
+}
+```
+
+SAVE ORDER:
+1. Save to base template FIRST
+2. Save to current instance SECOND
+```javascript
+if (baseTemplateId !== elementSlotId) {
+  onInlineClassChange(baseTemplateId, classNameForSave, saveStyles);
+}
+onInlineClassChange(elementSlotId, classNameForSave, saveStyles);
+```
+
+METADATA FLAGS:
+- styleOnly: true - Content section hidden (product cards)
+- readOnly: true - Content section hidden
+- textOnly: true - HTML editor hidden
+
+WHY TEMPLATE FIRST:
+- Ensures template has latest styles
+- Instance inherits from template
+- Prevents race conditions in rendering',
+'core', '["product card", "template", "mirroring", "instance"]', 85, 'developer', true);
 
 -- Update usage counts for patterns
 UPDATE ai_code_patterns SET usage_count = 5 WHERE pattern_type = 'css';
