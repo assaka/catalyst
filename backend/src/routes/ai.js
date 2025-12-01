@@ -1252,6 +1252,9 @@ Suggest helpful next steps. Be friendly and actionable.`;
       const configuration = slotConfig.configuration || {};
       const slots = configuration.slots || {};
 
+      console.log('[AI Chat] Available slots:', Object.keys(slots));
+      console.log('[AI Chat] Looking for element:', element);
+
       // Find the slot to modify
       let targetSlot = null;
       let targetSlotId = null;
@@ -1260,13 +1263,36 @@ Suggest helpful next steps. Be friendly and actionable.`;
       if (element && slots[element]) {
         targetSlot = slots[element];
         targetSlotId = element;
+        console.log('[AI Chat] Found exact slot match:', element);
       } else {
-        // Use AI to find the matching slot
-        const slotNames = Object.keys(slots).map(id => ({
-          id,
-          name: slots[id].name || id,
-          className: slots[id].className || ''
-        }));
+        // Try common variations before using AI
+        const variations = [
+          element,
+          element?.replace(/_/g, '-'),  // product_title -> product-title
+          element?.replace(/-/g, '_'),  // product-title -> product_title
+          `${pageType}_${element}`,     // title -> product_title
+          `${pageType}-${element}`,     // title -> product-title
+        ].filter(Boolean);
+
+        for (const variant of variations) {
+          if (slots[variant]) {
+            targetSlot = slots[variant];
+            targetSlotId = variant;
+            console.log('[AI Chat] Found slot by variation:', variant);
+            break;
+          }
+        }
+
+        // If still not found, use AI to find the matching slot
+        if (!targetSlot) {
+          const slotNames = Object.keys(slots).map(id => ({
+            id,
+            name: slots[id].name || id,
+            type: slots[id].type || 'unknown',
+            className: slots[id].className || ''
+          }));
+
+          console.log('[AI Chat] Using AI to match slot. Available:', JSON.stringify(slotNames));
 
         const matchPrompt = `Given these available slots for a ${pageType} page:
 ${JSON.stringify(slotNames, null, 2)}
@@ -1303,13 +1329,18 @@ Return ONLY valid JSON.`;
 
         try {
           const match = JSON.parse(matchResult.content.match(/\{[\s\S]*\}/)?.[0] || '{}');
+          console.log('[AI Chat] AI slot match result:', JSON.stringify(match));
           if (match.slotId && slots[match.slotId]) {
             targetSlot = slots[match.slotId];
             targetSlotId = match.slotId;
+            console.log('[AI Chat] AI matched slot:', targetSlotId);
+          } else {
+            console.log('[AI Chat] AI suggested slot not found in slots:', match.slotId);
           }
         } catch (e) {
-          console.error('Failed to parse slot match:', e);
+          console.error('[AI Chat] Failed to parse slot match:', e);
         }
+      }
       }
 
       if (!targetSlot || !targetSlotId) {
