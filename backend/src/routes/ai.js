@@ -1316,52 +1316,49 @@ Suggest helpful next steps. Be friendly and actionable.`;
         return `Container: ${parentId}\n${childList}`;
       }).join('\n\n');
 
+      // Get list of valid slot IDs for validation instruction
+      const validSlotIdsList = Object.keys(slots).join(', ');
+
       // Use AI to analyze the current layout and determine the changes
       const layoutAnalysisPrompt = `Analyze this slot configuration and help modify it.
 
 SLOT HIERARCHY (slots grouped by parent container):
 ${hierarchyText}
 
-SLOT NAME ALIASES:
-- "sku" = product_sku
-- "price" = price_container or product_price
-- "title" = product_title
-- "description" = product_short_description
-- "stock" = stock_status
-- "gallery" = product_gallery_container
-- "add to cart" = add_to_cart_button
-- "tabs" = product_tabs
-
 USER REQUEST: "${message}"
 
-DETECTED ACTION: ${action}
-SOURCE ELEMENT: ${sourceElement || 'not specified'}
-TARGET ELEMENT: ${targetElement || 'not specified'}
-POSITION: ${position}
+KEYWORD TO SLOT ID MAPPING (use these to understand user intent):
+- "sku" or "SKU" refers to: product_sku
+- "price" refers to: price_container
+- "title" or "name" refers to: product_title
+- "description" refers to: product_short_description
+- "stock" refers to: stock_status
+- "gallery" or "images" refers to: product_gallery_container
+- "add to cart" or "cart button" refers to: add_to_cart_button
+- "tabs" refers to: product_tabs
 
-Based on the user's request and slot hierarchy, determine:
-1. Which slot to move (sourceSlotId)
-2. Which slot to move it relative to (targetSlotId)
-3. Whether to place it before or after the target
+CRITICAL RULES:
+1. ONLY use slot IDs that EXACTLY match those listed in SLOT HIERARCHY above
+2. If user mentions a slot that doesn't exist in the hierarchy, set understood=false
+3. ALL IDs in your response (sourceSlotId, targetSlotId, newOrder) MUST be exact slot IDs like "product_sku", NOT aliases like "sku"
+4. The newOrder array must contain ONLY valid slot IDs from the same parent container
 
 Return JSON:
 {
   "understood": true/false,
-  "sourceSlotId": "exact slot id",
-  "targetSlotId": "exact slot id to move relative to",
+  "sourceSlotId": "EXACT slot ID from hierarchy (e.g., product_sku, NOT sku)",
+  "targetSlotId": "EXACT slot ID from hierarchy (e.g., price_container, NOT price)",
   "action": "move|swap|remove",
   "position": "before|after",
-  "newOrder": ["all_slot_ids_in_affected_container_in_new_order"],
-  "description": "human-readable description of what changed",
-  "error": "error message if understood is false"
+  "newOrder": ["EXACT_SLOT_IDS_ONLY"],
+  "description": "human-readable description",
+  "error": "error message if slot not found or understood is false"
 }
 
-IMPORTANT:
-- Match slot IDs exactly from the hierarchy above
-- Slots can only be reordered within the same parent container
-- "above" or "before" means place before (lower row number)
-- "below" or "after" means place after (higher row number)
-- Return newOrder as the new sequence for slots in the affected container
+VALIDATION:
+- Valid slot IDs are: ${validSlotIdsList}
+- If sourceSlotId is not in this list, return understood=false with error explaining which slot wasn't found
+- newOrder must ONLY contain IDs from this valid list
 
 Return ONLY valid JSON.`;
 
@@ -1417,6 +1414,43 @@ Return ONLY valid JSON.`;
         console.warn('[AI Chat] Invalid slot IDs in new order:', invalidIds);
         // Filter out invalid IDs
         analysis.newOrder = analysis.newOrder.filter(id => validSlotIds.includes(id));
+      }
+
+      // If all slot IDs were invalid, the AI used aliases instead of real IDs - return error
+      if (analysis.newOrder.length === 0) {
+        console.error('[AI Chat] All slot IDs in newOrder were invalid - AI likely used aliases instead of real IDs');
+        return res.json({
+          success: true,
+          message: "I couldn't process that layout change because I couldn't match the slot names. Please try again with more specific names like 'product_sku' or 'price_container', or describe what you see on the page.",
+          data: {
+            type: 'layout_error',
+            reason: 'invalid_slot_ids',
+            invalidIds,
+            validIds: validSlotIds.slice(0, 10) // Show first 10 valid IDs as hint
+          },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      // Also validate sourceSlotId and targetSlotId
+      if (!validSlotIds.includes(analysis.sourceSlotId)) {
+        console.error('[AI Chat] Invalid sourceSlotId:', analysis.sourceSlotId);
+        return res.json({
+          success: true,
+          message: `I couldn't find the slot "${analysis.sourceSlotId}". Available slots include: ${validSlotIds.slice(0, 8).join(', ')}...`,
+          data: { type: 'layout_error', reason: 'invalid_source_slot' },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      if (analysis.targetSlotId && !validSlotIds.includes(analysis.targetSlotId)) {
+        console.error('[AI Chat] Invalid targetSlotId:', analysis.targetSlotId);
+        return res.json({
+          success: true,
+          message: `I couldn't find the target slot "${analysis.targetSlotId}". Available slots include: ${validSlotIds.slice(0, 8).join(', ')}...`,
+          data: { type: 'layout_error', reason: 'invalid_target_slot' },
+          creditsDeducted: creditsUsed
+        });
       }
 
       // CRITICAL FIX: Update position.row values for hierarchical slot ordering
