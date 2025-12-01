@@ -95,12 +95,16 @@ class AIService {
   async deductCredits(userId, operationType, metadata = {}) {
     const cost = await this.getOperationCost(operationType);
 
-    // Get store_id - use first store if not provided (credit_usage requires non-null store_id)
+    // Get store_id - try to get user's active store if not provided
     let storeId = metadata.storeId;
     if (!storeId) {
+      // Get first active store owned by this user (not just any store in DB)
       const { data: store } = await masterDbClient
         .from('stores')
         .select('id')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
       storeId = store?.id || '00000000-0000-0000-0000-000000000000'; // Fallback UUID
@@ -118,11 +122,24 @@ class AIService {
 
     const usageType = usageTypeMap[operationType] || 'other';
 
-    // Deduct credits from master DB
+    // Deduct credits from master DB - first get current credits, then update
+    const { data: userData, error: fetchError } = await masterDbClient
+      .from('users')
+      .select('credits')
+      .eq('id', userId)
+      .single();
+
+    if (fetchError) {
+      throw new Error(`Failed to fetch user credits: ${fetchError.message}`);
+    }
+
+    const currentCredits = userData?.credits || 0;
+    const newCredits = Math.max(0, currentCredits - cost);
+
     const { error: updateError } = await masterDbClient
       .from('users')
       .update({
-        credits: masterDbClient.raw(`credits - ${cost}`),
+        credits: newCredits,
         updated_at: new Date().toISOString()
       })
       .eq('id', userId);
@@ -157,39 +174,36 @@ class AIService {
    * Log AI usage for analytics (tenant data)
    */
   async logUsage(userId, operationType, metadata = {}) {
-    // Get storeId from metadata or use first store
-    let storeId = metadata.storeId;
-    if (!storeId) {
-      const { data: store } = await masterDbClient
-        .from('stores')
-        .select('id')
-        .limit(1)
-        .maybeSingle();
-      storeId = store?.id;
-    }
+    // Get storeId from metadata - don't fallback to first store (could be inactive)
+    const storeId = metadata.storeId;
 
     if (!storeId) {
-      console.warn('No store found for AI usage logging, skipping');
+      console.warn('No storeId in metadata for AI usage logging, skipping tenant logging');
       return;
     }
 
-    // Get tenant connection for AI usage logs
-    const connection = await ConnectionManager.getStoreConnection(storeId);
+    try {
+      // Get tenant connection for AI usage logs
+      const connection = await ConnectionManager.getStoreConnection(storeId);
 
-    const { error } = await connection.client
-      .from('ai_usage_logs')
-      .insert({
-        user_id: userId,
-        operation_type: operationType,
-        model_used: metadata.model || this.defaultModel,
-        tokens_input: metadata.tokensInput || 0,
-        tokens_output: metadata.tokensOutput || 0,
-        metadata: metadata,
-        created_at: new Date().toISOString()
-      });
+      const { error } = await connection
+        .from('ai_usage_logs')
+        .insert({
+          user_id: userId,
+          operation_type: operationType,
+          model_used: metadata.model || this.defaultModel,
+          tokens_input: metadata.tokensInput || 0,
+          tokens_output: metadata.tokensOutput || 0,
+          metadata: metadata,
+          created_at: new Date().toISOString()
+        });
 
-    if (error) {
-      console.error('Failed to log AI usage:', error);
+      if (error) {
+        console.error('Failed to log AI usage:', error);
+        // Don't throw - logging failure shouldn't break the operation
+      }
+    } catch (connectionError) {
+      console.warn('Failed to connect to tenant DB for AI usage logging:', connectionError.message);
       // Don't throw - logging failure shouldn't break the operation
     }
   }
