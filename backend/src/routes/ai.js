@@ -872,6 +872,9 @@ Return ONLY valid JSON.`;
       intent = { intent: 'chat', action: 'chat' };
     }
 
+    console.log('[AI Chat] Detected intent:', JSON.stringify(intent));
+    console.log('[AI Chat] Store ID:', resolvedStoreId);
+
     // Execute based on intent
     let responseData = null;
     let creditsUsed = intentResult.creditsDeducted;
@@ -1177,6 +1180,8 @@ Suggest helpful next steps. Be friendly and actionable.`;
 
     } else if (intent.intent === 'styling') {
       // Handle styling changes to slot configurations
+      console.log('[AI Chat] Entering styling handler');
+      console.log('[AI Chat] Styling details:', JSON.stringify(intent.details));
       const ConnectionManager = require('../services/database/ConnectionManager');
 
       // Use global AI conversations array
@@ -1207,12 +1212,14 @@ Suggest helpful next steps. Be friendly and actionable.`;
         .maybeSingle();
 
       if (fetchError) {
-        console.error('Failed to fetch slot configuration:', fetchError);
+        console.error('[AI Chat] Failed to fetch slot configuration:', fetchError);
         return res.status(500).json({
           success: false,
           message: 'Failed to fetch current layout configuration'
         });
       }
+
+      console.log('[AI Chat] Fetched slot config:', slotConfig ? `id=${slotConfig.id}, page=${slotConfig.page_type}` : 'null');
 
       if (!slotConfig) {
         return res.json({
@@ -1438,12 +1445,15 @@ Return ONLY valid JSON.`;
         .eq('id', slotConfig.id);
 
       if (updateError) {
-        console.error('Failed to save styling change:', updateError);
+        console.error('[AI Chat] Failed to save styling change:', updateError);
         return res.status(500).json({
           success: false,
           message: 'Failed to save styling change: ' + updateError.message
         });
       }
+
+      console.log('[AI Chat] Successfully updated slot config:', slotConfig.id);
+      console.log('[AI Chat] Change applied:', changeDescription);
 
       // Generate natural AI response
       const responsePrompt = `The user asked: "${message}"
@@ -1488,7 +1498,8 @@ Generate a brief, friendly confirmation message (1-2 sentences). Be conversation
           newStyles
         },
         configId: slotConfig.id,
-        aiConversations
+        aiConversations,
+        detectedIntent: intent
       };
 
       res.json({
@@ -1497,6 +1508,7 @@ Generate a brief, friendly confirmation message (1-2 sentences). Be conversation
         data: responseData,
         creditsDeducted: creditsUsed
       });
+      return;
 
     } else {
       // Just chat
