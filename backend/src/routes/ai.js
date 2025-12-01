@@ -1488,9 +1488,38 @@ Return ONLY valid JSON.`;
         newStyles.backgroundColor = hexColor;
         changeDescription = `Changed background color to ${value} (${hexColor})`;
 
-      } else if (property === 'fontSize') {
-        newStyles.fontSize = value;
-        changeDescription = `Changed font size to ${value}`;
+      } else if (property === 'fontSize' || property === 'size' || property === 'font-size' || property === 'textSize') {
+        // Handle relative size values
+        let finalSize = value;
+        const lowerValue = value?.toLowerCase?.() || '';
+
+        if (lowerValue.includes('larger') || lowerValue.includes('bigger') || lowerValue.includes('increase')) {
+          // Get current size and increase it
+          const currentSize = currentStyles.fontSize || '16px';
+          const sizeNum = parseInt(currentSize) || 16;
+          finalSize = `${Math.round(sizeNum * 1.25)}px`;
+        } else if (lowerValue.includes('smaller') || lowerValue.includes('decrease')) {
+          const currentSize = currentStyles.fontSize || '16px';
+          const sizeNum = parseInt(currentSize) || 16;
+          finalSize = `${Math.round(sizeNum * 0.8)}px`;
+        } else if (lowerValue.includes('large') || lowerValue === 'big') {
+          finalSize = '24px';
+        } else if (lowerValue.includes('small') || lowerValue === 'tiny') {
+          finalSize = '12px';
+        } else if (lowerValue.includes('medium') || lowerValue === 'normal') {
+          finalSize = '16px';
+        } else if (lowerValue.includes('huge') || lowerValue.includes('extra large') || lowerValue === 'xl') {
+          finalSize = '32px';
+        } else if (!value?.includes('px') && !value?.includes('rem') && !value?.includes('em') && !value?.includes('%')) {
+          // If it's just a number, add px
+          const num = parseFloat(value);
+          if (!isNaN(num)) {
+            finalSize = `${num}px`;
+          }
+        }
+
+        newStyles.fontSize = finalSize;
+        changeDescription = `Changed font size to ${finalSize}`;
       } else {
         // Generic CSS property
         newStyles[property] = value;
