@@ -241,27 +241,34 @@ class AIContextService {
   }
 
   /**
-   * Get user preferences
+   * Get user preferences (from TENANT DB - user prefs are tenant-specific)
    */
   async getUserPreferences({ userId, sessionId, storeId }) {
     try {
-      let query = masterDbClient
+      if (!storeId) {
+        return null;
+      }
+
+      const ConnectionManager = require('./database/ConnectionManager');
+      const db = await ConnectionManager.getStoreConnection(storeId);
+
+      let query = db
         .from('ai_user_preferences')
         .select('*')
-        .order('updated_at', { ascending: false })
+        .orderBy('updated_at', 'desc')
         .limit(1);
 
       if (userId) {
-        query = query.eq('user_id', userId);
+        query = query.where('user_id', userId);
       } else if (sessionId) {
-        query = query.eq('session_id', sessionId);
+        query = query.where('session_id', sessionId);
       } else {
         return null;
       }
 
-      const { data, error } = await query.maybeSingle();
+      const data = await query.first();
 
-      if (error || !data) {
+      if (!data) {
         return null;
       }
 
@@ -280,35 +287,42 @@ class AIContextService {
   }
 
   /**
-   * Save/update user preferences
+   * Save/update user preferences (in TENANT DB - user prefs are tenant-specific)
    */
   async saveUserPreferences(preferences) {
     try {
       const { userId, sessionId, storeId, ...prefs } = preferences;
+
+      if (!storeId) {
+        console.error('storeId is required for saving user preferences');
+        return;
+      }
+
+      const ConnectionManager = require('./database/ConnectionManager');
+      const db = await ConnectionManager.getStoreConnection(storeId);
 
       const existing = await this.getUserPreferences({ userId, sessionId, storeId });
 
       const data = {
         user_id: userId || null,
         session_id: sessionId || null,
-        store_id: storeId || null,
         preferred_mode: prefs.preferredMode || null,
-        coding_style: prefs.codingStyle || {},
-        favorite_patterns: prefs.favoritePatterns || [],
-        recent_plugins: prefs.recentPlugins || [],
-        categories_interest: prefs.categoriesInterest || [],
-        context_preferences: prefs.contextPreferences || {},
+        coding_style: JSON.stringify(prefs.codingStyle || {}),
+        favorite_patterns: JSON.stringify(prefs.favoritePatterns || []),
+        recent_plugins: JSON.stringify(prefs.recentPlugins || []),
+        categories_interest: JSON.stringify(prefs.categoriesInterest || []),
+        context_preferences: JSON.stringify(prefs.contextPreferences || {}),
         updated_at: new Date().toISOString()
       };
 
       if (existing) {
-        await masterDbClient
+        await db
           .from('ai_user_preferences')
-          .update(data)
-          .eq('id', existing.id);
+          .where('id', existing.id)
+          .update(data);
       } else {
         data.created_at = new Date().toISOString();
-        await masterDbClient.from('ai_user_preferences').insert(data);
+        await db.from('ai_user_preferences').insert(data);
       }
     } catch (error) {
       console.error('Error saving user preferences:', error);

@@ -177,28 +177,13 @@ CREATE INDEX IF NOT EXISTS idx_ai_context_usage_store ON ai_context_usage(store_
 CREATE INDEX IF NOT EXISTS idx_ai_context_usage_helpful ON ai_context_usage(was_helpful);
 
 -- ============================================
--- 8. AI USER PREFERENCES - Per-user AI settings
+-- 8. AI USER PREFERENCES - STORED IN TENANT DB (not master)
 -- ============================================
-CREATE TABLE IF NOT EXISTS ai_user_preferences (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID, -- References users but no FK constraint (cross-DB)
-  session_id VARCHAR(255),
-  store_id UUID,
-  preferred_mode VARCHAR(50), -- 'nocode', 'developer'
-  coding_style JSONB DEFAULT '{}',
-  favorite_patterns JSONB DEFAULT '[]',
-  recent_plugins JSONB DEFAULT '[]',
-  categories_interest JSONB DEFAULT '[]',
-  context_preferences JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_ai_user_prefs_user ON ai_user_preferences(user_id);
-CREATE INDEX IF NOT EXISTS idx_ai_user_prefs_session ON ai_user_preferences(session_id);
+-- ai_user_preferences stays in tenant DBs because preferences are tenant-specific
+-- See: backend/src/migrations/tenant/create-ai-user-preferences.sql
 
 -- ============================================
--- 9. AI USAGE LOGS - Request tracking
+-- 8. AI USAGE LOGS - Request tracking
 -- ============================================
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
   id SERIAL PRIMARY KEY,
@@ -248,15 +233,6 @@ ALTER TABLE ai_entity_definitions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can read active entities" ON ai_entity_definitions
   FOR SELECT USING (is_active = true);
 
--- User preferences: users can only access their own preferences
-ALTER TABLE ai_user_preferences ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view own preferences" ON ai_user_preferences
-  FOR SELECT USING (auth.uid()::text = user_id::text OR user_id IS NULL);
-CREATE POLICY "Users can insert own preferences" ON ai_user_preferences
-  FOR INSERT WITH CHECK (auth.uid()::text = user_id::text OR user_id IS NULL);
-CREATE POLICY "Users can update own preferences" ON ai_user_preferences
-  FOR UPDATE USING (auth.uid()::text = user_id::text OR user_id IS NULL);
-
 -- Context usage tracking: users can see their own usage
 ALTER TABLE ai_context_usage ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own context usage" ON ai_context_usage
@@ -285,5 +261,5 @@ COMMENT ON TABLE ai_entity_definitions IS 'Admin entity schemas for dynamic AI o
 COMMENT ON TABLE ai_chat_history IS 'All AI conversations for learning and improvement';
 COMMENT ON TABLE ai_learning_insights IS 'Aggregated learnings from successful/failed interactions';
 COMMENT ON TABLE ai_context_usage IS 'Tracks which AI context was helpful for learning';
-COMMENT ON TABLE ai_user_preferences IS 'Per-user AI preferences and settings';
 COMMENT ON TABLE ai_usage_logs IS 'Request-level AI usage tracking and logging';
+-- Note: ai_user_preferences is in TENANT DBs, not master
