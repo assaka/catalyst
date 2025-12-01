@@ -789,75 +789,6 @@ CREATE TABLE IF NOT EXISTS admin_navigation_registry (
   type VARCHAR(50) DEFAULT 'standard'::character varying
 );
 
-CREATE TABLE IF NOT EXISTS ai_code_patterns (
-  id INTEGER PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  pattern_type VARCHAR(100) NOT NULL,
-  description TEXT,
-  code TEXT NOT NULL,
-  language VARCHAR(50) DEFAULT 'javascript'::character varying,
-  framework VARCHAR(100),
-  parameters JSONB DEFAULT '[]'::jsonb,
-  example_usage TEXT,
-  tags JSONB DEFAULT '[]'::jsonb,
-  usage_count INTEGER DEFAULT 0,
-  is_active BOOLEAN DEFAULT true,
-  embedding_vector TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS ai_context_documents (
-  id INTEGER PRIMARY KEY,
-  type VARCHAR(50) NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  content TEXT NOT NULL,
-  category VARCHAR(100),
-  tags JSONB DEFAULT '[]'::jsonb,
-  metadata JSONB DEFAULT '{}'::jsonb,
-  priority INTEGER DEFAULT 0,
-  mode VARCHAR(50),
-  is_active BOOLEAN DEFAULT true,
-  store_id INTEGER,
-  embedding_vector TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS ai_context_usage (
-  id INTEGER PRIMARY KEY,
-  document_id INTEGER,
-  example_id INTEGER,
-  pattern_id INTEGER,
-  user_id INTEGER,
-  session_id VARCHAR(255),
-  query TEXT,
-  was_helpful BOOLEAN,
-  generated_plugin_id INTEGER,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS ai_plugin_examples (
-  id INTEGER PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  slug VARCHAR(255) NOT NULL,
-  description TEXT,
-  category VARCHAR(100) NOT NULL,
-  complexity VARCHAR(20) DEFAULT 'simple'::character varying,
-  code TEXT NOT NULL,
-  files JSONB DEFAULT '[]'::jsonb,
-  features JSONB DEFAULT '[]'::jsonb,
-  use_cases JSONB DEFAULT '[]'::jsonb,
-  tags JSONB DEFAULT '[]'::jsonb,
-  usage_count INTEGER DEFAULT 0,
-  rating NUMERIC,
-  is_template BOOLEAN DEFAULT false,
-  is_active BOOLEAN DEFAULT true,
-  embedding_vector TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
@@ -3077,36 +3008,6 @@ CREATE UNIQUE INDEX email_templates_identifier_store_id ON email_templates USING
 CREATE INDEX IF NOT EXISTS email_templates_is_active ON email_templates USING btree (is_active);
 
 CREATE INDEX IF NOT EXISTS email_templates_store_id ON email_templates USING btree (store_id);
-
-CREATE INDEX IF NOT EXISTS idx_ai_code_patterns_framework ON ai_code_patterns USING btree (framework);
-
-CREATE INDEX IF NOT EXISTS idx_ai_code_patterns_type ON ai_code_patterns USING btree (pattern_type, is_active);
-
-CREATE INDEX IF NOT EXISTS idx_ai_context_docs_category ON ai_context_documents USING btree (category);
-
-CREATE INDEX IF NOT EXISTS idx_ai_context_docs_mode ON ai_context_documents USING btree (mode);
-
-CREATE INDEX IF NOT EXISTS idx_ai_context_docs_priority ON ai_context_documents USING btree (priority);
-
-CREATE INDEX IF NOT EXISTS idx_ai_context_docs_store ON ai_context_documents USING btree (store_id);
-
-CREATE INDEX IF NOT EXISTS idx_ai_context_docs_type_active ON ai_context_documents USING btree (type, is_active);
-
-CREATE INDEX IF NOT EXISTS idx_ai_context_usage_created ON ai_context_usage USING btree (created_at);
-
-CREATE INDEX IF NOT EXISTS idx_ai_context_usage_document ON ai_context_usage USING btree (document_id);
-
-CREATE INDEX IF NOT EXISTS idx_ai_context_usage_example ON ai_context_usage USING btree (example_id);
-
-CREATE INDEX IF NOT EXISTS idx_ai_context_usage_pattern ON ai_context_usage USING btree (pattern_id);
-
-CREATE INDEX IF NOT EXISTS idx_ai_plugin_examples_category ON ai_plugin_examples USING btree (category, is_active);
-
-CREATE INDEX IF NOT EXISTS idx_ai_plugin_examples_complexity ON ai_plugin_examples USING btree (complexity);
-
-CREATE INDEX IF NOT EXISTS idx_ai_plugin_examples_template ON ai_plugin_examples USING btree (is_template);
-
-CREATE INDEX IF NOT EXISTS idx_ai_plugin_examples_usage ON ai_plugin_examples USING btree (usage_count);
 
 CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_created_at ON ai_usage_logs USING btree (created_at DESC);
 
