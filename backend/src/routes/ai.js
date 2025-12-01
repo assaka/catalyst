@@ -1200,16 +1200,34 @@ Suggest helpful next steps. Be friendly and actionable.`;
       const property = intent.details?.property;
       const value = intent.details?.value;
 
-      // Fetch current slot configuration for the page type
-      const { data: slotConfig, error: fetchError } = await tenantDb
+      // Fetch current slot configuration for the page type (draft first, then published)
+      // Draft is used for preview, published is for live site
+      let { data: slotConfig, error: fetchError } = await tenantDb
         .from('slot_configurations')
         .select('*')
         .eq('store_id', resolvedStoreId)
         .eq('page_type', pageType)
-        .eq('status', 'published')
+        .eq('status', 'draft')
         .order('version_number', { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      // If no draft found, try published
+      if (!slotConfig && !fetchError) {
+        const { data: publishedConfig, error: pubError } = await tenantDb
+          .from('slot_configurations')
+          .select('*')
+          .eq('store_id', resolvedStoreId)
+          .eq('page_type', pageType)
+          .eq('status', 'published')
+          .order('version_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        slotConfig = publishedConfig;
+        fetchError = pubError;
+        console.log('[AI Chat] No draft found, using published config');
+      }
 
       if (fetchError) {
         console.error('[AI Chat] Failed to fetch slot configuration:', fetchError);
@@ -1224,8 +1242,8 @@ Suggest helpful next steps. Be friendly and actionable.`;
       if (!slotConfig) {
         return res.json({
           success: true,
-          message: `I couldn't find a published layout for the ${pageType} page. Please publish a layout first in the Editor, then I can help you modify styles.`,
-          data: { type: 'styling_error', reason: 'no_published_config' },
+          message: `I couldn't find a layout configuration for the ${pageType} page. Please save a layout in the Editor first, then I can help you modify styles.`,
+          data: { type: 'styling_error', reason: 'no_config_found' },
           creditsDeducted: creditsUsed
         });
       }
