@@ -1247,19 +1247,45 @@ Return ONLY valid JSON.`;
       // Generate the styling change
       const currentClassName = targetSlot.className || '';
       const currentStyles = targetSlot.styles || {};
+      const { colord, extend } = require('colord');
+      const namesPlugin = require('colord/plugins/names');
+      extend([namesPlugin]);
 
-      // Map common color names to Tailwind classes
-      const colorMap = {
-        'red': 'text-red-600',
-        'blue': 'text-blue-600',
-        'green': 'text-green-600',
-        'yellow': 'text-yellow-600',
-        'purple': 'text-purple-600',
-        'pink': 'text-pink-600',
-        'orange': 'text-orange-600',
-        'gray': 'text-gray-600',
-        'black': 'text-black',
-        'white': 'text-white'
+      // Helper to parse any color value to hex
+      const parseColor = (colorValue) => {
+        if (!colorValue) return null;
+
+        // Clean up the input
+        const cleaned = colorValue.toLowerCase().trim().replace(/\s+/g, '');
+
+        // Try parsing with colord (handles hex, rgb, hsl, named colors)
+        const parsed = colord(cleaned);
+        if (parsed.isValid()) {
+          return parsed.toHex();
+        }
+
+        // Handle compound names like "lightgreen", "darkblue"
+        const compoundMap = {
+          'lightgreen': '#90ee90',
+          'lightblue': '#add8e6',
+          'lightred': '#ffcccb',
+          'lightpink': '#ffb6c1',
+          'lightyellow': '#ffffe0',
+          'lightgray': '#d3d3d3',
+          'lightgrey': '#d3d3d3',
+          'darkgreen': '#006400',
+          'darkblue': '#00008b',
+          'darkred': '#8b0000',
+          'darkgray': '#a9a9a9',
+          'darkgrey': '#a9a9a9'
+        };
+
+        if (compoundMap[cleaned]) {
+          return compoundMap[cleaned];
+        }
+
+        // Return original if we can't parse it
+        return colorValue;
       };
 
       let newClassName = currentClassName;
@@ -1267,25 +1293,30 @@ Return ONLY valid JSON.`;
       let changeDescription = '';
 
       if (property === 'color' || property === 'textColor') {
-        // Replace existing text color class
-        newClassName = currentClassName.replace(/text-(gray|red|blue|green|yellow|purple|pink|orange|black|white)-\d{3}/g, '').trim();
-        if (colorMap[value?.toLowerCase()]) {
-          newClassName = `${newClassName} ${colorMap[value.toLowerCase()]}`.replace(/\s+/g, ' ').trim();
-          changeDescription = `Changed text color to ${value}`;
-        } else if (value?.startsWith('#') || value?.startsWith('rgb')) {
-          newStyles.color = value;
-          changeDescription = `Changed text color to ${value}`;
-        } else {
-          newStyles.color = value;
-          changeDescription = `Changed text color to ${value}`;
-        }
+        // Remove existing Tailwind text color classes
+        newClassName = currentClassName
+          .replace(/text-(gray|red|blue|green|yellow|purple|pink|orange|black|white|slate|zinc|neutral|stone|amber|lime|emerald|teal|cyan|sky|indigo|violet|fuchsia|rose)-\d{2,3}/g, '')
+          .replace(/text-(black|white|transparent|current|inherit)/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        // Parse and apply the color as inline style
+        const hexColor = parseColor(value);
+        newStyles.color = hexColor;
+        changeDescription = `Changed text color to ${value} (${hexColor})`;
+
       } else if (property === 'backgroundColor' || property === 'background') {
-        if (value?.startsWith('#') || value?.startsWith('rgb')) {
-          newStyles.backgroundColor = value;
-        } else {
-          newStyles.backgroundColor = value;
-        }
-        changeDescription = `Changed background color to ${value}`;
+        // Remove existing Tailwind background color classes
+        newClassName = currentClassName
+          .replace(/bg-(gray|red|blue|green|yellow|purple|pink|orange|black|white|slate|zinc|neutral|stone|amber|lime|emerald|teal|cyan|sky|indigo|violet|fuchsia|rose)-\d{2,3}/g, '')
+          .replace(/bg-(black|white|transparent|current|inherit)/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        const hexColor = parseColor(value);
+        newStyles.backgroundColor = hexColor;
+        changeDescription = `Changed background color to ${value} (${hexColor})`;
+
       } else if (property === 'fontSize') {
         newStyles.fontSize = value;
         changeDescription = `Changed font size to ${value}`;
