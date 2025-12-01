@@ -110,18 +110,6 @@ class AIService {
       storeId = store?.id || '00000000-0000-0000-0000-000000000000'; // Fallback UUID
     }
 
-    // Map operation types to usage_type values that match existing constraint
-    const usageTypeMap = {
-      'plugin-generation': 'ai_plugin_generation',
-      'plugin-modification': 'ai_plugin_modification',
-      'translation': 'ai_translation',
-      'layout-generation': 'ai_layout',
-      'code-patch': 'ai_code_patch',
-      'general': 'ai_chat'
-    };
-
-    const usageType = usageTypeMap[operationType] || 'other';
-
     // Deduct credits from master DB - first get current credits, then update
     const { data: userData, error: fetchError } = await masterDbClient
       .from('users')
@@ -148,24 +136,10 @@ class AIService {
       throw new Error(`Failed to deduct credits: ${updateError.message}`);
     }
 
-    // Log credit usage in master DB
-    const { error: insertError } = await masterDbClient
-      .from('credit_usage')
-      .insert({
-        id: require('uuid').v4(),
-        user_id: userId,
-        store_id: storeId,
-        credits_used: cost,
-        usage_type: usageType,
-        description: `AI Studio: ${operationType}`,
-        metadata: metadata,
-        created_at: new Date().toISOString()
-      });
-
-    if (insertError) {
-      console.error('Failed to log credit usage:', insertError);
-      // Don't throw - logging failure shouldn't break the operation
-    }
+    // Note: credit_usage table is in tenant DB, not master DB
+    // Detailed logging happens via logUsage() which logs to tenant DB
+    // For now, just log to console for debugging
+    console.log(`💳 Credits deducted: ${cost} for ${operationType} (user: ${userId}, store: ${storeId})`);
 
     return cost;
   }
