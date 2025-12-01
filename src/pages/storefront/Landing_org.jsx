@@ -30,6 +30,7 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu.jsx";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function Landing() {
   const [user, setUser] = useState(null);
@@ -129,11 +130,7 @@ export default function Landing() {
   ];
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   return (

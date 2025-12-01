@@ -25,6 +25,7 @@ import slotConfigurationService from '@/services/slotConfigurationService';
 import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRenderer';
 import '@/components/editor/slot/UnifiedSlotComponents'; // Register unified components
 import { cartConfig } from '@/components/editor/slot/configs/cart-config';
+import { PageLoader } from '@/components/ui/page-loader';
 
 const getSessionId = () => {
   let sid = localStorage.getItem('guest_session_id');
@@ -1085,11 +1086,7 @@ export default function Cart() {
     
     // Wait for both store data and cart data to load
     if (loading || storeLoading) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
+        return <PageLoader size="lg" className="h-screen" />;
     }
 
     // Prepare data object for CartSlots component

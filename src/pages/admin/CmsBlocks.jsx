@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { useAlertTypes } from "@/hooks/useAlert";
 import { clearCmsBlocksCache } from "@/utils/cacheUtils";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function CmsBlocks() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -163,9 +164,7 @@ export default function CmsBlocks() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
+          <PageLoader size="lg" fullScreen={false} className="h-64" />
         ) : blocks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {blocks.map(block => (

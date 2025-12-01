@@ -11,6 +11,7 @@ import { SeoSetting } from "@/api/entities";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import FlashMessage from "@/components/storefront/FlashMessage";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function SeoHreflang() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -145,11 +146,7 @@ export default function SeoHreflang() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   const activeLanguages = selectedStore?.settings?.active_languages || [];

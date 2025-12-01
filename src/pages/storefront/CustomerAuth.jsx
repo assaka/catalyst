@@ -9,6 +9,7 @@ import { UnifiedSlotRenderer } from '@/components/editor/slot/UnifiedSlotRendere
 import '@/components/editor/slot/AccountLoginSlotComponents'; // Register account/login components
 import { loginConfig } from '@/components/editor/slot/configs/login-config';
 import { useTranslation } from '@/contexts/TranslationContext';
+import { PageLoader } from '@/components/ui/page-loader';
 
 export default function CustomerAuth() {
   const { t } = useTranslation();
@@ -224,11 +225,7 @@ export default function CustomerAuth() {
 
   // Wait for both config AND store to be loaded before rendering
   if (loading || !configLoaded || !store) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" fullScreen={false} className="min-h-[50vh]" />;
   }
 
   const hasConfig = loginLayoutConfig && loginLayoutConfig.slots;

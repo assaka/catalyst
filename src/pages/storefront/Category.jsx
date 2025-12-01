@@ -15,6 +15,7 @@ import { getCategoryName, getCurrentLanguage } from "@/utils/translationUtils";
 import { useTranslation } from '@/contexts/TranslationContext';
 // React Query hooks for optimized API calls
 import { useCategory, useSlotConfiguration } from '@/hooks/useApiQueries';
+import { PageLoader } from '@/components/ui/page-loader';
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -565,11 +566,7 @@ export default function Category() {
   const loading = storeLoading || categoryLoading;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" fullScreen={false} className="h-96" />;
   }
 
   const pageTitle = currentCategory ? getCategoryName(currentCategory, getCurrentLanguage()) : (categorySlug ? "Category Not Found" : "All Products");

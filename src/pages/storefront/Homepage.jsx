@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getProductName, getProductShortDescription, getCurrentLanguage } from "@/utils/translationUtils";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useHomepageBootstrap } from "@/hooks/usePageBootstrap";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const ensureArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -116,11 +117,7 @@ export default function Homepage() {
   };
 
   if (storeLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" fullScreen={false} className="h-96" />;
   }
 
   const filteredProducts = getFilteredProducts();

@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { getAttributeValueLabel } from '@/utils/attributeUtils';
 import { useTranslation } from '@/contexts/TranslationContext';
 import FlashMessage from '@/components/storefront/FlashMessage';
+import { PageLoader } from '@/components/ui/page-loader';
 
 import { useAlertTypes } from '@/hooks/useAlert';
 export default function ProductLabels() {
@@ -235,9 +236,7 @@ const [labels, setLabels] = useState([]);
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
+          <PageLoader size="lg" fullScreen={false} className="h-64" />
         ) : labels.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {labels.map(label => (

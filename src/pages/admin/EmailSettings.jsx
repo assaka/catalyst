@@ -5,6 +5,7 @@ import EmailProviderSettings from '@/components/admin/settings/EmailProviderSett
 import { Mail } from 'lucide-react';
 import { Store } from '@/api/entities';
 import { useState, useEffect } from 'react';
+import { PageLoader } from '@/components/ui/page-loader';
 
 export default function EmailSettings() {
   const { selectedStore } = useStoreSelection();
@@ -51,11 +52,7 @@ export default function EmailSettings() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   // Extract email from all possible locations

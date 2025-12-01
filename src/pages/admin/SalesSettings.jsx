@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Receipt, Send, FileText, Package, AlertTriangle } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import FlashMessage from '@/components/storefront/FlashMessage';
+import { PageLoader } from '@/components/ui/page-loader';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -146,11 +147,7 @@ export default function SalesSettings() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   if (!store) {

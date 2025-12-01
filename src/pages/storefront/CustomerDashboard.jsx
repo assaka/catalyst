@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { CountrySelect } from '@/components/ui/country-select';
 import { formatPriceWithTax } from '@/utils/priceUtils';
 import cartService from '@/services/cartService';
+import { PageLoader } from '@/components/ui/page-loader';
 
 // --- Utilities ---
 let globalRequestQueue = Promise.resolve();
@@ -1250,11 +1251,7 @@ export default function CustomerDashboard() {
   };
 
   if (loading || storeLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   return (

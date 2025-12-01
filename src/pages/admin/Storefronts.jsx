@@ -45,6 +45,7 @@ import {
 import { useAlertTypes } from '@/hooks/useAlert';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import apiClient from '@/api/client';
+import { PageLoader } from '@/components/ui/page-loader';
 
 export default function Storefronts() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -311,11 +312,7 @@ export default function Storefronts() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   return (

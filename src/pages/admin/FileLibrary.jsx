@@ -4,6 +4,7 @@ import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
 import SaveButton from '@/components/ui/save-button';
+import { PageLoader } from '@/components/ui/page-loader';
 
 const FileLibrary = () => {
   const { selectedStore } = useStoreSelection();
@@ -451,10 +452,7 @@ const FileLibrary = () => {
 
       {/* Files Display */}
       {loading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading files...</p>
-        </div>
+        <PageLoader size="lg" fullScreen={false} className="py-12" text="Loading files..." />
       ) : filteredFiles.length === 0 ? (
         <div className="text-center py-12">
           <File className="w-16 h-16 mx-auto text-gray-300 mb-4" />

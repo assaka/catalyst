@@ -41,6 +41,7 @@ import ProductTabForm from "@/components/admin/products/ProductTabForm";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { getAttributeLabel } from "@/utils/attributeUtils";
 import { clearAllCache } from "@/utils/cacheUtils";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ProductTabs() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -230,11 +231,7 @@ export default function ProductTabs() {
   );
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   // Display a message if no store is found for the user

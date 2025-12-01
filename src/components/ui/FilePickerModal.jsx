@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Image, File, Search, X } from 'lucide-react';
 import apiClient from '@/api/client';
+import { PageLoader } from '@/components/ui/page-loader';
 
 const FilePickerModal = ({ isOpen, onClose, onSelect, fileType = 'image' }) => {
   const [files, setFiles] = useState([]);
@@ -654,12 +655,7 @@ ${errorMessage}
           {(() => {
 
             if (loading) {
-              return (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-4 text-gray-600">Loading files...</p>
-                </div>
-              );
+              return <PageLoader size="lg" fullScreen={false} className="py-12" text="Loading files..." />;
             }
 
             if (error) {

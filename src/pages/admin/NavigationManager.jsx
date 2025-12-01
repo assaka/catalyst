@@ -37,6 +37,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import apiClient from '@/api/client';
+import { PageLoader } from '@/components/ui/page-loader';
 
 // Sortable Item Component
 const SortableItem = ({ item, index, isChild, onMoveUp, onMoveDown, onToggleVisibility, onUpdateOrder, onUpdateParent, onToggleCollapse, isCollapsed, hasChildren, canMoveUp, canMoveDown, availableParents }) => {
@@ -446,11 +447,7 @@ const NavigationManager = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   return (

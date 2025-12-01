@@ -22,6 +22,7 @@ import {
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
+import { PageLoader } from '@/components/ui/page-loader';
 
 const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, uploadFolder = 'library' }) => {
   const { selectedStore } = useStoreSelection();
@@ -378,9 +379,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
         {/* File Display */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
+            <PageLoader size="lg" fullScreen={false} className="h-full" />
           ) : filteredFiles.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
               <File className="w-16 h-16 mb-4" />

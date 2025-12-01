@@ -17,6 +17,7 @@ import TranslationFields from '@/components/admin/TranslationFields';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import api from '@/utils/api';
 import { queryClient } from '@/config/queryClient';
+import { PageLoader } from '@/components/ui/page-loader';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -996,11 +997,7 @@ export default function ThemeLayout() {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
+        return <PageLoader size="lg" />;
     }
     
     if (!store) {

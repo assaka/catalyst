@@ -14,6 +14,7 @@ import FlashMessage from "@/components/storefront/FlashMessage";
 import { useAlertTypes } from "@/hooks/useAlert";
 import BulkTranslateDialog from "@/components/admin/BulkTranslateDialog";
 import api from "@/utils/api";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function Emails() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -306,9 +307,7 @@ export default function Emails() {
 
         {/* Email Templates Tab */}
         {activeTab === 'emails' && (loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
+          <PageLoader size="lg" fullScreen={false} className="h-64" />
         ) : templates.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {templates.map(template => {
@@ -402,9 +401,7 @@ export default function Emails() {
 
         {/* PDF Templates Tab */}
         {activeTab === 'pdfs' && (loadingPdf ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
+          <PageLoader size="lg" fullScreen={false} className="h-64" />
         ) : pdfTemplates.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {pdfTemplates.map(template => (

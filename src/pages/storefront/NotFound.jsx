@@ -7,6 +7,7 @@ import { getPageTitle, getPageContent, getCurrentLanguage } from '@/utils/transl
 import { createPublicUrl } from '@/utils/urlUtils';
 import { Home, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageLoader } from '@/components/ui/page-loader';
 
 export default function NotFound() {
   const { storeCode } = useParams();
@@ -38,11 +39,7 @@ export default function NotFound() {
   }, [store?.id]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16 min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" fullScreen={false} className="py-16 min-h-[400px]" />;
   }
 
   const effectiveStoreCode = storeCode || store?.slug || store?.code;

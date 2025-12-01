@@ -24,6 +24,7 @@ import FlashMessage from '../../components/storefront/FlashMessage';
 import { Button } from '../../components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { toast } from 'sonner';
+import { PageLoader } from '../../components/ui/page-loader';
 
 export default function Translations() {
   const { availableLanguages, currentLanguage, changeLanguage } = useTranslation();
@@ -1659,10 +1660,7 @@ export default function Translations() {
 
               {/* Products List */}
               {loadingProducts ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading products...</p>
-                </div>
+                <PageLoader size="lg" fullScreen={false} className="bg-white border border-gray-200 rounded-lg p-12" text="Loading products..." />
               ) : products.length === 0 ? (
                 <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
                   <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
@@ -1793,10 +1791,7 @@ export default function Translations() {
 
               {/* Categories List */}
               {loadingCategories ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading categories...</p>
-                </div>
+                <PageLoader size="lg" fullScreen={false} className="bg-white border border-gray-200 rounded-lg p-12" text="Loading categories..." />
               ) : productCategories.length === 0 ? (
                 <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
                   <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
@@ -1927,10 +1922,7 @@ export default function Translations() {
 
               {/* Attributes List */}
               {loadingAttributes ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading attributes...</p>
-                </div>
+                <PageLoader size="lg" fullScreen={false} className="bg-white border border-gray-200 rounded-lg p-12" text="Loading attributes..." />
               ) : productAttributes.length === 0 ? (
                 <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
                   <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
@@ -2061,10 +2053,7 @@ export default function Translations() {
 
               {/* CMS Pages List */}
               {loadingCms ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading CMS pages...</p>
-                </div>
+                <PageLoader size="lg" fullScreen={false} className="bg-white border border-gray-200 rounded-lg p-12" text="Loading CMS pages..." />
               ) : cmsPages.length === 0 ? (
                 <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
                   <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
@@ -2198,10 +2187,7 @@ export default function Translations() {
 
               {/* CMS Blocks List */}
               {loadingCms ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading CMS blocks...</p>
-                </div>
+                <PageLoader size="lg" fullScreen={false} className="bg-white border border-gray-200 rounded-lg p-12" text="Loading CMS blocks..." />
               ) : cmsBlocks.length === 0 ? (
                 <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
                   <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
@@ -2881,10 +2867,7 @@ export default function Translations() {
               </p>
             </div>
           ) : loadingEntityStats ? (
-            <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading translation statistics...</p>
-            </div>
+            <PageLoader size="lg" fullScreen={false} className="bg-white border border-gray-200 rounded-lg p-12" text="Loading translation statistics..." />
           ) : (
             <>
               {/* Header with overall stats */}

@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar, Clock, Settings, Plus, Trash2 } from "lucide-react";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import SaveButton from '@/components/ui/save-button';
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function DeliverySettings() { // Renamed the function component from DeliverySettingsPage
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -190,11 +191,7 @@ export default function DeliverySettings() { // Renamed the function component f
   ];
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   // Display a message if no store is found after loading completes

@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import apiClient from '@/api/client';
+import { PageLoader } from '@/components/ui/page-loader';
 
 const DynamicPluginAdminPage = () => {
   const { pluginSlug, pageKey } = useParams();
@@ -118,14 +119,7 @@ const DynamicPluginAdminPage = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading plugin admin page...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader size="lg" className="h-screen" text="Loading plugin admin page..." />;
   }
 
   if (error) {
