@@ -47,7 +47,9 @@ const WorkspaceAIPanel = () => {
     slotHandlers,
     openPluginEditor,
     chatMaximized,
-    toggleChatMaximized
+    toggleChatMaximized,
+    refreshPreview,
+    triggerConfigurationRefresh
   } = useAIWorkspace();
 
   const { getSelectedStoreId } = useStoreSelection();
@@ -238,6 +240,25 @@ const WorkspaceAIPanel = () => {
           data: response.data,
           credits: response.creditsDeducted
         });
+
+        // Auto-refresh preview and editor after styling changes
+        if (response.data?.type === 'styling_applied' || response.data?.type === 'styling_preview') {
+          setTimeout(() => {
+            refreshPreview?.();
+            triggerConfigurationRefresh?.();
+
+            // Dispatch localStorage event to trigger reload in page editors
+            localStorage.setItem('slot_config_updated', JSON.stringify({
+              storeId,
+              pageType: response.data?.pageType || selectedPageType,
+              timestamp: Date.now()
+            }));
+            window.dispatchEvent(new StorageEvent('storage', {
+              key: 'slot_config_updated',
+              newValue: JSON.stringify({ storeId, pageType: response.data?.pageType || selectedPageType, timestamp: Date.now() })
+            }));
+          }, 500);
+        }
       } else {
         addChatMessage({
           role: 'assistant',
@@ -337,6 +358,25 @@ const WorkspaceAIPanel = () => {
         executionResult,
         data: response.data
       });
+
+      // Auto-refresh preview and editor after styling changes
+      if (response.data?.type === 'styling_applied' || response.data?.type === 'styling_preview') {
+        setTimeout(() => {
+          refreshPreview?.();
+          triggerConfigurationRefresh?.();
+
+          // Dispatch localStorage event to trigger reload in page editors
+          localStorage.setItem('slot_config_updated', JSON.stringify({
+            storeId,
+            pageType: response.data?.pageType || selectedPageType,
+            timestamp: Date.now()
+          }));
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: 'slot_config_updated',
+            newValue: JSON.stringify({ storeId, pageType: response.data?.pageType || selectedPageType, timestamp: Date.now() })
+          }));
+        }, 500);
+      }
 
     } catch (error) {
       console.error('AI processing error:', error);
