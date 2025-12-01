@@ -906,6 +906,19 @@ ${m.down_sql || '-- No down SQL'}`,
     } catch (adminError) {
     }
 
+    // Load cron jobs from plugin_cron table
+    let cronJobs = [];
+    try {
+      const { data: cronResult } = await tenantDb
+        .from('plugin_cron')
+        .select('*')
+        .eq('plugin_id', pluginId)
+        .order('cron_name', { ascending: true });
+
+      cronJobs = cronResult || [];
+    } catch (cronError) {
+    }
+
     res.json({
       success: true,
       data: {
@@ -916,6 +929,7 @@ ${m.down_sql || '-- No down SQL'}`,
         models,
         components,
         adminPages,
+        cronJobs,
         manifest,
         readme,
         source_code: generatedFiles
@@ -1916,6 +1930,305 @@ router.put('/:pluginId/controllers/:controllerName', async (req, res) => {
       message: 'Controller updated successfully'
     });
   } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ========================================
+// Plugin Cron Jobs - CRUD Operations
+// ========================================
+
+/**
+ * GET /api/plugins/:pluginId/cron
+ * Get all cron jobs for a plugin
+ */
+router.get('/:pluginId/cron', async (req, res) => {
+  try {
+    const tenantDb = await getTenantConnection(req);
+    const { pluginId } = req.params;
+
+    const { data: cronJobs, error } = await tenantDb
+      .from('plugin_cron')
+      .select('*')
+      .eq('plugin_id', pluginId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      cronJobs: cronJobs || []
+    });
+  } catch (error) {
+    console.error('Failed to get plugin cron jobs:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/plugins/:pluginId/cron
+ * Create a new cron job for a plugin
+ */
+router.post('/:pluginId/cron', async (req, res) => {
+  try {
+    const tenantDb = await getTenantConnection(req);
+    const { pluginId } = req.params;
+    const {
+      cron_name,
+      cron_schedule,
+      handler_method,
+      description,
+      handler_code,
+      handler_params = {},
+      timezone = 'UTC',
+      is_enabled = true,
+      timeout_seconds = 300,
+      max_failures = 5
+    } = req.body;
+
+    if (!cron_name || !cron_schedule || !handler_method) {
+      return res.status(400).json({
+        success: false,
+        error: 'cron_name, cron_schedule, and handler_method are required'
+      });
+    }
+
+    // Insert new cron job
+    const { data, error } = await tenantDb
+      .from('plugin_cron')
+      .insert({
+        plugin_id: pluginId,
+        cron_name,
+        cron_schedule,
+        handler_method,
+        description: description || `Scheduled task: ${cron_name}`,
+        handler_code,
+        handler_params,
+        timezone,
+        is_enabled,
+        timeout_seconds,
+        max_failures,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: 'Cron job created successfully',
+      cronJob: data
+    });
+  } catch (error) {
+    console.error('Failed to create plugin cron job:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * PUT /api/plugins/:pluginId/cron/:cronName
+ * Update an existing cron job
+ */
+router.put('/:pluginId/cron/:cronName', async (req, res) => {
+  try {
+    const tenantDb = await getTenantConnection(req);
+    const { pluginId, cronName } = req.params;
+    const {
+      cron_name,
+      cron_schedule,
+      handler_method,
+      description,
+      handler_code,
+      handler_params,
+      timezone,
+      is_enabled,
+      timeout_seconds,
+      max_failures
+    } = req.body;
+
+    // Update cron job
+    const { data, error } = await tenantDb
+      .from('plugin_cron')
+      .update({
+        cron_name: cron_name || cronName,
+        cron_schedule,
+        handler_method,
+        description,
+        handler_code,
+        handler_params,
+        timezone,
+        is_enabled,
+        timeout_seconds,
+        max_failures,
+        updated_at: new Date().toISOString()
+      })
+      .eq('plugin_id', pluginId)
+      .eq('cron_name', cronName)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: 'Cron job updated successfully',
+      cronJob: data
+    });
+  } catch (error) {
+    console.error('Failed to update plugin cron job:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/plugins/:pluginId/cron/:cronName
+ * Delete a cron job
+ */
+router.delete('/:pluginId/cron/:cronName', async (req, res) => {
+  try {
+    const tenantDb = await getTenantConnection(req);
+    const { pluginId, cronName } = req.params;
+
+    const { error } = await tenantDb
+      .from('plugin_cron')
+      .delete()
+      .eq('plugin_id', pluginId)
+      .eq('cron_name', cronName);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: 'Cron job deleted successfully'
+    });
+  } catch (error) {
+    console.error('Failed to delete plugin cron job:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/plugins/:pluginId/cron/:cronName/toggle
+ * Toggle cron job enabled/disabled status
+ */
+router.post('/:pluginId/cron/:cronName/toggle', async (req, res) => {
+  try {
+    const tenantDb = await getTenantConnection(req);
+    const { pluginId, cronName } = req.params;
+
+    // Get current status
+    const { data: existing, error: fetchError } = await tenantDb
+      .from('plugin_cron')
+      .select('is_enabled')
+      .eq('plugin_id', pluginId)
+      .eq('cron_name', cronName)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Toggle status
+    const { data, error } = await tenantDb
+      .from('plugin_cron')
+      .update({
+        is_enabled: !existing.is_enabled,
+        updated_at: new Date().toISOString()
+      })
+      .eq('plugin_id', pluginId)
+      .eq('cron_name', cronName)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: `Cron job ${data.is_enabled ? 'enabled' : 'disabled'}`,
+      cronJob: data
+    });
+  } catch (error) {
+    console.error('Failed to toggle plugin cron job:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/plugins/:pluginId/cron/:cronName/run
+ * Manually trigger a cron job execution
+ */
+router.post('/:pluginId/cron/:cronName/run', async (req, res) => {
+  try {
+    const tenantDb = await getTenantConnection(req);
+    const { pluginId, cronName } = req.params;
+
+    // Get cron job details
+    const { data: cronJob, error: fetchError } = await tenantDb
+      .from('plugin_cron')
+      .select('*')
+      .eq('plugin_id', pluginId)
+      .eq('cron_name', cronName)
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (!cronJob) {
+      return res.status(404).json({
+        success: false,
+        error: 'Cron job not found'
+      });
+    }
+
+    // Get plugin info
+    const { data: plugin, error: pluginError } = await tenantDb
+      .from('plugin_registry')
+      .select('id, name, slug')
+      .eq('id', pluginId)
+      .single();
+
+    if (pluginError) throw pluginError;
+
+    // TODO: Queue the job for immediate execution via BackgroundJobManager
+    // For now, just update last_run_at to indicate it was triggered
+    const { data, error } = await tenantDb
+      .from('plugin_cron')
+      .update({
+        last_run_at: new Date().toISOString(),
+        last_status: 'running',
+        run_count: (cronJob.run_count || 0) + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq('plugin_id', pluginId)
+      .eq('cron_name', cronName)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: `Cron job '${cronName}' triggered for execution`,
+      cronJob: data
+    });
+  } catch (error) {
+    console.error('Failed to trigger plugin cron job:', error);
     res.status(500).json({
       success: false,
       error: error.message

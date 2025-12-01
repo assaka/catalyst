@@ -17,6 +17,9 @@ import api from '@/utils/api';
  * @param {Array} fields - Field definitions [{ name: 'name', label: 'Name', type: 'text', required: true }]
  * @param {String} defaultLanguage - Default language to show (default: 'en')
  *
+ * @param className
+ * @param storeId
+ * @param entityType
  * @example
  * <TranslationFields
  *   translations={formData.translations}
@@ -44,10 +47,6 @@ export default function TranslationFields({
 
   // Update local state when translations prop changes
   useEffect(() => {
-    console.log('🔍 TranslationFields - Translations prop changed:', {
-      translationsKeys: Object.keys(translations || {}),
-      translations: translations
-    });
     setLocalTranslations(translations);
   }, [translations]);
 

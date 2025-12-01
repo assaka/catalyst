@@ -43,20 +43,12 @@ export default function ProductTabForm({ tab, attributes = [], attributeSets = [
 
   useEffect(() => {
     if (tab) {
-      console.log('🔍 Frontend: Loading tab into form:', {
-        tabId: tab.id,
-        tabName: tab.name,
-        tabContent: tab.content,
-        tabTranslations: tab.translations,
-        translationKeys: Object.keys(tab.translations || {})
-      });
 
       // Handle translations with backward compatibility
       let translations = tab.translations || {};
 
       // Ensure English translation exists (backward compatibility)
       if (!translations.en || (!translations.en.name && tab.name)) {
-        console.log('🔍 Frontend: Creating EN translation from base fields');
         translations.en = {
           name: tab.name || "",
           content: tab.content || ""

@@ -79,6 +79,13 @@ const DeveloperPluginEditor = ({
   const [controllerMethod, setControllerMethod] = useState('POST');
   const [showControllerMappingDialog, setShowControllerMappingDialog] = useState(false);
   const [editingControllerPath, setEditingControllerPath] = useState('');
+  // Cron-specific state
+  const [cronSchedule, setCronSchedule] = useState('0 2 * * *');
+  const [cronHandlerMethod, setCronHandlerMethod] = useState('');
+  const [cronDescription, setCronDescription] = useState('');
+  const [showCronMappingDialog, setShowCronMappingDialog] = useState(false);
+  const [editingCronSchedule, setEditingCronSchedule] = useState('');
+  const [editingCronHandlerMethod, setEditingCronHandlerMethod] = useState('');
   const [editingControllerMethod, setEditingControllerMethod] = useState('POST');
   const [isRunningMigration, setIsRunningMigration] = useState(false);
   const [showMigrationConfirm, setShowMigrationConfirm] = useState(false);
@@ -454,6 +461,90 @@ const DeveloperPluginEditor = ({
       });
     }
 
+    // Add cron folder and ensure it's visible
+    const cronFiles = allFiles.filter(f => f.name && f.name.startsWith('cron/'));
+
+    if (cronFiles.length > 0 || pluginData.cronJobs?.length > 0) {
+      let cronFolder = tree.children.find(f => f.name === 'cron');
+      if (!cronFolder) {
+        cronFolder = {
+          name: 'cron',
+          type: 'folder',
+          path: '/cron',
+          children: []
+        };
+        tree.children.push(cronFolder);
+      }
+
+      // Add cron files from source_code array
+      cronFiles.forEach(cron => {
+        const cronName = cron.name.replace('cron/', '');
+        const cronPath = `/cron/${cronName}`;
+        const existingIndex = cronFolder.children.findIndex(f => f.name === cronName);
+
+        const cronFile = {
+          name: cronName,
+          type: 'file',
+          path: cronPath,
+          content: cron.code,
+          cron_name: cron.cron_name,
+          cron_schedule: cron.cron_schedule,
+          handler_method: cron.handler_method,
+          description: cron.description,
+          is_enabled: cron.is_enabled,
+          last_run_at: cron.last_run_at,
+          last_status: cron.last_status
+        };
+
+        if (existingIndex >= 0) {
+          cronFolder.children[existingIndex] = cronFile;
+        } else {
+          cronFolder.children.push(cronFile);
+        }
+      });
+
+      // Add cron jobs from plugin_cron table (if available)
+      if (pluginData.cronJobs && pluginData.cronJobs.length > 0) {
+        pluginData.cronJobs.forEach(cronJob => {
+          const cronFileName = `${cronJob.cron_name}.json`;
+          const cronPath = `/cron/${cronFileName}`;
+          const existingIndex = cronFolder.children.findIndex(f => f.name === cronFileName);
+
+          const cronFile = {
+            name: cronFileName,
+            type: 'file',
+            path: cronPath,
+            content: JSON.stringify({
+              cron_name: cronJob.cron_name,
+              cron_schedule: cronJob.cron_schedule,
+              handler_method: cronJob.handler_method,
+              description: cronJob.description,
+              handler_params: cronJob.handler_params || {},
+              timezone: cronJob.timezone || 'UTC',
+              is_enabled: cronJob.is_enabled,
+              timeout_seconds: cronJob.timeout_seconds || 300,
+              max_failures: cronJob.max_failures || 5
+            }, null, 2),
+            cron_name: cronJob.cron_name,
+            cron_schedule: cronJob.cron_schedule,
+            handler_method: cronJob.handler_method,
+            description: cronJob.description,
+            is_enabled: cronJob.is_enabled,
+            last_run_at: cronJob.last_run_at,
+            last_status: cronJob.last_status,
+            run_count: cronJob.run_count,
+            success_count: cronJob.success_count
+          };
+
+          if (existingIndex >= 0) {
+            cronFolder.children[existingIndex] = cronFile;
+          } else {
+            cronFolder.children.push(cronFile);
+          }
+        });
+      }
+    }
+
     // NO hardcoding - manifest.json and README.md come from backend via source_code array
     // - manifest.json: Backend adds from plugin_registry.manifest column
     // - README.md: Backend loads from plugin_docs table (doc_type='readme')
@@ -812,6 +903,10 @@ const DeveloperPluginEditor = ({
           filePath = `/events/${newFileName}`;
           fileExtension = '.js';
           break;
+        case 'cron':
+          filePath = `/cron/${newFileName}`;
+          fileExtension = '.json';
+          break;
         default:
           filePath = `/${newFileName}`;
       }
@@ -849,6 +944,19 @@ const DeveloperPluginEditor = ({
       } else if (newFileType === 'service') {
         // Create default service
         defaultContent = `// Service: ${newFileName}\n// Created: ${new Date().toISOString()}\n\nclass ${newFileName.replace(/[^a-zA-Z0-9]/g, '')}Service {\n  constructor() {\n    // Initialize service\n  }\n\n  /**\n   * Example service method\n   */\n  async fetchData() {\n    try {\n      // Your API calls or data operations here\n      return { success: true, data: [] };\n    } catch (error) {\n      console.error('Service error:', error);\n      throw error;\n    }\n  }\n}\n\nexport default new ${newFileName.replace(/[^a-zA-Z0-9]/g, '')}Service();\n`;
+      } else if (newFileType === 'cron') {
+        // Create default cron job configuration (JSON)
+        defaultContent = JSON.stringify({
+          cron_name: newFileName.replace(/\.json$/, ''),
+          cron_schedule: cronSchedule,
+          handler_method: cronHandlerMethod,
+          description: cronDescription || `Scheduled task: ${newFileName}`,
+          handler_params: {},
+          timezone: 'UTC',
+          is_enabled: true,
+          timeout_seconds: 300,
+          max_failures: 5
+        }, null, 2);
       }
 
       // For event files, create the event listener mapping in junction table
@@ -875,6 +983,21 @@ const DeveloperPluginEditor = ({
         });
 
         addTerminalOutput(`✓ Created controller ${newFileName} (${controllerMethod} ${controllerPath})`, 'success');
+      } else if (newFileType === 'cron') {
+        // For cron files, create in plugin_cron table
+        await apiClient.post(`plugins/${plugin.id}/cron`, {
+          cron_name: newFileName.replace(/\.json$/, ''),
+          cron_schedule: cronSchedule,
+          handler_method: cronHandlerMethod,
+          description: cronDescription || `Scheduled task: ${newFileName}`,
+          handler_params: {},
+          timezone: 'UTC',
+          is_enabled: true,
+          timeout_seconds: 300,
+          max_failures: 5
+        });
+
+        addTerminalOutput(`✓ Created cron job ${newFileName} (${cronSchedule} → ${cronHandlerMethod})`, 'success');
       } else {
         // For component, util, service, hook, and other files, use the file save endpoint
         // These will be saved to plugin_scripts table (for components/utils/services) or plugin_hooks table (for hooks)
@@ -901,6 +1024,9 @@ const DeveloperPluginEditor = ({
       setEventSearchQuery('');
       setControllerPath('');
       setControllerMethod('POST');
+      setCronSchedule('0 2 * * *');
+      setCronHandlerMethod('');
+      setCronDescription('');
 
       // Reload file tree
       await loadPluginFiles();
@@ -1081,8 +1207,19 @@ const DeveloperPluginEditor = ({
               </Badge>
             )}
 
+            {/* Show cron schedule badge for cron files */}
+            {node.cron_schedule && (
+              <Badge
+                className={`ml-auto text-xs flex items-center gap-1 ${node.is_enabled !== false ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}
+                title={`${node.description || node.cron_name} - Handler: ${node.handler_method}${node.last_run_at ? ` | Last run: ${new Date(node.last_run_at).toLocaleString()}` : ''}`}
+              >
+                <Clock className="w-3 h-3" />
+                {node.cron_schedule}
+              </Badge>
+            )}
+
             {/* Show modified badge */}
-            {node.type === 'file' && fileContent !== originalContent && selectedFile?.path === node.path && !node.eventName && (
+            {node.type === 'file' && fileContent !== originalContent && selectedFile?.path === node.path && !node.eventName && !node.cron_schedule && (
               <Badge className="ml-auto bg-orange-100 text-orange-700 text-xs">M</Badge>
             )}
           </div>
@@ -1515,6 +1652,7 @@ const DeveloperPluginEditor = ({
                   <option value="service">Service - API/Data Layer (.js)</option>
                   <option value="hook">Hook - React Hook (.js)</option>
                   <option value="event">Event Listener (.js)</option>
+                  <option value="cron">Cron Job - Scheduled Task (.json)</option>
                 </select>
               </div>
 
@@ -1569,13 +1707,63 @@ const DeveloperPluginEditor = ({
                   </div>
                 </>
               )}
+
+              {/* Cron Schedule and Handler - Only for Cron type */}
+              {newFileType === 'cron' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Cron Schedule *
+                    </label>
+                    <Input
+                      value={cronSchedule}
+                      onChange={(e) => setCronSchedule(e.target.value)}
+                      placeholder="e.g., 0 2 * * * (daily at 2 AM)"
+                      className="w-full font-mono"
+                    />
+                    <div className="text-xs text-gray-500 mt-1 space-y-1">
+                      <p>Standard cron format: minute hour day month weekday</p>
+                      <p className="font-mono">
+                        Examples: <span className="text-blue-600">0 2 * * *</span> (daily 2AM),{' '}
+                        <span className="text-blue-600">0 */6 * * *</span> (every 6h),{' '}
+                        <span className="text-blue-600">0 9 * * 1</span> (Mon 9AM)
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Handler Method *
+                    </label>
+                    <Input
+                      value={cronHandlerMethod}
+                      onChange={(e) => setCronHandlerMethod(e.target.value)}
+                      placeholder="e.g., sendCartReminders"
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      The method name in your plugin class to call when the cron runs
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description
+                    </label>
+                    <Input
+                      value={cronDescription}
+                      onChange={(e) => setCronDescription(e.target.value)}
+                      placeholder="e.g., Send abandoned cart reminder emails"
+                      className="w-full"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex gap-2 mt-6">
               <Button
                 onClick={handleCreateNewFile}
                 className="flex-1"
-                disabled={(newFileType === 'event' && !selectedEventName) || (newFileType === 'controller' && (!controllerPath.trim() || !controllerMethod))}
+                disabled={(newFileType === 'event' && !selectedEventName) || (newFileType === 'controller' && (!controllerPath.trim() || !controllerMethod)) || (newFileType === 'cron' && (!cronSchedule.trim() || !cronHandlerMethod.trim()))}
               >
                 Create
               </Button>
