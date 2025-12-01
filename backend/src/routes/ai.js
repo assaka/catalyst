@@ -794,25 +794,47 @@ Determine the intent and respond with JSON:
 {
   "intent": "plugin|translation|layout|styling|code|chat",
   "action": "generate|modify|chat",
-  "details": {
-    // For plugin: { description, category }
-    // For translation: { text: "the text to translate", targetLanguages: ["fr", "es"], entities: ["products", "categories"] }
-    // For layout: { configType, description }
-    // For styling: { pageType: "product|category|homepage|cart|checkout", element: "product_title|product_price|add_to_cart_button|etc", property: "color|backgroundColor|fontSize|etc", value: "red|#ff0000|16px|etc" }
-    // For code: { operation }
-  }
+  "details": { ... }
 }
 
-For styling intent (CSS/visual changes):
-- Identify the page type: product, category, homepage, cart, checkout, account, login, success
-- Identify the element to style: product_title, product_price, add_to_cart_button, breadcrumbs, etc.
-- Identify the CSS property: color, backgroundColor, fontSize, fontWeight, padding, margin, border, etc.
-- Extract the value: color names (red, blue), hex codes (#ff0000), sizes (16px, 1rem), etc.
+INTENT DEFINITIONS:
 
-For translation intent:
-- Extract the text to translate (e.g., "add to cart button" → "Add to Cart")
-- Extract target language codes (e.g., "French" → "fr", "Spanish" → "es", "German" → "de", "Arabic" → "ar")
-- Common language mappings: French=fr, Spanish=es, German=de, Arabic=ar, Chinese=zh, Japanese=ja, Portuguese=pt, Italian=it, Dutch=nl, Russian=ru
+1. **styling** - Changing visual properties of EXISTING elements (colors, fonts, sizes, spacing):
+   - "change the product title color to red" → styling
+   - "make the price blue" → styling
+   - "set the button background to green" → styling
+   - "increase the font size of the title" → styling
+   Details: { pageType, element, property, value }
+
+2. **layout** - Adding, removing, or reordering SECTIONS/COMPONENTS on a page:
+   - "add a hero section to the homepage" → layout
+   - "remove the related products section" → layout
+   - "move the breadcrumbs below the title" → layout
+   Details: { configType, description }
+
+3. **translation** - Translating text to other languages:
+   - "translate add to cart to French" → translation
+   Details: { text, targetLanguages, entities }
+
+4. **plugin** - Creating new functionality/features:
+   - "create a wishlist plugin" → plugin
+   Details: { description, category }
+
+5. **code** - Modifying source code directly:
+   - "add error handling to this function" → code
+   Details: { operation }
+
+6. **chat** - General questions or conversation
+
+STYLING DETAILS FORMAT:
+{
+  "pageType": "product|category|homepage|cart|checkout|account|login|success",
+  "element": "product_title|product_price|add_to_cart_button|breadcrumbs|etc",
+  "property": "color|backgroundColor|fontSize|fontWeight|padding|margin|border|etc",
+  "value": "the color/size/value mentioned"
+}
+
+IMPORTANT: If user mentions color, font, size, background - it's STYLING, not layout.
 
 Return ONLY valid JSON.`;
 

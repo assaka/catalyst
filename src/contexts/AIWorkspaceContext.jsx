@@ -99,6 +99,9 @@ export const AIWorkspaceProvider = ({ children }) => {
   // Configuration refresh trigger (increments to signal editors to reload)
   const [configurationRefreshTrigger, setConfigurationRefreshTrigger] = useState(0);
 
+  // Preview refresh trigger (increments to signal storefront preview to reload)
+  const [previewRefreshTrigger, setPreviewRefreshTrigger] = useState(0);
+
   // Check for plugin passed via location state (from Plugins page Edit button)
   useEffect(() => {
     if (location.state?.plugin) {
@@ -295,6 +298,13 @@ export const AIWorkspaceProvider = ({ children }) => {
     setConfigurationRefreshTrigger(prev => prev + 1);
   }, []);
 
+  /**
+   * Trigger preview refresh (called after AI styling changes to reload storefront preview)
+   */
+  const refreshPreview = useCallback(() => {
+    setPreviewRefreshTrigger(prev => prev + 1);
+  }, []);
+
   // Memoized value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     // Page/Editor State
@@ -357,6 +367,8 @@ export const AIWorkspaceProvider = ({ children }) => {
     triggerPublishStatusRefresh,
     configurationRefreshTrigger,
     triggerConfigurationRefresh,
+    previewRefreshTrigger,
+    refreshPreview,
 
     // Constants
     pageTypes: PAGE_TYPES,

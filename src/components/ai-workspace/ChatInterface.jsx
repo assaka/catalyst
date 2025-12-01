@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
 import { User as UserEntity } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { useAIWorkspace } from '@/contexts/AIWorkspaceContext';
 
 /**
  * ChatInterface - Conversational AI for AI Studio
@@ -11,6 +12,7 @@ import { useStoreSelection } from '@/contexts/StoreSelectionContext';
  */
 const ChatInterface = ({ onPluginCloned, context }) => {
   const { getSelectedStoreId } = useStoreSelection();
+  const { refreshPreview } = useAIWorkspace();
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -169,9 +171,14 @@ const ChatInterface = ({ onPluginCloned, context }) => {
         setMessages(prev => [...prev, {
           role: 'assistant',
           content: response.message,
-          data: response.data, // Plugin, translation, layout data
+          data: response.data, // Plugin, translation, layout, styling data
           credits: response.creditsDeducted
         }]);
+
+        // Auto-refresh preview after styling changes are applied
+        if (response.data?.type === 'styling_applied' || response.data?.type === 'styling_preview') {
+          setTimeout(() => refreshPreview?.(), 500);
+        }
       } else {
         setMessages(prev => [...prev, {
           role: 'assistant',

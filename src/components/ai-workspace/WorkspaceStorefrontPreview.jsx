@@ -12,7 +12,7 @@ import { StorefrontProduct, StorefrontCategory } from '@/api/storefront-entities
  * Shows the actual live storefront homepage with full clickable features
  */
 const WorkspaceStorefrontPreview = () => {
-  const { selectedPageType, viewportMode, setViewportMode } = useAIWorkspace();
+  const { selectedPageType, viewportMode, setViewportMode, previewRefreshTrigger } = useAIWorkspace();
   const { getSelectedStoreId, selectedStore } = useStoreSelection();
 
   const iframeRef = useRef(null);
@@ -20,6 +20,14 @@ const WorkspaceStorefrontPreview = () => {
   const [currentUrl, setCurrentUrl] = useState('');
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(Date.now()); // Force refresh on mount
+
+  // Refresh preview when trigger changes (e.g., after AI styling changes)
+  useEffect(() => {
+    if (previewRefreshTrigger > 0) {
+      setRefreshKey(Date.now());
+      setIsLoading(true);
+    }
+  }, [previewRefreshTrigger]);
   const [firstProductSlug, setFirstProductSlug] = useState(null);
   const [firstCategorySlug, setFirstCategorySlug] = useState(null);
 
