@@ -110,6 +110,16 @@ export const AIWorkspaceProvider = ({ children }) => {
       // Clear the state to prevent re-opening on navigation
       window.history.replaceState({}, document.title);
     }
+    // Handle new plugin creation (from Plugins page Create with AI button)
+    if (location.state?.newPlugin) {
+      setPluginToEdit({
+        ...location.state.newPlugin,
+        isNew: true // Flag to indicate this is a new plugin
+      });
+      setShowPluginEditor(true);
+      // Clear the state to prevent re-opening on navigation
+      window.history.replaceState({}, document.title);
+    }
   }, [location.state]);
 
   /**

@@ -37,7 +37,12 @@ import {
   Clock,
   FileCode,
   Folder,
-  CheckCircle2
+  CheckCircle2,
+  Database,
+  Webhook,
+  LayoutDashboard,
+  Terminal,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -430,58 +435,40 @@ export default function Plugins() {
       return;
     }
 
-    setCreatingPlugin(true);
-    try {
-      // Create the plugin in the database first
-      const slug = newPluginData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    // Generate slug from name
+    const slug = newPluginData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-      const response = await apiClient.request('POST', 'plugins', {
-        name: newPluginData.name,
-        slug: slug,
-        description: newPluginData.description || `A custom ${newPluginData.category} plugin`,
-        category: newPluginData.category,
-        version: '1.0.0',
-        creator_id: user?.id,
-        is_public: false,
-        manifest: {
+    // Close dialog
+    setShowCreatePluginDialog(false);
+
+    // Navigate to AI workspace with the new plugin metadata
+    // The AI workspace will handle creating the plugin
+    navigate('/ai-workspace', {
+      state: {
+        newPlugin: {
           name: newPluginData.name,
           slug: slug,
-          version: '1.0.0',
           description: newPluginData.description || `A custom ${newPluginData.category} plugin`,
-          author: user?.name || 'Store Owner',
           category: newPluginData.category,
-          hooks: {},
-          configSchema: { properties: {} }
-        }
-      });
+          version: '1.0.0',
+          author: user?.name || 'Store Owner',
+          manifest: {
+            name: newPluginData.name,
+            slug: slug,
+            version: '1.0.0',
+            description: newPluginData.description || `A custom ${newPluginData.category} plugin`,
+            author: user?.name || 'Store Owner',
+            category: newPluginData.category,
+            hooks: {},
+            configSchema: { properties: {} }
+          }
+        },
+        isNewPlugin: true
+      }
+    });
 
-      const createdPlugin = response.plugin || response;
-
-      // Close dialog and navigate to AI workspace with the plugin
-      setShowCreatePluginDialog(false);
-      setNewPluginData({ name: '', description: '', category: 'integration' });
-
-      // Navigate to AI workspace with the new plugin for editing
-      navigate('/ai-workspace', {
-        state: {
-          plugin: {
-            id: createdPlugin.id,
-            name: createdPlugin.name,
-            slug: createdPlugin.slug,
-            description: createdPlugin.description,
-            category: createdPlugin.category || newPluginData.category,
-            version: createdPlugin.version || '1.0.0',
-            manifest: createdPlugin.manifest
-          },
-          isNewPlugin: true
-        }
-      });
-    } catch (error) {
-      console.error("Error creating plugin:", error);
-      setFlashMessage({ type: 'error', message: 'Error creating plugin: ' + error.message });
-    } finally {
-      setCreatingPlugin(false);
-    }
+    // Reset form
+    setNewPluginData({ name: '', description: '', category: 'integration' });
   };
 
   // Different filtering for different contexts
@@ -1461,7 +1448,7 @@ export default function Plugins() {
 
         {/* How-To Documentation Dialog */}
         <Dialog open={showHowToDialog} onOpenChange={setShowHowToDialog}>
-          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-blue-600" />
@@ -1486,11 +1473,15 @@ export default function Plugins() {
                   <Folder className="w-4 h-4 text-blue-600" />
                   Plugin Structure
                 </h3>
-                <p className="text-gray-600 mb-2">Every plugin needs 2 files:</p>
+                <p className="text-gray-600 mb-2">A plugin can have these files:</p>
                 <div className="bg-gray-50 rounded-lg p-3 font-mono text-xs">
                   <div className="text-gray-500">backend/plugins/my-plugin/</div>
-                  <div className="ml-4">├── <span className="text-blue-600">manifest.json</span> <span className="text-gray-400">← Plugin info</span></div>
-                  <div className="ml-4">└── <span className="text-green-600">index.js</span> <span className="text-gray-400">← Plugin code</span></div>
+                  <div className="ml-4">├── <span className="text-blue-600">manifest.json</span> <span className="text-gray-400">← Required: Plugin info</span></div>
+                  <div className="ml-4">├── <span className="text-green-600">index.js</span> <span className="text-gray-400">← Required: Main plugin code</span></div>
+                  <div className="ml-4">├── <span className="text-purple-600">controllers/</span> <span className="text-gray-400">← Optional: API route handlers</span></div>
+                  <div className="ml-4">├── <span className="text-orange-600">migrations/</span> <span className="text-gray-400">← Optional: Database migrations</span></div>
+                  <div className="ml-4">├── <span className="text-pink-600">events/</span> <span className="text-gray-400">← Optional: Event handlers</span></div>
+                  <div className="ml-4">└── <span className="text-cyan-600">styles.css</span> <span className="text-gray-400">← Optional: Custom styles</span></div>
                 </div>
               </div>
 
@@ -1498,9 +1489,8 @@ export default function Plugins() {
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <FileCode className="w-4 h-4 text-orange-600" />
-                  manifest.json
+                  manifest.json (Full Example)
                 </h3>
-                <p className="text-gray-600 mb-2">Describes your plugin:</p>
                 <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
                   <pre>{`{
   "name": "My Plugin",
@@ -1508,103 +1498,339 @@ export default function Plugins() {
   "version": "1.0.0",
   "description": "What it does",
   "author": "Your Name",
-  "category": "display"
+  "category": "display",
+  "hooks": {
+    "homepage_header": "renderHeader",
+    "homepage_content": "renderContent"
+  },
+  "routes": [
+    { "path": "/api/plugins/my-plugin/data", "method": "GET", "handler": "getData" },
+    { "path": "/api/plugins/my-plugin/save", "method": "POST", "handler": "saveData" }
+  ],
+  "cron": [
+    { "name": "Daily Task", "schedule": "0 9 * * *", "handler": "runDaily" }
+  ],
+  "adminNavigation": {
+    "enabled": true,
+    "label": "My Plugin",
+    "icon": "Settings",
+    "route": "/admin/my-plugin"
+  },
+  "configSchema": {
+    "properties": {
+      "message": { "type": "string", "default": "Hello!" },
+      "enabled": { "type": "boolean", "default": true }
+    }
+  }
 }`}</pre>
                 </div>
               </div>
 
-              {/* What Plugins Can Do */}
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-yellow-600" />
-                  What Plugins Can Do
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="border rounded-lg p-3">
-                    <div className="font-medium text-gray-900 mb-1 flex items-center gap-2">
-                      <Code className="w-4 h-4 text-blue-500" />
-                      Hooks
-                    </div>
-                    <p className="text-gray-600 text-xs">Display content on specific parts of the page (homepage header, content area)</p>
-                  </div>
-                  <div className="border rounded-lg p-3">
-                    <div className="font-medium text-gray-900 mb-1 flex items-center gap-2">
-                      <Settings className="w-4 h-4 text-gray-500" />
-                      Configuration
-                    </div>
-                    <p className="text-gray-600 text-xs">Let store owners customize your plugin via the admin panel</p>
-                  </div>
-                  <div className="border rounded-lg p-3">
-                    <div className="font-medium text-gray-900 mb-1 flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-green-500" />
-                      API Routes
-                    </div>
-                    <p className="text-gray-600 text-xs">Create custom API endpoints for your plugin</p>
-                  </div>
-                  <div className="border rounded-lg p-3">
-                    <div className="font-medium text-gray-900 mb-1 flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-purple-500" />
-                      Scheduled Tasks
-                    </div>
-                    <p className="text-gray-600 text-xs">Run tasks automatically on a schedule (cron jobs)</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Simple Example */}
-              <div>
+              {/* HOOKS EXAMPLE */}
+              <div className="border-t pt-4">
                 <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  Simple Example
+                  <Code className="w-4 h-4 text-blue-600" />
+                  Hooks Example
                 </h3>
-                <p className="text-gray-600 mb-2">A plugin that shows a welcome banner:</p>
+                <p className="text-gray-600 mb-2">Display content on specific parts of the page:</p>
                 <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// index.js
-class WelcomeBannerPlugin {
-  showWelcome(config, context) {
-    return \`
-      <div style="background: #4CAF50;
-                  color: white;
-                  padding: 20px;
-                  text-align: center;">
-        <h2>\${config.message || 'Welcome!'}</h2>
-      </div>
-    \`;
+                  <pre>{`// manifest.json
+{
+  "hooks": {
+    "homepage_header": "renderHeader",
+    "homepage_content": "renderContent"
   }
 }
-module.exports = WelcomeBannerPlugin;`}</pre>
+
+// index.js
+class MyPlugin {
+  renderHeader(config, context) {
+    return \`<div class="banner">\${config.message}</div>\`;
+  }
+
+  renderContent(config, context) {
+    const storeName = context.store?.name || 'Store';
+    return \`<p>Welcome to \${storeName}!</p>\`;
+  }
+}
+module.exports = MyPlugin;`}</pre>
+                </div>
+                <p className="text-gray-500 text-xs mt-2">Available hooks: <code className="bg-gray-100 px-1 rounded">homepage_header</code>, <code className="bg-gray-100 px-1 rounded">homepage_content</code></p>
+              </div>
+
+              {/* CRON EXAMPLE */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-purple-600" />
+                  Cron Jobs Example
+                </h3>
+                <p className="text-gray-600 mb-2">Run tasks on a schedule:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`// manifest.json
+{
+  "cron": [
+    {
+      "name": "Daily Report",
+      "schedule": "0 9 * * *",
+      "handler": "sendDailyReport",
+      "description": "Sends report every day at 9 AM"
+    },
+    {
+      "name": "Cleanup",
+      "schedule": "0 0 * * 0",
+      "handler": "weeklyCleanup",
+      "description": "Runs every Sunday at midnight"
+    }
+  ]
+}
+
+// index.js
+class MyPlugin {
+  async sendDailyReport() {
+    console.log('Sending daily report...');
+    // Your logic here
+  }
+
+  async weeklyCleanup() {
+    console.log('Running weekly cleanup...');
+    // Your logic here
+  }
+}
+module.exports = MyPlugin;`}</pre>
+                </div>
+                <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                  <div className="bg-purple-50 rounded p-2">
+                    <div className="font-mono text-purple-700">* * * * *</div>
+                    <div className="text-purple-600">Every minute</div>
+                  </div>
+                  <div className="bg-purple-50 rounded p-2">
+                    <div className="font-mono text-purple-700">0 * * * *</div>
+                    <div className="text-purple-600">Every hour</div>
+                  </div>
+                  <div className="bg-purple-50 rounded p-2">
+                    <div className="font-mono text-purple-700">0 9 * * *</div>
+                    <div className="text-purple-600">Daily at 9 AM</div>
+                  </div>
+                  <div className="bg-purple-50 rounded p-2">
+                    <div className="font-mono text-purple-700">0 0 * * 0</div>
+                    <div className="text-purple-600">Weekly (Sunday)</div>
+                  </div>
                 </div>
               </div>
 
-              {/* Config Types */}
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Configuration Types</h3>
-                <div className="grid grid-cols-3 gap-2 text-xs">
+              {/* API ROUTES / CONTROLLERS */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-green-600" />
+                  API Routes / Controllers
+                </h3>
+                <p className="text-gray-600 mb-2">Create custom API endpoints:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`// manifest.json
+{
+  "routes": [
+    {
+      "path": "/api/plugins/my-plugin/items",
+      "method": "GET",
+      "handler": "getItems"
+    },
+    {
+      "path": "/api/plugins/my-plugin/items",
+      "method": "POST",
+      "handler": "createItem"
+    },
+    {
+      "path": "/api/plugins/my-plugin/items/:id",
+      "method": "DELETE",
+      "handler": "deleteItem"
+    }
+  ]
+}
+
+// index.js
+class MyPlugin {
+  async getItems(req, res) {
+    const items = [{ id: 1, name: 'Item 1' }];
+    return { success: true, items };
+  }
+
+  async createItem(req, res) {
+    const { name } = req.body;
+    // Save to database...
+    return { success: true, item: { id: 2, name } };
+  }
+
+  async deleteItem(req, res) {
+    const { id } = req.params;
+    // Delete from database...
+    return { success: true, deleted: id };
+  }
+}
+module.exports = MyPlugin;`}</pre>
+                </div>
+              </div>
+
+              {/* MIGRATIONS */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Database className="w-4 h-4 text-orange-600" />
+                  Database Migrations
+                </h3>
+                <p className="text-gray-600 mb-2">Create database tables for your plugin:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`// migrations/001_create_my_table.js
+module.exports = {
+  up: async (knex) => {
+    await knex.schema.createTable('my_plugin_items', (table) => {
+      table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+      table.string('name').notNullable();
+      table.text('description');
+      table.boolean('is_active').defaultTo(true);
+      table.uuid('store_id').references('id').inTable('stores');
+      table.timestamps(true, true);
+    });
+  },
+
+  down: async (knex) => {
+    await knex.schema.dropTableIfExists('my_plugin_items');
+  }
+};`}</pre>
+                </div>
+                <p className="text-gray-500 text-xs mt-2">Migrations run automatically when the plugin is installed.</p>
+              </div>
+
+              {/* EVENTS */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Webhook className="w-4 h-4 text-pink-600" />
+                  Events
+                </h3>
+                <p className="text-gray-600 mb-2">React to system events:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`// index.js
+class MyPlugin {
+  // Called when plugin is enabled
+  onEnable() {
+    console.log('Plugin enabled!');
+  }
+
+  // Called when plugin is disabled
+  onDisable() {
+    console.log('Plugin disabled!');
+  }
+
+  // Called when config changes
+  onConfigUpdate(newConfig, oldConfig) {
+    console.log('Config updated:', newConfig);
+  }
+
+  // Called on plugin install
+  async install() {
+    console.log('Plugin installed!');
+  }
+
+  // Called on plugin uninstall
+  async uninstall() {
+    console.log('Plugin uninstalled!');
+  }
+}
+module.exports = MyPlugin;`}</pre>
+                </div>
+              </div>
+
+              {/* ADMIN NAVIGATION */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <LayoutDashboard className="w-4 h-4 text-cyan-600" />
+                  Admin Navigation
+                </h3>
+                <p className="text-gray-600 mb-2">Add a page to the admin menu:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`// manifest.json
+{
+  "adminNavigation": {
+    "enabled": true,
+    "label": "My Plugin Settings",
+    "icon": "Settings",
+    "route": "/admin/my-plugin",
+    "order": 100,
+    "description": "Configure my plugin"
+  }
+}`}</pre>
+                </div>
+                <p className="text-gray-500 text-xs mt-2">Available icons: Settings, BarChart3, Mail, CreditCard, Truck, Puzzle, Code2, and more from Lucide.</p>
+              </div>
+
+              {/* CONFIG SCHEMA */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-gray-600" />
+                  Configuration Schema
+                </h3>
+                <p className="text-gray-600 mb-2">Define settings for store owners to configure:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`// manifest.json
+{
+  "configSchema": {
+    "properties": {
+      "welcomeMessage": {
+        "type": "string",
+        "default": "Welcome!",
+        "description": "Message to display"
+      },
+      "showBanner": {
+        "type": "boolean",
+        "default": true,
+        "description": "Show the banner"
+      },
+      "position": {
+        "type": "string",
+        "enum": ["left", "center", "right"],
+        "default": "center",
+        "description": "Text alignment"
+      },
+      "maxItems": {
+        "type": "number",
+        "default": 10,
+        "description": "Maximum items to show"
+      }
+    }
+  }
+}`}</pre>
+                </div>
+                <div className="mt-2 grid grid-cols-4 gap-2 text-xs">
                   <div className="bg-blue-50 rounded p-2">
                     <div className="font-medium text-blue-700">string</div>
                     <div className="text-blue-600">Text input</div>
                   </div>
                   <div className="bg-green-50 rounded p-2">
                     <div className="font-medium text-green-700">boolean</div>
-                    <div className="text-green-600">On/Off toggle</div>
+                    <div className="text-green-600">Toggle</div>
                   </div>
                   <div className="bg-purple-50 rounded p-2">
-                    <div className="font-medium text-purple-700">enum</div>
-                    <div className="text-purple-600">Dropdown</div>
+                    <div className="font-medium text-purple-700">number</div>
+                    <div className="text-purple-600">Number</div>
+                  </div>
+                  <div className="bg-orange-50 rounded p-2">
+                    <div className="font-medium text-orange-700">enum</div>
+                    <div className="text-orange-600">Dropdown</div>
                   </div>
                 </div>
               </div>
 
               {/* Tips */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">Tips</h3>
-                <ul className="text-blue-800 text-xs space-y-1">
-                  <li>• Always escape HTML to prevent security issues</li>
-                  <li>• Provide default values in your config</li>
-                  <li>• Use clear, unique plugin slugs</li>
-                  <li>• Test locally before deploying</li>
-                  <li>• Check <code className="bg-blue-100 px-1 rounded">backend/plugins/hello-world-example/</code> for a complete example</li>
-                </ul>
+              <div className="border-t pt-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-blue-900 mb-2">Tips</h3>
+                  <ul className="text-blue-800 text-xs space-y-1">
+                    <li>• Always escape HTML in hooks to prevent XSS attacks</li>
+                    <li>• Provide sensible default values in configSchema</li>
+                    <li>• Use unique slugs to avoid conflicts with other plugins</li>
+                    <li>• Test migrations locally before deploying</li>
+                    <li>• Use <code className="bg-blue-100 px-1 rounded">context.store</code> to access store info in hooks</li>
+                    <li>• Check <code className="bg-blue-100 px-1 rounded">backend/plugins/hello-world-example/</code> for a complete example</li>
+                  </ul>
+                </div>
               </div>
 
               <div className="flex justify-end pt-2">
