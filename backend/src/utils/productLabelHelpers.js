@@ -1,15 +1,12 @@
 /**
- * Product Label Helpers for Normalized Translations
+ * Product Label Helpers using JSONB translations column
  *
- * These helpers construct the same JSON format that the frontend expects
- * from normalized translation tables.
- *
- * IMPORTANT: These functions require tenantDb connection parameter.
- * Routes should call ConnectionManager.getStoreConnection(storeId) and pass the tenantDb.
+ * Translations are stored directly in the product_labels.translations JSONB column
+ * Format: { "en": { "name": "...", "text": "..." }, "nl": { ... } }
  */
 
 /**
- * Get product labels with translations from normalized tables
+ * Get product labels with translations from JSONB column
  *
  * @param {Object} tenantDb - Tenant database connection (Supabase client)
  * @param {Object} where - WHERE clause conditions
@@ -27,11 +24,7 @@ async function getProductLabelsWithTranslations(tenantDb, where = {}, lang = 'en
 
   // Apply where conditions
   Object.entries(where).forEach(([key, value]) => {
-    if (value === true || value === false) {
-      labelsQuery = labelsQuery.eq(key, value);
-    } else {
-      labelsQuery = labelsQuery.eq(key, value);
-    }
+    labelsQuery = labelsQuery.eq(key, value);
   });
 
   labelsQuery = labelsQuery.order('sort_order', { ascending: true }).order('priority', { ascending: false });
@@ -41,43 +34,19 @@ async function getProductLabelsWithTranslations(tenantDb, where = {}, lang = 'en
   if (labelsError) throw labelsError;
   if (!labels || labels.length === 0) return [];
 
-  // Fetch translations
-  const labelIds = labels.map(l => l.id);
-  const { data: translations, error: transError } = await tenantDb
-    .from('product_label_translations')
-    .select('*')
-    .in('product_label_id', labelIds);
-
-  if (transError) {
-    console.error('Error fetching product label translations:', transError);
-    return labels.map(l => allTranslations ? { ...l, translations: {} } : l);
-  }
-
-  // Group translations
-  const translationsByLabel = {};
-  (translations || []).forEach(t => {
-    if (!translationsByLabel[t.product_label_id]) {
-      translationsByLabel[t.product_label_id] = {};
-    }
-    translationsByLabel[t.product_label_id][t.language_code] = {
-      name: t.name,
-      text: t.text
-    };
-  });
-
-  // Return with all translations or single language
+  // If allTranslations is true, return labels with translations object as-is
   if (allTranslations) {
     return labels.map(label => ({
       ...label,
-      translations: translationsByLabel[label.id] || {}
+      translations: label.translations || {}
     }));
   }
 
-  // Single language mode - merge translations into label
+  // Single language mode - merge translation into label fields
   return labels.map(label => {
-    const trans = translationsByLabel[label.id];
-    const reqLang = trans?.[lang];
-    const enLang = trans?.['en'];
+    const trans = label.translations || {};
+    const reqLang = trans[lang];
+    const enLang = trans['en'];
 
     return {
       ...label,
@@ -113,35 +82,8 @@ async function getProductLabelWithAllTranslations(tenantDb, id) {
   return labels[0] || null;
 }
 
-/**
- * @deprecated Routes should implement their own create logic using tenantDb directly
- * This function exists for backward compatibility but should not be used.
- */
-async function createProductLabelWithTranslations() {
-  throw new Error('createProductLabelWithTranslations is deprecated. Routes should implement create logic using tenantDb directly.');
-}
-
-/**
- * @deprecated Routes should implement their own update logic using tenantDb directly
- * This function exists for backward compatibility but should not be used.
- */
-async function updateProductLabelWithTranslations() {
-  throw new Error('updateProductLabelWithTranslations is deprecated. Routes should implement update logic using tenantDb directly.');
-}
-
-/**
- * @deprecated Routes should implement their own delete logic using tenantDb directly
- * This function exists for backward compatibility but should not be used.
- */
-async function deleteProductLabel() {
-  throw new Error('deleteProductLabel is deprecated. Routes should implement delete logic using tenantDb directly.');
-}
-
 module.exports = {
   getProductLabelsWithTranslations,
   getProductLabelById,
-  getProductLabelWithAllTranslations,
-  createProductLabelWithTranslations,
-  updateProductLabelWithTranslations,
-  deleteProductLabel
+  getProductLabelWithAllTranslations
 };
