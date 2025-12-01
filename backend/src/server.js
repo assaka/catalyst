@@ -1375,9 +1375,9 @@ app.use('/api/custom-domains', customDomainsRoutes); // Custom domain management
 app.use('/api/images', authMiddleware, imageRoutes);
 app.use('/api/cloudflare/oauth', cloudflareOAuthRoutes);
 app.use('/api/admin', adminNavigationRoutes); // Dynamic navigation API (Plugin Architecture Phase 1)
-app.use('/api/plugins', pluginRoutes); // Core plugin management: install, uninstall, enable, disable, delete
 app.use('/api/plugins', pluginApiRoutes); // Modern plugin system: widgets, marketplace, purchases (Plugin Architecture Phase 1)
 app.use('/api/plugins', pluginVersionApiRoutes); // Plugin version control: git-like versioning, snapshots, patches, rollback
+app.use('/api/plugins', pluginRoutes); // Core plugin management: install, uninstall, enable, disable, delete (must be after pluginApiRoutes due to /:name catch-all)
 app.use('/api/stores/:store_id/plugins', storePluginRoutes); // Store-specific plugin routes (enable/disable/configure)
 app.use('/api/stores/:store_id/plugins/create', pluginCreationRoutes);
 app.use('/api/plugins', dynamicPluginRoutes.router);
