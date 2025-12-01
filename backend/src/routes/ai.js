@@ -1316,49 +1316,111 @@ Suggest helpful next steps. Be friendly and actionable.`;
         return `Container: ${parentId}\n${childList}`;
       }).join('\n\n');
 
-      // Get list of valid slot IDs for validation instruction
-      const validSlotIdsList = Object.keys(slots).join(', ');
+      // Build a slot name lookup map for resolving user-friendly names to actual slot IDs
+      const slotNameMap = {};
+      Object.entries(slots).forEach(([id, slot]) => {
+        // Add the ID itself
+        slotNameMap[id.toLowerCase()] = id;
+        // Add without underscores
+        slotNameMap[id.toLowerCase().replace(/_/g, ' ')] = id;
+        // Add display name if available
+        if (slot.metadata?.displayName) {
+          slotNameMap[slot.metadata.displayName.toLowerCase()] = id;
+        }
+        // Add name if available
+        if (slot.name) {
+          slotNameMap[slot.name.toLowerCase()] = id;
+        }
+      });
 
-      // Use AI to analyze the current layout and determine the changes
-      const layoutAnalysisPrompt = `Analyze this slot configuration and help modify it.
+      // Add common aliases
+      const commonAliases = {
+        'sku': 'product_sku',
+        'price': 'price_container',
+        'the price': 'price_container',
+        'product price': 'product_price',
+        'main price': 'product_price',
+        'title': 'product_title',
+        'product title': 'product_title',
+        'name': 'product_title',
+        'product name': 'product_title',
+        'description': 'product_short_description',
+        'short description': 'product_short_description',
+        'stock': 'stock_status',
+        'stock status': 'stock_status',
+        'availability': 'stock_status',
+        'gallery': 'product_gallery_container',
+        'images': 'product_gallery_container',
+        'product images': 'product_gallery_container',
+        'add to cart': 'add_to_cart_button',
+        'cart button': 'add_to_cart_button',
+        'buy button': 'add_to_cart_button',
+        'wishlist': 'wishlist_button',
+        'quantity': 'quantity_selector',
+        'qty': 'quantity_selector',
+        'tabs': 'product_tabs',
+        'product tabs': 'product_tabs',
+        'breadcrumbs': 'breadcrumbs',
+        'related products': 'related_products_container',
+        'related': 'related_products_container',
+        'options': 'options_container',
+        'custom options': 'custom_options'
+      };
+      Object.entries(commonAliases).forEach(([alias, slotId]) => {
+        if (slots[slotId]) { // Only add if slot exists in current config
+          slotNameMap[alias] = slotId;
+        }
+      });
 
-SLOT HIERARCHY (slots grouped by parent container):
+      /**
+       * Resolve a user-provided slot name to actual slot ID
+       */
+      const resolveSlotId = (name) => {
+        if (!name) return null;
+        const lower = name.toLowerCase().trim();
+
+        // Direct match
+        if (slots[lower]) return lower;
+        if (slots[name]) return name;
+
+        // Lookup in map
+        if (slotNameMap[lower]) return slotNameMap[lower];
+
+        // Fuzzy match - check if any key contains the name or vice versa
+        for (const [key, slotId] of Object.entries(slotNameMap)) {
+          if (key.includes(lower) || lower.includes(key)) {
+            return slotId;
+          }
+        }
+
+        return null;
+      };
+
+      // Use AI to analyze - AI just needs to understand INTENT, we resolve the IDs
+      const layoutAnalysisPrompt = `Understand this layout modification request.
+
+AVAILABLE ELEMENTS ON PAGE:
 ${hierarchyText}
 
 USER REQUEST: "${message}"
 
-KEYWORD TO SLOT ID MAPPING (use these to understand user intent):
-- "sku" or "SKU" refers to: product_sku
-- "price" refers to: price_container
-- "title" or "name" refers to: product_title
-- "description" refers to: product_short_description
-- "stock" refers to: stock_status
-- "gallery" or "images" refers to: product_gallery_container
-- "add to cart" or "cart button" refers to: add_to_cart_button
-- "tabs" refers to: product_tabs
-
-CRITICAL RULES:
-1. ONLY use slot IDs that EXACTLY match those listed in SLOT HIERARCHY above
-2. If user mentions a slot that doesn't exist in the hierarchy, set understood=false
-3. ALL IDs in your response (sourceSlotId, targetSlotId, newOrder) MUST be exact slot IDs like "product_sku", NOT aliases like "sku"
-4. The newOrder array must contain ONLY valid slot IDs from the same parent container
+Your job: Understand what the user wants to move and where.
 
 Return JSON:
 {
   "understood": true/false,
-  "sourceSlotId": "EXACT slot ID from hierarchy (e.g., product_sku, NOT sku)",
-  "targetSlotId": "EXACT slot ID from hierarchy (e.g., price_container, NOT price)",
+  "source": "what user wants to move (use their words)",
+  "target": "where to move it relative to (use their words)",
   "action": "move|swap|remove",
   "position": "before|after",
-  "newOrder": ["EXACT_SLOT_IDS_ONLY"],
   "description": "human-readable description",
-  "error": "error message if slot not found or understood is false"
+  "error": "error if request is unclear"
 }
 
-VALIDATION:
-- Valid slot IDs are: ${validSlotIdsList}
-- If sourceSlotId is not in this list, return understood=false with error explaining which slot wasn't found
-- newOrder must ONLY contain IDs from this valid list
+Examples:
+- "move sku above price" → {source: "sku", target: "price", position: "before"}
+- "put the title after description" → {source: "title", target: "description", position: "after"}
+- "swap gallery and tabs" → {source: "gallery", target: "tabs", action: "swap"}
 
 Return ONLY valid JSON.`;
 
@@ -1407,51 +1469,48 @@ Return ONLY valid JSON.`;
         });
       }
 
-      // Validate the new order contains valid slot IDs
-      const validSlotIds = Object.keys(slots);
-      const invalidIds = analysis.newOrder.filter(id => !validSlotIds.includes(id));
-      if (invalidIds.length > 0) {
-        console.warn('[AI Chat] Invalid slot IDs in new order:', invalidIds);
-        // Filter out invalid IDs
-        analysis.newOrder = analysis.newOrder.filter(id => validSlotIds.includes(id));
-      }
+      // SMART RESOLUTION: Map AI's response (source/target) to actual slot IDs
+      const sourceSlotIdResolved = resolveSlotId(analysis.source);
+      const targetSlotIdResolved = resolveSlotId(analysis.target);
 
-      // If all slot IDs were invalid, the AI used aliases instead of real IDs - return error
-      if (analysis.newOrder.length === 0) {
-        console.error('[AI Chat] All slot IDs in newOrder were invalid - AI likely used aliases instead of real IDs');
+      console.log('[AI Chat] AI understood:', { source: analysis.source, target: analysis.target, position: analysis.position });
+      console.log('[AI Chat] Resolved to:', { sourceSlotId: sourceSlotIdResolved, targetSlotId: targetSlotIdResolved });
+
+      // Validate we could resolve the source
+      if (!sourceSlotIdResolved) {
+        console.error('[AI Chat] Could not resolve source:', analysis.source);
         return res.json({
           success: true,
-          message: "I couldn't process that layout change because I couldn't match the slot names. Please try again with more specific names like 'product_sku' or 'price_container', or describe what you see on the page.",
+          message: `I couldn't find an element called "${analysis.source}" on this page. Try being more specific or use the exact name you see in the editor.`,
           data: {
             type: 'layout_error',
-            reason: 'invalid_slot_ids',
-            invalidIds,
-            validIds: validSlotIds.slice(0, 10) // Show first 10 valid IDs as hint
+            reason: 'source_not_found',
+            searched: analysis.source,
+            availableSlots: Object.keys(slots).filter(id => slots[id].parentId === 'info_container').slice(0, 8)
           },
           creditsDeducted: creditsUsed
         });
       }
 
-      // Also validate sourceSlotId and targetSlotId
-      if (!validSlotIds.includes(analysis.sourceSlotId)) {
-        console.error('[AI Chat] Invalid sourceSlotId:', analysis.sourceSlotId);
+      // Validate we could resolve the target (if action requires it)
+      if (analysis.action !== 'remove' && !targetSlotIdResolved) {
+        console.error('[AI Chat] Could not resolve target:', analysis.target);
         return res.json({
           success: true,
-          message: `I couldn't find the slot "${analysis.sourceSlotId}". Available slots include: ${validSlotIds.slice(0, 8).join(', ')}...`,
-          data: { type: 'layout_error', reason: 'invalid_source_slot' },
+          message: `I couldn't find an element called "${analysis.target}" on this page. Try being more specific or use the exact name you see in the editor.`,
+          data: {
+            type: 'layout_error',
+            reason: 'target_not_found',
+            searched: analysis.target,
+            availableSlots: Object.keys(slots).filter(id => slots[id].parentId === 'info_container').slice(0, 8)
+          },
           creditsDeducted: creditsUsed
         });
       }
 
-      if (analysis.targetSlotId && !validSlotIds.includes(analysis.targetSlotId)) {
-        console.error('[AI Chat] Invalid targetSlotId:', analysis.targetSlotId);
-        return res.json({
-          success: true,
-          message: `I couldn't find the target slot "${analysis.targetSlotId}". Available slots include: ${validSlotIds.slice(0, 8).join(', ')}...`,
-          data: { type: 'layout_error', reason: 'invalid_target_slot' },
-          creditsDeducted: creditsUsed
-        });
-      }
+      // Store resolved IDs in analysis for later use
+      analysis.sourceSlotId = sourceSlotIdResolved;
+      analysis.targetSlotId = targetSlotIdResolved;
 
       // CRITICAL FIX: Update position.row values for hierarchical slot ordering
       // Slots are sorted by position.row, not by slotOrder array
