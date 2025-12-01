@@ -1422,39 +1422,61 @@ Return ONLY valid JSON.`;
         }
       };
 
-      // Create a new draft version with the changes
-      const { data: newConfig, error: insertError } = await tenantDb
+      // Directly update the published configuration (no draft, immediate apply)
+      const { error: updateError } = await tenantDb
         .from('slot_configurations')
-        .insert({
-          user_id: slotConfig.user_id,
-          store_id: resolvedStoreId,
+        .update({
           configuration: updatedConfiguration,
-          version: slotConfig.version,
-          version_number: (slotConfig.version_number || 1) + 1,
-          page_type: pageType,
-          status: 'draft',
-          is_active: true,
-          has_unpublished_changes: true,
-          parent_version_id: slotConfig.id,
+          updated_at: new Date().toISOString(),
           metadata: {
+            ...slotConfig.metadata,
             ai_generated: true,
-            change_description: changeDescription,
-            original_request: message
+            last_ai_change: changeDescription,
+            last_ai_request: message
           }
         })
-        .select()
-        .single();
+        .eq('id', slotConfig.id);
 
-      if (insertError) {
-        console.error('Failed to save styling change:', insertError);
+      if (updateError) {
+        console.error('Failed to save styling change:', updateError);
         return res.status(500).json({
           success: false,
-          message: 'Failed to save styling change: ' + insertError.message
+          message: 'Failed to save styling change: ' + updateError.message
         });
       }
 
+      // Generate natural AI response
+      const responsePrompt = `The user asked: "${message}"
+
+I just applied this change: ${changeDescription}
+- Element: ${targetSlot.name || targetSlotId}
+- Page: ${pageType} page
+- New value: ${newStyles.color || newStyles.backgroundColor || value}
+
+Generate a brief, friendly confirmation message (1-2 sentences). Be conversational and helpful. Mention that the preview will refresh to show the change.`;
+
+      const responseResult = await aiService.generate({
+        userId,
+        operationType: 'general',
+        prompt: responsePrompt,
+        systemPrompt: 'You are a helpful AI assistant. Generate brief, friendly responses. No markdown, no emojis, just natural text.',
+        maxTokens: 150,
+        temperature: 0.7,
+        metadata: { type: 'response-generation', storeId: resolvedStoreId }
+      });
+      creditsUsed += responseResult.creditsDeducted;
+
+      aiConversations.push({
+        step: 'response-generation',
+        provider: 'anthropic',
+        model: responseResult.usage?.model || 'claude-3-haiku',
+        prompt: responsePrompt,
+        response: responseResult.content,
+        tokens: responseResult.usage
+      });
+
       responseData = {
-        type: 'styling_preview',
+        type: 'styling_applied',
         pageType,
         slotId: targetSlotId,
         slotName: targetSlot.name || targetSlotId,
@@ -1465,14 +1487,13 @@ Return ONLY valid JSON.`;
           newClassName,
           newStyles
         },
-        configId: newConfig.id,
-        action: 'publish_styling',
-        aiConversations // Include AI conversations for transparency
+        configId: slotConfig.id,
+        aiConversations
       };
 
       res.json({
         success: true,
-        message: `✅ ${changeDescription} for "${targetSlot.name || targetSlotId}" on the ${pageType} page.\n\nI've created a draft with this change. Would you like me to publish it? Say "yes" or "publish" to apply the change live.`,
+        message: responseResult.content,
         data: responseData,
         creditsDeducted: creditsUsed
       });
