@@ -1366,11 +1366,13 @@ Suggest helpful next steps. Be friendly and actionable.`;
         'options': 'options_container',
         'custom options': 'custom_options'
       };
+      // Always add common aliases - we'll validate the resolved ID later
       Object.entries(commonAliases).forEach(([alias, slotId]) => {
-        if (slots[slotId]) { // Only add if slot exists in current config
-          slotNameMap[alias] = slotId;
-        }
+        slotNameMap[alias] = slotId;
       });
+
+      console.log('[AI Chat] Slot name map keys:', Object.keys(slotNameMap).slice(0, 20));
+      console.log('[AI Chat] Available slots:', Object.keys(slots));
 
       /**
        * Resolve a user-provided slot name to actual slot ID
@@ -1539,13 +1541,26 @@ Return ONLY valid JSON.`;
       console.log('[AI Chat] AI understood:', { source: analysis.source, target: analysis.target, position: analysis.position });
       console.log('[AI Chat] Resolved to:', { sourceSlotId: sourceSlotIdResolved, targetSlotId: targetSlotIdResolved });
 
+      // Helper to build helpful error message with available slots
+      const getAvailableSlotsList = () => {
+        return Object.keys(slots)
+          .filter(id => id !== 'main_layout' && id !== 'content_area') // Skip containers
+          .slice(0, 10)
+          .map(id => {
+            const slot = slots[id];
+            const name = slot?.metadata?.displayName || id.replace(/_/g, ' ');
+            return name;
+          });
+      };
+
       // Validate we could resolve the source
       if (!sourceSlotIdResolved) {
         console.error('[AI Chat] Could not resolve source:', analysis.source);
         const suggestions = getSuggestions(analysis.source);
+        const availableSlots = getAvailableSlotsList();
         const suggestionText = suggestions.length > 0
           ? `\n\nDid you mean:\n${suggestions.map(s => `• ${s.name} ${s.hint}`).join('\n')}`
-          : '';
+          : `\n\nAvailable elements: ${availableSlots.join(', ')}`;
 
         return res.json({
           success: true,
@@ -1554,7 +1569,25 @@ Return ONLY valid JSON.`;
             type: 'layout_error',
             reason: 'source_not_found',
             searched: analysis.source,
-            suggestions: suggestions
+            suggestions: suggestions,
+            availableSlots: availableSlots
+          },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      // Check if resolved source slot actually exists in config
+      if (!slots[sourceSlotIdResolved]) {
+        console.error('[AI Chat] Resolved source slot not in config:', sourceSlotIdResolved);
+        const availableSlots = getAvailableSlotsList();
+        return res.json({
+          success: true,
+          message: `The "${analysis.source}" element doesn't exist in this page's saved layout.\n\nAvailable elements: ${availableSlots.join(', ')}`,
+          data: {
+            type: 'layout_error',
+            reason: 'source_slot_not_in_config',
+            resolvedTo: sourceSlotIdResolved,
+            availableSlots: availableSlots
           },
           creditsDeducted: creditsUsed
         });
@@ -1564,9 +1597,10 @@ Return ONLY valid JSON.`;
       if (analysis.action !== 'remove' && !targetSlotIdResolved) {
         console.error('[AI Chat] Could not resolve target:', analysis.target);
         const suggestions = getSuggestions(analysis.target);
+        const availableSlots = getAvailableSlotsList();
         const suggestionText = suggestions.length > 0
           ? `\n\nDid you mean:\n${suggestions.map(s => `• ${s.name} ${s.hint}`).join('\n')}`
-          : '';
+          : `\n\nAvailable elements: ${availableSlots.join(', ')}`;
 
         return res.json({
           success: true,
@@ -1575,7 +1609,25 @@ Return ONLY valid JSON.`;
             type: 'layout_error',
             reason: 'target_not_found',
             searched: analysis.target,
-            suggestions: suggestions
+            suggestions: suggestions,
+            availableSlots: availableSlots
+          },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      // Check if resolved target slot actually exists in config
+      if (analysis.action !== 'remove' && !slots[targetSlotIdResolved]) {
+        console.error('[AI Chat] Resolved target slot not in config:', targetSlotIdResolved);
+        const availableSlots = getAvailableSlotsList();
+        return res.json({
+          success: true,
+          message: `The "${analysis.target}" element doesn't exist in this page's saved layout.\n\nAvailable elements: ${availableSlots.join(', ')}`,
+          data: {
+            type: 'layout_error',
+            reason: 'target_slot_not_in_config',
+            resolvedTo: targetSlotIdResolved,
+            availableSlots: availableSlots
           },
           creditsDeducted: creditsUsed
         });
