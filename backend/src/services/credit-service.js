@@ -278,6 +278,7 @@ class CreditService {
   /**
    * Record daily credit charge for published/active store
    * Uses master DB only - status='active' means store is published and billable
+   * Also inserts record into store_uptime table in tenant DB for reporting
    */
   async chargeDailyPublishingFee(userId, storeId) {
     let dailyCost = 1.0;
@@ -318,6 +319,60 @@ class CreditService {
       storeId,
       'store_publishing'
     );
+
+    // Insert records into tenant DB for reporting
+    if (deductResult.success) {
+      try {
+        const ConnectionManager = require('./database/ConnectionManager');
+        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+        const { v4: uuidv4 } = require('uuid');
+        const chargeDate = new Date().toISOString().split('T')[0];
+
+        // Insert into store_uptime table
+        await tenantDb
+          .from('store_uptime')
+          .upsert({
+            id: uuidv4(),
+            store_id: storeId,
+            user_id: userId,
+            charged_date: chargeDate,
+            credits_charged: dailyCost,
+            user_balance_before: balanceBefore,
+            user_balance_after: deductResult.remaining_balance,
+            store_name: store.slug,
+            metadata: {
+              charge_type: 'daily_publishing',
+              store_published: true
+            }
+          }, {
+            onConflict: 'store_id,charged_date',
+            ignoreDuplicates: true
+          });
+
+        // Insert into credit_usage table
+        await tenantDb
+          .from('credit_usage')
+          .insert({
+            id: uuidv4(),
+            user_id: userId,
+            store_id: storeId,
+            credits_used: dailyCost,
+            usage_type: 'store_publishing',
+            reference_id: storeId,
+            reference_type: 'store',
+            description: `Daily publishing fee for store ${store.slug}`,
+            metadata: {
+              charge_type: 'daily_publishing',
+              charge_date: chargeDate,
+              balance_before: balanceBefore,
+              balance_after: deductResult.remaining_balance
+            }
+          });
+      } catch (uptimeError) {
+        // Log but don't fail the charge if record insertion fails
+        console.error('Failed to insert store_uptime/credit_usage record:', uptimeError.message);
+      }
+    }
 
     return deductResult;
   }
