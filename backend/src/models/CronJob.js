@@ -80,7 +80,7 @@ const CronJob = sequelize.define('CronJob', {
   // Ownership and access
   user_id: {
     type: DataTypes.UUID,
-    allowNull: false,
+    allowNull: true, // Nullable for plugin/system jobs that don't have user context
     references: {
       model: 'users',
       key: 'id'

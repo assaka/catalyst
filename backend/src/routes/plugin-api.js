@@ -2070,6 +2070,9 @@ router.post('/:pluginId/cron', async (req, res) => {
     // Sync to central cron_jobs table (Sequelize) for scheduling
     let centralCronJob = null;
     try {
+      console.log(`🔄 Syncing plugin cron to central scheduler...`);
+      console.log(`   store_id: ${store_id}, user_id: ${user_id || 'null'}`);
+
       centralCronJob = await CronJob.create({
         name: `[Plugin] ${pluginInfo?.name || pluginId}: ${cron_name}`,
         description: description || `Plugin cron job: ${cron_name}`,
@@ -2089,9 +2092,9 @@ router.post('/:pluginId/cron', async (req, res) => {
         source_id: pluginId,
         source_name: pluginInfo?.name || pluginId,
         handler: handler_method,
-        user_id: user_id || '00000000-0000-0000-0000-000000000000', // System user fallback
+        user_id: user_id || null, // Nullable for plugin jobs
         store_id: store_id,
-        is_active: is_enabled,
+        is_active: is_enabled !== false,
         is_paused: false,
         timeout_seconds: timeout_seconds || 300,
         max_failures: max_failures || 5,
@@ -2107,7 +2110,8 @@ router.post('/:pluginId/cron', async (req, res) => {
       data.cron_job_id = centralCronJob.id;
       console.log(`✅ Synced plugin cron to central scheduler: ${centralCronJob.id}`);
     } catch (syncError) {
-      console.error('⚠️ Failed to sync to central cron_jobs (scheduler may not pick up this job):', syncError.message);
+      console.error('⚠️ Failed to sync to central cron_jobs:', syncError.message);
+      console.error('   Full error:', syncError);
       // Don't fail the request - plugin_cron was created successfully
     }
 
