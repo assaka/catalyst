@@ -1251,40 +1251,52 @@ Return ONLY valid JSON.`;
       const namesPlugin = require('colord/plugins/names');
       extend([namesPlugin]);
 
-      // Helper to parse any color value to hex
-      const parseColor = (colorValue) => {
+      // Smart color parser - uses AI for natural language descriptions
+      const parseColor = async (colorValue) => {
         if (!colorValue) return null;
 
-        // Clean up the input
+        // First try colord for standard formats (hex, rgb, hsl, CSS names)
         const cleaned = colorValue.toLowerCase().trim().replace(/\s+/g, '');
-
-        // Try parsing with colord (handles hex, rgb, hsl, named colors)
         const parsed = colord(cleaned);
         if (parsed.isValid()) {
           return parsed.toHex();
         }
 
-        // Handle compound names like "lightgreen", "darkblue"
-        const compoundMap = {
-          'lightgreen': '#90ee90',
-          'lightblue': '#add8e6',
-          'lightred': '#ffcccb',
-          'lightpink': '#ffb6c1',
-          'lightyellow': '#ffffe0',
-          'lightgray': '#d3d3d3',
-          'lightgrey': '#d3d3d3',
-          'darkgreen': '#006400',
-          'darkblue': '#00008b',
-          'darkred': '#8b0000',
-          'darkgray': '#a9a9a9',
-          'darkgrey': '#a9a9a9'
-        };
+        // If not a standard format, use AI to interpret the color description
+        const colorPrompt = `Convert this color description to a hex color code:
+"${colorValue}"
 
-        if (compoundMap[cleaned]) {
-          return compoundMap[cleaned];
+Return ONLY a JSON object: { "hex": "#xxxxxx", "name": "color name" }
+
+Examples:
+- "light green" → { "hex": "#90ee90", "name": "light green" }
+- "dark ocean blue" → { "hex": "#1a3a5c", "name": "dark ocean blue" }
+- "warm sunset orange" → { "hex": "#ff6b35", "name": "warm sunset orange" }
+- "muted purple" → { "hex": "#9370db", "name": "muted purple" }
+
+Return ONLY valid JSON.`;
+
+        try {
+          const colorResult = await aiService.generate({
+            userId,
+            operationType: 'general',
+            prompt: colorPrompt,
+            systemPrompt: 'You are a color expert. Convert color descriptions to precise hex codes. Return ONLY valid JSON.',
+            maxTokens: 100,
+            temperature: 0.3,
+            metadata: { type: 'color-parsing', storeId: resolvedStoreId }
+          });
+          creditsUsed += colorResult.creditsDeducted;
+
+          const colorJson = JSON.parse(colorResult.content.match(/\{[\s\S]*\}/)?.[0] || '{}');
+          if (colorJson.hex && /^#[0-9a-fA-F]{6}$/.test(colorJson.hex)) {
+            return colorJson.hex;
+          }
+        } catch (e) {
+          console.warn('AI color parsing failed:', e.message);
         }
 
-        // Return original if we can't parse it
+        // Fallback to original value
         return colorValue;
       };
 
@@ -1300,8 +1312,8 @@ Return ONLY valid JSON.`;
           .replace(/\s+/g, ' ')
           .trim();
 
-        // Parse and apply the color as inline style
-        const hexColor = parseColor(value);
+        // Parse and apply the color as inline style (AI-powered for natural language)
+        const hexColor = await parseColor(value);
         newStyles.color = hexColor;
         changeDescription = `Changed text color to ${value} (${hexColor})`;
 
@@ -1313,7 +1325,7 @@ Return ONLY valid JSON.`;
           .replace(/\s+/g, ' ')
           .trim();
 
-        const hexColor = parseColor(value);
+        const hexColor = await parseColor(value);
         newStyles.backgroundColor = hexColor;
         changeDescription = `Changed background color to ${value} (${hexColor})`;
 
