@@ -644,20 +644,75 @@ router.post('/chat', authMiddleware, async (req, res) => {
 
     // Check for confirmation BEFORE intent detection
     // This prevents "yes" from being classified as a new translation intent
-    const isConfirmation = /^(yes|yeah|yep|sure|ok|okay|do it|update|apply|confirm|proceed)/i.test(message.trim());
+    const isConfirmation = /^(yes|yeah|yep|sure|ok|okay|do it|update|apply|confirm|proceed|publish)/i.test(message.trim());
 
     if (isConfirmation && conversationHistory && conversationHistory.length > 0) {
       console.log('🔍 Confirmation detected, checking conversation history...');
       console.log('📝 History length:', conversationHistory.length);
       console.log('📝 Last 2 messages:', JSON.stringify(conversationHistory.slice(-2), null, 2));
 
-      // Find the last assistant message with pending action
+      // Find the last assistant message with pending action (translation or styling)
       const lastAssistantMessage = [...conversationHistory]
         .reverse()
-        .find(msg => msg.role === 'assistant' && msg.data?.type === 'translation_preview');
+        .find(msg => msg.role === 'assistant' && (msg.data?.type === 'translation_preview' || msg.data?.type === 'styling_preview'));
 
-      console.log('🤖 Found pending translation?', !!lastAssistantMessage);
+      console.log('🤖 Found pending action?', !!lastAssistantMessage);
       console.log('🎯 Action type:', lastAssistantMessage?.data?.action);
+
+      // Handle styling confirmation
+      if (lastAssistantMessage?.data?.action === 'publish_styling') {
+        const { configId, pageType, slotId, change } = lastAssistantMessage.data;
+        const ConnectionManager = require('../services/database/ConnectionManager');
+
+        if (!resolvedStoreId) {
+          return res.status(400).json({
+            success: false,
+            message: 'store_id is required for publishing styling changes'
+          });
+        }
+
+        const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
+
+        // Publish the draft configuration
+        const { error: publishError } = await tenantDb
+          .from('slot_configurations')
+          .update({
+            status: 'published',
+            published_at: new Date().toISOString(),
+            published_by: userId,
+            has_unpublished_changes: false
+          })
+          .eq('id', configId);
+
+        if (publishError) {
+          console.error('Failed to publish styling change:', publishError);
+          return res.status(500).json({
+            success: false,
+            message: 'Failed to publish styling change: ' + publishError.message
+          });
+        }
+
+        // Deactivate the old published version
+        await tenantDb
+          .from('slot_configurations')
+          .update({ is_active: false })
+          .eq('store_id', resolvedStoreId)
+          .eq('page_type', pageType)
+          .eq('status', 'published')
+          .neq('id', configId);
+
+        return res.json({
+          success: true,
+          message: `✅ Published! The ${change?.property || 'styling'} change for "${slotId}" on the ${pageType} page is now live.\n\nRefresh your storefront to see the changes.`,
+          data: {
+            type: 'styling_applied',
+            configId,
+            pageType,
+            slotId
+          },
+          creditsDeducted: 0
+        });
+      }
 
       if (lastAssistantMessage?.data?.action === 'update_labels') {
         // User confirmed - update the translations
@@ -737,15 +792,22 @@ Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}
 
 Determine the intent and respond with JSON:
 {
-  "intent": "plugin|translation|layout|code|chat",
+  "intent": "plugin|translation|layout|styling|code|chat",
   "action": "generate|modify|chat",
   "details": {
     // For plugin: { description, category }
     // For translation: { text: "the text to translate", targetLanguages: ["fr", "es"], entities: ["products", "categories"] }
     // For layout: { configType, description }
+    // For styling: { pageType: "product|category|homepage|cart|checkout", element: "product_title|product_price|add_to_cart_button|etc", property: "color|backgroundColor|fontSize|etc", value: "red|#ff0000|16px|etc" }
     // For code: { operation }
   }
 }
+
+For styling intent (CSS/visual changes):
+- Identify the page type: product, category, homepage, cart, checkout, account, login, success
+- Identify the element to style: product_title, product_price, add_to_cart_button, breadcrumbs, etc.
+- Identify the CSS property: color, backgroundColor, fontSize, fontWeight, padding, margin, border, etc.
+- Extract the value: color names (red, blue), hex codes (#ff0000), sizes (16px, 1rem), etc.
 
 For translation intent:
 - Extract the text to translate (e.g., "add to cart button" → "Add to Cart")
@@ -1072,6 +1134,237 @@ Suggest helpful next steps. Be friendly and actionable.`;
       res.json({
         success: true,
         message: `I've generated a layout configuration for your ${intent.details?.configType || 'homepage'}. You can preview it below.`,
+        data: responseData,
+        creditsDeducted: creditsUsed
+      });
+
+    } else if (intent.intent === 'styling') {
+      // Handle styling changes to slot configurations
+      const ConnectionManager = require('../services/database/ConnectionManager');
+
+      if (!resolvedStoreId) {
+        return res.status(400).json({
+          success: false,
+          message: 'store_id is required for styling changes'
+        });
+      }
+
+      const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
+      const pageType = intent.details?.pageType || 'product';
+      const element = intent.details?.element;
+      const property = intent.details?.property;
+      const value = intent.details?.value;
+
+      // Fetch current slot configuration for the page type
+      const { data: slotConfig, error: fetchError } = await tenantDb
+        .from('slot_configurations')
+        .select('*')
+        .eq('store_id', resolvedStoreId)
+        .eq('page_type', pageType)
+        .eq('status', 'published')
+        .order('version_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('Failed to fetch slot configuration:', fetchError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to fetch current layout configuration'
+        });
+      }
+
+      if (!slotConfig) {
+        return res.json({
+          success: true,
+          message: `I couldn't find a published layout for the ${pageType} page. Please publish a layout first in the Editor, then I can help you modify styles.`,
+          data: { type: 'styling_error', reason: 'no_published_config' },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      // Parse the configuration
+      const configuration = slotConfig.configuration || {};
+      const slots = configuration.slots || {};
+
+      // Find the slot to modify
+      let targetSlot = null;
+      let targetSlotId = null;
+
+      // Try exact match first
+      if (element && slots[element]) {
+        targetSlot = slots[element];
+        targetSlotId = element;
+      } else {
+        // Use AI to find the matching slot
+        const slotNames = Object.keys(slots).map(id => ({
+          id,
+          name: slots[id].name || id,
+          className: slots[id].className || ''
+        }));
+
+        const matchPrompt = `Given these available slots for a ${pageType} page:
+${JSON.stringify(slotNames, null, 2)}
+
+The user wants to change the "${property}" of "${element || message}" to "${value}".
+
+Which slot ID should be modified? Return JSON:
+{ "slotId": "the_slot_id", "confidence": 0.0-1.0 }
+
+Return ONLY valid JSON.`;
+
+        const matchResult = await aiService.generate({
+          userId,
+          operationType: 'general',
+          prompt: matchPrompt,
+          systemPrompt: 'You are an expert at matching user requests to slot configurations. Return ONLY valid JSON.',
+          maxTokens: 256,
+          temperature: 0.2,
+          metadata: { type: 'slot-matching', storeId: resolvedStoreId }
+        });
+        creditsUsed += matchResult.creditsDeducted;
+
+        try {
+          const match = JSON.parse(matchResult.content.match(/\{[\s\S]*\}/)?.[0] || '{}');
+          if (match.slotId && slots[match.slotId]) {
+            targetSlot = slots[match.slotId];
+            targetSlotId = match.slotId;
+          }
+        } catch (e) {
+          console.error('Failed to parse slot match:', e);
+        }
+      }
+
+      if (!targetSlot || !targetSlotId) {
+        return res.json({
+          success: true,
+          message: `I couldn't find a matching element for "${element || message}". Available elements on the ${pageType} page include: ${Object.keys(slots).slice(0, 10).join(', ')}...`,
+          data: { type: 'styling_error', reason: 'slot_not_found', availableSlots: Object.keys(slots) },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      // Generate the styling change
+      const currentClassName = targetSlot.className || '';
+      const currentStyles = targetSlot.styles || {};
+
+      // Map common color names to Tailwind classes
+      const colorMap = {
+        'red': 'text-red-600',
+        'blue': 'text-blue-600',
+        'green': 'text-green-600',
+        'yellow': 'text-yellow-600',
+        'purple': 'text-purple-600',
+        'pink': 'text-pink-600',
+        'orange': 'text-orange-600',
+        'gray': 'text-gray-600',
+        'black': 'text-black',
+        'white': 'text-white'
+      };
+
+      let newClassName = currentClassName;
+      let newStyles = { ...currentStyles };
+      let changeDescription = '';
+
+      if (property === 'color' || property === 'textColor') {
+        // Replace existing text color class
+        newClassName = currentClassName.replace(/text-(gray|red|blue|green|yellow|purple|pink|orange|black|white)-\d{3}/g, '').trim();
+        if (colorMap[value?.toLowerCase()]) {
+          newClassName = `${newClassName} ${colorMap[value.toLowerCase()]}`.replace(/\s+/g, ' ').trim();
+          changeDescription = `Changed text color to ${value}`;
+        } else if (value?.startsWith('#') || value?.startsWith('rgb')) {
+          newStyles.color = value;
+          changeDescription = `Changed text color to ${value}`;
+        } else {
+          newStyles.color = value;
+          changeDescription = `Changed text color to ${value}`;
+        }
+      } else if (property === 'backgroundColor' || property === 'background') {
+        if (value?.startsWith('#') || value?.startsWith('rgb')) {
+          newStyles.backgroundColor = value;
+        } else {
+          newStyles.backgroundColor = value;
+        }
+        changeDescription = `Changed background color to ${value}`;
+      } else if (property === 'fontSize') {
+        newStyles.fontSize = value;
+        changeDescription = `Changed font size to ${value}`;
+      } else {
+        // Generic CSS property
+        newStyles[property] = value;
+        changeDescription = `Changed ${property} to ${value}`;
+      }
+
+      // Update the slot in configuration
+      const updatedSlots = {
+        ...slots,
+        [targetSlotId]: {
+          ...targetSlot,
+          className: newClassName,
+          styles: newStyles
+        }
+      };
+
+      const updatedConfiguration = {
+        ...configuration,
+        slots: updatedSlots,
+        metadata: {
+          ...configuration.metadata,
+          lastModified: new Date().toISOString(),
+          lastModifiedBy: 'AI Assistant'
+        }
+      };
+
+      // Create a new draft version with the changes
+      const { data: newConfig, error: insertError } = await tenantDb
+        .from('slot_configurations')
+        .insert({
+          user_id: slotConfig.user_id,
+          store_id: resolvedStoreId,
+          configuration: updatedConfiguration,
+          version: slotConfig.version,
+          version_number: (slotConfig.version_number || 1) + 1,
+          page_type: pageType,
+          status: 'draft',
+          is_active: true,
+          has_unpublished_changes: true,
+          parent_version_id: slotConfig.id,
+          metadata: {
+            ai_generated: true,
+            change_description: changeDescription,
+            original_request: message
+          }
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Failed to save styling change:', insertError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to save styling change: ' + insertError.message
+        });
+      }
+
+      responseData = {
+        type: 'styling_preview',
+        pageType,
+        slotId: targetSlotId,
+        slotName: targetSlot.name || targetSlotId,
+        change: {
+          property,
+          oldValue: property === 'color' ? currentClassName : currentStyles[property],
+          newValue: value,
+          newClassName,
+          newStyles
+        },
+        configId: newConfig.id,
+        action: 'publish_styling'
+      };
+
+      res.json({
+        success: true,
+        message: `✅ ${changeDescription} for "${targetSlot.name || targetSlotId}" on the ${pageType} page.\n\nI've created a draft with this change. Would you like me to publish it? Say "yes" or "publish" to apply the change live.`,
         data: responseData,
         creditsDeducted: creditsUsed
       });
