@@ -1050,6 +1050,13 @@ router.get('/:id/export', async (req, res) => {
       .eq('plugin_id', id)
       .order('load_order', { ascending: true });
 
+    // Get cron jobs
+    const { data: cronJobs } = await tenantDb
+      .from('plugin_cron')
+      .select('cron_name, cron_schedule, handler_method, description, is_enabled')
+      .eq('plugin_id', id)
+      .order('cron_name', { ascending: true });
+
     // Build package
     const packageData = {
       packageVersion: '1.0.0',
@@ -1160,6 +1167,14 @@ router.get('/:id/export', async (req, res) => {
         scriptCode: s.script_code,
         description: s.description,
         loadOrder: s.load_order
+      })),
+
+      cronJobs: (cronJobs || []).map(c => ({
+        cronName: c.cron_name,
+        cronSchedule: c.cron_schedule,
+        handlerMethod: c.handler_method,
+        description: c.description,
+        isEnabled: c.is_enabled
       }))
     };
 
@@ -1422,6 +1437,18 @@ router.post('/import', async (req, res) => {
         description: script.description,
         load_order: script.loadOrder || 100,
         is_enabled: true
+      });
+    }
+
+    // Import cron jobs
+    for (const cron of packageData.cronJobs || []) {
+      await tenantDb.from('plugin_cron').insert({
+        plugin_id: pluginId,
+        cron_name: cron.cronName,
+        cron_schedule: cron.cronSchedule,
+        handler_method: cron.handlerMethod,
+        description: cron.description || `Scheduled task: ${cron.cronName}`,
+        is_enabled: cron.isEnabled !== false
       });
     }
 
