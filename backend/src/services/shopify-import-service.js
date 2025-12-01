@@ -1,7 +1,7 @@
 const ShopifyClient = require('./shopify-client');
 const shopifyIntegration = require('./shopify-integration');
 const ImportStatistic = require('../models/ImportStatistic');
-const StorageManager = require('./storage/StorageManager');
+const StorageManager = require('./storage-manager');
 const ConnectionManager = require('./database/ConnectionManager');
 const AttributeMappingService = require('./AttributeMappingService');
 const axios = require('axios');
@@ -332,9 +332,6 @@ class ShopifyImportService {
    */
   async downloadAndStoreImage(imageUrl, productHandle, index = 0) {
     try {
-      // Get storage provider for this store
-      const storageProvider = await StorageManager.getProvider(this.storeId);
-
       // Download image from Shopify
       const response = await axios.get(imageUrl, {
         responseType: 'arraybuffer',
@@ -346,7 +343,6 @@ class ShopifyImportService {
       // Determine file extension and MIME type
       const urlPath = new URL(imageUrl).pathname;
       const urlExt = path.extname(urlPath).toLowerCase();
-      const rawContentType = response.headers['content-type'] || response.headers['Content-Type'];
 
       // Determine extension from URL
       let ext = urlExt;
@@ -373,41 +369,38 @@ class ShopifyImportService {
         mimeType = 'image/jpeg'; // Default
       }
 
-      console.log(`Detected: ext=${ext}, mimeType=${mimeType}, url=${imageUrl.substring(0, 80)}...`);
+      console.log(`📷 Downloading image: ext=${ext}, mimeType=${mimeType}, url=${imageUrl.substring(0, 80)}...`);
 
       // Generate organized directory path: products/g/i/gift-card-0.jpg
       const firstChar = productHandle.charAt(0).toLowerCase();
       const secondChar = productHandle.length > 1 ? productHandle.charAt(1).toLowerCase() : firstChar;
-      const filename = `products/${firstChar}/${secondChar}/${productHandle}-${index}${ext}`;
-
-      console.log(`Uploading image: ${filename} with MIME type: ${mimeType}`);
+      const filename = `${productHandle}-${index}${ext}`;
 
       // Validate MIME type before upload
       if (!mimeType || mimeType === 'undefined' || mimeType === undefined) {
         throw new Error(`Invalid MIME type: ${mimeType}. Extension was: ${ext}`);
       }
 
-      // Prepare file object for storage provider (expects specific format)
+      // Prepare file object for storage manager (multer-like format)
       const fileObject = {
         buffer: imageBuffer,
         mimetype: mimeType,
         size: imageBuffer.length,
-        originalname: path.basename(urlPath)
+        originalname: filename
       };
 
-      // Upload to storage provider
-      const uploadResult = await storageProvider.upload(fileObject, filename, {
-        contentType: mimeType,
-        folder: 'products',
+      // Upload using StorageManager.uploadFile() - the correct API
+      const uploadResult = await StorageManager.uploadFile(this.storeId, fileObject, {
+        folder: `products/${firstChar}/${secondChar}`,
         public: true,
-        upsert: true
+        type: 'product'
       });
 
-      console.log(`✅ Stored image: ${filename}`);
+      console.log(`✅ Stored image: ${uploadResult.url}`);
       return uploadResult.url;
 
     } catch (error) {
-      console.error(`Failed to download/store image from ${imageUrl}:`, error.message);
+      console.error(`❌ Failed to download/store image from ${imageUrl}:`, error.message);
       // Return original URL as fallback
       return imageUrl;
     }
