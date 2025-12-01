@@ -1036,95 +1036,80 @@ ${cronJob.handler_code}`;
         addTerminalOutput(`📋 Step 1: Generating handler code...`, 'info');
 
         // Generate handler code (stored in database, not as file)
-        const handlerCode = `/**
- * CRON HANDLER: ${cronHandlerMethod}
- * Schedule: ${cronSchedule}
- * ${cronDescription || `Scheduled task for ${cronName}`}
- *
- * AVAILABLE VARIABLES:
- *   - db        → Database connection (Supabase client)
- *   - storeId   → Your store's ID
- *   - params    → Custom parameters from handler_params
- *   - fetch     → Make HTTP requests
- *   - apiBaseUrl → Backend API URL
- */
-
-// ══════════════════════════════════════════════════════════════
-// STEP 1: Get store information
-// ══════════════════════════════════════════════════════════════
-const { data: store } = await db
-  .from('stores')
-  .select('id, name, email, settings')
-  .eq('id', storeId)
-  .single();
-
-if (!store) {
-  throw new Error('Store not found: ' + storeId);
-}
-
-console.log('🏪 Store:', store.name);
-console.log('📧 Email:', store.email);
-
-// ══════════════════════════════════════════════════════════════
-// STEP 2: Your custom logic here
-// ══════════════════════════════════════════════════════════════
-// Example: Query abandoned carts older than 24 hours
-// const { data: carts } = await db
-//   .from('carts')
-//   .select('*')
-//   .eq('store_id', storeId)
-//   .eq('status', 'abandoned')
-//   .lt('updated_at', new Date(Date.now() - 24*60*60*1000).toISOString());
-//
-// console.log('Found', carts?.length, 'abandoned carts');
-
-// ══════════════════════════════════════════════════════════════
-// STEP 3: Send notification email to store owner
-// ══════════════════════════════════════════════════════════════
-const emailResponse = await fetch(apiBaseUrl + '/api/email/send', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    to: store.email,
-    subject: '🕐 Scheduled Task: ${cronHandlerMethod}',
-    html: \`
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2563eb;">✅ Scheduled Task Completed</h2>
-        <p>Your scheduled task <strong>${cronHandlerMethod}</strong> has run successfully.</p>
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-          <tr style="background: #f3f4f6;">
-            <td style="padding: 10px; border: 1px solid #e5e7eb;"><strong>Store</strong></td>
-            <td style="padding: 10px; border: 1px solid #e5e7eb;">\${store.name}</td>
-          </tr>
-          <tr>
-            <td style="padding: 10px; border: 1px solid #e5e7eb;"><strong>Schedule</strong></td>
-            <td style="padding: 10px; border: 1px solid #e5e7eb;">${cronSchedule}</td>
-          </tr>
-          <tr style="background: #f3f4f6;">
-            <td style="padding: 10px; border: 1px solid #e5e7eb;"><strong>Executed</strong></td>
-            <td style="padding: 10px; border: 1px solid #e5e7eb;">\${new Date().toLocaleString()}</td>
-          </tr>
-        </table>
-        <p style="color: #6b7280; font-size: 12px;">
-          This is an automated notification from your Catalyst store.
-        </p>
-      </div>
-    \`
-  })
-});
-
-console.log('📧 Email sent to:', store.email);
-
-// ══════════════════════════════════════════════════════════════
-// STEP 4: Return result (saved to plugin_cron.last_result)
-// ══════════════════════════════════════════════════════════════
-return {
-  success: true,
-  storeName: store.name,
-  storeEmail: store.email,
-  emailSent: true,
-  executedAt: new Date().toISOString()
-};`;
+        // Using array join to avoid nested template literal issues
+        const handlerCode = [
+          '/**',
+          ` * CRON HANDLER: ${cronHandlerMethod}`,
+          ` * Schedule: ${cronSchedule}`,
+          ` * ${cronDescription || 'Scheduled task for ' + cronName}`,
+          ' *',
+          ' * AVAILABLE VARIABLES:',
+          ' *   - db        → Database connection (Supabase client)',
+          ' *   - storeId   → Your store ID',
+          ' *   - params    → Custom parameters from handler_params',
+          ' *   - fetch     → Make HTTP requests',
+          ' *   - apiBaseUrl → Backend API URL',
+          ' */',
+          '',
+          '// ══════════════════════════════════════════════════════════════',
+          '// STEP 1: Get store information',
+          '// ══════════════════════════════════════════════════════════════',
+          'const { data: store } = await db',
+          "  .from('stores')",
+          "  .select('id, name, email, settings')",
+          "  .eq('id', storeId)",
+          '  .single();',
+          '',
+          'if (!store) {',
+          "  throw new Error('Store not found: ' + storeId);",
+          '}',
+          '',
+          "console.log('🏪 Store:', store.name);",
+          "console.log('📧 Email:', store.email);",
+          '',
+          '// ══════════════════════════════════════════════════════════════',
+          '// STEP 2: Your custom logic here',
+          '// ══════════════════════════════════════════════════════════════',
+          '// Example: Query data from your tables',
+          '// const { data: items } = await db',
+          "//   .from('your_table')",
+          "//   .select('*')",
+          "//   .eq('store_id', storeId);",
+          '//',
+          "// console.log('Found', items?.length, 'items');",
+          '',
+          '// ══════════════════════════════════════════════════════════════',
+          '// STEP 3: Send notification email to store owner',
+          '// ══════════════════════════════════════════════════════════════',
+          "const emailResponse = await fetch(apiBaseUrl + '/api/email/send', {",
+          "  method: 'POST',",
+          "  headers: { 'Content-Type': 'application/json' },",
+          '  body: JSON.stringify({',
+          '    to: store.email,',
+          `    subject: '🕐 Scheduled Task: ${cronHandlerMethod}',`,
+          "    html: '<div style=\"font-family: Arial, sans-serif;\">' +",
+          "      '<h2>✅ Scheduled Task Completed</h2>' +",
+          `      '<p>Your task <strong>${cronHandlerMethod}</strong> ran successfully.</p>' +`,
+          "      '<p><strong>Store:</strong> ' + store.name + '</p>' +",
+          `      '<p><strong>Schedule:</strong> ${cronSchedule}</p>' +`,
+          "      '<p><strong>Executed:</strong> ' + new Date().toLocaleString() + '</p>' +",
+          "      '</div>'",
+          '  })',
+          '});',
+          '',
+          "console.log('📧 Email sent to:', store.email);",
+          '',
+          '// ══════════════════════════════════════════════════════════════',
+          '// STEP 4: Return result (saved to plugin_cron.last_result)',
+          '// ══════════════════════════════════════════════════════════════',
+          'return {',
+          '  success: true,',
+          '  storeName: store.name,',
+          '  storeEmail: store.email,',
+          '  emailSent: true,',
+          '  executedAt: new Date().toISOString()',
+          '};'
+        ].join('\n');
 
         addTerminalOutput(`   ✓ Handler code generated (${handlerCode.length} bytes)`, 'success');
         addTerminalOutput(``, 'info');
