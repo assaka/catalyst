@@ -2,18 +2,20 @@
  * AI Entity Service - Dynamic Entity Operations
  *
  * This service handles database-driven entity operations for AI chat.
- * It loads entity definitions from ai_entity_definitions table and
- * provides methods to:
- * - Detect which entity a user query refers to
- * - Generate dynamic intent prompts
- * - Execute CRUD operations on any admin entity
+ * It loads entity definitions from ai_entity_definitions table (MASTER DB)
+ * and executes CRUD operations on tenant data tables.
+ *
+ * Database split:
+ * - MASTER DB: ai_entity_definitions (shared entity schemas)
+ * - TENANT DB: Actual data tables (product_tabs, coupons, etc.)
  *
  * Usage:
  *   const aiEntityService = require('./aiEntityService');
- *   const entities = await aiEntityService.getEntityDefinitions(storeId);
+ *   const entities = await aiEntityService.getEntityDefinitions();
  *   const result = await aiEntityService.executeEntityOperation(storeId, 'product_tabs', 'update', { id: '123', name: 'New Name' });
  */
 
+const { masterDbClient } = require('../database/masterConnection');
 const ConnectionManager = require('./database/ConnectionManager');
 
 class AIEntityService {
@@ -27,11 +29,11 @@ class AIEntityService {
   }
 
   /**
-   * Get all active entity definitions from database
-   * @param {string} storeId - Store ID for tenant DB connection
+   * Get all active entity definitions from MASTER database
+   * Entity definitions are shared across all stores
    * @returns {Promise<Array>} Array of entity definitions
    */
-  async getEntityDefinitions(storeId) {
+  async getEntityDefinitions() {
     try {
       // Check cache
       const now = Date.now();
@@ -39,13 +41,19 @@ class AIEntityService {
         return this.cache.definitions;
       }
 
-      const db = await ConnectionManager.getStoreConnection(storeId);
-
-      const definitions = await db
+      // Query from MASTER DB (shared across all stores)
+      const { data, error } = await masterDbClient
         .from('ai_entity_definitions')
         .select('*')
-        .where('is_active', true)
-        .orderBy('priority', 'desc');
+        .eq('is_active', true)
+        .order('priority', { ascending: false });
+
+      if (error) {
+        console.error('[AIEntityService] Error fetching entity definitions:', error);
+        return [];
+      }
+
+      const definitions = data || [];
 
       // Parse JSON fields
       const parsed = definitions.map(def => ({
@@ -71,20 +79,19 @@ class AIEntityService {
   }
 
   /**
-   * Get a single entity definition by name
+   * Get a single entity definition by name (from MASTER DB)
    */
-  async getEntityDefinition(storeId, entityName) {
-    const definitions = await this.getEntityDefinitions(storeId);
+  async getEntityDefinition(entityName) {
+    const definitions = await this.getEntityDefinitions();
     return definitions.find(d => d.entity_name === entityName);
   }
 
   /**
    * Generate dynamic intent detection prompt based on entity definitions
-   * @param {string} storeId - Store ID
    * @returns {Promise<string>} Intent detection prompt with all entity definitions
    */
-  async generateIntentPrompt(storeId) {
-    const entities = await this.getEntityDefinitions(storeId);
+  async generateIntentPrompt() {
+    const entities = await this.getEntityDefinitions();
 
     // Group by category
     const byCategory = {};
@@ -139,14 +146,14 @@ Return ONLY valid JSON.`;
 
   /**
    * Detect which entity and operation user wants based on their message
-   * @param {string} storeId - Store ID
    * @param {string} message - User message
    * @param {object} aiService - AI service instance for generating response
    * @param {string} userId - User ID for AI credits
+   * @param {string} storeId - Store ID (for logging purposes)
    * @returns {Promise<object>} Detected intent with entity and operation
    */
-  async detectEntityIntent(storeId, message, aiService, userId) {
-    const intentPrompt = await this.generateIntentPrompt(storeId);
+  async detectEntityIntent(message, aiService, userId, storeId = null) {
+    const intentPrompt = await this.generateIntentPrompt();
 
     const result = await aiService.generate({
       userId,
@@ -173,7 +180,8 @@ Return ONLY valid JSON.`;
 
   /**
    * Execute an operation on an entity
-   * @param {string} storeId - Store ID
+   * Entity definitions from MASTER DB, data operations on TENANT DB
+   * @param {string} storeId - Store ID for tenant data access
    * @param {string} entityName - Entity name (e.g., 'product_tabs')
    * @param {string} operation - Operation (list, get, create, update, delete)
    * @param {object} params - Operation parameters
@@ -181,7 +189,8 @@ Return ONLY valid JSON.`;
    * @returns {Promise<object>} Operation result
    */
   async executeEntityOperation(storeId, entityName, operation, params = {}, options = {}) {
-    const entityDef = await this.getEntityDefinition(storeId, entityName);
+    // Get entity definition from MASTER DB
+    const entityDef = await this.getEntityDefinition(entityName);
 
     if (!entityDef) {
       throw new Error(`Unknown entity: ${entityName}`);
@@ -233,11 +242,14 @@ Return ONLY valid JSON.`;
 
   /**
    * Find an entity by search term (name, code, etc.)
+   * Entity definition from MASTER DB, actual search on TENANT DB
    */
   async findEntityBySearchTerm(storeId, entityName, searchTerm) {
-    const entityDef = await this.getEntityDefinition(storeId, entityName);
+    // Get entity definition from MASTER DB
+    const entityDef = await this.getEntityDefinition(entityName);
     if (!entityDef) return null;
 
+    // Search actual data in TENANT DB
     const db = await ConnectionManager.getStoreConnection(storeId);
     const tableName = entityDef.table_name;
     const tenantColumn = entityDef.tenant_column;

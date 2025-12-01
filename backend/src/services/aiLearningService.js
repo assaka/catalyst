@@ -8,6 +8,11 @@
  * 4. Admin documentation management
  * 5. Cross-user learning aggregation
  *
+ * ALL AI tables are in MASTER DB because:
+ * - Knowledge is shared across all stores
+ * - Cross-user learning benefits everyone
+ * - User-specific data uses user_id/store_id columns for filtering
+ *
  * The system learns from:
  * - Direct user feedback (helpful/not helpful)
  * - Successful operations (entity updates that weren't reverted)
@@ -15,7 +20,7 @@
  * - Error patterns (what queries fail and why)
  */
 
-const ConnectionManager = require('./database/ConnectionManager');
+const { masterDbClient } = require('../database/masterConnection');
 const aiContextService = require('./aiContextService');
 
 class AILearningService {
@@ -47,11 +52,11 @@ class AILearningService {
    */
   async recordFeedback(feedback) {
     try {
-      const db = await ConnectionManager.getStoreConnection(feedback.storeId);
-
+      // All AI tables are in MASTER DB
       // Insert into ai_context_usage with enhanced data
-      await db.from('ai_context_usage').insert({
+      await masterDbClient.from('ai_context_usage').insert({
         user_id: feedback.userId,
+        store_id: feedback.storeId,
         session_id: feedback.conversationId,
         query: feedback.userMessage,
         was_helpful: feedback.wasHelpful,
@@ -59,7 +64,6 @@ class AILearningService {
       });
 
       // Also track in ai_usage_logs with full context
-      const { masterDbClient } = require('../database/masterConnection');
       await masterDbClient.from('ai_usage_logs').insert({
         user_id: feedback.userId,
         store_id: feedback.storeId,
@@ -101,30 +105,38 @@ class AILearningService {
   }
 
   /**
-   * Save a successful interaction pattern for future reference
+   * Save a successful interaction pattern for future reference (MASTER DB)
    */
   async saveSuccessfulPattern(feedback) {
     try {
-      const db = await ConnectionManager.getStoreConnection(feedback.storeId);
-
-      // Check if similar pattern already exists
-      const existingPatterns = await db
+      // Check if similar pattern already exists in MASTER DB
+      const { data: existingPatterns, error: searchError } = await masterDbClient
         .from('ai_code_patterns')
-        .select('id', 'usage_count')
-        .where('pattern_type', 'successful_prompt')
-        .whereRaw(`tags::text LIKE ?`, [`%${feedback.entity}%`])
-        .whereRaw(`LOWER(description) LIKE ?`, [`%${feedback.userMessage.toLowerCase().substring(0, 50)}%`])
+        .select('id, usage_count')
+        .eq('pattern_type', 'successful_prompt')
+        .ilike('tags', `%${feedback.entity}%`)
+        .ilike('description', `%${feedback.userMessage.substring(0, 50)}%`)
         .limit(1);
 
-      if (existingPatterns.length > 0) {
+      if (searchError) {
+        console.error('[AILearningService] Error searching patterns:', searchError);
+      }
+
+      if (existingPatterns && existingPatterns.length > 0) {
         // Increment usage count for existing pattern
-        await db
-          .from('ai_code_patterns')
-          .where('id', existingPatterns[0].id)
-          .increment('usage_count', 1);
+        await masterDbClient.rpc('increment_usage_count', {
+          table_name: 'ai_code_patterns',
+          row_id: existingPatterns[0].id
+        }).catch(() => {
+          // Fallback: manual increment if RPC not available
+          masterDbClient
+            .from('ai_code_patterns')
+            .update({ usage_count: existingPatterns[0].usage_count + 1 })
+            .eq('id', existingPatterns[0].id);
+        });
       } else {
-        // Create new successful pattern
-        await db.from('ai_code_patterns').insert({
+        // Create new successful pattern in MASTER DB
+        await masterDbClient.from('ai_code_patterns').insert({
           name: `Successful: ${feedback.entity} ${feedback.operation}`,
           pattern_type: 'successful_prompt',
           description: feedback.userMessage,
@@ -133,7 +145,8 @@ class AILearningService {
             detected_intent: feedback.intent,
             entity: feedback.entity,
             operation: feedback.operation,
-            ai_response: feedback.aiResponse?.substring(0, 500)
+            ai_response: feedback.aiResponse?.substring(0, 500),
+            store_id: feedback.storeId // Track which store this came from
           }),
           language: 'json',
           framework: 'ai-learning',
@@ -155,14 +168,12 @@ class AILearningService {
   }
 
   /**
-   * Log failed interactions for analysis and improvement
+   * Log failed interactions for analysis and improvement (MASTER DB)
    */
   async logFailedInteraction(feedback) {
     try {
-      const db = await ConnectionManager.getStoreConnection(feedback.storeId);
-
-      // Store in ai_context_documents as a "failure_log" type for analysis
-      await db.from('ai_context_documents').insert({
+      // Store in MASTER DB ai_context_documents as a "failure_log" type for analysis
+      await masterDbClient.from('ai_context_documents').insert({
         type: 'failure_log',
         title: `Failed: ${feedback.intent || 'unknown'} - ${new Date().toISOString()}`,
         content: JSON.stringify({
@@ -172,6 +183,7 @@ class AILearningService {
           entity: feedback.entity,
           operation: feedback.operation,
           feedback_text: feedback.feedbackText,
+          store_id: feedback.storeId, // Track which store this came from
           timestamp: new Date().toISOString()
         }),
         category: 'learning',
@@ -224,29 +236,36 @@ class AILearningService {
   }
 
   /**
-   * Add a plugin example for AI to learn from
+   * Add a plugin example for AI to learn from (MASTER DB)
    * @param {object} example - Plugin example
    */
   async addPluginExample(example) {
     try {
-      const db = await ConnectionManager.getStoreConnection(example.storeId);
+      // Insert into MASTER DB (shared across all stores)
+      const { data: result, error } = await masterDbClient
+        .from('ai_plugin_examples')
+        .insert({
+          name: example.name,
+          slug: example.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          description: example.description,
+          category: example.category || 'general',
+          complexity: example.complexity || 'simple',
+          code: example.code,
+          files: JSON.stringify(example.files || []),
+          features: JSON.stringify(example.features || []),
+          use_cases: JSON.stringify(example.useCases || []),
+          tags: JSON.stringify(example.tags || []),
+          is_template: example.isTemplate || false,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
 
-      const [result] = await db.from('ai_plugin_examples').insert({
-        name: example.name,
-        slug: example.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        description: example.description,
-        category: example.category || 'general',
-        complexity: example.complexity || 'simple',
-        code: example.code,
-        files: JSON.stringify(example.files || []),
-        features: JSON.stringify(example.features || []),
-        use_cases: JSON.stringify(example.useCases || []),
-        tags: JSON.stringify(example.tags || []),
-        is_template: example.isTemplate || false,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }).returning('id');
+      if (error) {
+        throw error;
+      }
 
       aiContextService.clearCache();
 
@@ -258,71 +277,83 @@ class AILearningService {
   }
 
   /**
-   * Get learning statistics and insights
-   * @param {string} storeId - Store ID
+   * Get learning statistics and insights (all from MASTER DB)
+   * @param {string} storeId - Store ID (for filtering store-specific stats)
    */
   async getLearningStats(storeId) {
     try {
-      const db = await ConnectionManager.getStoreConnection(storeId);
-      const { masterDbClient } = require('../database/masterConnection');
+      // All AI tables are in MASTER DB - filter by store_id where applicable
 
-      // Get feedback statistics
-      const feedbackStats = await db
+      // Get feedback statistics for this store
+      const { data: feedbackData } = await masterDbClient
         .from('ai_context_usage')
-        .select(db.raw('COUNT(*) as total'))
-        .select(db.raw('SUM(CASE WHEN was_helpful = true THEN 1 ELSE 0 END) as helpful'))
-        .select(db.raw('SUM(CASE WHEN was_helpful = false THEN 1 ELSE 0 END) as not_helpful'))
-        .first();
+        .select('was_helpful')
+        .eq('store_id', storeId);
 
-      // Get usage by intent
-      const intentStats = await masterDbClient
+      const feedbackStats = {
+        total: feedbackData?.length || 0,
+        helpful: feedbackData?.filter(f => f.was_helpful === true).length || 0,
+        not_helpful: feedbackData?.filter(f => f.was_helpful === false).length || 0
+      };
+
+      // Get usage by intent for this store
+      const { data: usageData } = await masterDbClient
         .from('ai_usage_logs')
-        .select('operation_type')
-        .select(masterDbClient.raw('COUNT(*) as count'))
-        .select(masterDbClient.raw('SUM(CASE WHEN success = true THEN 1 ELSE 0 END) as successful'))
-        .where('store_id', storeId)
-        .groupBy('operation_type')
-        .orderBy('count', 'desc');
+        .select('operation_type, success')
+        .eq('store_id', storeId);
 
-      // Get most used context documents
-      const topDocuments = await db
+      // Aggregate intent stats
+      const intentMap = {};
+      (usageData || []).forEach(u => {
+        if (!intentMap[u.operation_type]) {
+          intentMap[u.operation_type] = { count: 0, successful: 0 };
+        }
+        intentMap[u.operation_type].count++;
+        if (u.success) intentMap[u.operation_type].successful++;
+      });
+      const intentStats = Object.entries(intentMap).map(([operation_type, stats]) => ({
+        operation_type,
+        ...stats
+      })).sort((a, b) => b.count - a.count);
+
+      // Get most used context documents (global, not store-specific)
+      const { data: topDocuments } = await masterDbClient
         .from('ai_context_documents')
-        .select('id', 'title', 'type', 'category', 'priority')
-        .where('is_active', true)
-        .orderBy('priority', 'desc')
+        .select('id, title, type, category, priority')
+        .eq('is_active', true)
+        .order('priority', { ascending: false })
         .limit(10);
 
-      // Get successful patterns
-      const successfulPatterns = await db
+      // Get successful patterns (global, benefits all stores)
+      const { data: successfulPatterns } = await masterDbClient
         .from('ai_code_patterns')
-        .select('name', 'description', 'usage_count', 'tags')
-        .where('pattern_type', 'successful_prompt')
-        .where('is_active', true)
-        .orderBy('usage_count', 'desc')
+        .select('name, description, usage_count, tags')
+        .eq('pattern_type', 'successful_prompt')
+        .eq('is_active', true)
+        .order('usage_count', { ascending: false })
         .limit(10);
 
-      // Get failed interactions count
-      const failedCount = await db
+      // Get failed interactions count (global)
+      const { count: failedCount } = await masterDbClient
         .from('ai_context_documents')
-        .where('type', 'failure_log')
-        .count('id as count')
-        .first();
+        .select('id', { count: 'exact', head: true })
+        .eq('type', 'failure_log');
 
       return {
         success: true,
         stats: {
           feedback: {
-            total: parseInt(feedbackStats?.total || 0),
-            helpful: parseInt(feedbackStats?.helpful || 0),
-            notHelpful: parseInt(feedbackStats?.not_helpful || 0),
-            helpfulRate: feedbackStats?.total > 0
+            total: feedbackStats.total,
+            helpful: feedbackStats.helpful,
+            notHelpful: feedbackStats.not_helpful,
+            helpfulRate: feedbackStats.total > 0
               ? ((feedbackStats.helpful / feedbackStats.total) * 100).toFixed(1) + '%'
               : 'N/A'
           },
-          intentUsage: intentStats?.data || intentStats || [],
+          intentUsage: intentStats,
           topDocuments: topDocuments || [],
           successfulPatterns: successfulPatterns || [],
-          failedInteractions: parseInt(failedCount?.count || 0)
+          failedInteractions: failedCount || 0
         }
       };
     } catch (error) {
@@ -332,24 +363,27 @@ class AILearningService {
   }
 
   /**
-   * Get successful prompts for a specific entity to use as examples
-   * @param {string} storeId - Store ID
+   * Get successful prompts for a specific entity to use as examples (MASTER DB)
    * @param {string} entity - Entity name
    */
-  async getSuccessfulPromptsForEntity(storeId, entity) {
+  async getSuccessfulPromptsForEntity(entity) {
     try {
-      const db = await ConnectionManager.getStoreConnection(storeId);
-
-      const patterns = await db
+      // Query MASTER DB for global successful patterns
+      const { data: patterns, error } = await masterDbClient
         .from('ai_code_patterns')
-        .select('description', 'code', 'usage_count')
-        .where('pattern_type', 'successful_prompt')
-        .where('is_active', true)
-        .whereRaw(`tags::text LIKE ?`, [`%${entity}%`])
-        .orderBy('usage_count', 'desc')
+        .select('description, code, usage_count')
+        .eq('pattern_type', 'successful_prompt')
+        .eq('is_active', true)
+        .ilike('tags', `%${entity}%`)
+        .order('usage_count', { ascending: false })
         .limit(5);
 
-      return patterns.map(p => ({
+      if (error) {
+        console.error('[AILearningService] Error fetching patterns:', error);
+        return [];
+      }
+
+      return (patterns || []).map(p => ({
         prompt: p.description,
         details: typeof p.code === 'string' ? JSON.parse(p.code) : p.code,
         successCount: p.usage_count
@@ -361,30 +395,29 @@ class AILearningService {
   }
 
   /**
-   * Generate improved intent prompt using learned patterns
-   * @param {string} storeId - Store ID
+   * Generate improved intent prompt using learned patterns (MASTER DB)
+   * Global patterns benefit all stores
    * @param {string} entity - Entity name (optional)
    */
-  async getLearnedExamplesForPrompt(storeId, entity = null) {
+  async getLearnedExamplesForPrompt(entity = null) {
     try {
-      const db = await ConnectionManager.getStoreConnection(storeId);
-
-      let query = db
+      // Build query for MASTER DB
+      let query = masterDbClient
         .from('ai_code_patterns')
-        .select('description', 'code', 'tags')
-        .where('pattern_type', 'successful_prompt')
-        .where('is_active', true)
-        .where('usage_count', '>=', 2) // Only include patterns used at least twice
-        .orderBy('usage_count', 'desc')
+        .select('description, code, tags')
+        .eq('pattern_type', 'successful_prompt')
+        .eq('is_active', true)
+        .gte('usage_count', 2) // Only include patterns used at least twice
+        .order('usage_count', { ascending: false })
         .limit(10);
 
       if (entity) {
-        query = query.whereRaw(`tags::text LIKE ?`, [`%${entity}%`]);
+        query = query.ilike('tags', `%${entity}%`);
       }
 
-      const patterns = await query;
+      const { data: patterns, error } = await query;
 
-      if (patterns.length === 0) {
+      if (error || !patterns || patterns.length === 0) {
         return '';
       }
 
@@ -440,22 +473,24 @@ class AILearningService {
   }
 
   /**
-   * Analyze failed interactions and suggest improvements
-   * @param {string} storeId - Store ID
+   * Analyze failed interactions and suggest improvements (MASTER DB)
+   * Analyzes global failures to improve AI for all stores
    */
-  async analyzeFailures(storeId) {
+  async analyzeFailures() {
     try {
-      const db = await ConnectionManager.getStoreConnection(storeId);
-
-      // Get recent failures
-      const failures = await db
+      // Get recent failures from MASTER DB (global analysis)
+      const { data: failures, error } = await masterDbClient
         .from('ai_context_documents')
-        .select('content', 'created_at')
-        .where('type', 'failure_log')
-        .orderBy('created_at', 'desc')
+        .select('content, created_at')
+        .eq('type', 'failure_log')
+        .order('created_at', { ascending: false })
         .limit(50);
 
-      if (failures.length === 0) {
+      if (error) {
+        throw error;
+      }
+
+      if (!failures || failures.length === 0) {
         return { success: true, analysis: 'No failed interactions to analyze.' };
       }
 

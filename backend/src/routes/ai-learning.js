@@ -1,12 +1,15 @@
 /**
  * AI Learning Routes
  * Endpoints for AI training, feedback, and documentation management
+ *
+ * ALL AI tables are in MASTER DB for cross-user learning
  */
 
 const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/auth');
+const { masterDbClient } = require('../database/masterConnection');
 const aiLearningService = require('../services/aiLearningService');
 const aiContextService = require('../services/aiContextService');
 const aiEntityService = require('../services/aiEntityService');
@@ -97,20 +100,12 @@ router.get('/stats', authMiddleware, authorize(['admin', 'store_owner']), async 
 
 /**
  * GET /api/ai-learning/failures
- * Analyze failed interactions (admin only)
+ * Analyze failed interactions (admin only) - global analysis from MASTER DB
  */
 router.get('/failures', authMiddleware, authorize(['admin']), async (req, res) => {
   try {
-    const storeId = req.headers['x-store-id'] || req.query.store_id;
-
-    if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const result = await aiLearningService.analyzeFailures(storeId);
+    // No storeId needed - analyzes global failures from MASTER DB
+    const result = await aiLearningService.analyzeFailures();
     res.json(result);
   } catch (error) {
     console.error('AI failures analysis error:', error);
@@ -125,43 +120,38 @@ router.get('/failures', authMiddleware, authorize(['admin']), async (req, res) =
 
 /**
  * GET /api/ai-learning/documents
- * List all AI context documents
+ * List all AI context documents (from MASTER DB - global knowledge)
  */
 router.get('/documents', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const storeId = req.headers['x-store-id'] || req.query.store_id;
     const { type, category, is_active } = req.query;
 
-    if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const db = await require('../services/database/ConnectionManager').getStoreConnection(storeId);
-
-    let query = db
+    // Query MASTER DB (global documents)
+    let query = masterDbClient
       .from('ai_context_documents')
-      .select('id', 'type', 'title', 'category', 'tags', 'priority', 'mode', 'is_active', 'created_at', 'updated_at')
-      .orderBy('priority', 'desc')
-      .orderBy('created_at', 'desc');
+      .select('id, type, title, category, tags, priority, mode, is_active, created_at, updated_at')
+      .order('priority', { ascending: false })
+      .order('created_at', { ascending: false });
 
     if (type) {
-      query = query.where('type', type);
+      query = query.eq('type', type);
     }
     if (category) {
-      query = query.where('category', category);
+      query = query.eq('category', category);
     }
     if (is_active !== undefined) {
-      query = query.where('is_active', is_active === 'true');
+      query = query.eq('is_active', is_active === 'true');
     }
 
-    const documents = await query;
+    const { data: documents, error } = await query;
+
+    if (error) {
+      throw error;
+    }
 
     res.json({
       success: true,
-      data: documents.map(d => ({
+      data: (documents || []).map(d => ({
         ...d,
         tags: typeof d.tags === 'string' ? JSON.parse(d.tags) : d.tags
       }))
@@ -177,28 +167,18 @@ router.get('/documents', authMiddleware, authorize(['admin', 'store_owner']), as
 
 /**
  * GET /api/ai-learning/documents/:id
- * Get a single document with full content
+ * Get a single document with full content (from MASTER DB)
  */
 router.get('/documents/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const storeId = req.headers['x-store-id'] || req.query.store_id;
-
-    if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const db = await require('../services/database/ConnectionManager').getStoreConnection(storeId);
-
-    const document = await db
+    // Query MASTER DB (global documents)
+    const { data: document, error } = await masterDbClient
       .from('ai_context_documents')
       .select('*')
-      .where('id', req.params.id)
-      .first();
+      .eq('id', req.params.id)
+      .single();
 
-    if (!document) {
+    if (error || !document) {
       return res.status(404).json({
         success: false,
         message: 'Document not found'
@@ -224,19 +204,11 @@ router.get('/documents/:id', authMiddleware, authorize(['admin', 'store_owner'])
 
 /**
  * POST /api/ai-learning/documents
- * Create a new AI context document
+ * Create a new AI context document (in MASTER DB - global knowledge)
  */
 router.post('/documents', authMiddleware, authorize(['admin']), async (req, res) => {
   try {
-    const storeId = req.headers['x-store-id'] || req.body.storeId;
     const { title, content, type, category, tags, priority, mode } = req.body;
-
-    if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
 
     if (!title || !content) {
       return res.status(400).json({
@@ -245,8 +217,8 @@ router.post('/documents', authMiddleware, authorize(['admin']), async (req, res)
       });
     }
 
+    // Add document to MASTER DB via aiLearningService
     const result = await aiLearningService.addDocumentation({
-      storeId,
       title,
       content,
       type: type || 'reference',
@@ -268,21 +240,11 @@ router.post('/documents', authMiddleware, authorize(['admin']), async (req, res)
 
 /**
  * PUT /api/ai-learning/documents/:id
- * Update an AI context document
+ * Update an AI context document (in MASTER DB)
  */
 router.put('/documents/:id', authMiddleware, authorize(['admin']), async (req, res) => {
   try {
-    const storeId = req.headers['x-store-id'] || req.body.storeId;
     const { title, content, type, category, tags, priority, mode, is_active } = req.body;
-
-    if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const db = await require('../services/database/ConnectionManager').getStoreConnection(storeId);
 
     const updateData = {
       updated_at: new Date().toISOString()
@@ -292,18 +254,20 @@ router.put('/documents/:id', authMiddleware, authorize(['admin']), async (req, r
     if (content !== undefined) updateData.content = content;
     if (type !== undefined) updateData.type = type;
     if (category !== undefined) updateData.category = category;
-    if (tags !== undefined) updateData.tags = JSON.stringify(tags);
+    if (tags !== undefined) updateData.tags = tags;
     if (priority !== undefined) updateData.priority = priority;
     if (mode !== undefined) updateData.mode = mode;
     if (is_active !== undefined) updateData.is_active = is_active;
 
-    const [updated] = await db
+    // Update in MASTER DB
+    const { data: updated, error } = await masterDbClient
       .from('ai_context_documents')
-      .where('id', req.params.id)
       .update(updateData)
-      .returning('*');
+      .eq('id', req.params.id)
+      .select()
+      .single();
 
-    if (!updated) {
+    if (error || !updated) {
       return res.status(404).json({
         success: false,
         message: 'Document not found'
@@ -328,31 +292,18 @@ router.put('/documents/:id', authMiddleware, authorize(['admin']), async (req, r
 
 /**
  * DELETE /api/ai-learning/documents/:id
- * Delete an AI context document
+ * Delete an AI context document (from MASTER DB)
  */
 router.delete('/documents/:id', authMiddleware, authorize(['admin']), async (req, res) => {
   try {
-    const storeId = req.headers['x-store-id'] || req.query.store_id;
-
-    if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const db = await require('../services/database/ConnectionManager').getStoreConnection(storeId);
-
-    const deleted = await db
+    // Delete from MASTER DB
+    const { error, count } = await masterDbClient
       .from('ai_context_documents')
-      .where('id', req.params.id)
-      .delete();
+      .delete()
+      .eq('id', req.params.id);
 
-    if (deleted === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
+    if (error) {
+      throw error;
     }
 
     aiContextService.clearCache();
@@ -372,19 +323,11 @@ router.delete('/documents/:id', authMiddleware, authorize(['admin']), async (req
 
 /**
  * POST /api/ai-learning/documents/bulk-import
- * Bulk import documents from array
+ * Bulk import documents from array (to MASTER DB - global knowledge)
  */
 router.post('/documents/bulk-import', authMiddleware, authorize(['admin']), async (req, res) => {
   try {
-    const storeId = req.headers['x-store-id'] || req.body.storeId;
     const { documents } = req.body;
-
-    if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
 
     if (!Array.isArray(documents) || documents.length === 0) {
       return res.status(400).json({
@@ -393,7 +336,8 @@ router.post('/documents/bulk-import', authMiddleware, authorize(['admin']), asyn
       });
     }
 
-    const result = await aiLearningService.bulkImportDocumentation(storeId, documents);
+    // Import to MASTER DB (no storeId needed)
+    const result = await aiLearningService.bulkImportDocumentation(null, documents);
 
     res.json({
       success: true,
@@ -412,20 +356,12 @@ router.post('/documents/bulk-import', authMiddleware, authorize(['admin']), asyn
 
 /**
  * GET /api/ai-learning/entities
- * List all entity definitions
+ * List all entity definitions (from MASTER DB - global schemas)
  */
 router.get('/entities', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const storeId = req.headers['x-store-id'] || req.query.store_id;
-
-    if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const entities = await aiEntityService.getEntityDefinitions(storeId);
+    // Get entity definitions from MASTER DB (no storeId needed)
+    const entities = await aiEntityService.getEntityDefinitions();
 
     res.json({
       success: true,
@@ -442,39 +378,31 @@ router.get('/entities', authMiddleware, authorize(['admin', 'store_owner']), asy
 
 /**
  * PUT /api/ai-learning/entities/:entityName
- * Update entity definition (keywords, examples, etc.)
+ * Update entity definition (keywords, examples, etc.) in MASTER DB
  */
 router.put('/entities/:entityName', authMiddleware, authorize(['admin']), async (req, res) => {
   try {
-    const storeId = req.headers['x-store-id'] || req.body.storeId;
     const { intent_keywords, example_prompts, example_responses, is_active, priority } = req.body;
-
-    if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const db = await require('../services/database/ConnectionManager').getStoreConnection(storeId);
 
     const updateData = {
       updated_at: new Date().toISOString()
     };
 
-    if (intent_keywords !== undefined) updateData.intent_keywords = JSON.stringify(intent_keywords);
-    if (example_prompts !== undefined) updateData.example_prompts = JSON.stringify(example_prompts);
-    if (example_responses !== undefined) updateData.example_responses = JSON.stringify(example_responses);
+    if (intent_keywords !== undefined) updateData.intent_keywords = intent_keywords;
+    if (example_prompts !== undefined) updateData.example_prompts = example_prompts;
+    if (example_responses !== undefined) updateData.example_responses = example_responses;
     if (is_active !== undefined) updateData.is_active = is_active;
     if (priority !== undefined) updateData.priority = priority;
 
-    const [updated] = await db
+    // Update in MASTER DB
+    const { data: updated, error } = await masterDbClient
       .from('ai_entity_definitions')
-      .where('entity_name', req.params.entityName)
       .update(updateData)
-      .returning('*');
+      .eq('entity_name', req.params.entityName)
+      .select()
+      .single();
 
-    if (!updated) {
+    if (error || !updated) {
       return res.status(404).json({
         success: false,
         message: 'Entity definition not found'
@@ -501,39 +429,34 @@ router.put('/entities/:entityName', authMiddleware, authorize(['admin']), async 
 
 /**
  * GET /api/ai-learning/examples
- * List plugin examples
+ * List plugin examples (from MASTER DB - global code examples)
  */
 router.get('/examples', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const storeId = req.headers['x-store-id'] || req.query.store_id;
     const { category, complexity } = req.query;
 
-    if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'store_id is required'
-      });
-    }
-
-    const db = await require('../services/database/ConnectionManager').getStoreConnection(storeId);
-
-    let query = db
+    // Query MASTER DB for global plugin examples
+    let query = masterDbClient
       .from('ai_plugin_examples')
-      .select('id', 'name', 'slug', 'description', 'category', 'complexity', 'features', 'use_cases', 'tags', 'usage_count', 'is_template', 'is_active')
-      .orderBy('usage_count', 'desc');
+      .select('id, name, slug, description, category, complexity, features, use_cases, tags, usage_count, is_template, is_active')
+      .order('usage_count', { ascending: false });
 
     if (category) {
-      query = query.where('category', category);
+      query = query.eq('category', category);
     }
     if (complexity) {
-      query = query.where('complexity', complexity);
+      query = query.eq('complexity', complexity);
     }
 
-    const examples = await query;
+    const { data: examples, error } = await query;
+
+    if (error) {
+      throw error;
+    }
 
     res.json({
       success: true,
-      data: examples.map(e => ({
+      data: (examples || []).map(e => ({
         ...e,
         features: typeof e.features === 'string' ? JSON.parse(e.features) : e.features,
         use_cases: typeof e.use_cases === 'string' ? JSON.parse(e.use_cases) : e.use_cases,
@@ -551,22 +474,21 @@ router.get('/examples', authMiddleware, authorize(['admin', 'store_owner']), asy
 
 /**
  * POST /api/ai-learning/examples
- * Add a new plugin example
+ * Add a new plugin example (to MASTER DB - global examples)
  */
 router.post('/examples', authMiddleware, authorize(['admin']), async (req, res) => {
   try {
-    const storeId = req.headers['x-store-id'] || req.body.storeId;
     const { name, description, category, complexity, code, files, features, useCases, tags, isTemplate } = req.body;
 
-    if (!storeId || !name || !code) {
+    if (!name || !code) {
       return res.status(400).json({
         success: false,
-        message: 'store_id, name, and code are required'
+        message: 'name and code are required'
       });
     }
 
+    // Add to MASTER DB via aiLearningService
     const result = await aiLearningService.addPluginExample({
-      storeId,
       name,
       description,
       category,
