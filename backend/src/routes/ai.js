@@ -816,14 +816,29 @@ For translation intent:
 
 Return ONLY valid JSON.`;
 
+    // Track all AI conversations for transparency
+    const globalAiConversations = [];
+
+    const intentSystemPrompt = 'You are an intent classifier. Return ONLY valid JSON.';
     const intentResult = await aiService.generate({
       userId,
       operationType: 'general',
       prompt: intentPrompt,
-      systemPrompt: 'You are an intent classifier. Return ONLY valid JSON.',
+      systemPrompt: intentSystemPrompt,
       maxTokens: 512,
       temperature: 0.3,
       metadata: { type: 'intent-detection', storeId: resolvedStoreId }
+    });
+
+    // Track intent detection conversation
+    globalAiConversations.push({
+      step: 'intent-detection',
+      provider: 'anthropic',
+      model: intentResult.usage?.model || 'claude-3-haiku',
+      prompt: intentPrompt,
+      systemPrompt: intentSystemPrompt,
+      response: intentResult.content,
+      tokens: intentResult.usage
     });
 
     let intent;
@@ -1142,6 +1157,9 @@ Suggest helpful next steps. Be friendly and actionable.`;
       // Handle styling changes to slot configurations
       const ConnectionManager = require('../services/database/ConnectionManager');
 
+      // Use global AI conversations array
+      const aiConversations = globalAiConversations;
+
       if (!resolvedStoreId) {
         return res.status(400).json({
           success: false,
@@ -1213,16 +1231,28 @@ Which slot ID should be modified? Return JSON:
 
 Return ONLY valid JSON.`;
 
+        const matchSystemPrompt = 'You are an expert at matching user requests to slot configurations. Return ONLY valid JSON.';
         const matchResult = await aiService.generate({
           userId,
           operationType: 'general',
           prompt: matchPrompt,
-          systemPrompt: 'You are an expert at matching user requests to slot configurations. Return ONLY valid JSON.',
+          systemPrompt: matchSystemPrompt,
           maxTokens: 256,
           temperature: 0.2,
           metadata: { type: 'slot-matching', storeId: resolvedStoreId }
         });
         creditsUsed += matchResult.creditsDeducted;
+
+        // Track this AI conversation
+        aiConversations.push({
+          step: 'slot-matching',
+          provider: 'anthropic',
+          model: matchResult.usage?.model || 'claude-3-haiku',
+          prompt: matchPrompt,
+          systemPrompt: matchSystemPrompt,
+          response: matchResult.content,
+          tokens: matchResult.usage
+        });
 
         try {
           const match = JSON.parse(matchResult.content.match(/\{[\s\S]*\}/)?.[0] || '{}');
@@ -1277,16 +1307,28 @@ Examples:
 Return ONLY valid JSON.`;
 
         try {
+          const colorSystemPrompt = 'You are a color expert. Convert color descriptions to precise hex codes. Return ONLY valid JSON.';
           const colorResult = await aiService.generate({
             userId,
             operationType: 'general',
             prompt: colorPrompt,
-            systemPrompt: 'You are a color expert. Convert color descriptions to precise hex codes. Return ONLY valid JSON.',
+            systemPrompt: colorSystemPrompt,
             maxTokens: 100,
             temperature: 0.3,
             metadata: { type: 'color-parsing', storeId: resolvedStoreId }
           });
           creditsUsed += colorResult.creditsDeducted;
+
+          // Track this AI conversation
+          aiConversations.push({
+            step: 'color-parsing',
+            provider: 'anthropic',
+            model: colorResult.usage?.model || 'claude-3-haiku',
+            prompt: colorPrompt,
+            systemPrompt: colorSystemPrompt,
+            response: colorResult.content,
+            tokens: colorResult.usage
+          });
 
           const colorJson = JSON.parse(colorResult.content.match(/\{[\s\S]*\}/)?.[0] || '{}');
           if (colorJson.hex && /^#[0-9a-fA-F]{6}$/.test(colorJson.hex)) {
@@ -1402,7 +1444,8 @@ Return ONLY valid JSON.`;
           newStyles
         },
         configId: newConfig.id,
-        action: 'publish_styling'
+        action: 'publish_styling',
+        aiConversations // Include AI conversations for transparency
       };
 
       res.json({
