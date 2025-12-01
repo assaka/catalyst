@@ -622,6 +622,15 @@ router.post('/chat', authMiddleware, async (req, res) => {
     const { message, conversationHistory, storeId } = req.body;
     const userId = req.user.id;
 
+    // Debug: Log ALL store_id sources at start of request
+    console.log('🔍 AI Chat - Request started. Store ID sources:', {
+      header: req.headers['x-store-id'],
+      query: req.query.store_id,
+      body_snake: req.body.store_id,
+      body_camel: req.body.storeId,
+      user_store_id: req.user?.store_id
+    });
+
     if (!message) {
       return res.status(400).json({
         success: false,
