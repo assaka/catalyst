@@ -112,8 +112,8 @@ CREATE INDEX IF NOT EXISTS idx_ai_entities_active ON ai_entity_definitions(is_ac
 -- ============================================
 CREATE TABLE IF NOT EXISTS ai_chat_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id INTEGER REFERENCES users(id),
-  store_id UUID REFERENCES stores(id),
+  user_id UUID, -- References users but no FK constraint (cross-DB)
+  store_id UUID, -- References stores but no FK constraint (cross-DB)
   session_id VARCHAR(255), -- Group messages in a conversation
   role VARCHAR(20) NOT NULL, -- 'user', 'assistant', 'system'
   content TEXT NOT NULL,
@@ -164,7 +164,7 @@ CREATE TABLE IF NOT EXISTS ai_context_usage (
   document_id INTEGER REFERENCES ai_context_documents(id),
   example_id INTEGER REFERENCES ai_plugin_examples(id),
   pattern_id INTEGER REFERENCES ai_code_patterns(id),
-  user_id INTEGER,
+  user_id UUID, -- References users but no FK constraint (cross-DB)
   store_id UUID,
   session_id VARCHAR(255),
   query TEXT,
@@ -181,7 +181,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_context_usage_helpful ON ai_context_usage(was_
 -- ============================================
 CREATE TABLE IF NOT EXISTS ai_user_preferences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id INTEGER,
+  user_id UUID, -- References users but no FK constraint (cross-DB)
   session_id VARCHAR(255),
   store_id UUID,
   preferred_mode VARCHAR(50), -- 'nocode', 'developer'
@@ -202,7 +202,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_user_prefs_session ON ai_user_preferences(sess
 -- ============================================
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER,
+  user_id UUID, -- References users but no FK constraint (cross-DB)
   store_id UUID,
   operation_type VARCHAR(50) NOT NULL,
   input TEXT,
