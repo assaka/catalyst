@@ -1516,17 +1516,18 @@ Return ONLY valid JSON.`;
       if (!analysis.understood || analysis.error) {
         return res.json({
           success: true,
-          message: analysis.error || "I couldn't determine how to modify the layout. Could you be more specific about which elements you want to move?",
+          message: analysis.error || "I couldn't understand that layout change. Try something like: 'move sku above price' or 'put title after description'",
           data: { type: 'layout_error', reason: 'not_understood', analysis },
           creditsDeducted: creditsUsed
         });
       }
 
-      if (!analysis.newOrder || !Array.isArray(analysis.newOrder)) {
+      // Validate AI returned source and target (new format - we resolve IDs ourselves)
+      if (!analysis.source) {
         return res.json({
           success: true,
-          message: "I couldn't determine the new layout order. Please specify which elements you want to move and where.",
-          data: { type: 'layout_error', reason: 'no_new_order' },
+          message: "I couldn't determine which element you want to move. Try: 'move [element] above/below [target]'",
+          data: { type: 'layout_error', reason: 'no_source' },
           creditsDeducted: creditsUsed
         });
       }
@@ -1640,11 +1641,11 @@ Return ONLY valid JSON.`;
         console.log('[AI Chat] Slots have different parents - cross-container move not yet supported');
       }
 
-      // Build the updated configuration with new order and updated positions
+      // Build the updated configuration with updated slot positions
       const updatedConfiguration = {
         ...configuration,
         slots: slots, // Updated slots with new position.row values
-        slotOrder: analysis.newOrder,
+        // Keep existing slotOrder - position.row is what matters for rendering
         metadata: {
           ...configuration.metadata,
           lastModified: new Date().toISOString(),
@@ -1654,8 +1655,8 @@ Return ONLY valid JSON.`;
       };
 
       // Update the slot configuration
-      console.log('[AI Chat] Updating layout order for config id:', slotConfig.id);
-      console.log('[AI Chat] New order:', analysis.newOrder);
+      console.log('[AI Chat] Updating layout for config id:', slotConfig.id);
+      console.log('[AI Chat] Change:', analysis.description);
 
       const { data: updatedData, error: updateError } = await tenantDb
         .from('slot_configurations')
@@ -1716,9 +1717,16 @@ Generate a brief, friendly confirmation message (1-2 sentences). Be conversation
         action: analysis.action,
         sourceSlotId: analysis.sourceSlotId,
         targetSlotId: analysis.targetSlotId,
-        newOrder: analysis.newOrder,
+        position: analysis.position,
         description: analysis.description,
-        configId: slotConfig.id
+        configId: slotConfig.id,
+        // Include resolved info for debugging
+        resolved: {
+          source: analysis.source,
+          target: analysis.target,
+          sourceSlotId: analysis.sourceSlotId,
+          targetSlotId: analysis.targetSlotId
+        }
       };
 
       res.json({
