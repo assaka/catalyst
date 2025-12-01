@@ -1281,122 +1281,95 @@ Suggest helpful next steps. Be friendly and actionable.`;
 
       // Parse the configuration
       const configuration = slotConfig.configuration || {};
+      let updatedSlots = { ...configuration.slots || {} };
       const slots = configuration.slots || {};
 
       console.log('[AI Chat] Available slots:', Object.keys(slots));
+      console.log('[AI Chat] Processing', stylingChanges.length, 'change(s)');
 
-      // For now, process first change (TODO: loop through all changes later)
-      const firstChange = stylingChanges[0];
-      const element = firstChange.element;
-      const property = firstChange.property;
-      const value = firstChange.value;
+      // Helper function to find slot by element name
+      const findSlot = async (elementName) => {
+        // Try exact match first
+        if (elementName && slots[elementName]) {
+          return { slot: slots[elementName], slotId: elementName };
+        }
 
-      console.log('[AI Chat] Processing change:', JSON.stringify(firstChange));
-      console.log('[AI Chat] Looking for element:', element);
-
-      // Find the slot to modify
-      let targetSlot = null;
-      let targetSlotId = null;
-
-      // Try exact match first
-      if (element && slots[element]) {
-        targetSlot = slots[element];
-        targetSlotId = element;
-        console.log('[AI Chat] Found exact slot match:', element);
-      } else {
-        // Try common variations before using AI
+        // Try common variations
         const variations = [
-          element,
-          element?.replace(/_/g, '-'),  // product_title -> product-title
-          element?.replace(/-/g, '_'),  // product-title -> product_title
-          `${pageType}_${element}`,     // title -> product_title
-          `${pageType}-${element}`,     // title -> product-title
+          elementName,
+          elementName?.replace(/_/g, '-'),
+          elementName?.replace(/-/g, '_'),
+          `${pageType}_${elementName}`,
+          `${pageType}-${elementName}`,
         ].filter(Boolean);
 
         for (const variant of variations) {
           if (slots[variant]) {
-            targetSlot = slots[variant];
-            targetSlotId = variant;
-            console.log('[AI Chat] Found slot by variation:', variant);
-            break;
+            return { slot: slots[variant], slotId: variant };
           }
         }
 
-        // If still not found, use AI to find the matching slot
-        if (!targetSlot) {
-          const slotNames = Object.keys(slots).map(id => ({
-            id,
-            name: slots[id].name || id,
-            type: slots[id].type || 'unknown',
-            className: slots[id].className || ''
-          }));
+        // Use AI to find matching slot
+        const slotNames = Object.keys(slots).map(id => ({
+          id,
+          name: slots[id].name || id,
+          type: slots[id].type || 'unknown'
+        }));
 
-          console.log('[AI Chat] Using AI to match slot. Available:', JSON.stringify(slotNames));
-
-        const matchPrompt = `Given these available slots for a ${pageType} page:
-${JSON.stringify(slotNames, null, 2)}
-
-The user wants to change the "${property}" of "${element || message}" to "${value}".
-
-Which slot ID should be modified? Return JSON:
-{ "slotId": "the_slot_id", "confidence": 0.0-1.0 }
-
-Return ONLY valid JSON.`;
-
-        const matchSystemPrompt = 'You are an expert at matching user requests to slot configurations. Return ONLY valid JSON.';
-        const matchResult = await aiService.generate({
-          userId,
-          operationType: 'general',
-          prompt: matchPrompt,
-          systemPrompt: matchSystemPrompt,
-          maxTokens: 256,
-          temperature: 0.2,
-          metadata: { type: 'slot-matching', storeId: resolvedStoreId }
-        });
-        creditsUsed += matchResult.creditsDeducted;
-
-        // Track this AI conversation
-        aiConversations.push({
-          step: 'slot-matching',
-          provider: 'anthropic',
-          model: matchResult.usage?.model || 'claude-3-haiku',
-          prompt: matchPrompt,
-          systemPrompt: matchSystemPrompt,
-          response: matchResult.content,
-          tokens: matchResult.usage
-        });
+        const matchPrompt = `Given these slots: ${JSON.stringify(slotNames)}
+The user wants to modify "${elementName}".
+Return JSON: { "slotId": "the_slot_id" }`;
 
         try {
+          const matchResult = await aiService.generate({
+            userId,
+            operationType: 'general',
+            prompt: matchPrompt,
+            systemPrompt: 'Match element names to slot IDs. Return ONLY valid JSON.',
+            maxTokens: 100,
+            temperature: 0.2,
+            metadata: { type: 'slot-matching', storeId: resolvedStoreId }
+          });
+          creditsUsed += matchResult.creditsDeducted;
+
           const match = JSON.parse(matchResult.content.match(/\{[\s\S]*\}/)?.[0] || '{}');
-          console.log('[AI Chat] AI slot match result:', JSON.stringify(match));
           if (match.slotId && slots[match.slotId]) {
-            targetSlot = slots[match.slotId];
-            targetSlotId = match.slotId;
-            console.log('[AI Chat] AI matched slot:', targetSlotId);
-          } else {
-            console.log('[AI Chat] AI suggested slot not found in slots:', match.slotId);
+            return { slot: slots[match.slotId], slotId: match.slotId };
           }
         } catch (e) {
-          console.error('[AI Chat] Failed to parse slot match:', e);
+          console.warn('Slot matching failed:', e.message);
         }
-      }
-      }
 
-      if (!targetSlot || !targetSlotId) {
-        return res.json({
-          success: true,
-          message: `I couldn't find a matching element for "${element || message}". Available elements on the ${pageType} page include: ${Object.keys(slots).slice(0, 10).join(', ')}...`,
-          data: { type: 'styling_error', reason: 'slot_not_found', availableSlots: Object.keys(slots) },
-          creditsDeducted: creditsUsed
-        });
-      }
+        return { slot: null, slotId: null };
+      };
 
-      // Generate the styling change
-      const currentClassName = targetSlot.className || '';
-      const currentStyles = targetSlot.styles || {};
-      const { colord, extend } = require('colord');
-      const namesPlugin = require('colord/plugins/names');
-      extend([namesPlugin]);
+      // Process all changes
+      const appliedChanges = [];
+      const failedChanges = [];
+
+      for (const change of stylingChanges) {
+        const { element, property, value } = change;
+        console.log('[AI Chat] Processing change:', JSON.stringify(change));
+
+        const { slot: targetSlot, slotId: targetSlotId } = await findSlot(element);
+
+        if (!targetSlot || !targetSlotId) {
+          failedChanges.push({ element, reason: 'slot not found' });
+          continue;
+        }
+
+        // Get current slot state (may have been modified by previous change)
+        const currentSlot = updatedSlots[targetSlotId] || targetSlot;
+        const currentClassName = currentSlot.className || '';
+        const currentStyles = currentSlot.styles || {};
+        let newClassName = currentClassName;
+        let newStyles = { ...currentStyles };
+        let changeDescription = '';
+
+        // Load colord for color parsing
+        const { colord, extend } = require('colord');
+        const namesPlugin = require('colord/plugins/names');
+        extend([namesPlugin]);
 
       // Smart color parser - uses AI for natural language descriptions
       const parseColor = async (colorValue) => {
@@ -1459,11 +1432,7 @@ Return ONLY valid JSON.`;
         return colorValue;
       };
 
-      let newClassName = currentClassName;
-      let newStyles = { ...currentStyles };
-      let changeDescription = '';
-
-      if (property === 'color' || property === 'textColor') {
+        if (property === 'color' || property === 'textColor') {
         // Remove existing Tailwind text color classes
         newClassName = currentClassName
           .replace(/text-(gray|red|blue|green|yellow|purple|pink|orange|black|white|slate|zinc|neutral|stone|amber|lime|emerald|teal|cyan|sky|indigo|violet|fuchsia|rose)-\d{2,3}/g, '')
@@ -1602,16 +1571,35 @@ Return ONLY valid JSON.`;
         changeDescription = `Changed ${finalProperty} to ${finalValue}`;
       }
 
-      // Update the slot in configuration
-      const updatedSlots = {
-        ...slots,
-        [targetSlotId]: {
-          ...targetSlot,
+        // Update this slot in the accumulated changes
+        updatedSlots[targetSlotId] = {
+          ...currentSlot,
           className: newClassName,
           styles: newStyles
-        }
-      };
+        };
 
+        appliedChanges.push({
+          element,
+          slotId: targetSlotId,
+          property,
+          value,
+          description: changeDescription
+        });
+
+        console.log('[AI Chat] Applied change:', changeDescription);
+      } // End of for loop
+
+      // Check if any changes were applied
+      if (appliedChanges.length === 0) {
+        return res.json({
+          success: true,
+          message: `I couldn't apply any of the requested changes. ${failedChanges.length > 0 ? `Failed to find: ${failedChanges.map(f => f.element).join(', ')}` : ''}`,
+          data: { type: 'styling_error', reason: 'no_changes_applied', failedChanges },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      // Build the updated configuration with all changes
       const updatedConfiguration = {
         ...configuration,
         slots: updatedSlots,
@@ -1623,9 +1611,9 @@ Return ONLY valid JSON.`;
       };
 
       // Directly update the published configuration (no draft, immediate apply)
+      const allChangeDescriptions = appliedChanges.map(c => c.description).join('; ');
       console.log('[AI Chat] Updating slot config id:', slotConfig.id);
-      console.log('[AI Chat] Target slot:', targetSlotId);
-      console.log('[AI Chat] New styles:', JSON.stringify(newStyles));
+      console.log('[AI Chat] Applied', appliedChanges.length, 'change(s):', allChangeDescriptions);
 
       const { data: updatedData, error: updateError } = await tenantDb
         .from('slot_configurations')
@@ -1635,7 +1623,7 @@ Return ONLY valid JSON.`;
           metadata: {
             ...slotConfig.metadata,
             ai_generated: true,
-            last_ai_change: changeDescription,
+            last_ai_change: allChangeDescriptions,
             last_ai_request: message
           }
         })
@@ -1660,21 +1648,16 @@ Return ONLY valid JSON.`;
       }
 
       console.log('[AI Chat] Successfully updated slot config:', updatedData.id);
-      console.log('[AI Chat] Change applied:', changeDescription);
+      console.log('[AI Chat] Changes applied:', allChangeDescriptions);
 
-      // Verify the slot was actually updated in the returned data
-      const verifySlot = updatedData.configuration?.slots?.[targetSlotId];
-      console.log('[AI Chat] Verified slot styles:', JSON.stringify(verifySlot?.styles));
-
-      // Generate natural AI response
+      // Generate natural AI response for all changes
+      const changesListForPrompt = appliedChanges.map(c => `- ${c.description} (${c.element})`).join('\n');
       const responsePrompt = `The user asked: "${message}"
 
-I just applied this change: ${changeDescription}
-- Element: ${targetSlot.name || targetSlotId}
-- Page: ${pageType} page
-- New value: ${newStyles.color || newStyles.backgroundColor || value}
+I applied these styling changes on the ${pageType} page:
+${changesListForPrompt}
 
-Generate a brief, friendly confirmation message (1-2 sentences). Be conversational and helpful. Mention that the preview will refresh to show the change.`;
+Generate a brief, friendly confirmation message (1-2 sentences). Be conversational and helpful. Mention that the preview will refresh to show the changes.`;
 
       const responseResult = await aiService.generate({
         userId,
@@ -1699,15 +1682,8 @@ Generate a brief, friendly confirmation message (1-2 sentences). Be conversation
       responseData = {
         type: 'styling_applied',
         pageType,
-        slotId: targetSlotId,
-        slotName: targetSlot.name || targetSlotId,
-        change: {
-          property,
-          oldValue: property === 'color' ? currentClassName : currentStyles[property],
-          newValue: value,
-          newClassName,
-          newStyles
-        },
+        appliedChanges,
+        failedChanges,
         configId: slotConfig.id,
         aiConversations,
         detectedIntent: intent
