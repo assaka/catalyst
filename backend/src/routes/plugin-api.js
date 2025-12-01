@@ -2253,15 +2253,16 @@ router.delete('/:pluginId/cron/:cronName', async (req, res) => {
 
     if (error) throw error;
 
-    // Also delete from central cron_jobs if linked
+    // Also delete from cron_jobs if linked
     if (cronData?.cron_job_id) {
       try {
-        await CronJob.destroy({
-          where: { id: cronData.cron_job_id }
-        });
-        console.log(`✅ Deleted plugin cron from central scheduler: ${cronData.cron_job_id}`);
+        await tenantDb
+          .from('cron_jobs')
+          .delete()
+          .eq('id', cronData.cron_job_id);
+        console.log(`✅ Deleted plugin cron from cron_jobs: ${cronData.cron_job_id}`);
       } catch (syncError) {
-        console.error('⚠️ Failed to delete from central cron_jobs:', syncError.message);
+        console.error('⚠️ Failed to delete from cron_jobs:', syncError.message);
       }
     }
 
@@ -2311,16 +2312,16 @@ router.post('/:pluginId/cron/:cronName/toggle', async (req, res) => {
 
     if (error) throw error;
 
-    // Sync toggle to central cron_jobs
+    // Sync toggle to cron_jobs
     if (existing.cron_job_id) {
       try {
-        await CronJob.update(
-          { is_active: data.is_enabled },
-          { where: { id: existing.cron_job_id } }
-        );
-        console.log(`✅ Synced toggle to central scheduler: ${existing.cron_job_id} -> ${data.is_enabled ? 'active' : 'paused'}`);
+        await tenantDb
+          .from('cron_jobs')
+          .update({ is_active: data.is_enabled, updated_at: new Date().toISOString() })
+          .eq('id', existing.cron_job_id);
+        console.log(`✅ Synced toggle to cron_jobs: ${existing.cron_job_id} -> ${data.is_enabled ? 'active' : 'paused'}`);
       } catch (syncError) {
-        console.error('⚠️ Failed to sync toggle to central cron_jobs:', syncError.message);
+        console.error('⚠️ Failed to sync toggle to cron_jobs:', syncError.message);
       }
     }
 
