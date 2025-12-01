@@ -351,10 +351,14 @@ router.put('/:id',
       await updateProductTranslations(store_id, req.params.id, translations);
     }
 
+    // Get tenant connection and apply images from product_files table
+    const tenantDb = await ConnectionManager.getStoreConnection(store_id);
+    const productsWithImages = await applyProductImages([updatedProduct], tenantDb);
+
     res.json({
       success: true,
       message: 'Product updated successfully',
-      data: updatedProduct
+      data: productsWithImages[0]
     });
   } catch (error) {
     console.error('Update product error:', error);

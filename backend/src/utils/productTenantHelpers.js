@@ -161,10 +161,13 @@ async function loadProductAttributes(tenantDb, productId) {
 async function createProduct(storeId, productData) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+  // Extract images to sync separately
+  const { images, ...productFields } = productData;
+
   const { data: product, error } = await tenantDb
     .from('products')
     .insert({
-      ...productData,
+      ...productFields,
       store_id: storeId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -177,6 +180,11 @@ async function createProduct(storeId, productData) {
   // Sync attributes to product_attribute_values table for storefront filtering
   if (productData.attributes && typeof productData.attributes === 'object') {
     await syncProductAttributeValues(tenantDb, storeId, product.id, productData.attributes);
+  }
+
+  // Sync images to product_files table
+  if (images && Array.isArray(images) && images.length > 0) {
+    await syncProductImages(tenantDb, storeId, product.id, images);
   }
 
   return product;
@@ -194,7 +202,8 @@ async function updateProduct(storeId, productId, productData) {
   const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
   // Exclude translation fields (name, description, short_description) - these go in product_translations table
-  const { name, description, short_description, attributes, ...productFieldsOnly } = productData;
+  // Also extract images to sync to product_files table
+  const { name, description, short_description, attributes, images, ...productFieldsOnly } = productData;
 
   const updateFields = {
     ...productFieldsOnly,
@@ -214,8 +223,74 @@ async function updateProduct(storeId, productId, productData) {
     await syncProductAttributeValues(tenantDb, storeId, productId, attributes);
   }
 
+  // Sync images to product_files table
+  if (images && Array.isArray(images)) {
+    await syncProductImages(tenantDb, storeId, productId, images);
+  }
+
   // Return updated product
   return await getProductById(storeId, productId);
+}
+
+/**
+ * Sync product images to product_files table
+ * Replaces all existing images with the new array
+ *
+ * @param {Object} tenantDb - Tenant database connection
+ * @param {string} storeId - Store UUID
+ * @param {string} productId - Product UUID
+ * @param {Array} images - Array of image objects with url, alt, position, etc.
+ */
+async function syncProductImages(tenantDb, storeId, productId, images) {
+  try {
+    console.log(`📷 Syncing ${images.length} images for product ${productId}`);
+
+    // Delete existing images for this product
+    const { error: deleteError } = await tenantDb
+      .from('product_files')
+      .delete()
+      .eq('product_id', productId)
+      .eq('file_type', 'image');
+
+    if (deleteError) {
+      console.error('Error deleting existing product images:', deleteError);
+      throw deleteError;
+    }
+
+    // Insert new images
+    if (images.length > 0) {
+      const insertRecords = images.map((img, index) => ({
+        product_id: productId,
+        store_id: storeId,
+        file_url: img.url || img.file_url,
+        file_type: 'image',
+        position: img.position !== undefined ? img.position : index,
+        is_primary: img.isPrimary !== undefined ? img.isPrimary : index === 0,
+        alt_text: img.alt || img.alt_text || '',
+        file_size: img.filesize || img.file_size || null,
+        mime_type: img.mime_type || null,
+        metadata: {
+          attribute_code: img.attribute_code || null,
+          filepath: img.filepath || null,
+          original_data: img
+        }
+      }));
+
+      const { error: insertError } = await tenantDb
+        .from('product_files')
+        .insert(insertRecords);
+
+      if (insertError) {
+        console.error('Error inserting product images:', insertError);
+        throw insertError;
+      }
+
+      console.log(`✅ Successfully synced ${images.length} images to product_files`);
+    }
+  } catch (err) {
+    console.error('Error in syncProductImages:', err);
+    // Don't throw - let the product update succeed even if image sync fails
+  }
 }
 
 /**
@@ -367,5 +442,6 @@ module.exports = {
   updateProduct,
   deleteProduct,
   getAllProducts,
-  syncProductAttributeValues
+  syncProductAttributeValues,
+  syncProductImages
 };
