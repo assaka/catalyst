@@ -1430,7 +1430,11 @@ Return ONLY valid JSON.`;
       };
 
       // Directly update the published configuration (no draft, immediate apply)
-      const { error: updateError } = await tenantDb
+      console.log('[AI Chat] Updating slot config id:', slotConfig.id);
+      console.log('[AI Chat] Target slot:', targetSlotId);
+      console.log('[AI Chat] New styles:', JSON.stringify(newStyles));
+
+      const { data: updatedData, error: updateError } = await tenantDb
         .from('slot_configurations')
         .update({
           configuration: updatedConfiguration,
@@ -1442,7 +1446,9 @@ Return ONLY valid JSON.`;
             last_ai_request: message
           }
         })
-        .eq('id', slotConfig.id);
+        .eq('id', slotConfig.id)
+        .select('id, configuration')
+        .single();
 
       if (updateError) {
         console.error('[AI Chat] Failed to save styling change:', updateError);
@@ -1452,8 +1458,20 @@ Return ONLY valid JSON.`;
         });
       }
 
-      console.log('[AI Chat] Successfully updated slot config:', slotConfig.id);
+      if (!updatedData) {
+        console.error('[AI Chat] Update returned no data - row may not exist');
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to update styling - configuration not found'
+        });
+      }
+
+      console.log('[AI Chat] Successfully updated slot config:', updatedData.id);
       console.log('[AI Chat] Change applied:', changeDescription);
+
+      // Verify the slot was actually updated in the returned data
+      const verifySlot = updatedData.configuration?.slots?.[targetSlotId];
+      console.log('[AI Chat] Verified slot styles:', JSON.stringify(verifySlot?.styles));
 
       // Generate natural AI response
       const responsePrompt = `The user asked: "${message}"
