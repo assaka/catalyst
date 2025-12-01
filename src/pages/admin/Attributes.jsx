@@ -48,6 +48,7 @@ import AttributeForm from "@/components/admin/attributes/AttributeForm";
 import AttributeSetForm from "@/components/admin/attributes/AttributeSetForm";
 import BulkTranslateDialog from "@/components/admin/BulkTranslateDialog";
 import { toast } from "sonner";
+import { PageLoader } from "@/components/ui/page-loader";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
 import { getAttributeLabel } from "@/utils/attributeUtils";
 
@@ -433,11 +434,7 @@ export default function Attributes() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   if (!selectedStore) {

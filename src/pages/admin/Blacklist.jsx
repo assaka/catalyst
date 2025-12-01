@@ -13,6 +13,7 @@ import { Shield, Search, Plus, Trash2, Globe, Mail, MonitorSmartphone } from 'lu
 import { useAlertTypes } from '@/hooks/useAlert';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import SaveButton from "@/components/ui/save-button.jsx";
+import { PageLoader } from '@/components/ui/page-loader';
 
 export default function Blacklist() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();

@@ -28,6 +28,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import TranslationFields from "@/components/admin/TranslationFields";
+import { PageLoader } from "@/components/ui/page-loader";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 

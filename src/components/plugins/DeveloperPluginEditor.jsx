@@ -510,24 +510,52 @@ const DeveloperPluginEditor = ({
           const cronPath = `/cron/${cronFileName}`;
           const existingIndex = cronFolder.children.findIndex(f => f.name === cronFileName);
 
+          // Build content: show config + handler_code for editing
+          const cronConfig = {
+            cron_name: cronJob.cron_name,
+            cron_schedule: cronJob.cron_schedule,
+            handler_method: cronJob.handler_method,
+            description: cronJob.description,
+            handler_params: cronJob.handler_params || {},
+            timezone: cronJob.timezone || 'UTC',
+            is_enabled: cronJob.is_enabled,
+            timeout_seconds: cronJob.timeout_seconds || 300,
+            max_failures: cronJob.max_failures || 5
+          };
+
+          // If handler_code exists, show it in a code-friendly format
+          let content;
+          if (cronJob.handler_code) {
+            content = `// ═══════════════════════════════════════════════════════════════════════════
+// CRON CONFIG (stored in database)
+// ═══════════════════════════════════════════════════════════════════════════
+// Schedule: ${cronJob.cron_schedule}
+// Handler: ${cronJob.handler_method}
+// Enabled: ${cronJob.is_enabled}
+// ═══════════════════════════════════════════════════════════════════════════
+
+// To edit config, modify the values below and save:
+const config = ${JSON.stringify(cronConfig, null, 2)};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HANDLER CODE (executed when cron runs)
+// Available: db, storeId, params, fetch, apiBaseUrl
+// ═══════════════════════════════════════════════════════════════════════════
+
+${cronJob.handler_code}`;
+          } else {
+            content = JSON.stringify(cronConfig, null, 2);
+          }
+
           const cronFile = {
             name: cronFileName,
             type: 'file',
             path: cronPath,
-            content: JSON.stringify({
-              cron_name: cronJob.cron_name,
-              cron_schedule: cronJob.cron_schedule,
-              handler_method: cronJob.handler_method,
-              description: cronJob.description,
-              handler_params: cronJob.handler_params || {},
-              timezone: cronJob.timezone || 'UTC',
-              is_enabled: cronJob.is_enabled,
-              timeout_seconds: cronJob.timeout_seconds || 300,
-              max_failures: cronJob.max_failures || 5
-            }, null, 2),
+            content,
             cron_name: cronJob.cron_name,
             cron_schedule: cronJob.cron_schedule,
             handler_method: cronJob.handler_method,
+            handler_code: cronJob.handler_code,
             description: cronJob.description,
             is_enabled: cronJob.is_enabled,
             last_run_at: cronJob.last_run_at,
@@ -1000,119 +1028,80 @@ const DeveloperPluginEditor = ({
           max_failures: 5
         });
 
-        addTerminalOutput(``, 'info');
-        addTerminalOutput(`✅ CRON JOB CREATED SUCCESSFULLY`, 'success');
-        addTerminalOutput(`   📅 Schedule: ${cronSchedule}`, 'info');
-        addTerminalOutput(`   📁 Config: /cron/${cronName}.json`, 'info');
-
-        // 2. Auto-generate handler file with practical example code
+        // Generate handler code (stored in database, not as file)
         const handlerCode = `/**
- * ═══════════════════════════════════════════════════════════════════════════
  * CRON HANDLER: ${cronHandlerMethod}
- * ═══════════════════════════════════════════════════════════════════════════
- *
  * Schedule: ${cronSchedule}
  * ${cronDescription || `Scheduled task for ${cronName}`}
  *
- * This handler runs automatically based on your cron schedule.
- * Edit the code below to implement your scheduled task logic.
- *
- * AVAILABLE IN CONTEXT:
- *   - context.storeId    → Your store's ID
- *   - context.db         → Database connection (query your tables)
- *   - context.cronJobId  → This cron job's ID
- *   - params             → Custom parameters from cron config
- *
- * ═══════════════════════════════════════════════════════════════════════════
+ * AVAILABLE:
+ *   - db        → Database connection (Supabase client)
+ *   - storeId   → Your store's ID
+ *   - params    → Custom parameters from cron config
+ *   - fetch     → Make HTTP requests
  */
 
-export default async function ${cronHandlerMethod}(params = {}, context = {}) {
-  const { storeId, db, cronJobId } = context;
+// STEP 1: Get store information
+const { data: store } = await db
+  .from('stores')
+  .select('id, name, email, settings')
+  .eq('id', storeId)
+  .single();
 
-  console.log('🕐 [${cronHandlerMethod}] Starting scheduled task for store:', storeId);
-
-  try {
-    // ─────────────────────────────────────────────────────────────────────────
-    // STEP 1: Get store information (including store email)
-    // ─────────────────────────────────────────────────────────────────────────
-    const { data: store } = await db
-      .from('stores')
-      .select('id, name, email, settings')
-      .eq('id', storeId)
-      .single();
-
-    if (!store) {
-      throw new Error('Store not found: ' + storeId);
-    }
-
-    console.log('📧 Store email:', store.email);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // STEP 2: Your custom logic here (example: find items to process)
-    // ─────────────────────────────────────────────────────────────────────────
-    // Example: Query abandoned carts, pending orders, etc.
-    // const { data: items } = await db
-    //   .from('your_table')
-    //   .select('*')
-    //   .eq('store_id', storeId)
-    //   .eq('status', 'pending');
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // STEP 3: Send notification email to store owner
-    // ─────────────────────────────────────────────────────────────────────────
-    // This is a demo - sends a test email to the store's email address
-    const emailResult = await fetch('/api/email/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: store.email,
-        subject: '🕐 Scheduled Task Report: ${cronHandlerMethod}',
-        html: \`
-          <h2>Scheduled Task Completed</h2>
-          <p>Your scheduled task <strong>${cronHandlerMethod}</strong> has run successfully.</p>
-          <ul>
-            <li><strong>Store:</strong> \${store.name}</li>
-            <li><strong>Schedule:</strong> ${cronSchedule}</li>
-            <li><strong>Executed at:</strong> \${new Date().toLocaleString()}</li>
-          </ul>
-          <p style="color: #666; font-size: 12px;">
-            This is an automated notification from your Catalyst store.
-          </p>
-        \`
-      })
-    });
-
-    console.log('📧 Email sent to:', store.email);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // STEP 4: Return result (saved to database for monitoring)
-    // ─────────────────────────────────────────────────────────────────────────
-    return {
-      success: true,
-      storeName: store.name,
-      storeEmail: store.email,
-      emailSent: true,
-      message: '${cronHandlerMethod} completed successfully',
-      executedAt: new Date().toISOString()
-    };
-
-  } catch (error) {
-    console.error('❌ [${cronHandlerMethod}] Failed:', error.message);
-    throw error; // This marks the job as failed in the scheduler
-  }
+if (!store) {
+  throw new Error('Store not found: ' + storeId);
 }
-`;
 
-        // Save handler file to plugin_scripts
-        await apiClient.put(`plugins/registry/${plugin.id}/files`, {
-          path: `/handlers/${cronHandlerMethod}.js`,
-          content: handlerCode
+console.log('📧 Store email:', store.email);
+
+// STEP 2: Your custom logic here
+// Example: Query abandoned carts, pending orders, etc.
+// const { data: items } = await db
+//   .from('your_table')
+//   .select('*')
+//   .eq('store_id', storeId);
+
+// STEP 3: Send notification email to store owner (demo)
+await fetch(apiBaseUrl + '/api/email/send', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    to: store.email,
+    subject: '🕐 Scheduled Task Report: ${cronHandlerMethod}',
+    html: \`
+      <h2>Scheduled Task Completed</h2>
+      <p>Your scheduled task <strong>${cronHandlerMethod}</strong> has run successfully.</p>
+      <ul>
+        <li><strong>Store:</strong> \${store.name}</li>
+        <li><strong>Schedule:</strong> ${cronSchedule}</li>
+        <li><strong>Executed at:</strong> \${new Date().toLocaleString()}</li>
+      </ul>
+    \`
+  })
+});
+
+console.log('✅ Email sent to:', store.email);
+
+// STEP 4: Return result (saved to last_result column)
+return {
+  success: true,
+  storeName: store.name,
+  emailSent: true,
+  executedAt: new Date().toISOString()
+};`;
+
+        // Update cron job with handler_code (100% DB driven)
+        await apiClient.put(`plugins/${plugin.id}/cron/${cronName}`, {
+          handler_code: handlerCode
         });
 
-        addTerminalOutput(`   📝 Handler: /handlers/${cronHandlerMethod}.js`, 'info');
         addTerminalOutput(``, 'info');
-        addTerminalOutput(`💡 TIP: Open the handler file to customize your scheduled task logic.`, 'info');
-        addTerminalOutput(`   The handler includes a demo that sends an email to your store.`, 'info');
+        addTerminalOutput(`✅ CRON JOB CREATED SUCCESSFULLY`, 'success');
+        addTerminalOutput(`   📅 Schedule: ${cronSchedule}`, 'info');
+        addTerminalOutput(`   📝 Handler: ${cronHandlerMethod} (stored in database)`, 'info');
+        addTerminalOutput(``, 'info');
+        addTerminalOutput(`💡 Open /cron/${cronName}.json to edit the handler code.`, 'info');
+        addTerminalOutput(`   The demo sends an email to your store when it runs.`, 'info');
       } else {
         // For component, util, service, hook, and other files, use the file save endpoint
         // These will be saved to plugin_scripts table (for components/utils/services) or plugin_hooks table (for hooks)

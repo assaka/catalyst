@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import SaveButton from '@/components/ui/save-button';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
+import { PageLoader } from '@/components/ui/page-loader';
 
 
 export default function AnalyticsSettings() {
@@ -468,11 +469,7 @@ export default function AnalyticsSettings() {
     
 
     if (loading) {
-        return (
-            <div className="p-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
+        return <PageLoader size="lg" fullScreen={false} className="p-8" />;
     }
     
     if (!store) {

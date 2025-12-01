@@ -199,14 +199,22 @@ class DynamicCronJob extends BaseJobHandler {
 
   /**
    * Execute plugin job type
-   * Calls the appropriate handler method on the plugin
+   * Supports two modes:
+   * 1. handler_code - inline code stored in database (100% DB driven)
+   * 2. handler_method - method on plugin class (legacy/file-based)
    */
   async executePluginJob(cronJob) {
-    const { configuration, handler } = cronJob;
+    const { configuration, handler, handler_code, store_id } = cronJob;
     const { plugin_slug, plugin_name, params = {} } = configuration;
 
-    console.log(`🔌 Executing plugin job: ${plugin_name || plugin_slug} -> ${handler}`);
+    console.log(`🔌 Executing plugin job: ${plugin_name || plugin_slug}`);
 
+    // Mode 1: Execute inline handler_code from database (100% DB driven)
+    if (handler_code) {
+      return await this.executeInlineHandlerCode(cronJob);
+    }
+
+    // Mode 2: Execute method on plugin class (legacy)
     const pluginManager = getPluginManager();
     const plugin = pluginManager.getPlugin(plugin_slug);
 
@@ -218,7 +226,6 @@ class DynamicCronJob extends BaseJobHandler {
       throw new Error(`Plugin ${plugin_slug} is not enabled`);
     }
 
-    // Check if handler method exists on the plugin
     const handlerMethod = handler || configuration.handler;
     if (!handlerMethod) {
       throw new Error(`No handler specified for plugin job`);
@@ -228,7 +235,6 @@ class DynamicCronJob extends BaseJobHandler {
       throw new Error(`Handler method '${handlerMethod}' not found on plugin ${plugin_slug}`);
     }
 
-    // Execute the plugin handler method
     const result = await plugin[handlerMethod](params, {
       cronJobId: cronJob.id,
       storeId: cronJob.store_id,
@@ -240,6 +246,62 @@ class DynamicCronJob extends BaseJobHandler {
       handler: handlerMethod,
       result
     };
+  }
+
+  /**
+   * Execute inline handler code from database
+   * This enables 100% database-driven cron handlers
+   */
+  async executeInlineHandlerCode(cronJob) {
+    const { handler_code, handler_method, store_id, configuration } = cronJob;
+    const { params = {} } = configuration || {};
+
+    console.log(`📝 Executing inline handler code for: ${handler_method || 'anonymous'}`);
+
+    // Get tenant database connection
+    const { getTenantConnection } = require('../../database/tenant-connection');
+    const db = await getTenantConnection(store_id);
+
+    // Build execution context
+    const context = {
+      db,
+      storeId: store_id,
+      cronJobId: cronJob.id,
+      params,
+      apiBaseUrl: process.env.API_BASE_URL || process.env.BACKEND_URL || 'http://localhost:3001'
+    };
+
+    try {
+      // Create async function from handler_code
+      // Available variables: db, storeId, params, fetch, apiBaseUrl
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const handlerFn = new AsyncFunction(
+        'db', 'storeId', 'params', 'fetch', 'apiBaseUrl', 'console',
+        handler_code
+      );
+
+      // Execute the handler
+      const result = await handlerFn(
+        db,
+        store_id,
+        params,
+        fetch,
+        context.apiBaseUrl,
+        console
+      );
+
+      console.log(`✅ Handler completed:`, result);
+
+      return {
+        handler: handler_method || 'inline',
+        executedAt: new Date().toISOString(),
+        result
+      };
+
+    } catch (error) {
+      console.error(`❌ Handler execution failed:`, error.message);
+      throw error;
+    }
   }
 
   /**
