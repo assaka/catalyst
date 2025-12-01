@@ -6,7 +6,7 @@ const PluginPurchaseService = require('../services/PluginPurchaseService');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { storeResolver } = require('../middleware/storeResolver');
 const { optionalAuthMiddleware } = require('../middleware/authMiddleware');
-const CronJob = require('../models/CronJob');
+// Note: cron_jobs is in tenant Supabase DB, not Sequelize
 
 /**
  * Helper function to get tenant database connection from request
@@ -2067,50 +2067,60 @@ router.post('/:pluginId/cron', async (req, res) => {
 
     if (error) throw error;
 
-    // Sync to central cron_jobs table (Sequelize) for scheduling
-    let centralCronJob = null;
+    // Sync to cron_jobs table (same tenant DB) for scheduling
+    let cronJobId = null;
     try {
-      console.log(`🔄 Syncing plugin cron to central scheduler...`);
-      console.log(`   store_id: ${store_id}, user_id: ${user_id || 'null'}`);
+      console.log(`🔄 Syncing plugin cron to cron_jobs table...`);
 
-      centralCronJob = await CronJob.create({
-        name: `[Plugin] ${pluginInfo?.name || pluginId}: ${cron_name}`,
-        description: description || `Plugin cron job: ${cron_name}`,
-        cron_expression: cron_schedule,
-        timezone: timezone || 'UTC',
-        job_type: 'plugin_job',
-        configuration: {
-          plugin_cron_id: data.id,
-          plugin_id: pluginId,
-          plugin_slug: pluginInfo?.slug,
-          plugin_name: pluginInfo?.name,
-          cron_name: cron_name,
-          handler_method: handler_method,
-          params: handler_params || {}
-        },
-        source_type: 'plugin',
-        source_id: pluginId,
-        source_name: pluginInfo?.name || pluginId,
-        handler: handler_method,
-        user_id: user_id || null, // Nullable for plugin jobs
-        store_id: store_id,
-        is_active: is_enabled !== false,
-        is_paused: false,
-        timeout_seconds: timeout_seconds || 300,
-        max_failures: max_failures || 5,
-        next_run_at: new Date() // Will be calculated by scheduler
-      });
+      const { data: cronJob, error: cronError } = await tenantDb
+        .from('cron_jobs')
+        .insert({
+          name: `[Plugin] ${pluginInfo?.name || pluginId}: ${cron_name}`,
+          description: description || `Plugin cron job: ${cron_name}`,
+          cron_expression: cron_schedule,
+          timezone: timezone || 'UTC',
+          job_type: 'plugin_job',
+          configuration: {
+            plugin_cron_id: data.id,
+            plugin_id: pluginId,
+            plugin_slug: pluginInfo?.slug,
+            plugin_name: pluginInfo?.name,
+            cron_name: cron_name,
+            handler_method: handler_method,
+            params: handler_params || {}
+          },
+          source_type: 'plugin',
+          source_id: pluginId,
+          source_name: pluginInfo?.name || pluginId,
+          handler: handler_method,
+          user_id: user_id || null,
+          store_id: store_id,
+          is_active: is_enabled !== false,
+          is_paused: false,
+          is_system: false,
+          timeout_seconds: timeout_seconds || 300,
+          max_failures: max_failures || 5,
+          next_run_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
 
-      // Update plugin_cron with the central cron_job_id
+      if (cronError) throw cronError;
+
+      cronJobId = cronJob.id;
+
+      // Update plugin_cron with the cron_job_id
       await tenantDb
         .from('plugin_cron')
-        .update({ cron_job_id: centralCronJob.id })
+        .update({ cron_job_id: cronJobId })
         .eq('id', data.id);
 
-      data.cron_job_id = centralCronJob.id;
-      console.log(`✅ Synced plugin cron to central scheduler: ${centralCronJob.id}`);
+      data.cron_job_id = cronJobId;
+      console.log(`✅ Synced plugin cron to cron_jobs: ${cronJobId}`);
     } catch (syncError) {
-      console.error('⚠️ Failed to sync to central cron_jobs:', syncError.message);
+      console.error('⚠️ Failed to sync to cron_jobs:', syncError.message);
       console.error('   Full error:', syncError);
       // Don't fail the request - plugin_cron was created successfully
     }
@@ -2179,26 +2189,27 @@ router.put('/:pluginId/cron/:cronName', async (req, res) => {
 
     if (error) throw error;
 
-    // Sync updates to central cron_jobs table if linked
+    // Sync updates to cron_jobs table if linked
     if (data.cron_job_id) {
       try {
-        const centralUpdateData = {};
-        if (cron_schedule !== undefined) centralUpdateData.cron_expression = cron_schedule;
-        if (description !== undefined) centralUpdateData.description = description;
-        if (timezone !== undefined) centralUpdateData.timezone = timezone;
-        if (is_enabled !== undefined) centralUpdateData.is_active = is_enabled;
-        if (timeout_seconds !== undefined) centralUpdateData.timeout_seconds = timeout_seconds;
-        if (max_failures !== undefined) centralUpdateData.max_failures = max_failures;
-        if (handler_method !== undefined) centralUpdateData.handler = handler_method;
+        const cronUpdateData = { updated_at: new Date().toISOString() };
+        if (cron_schedule !== undefined) cronUpdateData.cron_expression = cron_schedule;
+        if (description !== undefined) cronUpdateData.description = description;
+        if (timezone !== undefined) cronUpdateData.timezone = timezone;
+        if (is_enabled !== undefined) cronUpdateData.is_active = is_enabled;
+        if (timeout_seconds !== undefined) cronUpdateData.timeout_seconds = timeout_seconds;
+        if (max_failures !== undefined) cronUpdateData.max_failures = max_failures;
+        if (handler_method !== undefined) cronUpdateData.handler = handler_method;
 
-        if (Object.keys(centralUpdateData).length > 0) {
-          await CronJob.update(centralUpdateData, {
-            where: { id: data.cron_job_id }
-          });
-          console.log(`✅ Synced plugin cron update to central scheduler: ${data.cron_job_id}`);
+        if (Object.keys(cronUpdateData).length > 1) { // > 1 because updated_at is always there
+          await tenantDb
+            .from('cron_jobs')
+            .update(cronUpdateData)
+            .eq('id', data.cron_job_id);
+          console.log(`✅ Synced plugin cron update to cron_jobs: ${data.cron_job_id}`);
         }
       } catch (syncError) {
-        console.error('⚠️ Failed to sync update to central cron_jobs:', syncError.message);
+        console.error('⚠️ Failed to sync update to cron_jobs:', syncError.message);
       }
     }
 

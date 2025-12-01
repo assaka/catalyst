@@ -177,31 +177,11 @@ CREATE INDEX IF NOT EXISTS idx_ai_context_usage_store ON ai_context_usage(store_
 CREATE INDEX IF NOT EXISTS idx_ai_context_usage_helpful ON ai_context_usage(was_helpful);
 
 -- ============================================
--- 8. AI USER PREFERENCES - STORED IN TENANT DB (not master)
+-- TABLES STORED IN TENANT DB (not master)
 -- ============================================
--- ai_user_preferences stays in tenant DBs because preferences are tenant-specific
--- See: backend/src/migrations/tenant/create-ai-user-preferences.sql
-
--- ============================================
--- 8. AI USAGE LOGS - Request tracking
--- ============================================
-CREATE TABLE IF NOT EXISTS ai_usage_logs (
-  id SERIAL PRIMARY KEY,
-  user_id UUID, -- References users but no FK constraint (cross-DB)
-  store_id UUID,
-  operation_type VARCHAR(50) NOT NULL,
-  input TEXT,
-  output TEXT,
-  credits_used DECIMAL(10,2) DEFAULT 0,
-  success BOOLEAN DEFAULT true,
-  error_message TEXT,
-  metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_ai_usage_user ON ai_usage_logs(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_ai_usage_store ON ai_usage_logs(store_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_ai_usage_type ON ai_usage_logs(operation_type);
+-- ai_user_preferences - stays in tenant DBs (user prefs are tenant-specific)
+-- ai_usage_logs - stays in tenant DBs (usage tracking is per-store)
+-- See: backend/src/database/schemas/tenant/001-create-tenant-tables.sql
 
 -- ============================================
 -- ROW LEVEL SECURITY
@@ -261,5 +241,4 @@ COMMENT ON TABLE ai_entity_definitions IS 'Admin entity schemas for dynamic AI o
 COMMENT ON TABLE ai_chat_history IS 'All AI conversations for learning and improvement';
 COMMENT ON TABLE ai_learning_insights IS 'Aggregated learnings from successful/failed interactions';
 COMMENT ON TABLE ai_context_usage IS 'Tracks which AI context was helpful for learning';
-COMMENT ON TABLE ai_usage_logs IS 'Request-level AI usage tracking and logging';
--- Note: ai_user_preferences is in TENANT DBs, not master
+-- Note: ai_user_preferences and ai_usage_logs are in TENANT DBs, not master

@@ -1461,31 +1461,53 @@ CREATE TABLE IF NOT EXISTS cron_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
   description TEXT,
+
+  -- Scheduling
   cron_expression VARCHAR(100) NOT NULL,
-  timezone VARCHAR(50) DEFAULT 'UTC'::character varying,
-  job_type VARCHAR(100) NOT NULL,
-  configuration JSON NOT NULL,
-  user_id UUID NOT NULL,
+  timezone VARCHAR(50) DEFAULT 'UTC',
+
+  -- Job configuration
+  job_type VARCHAR(100) NOT NULL, -- 'webhook', 'email', 'plugin_job', 'akeneo_import', 'shopify_sync', 'system_job'
+  configuration JSONB NOT NULL DEFAULT '{}',
+
+  -- Source tracking (for unified scheduler)
+  source_type VARCHAR(20) DEFAULT 'user', -- 'user', 'plugin', 'integration', 'system'
+  source_id UUID, -- Reference to plugin_id, akeneo_schedule_id, etc.
+  source_name VARCHAR(100), -- Human-readable source name
+  handler VARCHAR(255), -- Handler method name for plugin/integration jobs
+
+  -- Ownership (nullable for plugin/system jobs)
+  user_id UUID, -- NULL for plugin/system jobs
   store_id UUID,
+
+  -- Status and control
   is_active BOOLEAN DEFAULT true,
   is_paused BOOLEAN DEFAULT false,
-  last_run_at TIMESTAMP,
-  next_run_at TIMESTAMP,
+  is_system BOOLEAN DEFAULT false,
+
+  -- Execution tracking
+  last_run_at TIMESTAMP WITH TIME ZONE,
+  next_run_at TIMESTAMP WITH TIME ZONE,
   run_count INTEGER DEFAULT 0,
   success_count INTEGER DEFAULT 0,
   failure_count INTEGER DEFAULT 0,
-  last_status VARCHAR(20),
+  last_status VARCHAR(20), -- 'success', 'failed', 'running', 'skipped'
   last_error TEXT,
-  last_result JSON,
-  max_runs INTEGER,
+  last_result JSONB,
+
+  -- Limits and controls
+  max_runs INTEGER, -- NULL for unlimited
   max_failures INTEGER DEFAULT 5,
   consecutive_failures INTEGER DEFAULT 0,
   timeout_seconds INTEGER DEFAULT 300,
+
+  -- Metadata
   tags VARCHAR(500),
-  metadata JSON DEFAULT '{}'::json,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  is_system BOOLEAN DEFAULT false
+  metadata JSONB DEFAULT '{}',
+
+  -- Timestamps
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS custom_analytics_events (

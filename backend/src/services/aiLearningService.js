@@ -52,8 +52,7 @@ class AILearningService {
    */
   async recordFeedback(feedback) {
     try {
-      // All AI tables are in MASTER DB
-      // Insert into ai_context_usage with enhanced data
+      // ai_context_usage is in MASTER DB (cross-user learning)
       await masterDbClient.from('ai_context_usage').insert({
         user_id: feedback.userId,
         store_id: feedback.storeId,
@@ -63,29 +62,32 @@ class AILearningService {
         created_at: new Date().toISOString()
       });
 
-      // Also track in ai_usage_logs with full context
-      await masterDbClient.from('ai_usage_logs').insert({
-        user_id: feedback.userId,
-        store_id: feedback.storeId,
-        operation_type: feedback.intent || 'chat',
-        input: JSON.stringify({
-          message: feedback.userMessage,
-          intent: feedback.intent,
-          entity: feedback.entity,
-          operation: feedback.operation
-        }),
-        output: feedback.aiResponse?.substring(0, 1000), // Truncate for storage
-        credits_used: 0, // Feedback doesn't cost credits
-        success: feedback.wasHelpful,
-        metadata: JSON.stringify({
-          feedback_type: 'user_rating',
-          was_helpful: feedback.wasHelpful,
-          feedback_text: feedback.feedbackText,
-          message_id: feedback.messageId,
-          ...feedback.metadata
-        }),
-        created_at: new Date().toISOString()
-      });
+      // ai_usage_logs is in TENANT DB (per-store tracking)
+      if (feedback.storeId) {
+        const ConnectionManager = require('./database/ConnectionManager');
+        const db = await ConnectionManager.getStoreConnection(feedback.storeId);
+        await db.from('ai_usage_logs').insert({
+          user_id: feedback.userId,
+          operation_type: feedback.intent || 'chat',
+          input: JSON.stringify({
+            message: feedback.userMessage,
+            intent: feedback.intent,
+            entity: feedback.entity,
+            operation: feedback.operation
+          }),
+          output: feedback.aiResponse?.substring(0, 1000), // Truncate for storage
+          credits_used: 0, // Feedback doesn't cost credits
+          success: feedback.wasHelpful,
+          metadata: JSON.stringify({
+            feedback_type: 'user_rating',
+            was_helpful: feedback.wasHelpful,
+            feedback_text: feedback.feedbackText,
+            message_id: feedback.messageId,
+            ...feedback.metadata
+          }),
+          created_at: new Date().toISOString()
+        });
+      }
 
       // If feedback is positive and it's an entity operation, save as successful pattern
       if (feedback.wasHelpful && feedback.intent === 'admin_entity' && feedback.entity) {
@@ -296,25 +298,29 @@ class AILearningService {
         not_helpful: feedbackData?.filter(f => f.was_helpful === false).length || 0
       };
 
-      // Get usage by intent for this store
-      const { data: usageData } = await masterDbClient
-        .from('ai_usage_logs')
-        .select('operation_type, success')
-        .eq('store_id', storeId);
+      // Get usage by intent for this store (ai_usage_logs is in TENANT DB)
+      let intentStats = [];
+      if (storeId) {
+        const ConnectionManager = require('./database/ConnectionManager');
+        const db = await ConnectionManager.getStoreConnection(storeId);
+        const usageData = await db
+          .from('ai_usage_logs')
+          .select('operation_type', 'success');
 
-      // Aggregate intent stats
-      const intentMap = {};
-      (usageData || []).forEach(u => {
-        if (!intentMap[u.operation_type]) {
-          intentMap[u.operation_type] = { count: 0, successful: 0 };
-        }
-        intentMap[u.operation_type].count++;
-        if (u.success) intentMap[u.operation_type].successful++;
-      });
-      const intentStats = Object.entries(intentMap).map(([operation_type, stats]) => ({
-        operation_type,
-        ...stats
-      })).sort((a, b) => b.count - a.count);
+        // Aggregate intent stats
+        const intentMap = {};
+        (usageData || []).forEach(u => {
+          if (!intentMap[u.operation_type]) {
+            intentMap[u.operation_type] = { count: 0, successful: 0 };
+          }
+          intentMap[u.operation_type].count++;
+          if (u.success) intentMap[u.operation_type].successful++;
+        });
+        intentStats = Object.entries(intentMap).map(([operation_type, stats]) => ({
+          operation_type,
+          ...stats
+        })).sort((a, b) => b.count - a.count);
+      }
 
       // Get most used context documents (global, not store-specific)
       const { data: topDocuments } = await masterDbClient
