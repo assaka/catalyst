@@ -1396,6 +1396,68 @@ Suggest helpful next steps. Be friendly and actionable.`;
         return null;
       };
 
+      /**
+       * Get suggestions for a slot name that wasn't found
+       * Uses Levenshtein distance and keyword matching
+       */
+      const getSuggestions = (name, maxSuggestions = 3) => {
+        if (!name) return [];
+        const lower = name.toLowerCase().trim();
+        const suggestions = [];
+
+        // Simple Levenshtein distance
+        const levenshtein = (a, b) => {
+          if (a.length === 0) return b.length;
+          if (b.length === 0) return a.length;
+          const matrix = [];
+          for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+          for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+          for (let i = 1; i <= b.length; i++) {
+            for (let j = 1; j <= a.length; j++) {
+              matrix[i][j] = b.charAt(i - 1) === a.charAt(j - 1)
+                ? matrix[i - 1][j - 1]
+                : Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+            }
+          }
+          return matrix[b.length][a.length];
+        };
+
+        // Score all slot names
+        const scored = [];
+        const seen = new Set();
+
+        // Check aliases and slot IDs
+        for (const [key, slotId] of Object.entries(slotNameMap)) {
+          if (seen.has(slotId)) continue;
+          seen.add(slotId);
+
+          const distance = levenshtein(lower, key);
+          const containsMatch = key.includes(lower) || lower.includes(key);
+          const startsWithMatch = key.startsWith(lower) || lower.startsWith(key);
+
+          // Score: lower is better
+          let score = distance;
+          if (containsMatch) score -= 3;
+          if (startsWithMatch) score -= 5;
+
+          // Get friendly name for display
+          const slot = slots[slotId];
+          const friendlyName = slot?.metadata?.displayName ||
+                              slot?.name ||
+                              slotId.replace(/_/g, ' ');
+
+          scored.push({ slotId, friendlyName, key, score, distance });
+        }
+
+        // Sort by score and return top suggestions
+        scored.sort((a, b) => a.score - b.score);
+        return scored.slice(0, maxSuggestions).map(s => ({
+          slotId: s.slotId,
+          name: s.friendlyName,
+          hint: s.key !== s.slotId ? `(you can say "${s.key}")` : ''
+        }));
+      };
+
       // Use AI to analyze - AI just needs to understand INTENT, we resolve the IDs
       const layoutAnalysisPrompt = `Understand this layout modification request.
 
@@ -1479,14 +1541,19 @@ Return ONLY valid JSON.`;
       // Validate we could resolve the source
       if (!sourceSlotIdResolved) {
         console.error('[AI Chat] Could not resolve source:', analysis.source);
+        const suggestions = getSuggestions(analysis.source);
+        const suggestionText = suggestions.length > 0
+          ? `\n\nDid you mean:\n${suggestions.map(s => `• ${s.name} ${s.hint}`).join('\n')}`
+          : '';
+
         return res.json({
           success: true,
-          message: `I couldn't find an element called "${analysis.source}" on this page. Try being more specific or use the exact name you see in the editor.`,
+          message: `I couldn't find an element called "${analysis.source}" on this page.${suggestionText}`,
           data: {
             type: 'layout_error',
             reason: 'source_not_found',
             searched: analysis.source,
-            availableSlots: Object.keys(slots).filter(id => slots[id].parentId === 'info_container').slice(0, 8)
+            suggestions: suggestions
           },
           creditsDeducted: creditsUsed
         });
@@ -1495,14 +1562,19 @@ Return ONLY valid JSON.`;
       // Validate we could resolve the target (if action requires it)
       if (analysis.action !== 'remove' && !targetSlotIdResolved) {
         console.error('[AI Chat] Could not resolve target:', analysis.target);
+        const suggestions = getSuggestions(analysis.target);
+        const suggestionText = suggestions.length > 0
+          ? `\n\nDid you mean:\n${suggestions.map(s => `• ${s.name} ${s.hint}`).join('\n')}`
+          : '';
+
         return res.json({
           success: true,
-          message: `I couldn't find an element called "${analysis.target}" on this page. Try being more specific or use the exact name you see in the editor.`,
+          message: `I couldn't find an element called "${analysis.target}" on this page.${suggestionText}`,
           data: {
             type: 'layout_error',
             reason: 'target_not_found',
             searched: analysis.target,
-            availableSlots: Object.keys(slots).filter(id => slots[id].parentId === 'info_container').slice(0, 8)
+            suggestions: suggestions
           },
           creditsDeducted: creditsUsed
         });
