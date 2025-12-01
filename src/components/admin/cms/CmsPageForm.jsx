@@ -456,6 +456,8 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
               { name: 'title', label: 'Page Title', type: 'text', required: true },
               { name: 'content', label: 'Page Content', type: 'textarea', rows: 10 }
             ]}
+            storeId={getSelectedStoreId()}
+            entityType="cms_page"
           />
           <p className="text-sm text-gray-600 mt-3">
             Translate page content to provide a localized experience for your customers
