@@ -1489,29 +1489,55 @@ Return ONLY valid JSON.`;
         changeDescription = `Changed background color to ${value} (${hexColor})`;
 
       } else if (property === 'fontSize' || property === 'size' || property === 'font-size' || property === 'textSize') {
-        // Handle relative size values
-        let finalSize = value;
-        const lowerValue = value?.toLowerCase?.() || '';
+        // Use AI to interpret font size value
+        const currentSize = currentStyles.fontSize || '16px';
+        const sizePrompt = `Convert this font size description to a valid CSS font-size value:
+"${value}"
 
-        if (lowerValue.includes('larger') || lowerValue.includes('bigger') || lowerValue.includes('increase')) {
-          // Get current size and increase it
-          const currentSize = currentStyles.fontSize || '16px';
-          const sizeNum = parseInt(currentSize) || 16;
-          finalSize = `${Math.round(sizeNum * 1.25)}px`;
-        } else if (lowerValue.includes('smaller') || lowerValue.includes('decrease')) {
-          const currentSize = currentStyles.fontSize || '16px';
-          const sizeNum = parseInt(currentSize) || 16;
-          finalSize = `${Math.round(sizeNum * 0.8)}px`;
-        } else if (lowerValue.includes('large') || lowerValue === 'big') {
-          finalSize = '24px';
-        } else if (lowerValue.includes('small') || lowerValue === 'tiny') {
-          finalSize = '12px';
-        } else if (lowerValue.includes('medium') || lowerValue === 'normal') {
-          finalSize = '16px';
-        } else if (lowerValue.includes('huge') || lowerValue.includes('extra large') || lowerValue === 'xl') {
-          finalSize = '32px';
-        } else if (!value?.includes('px') && !value?.includes('rem') && !value?.includes('em') && !value?.includes('%')) {
-          // If it's just a number, add px
+Current font size: ${currentSize}
+Context: This is for a ${element || 'text element'} on a ${pageType} page.
+
+If the request is relative (larger, bigger, smaller, etc.), calculate based on current size.
+Return ONLY a JSON object: { "size": "24px", "interpretation": "description of change" }
+
+Examples:
+- "larger" with current 16px → { "size": "20px", "interpretation": "increased by 25%" }
+- "much bigger" with current 14px → { "size": "21px", "interpretation": "increased by 50%" }
+- "small" → { "size": "12px", "interpretation": "small text size" }
+- "32" → { "size": "32px", "interpretation": "explicit pixel value" }
+- "2rem" → { "size": "2rem", "interpretation": "explicit rem value" }
+
+Return ONLY valid JSON.`;
+
+        let finalSize = value;
+        try {
+          const sizeResult = await aiService.generate({
+            userId,
+            operationType: 'general',
+            prompt: sizePrompt,
+            systemPrompt: 'You are a CSS expert. Convert size descriptions to valid CSS values. Return ONLY valid JSON.',
+            maxTokens: 100,
+            temperature: 0.2,
+            metadata: { type: 'size-parsing', storeId: resolvedStoreId }
+          });
+          creditsUsed += sizeResult.creditsDeducted;
+
+          aiConversations.push({
+            step: 'size-parsing',
+            provider: 'anthropic',
+            model: sizeResult.usage?.model || 'claude-3-haiku',
+            prompt: sizePrompt,
+            response: sizeResult.content,
+            tokens: sizeResult.usage
+          });
+
+          const sizeJson = JSON.parse(sizeResult.content.match(/\{[\s\S]*\}/)?.[0] || '{}');
+          if (sizeJson.size) {
+            finalSize = sizeJson.size;
+          }
+        } catch (e) {
+          console.warn('AI size parsing failed:', e.message);
+          // Fallback: add px if just a number
           const num = parseFloat(value);
           if (!isNaN(num)) {
             finalSize = `${num}px`;
@@ -1521,9 +1547,59 @@ Return ONLY valid JSON.`;
         newStyles.fontSize = finalSize;
         changeDescription = `Changed font size to ${finalSize}`;
       } else {
-        // Generic CSS property
-        newStyles[property] = value;
-        changeDescription = `Changed ${property} to ${value}`;
+        // Use AI to interpret any CSS property value
+        const cssPrompt = `Convert this styling request to a valid CSS property and value:
+Property: "${property}"
+Value: "${value}"
+Element: ${element || 'text element'}
+Page: ${pageType} page
+Current styles: ${JSON.stringify(currentStyles)}
+
+Return ONLY a JSON object: { "property": "css-property-name", "value": "valid-css-value", "interpretation": "what this does" }
+
+Examples:
+- property: "padding", value: "more" → { "property": "padding", "value": "16px", "interpretation": "increased padding" }
+- property: "margin", value: "larger" → { "property": "margin", "value": "24px", "interpretation": "increased margin" }
+- property: "border", value: "thin red" → { "property": "border", "value": "1px solid red", "interpretation": "thin red border" }
+- property: "fontWeight", value: "bold" → { "property": "fontWeight", "value": "700", "interpretation": "bold text" }
+
+Return ONLY valid JSON.`;
+
+        let finalProperty = property;
+        let finalValue = value;
+
+        try {
+          const cssResult = await aiService.generate({
+            userId,
+            operationType: 'general',
+            prompt: cssPrompt,
+            systemPrompt: 'You are a CSS expert. Convert style descriptions to valid CSS. Return ONLY valid JSON.',
+            maxTokens: 150,
+            temperature: 0.2,
+            metadata: { type: 'css-parsing', storeId: resolvedStoreId }
+          });
+          creditsUsed += cssResult.creditsDeducted;
+
+          aiConversations.push({
+            step: 'css-parsing',
+            provider: 'anthropic',
+            model: cssResult.usage?.model || 'claude-3-haiku',
+            prompt: cssPrompt,
+            response: cssResult.content,
+            tokens: cssResult.usage
+          });
+
+          const cssJson = JSON.parse(cssResult.content.match(/\{[\s\S]*\}/)?.[0] || '{}');
+          if (cssJson.property && cssJson.value) {
+            finalProperty = cssJson.property;
+            finalValue = cssJson.value;
+          }
+        } catch (e) {
+          console.warn('AI CSS parsing failed:', e.message);
+        }
+
+        newStyles[finalProperty] = finalValue;
+        changeDescription = `Changed ${finalProperty} to ${finalValue}`;
       }
 
       // Update the slot in configuration
