@@ -526,23 +526,26 @@ const DeveloperPluginEditor = ({
           // If handler_code exists, show it in a code-friendly format
           let content;
           if (cronJob.handler_code) {
-            content = `// ═══════════════════════════════════════════════════════════════════════════
-// CRON CONFIG (stored in database)
-// ═══════════════════════════════════════════════════════════════════════════
-// Schedule: ${cronJob.cron_schedule}
-// Handler: ${cronJob.handler_method}
-// Enabled: ${cronJob.is_enabled}
-// ═══════════════════════════════════════════════════════════════════════════
-
-// To edit config, modify the values below and save:
-const config = ${JSON.stringify(cronConfig, null, 2)};
-
-// ═══════════════════════════════════════════════════════════════════════════
-// HANDLER CODE (executed when cron runs)
-// Available: db, storeId, params, fetch, apiBaseUrl
-// ═══════════════════════════════════════════════════════════════════════════
-
-${cronJob.handler_code}`;
+            // Use array join to avoid template literal issues
+            content = [
+              '// ═══════════════════════════════════════════════════════════════════════════',
+              '// CRON CONFIG (stored in database)',
+              '// ═══════════════════════════════════════════════════════════════════════════',
+              '// Schedule: ' + cronJob.cron_schedule,
+              '// Handler: ' + cronJob.handler_method,
+              '// Enabled: ' + cronJob.is_enabled,
+              '// ═══════════════════════════════════════════════════════════════════════════',
+              '',
+              '// To edit config, modify the values below and save:',
+              'const config = ' + JSON.stringify(cronConfig, null, 2) + ';',
+              '',
+              '// ═══════════════════════════════════════════════════════════════════════════',
+              '// HANDLER CODE (executed when cron runs)',
+              '// Available: db, storeId, params, fetch, apiBaseUrl',
+              '// ═══════════════════════════════════════════════════════════════════════════',
+              '',
+              cronJob.handler_code
+            ].join('\n');
           } else {
             content = JSON.stringify(cronConfig, null, 2);
           }
