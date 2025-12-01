@@ -593,15 +593,22 @@ class ApiClient {
 
     const formData = new FormData();
     formData.append('file', file);
-    
+
     // Add additional data to form
     Object.keys(additionalData).forEach(key => {
       formData.append(key, additionalData[key]);
     });
 
+    // Build headers - include auth token and store ID
     const headers = {};
     if (token) {
       headers.Authorization = `Bearer ${token}`;
+    }
+
+    // Add X-Store-Id header from localStorage (required for storage endpoints)
+    const selectedStoreId = localStorage.getItem('selectedStoreId');
+    if (selectedStoreId && selectedStoreId !== 'undefined') {
+      headers['x-store-id'] = selectedStoreId;
     }
 
     try {

@@ -43,7 +43,7 @@ const upload = multer({
 
 // All routes require authentication and automatic store resolution
 router.use(authMiddleware);
-router.use(storeResolver);
+router.use(storeResolver());
 
 /**
  * POST /api/storage/upload
