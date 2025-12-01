@@ -52,6 +52,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PageLoader } from "@/components/ui/page-loader";
 
 import CategoryForm from "@/components/admin/categories/CategoryForm";
 import { TranslationIndicator } from "@/components/admin/TranslationFields";
@@ -897,11 +898,7 @@ export default function Categories() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   // Determine if adding a category is possible (i.e., a store is assigned to the user)

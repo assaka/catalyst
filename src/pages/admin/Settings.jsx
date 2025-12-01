@@ -22,6 +22,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { clearSettingsCache, clearAllCache } from '@/utils/cacheUtils';
 import { queryClient } from '@/config/queryClient';
 import FlashMessage from '@/components/storefront/FlashMessage';
+import { PageLoader } from '@/components/ui/page-loader';
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -464,11 +465,7 @@ export default function Settings() {
 
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   // Ensure store is not null before rendering form elements that depend on it

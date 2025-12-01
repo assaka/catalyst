@@ -31,6 +31,7 @@ import { formatPrice } from "@/utils/priceUtils";
 import CouponForm from "@/components/admin/coupons/CouponForm";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function CouponsPage() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();

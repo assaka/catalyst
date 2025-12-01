@@ -31,6 +31,7 @@ import CmsPageForm from "@/components/admin/cms/CmsPageForm";
 import { getPageTitle } from "@/utils/translationUtils";
 import { useAlertTypes } from "@/hooks/useAlert";
 import { clearCmsPagesCache } from "@/utils/cacheUtils";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function CmsPages() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -208,11 +209,7 @@ export default function CmsPages() {
   });
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   if (!selectedStore) {

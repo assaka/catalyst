@@ -1000,46 +1000,105 @@ const DeveloperPluginEditor = ({
           max_failures: 5
         });
 
-        addTerminalOutput(`✓ Created cron job ${cronName} (${cronSchedule})`, 'success');
+        addTerminalOutput(``, 'info');
+        addTerminalOutput(`✅ CRON JOB CREATED SUCCESSFULLY`, 'success');
+        addTerminalOutput(`   📅 Schedule: ${cronSchedule}`, 'info');
+        addTerminalOutput(`   📁 Config: /cron/${cronName}.json`, 'info');
 
-        // 2. Auto-generate handler file with boilerplate code
+        // 2. Auto-generate handler file with practical example code
         const handlerCode = `/**
- * Cron Handler: ${cronHandlerMethod}
+ * ═══════════════════════════════════════════════════════════════════════════
+ * CRON HANDLER: ${cronHandlerMethod}
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
  * Schedule: ${cronSchedule}
  * ${cronDescription || `Scheduled task for ${cronName}`}
  *
- * This handler is called automatically by the scheduler.
+ * This handler runs automatically based on your cron schedule.
+ * Edit the code below to implement your scheduled task logic.
  *
- * @param {Object} params - Parameters from handler_params in cron config
- * @param {Object} context - Execution context
- * @param {string} context.cronJobId - ID of the cron job
- * @param {string} context.storeId - Store ID
- * @param {string} context.userId - User ID (if applicable)
- * @param {Object} context.db - Database connection
- * @returns {Object} Result object (stored in last_result)
+ * AVAILABLE IN CONTEXT:
+ *   - context.storeId    → Your store's ID
+ *   - context.db         → Database connection (query your tables)
+ *   - context.cronJobId  → This cron job's ID
+ *   - params             → Custom parameters from cron config
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
  */
-export default async function ${cronHandlerMethod}(params = {}, context = {}) {
-  const { storeId, db } = context;
 
-  console.log('🕐 Running ${cronHandlerMethod} for store:', storeId);
+export default async function ${cronHandlerMethod}(params = {}, context = {}) {
+  const { storeId, db, cronJobId } = context;
+
+  console.log('🕐 [${cronHandlerMethod}] Starting scheduled task for store:', storeId);
 
   try {
-    // TODO: Implement your scheduled task logic here
-    // Example: Query data, send emails, cleanup records, etc.
+    // ─────────────────────────────────────────────────────────────────────────
+    // STEP 1: Get store information (including store email)
+    // ─────────────────────────────────────────────────────────────────────────
+    const { data: store } = await db
+      .from('stores')
+      .select('id, name, email, settings')
+      .eq('id', storeId)
+      .single();
 
-    // Access params from cron config
-    // const { reminderDelayHours = 24 } = params;
+    if (!store) {
+      throw new Error('Store not found: ' + storeId);
+    }
 
-    // Return result (will be stored in last_result column)
+    console.log('📧 Store email:', store.email);
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // STEP 2: Your custom logic here (example: find items to process)
+    // ─────────────────────────────────────────────────────────────────────────
+    // Example: Query abandoned carts, pending orders, etc.
+    // const { data: items } = await db
+    //   .from('your_table')
+    //   .select('*')
+    //   .eq('store_id', storeId)
+    //   .eq('status', 'pending');
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // STEP 3: Send notification email to store owner
+    // ─────────────────────────────────────────────────────────────────────────
+    // This is a demo - sends a test email to the store's email address
+    const emailResult = await fetch('/api/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: store.email,
+        subject: '🕐 Scheduled Task Report: ${cronHandlerMethod}',
+        html: \`
+          <h2>Scheduled Task Completed</h2>
+          <p>Your scheduled task <strong>${cronHandlerMethod}</strong> has run successfully.</p>
+          <ul>
+            <li><strong>Store:</strong> \${store.name}</li>
+            <li><strong>Schedule:</strong> ${cronSchedule}</li>
+            <li><strong>Executed at:</strong> \${new Date().toLocaleString()}</li>
+          </ul>
+          <p style="color: #666; font-size: 12px;">
+            This is an automated notification from your Catalyst store.
+          </p>
+        \`
+      })
+    });
+
+    console.log('📧 Email sent to:', store.email);
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // STEP 4: Return result (saved to database for monitoring)
+    // ─────────────────────────────────────────────────────────────────────────
     return {
       success: true,
+      storeName: store.name,
+      storeEmail: store.email,
+      emailSent: true,
       message: '${cronHandlerMethod} completed successfully',
-      timestamp: new Date().toISOString()
+      executedAt: new Date().toISOString()
     };
 
   } catch (error) {
-    console.error('❌ ${cronHandlerMethod} failed:', error);
-    throw error; // Re-throw to mark job as failed
+    console.error('❌ [${cronHandlerMethod}] Failed:', error.message);
+    throw error; // This marks the job as failed in the scheduler
   }
 }
 `;
@@ -1050,7 +1109,10 @@ export default async function ${cronHandlerMethod}(params = {}, context = {}) {
           content: handlerCode
         });
 
-        addTerminalOutput(`✓ Created handler: /handlers/${cronHandlerMethod}.js`, 'success');
+        addTerminalOutput(`   📝 Handler: /handlers/${cronHandlerMethod}.js`, 'info');
+        addTerminalOutput(``, 'info');
+        addTerminalOutput(`💡 TIP: Open the handler file to customize your scheduled task logic.`, 'info');
+        addTerminalOutput(`   The handler includes a demo that sends an email to your store.`, 'info');
       } else {
         // For component, util, service, hook, and other files, use the file save endpoint
         // These will be saved to plugin_scripts table (for components/utils/services) or plugin_hooks table (for hooks)

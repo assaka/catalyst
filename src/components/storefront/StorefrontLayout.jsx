@@ -10,6 +10,7 @@ import { CustomerAuth } from '@/api/storefront-entities';
 import { DeliverySettings, User, apiClient } from '@/api/entities';
 import { ShoppingBag, User as UserIcon, Globe, Menu, Search, ChevronDown, Settings, Package, LogOut, X } from "lucide-react";
 import { Button } from '@/components/ui/button';
+import { PageLoader } from '@/components/ui/page-loader';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import MiniCart from './MiniCart';
@@ -293,11 +294,7 @@ export default function StorefrontLayout({ children }) {
     }, []);
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
+        return <PageLoader size="lg" className="h-screen" />;
     }
 
     if (!store) {

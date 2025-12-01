@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Users, Search, Download, Edit, Trash2, UserPlus, Eye, Ban, CheckCircle, Shield } from 'lucide-react';
 import { useAlertTypes } from '@/hooks/useAlert';
 import FlashMessage from '@/components/storefront/FlashMessage';
+import { PageLoader } from '@/components/ui/page-loader';
 
 export default function Customers() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -419,11 +420,7 @@ export default function Customers() {
     };
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
+        return <PageLoader size="lg" />;
     }
 
     if (!selectedStore) {

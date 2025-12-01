@@ -89,6 +89,7 @@ import {
 import { StoreProvider } from "@/components/storefront/StoreProvider";
 import { PriceUtilsProvider } from "@/utils/PriceUtilsProvider";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageLoader } from "@/components/ui/page-loader";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext";
 import { AIWorkspaceProvider, useAIWorkspace, AI_WORKSPACE_MODES } from "@/contexts/AIWorkspaceGlobalContext";
 import GlobalAIPanel from "@/components/ai-workspace/GlobalAIPanel";
@@ -362,11 +363,7 @@ function LayoutInner({ children, currentPageName }) {
   useRoleProtection(isAdminPage || isEditorPage || isPluginPage || isAIWorkspacePage);
 
   if (isLoading && (isAdminPage || isEditorPage || isPluginPage || isAIWorkspacePage)) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   if (isStorefrontPage || isCustomerDashboard) {
@@ -389,11 +386,7 @@ function LayoutInner({ children, currentPageName }) {
       
       if (!isLoading && !hasStoreOwnerToken) {
           navigate(createAdminUrl('ADMIN_AUTH'));
-          return (
-              <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-                  <p className="text-lg text-gray-700 mb-4">Redirecting...</p>
-              </div>
-          );
+          return <PageLoader size="lg" text="Redirecting..." />;
       }
       
   }

@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { TranslationProvider } from '@/contexts/TranslationContext';
 import apiClient from '@/utils/api';
-import { Loader2 } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 
 export function AdminLayoutWrapper({ children }) {
   const navigate = useNavigate();
@@ -57,11 +57,7 @@ export function AdminLayoutWrapper({ children }) {
   };
 
   if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
+    return <PageLoader size="lg" />;
   }
 
   // For auth page, provide minimal TranslationProvider with English fallback (no API calls)
