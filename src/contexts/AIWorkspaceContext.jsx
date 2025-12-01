@@ -416,7 +416,9 @@ export const AIWorkspaceProvider = ({ children }) => {
     registerPublishStatusRefresh,
     triggerPublishStatusRefresh,
     configurationRefreshTrigger,
-    triggerConfigurationRefresh
+    triggerConfigurationRefresh,
+    previewRefreshTrigger,
+    refreshPreview
   ]);
 
   return (

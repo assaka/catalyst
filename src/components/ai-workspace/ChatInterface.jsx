@@ -12,7 +12,7 @@ import { useAIWorkspace } from '@/contexts/AIWorkspaceContext';
  */
 const ChatInterface = ({ onPluginCloned, context }) => {
   const { getSelectedStoreId } = useStoreSelection();
-  const { refreshPreview } = useAIWorkspace();
+  const { refreshPreview, triggerConfigurationRefresh } = useAIWorkspace();
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -175,9 +175,26 @@ const ChatInterface = ({ onPluginCloned, context }) => {
           credits: response.creditsDeducted
         }]);
 
-        // Auto-refresh preview after styling changes are applied
+        // Auto-refresh preview and editor after styling changes are applied
         if (response.data?.type === 'styling_applied' || response.data?.type === 'styling_preview') {
-          setTimeout(() => refreshPreview?.(), 500);
+          setTimeout(() => {
+            refreshPreview?.();
+            triggerConfigurationRefresh?.();
+
+            // Dispatch localStorage event to trigger reload in page editors
+            const storeId = getSelectedStoreId();
+            const pageType = response.data?.pageType || 'product';
+            localStorage.setItem('slot_config_updated', JSON.stringify({
+              storeId,
+              pageType,
+              timestamp: Date.now()
+            }));
+            // Dispatch storage event for same-window listeners
+            window.dispatchEvent(new StorageEvent('storage', {
+              key: 'slot_config_updated',
+              newValue: JSON.stringify({ storeId, pageType, timestamp: Date.now() })
+            }));
+          }, 500);
         }
       } else {
         setMessages(prev => [...prev, {
