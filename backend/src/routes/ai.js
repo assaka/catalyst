@@ -826,15 +826,25 @@ INTENT DEFINITIONS:
 
 6. **chat** - General questions or conversation
 
-STYLING DETAILS FORMAT:
+STYLING DETAILS FORMAT (supports multiple changes):
 {
   "pageType": "product|category|homepage|cart|checkout|account|login|success",
-  "element": "product_title|product_price|add_to_cart_button|breadcrumbs|etc",
-  "property": "color|backgroundColor|fontSize|fontWeight|padding|margin|border|etc",
-  "value": "the color/size/value mentioned"
+  "changes": [
+    { "element": "product_title", "property": "fontSize", "value": "24px" },
+    { "element": "product_price", "property": "color", "value": "purple" }
+  ]
+}
+
+For single changes, you can also use the simple format:
+{
+  "pageType": "product",
+  "element": "product_title",
+  "property": "color",
+  "value": "red"
 }
 
 IMPORTANT: If user mentions color, font, size, background - it's STYLING, not layout.
+IMPORTANT: If user mentions multiple changes in one message, use the "changes" array format.
 
 Return ONLY valid JSON.`;
 
@@ -1196,9 +1206,30 @@ Suggest helpful next steps. Be friendly and actionable.`;
 
       const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
       const pageType = intent.details?.pageType || 'product';
-      const element = intent.details?.element;
-      const property = intent.details?.property;
-      const value = intent.details?.value;
+
+      // Normalize changes to array format (supports single or multiple changes)
+      let stylingChanges = [];
+      if (intent.details?.changes && Array.isArray(intent.details.changes)) {
+        stylingChanges = intent.details.changes;
+      } else if (intent.details?.element && intent.details?.property) {
+        // Single change format
+        stylingChanges = [{
+          element: intent.details.element,
+          property: intent.details.property,
+          value: intent.details.value
+        }];
+      }
+
+      console.log('[AI Chat] Styling changes to apply:', JSON.stringify(stylingChanges));
+
+      if (stylingChanges.length === 0) {
+        return res.json({
+          success: true,
+          message: "I couldn't determine what styling changes you want to make. Could you be more specific? For example: 'change the product title color to red' or 'increase the price font size to 24px'",
+          data: { type: 'styling_error', reason: 'no_changes_specified' },
+          creditsDeducted: creditsUsed
+        });
+      }
 
       // Fetch current slot configuration for the page type (draft first, then published)
       // Draft is used for preview, published is for live site
@@ -1253,6 +1284,14 @@ Suggest helpful next steps. Be friendly and actionable.`;
       const slots = configuration.slots || {};
 
       console.log('[AI Chat] Available slots:', Object.keys(slots));
+
+      // For now, process first change (TODO: loop through all changes later)
+      const firstChange = stylingChanges[0];
+      const element = firstChange.element;
+      const property = firstChange.property;
+      const value = firstChange.value;
+
+      console.log('[AI Chat] Processing change:', JSON.stringify(firstChange));
       console.log('[AI Chat] Looking for element:', element);
 
       // Find the slot to modify
