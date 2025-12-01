@@ -199,22 +199,56 @@ class DynamicCronJob extends BaseJobHandler {
 
   /**
    * Execute plugin job type
-   * Supports two modes:
-   * 1. handler_code - inline code stored in database (100% DB driven)
-   * 2. handler_method - method on plugin class (legacy/file-based)
+   * Supports three modes:
+   * 1. plugin_cron_id - fetch handler_code from tenant plugin_cron table (Option B - recommended)
+   * 2. handler_code - inline code on cronJob (legacy)
+   * 3. handler_method - method on plugin class (legacy/file-based)
    */
   async executePluginJob(cronJob) {
     const { configuration, handler, handler_code, store_id } = cronJob;
-    const { plugin_slug, plugin_name, params = {} } = configuration;
+    const { plugin_slug, plugin_name, plugin_cron_id, params = {} } = configuration || {};
 
     console.log(`🔌 Executing plugin job: ${plugin_name || plugin_slug}`);
 
-    // Mode 1: Execute inline handler_code from database (100% DB driven)
+    // Mode 1: Fetch handler_code from tenant plugin_cron table (Option B - source of truth)
+    if (plugin_cron_id && store_id) {
+      console.log(`📦 Fetching handler from plugin_cron: ${plugin_cron_id}`);
+
+      const { getTenantConnection } = require('../../database/tenant-connection');
+      const tenantDb = await getTenantConnection(store_id);
+
+      const { data: pluginCron, error } = await tenantDb
+        .from('plugin_cron')
+        .select('*')
+        .eq('id', plugin_cron_id)
+        .single();
+
+      if (error || !pluginCron) {
+        throw new Error(`Plugin cron not found: ${plugin_cron_id}`);
+      }
+
+      if (!pluginCron.handler_code) {
+        throw new Error(`No handler_code defined for plugin cron: ${plugin_cron_id}`);
+      }
+
+      // Execute using the handler_code from plugin_cron
+      return await this.executeInlineHandlerCode({
+        ...cronJob,
+        handler_code: pluginCron.handler_code,
+        handler_method: pluginCron.handler_method,
+        configuration: {
+          ...configuration,
+          params: pluginCron.handler_params || params
+        }
+      });
+    }
+
+    // Mode 2: Execute inline handler_code from cronJob (legacy - handler_code on central table)
     if (handler_code) {
       return await this.executeInlineHandlerCode(cronJob);
     }
 
-    // Mode 2: Execute method on plugin class (legacy)
+    // Mode 3: Execute method on plugin class (legacy/file-based)
     const pluginManager = getPluginManager();
     const plugin = pluginManager.getPlugin(plugin_slug);
 
