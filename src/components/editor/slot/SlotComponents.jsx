@@ -2278,38 +2278,6 @@ export function TimestampsRow({
   );
 }
 
-// PublishPanelToggle Component
-export function PublishPanelToggle({
-  hasUnsavedChanges = false,
-  showPublishPanel = false,
-  onTogglePublishPanel,
-  onClosePublishPanel
-}) {
-  return (
-    <div className="flex items-center gap-4">
-      <Button
-        variant={hasUnsavedChanges ? "default" : "outline"}
-        size="sm"
-        onClick={() => {
-          if (onClosePublishPanel) {
-            onClosePublishPanel();
-          }
-          if (onTogglePublishPanel) {
-            onTogglePublishPanel(!showPublishPanel);
-          }
-        }}
-        className={`${showPublishPanel ?
-          (hasUnsavedChanges ? 'bg-green-600 border-green-600 hover:bg-green-700 ml-3' : 'bg-blue-50 border-blue-200 ml-3') :
-          (hasUnsavedChanges ? 'bg-green-500 hover:bg-green-600 text-white border-green-500 ml-3' : '')
-        }`}
-      >
-        <Rocket className="w-4 h-4 mr-2" />
-        Publish
-      </Button>
-    </div>
-  );
-}
-
 // CodeModal Component - Using advanced CodeEditor with split review
 export function CodeModal({
   isOpen,
