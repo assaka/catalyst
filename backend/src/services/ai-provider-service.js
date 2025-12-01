@@ -192,11 +192,17 @@ Return ONLY the translated text, no explanations or notes.`;
 
     const messages = [{ role: 'user', content: userPrompt }];
 
+    // Calculate maxTokens based on input length - longer texts need more output tokens
+    // Claude Haiku supports up to 4096 output tokens, GPT-3.5 supports up to 4096
+    const inputLength = text.length;
+    const estimatedTokens = Math.ceil(inputLength / 3); // Rough estimate: 3 chars per token
+    const dynamicMaxTokens = Math.min(Math.max(estimatedTokens * 2, 2048), 8192); // At least 2048, max 8192
+
     const result = await this.chat(messages, {
       provider,
       model: this.defaultModels[provider],
       temperature: 0.3, // Lower temperature for consistent translations
-      maxTokens: 1024,
+      maxTokens: dynamicMaxTokens,
       systemPrompt
     });
 
