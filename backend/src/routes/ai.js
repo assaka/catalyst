@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const aiService = require('../services/AIService');
+const aiEntityService = require('../services/aiEntityService');
 const { authMiddleware } = require('../middleware/authMiddleware');
 
 /**
@@ -792,7 +793,7 @@ Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}
 
 Determine the intent and respond with JSON:
 {
-  "intent": "plugin|translation|layout|layout_modify|styling|code|chat",
+  "intent": "plugin|translation|layout|layout_modify|styling|admin_entity|code|chat",
   "action": "generate|modify|chat",
   "details": { ... }
 }
@@ -838,7 +839,21 @@ INTENT DEFINITIONS:
    - "add error handling to this function" → code
    Details: { operation }
 
-7. **chat** - General questions or conversation
+7. **admin_entity** - Modifying admin settings, product tabs, categories, coupons, and other database entities:
+   - "rename the specs tab to Technical Details" → admin_entity
+   - "change store name to My Awesome Store" → admin_entity
+   - "create a 20% discount coupon SUMMER20" → admin_entity
+   - "disable PayPal payments" → admin_entity
+   - "add a new attribute called Brand" → admin_entity
+   - "set VAT to 21%" → admin_entity
+   Details: {
+     entity: "product_tabs|categories|attributes|coupons|payment_methods|shipping_methods|languages|seo_settings|store_settings|tax_settings|cms_pages|email_templates|translations",
+     operation: "list|get|create|update|delete",
+     search_term: "name or identifier to find the record",
+     params: { field_name: value, ... }
+   }
+
+8. **chat** - General questions or conversation
 
 STYLING DETAILS FORMAT (supports multiple changes):
 {
@@ -1454,6 +1469,157 @@ Generate a brief, friendly confirmation message (1-2 sentences). Be conversation
         creditsDeducted: creditsUsed
       });
       return;
+
+    } else if (intent.intent === 'admin_entity') {
+      // Handle admin entity operations (product tabs, settings, coupons, etc.)
+      console.log('[AI Chat] Entering admin_entity handler');
+      console.log('[AI Chat] Admin entity details:', JSON.stringify(intent.details));
+
+      if (!resolvedStoreId) {
+        return res.status(400).json({
+          success: false,
+          message: 'store_id is required for admin entity operations'
+        });
+      }
+
+      try {
+        const entityName = intent.details?.entity;
+        const operation = intent.details?.operation || 'update';
+        const searchTerm = intent.details?.search_term;
+        const params = intent.details?.params || {};
+
+        if (!entityName) {
+          // If no entity detected, use dynamic detection from database
+          console.log('[AI Chat] No entity in intent, using dynamic detection');
+          const dynamicIntent = await aiEntityService.detectEntityIntent(
+            resolvedStoreId,
+            message,
+            aiService,
+            userId
+          );
+          creditsUsed += dynamicIntent.creditsUsed || 0;
+
+          if (dynamicIntent.intent !== 'admin_entity' || !dynamicIntent.entity) {
+            return res.json({
+              success: true,
+              message: "I couldn't determine which admin setting you want to change. Could you be more specific? For example: 'rename the specs tab to Technical Details' or 'create a 20% discount coupon'.",
+              data: { type: 'admin_error', reason: 'entity_not_detected' },
+              creditsDeducted: creditsUsed
+            });
+          }
+
+          // Use the dynamically detected values
+          intent.details = {
+            entity: dynamicIntent.entity,
+            operation: dynamicIntent.operation,
+            search_term: dynamicIntent.search_term,
+            params: dynamicIntent.params
+          };
+        }
+
+        const detectedEntity = intent.details.entity;
+        const detectedOperation = intent.details.operation || 'update';
+        const detectedSearchTerm = intent.details.search_term;
+        const detectedParams = intent.details.params || {};
+
+        // Get entity definition
+        const entityDef = await aiEntityService.getEntityDefinition(resolvedStoreId, detectedEntity);
+
+        if (!entityDef) {
+          return res.json({
+            success: true,
+            message: `I don't recognize the entity "${detectedEntity}". I can help with: product tabs, categories, attributes, coupons, payment methods, shipping, languages, SEO settings, store settings, tax settings, CMS pages, and email templates.`,
+            data: { type: 'admin_error', reason: 'unknown_entity' },
+            creditsDeducted: creditsUsed
+          });
+        }
+
+        // If we need to find an entity by search term, do that first
+        let targetId = detectedParams.id;
+        if (!targetId && detectedSearchTerm && ['update', 'delete', 'get'].includes(detectedOperation)) {
+          console.log(`[AI Chat] Searching for ${detectedEntity} matching: ${detectedSearchTerm}`);
+          const found = await aiEntityService.findEntityBySearchTerm(resolvedStoreId, detectedEntity, detectedSearchTerm);
+
+          if (!found) {
+            return res.json({
+              success: true,
+              message: `I couldn't find a ${entityDef.display_name} matching "${detectedSearchTerm}". Would you like me to list all available ${entityDef.display_name}?`,
+              data: { type: 'admin_error', reason: 'not_found', search_term: detectedSearchTerm },
+              creditsDeducted: creditsUsed
+            });
+          }
+
+          if (Array.isArray(found)) {
+            // Multiple matches - ask user to clarify
+            const options = found.map(f => f.name || f.code || f.title || f[entityDef.primary_key]).join(', ');
+            return res.json({
+              success: true,
+              message: `I found multiple ${entityDef.display_name} matching "${detectedSearchTerm}": ${options}. Which one did you mean?`,
+              data: { type: 'admin_clarification', matches: found, entity: detectedEntity },
+              creditsDeducted: creditsUsed
+            });
+          }
+
+          targetId = found[entityDef.primary_key || 'id'];
+          console.log(`[AI Chat] Found entity with ID: ${targetId}`);
+        }
+
+        // Execute the operation
+        const operationParams = { ...detectedParams };
+        if (targetId) {
+          operationParams.id = targetId;
+        }
+
+        console.log(`[AI Chat] Executing ${detectedOperation} on ${detectedEntity}:`, operationParams);
+
+        const result = await aiEntityService.executeEntityOperation(
+          resolvedStoreId,
+          detectedEntity,
+          detectedOperation,
+          operationParams,
+          { search_term: detectedSearchTerm }
+        );
+
+        // Generate natural response
+        const responseGen = await aiEntityService.generateEntityResponse(
+          resolvedStoreId,
+          entityDef,
+          detectedOperation,
+          result,
+          aiService,
+          userId,
+          message
+        );
+        creditsUsed += responseGen.creditsUsed || 0;
+
+        responseData = {
+          type: 'admin_entity_modified',
+          entity: detectedEntity,
+          operation: detectedOperation,
+          result: result.data,
+          entityDef: {
+            display_name: entityDef.display_name,
+            category: entityDef.category
+          }
+        };
+
+        res.json({
+          success: true,
+          message: responseGen.message,
+          data: responseData,
+          creditsDeducted: creditsUsed
+        });
+        return;
+
+      } catch (error) {
+        console.error('[AI Chat] Admin entity error:', error);
+        return res.json({
+          success: true,
+          message: `I encountered an error while trying to update: ${error.message}. Please try again or contact support if the problem persists.`,
+          data: { type: 'admin_error', reason: 'operation_failed', error: error.message },
+          creditsDeducted: creditsUsed
+        });
+      }
 
     } else if (intent.intent === 'styling') {
       // Handle styling changes to slot configurations
