@@ -29,7 +29,15 @@ import {
   Trash2,
   AlertTriangle,
   Pause,
-  Play
+  Play,
+  HelpCircle,
+  BookOpen,
+  Code,
+  Zap,
+  Clock,
+  FileCode,
+  Folder,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,6 +95,14 @@ export default function Plugins() {
   const [pluginToDelete, setPluginToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
+  const [showHowToDialog, setShowHowToDialog] = useState(false);
+  const [showCreatePluginDialog, setShowCreatePluginDialog] = useState(false);
+  const [newPluginData, setNewPluginData] = useState({
+    name: '',
+    description: '',
+    category: 'integration'
+  });
+  const [creatingPlugin, setCreatingPlugin] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -408,6 +424,66 @@ export default function Plugins() {
     }
   };
 
+  const handleCreateWithAI = async () => {
+    if (!newPluginData.name.trim()) {
+      setFlashMessage({ type: 'error', message: 'Please enter a plugin name' });
+      return;
+    }
+
+    setCreatingPlugin(true);
+    try {
+      // Create the plugin in the database first
+      const slug = newPluginData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+      const response = await apiClient.request('POST', 'plugins', {
+        name: newPluginData.name,
+        slug: slug,
+        description: newPluginData.description || `A custom ${newPluginData.category} plugin`,
+        category: newPluginData.category,
+        version: '1.0.0',
+        creator_id: user?.id,
+        is_public: false,
+        manifest: {
+          name: newPluginData.name,
+          slug: slug,
+          version: '1.0.0',
+          description: newPluginData.description || `A custom ${newPluginData.category} plugin`,
+          author: user?.name || 'Store Owner',
+          category: newPluginData.category,
+          hooks: {},
+          configSchema: { properties: {} }
+        }
+      });
+
+      const createdPlugin = response.plugin || response;
+
+      // Close dialog and navigate to AI workspace with the plugin
+      setShowCreatePluginDialog(false);
+      setNewPluginData({ name: '', description: '', category: 'integration' });
+
+      // Navigate to AI workspace with the new plugin for editing
+      navigate('/ai-workspace', {
+        state: {
+          plugin: {
+            id: createdPlugin.id,
+            name: createdPlugin.name,
+            slug: createdPlugin.slug,
+            description: createdPlugin.description,
+            category: createdPlugin.category || newPluginData.category,
+            version: createdPlugin.version || '1.0.0',
+            manifest: createdPlugin.manifest
+          },
+          isNewPlugin: true
+        }
+      });
+    } catch (error) {
+      console.error("Error creating plugin:", error);
+      setFlashMessage({ type: 'error', message: 'Error creating plugin: ' + error.message });
+    } finally {
+      setCreatingPlugin(false);
+    }
+  };
+
   // Different filtering for different contexts
   const getFilteredPlugins = (tabFilter = 'marketplace') => {
     return plugins.filter(plugin => {
@@ -476,7 +552,7 @@ export default function Plugins() {
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={() => navigate('/ai-workspace')}
+              onClick={() => setShowCreatePluginDialog(true)}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
               <Sparkles className="w-4 h-4 mr-2" />
@@ -488,6 +564,13 @@ export default function Plugins() {
             >
               <Upload className="w-4 h-4 mr-2" />
               Import Plugin
+            </Button>
+            <Button
+              onClick={() => setShowHowToDialog(true)}
+              variant="outline"
+            >
+              <HelpCircle className="w-4 h-4 mr-2" />
+              How-To
             </Button>
             <Button
               onClick={() => setShowGitHubInstall(true)}
@@ -913,7 +996,7 @@ export default function Plugins() {
                     Use AI to create your first plugin in minutes
                   </p>
                   <Button
-                    onClick={() => navigate('/ai-workspace')}
+                    onClick={() => setShowCreatePluginDialog(true)}
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
@@ -1275,6 +1358,258 @@ export default function Plugins() {
                       Delete Permanently
                     </>
                   )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Plugin with AI Dialog */}
+        <Dialog open={showCreatePluginDialog} onOpenChange={setShowCreatePluginDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+                Create Plugin with AI
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Give your plugin a name and description. AI will help you build it in the next step.
+              </p>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Plugin Name *
+                </label>
+                <Input
+                  placeholder="e.g., Store Announcement"
+                  value={newPluginData.name}
+                  onChange={(e) => setNewPluginData({ ...newPluginData, name: e.target.value })}
+                  disabled={creatingPlugin}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Description
+                </label>
+                <textarea
+                  className="w-full border border-gray-300 rounded-md p-2 text-sm min-h-[80px]"
+                  placeholder="Describe what your plugin will do..."
+                  value={newPluginData.description}
+                  onChange={(e) => setNewPluginData({ ...newPluginData, description: e.target.value })}
+                  disabled={creatingPlugin}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Category
+                </label>
+                <Select
+                  value={newPluginData.category}
+                  onValueChange={(value) => setNewPluginData({ ...newPluginData, category: value })}
+                  disabled={creatingPlugin}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="display">Display</SelectItem>
+                    <SelectItem value="analytics">Analytics</SelectItem>
+                    <SelectItem value="payment">Payment</SelectItem>
+                    <SelectItem value="shipping">Shipping</SelectItem>
+                    <SelectItem value="marketing">Marketing</SelectItem>
+                    <SelectItem value="integration">Integration</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowCreatePluginDialog(false);
+                    setNewPluginData({ name: '', description: '', category: 'integration' });
+                  }}
+                  disabled={creatingPlugin}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateWithAI}
+                  disabled={creatingPlugin || !newPluginData.name.trim()}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                >
+                  {creatingPlugin ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Create & Open Editor
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* How-To Documentation Dialog */}
+        <Dialog open={showHowToDialog} onOpenChange={setShowHowToDialog}>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-blue-600" />
+                Plugin Development Guide
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6 text-sm">
+              {/* What is a Plugin */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Puzzle className="w-4 h-4 text-purple-600" />
+                  What is a Plugin?
+                </h3>
+                <p className="text-gray-600">
+                  A plugin is a small package that adds new functionality to your store. For example: display custom messages, add admin pages, create scheduled tasks, or add API endpoints.
+                </p>
+              </div>
+
+              {/* Plugin Structure */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Folder className="w-4 h-4 text-blue-600" />
+                  Plugin Structure
+                </h3>
+                <p className="text-gray-600 mb-2">Every plugin needs 2 files:</p>
+                <div className="bg-gray-50 rounded-lg p-3 font-mono text-xs">
+                  <div className="text-gray-500">backend/plugins/my-plugin/</div>
+                  <div className="ml-4">├── <span className="text-blue-600">manifest.json</span> <span className="text-gray-400">← Plugin info</span></div>
+                  <div className="ml-4">└── <span className="text-green-600">index.js</span> <span className="text-gray-400">← Plugin code</span></div>
+                </div>
+              </div>
+
+              {/* manifest.json */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <FileCode className="w-4 h-4 text-orange-600" />
+                  manifest.json
+                </h3>
+                <p className="text-gray-600 mb-2">Describes your plugin:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`{
+  "name": "My Plugin",
+  "slug": "my-plugin",
+  "version": "1.0.0",
+  "description": "What it does",
+  "author": "Your Name",
+  "category": "display"
+}`}</pre>
+                </div>
+              </div>
+
+              {/* What Plugins Can Do */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-yellow-600" />
+                  What Plugins Can Do
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="border rounded-lg p-3">
+                    <div className="font-medium text-gray-900 mb-1 flex items-center gap-2">
+                      <Code className="w-4 h-4 text-blue-500" />
+                      Hooks
+                    </div>
+                    <p className="text-gray-600 text-xs">Display content on specific parts of the page (homepage header, content area)</p>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <div className="font-medium text-gray-900 mb-1 flex items-center gap-2">
+                      <Settings className="w-4 h-4 text-gray-500" />
+                      Configuration
+                    </div>
+                    <p className="text-gray-600 text-xs">Let store owners customize your plugin via the admin panel</p>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <div className="font-medium text-gray-900 mb-1 flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-green-500" />
+                      API Routes
+                    </div>
+                    <p className="text-gray-600 text-xs">Create custom API endpoints for your plugin</p>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <div className="font-medium text-gray-900 mb-1 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-purple-500" />
+                      Scheduled Tasks
+                    </div>
+                    <p className="text-gray-600 text-xs">Run tasks automatically on a schedule (cron jobs)</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Simple Example */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  Simple Example
+                </h3>
+                <p className="text-gray-600 mb-2">A plugin that shows a welcome banner:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`// index.js
+class WelcomeBannerPlugin {
+  showWelcome(config, context) {
+    return \`
+      <div style="background: #4CAF50;
+                  color: white;
+                  padding: 20px;
+                  text-align: center;">
+        <h2>\${config.message || 'Welcome!'}</h2>
+      </div>
+    \`;
+  }
+}
+module.exports = WelcomeBannerPlugin;`}</pre>
+                </div>
+              </div>
+
+              {/* Config Types */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Configuration Types</h3>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="bg-blue-50 rounded p-2">
+                    <div className="font-medium text-blue-700">string</div>
+                    <div className="text-blue-600">Text input</div>
+                  </div>
+                  <div className="bg-green-50 rounded p-2">
+                    <div className="font-medium text-green-700">boolean</div>
+                    <div className="text-green-600">On/Off toggle</div>
+                  </div>
+                  <div className="bg-purple-50 rounded p-2">
+                    <div className="font-medium text-purple-700">enum</div>
+                    <div className="text-purple-600">Dropdown</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tips */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 mb-2">Tips</h3>
+                <ul className="text-blue-800 text-xs space-y-1">
+                  <li>• Always escape HTML to prevent security issues</li>
+                  <li>• Provide default values in your config</li>
+                  <li>• Use clear, unique plugin slugs</li>
+                  <li>• Test locally before deploying</li>
+                  <li>• Check <code className="bg-blue-100 px-1 rounded">backend/plugins/hello-world-example/</code> for a complete example</li>
+                </ul>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button onClick={() => setShowHowToDialog(false)}>
+                  Got it!
                 </Button>
               </div>
             </div>
