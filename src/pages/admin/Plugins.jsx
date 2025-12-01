@@ -485,8 +485,6 @@ export default function Plugins() {
             <Button
               onClick={() => setShowImportDialog(true)}
               variant="outline"
-              disabled
-              className="opacity-50 cursor-not-allowed"
             >
               <Upload className="w-4 h-4 mr-2" />
               Import Plugin
