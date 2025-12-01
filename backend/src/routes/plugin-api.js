@@ -2057,22 +2057,27 @@ router.put('/:pluginId/cron/:cronName', async (req, res) => {
       max_failures
     } = req.body;
 
+    // Build update object with only provided fields
+    const updateData = {
+      updated_at: new Date().toISOString()
+    };
+
+    // Only include fields that were actually provided
+    if (cron_name !== undefined) updateData.cron_name = cron_name;
+    if (cron_schedule !== undefined) updateData.cron_schedule = cron_schedule;
+    if (handler_method !== undefined) updateData.handler_method = handler_method;
+    if (description !== undefined) updateData.description = description;
+    if (handler_code !== undefined) updateData.handler_code = handler_code;
+    if (handler_params !== undefined) updateData.handler_params = handler_params;
+    if (timezone !== undefined) updateData.timezone = timezone;
+    if (is_enabled !== undefined) updateData.is_enabled = is_enabled;
+    if (timeout_seconds !== undefined) updateData.timeout_seconds = timeout_seconds;
+    if (max_failures !== undefined) updateData.max_failures = max_failures;
+
     // Update cron job
     const { data, error } = await tenantDb
       .from('plugin_cron')
-      .update({
-        cron_name: cron_name || cronName,
-        cron_schedule,
-        handler_method,
-        description,
-        handler_code,
-        handler_params,
-        timezone,
-        is_enabled,
-        timeout_seconds,
-        max_failures,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('plugin_id', pluginId)
       .eq('cron_name', cronName)
       .select()
@@ -2529,6 +2534,24 @@ router.delete('/registry/:id/files', async (req, res) => {
           .delete()
           .eq('plugin_id', id)
           .eq('controller_name', fileName)
+          .select();
+        if (!error && data && data.length > 0) {
+          deleted = true;
+        }
+      } catch (err) {
+        // Silently fail
+      }
+    }
+    // Delete from plugin_cron table
+    else if (normalizedPath.startsWith('cron/')) {
+      const cronName = normalizedPath.replace('cron/', '').replace('.json', '');
+      attemptedTable = 'plugin_cron';
+      try {
+        const { data, error } = await tenantDb
+          .from('plugin_cron')
+          .delete()
+          .eq('plugin_id', id)
+          .eq('cron_name', cronName)
           .select();
         if (!error && data && data.length > 0) {
           deleted = true;
