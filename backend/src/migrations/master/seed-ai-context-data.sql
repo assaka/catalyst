@@ -619,6 +619,378 @@ export function Component() {
 '["help customers decide", "highlight differences", "feature comparison"]',
 '["compare", "comparison", "products", "features"]', true);
 
+-- ============================================
+-- DETAILED SLOT ARCHITECTURE DOCUMENTATION
+-- ============================================
+
+INSERT INTO ai_context_documents (type, title, content, category, tags, priority, mode, is_active) VALUES
+
+('architecture', 'Slot Configuration System - Overview',
+'The storefront uses a hierarchical slot-based layout system defined in config files.
+
+CONFIG FILES:
+- product-config.js: Product detail page layout
+- category-config.js: Category/collection page layout
+- header-config.js: Header layout
+- cart-config.js: Cart page layout
+- checkout-config.js: Checkout flow layout
+- account-config.js: Account pages layout
+
+SLOT STRUCTURE:
+Each slot is defined with these properties:
+{
+  id: "slot_name",           // Unique identifier
+  type: "container|grid|flex|text|image|button|component",
+  component: "ComponentName", // For type="component", e.g., "ProductGallery"
+  content: "{{variable}}",    // Handlebars template content
+  className: "tailwind classes",
+  parentClassName: "",        // Classes for parent wrapper
+  styles: { css properties }, // Inline styles
+  parentId: "parent_slot_id", // null for root slots
+  position: { col: 1, row: 1 }, // Grid coordinates
+  colSpan: 12,               // 1-12 column span (or object {default: 12, grid: 6})
+  rowSpan: 1,                // Row span for height
+  viewMode: ["default"],     // Which views to show in
+  metadata: {
+    hierarchical: true,
+    displayName: "Human Readable Name",
+    component: "ComponentName"
+  }
+}
+
+HIERARCHY:
+- Root slots have parentId: null
+- Child slots reference parent via parentId
+- Grid/container slots can have children
+- Example: main_layout -> content_area -> info_container -> product_title',
+'core', '["slots", "configuration", "architecture", "config"]', 100, 'developer', true),
+
+('architecture', 'Slot Grid System - Positioning & Sizing',
+'Slots use a 12-column CSS Grid system for responsive layouts.
+
+GRID PROPERTIES:
+- gridCols: 12 (default) - Total columns in grid
+- colSpan: Number or object - How many columns slot spans
+  - Simple: colSpan: 6 (6 columns wide)
+  - Responsive: colSpan: { default: 12, grid: 6, list: 12 }
+- rowSpan: Number - How many rows tall (default: 1)
+- position: { col: 1, row: 1 } - Grid coordinates
+
+POSITIONING:
+- col: 1-12 column position (1 = leftmost)
+- row: Sequential row number
+- Slots are sorted by row, then column
+
+RESIZING SLOTS:
+To change slot width, update colSpan:
+UPDATE slot_configurations
+SET configuration = jsonb_set(
+  configuration,
+  ''{slots,product_gallery,colSpan}'',
+  ''6''::jsonb
+)
+WHERE page_type = ''product'';
+
+RESPONSIVE CLASSES:
+Use Tailwind for responsive widths:
+- col-span-12 lg:col-span-6 (full on mobile, half on desktop)
+- colSpan can be string: "col-span-12 lg:col-span-6"',
+'core', '["grid", "positioning", "colSpan", "resize", "responsive"]', 95, 'developer', true),
+
+('architecture', 'Slot Reordering - Moving Elements',
+'Slots can be reordered by updating their position coordinates.
+
+REORDER WITHIN CONTAINER:
+To move slot A before slot B in the same container:
+1. Get slots with same parentId
+2. Update position.row values
+3. Lower row = appears first
+
+EXAMPLE - Move SKU above Price:
+-- Current: price at row 3, sku at row 4
+-- Target: sku at row 3, price at row 4
+
+UPDATE slot_configurations
+SET configuration = jsonb_set(
+  jsonb_set(
+    configuration,
+    ''{slots,product_sku,position,row}'',
+    ''3''::jsonb
+  ),
+  ''{slots,product_price,position,row}'',
+  ''4''::jsonb
+)
+WHERE page_type = ''product'';
+
+MOVE TO DIFFERENT CONTAINER:
+Change the parentId and position:
+{
+  "parentId": "new_parent_container",
+  "position": { "col": 1, "row": 1 }
+}
+
+API ENDPOINT:
+POST /api/slot-configurations/reorder
+{
+  "storeId": "...",
+  "pageType": "product",
+  "slotId": "product_sku",
+  "newParentId": "info_container",
+  "newPosition": { "col": 1, "row": 3 }
+}',
+'core', '["reorder", "move", "position", "parentId", "slots"]', 95, 'developer', true),
+
+('architecture', 'Slot Types & Components',
+'Different slot types serve different purposes.
+
+SLOT TYPES:
+1. container - Generic wrapper, can hold children
+2. grid - CSS Grid container with gridCols
+3. flex - Flexbox container
+4. text - Text content with Handlebars variables
+5. image - Image with src binding
+6. button - Interactive button with action
+7. component - React component reference
+8. html - Raw HTML with script support
+
+COMPONENT SLOTS:
+Reference React components by name:
+{
+  type: "component",
+  component: "ProductGallery",
+  metadata: {
+    component: "ProductGallery"
+  }
+}
+
+Available components:
+- ProductGallery: Image gallery with thumbnails
+- StockStatus: Stock availability indicator
+- QuantitySelector: Quantity input with +/- buttons
+- CustomOptions: Product options selector
+- ConfigurableProductSelector: Variant selector
+- ProductTabsSlot: Description/Specs/Reviews tabs
+- Breadcrumbs: Navigation breadcrumbs
+- LayeredNavigation: Filters sidebar
+- PaginationComponent: Page navigation
+- CmsBlockRenderer: Dynamic CMS content
+
+TEXT SLOTS WITH HANDLEBARS:
+{
+  type: "text",
+  content: "{{product.name}}",
+  metadata: { htmlTag: "h1" }
+}
+
+Variables: {{product.name}}, {{product.price}}, {{settings.currency_symbol}}, {{t "key"}}',
+'core', '["types", "components", "text", "container", "slots"]', 90, 'developer', true),
+
+('architecture', 'Adding New Slots - Editor & API',
+'New slots can be added via the visual editor or API.
+
+VIA VISUAL EDITOR:
+1. Click "+ Add Element" in editor
+2. Select slot type (text, image, container)
+3. Choose parent container
+4. Slot is created with default position
+
+VIA API:
+POST /api/slot-configurations/slots
+{
+  "storeId": "...",
+  "pageType": "product",
+  "slot": {
+    "id": "custom_banner",
+    "type": "text",
+    "content": "Free shipping on orders over $50!",
+    "className": "bg-blue-500 text-white p-4 text-center",
+    "parentId": "main_layout",
+    "position": { "col": 1, "row": 0 },
+    "colSpan": 12,
+    "viewMode": ["default"],
+    "metadata": {
+      "hierarchical": true,
+      "isCustom": true,
+      "displayName": "Promo Banner"
+    }
+  }
+}
+
+SLOT ID NAMING:
+- Use snake_case: custom_promo_banner
+- Prefix with purpose: cms_block_*, custom_*
+- Include location: header_*, footer_*, sidebar_*
+
+MAKING SLOTS EDITABLE:
+Add to metadata:
+{
+  metadata: {
+    displayName: "My Custom Slot",
+    customizable: ["content", "className", "styles"],
+    editableProperties: ["fontSize", "color", "backgroundColor"]
+  }
+}',
+'core', '["add", "create", "new slot", "editor", "API"]', 90, 'developer', true),
+
+('architecture', 'CMS Blocks Integration',
+'CMS blocks allow dynamic content injection into slot areas.
+
+CMS BLOCK SLOTS:
+{
+  id: "cms_block_product_above",
+  type: "component",
+  component: "CmsBlockRenderer",
+  metadata: {
+    cmsPosition: "product_above",
+    props: { position: "product_above" }
+  }
+}
+
+CMS POSITIONS (Product Page):
+- product_above: Above entire product section
+- product_above_price: Between title and price
+- product_below_price: After price
+- product_above_cart_button: Before add to cart
+- product_below_cart_button: After add to cart
+- product_below: Below entire product section
+
+CMS POSITIONS (Category Page):
+- category_above_filters: Above filter sidebar
+- category_below_filters: Below filter sidebar
+- category_above_products: Above product grid
+- category_below_products: Below product grid
+
+CREATING CMS CONTENT:
+1. Go to Admin > Content > CMS Blocks
+2. Create block with position matching cmsPosition
+3. Content automatically renders in that slot
+
+HTML/SCRIPT IN CMS:
+CMS blocks can contain:
+- HTML content
+- Inline CSS
+- JavaScript (with caution)
+- Handlebars variables',
+'core', '["cms", "blocks", "content", "dynamic", "positions"]', 85, 'developer', true),
+
+('architecture', 'Slot Configuration Service - useSlotConfiguration Hook',
+'The useSlotConfiguration hook manages slot state in editors.
+
+HOOK USAGE:
+const {
+  handleResetLayout,      // Reset to default config
+  handlePublishConfiguration, // Publish draft to live
+  getDraftConfiguration,  // Get current draft
+  createSlot,            // Add new slot
+  handleSlotDrop,        // Reorder slots
+  handleSlotDelete,      // Remove slot
+  handleGridResize,      // Change colSpan
+  handleTextChange,      // Update text content
+  handleClassChange      // Update className/styles
+} = useSlotConfiguration({
+  pageType: "product",
+  pageName: "Product Detail",
+  slotType: "product_layout",
+  selectedStore
+});
+
+DRAFT/PUBLISH WORKFLOW:
+1. Edit slots -> changes saved to draft
+2. Preview draft changes
+3. Publish draft -> becomes live
+4. Can revert to previous published version
+
+CONFIGURATION STORAGE:
+- slot_configurations table in tenant DB
+- status: "init", "draft", "published"
+- configuration: JSONB with slots object
+- Versioning tracks history
+
+AUTO-SAVE:
+Changes auto-save to draft after 500ms debounce.
+Explicit publish required to go live.',
+'core', '["hook", "useSlotConfiguration", "draft", "publish", "service"]', 85, 'developer', true),
+
+('architecture', 'Product Page Slot Hierarchy',
+'Product page slot structure from product-config.js.
+
+HIERARCHY:
+cms_block_product_above (root, row 0)
+main_layout (root, row 1)
+├── breadcrumbs_container (row 1)
+│   └── breadcrumbs
+├── content_area (row 2)
+│   ├── product_title_mobile (mobile only)
+│   ├── product_gallery_container (col 1-6)
+│   └── info_container (col 7-12)
+│       ├── product_title
+│       ├── cms_block_product_above_price
+│       ├── price_container
+│       │   ├── product_price
+│       │   └── original_price
+│       ├── stock_status
+│       ├── product_sku
+│       ├── product_short_description
+│       ├── options_container
+│       │   ├── configurable_product_selector
+│       │   └── custom_options
+│       └── actions_container
+│           ├── quantity_selector
+│           ├── total_price_display
+│           └── buttons_container
+│               ├── add_to_cart_button
+│               └── wishlist_button
+├── product_tabs (row 3)
+└── related_products_container (row 4)
+cms_block_product_below (root, row 5)
+
+KEY SLOTS TO MODIFY:
+- product_sku: SKU display position
+- stock_status: In/out of stock indicator
+- product_price: Main price display
+- add_to_cart_button: Buy button styling',
+'core', '["product", "hierarchy", "structure", "slots", "layout"]', 90, 'developer', true),
+
+('architecture', 'Category Page Slot Hierarchy',
+'Category page slot structure from category-config.js.
+
+HIERARCHY:
+page_header (root)
+├── breadcrumbs_content
+├── category_title
+└── category_description
+
+filters_container (col 1-3)
+├── filters_above_cms
+├── filter_heading
+├── active_filters
+├── layered_navigation
+└── filters_below_cms
+
+products_container (col 4-12)
+├── mobile_filter_toggle (mobile only)
+├── sorting_controls
+│   ├── product_count_info
+│   ├── sort_selector
+│   └── view_mode_toggle
+├── products_above_cms
+├── product_items (product grid)
+│   └── product_card_template (repeated)
+│       ├── product_card_image
+│       └── product_card_content
+│           ├── product_card_name
+│           ├── product_card_price_container
+│           ├── product_card_stock_label
+│           └── product_card_add_to_cart
+├── products_below_cms
+└── pagination_container
+
+PRODUCT CARD TEMPLATE:
+The product_card_template is repeated for each product.
+Child slots get instance IDs: product_card_name_0, product_card_name_1, etc.
+Edit template slots to change all product cards.',
+'core', '["category", "hierarchy", "structure", "product card", "filters"]', 90, 'developer', true);
+
 -- Update usage counts for patterns
 UPDATE ai_code_patterns SET usage_count = 5 WHERE pattern_type = 'css';
 UPDATE ai_code_patterns SET usage_count = 3 WHERE pattern_type = 'database';
