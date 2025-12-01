@@ -151,22 +151,8 @@ const DeveloperPluginEditor = ({
       const files = buildFileTree(response.data);
       setFileTree(files);
 
-      // Expand only root and first-level subdirectories
-      const paths = new Set(['root', '/']);
-      files.forEach(node => {
-        if (node.type === 'folder') {
-          paths.add(node.path);
-          // Add immediate children folders only (not nested)
-          if (node.children) {
-            node.children.forEach(child => {
-              if (child.type === 'folder') {
-                paths.add(child.path);
-              }
-            });
-          }
-        }
-      });
-      setExpandedFolders(paths);
+      // Expand only root folder, keep subdirectories collapsed
+      setExpandedFolders(new Set(['root', '/']));
     } catch (error) {
       console.error('Error loading plugin files:', error);
     }
