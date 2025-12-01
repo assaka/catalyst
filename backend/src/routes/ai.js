@@ -622,13 +622,17 @@ router.post('/chat', authMiddleware, async (req, res) => {
     const { message, conversationHistory, storeId } = req.body;
     const userId = req.user.id;
 
+    // Resolve store_id from various sources (header takes priority)
+    const resolvedStoreId = req.headers['x-store-id'] || req.query.store_id || req.body.store_id || req.body.storeId;
+
     // Debug: Log ALL store_id sources at start of request
     console.log('🔍 AI Chat - Request started. Store ID sources:', {
       header: req.headers['x-store-id'],
       query: req.query.store_id,
       body_snake: req.body.store_id,
       body_camel: req.body.storeId,
-      user_store_id: req.user?.store_id
+      user_store_id: req.user?.store_id,
+      resolved: resolvedStoreId
     });
 
     if (!message) {
@@ -757,7 +761,7 @@ Return ONLY valid JSON.`;
       systemPrompt: 'You are an intent classifier. Return ONLY valid JSON.',
       maxTokens: 512,
       temperature: 0.3,
-      metadata: { type: 'intent-detection' }
+      metadata: { type: 'intent-detection', storeId: resolvedStoreId }
     });
 
     let intent;
@@ -878,7 +882,7 @@ If you need to ask for clarification (missing language or unclear text), set nee
         systemPrompt: 'You are an AI translation assistant. Analyze user requests and extract structured information. Return ONLY valid JSON.',
         maxTokens: 512,
         temperature: 0.3,
-        metadata: { type: 'translation-analysis' }
+        metadata: { type: 'translation-analysis', storeId: resolvedStoreId }
       });
 
       let analysis;
@@ -964,7 +968,7 @@ Which keys should be updated? Return JSON:
           systemPrompt: 'You are a translation key expert. Identify the most relevant keys. Return ONLY valid JSON.',
           maxTokens: 256,
           temperature: 0.2,
-          metadata: { type: 'key-selection' }
+          metadata: { type: 'key-selection', storeId: resolvedStoreId }
         });
 
         let decision;
@@ -1042,7 +1046,7 @@ Suggest helpful next steps. Be friendly and actionable.`;
         systemPrompt: 'You are a helpful translation assistant.',
         maxTokens: 256,
         temperature: 0.7,
-        metadata: { type: 'translation-suggestion' }
+        metadata: { type: 'translation-suggestion', storeId: resolvedStoreId }
       });
 
       res.json({
@@ -1091,7 +1095,7 @@ Be friendly and guide them toward what they can build.
 Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}`,
         maxTokens: 1024,
         temperature: 0.7,
-        metadata: { type: 'chat' }
+        metadata: { type: 'chat', storeId: resolvedStoreId }
       });
 
       res.json({

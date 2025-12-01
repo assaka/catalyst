@@ -136,10 +136,46 @@ class AIService {
       throw new Error(`Failed to deduct credits: ${updateError.message}`);
     }
 
-    // Note: credit_usage table is in tenant DB, not master DB
-    // Detailed logging happens via logUsage() which logs to tenant DB
-    // For now, just log to console for debugging
     console.log(`💳 Credits deducted: ${cost} for ${operationType} (user: ${userId}, store: ${storeId})`);
+
+    // Log credit usage to tenant DB
+    if (storeId && storeId !== '00000000-0000-0000-0000-000000000000') {
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+        // Map operation types to usage_type values
+        const usageTypeMap = {
+          'plugin-generation': 'ai_plugin_generation',
+          'plugin-modification': 'ai_plugin_modification',
+          'translation': 'ai_translation',
+          'layout-generation': 'ai_layout',
+          'code-patch': 'ai_code_patch',
+          'general': 'ai_chat'
+        };
+        const usageType = usageTypeMap[operationType] || 'other';
+
+        const { error: insertError } = await tenantDb
+          .from('credit_usage')
+          .insert({
+            id: require('uuid').v4(),
+            user_id: userId,
+            store_id: storeId,
+            credits_used: cost,
+            usage_type: usageType,
+            description: `AI Studio: ${operationType}`,
+            metadata: metadata,
+            created_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          console.warn('Failed to log credit usage to tenant DB:', insertError.message);
+          // Don't throw - logging failure shouldn't break the operation
+        }
+      } catch (connectionError) {
+        console.warn('Failed to connect to tenant DB for credit logging:', connectionError.message);
+        // Don't throw - logging failure shouldn't break the operation
+      }
+    }
 
     return cost;
   }
