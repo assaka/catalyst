@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Category } from "@/api/entities";
+import { User } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import { useTranslation } from "@/contexts/TranslationContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
@@ -79,6 +80,23 @@ export default function Categories() {
   const [translateFromLang, setTranslateFromLang] = useState('en');
   const [translateToLangs, setTranslateToLangs] = useState([]);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [userCredits, setUserCredits] = useState(null);
+
+  // Load user credits for AI translation checks
+  const loadUserCredits = async () => {
+    try {
+      const userData = await User.me();
+      setUserCredits(userData.credits || 0);
+    } catch (error) {
+      console.error('Failed to load user credits:', error);
+      setUserCredits(0);
+    }
+  };
+
+  // Load user credits on component mount
+  useEffect(() => {
+    loadUserCredits();
+  }, []);
 
   useEffect(() => {
     if (selectedStore) {
@@ -1490,6 +1508,46 @@ export default function Categories() {
                 </p>
               </div>
 
+              {/* Credit Cost Estimate */}
+              {translateToLangs.length > 0 && totalItems > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="text-green-800 font-medium">
+                      💰 Estimated Cost:
+                    </span>
+                    <span className="text-green-900 font-bold">
+                      {(totalItems * translateToLangs.length * 0.10).toFixed(2)} credits
+                    </span>
+                  </div>
+                  <p className="text-xs text-green-700">
+                    {totalItems} {totalItems === 1 ? 'category' : 'categories'} × {translateToLangs.length} lang(s) × 0.10 credits per item
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Standard rate: 0.10 credits per item
+                  </p>
+                </div>
+              )}
+
+              {/* Credit Balance Warning */}
+              {translateToLangs.length > 0 && totalItems > 0 && userCredits !== null && userCredits !== undefined && (
+                <div className={`p-3 rounded-lg border ${
+                  userCredits < (totalItems * translateToLangs.length * 0.10)
+                    ? 'bg-red-50 border-red-200'
+                    : 'bg-green-50 border-green-200'
+                }`}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className={userCredits < (totalItems * translateToLangs.length * 0.10) ? 'text-red-800' : 'text-green-800'}>
+                      Your balance: {Number(userCredits).toFixed(2)} credits
+                    </span>
+                    {userCredits < (totalItems * translateToLangs.length * 0.10) && (
+                      <span className="text-red-600 font-medium text-xs">
+                        ⚠️ Insufficient credits
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-end gap-2 pt-4">
                 <Button
                   variant="outline"
@@ -1503,7 +1561,7 @@ export default function Categories() {
                 </Button>
                 <Button
                   onClick={handleBulkTranslate}
-                  disabled={isTranslating || !translateFromLang || translateToLangs.length === 0}
+                  disabled={isTranslating || !translateFromLang || translateToLangs.length === 0 || (userCredits !== null && userCredits < (totalItems * translateToLangs.length * 0.10))}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   {isTranslating ? (

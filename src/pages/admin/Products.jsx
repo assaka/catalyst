@@ -6,6 +6,7 @@ import { Category } from "@/api/entities";
 import { Tax } from "@/api/entities";
 import { Attribute } from "@/api/entities";
 import { AttributeSet } from "@/api/entities";
+import { User } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import { getPrimaryImageUrl } from "@/utils/imageUtils";
@@ -126,6 +127,9 @@ export default function Products() {
 
   // FlashMessage state
   const [flashMessage, setFlashMessage] = useState(null);
+
+  // User credits for AI translations
+  const [userCredits, setUserCredits] = useState(null);
 
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -267,6 +271,22 @@ export default function Products() {
       setLoading(false);
     }
   };
+
+  // Load user credits for AI translation checks
+  const loadUserCredits = async () => {
+    try {
+      const userData = await User.me();
+      setUserCredits(userData.credits || 0);
+    } catch (error) {
+      console.error('Failed to load user credits:', error);
+      setUserCredits(0);
+    }
+  };
+
+  // Load user credits on component mount
+  useEffect(() => {
+    loadUserCredits();
+  }, []);
 
   // Fetch fresh product data for editing (includes attributes from product_attribute_values)
   const handleEditProduct = async (product) => {
@@ -1436,6 +1456,10 @@ export default function Products() {
           entityType="products"
           entityName="Products"
           onTranslate={handleBulkTranslate}
+          itemCount={totalItems}
+          userCredits={userCredits}
+          onCreditsUpdate={loadUserCredits}
+          onComplete={loadData}
         />
 
         {/* Confirmation Modal */}
