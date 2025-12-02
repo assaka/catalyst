@@ -1235,25 +1235,53 @@ Which slot matches? Reply with JUST the slot ID, nothing else. If no match, repl
       const needsClarification = results.filter(r => r.needsClarification);
       const allNotFound = needsClarification.flatMap(r => r.notFound || []);
 
-      // Build context for AI
+      // Build context for AI - check what needs clarification
       const whatWasDone = successfulChanges.map(r => r.message).join('; ');
-      const whatFailed = allNotFound.map(nf =>
-        `couldn't find "${nf.name}"${nf.suggestions?.length ? ` (maybe ${nf.suggestions[0]}?)` : ''}`
-      ).join('; ');
 
-      const responsePrompt = `Changes made: ${whatWasDone || 'none'}
-${whatFailed ? `Failed: ${whatFailed}` : ''}
+      // Check for incomplete layout commands (missing target)
+      const incompleteLayout = parsedIntent.intents.find(i =>
+        i.intent === 'layout_modify' && !i.details?.targetElement
+      );
 
-Confirm in 1 sentence. MUST mention the specific changes (e.g. "sku above title", "title green").
-Keep it casual. No "Great/I've/Let me know/Feel free".`;
+      // Build clarification questions
+      let clarificationNeeded = [];
+      if (incompleteLayout) {
+        const source = incompleteLayout.details?.sourceElement || 'element';
+        const position = incompleteLayout.details?.position || 'move';
+        clarificationNeeded.push(`move ${source} ${position} what?`);
+      }
+      allNotFound.forEach(nf => {
+        if (nf.name) {
+          clarificationNeeded.push(`couldn't find "${nf.name}"${nf.suggestions?.length ? ` - did you mean ${nf.suggestions[0]}?` : ''}`);
+        }
+      });
+
+      // Generate response based on what happened
+      let responsePrompt;
+      if (clarificationNeeded.length > 0 && successCount > 0) {
+        // Some things worked, some need clarification
+        responsePrompt = `Done: ${whatWasDone}
+But I need clarification: ${clarificationNeeded.join(', ')}
+Ask the user to clarify in a natural way. Keep it brief.`;
+      } else if (clarificationNeeded.length > 0) {
+        // Nothing worked, need clarification
+        responsePrompt = `I need more info: ${clarificationNeeded.join(', ')}
+Ask the user to be more specific. For example, "move X below Y" needs both elements. Keep it brief and helpful.`;
+      } else {
+        // Everything worked
+        responsePrompt = `Changes made: ${whatWasDone || 'none'}
+Confirm in 1 sentence. MUST mention the specific changes. Keep it casual.`;
+      }
 
       const responseResult = await aiService.generate({
         userId,
         operationType: 'general',
         prompt: responsePrompt,
-        systemPrompt: 'Mention the SPECIFIC changes made. One casual sentence.',
-        maxTokens: 40,
-        temperature: 0.8,
+        systemPrompt: clarificationNeeded.length > 0
+          ? 'Ask for clarification naturally. Be helpful, suggest examples.'
+          : 'Mention the SPECIFIC changes made. One casual sentence.',
+        maxTokens: clarificationNeeded.length > 0 ? 80 : 40,
+        temperature: 0.7,
         metadata: { type: 'response', storeId: resolvedStoreId }
       });
       totalCredits += responseResult.creditsDeducted;
@@ -1632,6 +1660,32 @@ Suggest helpful next steps. Be friendly and actionable.`;
       const sourceElement = intent.details?.sourceElement;
       const targetElement = intent.details?.targetElement;
       const position = intent.details?.position || 'before';
+
+      // Check if we're missing required info for the move
+      if (!targetElement && sourceElement) {
+        // Ask for clarification - what should it be moved relative to?
+        const clarifyPrompt = `User wants to move "${sourceElement}" ${position} something, but didn't specify what.
+Ask them to clarify. Example: "move ${sourceElement} ${position} [other element]"
+Keep it brief and helpful.`;
+
+        const clarifyResult = await aiService.generate({
+          userId,
+          operationType: 'general',
+          prompt: clarifyPrompt,
+          systemPrompt: 'Ask for clarification naturally. Be helpful.',
+          maxTokens: 60,
+          temperature: 0.7,
+          metadata: { type: 'clarification', storeId: resolvedStoreId }
+        });
+        creditsUsed += clarifyResult.creditsDeducted;
+
+        return res.json({
+          success: true,
+          message: clarifyResult.content,
+          data: { type: 'layout_clarification', missing: 'targetElement', sourceElement, position },
+          creditsDeducted: creditsUsed
+        });
+      }
 
       // Fetch current slot configuration (draft first, then published)
       let { data: slotConfig, error: fetchError } = await tenantDb
