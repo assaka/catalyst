@@ -1818,6 +1818,345 @@ module.exports = MyPlugin;`}</pre>
                 </div>
               </div>
 
+              {/* SERVICES */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-yellow-600" />
+                  Services
+                </h3>
+                <p className="text-gray-600 mb-2">Reusable business logic for your plugin:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`// services/LoyaltyService.js
+class LoyaltyService {
+  constructor(db) {
+    this.db = db;
+  }
+
+  async addPoints(customerId, amount, type, description) {
+    // Add points to customer balance
+    await this.db.query(
+      'UPDATE loyalty_points SET points = points + $1 WHERE customer_id = $2',
+      [amount, customerId]
+    );
+
+    // Record the transaction
+    await this.db.query(
+      \`INSERT INTO points_transactions (customer_id, amount, type, description)
+       VALUES ($1, $2, $3, $4)\`,
+      [customerId, amount, type, description]
+    );
+
+    // Check for tier upgrade
+    await this.checkTierUpgrade(customerId);
+  }
+
+  async redeemPoints(customerId, amount) {
+    const balance = await this.getBalance(customerId);
+    if (balance < amount) {
+      throw new Error('Insufficient points');
+    }
+
+    await this.db.query(
+      'UPDATE loyalty_points SET points = points - $1 WHERE customer_id = $2',
+      [amount, customerId]
+    );
+
+    return { discount: amount * 0.01 }; // 100 points = $1
+  }
+
+  async getBalance(customerId) {
+    const result = await this.db.query(
+      'SELECT points FROM loyalty_points WHERE customer_id = $1',
+      [customerId]
+    );
+    return result.rows[0]?.points || 0;
+  }
+}
+module.exports = LoyaltyService;`}</pre>
+                </div>
+              </div>
+
+              {/* UTILITIES */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Code className="w-4 h-4 text-indigo-600" />
+                  Utilities
+                </h3>
+                <p className="text-gray-600 mb-2">Helper functions for common operations:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`// utils/helpers.js
+const helpers = {
+  // Format price with currency
+  formatPrice(amount, currency = 'USD') {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency
+    }).format(amount);
+  },
+
+  // Generate unique ID
+  generateId() {
+    return crypto.randomUUID();
+  },
+
+  // Escape HTML to prevent XSS
+  escapeHTML(str) {
+    if (typeof str !== 'string') return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  },
+
+  // Validate email format
+  isValidEmail(email) {
+    return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
+  },
+
+  // Calculate percentage
+  calculatePercentage(value, total) {
+    if (total === 0) return 0;
+    return ((value / total) * 100).toFixed(2);
+  }
+};
+
+module.exports = helpers;`}</pre>
+                </div>
+              </div>
+
+              {/* MODELS */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Database className="w-4 h-4 text-emerald-600" />
+                  Models
+                </h3>
+                <p className="text-gray-600 mb-2">Database models for your plugin data:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`// models/ProductReview.js
+class ProductReview {
+  constructor(db) {
+    this.db = db;
+  }
+
+  async create(data) {
+    const { productId, customerId, rating, text, photos } = data;
+    const result = await this.db.query(
+      \`INSERT INTO product_reviews
+       (id, product_id, customer_id, rating, review_text, photos)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)
+       RETURNING *\`,
+      [productId, customerId, rating, text, JSON.stringify(photos)]
+    );
+    return result.rows[0];
+  }
+
+  async findByProduct(productId) {
+    const result = await this.db.query(
+      'SELECT * FROM product_reviews WHERE product_id = $1 ORDER BY created_at DESC',
+      [productId]
+    );
+    return result.rows;
+  }
+
+  async getAverageRating(productId) {
+    const result = await this.db.query(
+      'SELECT AVG(rating)::numeric(10,2) as avg FROM product_reviews WHERE product_id = $1',
+      [productId]
+    );
+    return parseFloat(result.rows[0]?.avg) || 0;
+  }
+
+  async delete(id) {
+    await this.db.query('DELETE FROM product_reviews WHERE id = $1', [id]);
+  }
+}
+module.exports = ProductReview;`}</pre>
+                </div>
+              </div>
+
+              {/* ADMIN PAGE COMPONENT */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <LayoutDashboard className="w-4 h-4 text-blue-600" />
+                  Admin Page Component
+                </h3>
+                <p className="text-gray-600 mb-2">React component for your admin page:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`// components/ReviewsAdminPage.jsx
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Star, Trash2 } from 'lucide-react';
+
+const ReviewsAdminPage = () => {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchReviews();
+  }, []);
+
+  const fetchReviews = async () => {
+    const res = await fetch('/api/plugins/product-reviews/reviews');
+    const data = await res.json();
+    setReviews(data.reviews);
+    setLoading(false);
+  };
+
+  const deleteReview = async (id) => {
+    await fetch(\`/api/plugins/product-reviews/reviews/\${id}\`, {
+      method: 'DELETE'
+    });
+    setReviews(reviews.filter(r => r.id !== id));
+  };
+
+  if (loading) return <div>Loading...</div>;
+
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Product Reviews</h1>
+
+      <div className="grid gap-4">
+        {reviews.map(review => (
+          <Card key={review.id}>
+            <CardContent className="p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-1 mb-2">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={\`w-4 h-4 \${
+                          i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                        }\`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-gray-600">{review.review_text}</p>
+                  <p className="text-sm text-gray-400 mt-2">
+                    By {review.customer_name} • {new Date(review.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => deleteReview(review.id)}>
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default ReviewsAdminPage;`}</pre>
+                </div>
+              </div>
+
+              {/* EVENT LISTENERS */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Webhook className="w-4 h-4 text-rose-600" />
+                  Event Listeners
+                </h3>
+                <p className="text-gray-600 mb-2">Listen to system events and react:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`// events/listeners.js
+module.exports = {
+  // When an order is completed
+  'order.completed': async function(order) {
+    // Award loyalty points
+    const points = Math.floor(order.total * 10);
+    await this.services.loyalty.addPoints(
+      order.customer_id,
+      points,
+      'purchase',
+      \`Order #\${order.id}\`
+    );
+  },
+
+  // When a review is created
+  'review.created': async function(review) {
+    // Notify store owner
+    await this.services.email.send({
+      to: this.config.ownerEmail,
+      subject: 'New Product Review',
+      body: \`New \${review.rating}-star review on \${review.product.name}\`
+    });
+  },
+
+  // When a customer signs up
+  'customer.registered': async function(customer) {
+    // Give welcome bonus
+    await this.services.loyalty.addPoints(
+      customer.id,
+      100,
+      'welcome_bonus',
+      'Welcome bonus for signing up'
+    );
+  },
+
+  // When tier is upgraded
+  'tier.upgraded': async function({ customer, newTier }) {
+    await this.services.email.send({
+      to: customer.email,
+      subject: 'Congratulations! You\\'ve been upgraded!',
+      body: \`You've reached \${newTier} tier! Enjoy exclusive benefits.\`
+    });
+  }
+};`}</pre>
+                </div>
+                <p className="text-gray-500 text-xs mt-2">Available events: <code className="bg-gray-100 px-1 rounded">order.completed</code>, <code className="bg-gray-100 px-1 rounded">customer.registered</code>, <code className="bg-gray-100 px-1 rounded">product.viewed</code>, <code className="bg-gray-100 px-1 rounded">cart.updated</code></p>
+              </div>
+
+              {/* SYSTEM HOOKS */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 text-teal-600" />
+                  System Hooks
+                </h3>
+                <p className="text-gray-600 mb-2">Modify data before it's rendered or saved:</p>
+                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+                  <pre>{`// hooks/productHooks.js
+module.exports = {
+  // Add review data to product before rendering
+  'product.render': async function(product) {
+    const reviews = await this.models.Review.findByProduct(product.id);
+    const avgRating = await this.models.Review.getAverageRating(product.id);
+
+    return {
+      ...product,
+      reviews,
+      average_rating: avgRating,
+      review_count: reviews.length
+    };
+  },
+
+  // Modify cart totals to apply points discount
+  'cart.calculate': async function(cart) {
+    if (cart.points_to_redeem > 0) {
+      const discount = cart.points_to_redeem * 0.01;
+      cart.discount += discount;
+      cart.total -= discount;
+    }
+    return cart;
+  },
+
+  // Add custom data to checkout
+  'checkout.render': async function(checkout) {
+    const points = await this.services.loyalty.getBalance(checkout.customer_id);
+    return {
+      ...checkout,
+      available_points: points,
+      points_value: points * 0.01
+    };
+  }
+};`}</pre>
+                </div>
+                <p className="text-gray-500 text-xs mt-2">Hooks can modify and return data. Events are fire-and-forget.</p>
+              </div>
+
               {/* Tips */}
               <div className="border-t pt-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -1828,6 +2167,7 @@ module.exports = MyPlugin;`}</pre>
                     <li>• Use unique slugs to avoid conflicts with other plugins</li>
                     <li>• Test migrations locally before deploying</li>
                     <li>• Use <code className="bg-blue-100 px-1 rounded">context.store</code> to access store info in hooks</li>
+                    <li>• Services go in <code className="bg-blue-100 px-1 rounded">services/</code>, models in <code className="bg-blue-100 px-1 rounded">models/</code>, utils in <code className="bg-blue-100 px-1 rounded">utils/</code></li>
                     <li>• Check <code className="bg-blue-100 px-1 rounded">backend/plugins/hello-world-example/</code> for a complete example</li>
                   </ul>
                 </div>
