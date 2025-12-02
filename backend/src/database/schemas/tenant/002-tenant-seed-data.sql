@@ -2136,6 +2136,7 @@ VALUES
   ('8999d09a-9295-4bd6-8f11-144a29c2afe4', 'navigation.storefront', 'en', 'Storefront', 'navigation', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('f3d94c32-b2bd-44bd-bd70-a341d7ac9b94', 'product.name', 'en', 'Product Name', 'product', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('4af06df4-eda6-4091-b259-853a14f4f9a6', 'product.in_stock', 'en', 'In Stock', 'product', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
+  ('4af06df4-eda6-4091-b259-853a14f4f9a6', 'product.out_of_stock', 'en', 'Out of Stock', 'product', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('01ff44ee-27fa-4a78-9a37-cb5013090b60', 'common.confirm_password', 'en', 'Confirm Password', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('e31519d3-a933-4456-af16-fa69117b8dfb', 'common.could_not_apply_coupon', 'en', 'Could not apply coupon', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('a0ef31ad-6b27-4edb-a1c1-6a73abad0ef1', 'cart.cart_empty', 'en', 'Cart is empty', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),

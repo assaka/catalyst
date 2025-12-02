@@ -1100,7 +1100,7 @@ export function UnifiedSlotRenderer({
             disabled={isOutOfStock}
           >
             {isHtmlContent ? (
-              <span dangerouslySetInnerHTML={{ __html: buttonContent }} />
+              <span className="flex items-center" dangerouslySetInnerHTML={{ __html: buttonContent }} />
             ) : (
               buttonContent
             )}
@@ -1122,7 +1122,7 @@ export function UnifiedSlotRenderer({
             }}
           >
             {isHtmlContent ? (
-              <span dangerouslySetInnerHTML={{ __html: buttonContent }} />
+              <span className="flex items-center" dangerouslySetInnerHTML={{ __html: buttonContent }} />
             ) : (
               buttonContent
             )}
