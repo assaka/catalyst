@@ -444,51 +444,56 @@ VARIABLE CONTEXT IN SLOTS:
 'core', '["slots", "settings", "configuration", "rendering"]', 100, 'all', true),
 
 ('settings', 'Store Settings Reference - Feature Toggles',
-'STORE SETTINGS (stores.settings.*):
+'STORE SETTINGS PATH REFERENCE:
 
-STOCK SETTINGS:
-- enable_inventory (boolean) - Track inventory levels
+=== NESTED UNDER stock_settings.* ===
+These MUST use the nested path stock_settings.X:
+- stock_settings.show_stock_label (boolean) - Show/hide stock badge
+- stock_settings.in_stock_label (string) - "In Stock" text
+- stock_settings.out_of_stock_label (string) - "Out of Stock" text
+- stock_settings.low_stock_label (string) - "Low Stock" text
+- stock_settings.in_stock_text_color (hex) - In stock text color
+- stock_settings.in_stock_bg_color (hex) - In stock background
+- stock_settings.out_of_stock_text_color (hex) - Out of stock text
+- stock_settings.out_of_stock_bg_color (hex) - Out of stock background
+- stock_settings.low_stock_text_color (hex) - Low stock text
+- stock_settings.low_stock_bg_color (hex) - Low stock background
+
+=== NESTED UNDER theme.* ===
+These MUST use the nested path theme.X:
+- theme.primary_color, theme.add_to_cart_button_color
+- theme.breadcrumb_item_text_color, theme.breadcrumb_show_home_icon
+- theme.font_family, theme.product_tabs_title_color
+(See Theme Settings doc for full list)
+
+=== TOP-LEVEL SETTINGS ===
+These are at the root level (just the key name):
+- enable_inventory (boolean) - Track inventory
 - display_out_of_stock (boolean) - Show out of stock products
-- hide_stock_quantity (boolean) - Hide exact stock numbers
-- display_low_stock_threshold (number) - When to show "low stock"
-- show_stock_label (boolean) - Show "In Stock"/"Out of Stock" badge
-
-DISPLAY SETTINGS:
-- hide_currency_category (boolean) - Hide currency on category pages
-- hide_currency_product (boolean) - Hide currency on product pages
-- hide_quantity_selector (boolean) - Hide qty +/- on product page
-- hide_header_cart (boolean) - Hide cart icon in header
-- hide_header_checkout (boolean) - Hide checkout in header
-- show_permanent_search (boolean) - Always show search bar
-- show_category_in_breadcrumb (boolean) - Include category in breadcrumbs
-- show_language_selector (boolean) - Show language picker in header
-
-CHECKOUT SETTINGS:
-- allow_guest_checkout (boolean) - Allow checkout without account
-- require_shipping_address (boolean) - Require shipping address
-- collect_phone_number_at_checkout (boolean) - Ask for phone
-- phone_number_required_at_checkout (boolean) - Phone is required
-
-CATEGORY PAGE SETTINGS:
-- enable_product_filters (boolean) - Show filter sidebar
-- collapse_filters (boolean) - Filters collapsed by default
-- max_visible_attributes (number) - Max filters to show
-- enable_view_mode_toggle (boolean) - Show grid/list toggle
+- hide_stock_quantity (boolean) - Hide stock numbers
+- hide_currency_category (boolean) - Hide currency on category
+- hide_currency_product (boolean) - Hide currency on product
+- hide_quantity_selector (boolean) - Hide qty selector
+- hide_header_cart (boolean) - Hide cart icon
+- show_permanent_search (boolean) - Always show search
+- show_category_in_breadcrumb (boolean) - Category in breadcrumbs
+- show_language_selector (boolean) - Language picker
+- allow_guest_checkout (boolean) - Guest checkout
+- enable_product_filters (boolean) - Show filters
+- collapse_filters (boolean) - Filters collapsed
+- enable_view_mode_toggle (boolean) - Grid/list toggle
 - default_view_mode (string) - "grid" or "list"
-
-PRODUCT GALLERY SETTINGS:
 - product_gallery_layout (string) - "horizontal" or "vertical"
-- vertical_gallery_position (string) - "left" or "right"
-- mobile_gallery_layout (string) - "below" or "slider"
 
-COMMAND MAPPING (use these exact paths):
+COMMAND → PATH MAPPING:
 "hide stock label" → stock_settings.show_stock_label = false
 "show stock label" → stock_settings.show_stock_label = true
+"change stock label color" → stock_settings.in_stock_text_color = "#hexcolor"
 "hide currency" → hide_currency_product = true
 "hide quantity selector" → hide_quantity_selector = true
-"enable guest checkout" → allow_guest_checkout = true
-"show filters" → enable_product_filters = true',
-'settings', '["settings", "toggles", "features", "hide", "show"]', 98, 'all', true),
+"change breadcrumb color" → theme.breadcrumb_item_text_color = "#hexcolor"
+"change add to cart color" → theme.add_to_cart_button_color = "#hexcolor"',
+'settings', '["settings", "toggles", "features", "hide", "show", "paths"]', 98, 'all', true),
 
 ('settings', 'Theme and Layout Settings',
 'THEME SETTINGS (stores.settings.theme JSONB):
