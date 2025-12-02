@@ -1,7 +1,121 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/authMiddleware');
+
+// Helper function to load page configuration from frontend config files
+async function loadPageConfig(pageType) {
+  try {
+    const configsDir = path.resolve(__dirname, '../../../src/components/editor/slot/configs');
+    let configPath, configExport;
+
+    switch (pageType) {
+      case 'cart':
+        configPath = path.join(configsDir, 'cart-config.js');
+        configExport = 'cartConfig';
+        break;
+      case 'category':
+        configPath = path.join(configsDir, 'category-config.js');
+        configExport = 'categoryConfig';
+        break;
+      case 'product':
+        configPath = path.join(configsDir, 'product-config.js');
+        configExport = 'productConfig';
+        break;
+      case 'checkout':
+        configPath = path.join(configsDir, 'checkout-config.js');
+        configExport = 'checkoutConfig';
+        break;
+      case 'success':
+        configPath = path.join(configsDir, 'success-config.js');
+        configExport = 'successConfig';
+        break;
+      case 'homepage':
+        configPath = path.join(configsDir, 'homepage-config.js');
+        configExport = 'homepageConfig';
+        break;
+      case 'header':
+        configPath = path.join(configsDir, 'header-config.js');
+        configExport = 'headerConfig';
+        break;
+      case 'account':
+        configPath = path.join(configsDir, 'account-config.js');
+        configExport = 'accountConfig';
+        break;
+      case 'login':
+        configPath = path.join(configsDir, 'login-config.js');
+        configExport = 'loginConfig';
+        break;
+      default:
+        console.warn(`Unknown page type '${pageType}', falling back to minimal config`);
+        return null;
+    }
+
+    const configModule = await import(configPath);
+    const config = configModule[configExport];
+
+    if (!config) {
+      console.warn(`Config export '${configExport}' not found in ${configPath}`);
+      return null;
+    }
+
+    return config;
+  } catch (error) {
+    console.error(`Failed to load ${pageType}-config.js:`, error);
+    return null;
+  }
+}
+
+// Helper function to build root slots from slot configuration
+function buildRootSlots(slots) {
+  if (!slots) return [];
+  return Object.entries(slots)
+    .filter(([_, slot]) => !slot.parentId || slot.parentId === null)
+    .map(([slotId]) => slotId);
+}
+
+// Helper function to ensure configuration has slotDefinitions populated
+async function ensureFullConfiguration(configuration, pageType) {
+  // Check if slotDefinitions is missing or empty
+  const hasSlotDefinitions = configuration?.slotDefinitions &&
+    Object.keys(configuration.slotDefinitions).length > 0;
+
+  // Check if slots is missing or empty
+  const hasSlots = configuration?.slots &&
+    Object.keys(configuration.slots).length > 0;
+
+  // If we have everything, return as-is
+  if (hasSlotDefinitions && hasSlots) {
+    return configuration;
+  }
+
+  // Load full config from config file
+  const pageConfig = await loadPageConfig(pageType);
+  if (!pageConfig) {
+    return configuration; // Return original if we can't load config
+  }
+
+  console.log(`📦 Populating full configuration for ${pageType} from config file`);
+
+  // Merge with existing configuration, preferring existing values where they exist
+  const fullConfiguration = {
+    page_name: configuration?.page_name || pageConfig.page_name || pageType.charAt(0).toUpperCase() + pageType.slice(1),
+    slot_type: configuration?.slot_type || pageConfig.slot_type || `${pageType}_layout`,
+    slots: hasSlots ? configuration.slots : (pageConfig.slots || {}),
+    rootSlots: configuration?.rootSlots?.length ? configuration.rootSlots : buildRootSlots(pageConfig.slots),
+    slotDefinitions: hasSlotDefinitions ? configuration.slotDefinitions : (pageConfig.slotDefinitions || {}),
+    metadata: {
+      ...(configuration?.metadata || {}),
+      created: configuration?.metadata?.created || new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+      source: `${pageType}-config.js`,
+      pageType: pageType
+    }
+  };
+
+  return fullConfiguration;
+}
 
 // Public endpoint to get active slot configurations for storefront
 router.get('/public', async (req, res) => {
@@ -140,10 +254,34 @@ router.post('/draft/:storeId/:pageType', authMiddleware, async (req, res) => {
       .eq('is_active', false)
       .maybeSingle();
 
-    // If draft exists for the same page type, return it
+    // If draft exists for the same page type, check if it needs full configuration
     if (existing && !findError) {
       const existingPageType = existing.configuration?.metadata?.pageType;
       if (existingPageType === pageType) {
+        // Ensure full configuration (populate slotDefinitions if null)
+        const fullConfiguration = await ensureFullConfiguration(existing.configuration, pageType);
+
+        // If configuration was updated, save it to database
+        if (fullConfiguration !== existing.configuration) {
+          console.log('📦 Updating existing draft with full configuration for:', pageType);
+          const { data: updated, error: updateError } = await tenantDb
+            .from('slot_configurations')
+            .update({
+              configuration: fullConfiguration,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existing.id)
+            .select()
+            .single();
+
+          if (updateError) {
+            throw updateError;
+          }
+
+          console.log('✅ Returning updated draft with full configuration for user/store/page:', req.user.id, storeId, pageType);
+          return res.json({ success: true, data: updated });
+        }
+
         console.log('✅ Returning existing draft slot configuration for user/store/page:', req.user.id, storeId, pageType);
         return res.json({ success: true, data: existing });
       }
@@ -173,15 +311,20 @@ router.post('/draft/:storeId/:pageType', authMiddleware, async (req, res) => {
       return res.json({ success: true, data: existing });
     }
 
-    // Create new draft configuration with static defaults or empty slots
-    const newConfig = staticConfiguration || {
-      slots: {},
-      metadata: {
-        pageType: pageType,
-        created: new Date().toISOString(),
-        lastModified: new Date().toISOString()
-      }
-    };
+    // Create new draft configuration with full config from file
+    let newConfig;
+    if (staticConfiguration) {
+      newConfig = staticConfiguration;
+    } else {
+      // Load full configuration from config file
+      newConfig = await ensureFullConfiguration({
+        metadata: {
+          pageType: pageType,
+          created: new Date().toISOString(),
+          lastModified: new Date().toISOString()
+        }
+      }, pageType);
+    }
 
     console.log('➕ Creating new draft slot configuration for user/store/page:', req.user.id, storeId, pageType);
 
