@@ -789,6 +789,27 @@ CREATE TABLE IF NOT EXISTS admin_navigation_registry (
   type VARCHAR(50) DEFAULT 'standard'::character varying
 );
 
+CREATE TABLE IF NOT EXISTS ai_chat_sessions (
+                                                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    session_id VARCHAR(255),
+    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
+    content TEXT NOT NULL,
+    intent VARCHAR(50),
+    data JSONB DEFAULT '{}',
+    credits_used INTEGER DEFAULT 0,
+    is_error BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+
+CREATE TABLE IF NOT EXISTS ai_input_history (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    input TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
@@ -2128,10 +2149,6 @@ CREATE TABLE IF NOT EXISTS plugin_cron (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_plugin_cron_plugin_id ON plugin_cron(plugin_id);
-CREATE INDEX IF NOT EXISTS idx_plugin_cron_enabled ON plugin_cron(is_enabled) WHERE is_enabled = true;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_cron_unique_name ON plugin_cron(plugin_id, cron_name);
-
 CREATE TABLE IF NOT EXISTS plugin_marketplace (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
@@ -2913,6 +2930,10 @@ CREATE INDEX IF NOT EXISTS ab_tests_status ON ab_tests USING btree (status);
 
 CREATE INDEX IF NOT EXISTS ab_tests_store_id ON ab_tests USING btree (store_id);
 
+CREATE INDEX idx_ai_chat_sessions_user ON ai_chat_sessions(user_id, created_at DESC);
+
+CREATE INDEX idx_ai_input_history_user ON ai_input_history(user_id, created_at DESC);
+
 CREATE UNIQUE INDEX akeneo_custom_mappings_store_id_mapping_type ON akeneo_custom_mappings USING btree (store_id, mapping_type);
 
 CREATE INDEX IF NOT EXISTS akeneo_schedules_is_active ON akeneo_schedules USING btree (is_active);
@@ -3314,6 +3335,10 @@ CREATE INDEX IF NOT EXISTS idx_plugin_controllers_enabled ON plugin_controllers 
 CREATE INDEX IF NOT EXISTS idx_plugin_controllers_method_path ON plugin_controllers USING btree (method, path);
 
 CREATE INDEX IF NOT EXISTS idx_plugin_controllers_plugin_id ON plugin_controllers USING btree (plugin_id);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_cron_plugin_id ON plugin_cron(plugin_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_cron_enabled ON plugin_cron(is_enabled) WHERE is_enabled = true;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_cron_unique_name ON plugin_cron(plugin_id, cron_name);
 
 CREATE INDEX IF NOT EXISTS idx_plugin_data_key ON plugin_data USING btree (data_key);
 
