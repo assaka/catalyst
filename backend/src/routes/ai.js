@@ -620,6 +620,15 @@ User request: ${prompt}`,
  * Like Bolt, Lovable, v0 - user chats naturally
  */
 router.post('/chat', authMiddleware, async (req, res) => {
+  // Normalize position terms (below → after, above → before)
+  const normalizePosition = (pos) => {
+    if (!pos) return 'after';
+    const lower = pos.toLowerCase();
+    if (['below', 'after', 'under', 'beneath', 'bottom'].includes(lower)) return 'after';
+    if (['above', 'before', 'over', 'top', 'up'].includes(lower)) return 'before';
+    return 'after';
+  };
+
   try {
     let { message, conversationHistory, storeId } = req.body;
     const userId = req.user.id;
@@ -793,6 +802,21 @@ router.post('/chat', authMiddleware, async (req, res) => {
           creditsDeducted: 0 // No AI call needed for confirmation
         });
       }
+    }
+
+    // Fetch RAG context to enrich AI understanding
+    let ragContext = '';
+    try {
+      ragContext = await aiContextService.getContextForQuery({
+        mode: 'all',
+        category: null,
+        query: message,
+        storeId: resolvedStoreId,
+        limit: 5
+      });
+      console.log('[AI Chat] RAG context loaded:', ragContext ? 'yes' : 'no', ragContext?.length || 0, 'chars');
+    } catch (err) {
+      console.error('[AI Chat] Failed to load RAG context:', err);
     }
 
     // Determine intent from conversation
@@ -1048,6 +1072,28 @@ Which slot matches? Reply with JUST the slot ID, nothing else. If no match, repl
           .map(s => getFriendlyName(s));
       };
 
+      // Generate slot grid visualization for AI understanding
+      const generateSlotGridMap = () => {
+        const containers = {};
+        // Group slots by parent
+        Object.entries(slots).forEach(([id, slot]) => {
+          const parent = slot.parentId || 'root';
+          if (!containers[parent]) containers[parent] = [];
+          containers[parent].push({
+            id,
+            row: slot.position?.row ?? 999,
+            col: slot.position?.col ?? 1,
+            colSpan: typeof slot.colSpan === 'object' ? slot.colSpan.default : slot.colSpan,
+            name: getFriendlyName(id)
+          });
+        });
+        // Sort by row, then col
+        Object.values(containers).forEach(slots => {
+          slots.sort((a, b) => a.row - b.row || a.col - b.col);
+        });
+        return containers;
+      };
+
       // Process each intent
       for (const singleIntent of parsedIntent.intents) {
         console.log('[AI Chat] Processing multi-intent:', singleIntent.intent, singleIntent.details);
@@ -1058,7 +1104,13 @@ Which slot matches? Reply with JUST the slot ID, nothing else. If no match, repl
           if (singleIntent.intent === 'layout_modify') {
             const sourceElement = singleIntent.details?.sourceElement;
             const targetElement = singleIntent.details?.targetElement;
-            const position = singleIntent.details?.position || 'before';
+            const rawPosition = singleIntent.details?.position || 'after';
+            const position = normalizePosition(rawPosition);
+            console.log('[AI Chat Multi] Position normalized:', rawPosition, '->', position);
+
+            // Log grid structure for debugging
+            const gridMap = generateSlotGridMap();
+            console.log('[AI Chat Multi] Current slot grid:', JSON.stringify(gridMap, null, 2));
 
             // Use AI-driven resolution for both elements
             const sourceSlotId = resolveSlotId(sourceElement) || await resolveSlotIdWithAI(sourceElement);
@@ -1727,7 +1779,9 @@ Suggest helpful next steps. Be friendly and actionable.`;
       const action = intent.details?.action || 'move';
       const sourceElement = intent.details?.sourceElement;
       const targetElement = intent.details?.targetElement;
-      const position = intent.details?.position || 'before';
+      const rawPosition = intent.details?.position || 'after';
+      const position = normalizePosition(rawPosition);
+      console.log('[AI Chat] Position normalized:', rawPosition, '->', position);
 
       // Check if we're missing required info for the move
       if (!targetElement && sourceElement) {
