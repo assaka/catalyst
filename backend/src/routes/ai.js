@@ -838,6 +838,7 @@ INTENTS:
 - job_trigger: Triggering background tasks (e.g., "import from akeneo", "run sync", "start export")
 - settings_update: Theme/appearance/catalog settings (e.g., "change breadcrumb color", "hide stock label", "enable inventory tracking")
 - admin_entity: Store entity CRUD (e.g., "rename tab", "create coupon", "disable payment method")
+- category_management: Adding/removing products to/from categories (e.g., "add all products to snowboard category", "remove product from category", "assign products to category")
 - plugin: Creating new features
 - translation: Language translations
 - chat: Questions or general help
@@ -854,6 +855,11 @@ For analytics_query, extract:
 For job_trigger, extract:
 - job_type: "akeneo:import:products", "shopify:import:products", "export:products", etc.
 - priority: "normal", "high", "urgent"
+
+For category_management, extract:
+- operation: "add" or "remove"
+- category_name: The target category name (e.g., "snowboard", "accessories")
+- product_filter: "all" or specific product criteria (e.g., "product X", "products with tag Y")
 
 For settings_update, extract:
 - setting_path: The setting key. Can be:
@@ -3629,6 +3635,160 @@ If showing products/customers, include names and key metrics.`;
           success: true,
           message: `I couldn't update that setting: ${settingsError.message}. Please try again.`,
           data: { type: 'settings_error', error: settingsError.message },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+    } else if (intent.intent === 'category_management') {
+      // Handle adding/removing products to/from categories
+      console.log('[AI Chat] Entering category_management handler');
+      console.log('[AI Chat] Category management details:', JSON.stringify(intent.details));
+      const ConnectionManager = require('../services/database/ConnectionManager');
+
+      if (!resolvedStoreId) {
+        return res.status(400).json({
+          success: false,
+          message: 'store_id is required for category management'
+        });
+      }
+
+      const operation = intent.details?.operation || 'add';
+      const categoryName = intent.details?.category_name;
+      const productFilter = intent.details?.product_filter || 'all';
+
+      if (!categoryName) {
+        return res.json({
+          success: true,
+          message: "I need to know which category you want to work with. Please specify the category name, e.g., 'add all products to Snowboards category'.",
+          data: { type: 'category_clarification' },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
+
+        // Find the category by name (case-insensitive search)
+        const categories = await tenantDb('categories')
+          .whereRaw('LOWER(name) LIKE ?', [`%${categoryName.toLowerCase()}%`])
+          .select('id', 'name');
+
+        if (categories.length === 0) {
+          return res.json({
+            success: true,
+            message: `I couldn't find a category matching "${categoryName}". Please check the category name and try again.`,
+            data: { type: 'category_not_found' },
+            creditsDeducted: creditsUsed
+          });
+        }
+
+        if (categories.length > 1) {
+          const categoryList = categories.map(c => c.name).join(', ');
+          return res.json({
+            success: true,
+            message: `Found multiple categories matching "${categoryName}": ${categoryList}. Please be more specific.`,
+            data: { type: 'category_ambiguous', categories: categories },
+            creditsDeducted: creditsUsed
+          });
+        }
+
+        const targetCategory = categories[0];
+
+        // Get products to assign
+        let productsQuery = tenantDb('products').select('id', 'name', 'sku');
+
+        // Apply product filter if not "all"
+        if (productFilter !== 'all') {
+          productsQuery = productsQuery.whereRaw('LOWER(name) LIKE ? OR LOWER(sku) LIKE ?',
+            [`%${productFilter.toLowerCase()}%`, `%${productFilter.toLowerCase()}%`]);
+        }
+
+        const products = await productsQuery;
+
+        if (products.length === 0) {
+          return res.json({
+            success: true,
+            message: productFilter === 'all'
+              ? "There are no products in your store to assign."
+              : `I couldn't find any products matching "${productFilter}".`,
+            data: { type: 'no_products_found' },
+            creditsDeducted: creditsUsed
+          });
+        }
+
+        let assignedCount = 0;
+        let alreadyAssignedCount = 0;
+        let removedCount = 0;
+
+        if (operation === 'add') {
+          // Add products to category
+          for (const product of products) {
+            // Check if already assigned
+            const existing = await tenantDb('product_categories')
+              .where({ product_id: product.id, category_id: targetCategory.id })
+              .first();
+
+            if (!existing) {
+              await tenantDb('product_categories').insert({
+                product_id: product.id,
+                category_id: targetCategory.id,
+                created_at: new Date().toISOString()
+              });
+              assignedCount++;
+            } else {
+              alreadyAssignedCount++;
+            }
+          }
+
+          const message = assignedCount > 0
+            ? `Done! I've added ${assignedCount} product(s) to the "${targetCategory.name}" category.${alreadyAssignedCount > 0 ? ` (${alreadyAssignedCount} were already in this category)` : ''}`
+            : `All ${alreadyAssignedCount} product(s) were already in the "${targetCategory.name}" category.`;
+
+          res.json({
+            success: true,
+            message: message,
+            data: {
+              type: 'category_products_added',
+              category: targetCategory,
+              assigned_count: assignedCount,
+              already_assigned_count: alreadyAssignedCount,
+              total_products: products.length
+            },
+            creditsDeducted: creditsUsed
+          });
+          return;
+
+        } else if (operation === 'remove') {
+          // Remove products from category
+          for (const product of products) {
+            const deleted = await tenantDb('product_categories')
+              .where({ product_id: product.id, category_id: targetCategory.id })
+              .delete();
+            if (deleted) removedCount++;
+          }
+
+          res.json({
+            success: true,
+            message: removedCount > 0
+              ? `Done! I've removed ${removedCount} product(s) from the "${targetCategory.name}" category.`
+              : `None of the selected products were in the "${targetCategory.name}" category.`,
+            data: {
+              type: 'category_products_removed',
+              category: targetCategory,
+              removed_count: removedCount,
+              total_products: products.length
+            },
+            creditsDeducted: creditsUsed
+          });
+          return;
+        }
+
+      } catch (categoryError) {
+        console.error('[AI Chat] Category management error:', categoryError);
+        return res.json({
+          success: true,
+          message: `I couldn't complete the category operation: ${categoryError.message}. Please try again.`,
+          data: { type: 'category_error', error: categoryError.message },
           creditsDeducted: creditsUsed
         });
       }
