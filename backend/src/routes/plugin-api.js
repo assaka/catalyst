@@ -2129,7 +2129,7 @@ router.post('/:pluginId/cron', async (req, res) => {
       success: true,
       message: 'Cron job created successfully',
       cronJob: data,
-      centralCronJobId: centralCronJob?.id
+      cronJobId: cronJobId
     });
   } catch (error) {
     console.error('Failed to create plugin cron job:', error);
