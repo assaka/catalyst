@@ -937,57 +937,244 @@ Return ONLY valid JSON.`;
 
       const results = [];
       let totalCredits = intentResult.creditsDeducted;
+      const ConnectionManager = require('../services/database/ConnectionManager');
 
-      // Process each intent by making recursive-like calls to intent handlers
+      if (!resolvedStoreId) {
+        return res.status(400).json({
+          success: false,
+          message: 'store_id is required for multi-intent operations'
+        });
+      }
+
+      const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
+
+      // Get the page type (use first intent that specifies it, default to 'product')
+      const pageType = parsedIntent.intents.find(i => i.details?.pageType)?.details?.pageType || 'product';
+
+      // Fetch current slot configuration once for all operations
+      let { data: slotConfig, error: fetchError } = await tenantDb
+        .from('slot_configurations')
+        .select('*')
+        .eq('store_id', resolvedStoreId)
+        .eq('page_type', pageType)
+        .eq('status', 'draft')
+        .order('version_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!slotConfig && !fetchError) {
+        const { data: publishedConfig } = await tenantDb
+          .from('slot_configurations')
+          .select('*')
+          .eq('store_id', resolvedStoreId)
+          .eq('page_type', pageType)
+          .eq('status', 'published')
+          .order('version_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        slotConfig = publishedConfig;
+      }
+
+      if (!slotConfig) {
+        return res.json({
+          success: true,
+          message: `I couldn't find a layout configuration for the ${pageType} page. Please save a layout in the Editor first.`,
+          data: { type: 'multi_intent_error', reason: 'no_config_found' },
+          creditsDeducted: totalCredits
+        });
+      }
+
+      // Work with a copy of the configuration
+      let workingConfig = JSON.parse(JSON.stringify(slotConfig.configuration || {}));
+      let slots = workingConfig.slots || {};
+
+      // Build slot name map for resolution
+      const slotNameMap = {};
+      Object.entries(slots).forEach(([id, slot]) => {
+        slotNameMap[id.toLowerCase()] = id;
+        slotNameMap[id.toLowerCase().replace(/_/g, ' ')] = id;
+        if (slot.metadata?.displayName) {
+          slotNameMap[slot.metadata.displayName.toLowerCase()] = id;
+        }
+      });
+      // Add common aliases
+      const commonAliases = {
+        'sku': 'product_sku', 'price': 'price_container', 'title': 'product_title',
+        'description': 'product_short_description', 'stock': 'stock_status',
+        'gallery': 'product_gallery_container', 'add to cart': 'add_to_cart_button',
+        'cart button': 'add_to_cart_button', 'wishlist': 'wishlist_button'
+      };
+      Object.entries(commonAliases).forEach(([alias, slotId]) => {
+        slotNameMap[alias] = slotId;
+      });
+
+      const resolveSlotId = (name) => {
+        if (!name) return null;
+        const lower = name.toLowerCase().trim();
+        if (slots[lower]) return lower;
+        if (slots[name]) return name;
+        if (slotNameMap[lower]) return slotNameMap[lower];
+        return null;
+      };
+
+      // Process each intent
       for (const singleIntent of parsedIntent.intents) {
-        console.log('[AI Chat] Processing sub-intent:', singleIntent.intent);
-
-        // Create a mock response collector
+        console.log('[AI Chat] Processing multi-intent:', singleIntent.intent, singleIntent.details);
         let subResult = { success: false, message: '', data: null };
 
         try {
-          // For layout_modify intents
+          // Handle layout_modify intent
           if (singleIntent.intent === 'layout_modify') {
-            subResult = {
-              success: true,
-              message: `Layout change: ${singleIntent.details?.action || 'modify'} ${singleIntent.details?.sourceElement || 'element'}`,
-              data: { type: 'layout_modify', details: singleIntent.details }
-            };
+            const sourceElement = singleIntent.details?.sourceElement;
+            const targetElement = singleIntent.details?.targetElement;
+            const position = singleIntent.details?.position || 'before';
+
+            const sourceSlotId = resolveSlotId(sourceElement);
+            const targetSlotId = resolveSlotId(targetElement);
+
+            if (sourceSlotId && targetSlotId && slots[sourceSlotId] && slots[targetSlotId]) {
+              const sourceSlot = slots[sourceSlotId];
+              const targetSlot = slots[targetSlotId];
+
+              if (sourceSlot.parentId === targetSlot.parentId) {
+                // Get siblings and reorder
+                const parentId = sourceSlot.parentId;
+                const siblingSlots = Object.entries(slots)
+                  .filter(([id, slot]) => slot.parentId === parentId)
+                  .sort((a, b) => (a[1].position?.row ?? 999) - (b[1].position?.row ?? 999));
+
+                const currentOrder = siblingSlots.map(([id]) => id);
+                const sourceIndex = currentOrder.indexOf(sourceSlotId);
+                const targetIndex = currentOrder.indexOf(targetSlotId);
+
+                if (sourceIndex !== -1 && targetIndex !== -1) {
+                  currentOrder.splice(sourceIndex, 1);
+                  let newTargetIndex = currentOrder.indexOf(targetSlotId);
+                  if (position === 'after') newTargetIndex += 1;
+                  currentOrder.splice(newTargetIndex, 0, sourceSlotId);
+
+                  // Update row positions
+                  currentOrder.forEach((slotId, index) => {
+                    if (slots[slotId] && slots[slotId].position) {
+                      slots[slotId].position.row = index + 1;
+                    }
+                  });
+
+                  subResult = {
+                    success: true,
+                    message: `Moved ${sourceElement} ${position} ${targetElement}`,
+                    data: { type: 'layout_modify', action: 'move', source: sourceSlotId, target: targetSlotId }
+                  };
+                }
+              } else {
+                subResult = { success: false, message: `Cannot move ${sourceElement} - different containers`, data: null };
+              }
+            } else {
+              subResult = { success: false, message: `Could not find ${sourceElement} or ${targetElement}`, data: null };
+            }
           }
-          // For styling intents
+          // Handle styling intent
           else if (singleIntent.intent === 'styling') {
-            subResult = {
-              success: true,
-              message: `Style change: ${singleIntent.details?.property || 'property'} = ${singleIntent.details?.value || 'value'}`,
-              data: { type: 'styling', details: singleIntent.details }
-            };
+            const element = singleIntent.details?.element;
+            const property = singleIntent.details?.property;
+            const value = singleIntent.details?.value;
+
+            const targetSlotId = resolveSlotId(element);
+
+            if (targetSlotId && slots[targetSlotId]) {
+              const slot = slots[targetSlotId];
+              const propLower = property?.toLowerCase() || '';
+
+              // Initialize styles if needed
+              if (!slot.styles) slot.styles = {};
+
+              // Handle common properties
+              if (propLower.includes('color') && !propLower.includes('background')) {
+                // Text color - add to className or styles
+                const colorValue = value?.toLowerCase().replace(/\s+/g, '');
+                if (colorValue) {
+                  // Try to convert color name to hex or use Tailwind class
+                  const tailwindColors = {
+                    'red': 'text-red-500', 'blue': 'text-blue-500', 'green': 'text-green-500',
+                    'orange': 'text-orange-500', 'yellow': 'text-yellow-500', 'purple': 'text-purple-500',
+                    'pink': 'text-pink-500', 'gray': 'text-gray-500', 'black': 'text-black', 'white': 'text-white'
+                  };
+                  const tailwindClass = tailwindColors[colorValue];
+                  if (tailwindClass) {
+                    // Remove existing text-*-* classes and add new one
+                    const existingClasses = (slot.className || '').split(' ');
+                    const filteredClasses = existingClasses.filter(c => !c.match(/^text-(red|blue|green|orange|yellow|purple|pink|gray|black|white)(-\d+)?$/));
+                    slot.className = [...filteredClasses, tailwindClass].join(' ').trim();
+                  } else {
+                    slot.styles.color = value;
+                  }
+                  subResult = { success: true, message: `Set ${element} color to ${value}`, data: { type: 'styling', element, property: 'color', value } };
+                }
+              } else if (propLower.includes('background')) {
+                slot.styles.backgroundColor = value;
+                subResult = { success: true, message: `Set ${element} background to ${value}`, data: { type: 'styling', element, property: 'backgroundColor', value } };
+              } else if (propLower.includes('size') || propLower.includes('font')) {
+                slot.styles.fontSize = value;
+                subResult = { success: true, message: `Set ${element} font size to ${value}`, data: { type: 'styling', element, property: 'fontSize', value } };
+              } else {
+                // Generic style property
+                slot.styles[property] = value;
+                subResult = { success: true, message: `Set ${element} ${property} to ${value}`, data: { type: 'styling', element, property, value } };
+              }
+            } else {
+              subResult = { success: false, message: `Could not find element ${element}`, data: null };
+            }
           }
-          // For other intents, note them
+          // Other intents - note for user
           else {
-            subResult = {
-              success: true,
-              message: `Queued: ${singleIntent.intent}`,
-              data: { type: singleIntent.intent }
-            };
+            subResult = { success: false, message: `Intent '${singleIntent.intent}' not yet supported in multi-action mode`, data: null };
           }
 
           results.push(subResult);
         } catch (err) {
           console.error('[AI Chat] Error processing sub-intent:', err);
-          results.push({ success: false, message: `Failed: ${singleIntent.intent}`, error: err.message });
+          results.push({ success: false, message: `Failed: ${singleIntent.intent} - ${err.message}`, error: err.message });
         }
       }
 
-      // For now, return a summary - full implementation will process each properly
-      const summaryMessages = results.map((r, i) => `${i + 1}. ${r.message}`).join('\n');
+      // Update configuration with all changes
+      workingConfig.slots = slots;
+      workingConfig.metadata = {
+        ...workingConfig.metadata,
+        lastModified: new Date().toISOString(),
+        lastModifiedBy: 'AI Assistant (multi-intent)',
+        lastChanges: results.filter(r => r.success).map(r => r.message)
+      };
+
+      // Save the updated configuration
+      const { error: updateError } = await tenantDb
+        .from('slot_configurations')
+        .update({
+          configuration: workingConfig,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', slotConfig.id);
+
+      if (updateError) {
+        console.error('[AI Chat] Failed to save multi-intent changes:', updateError);
+      }
+
+      // Build summary response
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.filter(r => !r.success).length;
+      const summaryMessages = results.map((r, i) => `${i + 1}. ${r.success ? '✓' : '✗'} ${r.message}`).join('\n');
 
       return res.json({
-        success: true,
-        message: `I detected ${parsedIntent.intents.length} actions in your request:\n\n${summaryMessages}\n\nNote: Multiple actions in one message is a new feature. For now, please send each action separately for full execution.`,
+        success: successCount > 0,
+        message: successCount === results.length
+          ? `Done! I made ${successCount} change(s):\n\n${summaryMessages}\n\nRefresh the preview to see your updates.`
+          : `Completed ${successCount} of ${results.length} changes:\n\n${summaryMessages}`,
         data: {
           type: 'multi_intent',
           intents: parsedIntent.intents,
-          results: results
+          results: results,
+          successCount,
+          failCount
         },
         creditsDeducted: totalCredits
       });
@@ -1368,11 +1555,111 @@ Suggest helpful next steps. Be friendly and actionable.`;
 
       // Parse the configuration
       const configuration = slotConfig.configuration || {};
-      const slots = configuration.slots || {};
+      let slots = configuration.slots || {};
       const slotOrder = configuration.slotOrder || Object.keys(slots);
 
+      console.log('[AI Chat] Config structure:', {
+        hasConfiguration: !!slotConfig.configuration,
+        hasSlots: !!configuration.slots,
+        slotCount: Object.keys(slots).length,
+        topLevelKeys: Object.keys(configuration).slice(0, 10)
+      });
       console.log('[AI Chat] Available slots:', Object.keys(slots));
       console.log('[AI Chat] Current slot order:', slotOrder);
+
+      // Check if slots object is empty - try to auto-recover by loading default slots
+      if (Object.keys(slots).length === 0) {
+        console.log('[AI Chat] Empty slots object in database configuration, attempting auto-recovery...');
+        console.log('[AI Chat] Full configuration (first 500 chars):', JSON.stringify(slotConfig.configuration).substring(0, 500));
+
+        // Try to load default slots from the config file
+        try {
+          const path = require('path');
+          const configsDir = path.resolve(__dirname, '../../../src/components/editor/slot/configs');
+          let configPath, configExport;
+
+          switch (pageType) {
+            case 'product':
+              configPath = path.join(configsDir, 'product-config.js');
+              configExport = 'productConfig';
+              break;
+            case 'category':
+              configPath = path.join(configsDir, 'category-config.js');
+              configExport = 'categoryConfig';
+              break;
+            case 'cart':
+              configPath = path.join(configsDir, 'cart-config.js');
+              configExport = 'cartConfig';
+              break;
+            case 'checkout':
+              configPath = path.join(configsDir, 'checkout-config.js');
+              configExport = 'checkoutConfig';
+              break;
+            case 'success':
+              configPath = path.join(configsDir, 'success-config.js');
+              configExport = 'successConfig';
+              break;
+            case 'header':
+              configPath = path.join(configsDir, 'header-config.js');
+              configExport = 'headerConfig';
+              break;
+            default:
+              configPath = path.join(configsDir, `${pageType}-config.js`);
+              configExport = `${pageType}Config`;
+          }
+
+          const configModule = await import(configPath);
+          const defaultConfig = configModule[configExport];
+
+          if (defaultConfig && defaultConfig.slots && Object.keys(defaultConfig.slots).length > 0) {
+            // Found default slots - use them and update the database
+            console.log(`[AI Chat] Loaded ${Object.keys(defaultConfig.slots).length} default slots from ${pageType}-config.js`);
+            slots = defaultConfig.slots;
+
+            // Update the database configuration with the default slots
+            const updatedConfig = {
+              ...configuration,
+              slots: slots,
+              metadata: {
+                ...configuration.metadata,
+                autoRecoveredSlots: true,
+                recoveredAt: new Date().toISOString()
+              }
+            };
+
+            const { error: updateError } = await tenantDb
+              .from('slot_configurations')
+              .update({
+                configuration: updatedConfig,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', slotConfig.id);
+
+            if (updateError) {
+              console.error('[AI Chat] Failed to update config with recovered slots:', updateError);
+            } else {
+              console.log('[AI Chat] Successfully updated database with recovered slots');
+            }
+          } else {
+            throw new Error('Default config has no slots');
+          }
+        } catch (loadError) {
+          console.error('[AI Chat] Failed to load default slots:', loadError);
+          return res.json({
+            success: true,
+            message: `The ${pageType} page layout exists but has no slot configuration saved. Please open the ${pageType} page in the Editor, make a change (even a small one), and save it. Then I can help you modify the layout.`,
+            data: {
+              type: 'layout_error',
+              reason: 'empty_slots',
+              configId: slotConfig.id,
+              pageType: pageType,
+              configStatus: slotConfig.status,
+              hint: 'The slot configuration may need to be re-saved from the Editor to populate the slots object.'
+            },
+            creditsDeducted: creditsUsed
+          });
+        }
+      }
 
       // Build hierarchical slot info for better AI understanding
       const slotsByParent = {};
