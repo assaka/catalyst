@@ -849,8 +849,11 @@ For layout_modify, extract:
 - position: "before" (above) or "after" (below)
 
 For analytics_query, extract:
-- query_type: "best_selling", "revenue", "orders", "customers", "inventory"
-- filters: { period: "today/week/month/year", limit: number }
+- query_type: "best_selling", "revenue", "orders", "customers", "inventory", "out_of_stock", "low_stock", "products_by_attribute_set"
+- filters: { period: "today/week/month/year", limit: number, attribute_set: "set name" }
+Examples:
+- "show out of stock products" → query_type: "out_of_stock"
+- "get products with attribute set Snowboards" → query_type: "products_by_attribute_set", filters: { attribute_set: "Snowboards" }
 
 For job_trigger, extract:
 - job_type: "akeneo:import:products", "shopify:import:products", "export:products", etc.
@@ -859,7 +862,8 @@ For job_trigger, extract:
 For category_management, extract:
 - operation: "add" or "remove"
 - category_name: The target category name (e.g., "snowboard", "accessories")
-- product_filter: "all" or specific product criteria (e.g., "product X", "products with tag Y")
+- product_filter: "all", "out_of_stock", or specific product name/SKU
+- attribute_set: (optional) Filter by attribute set name (e.g., "add products with attribute set Snowboards to category")
 
 For settings_update, extract:
 - setting_path: The setting key. Can be:
@@ -3364,6 +3368,95 @@ Confirm in 1 sentence. MUST mention the specific changes. Keep it casual. No "Gr
             queryDescription = `Top ${limit} customers by spending`;
             break;
 
+          case 'out_of_stock':
+            // Get only out of stock products
+            const outOfStockProducts = await tenantDb('products')
+              .select('id', 'sku', 'stock_quantity')
+              .where('stock_quantity', '<=', 0)
+              .where('status', 'active')
+              .limit(filters.limit || 50);
+
+            // Get names
+            if (outOfStockProducts.length > 0) {
+              const oosIds = outOfStockProducts.map(p => p.id);
+              const oosNames = await tenantDb('product_translations')
+                .select('product_id', 'name')
+                .whereIn('product_id', oosIds)
+                .where('locale', 'en');
+              const oosNameMap = {};
+              oosNames.forEach(t => { oosNameMap[t.product_id] = t.name; });
+              outOfStockProducts.forEach(p => { p.name = oosNameMap[p.id] || 'Unnamed'; });
+            }
+
+            queryResult = {
+              products: outOfStockProducts,
+              count: outOfStockProducts.length
+            };
+            queryDescription = 'Out of stock products';
+            break;
+
+          case 'low_stock':
+            // Get only low stock products (not out of stock)
+            const lowStockProducts = await tenantDb('products')
+              .select('id', 'sku', 'stock_quantity', 'low_stock_threshold')
+              .where('stock_quantity', '>', 0)
+              .whereRaw('stock_quantity <= COALESCE(low_stock_threshold, 5)')
+              .where('status', 'active')
+              .limit(filters.limit || 50);
+
+            if (lowStockProducts.length > 0) {
+              const lsIds = lowStockProducts.map(p => p.id);
+              const lsNames = await tenantDb('product_translations')
+                .select('product_id', 'name')
+                .whereIn('product_id', lsIds)
+                .where('locale', 'en');
+              const lsNameMap = {};
+              lsNames.forEach(t => { lsNameMap[t.product_id] = t.name; });
+              lowStockProducts.forEach(p => { p.name = lsNameMap[p.id] || 'Unnamed'; });
+            }
+
+            queryResult = {
+              products: lowStockProducts,
+              count: lowStockProducts.length
+            };
+            queryDescription = 'Low stock products';
+            break;
+
+          case 'products_by_attribute_set':
+            // Get products by attribute set
+            const attrSetName = filters.attribute_set;
+            if (!attrSetName) {
+              queryResult = { error: 'Please specify an attribute set name' };
+              queryDescription = 'Missing attribute set';
+              break;
+            }
+
+            const attrSetProducts = await tenantDb('products')
+              .select('products.id', 'products.sku', 'products.stock_quantity', 'attribute_sets.name as attribute_set_name')
+              .join('attribute_sets', 'products.attribute_set_id', 'attribute_sets.id')
+              .whereRaw('LOWER(attribute_sets.name) LIKE ?', [`%${attrSetName.toLowerCase()}%`])
+              .where('products.status', 'active')
+              .limit(filters.limit || 100);
+
+            if (attrSetProducts.length > 0) {
+              const asIds = attrSetProducts.map(p => p.id);
+              const asNames = await tenantDb('product_translations')
+                .select('product_id', 'name')
+                .whereIn('product_id', asIds)
+                .where('locale', 'en');
+              const asNameMap = {};
+              asNames.forEach(t => { asNameMap[t.product_id] = t.name; });
+              attrSetProducts.forEach(p => { p.name = asNameMap[p.id] || 'Unnamed'; });
+            }
+
+            queryResult = {
+              products: attrSetProducts,
+              count: attrSetProducts.length,
+              attribute_set: attrSetName
+            };
+            queryDescription = `Products with attribute set "${attrSetName}"`;
+            break;
+
           case 'inventory':
             // Get low stock and out of stock products
             const { data: lowStock } = await tenantDb
@@ -3695,11 +3788,23 @@ If showing products/customers, include names and key metrics.`;
         const targetCategory = categories[0];
 
         // Get products to assign
-        let productsQuery = tenantDb('products').select('id', 'name', 'sku');
+        let productsQuery = tenantDb('products').select('products.id', 'products.sku');
+
+        // Apply attribute set filter if provided
+        const attributeSetFilter = intent.details?.attribute_set;
+        if (attributeSetFilter) {
+          // Join with attribute_sets table
+          productsQuery = productsQuery
+            .join('attribute_sets', 'products.attribute_set_id', 'attribute_sets.id')
+            .whereRaw('LOWER(attribute_sets.name) LIKE ?', [`%${attributeSetFilter.toLowerCase()}%`]);
+          console.log('[AI Chat] Filtering by attribute set:', attributeSetFilter);
+        }
 
         // Apply product filter if not "all"
-        if (productFilter !== 'all') {
-          productsQuery = productsQuery.whereRaw('LOWER(name) LIKE ? OR LOWER(sku) LIKE ?',
+        if (productFilter === 'out_of_stock') {
+          productsQuery = productsQuery.where('products.stock_quantity', '<=', 0);
+        } else if (productFilter !== 'all') {
+          productsQuery = productsQuery.whereRaw('LOWER(products.name) LIKE ? OR LOWER(products.sku) LIKE ?',
             [`%${productFilter.toLowerCase()}%`, `%${productFilter.toLowerCase()}%`]);
         }
 
