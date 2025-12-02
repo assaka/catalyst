@@ -22,11 +22,15 @@ const { createClient } = require('@supabase/supabase-js');
 // MASTER DATABASE CONNECTION (PostgreSQL/Supabase)
 // ============================================
 
-// Use MASTER_DB_URL if available, otherwise fall back to individual components
-const masterDbUrl = process.env.MASTER_DB_URL;
+// Use MASTER_DB_URL if available, otherwise fall back to DATABASE_URL or SUPABASE_DB_URL
+const masterDbUrl = process.env.MASTER_DB_URL || process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
 const useMasterDbUrl = !!masterDbUrl;
+const dbUrlSource = process.env.MASTER_DB_URL ? 'MASTER_DB_URL' :
+                    process.env.DATABASE_URL ? 'DATABASE_URL' :
+                    process.env.SUPABASE_DB_URL ? 'SUPABASE_DB_URL' : 'NONE';
 
-console.log('🔧 [MASTER CONNECTION INIT] MASTER_DB_URL loaded:', masterDbUrl ? masterDbUrl.substring(0, 80) + '...' : '❌ NOT SET');
+console.log('🔧 [MASTER CONNECTION INIT] Using DB URL from:', dbUrlSource);
+console.log('🔧 [MASTER CONNECTION INIT] URL loaded:', masterDbUrl ? masterDbUrl.substring(0, 80) + '...' : '❌ NOT SET');
 console.log('🔧 [MASTER CONNECTION INIT] Will use URL-based connection:', useMasterDbUrl);
 
 if (!masterDbUrl) {
@@ -113,12 +117,18 @@ if (useMasterDbUrl) {
 
 let masterDbClient = null;
 
-// First try explicit MASTER_SUPABASE_URL and MASTER_SUPABASE_SERVICE_KEY
-if (process.env.MASTER_SUPABASE_URL && process.env.MASTER_SUPABASE_SERVICE_KEY) {
-  console.log('🔧 [MASTER SUPABASE] Initializing from MASTER_SUPABASE_URL...');
+// Determine Supabase URL and service key (check MASTER_ first, then fall back to regular)
+const supabaseUrl = process.env.MASTER_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.MASTER_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// First try explicit env vars (MASTER_ or regular)
+if (supabaseUrl && supabaseServiceKey) {
+  console.log('🔧 [MASTER SUPABASE] Initializing from env vars...');
+  console.log('   - Using URL:', supabaseUrl.substring(0, 40) + '...');
+  console.log('   - Using key type:', process.env.MASTER_SUPABASE_SERVICE_KEY ? 'MASTER_SUPABASE_SERVICE_KEY' : 'SUPABASE_SERVICE_ROLE_KEY');
   masterDbClient = createClient(
-    process.env.MASTER_SUPABASE_URL,
-    process.env.MASTER_SUPABASE_SERVICE_KEY,
+    supabaseUrl,
+    supabaseServiceKey,
     {
       auth: {
         autoRefreshToken: false,
@@ -126,7 +136,7 @@ if (process.env.MASTER_SUPABASE_URL && process.env.MASTER_SUPABASE_SERVICE_KEY) 
       }
     }
   );
-  console.log('✅ [MASTER SUPABASE] Client initialized from explicit env vars');
+  console.log('✅ [MASTER SUPABASE] Client initialized successfully');
 }
 // Fallback: Try to parse from MASTER_DB_URL if it's a Supabase URL
 else if (masterDbUrl && masterDbUrl.includes('.supabase.co')) {
