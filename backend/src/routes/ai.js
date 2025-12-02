@@ -934,28 +934,94 @@ Return ONLY valid JSON.`;
       Object.entries(slots).forEach(([id, slot]) => {
         slotNameMap[id.toLowerCase()] = id;
         slotNameMap[id.toLowerCase().replace(/_/g, ' ')] = id;
+        slotNameMap[id.toLowerCase().replace(/_/g, '')] = id;
         if (slot.metadata?.displayName) {
           slotNameMap[slot.metadata.displayName.toLowerCase()] = id;
         }
       });
-      // Add common aliases
-      const commonAliases = {
-        'sku': 'product_sku', 'price': 'price_container', 'title': 'product_title',
-        'description': 'product_short_description', 'stock': 'stock_status',
-        'gallery': 'product_gallery_container', 'add to cart': 'add_to_cart_button',
-        'cart button': 'add_to_cart_button', 'wishlist': 'wishlist_button'
-      };
-      Object.entries(commonAliases).forEach(([alias, slotId]) => {
-        slotNameMap[alias] = slotId;
-      });
 
+      // Levenshtein distance for fuzzy matching
+      const levenshtein = (a, b) => {
+        if (a.length === 0) return b.length;
+        if (b.length === 0) return a.length;
+        const matrix = [];
+        for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+        for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+        for (let i = 1; i <= b.length; i++) {
+          for (let j = 1; j <= a.length; j++) {
+            matrix[i][j] = b.charAt(i - 1) === a.charAt(j - 1)
+              ? matrix[i - 1][j - 1]
+              : Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+          }
+        }
+        return matrix[b.length][a.length];
+      };
+
+      // Smart slot resolution with fuzzy matching
       const resolveSlotId = (name) => {
         if (!name) return null;
-        const lower = name.toLowerCase().trim();
-        if (slots[lower]) return lower;
+        const lower = name.toLowerCase().trim().replace(/_/g, ' ');
+        const lowerNoSpace = lower.replace(/\s+/g, '');
+
+        // 1. Direct match
         if (slots[name]) return name;
+        if (slots[lower]) return lower;
         if (slotNameMap[lower]) return slotNameMap[lower];
+
+        // 2. Partial/contains match - "stock label" should find "stock_status"
+        for (const [key, slotId] of Object.entries(slotNameMap)) {
+          const keyWords = key.split(/[\s_]+/);
+          const searchWords = lower.split(/[\s_]+/);
+          // Check if main word matches
+          if (keyWords.some(kw => searchWords.some(sw => kw.includes(sw) || sw.includes(kw)))) {
+            if (slots[slotId]) return slotId;
+          }
+        }
+
+        // 3. Fuzzy match - find closest match
+        let bestMatch = null;
+        let bestScore = Infinity;
+        for (const [key, slotId] of Object.entries(slotNameMap)) {
+          if (!slots[slotId]) continue;
+          const distance = levenshtein(lowerNoSpace, key.replace(/[\s_]+/g, ''));
+          const maxLen = Math.max(lowerNoSpace.length, key.length);
+          const similarity = 1 - (distance / maxLen);
+          if (similarity > 0.5 && distance < bestScore) {
+            bestScore = distance;
+            bestMatch = slotId;
+          }
+        }
+        if (bestMatch) return bestMatch;
+
         return null;
+      };
+
+      // Get friendly name for slot
+      const getFriendlyName = (slotId) => {
+        const slot = slots[slotId];
+        return slot?.metadata?.displayName || slotId.replace(/_/g, ' ');
+      };
+
+      // Find suggestions for unmatched element
+      const getSuggestions = (name) => {
+        if (!name) return [];
+        const lower = name.toLowerCase().replace(/[\s_]+/g, '');
+        const suggestions = [];
+
+        for (const [key, slotId] of Object.entries(slotNameMap)) {
+          if (!slots[slotId]) continue;
+          const keyClean = key.replace(/[\s_]+/g, '');
+          const distance = levenshtein(lower, keyClean);
+          const maxLen = Math.max(lower.length, keyClean.length);
+          if (distance <= maxLen * 0.6) {
+            suggestions.push({ slotId, name: getFriendlyName(slotId), distance });
+          }
+        }
+
+        return suggestions
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, 3)
+          .map(s => s.name);
       };
 
       // Process each intent
@@ -1008,10 +1074,24 @@ Return ONLY valid JSON.`;
                   };
                 }
               } else {
-                subResult = { success: false, message: `Cannot move ${sourceElement} - different containers`, data: null };
+                subResult = {
+                  success: false,
+                  message: `I can't move ${sourceElement} next to ${targetElement} because they're in different sections.`,
+                  needsClarification: true,
+                  element: sourceElement
+                };
               }
             } else {
-              subResult = { success: false, message: `Could not find ${sourceElement} or ${targetElement}`, data: null };
+              // Find which element(s) couldn't be found
+              const notFound = [];
+              if (!sourceSlotId || !slots[sourceSlotId]) notFound.push({ name: sourceElement, suggestions: getSuggestions(sourceElement) });
+              if (!targetSlotId || !slots[targetSlotId]) notFound.push({ name: targetElement, suggestions: getSuggestions(targetElement) });
+
+              subResult = {
+                success: false,
+                notFound,
+                needsClarification: true
+              };
             }
           }
           // Handle styling intent
@@ -1025,16 +1105,15 @@ Return ONLY valid JSON.`;
             if (targetSlotId && slots[targetSlotId]) {
               const slot = slots[targetSlotId];
               const propLower = property?.toLowerCase() || '';
+              const friendlyName = getFriendlyName(targetSlotId);
 
               // Initialize styles if needed
               if (!slot.styles) slot.styles = {};
 
               // Handle common properties
               if (propLower.includes('color') && !propLower.includes('background')) {
-                // Text color - add to className or styles
                 const colorValue = value?.toLowerCase().replace(/\s+/g, '');
                 if (colorValue) {
-                  // Try to convert color name to hex or use Tailwind class
                   const tailwindColors = {
                     'red': 'text-red-500', 'blue': 'text-blue-500', 'green': 'text-green-500',
                     'orange': 'text-orange-500', 'yellow': 'text-yellow-500', 'purple': 'text-purple-500',
@@ -1042,80 +1121,116 @@ Return ONLY valid JSON.`;
                   };
                   const tailwindClass = tailwindColors[colorValue];
                   if (tailwindClass) {
-                    // Remove existing text-*-* classes and add new one
                     const existingClasses = (slot.className || '').split(' ');
                     const filteredClasses = existingClasses.filter(c => !c.match(/^text-(red|blue|green|orange|yellow|purple|pink|gray|black|white)(-\d+)?$/));
                     slot.className = [...filteredClasses, tailwindClass].join(' ').trim();
                   } else {
                     slot.styles.color = value;
                   }
-                  subResult = { success: true, message: `Set ${element} color to ${value}`, data: { type: 'styling', element, property: 'color', value } };
+                  subResult = { success: true, message: `Changed ${friendlyName} color to ${value}`, data: { type: 'styling', element: targetSlotId, property: 'color', value } };
                 }
               } else if (propLower.includes('background')) {
                 slot.styles.backgroundColor = value;
-                subResult = { success: true, message: `Set ${element} background to ${value}`, data: { type: 'styling', element, property: 'backgroundColor', value } };
+                subResult = { success: true, message: `Changed ${friendlyName} background to ${value}`, data: { type: 'styling', element: targetSlotId, property: 'backgroundColor', value } };
               } else if (propLower.includes('size') || propLower.includes('font')) {
                 slot.styles.fontSize = value;
-                subResult = { success: true, message: `Set ${element} font size to ${value}`, data: { type: 'styling', element, property: 'fontSize', value } };
+                subResult = { success: true, message: `Changed ${friendlyName} font size to ${value}`, data: { type: 'styling', element: targetSlotId, property: 'fontSize', value } };
               } else {
-                // Generic style property
                 slot.styles[property] = value;
-                subResult = { success: true, message: `Set ${element} ${property} to ${value}`, data: { type: 'styling', element, property, value } };
+                subResult = { success: true, message: `Updated ${friendlyName} ${property} to ${value}`, data: { type: 'styling', element: targetSlotId, property, value } };
               }
             } else {
-              subResult = { success: false, message: `Could not find element ${element}`, data: null };
+              const suggestions = getSuggestions(element);
+              subResult = {
+                success: false,
+                notFound: [{ name: element, suggestions }],
+                needsClarification: true
+              };
             }
           }
-          // Other intents - note for user
+          // Other intents
           else {
-            subResult = { success: false, message: `Intent '${singleIntent.intent}' not yet supported in multi-action mode`, data: null };
+            subResult = { success: false, message: `I'll need to handle "${singleIntent.intent}" separately.`, data: null };
           }
 
           results.push(subResult);
         } catch (err) {
           console.error('[AI Chat] Error processing sub-intent:', err);
-          results.push({ success: false, message: `Failed: ${singleIntent.intent} - ${err.message}`, error: err.message });
+          results.push({ success: false, message: `Something went wrong with that change.`, error: err.message });
         }
       }
 
-      // Update configuration with all changes
-      workingConfig.slots = slots;
-      workingConfig.metadata = {
-        ...workingConfig.metadata,
-        lastModified: new Date().toISOString(),
-        lastModifiedBy: 'AI Assistant (multi-intent)',
-        lastChanges: results.filter(r => r.success).map(r => r.message)
-      };
+      // Update configuration with successful changes
+      const successfulChanges = results.filter(r => r.success);
+      if (successfulChanges.length > 0) {
+        workingConfig.slots = slots;
+        workingConfig.metadata = {
+          ...workingConfig.metadata,
+          lastModified: new Date().toISOString(),
+          lastModifiedBy: 'AI Assistant',
+          lastChanges: successfulChanges.map(r => r.message)
+        };
 
-      // Save the updated configuration
-      const { error: updateError } = await tenantDb
-        .from('slot_configurations')
-        .update({
-          configuration: workingConfig,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', slotConfig.id);
+        const { error: updateError } = await tenantDb
+          .from('slot_configurations')
+          .update({
+            configuration: workingConfig,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', slotConfig.id);
 
-      if (updateError) {
-        console.error('[AI Chat] Failed to save multi-intent changes:', updateError);
+        if (updateError) {
+          console.error('[AI Chat] Failed to save multi-intent changes:', updateError);
+        }
       }
 
-      // Build summary response
-      const successCount = results.filter(r => r.success).length;
-      const failCount = results.filter(r => !r.success).length;
-      const summaryMessages = results.map((r, i) => `${i + 1}. ${r.success ? '✓' : '✗'} ${r.message}`).join('\n');
+      // Build friendly response
+      const successCount = successfulChanges.length;
+      const needsClarification = results.filter(r => r.needsClarification);
+
+      let responseMessage = '';
+
+      if (successCount > 0) {
+        responseMessage = successCount === 1
+          ? `Done! ${successfulChanges[0].message}.`
+          : `Done! I made these changes:\n${successfulChanges.map(r => `• ${r.message}`).join('\n')}`;
+      }
+
+      // Handle elements that weren't found - ask clarifying questions
+      if (needsClarification.length > 0) {
+        const allNotFound = needsClarification.flatMap(r => r.notFound || []);
+        const uniqueNotFound = [...new Map(allNotFound.map(item => [item.name, item])).values()];
+
+        if (uniqueNotFound.length > 0) {
+          const clarifications = uniqueNotFound.map(nf => {
+            if (nf.suggestions && nf.suggestions.length > 0) {
+              return `I couldn't find "${nf.name}" - did you mean ${nf.suggestions.slice(0, 2).join(' or ')}?`;
+            }
+            return `I couldn't find an element called "${nf.name}".`;
+          });
+
+          if (responseMessage) {
+            responseMessage += '\n\n';
+          }
+          responseMessage += clarifications.join('\n');
+        }
+      }
+
+      if (!responseMessage) {
+        responseMessage = "I wasn't able to make those changes. Could you try rephrasing what you'd like to do?";
+      } else if (successCount > 0) {
+        responseMessage += '\n\nRefresh the preview to see your updates!';
+      }
 
       return res.json({
         success: successCount > 0,
-        message: successCount === results.length
-          ? `Done! I made ${successCount} change(s):\n\n${summaryMessages}\n\nRefresh the preview to see your updates.`
-          : `Completed ${successCount} of ${results.length} changes:\n\n${summaryMessages}`,
+        message: responseMessage,
         data: {
           type: 'multi_intent',
           intents: parsedIntent.intents,
           results: results,
           successCount,
-          failCount
+          needsClarification: needsClarification.length
         },
         creditsDeducted: totalCredits
       });
