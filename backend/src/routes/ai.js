@@ -785,56 +785,52 @@ router.post('/chat', authMiddleware, async (req, res) => {
     }
 
     // Determine intent from conversation
-    const intentPrompt = `Analyze this user message and determine what they want to do.
+    const intentPrompt = `You are the AI for Catalyst, a SLOT-BASED e-commerce website builder.
+
+CONTEXT: Pages are built from configurable SLOTS (components like product_sku, price_container, product_title).
+Changes are made by updating slot configurations - NOT by editing HTML/CSS files.
 
 User message: "${message}"
 
 Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}
 
-IMPORTANT: Users may request MULTIPLE actions in one message. If the message contains multiple distinct requests, return an array of intents.
+Classify the intent - users may request MULTIPLE actions in one message.
 
-Respond with JSON - either a single intent OR an array of intents:
+INTENTS:
+- styling: Change appearance (colors, fonts, sizes) of existing slots
+- layout_modify: Move/swap/reorder existing slots
+- layout: Create entirely new page sections
+- plugin: Add new interactive behavior/functionality
+- translation: Translate text to other languages
+- admin_entity: Configure store settings, products, coupons
+- chat: General questions (use sparingly - prefer action intents)
 
-Single intent:
+IMPORTANT:
+- "make sku red" = styling (not chat!)
+- "move price above title" = layout_modify (not chat!)
+- If user wants to change how something looks → styling
+- If user wants to move/reorder things → layout_modify
+- Only use "chat" for actual questions that don't involve changes
+
+Respond with JSON:
 {
-  "intent": "plugin|translation|layout|layout_modify|styling|admin_entity|code|chat",
-  "action": "generate|modify|chat",
-  "details": { ... }
+  "intent": "styling|layout_modify|layout|plugin|translation|admin_entity|chat",
+  "action": "modify|generate|chat",
+  "details": {
+    "pageType": "product|category|cart|checkout|homepage",
+    "element": "slot name user referenced",
+    "property": "what to change",
+    "value": "new value"
+  }
 }
 
-Multiple intents (when user asks for multiple things):
+For multiple actions:
 {
   "intents": [
-    { "intent": "layout_modify", "action": "modify", "details": { ... } },
-    { "intent": "styling", "action": "modify", "details": { ... } }
+    { "intent": "layout_modify", "details": { "action": "move", "sourceElement": "sku", "targetElement": "price", "position": "before" } },
+    { "intent": "styling", "details": { "element": "sku", "property": "color", "value": "red" } }
   ]
 }
-
-Example: "move sku above price and make it red" should return:
-{
-  "intents": [
-    { "intent": "layout_modify", "action": "modify", "details": { "pageType": "product", "action": "move", "sourceElement": "sku", "targetElement": "price", "position": "before" } },
-    { "intent": "styling", "action": "modify", "details": { "pageType": "product", "element": "product_sku", "property": "color", "value": "red" } }
-  ]
-}
-
-AVAILABLE INTENTS:
-- styling: Visual appearance changes (how things look)
-- layout: Creating new page sections from scratch
-- layout_modify: Reorganizing existing elements (move, swap, reorder)
-- translation: Language translations
-- plugin: New interactive functionality/behavior (things that DO something)
-- admin_entity: Store settings, products, coupons, payment config
-- code: Direct source code changes
-- chat: Questions or conversation
-
-Think about WHAT the user wants to achieve, not the words they use:
-- Changing appearance/feel/look → styling
-- Moving things around → layout_modify
-- Adding new behavior/interaction → plugin
-- Configuring store data → admin_entity
-
-Return details that help execute the request. Be flexible with the details structure based on what's needed.
 
 Return ONLY valid JSON.`;
 
@@ -2902,22 +2898,35 @@ Generate a brief, friendly confirmation message (1-2 sentences). Be conversation
       return;
 
     } else {
-      // Just chat
+      // Just chat - provide context about our slot-based system
+      const chatSystemPrompt = `You are the AI assistant for Catalyst, a visual e-commerce website builder.
+
+IMPORTANT: Catalyst uses a SLOT-BASED CONFIGURATION SYSTEM, not raw HTML/CSS.
+- Pages are built from configurable slots (components)
+- Each slot has properties: position, styles, className, visibility
+- Changes are made by updating slot configurations, NOT by editing HTML files
+- Users configure their store visually through the Editor
+
+Available page types: product, category, cart, checkout, homepage, header
+Common slots: product_title, product_sku, price_container, product_gallery, add_to_cart_button, stock_status
+
+What you can help with:
+- STYLING: "make sku red" → I modify the product_sku slot's color property
+- LAYOUT: "move sku above price" → I reorder slots by updating position values
+- PLUGINS: "add a wishlist button" → I generate custom functionality
+- TRANSLATIONS: "translate to French" → I update language strings
+- SETTINGS: "change store name" → I update store configuration
+
+When users ask about styling or layout, ALWAYS explain that you'll modify their slot configuration.
+NEVER suggest editing HTML files or CSS stylesheets directly - that's not how Catalyst works.
+
+Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}`;
+
       const chatResult = await aiService.generate({
         userId,
         operationType: 'general',
         prompt: message,
-        systemPrompt: `You are a helpful AI assistant for Catalyst e-commerce platform.
-
-You can help users:
-- Create plugins: "Create a wishlist plugin"
-- Translate content: "Translate all products to French"
-- Generate layouts: "Add hero section to homepage"
-- Edit code: "Add error handling to this function"
-
-Be friendly and guide them toward what they can build.
-
-Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}`,
+        systemPrompt: chatSystemPrompt,
         maxTokens: 1024,
         temperature: 0.7,
         metadata: { type: 'chat', storeId: resolvedStoreId }
