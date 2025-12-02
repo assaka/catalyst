@@ -74,31 +74,40 @@ class CreditService {
     // Log credit usage to tenant DB for reporting
     if (storeId) {
       try {
+        console.log(`[CREDIT_USAGE] Attempting to log credit usage for store ${storeId}`);
         const ConnectionManager = require('./database/ConnectionManager');
         const tenantDb = await ConnectionManager.getStoreConnection(storeId);
         const { v4: uuidv4 } = require('uuid');
 
-        await tenantDb
+        const insertData = {
+          id: uuidv4(),
+          user_id: userId,
+          store_id: storeId,
+          credits_used: creditAmount,
+          usage_type: referenceType || 'general',
+          reference_id: referenceId,
+          reference_type: referenceType,
+          description: description,
+          metadata: {
+            ...metadata,
+            balance_before: balance,
+            balance_after: newBalance,
+            charged_at: new Date().toISOString()
+          }
+        };
+
+        const { error: insertError } = await tenantDb
           .from('credit_usage')
-          .insert({
-            id: uuidv4(),
-            user_id: userId,
-            store_id: storeId,
-            credits_used: creditAmount,
-            usage_type: referenceType || 'general',
-            reference_id: referenceId,
-            reference_type: referenceType,
-            description: description,
-            metadata: {
-              ...metadata,
-              balance_before: balance,
-              balance_after: newBalance,
-              charged_at: new Date().toISOString()
-            }
-          });
+          .insert(insertData);
+
+        if (insertError) {
+          console.error(`[CREDIT_USAGE] Insert error for store ${storeId}:`, insertError.message);
+        } else {
+          console.log(`[CREDIT_USAGE] Successfully logged ${creditAmount} credits for store ${storeId}`);
+        }
       } catch (logError) {
         // Log but don't fail the deduction if credit_usage insert fails
-        console.error('Failed to log credit_usage to tenant DB:', logError.message);
+        console.error('[CREDIT_USAGE] Failed to log to tenant DB:', logError.message);
       }
     }
 
@@ -355,13 +364,14 @@ class CreditService {
     // Note: credit_usage is now handled by the deduct() method
     if (deductResult.success) {
       try {
+        console.log(`[STORE_UPTIME] Attempting to log uptime for store ${storeId}`);
         const ConnectionManager = require('./database/ConnectionManager');
         const tenantDb = await ConnectionManager.getStoreConnection(storeId);
         const { v4: uuidv4 } = require('uuid');
         const chargeDate = new Date().toISOString().split('T')[0];
 
         // Insert into store_uptime table
-        await tenantDb
+        const { error: uptimeInsertError } = await tenantDb
           .from('store_uptime')
           .upsert({
             id: uuidv4(),
@@ -380,9 +390,15 @@ class CreditService {
             onConflict: 'store_id,charged_date',
             ignoreDuplicates: true
           });
+
+        if (uptimeInsertError) {
+          console.error(`[STORE_UPTIME] Insert error for store ${storeId}:`, uptimeInsertError.message);
+        } else {
+          console.log(`[STORE_UPTIME] Successfully logged uptime for store ${storeId} on ${chargeDate}`);
+        }
       } catch (uptimeError) {
         // Log but don't fail the charge if store_uptime insert fails
-        console.error('Failed to insert store_uptime record:', uptimeError.message);
+        console.error('[STORE_UPTIME] Failed to insert record:', uptimeError.message);
       }
     }
 

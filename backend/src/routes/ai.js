@@ -964,71 +964,78 @@ Return ONLY valid JSON.`;
 
       console.log('[AI Chat Multi] Available slots:', Object.keys(slots).slice(0, 10));
 
-      // Build slot name map for resolution
-      const slotNameMap = {};
-      Object.entries(slots).forEach(([id, slot]) => {
-        slotNameMap[id.toLowerCase()] = id;
-        slotNameMap[id.toLowerCase().replace(/_/g, ' ')] = id;
-        slotNameMap[id.toLowerCase().replace(/_/g, '')] = id;
-        if (slot.metadata?.displayName) {
-          slotNameMap[slot.metadata.displayName.toLowerCase()] = id;
-        }
-      });
+      // Get list of available slot names for AI
+      const availableSlots = Object.keys(slots);
+      console.log('[AI Chat Multi] Available slots:', availableSlots);
 
-      // Levenshtein distance for fuzzy matching
-      const levenshtein = (a, b) => {
-        if (a.length === 0) return b.length;
-        if (b.length === 0) return a.length;
-        const matrix = [];
-        for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-        for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-        for (let i = 1; i <= b.length; i++) {
-          for (let j = 1; j <= a.length; j++) {
-            matrix[i][j] = b.charAt(i - 1) === a.charAt(j - 1)
-              ? matrix[i - 1][j - 1]
-              : Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
-          }
-        }
-        return matrix[b.length][a.length];
-      };
+      // AI-driven slot resolution - let AI figure out what user means
+      const resolveSlotIdWithAI = async (userTerm) => {
+        if (!userTerm) return null;
+        const lower = userTerm.toLowerCase().trim();
 
-      // Smart slot resolution with fuzzy matching
-      const resolveSlotId = (name) => {
-        if (!name) return null;
-        const lower = name.toLowerCase().trim().replace(/_/g, ' ');
-        const lowerNoSpace = lower.replace(/\s+/g, '');
-
-        // 1. Direct match
-        if (slots[name]) return name;
+        // 1. Direct match first (exact or with underscores)
+        if (slots[userTerm]) return userTerm;
         if (slots[lower]) return lower;
-        if (slotNameMap[lower]) return slotNameMap[lower];
+        if (slots[lower.replace(/\s+/g, '_')]) return lower.replace(/\s+/g, '_');
 
-        // 2. Partial/contains match - "stock label" should find "stock_status"
-        for (const [key, slotId] of Object.entries(slotNameMap)) {
-          const keyWords = key.split(/[\s_]+/);
-          const searchWords = lower.split(/[\s_]+/);
-          // Check if main word matches
-          if (keyWords.some(kw => searchWords.some(sw => kw.includes(sw) || sw.includes(kw)))) {
-            if (slots[slotId]) return slotId;
+        // 2. Simple contains match
+        for (const slotId of availableSlots) {
+          if (slotId.toLowerCase().includes(lower) || lower.includes(slotId.toLowerCase().replace(/_/g, ''))) {
+            return slotId;
           }
         }
 
-        // 3. Fuzzy match - find closest match
-        let bestMatch = null;
-        let bestScore = Infinity;
-        for (const [key, slotId] of Object.entries(slotNameMap)) {
-          if (!slots[slotId]) continue;
-          const distance = levenshtein(lowerNoSpace, key.replace(/[\s_]+/g, ''));
-          const maxLen = Math.max(lowerNoSpace.length, key.length);
-          const similarity = 1 - (distance / maxLen);
-          if (similarity > 0.5 && distance < bestScore) {
-            bestScore = distance;
-            bestMatch = slotId;
-          }
+        // 3. AI-driven matching for ambiguous terms
+        console.log(`[AI Chat Multi] Using AI to resolve "${userTerm}" from slots:`, availableSlots.slice(0, 15));
+        const matchPrompt = `Available slots: ${availableSlots.join(', ')}
+
+User said: "${userTerm}"
+
+Which slot matches? Reply with JUST the slot ID, nothing else. If no match, reply "none".`;
+
+        try {
+          const matchResult = await aiService.generate({
+            userId,
+            operationType: 'general',
+            prompt: matchPrompt,
+            systemPrompt: 'Reply with only the matching slot ID. Nothing else.',
+            maxTokens: 30,
+            temperature: 0,
+            metadata: { type: 'slot-matching', storeId: resolvedStoreId }
+          });
+          totalCredits += matchResult.creditsDeducted;
+
+          const matched = matchResult.content.trim().toLowerCase();
+          console.log(`[AI Chat Multi] AI matched "${userTerm}" to:`, matched);
+
+          // Find the actual slot ID (case-insensitive)
+          const actualSlot = availableSlots.find(s => s.toLowerCase() === matched);
+          if (actualSlot && slots[actualSlot]) return actualSlot;
+        } catch (e) {
+          console.error('[AI Chat Multi] AI slot matching failed:', e.message);
         }
-        if (bestMatch) return bestMatch;
 
         return null;
+      };
+
+      // Sync wrapper for simple cases, async for AI
+      const resolveSlotId = (name) => {
+        if (!name) return null;
+        const lower = name.toLowerCase().trim();
+
+        // Quick direct matches
+        if (slots[name]) return name;
+        if (slots[lower]) return lower;
+        if (slots[lower.replace(/\s+/g, '_')]) return lower.replace(/\s+/g, '_');
+
+        // Simple contains
+        for (const slotId of availableSlots) {
+          if (slotId.toLowerCase().includes(lower) || lower.includes(slotId.toLowerCase().replace(/_/g, ''))) {
+            return slotId;
+          }
+        }
+
+        return null; // Will use AI fallback
       };
 
       // Get friendly name for slot
@@ -1040,23 +1047,11 @@ Return ONLY valid JSON.`;
       // Find suggestions for unmatched element
       const getSuggestions = (name) => {
         if (!name) return [];
-        const lower = name.toLowerCase().replace(/[\s_]+/g, '');
-        const suggestions = [];
-
-        for (const [key, slotId] of Object.entries(slotNameMap)) {
-          if (!slots[slotId]) continue;
-          const keyClean = key.replace(/[\s_]+/g, '');
-          const distance = levenshtein(lower, keyClean);
-          const maxLen = Math.max(lower.length, keyClean.length);
-          if (distance <= maxLen * 0.6) {
-            suggestions.push({ slotId, name: getFriendlyName(slotId), distance });
-          }
-        }
-
-        return suggestions
-          .sort((a, b) => a.distance - b.distance)
+        const lower = name.toLowerCase();
+        return availableSlots
+          .filter(s => s.toLowerCase().includes(lower) || lower.includes(s.toLowerCase().replace(/_/g, '')))
           .slice(0, 3)
-          .map(s => s.name);
+          .map(s => getFriendlyName(s));
       };
 
       // Process each intent
@@ -1071,8 +1066,9 @@ Return ONLY valid JSON.`;
             const targetElement = singleIntent.details?.targetElement;
             const position = singleIntent.details?.position || 'before';
 
-            const sourceSlotId = resolveSlotId(sourceElement);
-            const targetSlotId = resolveSlotId(targetElement);
+            // Use AI-driven resolution for both elements
+            const sourceSlotId = resolveSlotId(sourceElement) || await resolveSlotIdWithAI(sourceElement);
+            const targetSlotId = resolveSlotId(targetElement) || await resolveSlotIdWithAI(targetElement);
 
             if (sourceSlotId && targetSlotId && slots[sourceSlotId] && slots[targetSlotId]) {
               const sourceSlot = slots[sourceSlotId];
@@ -1148,8 +1144,9 @@ Return ONLY valid JSON.`;
               property = 'color';
             }
 
-            const targetSlotId = resolveSlotId(element);
-            console.log('[AI Chat Multi] Resolved slot:', targetSlotId);
+            // Use AI-driven resolution for element
+            const targetSlotId = resolveSlotId(element) || await resolveSlotIdWithAI(element);
+            console.log('[AI Chat Multi] Resolved slot:', targetSlotId, 'from element:', element);
 
             if (targetSlotId && slots[targetSlotId]) {
               const slot = slots[targetSlotId];

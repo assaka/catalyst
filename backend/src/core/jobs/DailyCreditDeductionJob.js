@@ -32,6 +32,7 @@ class DailyCreditDeductionJob extends BaseJobHandler {
       }
 
       if (!publishedStores || publishedStores.length === 0) {
+        console.log('[DAILY_DEDUCTION] No published stores found');
         return {
           success: true,
           message: 'No published stores found',
@@ -41,6 +42,8 @@ class DailyCreditDeductionJob extends BaseJobHandler {
           timestamp: new Date().toISOString()
         };
       }
+
+      console.log(`[DAILY_DEDUCTION] Found ${publishedStores.length} published stores to process`);
 
       const results = {
         processed: 0,
@@ -81,7 +84,9 @@ class DailyCreditDeductionJob extends BaseJobHandler {
             continue;
           }
 
+          console.log(`[DAILY_DEDUCTION] Processing store ${store.slug} (${store.id})`);
           const chargeResult = await creditService.chargeDailyPublishingFee(store.user_id, store.id);
+          console.log(`[DAILY_DEDUCTION] Charge result for ${store.slug}:`, JSON.stringify(chargeResult));
 
           if (chargeResult.success) {
             results.successful++;
