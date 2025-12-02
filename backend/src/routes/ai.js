@@ -839,6 +839,12 @@ INTENTS:
 - settings_update: Theme/appearance/catalog settings (e.g., "change breadcrumb color", "hide stock label", "enable inventory tracking")
 - admin_entity: Store entity CRUD (e.g., "rename tab", "create coupon", "disable payment method")
 - category_management: Adding/removing products to/from categories (e.g., "add all products to snowboard category", "remove product from category", "assign products to category")
+- attribute_management: Create/update attributes and values (e.g., "create attribute Color with values Red, Blue, Green", "add XL to Size attribute")
+- product_label_management: Create/update product labels/badges (e.g., "create a Sale label", "add New Arrival label to products")
+- product_tab_management: Create/update product detail tabs (e.g., "create a Care Instructions tab", "rename Specs tab to Technical Details")
+- custom_option_management: Manage product custom options (e.g., "add text engraving option to product", "create dropdown for gift wrapping")
+- customer_management: Customer operations (e.g., "blacklist customer john@example.com", "unblock customer", "get customer details")
+- cms_management: Create/update CMS pages and blocks (e.g., "create About Us page", "add shipping info block", "update FAQ page")
 - plugin: Creating new features
 - translation: Language translations
 - chat: Questions or general help
@@ -883,6 +889,43 @@ Common settings_update mappings (IMPORTANT - pay attention to value logic):
 VALUE LOGIC:
 - For "show_*" settings: "show X" = true, "hide X" = false
 - For "hide_*" settings: "hide X" = true, "show X" = false
+
+For attribute_management, extract:
+- operation: "create_attribute", "update_attribute", "add_value", "remove_value"
+- attribute_name: The attribute name (e.g., "Color", "Size")
+- values: Array of values to add (e.g., ["Red", "Blue", "Green"])
+- value_to_add: Single value to add to existing attribute
+- value_to_remove: Value to remove from attribute
+
+For product_label_management, extract:
+- operation: "create", "update", "delete", "assign", "unassign"
+- label_name: The label name (e.g., "Sale", "New Arrival", "Best Seller")
+- label_color: Optional color for the label (e.g., "#FF0000")
+- product_filter: Products to assign label to (e.g., "all", "out_of_stock", specific product name)
+
+For product_tab_management, extract:
+- operation: "create", "update", "delete"
+- tab_name: Current or new tab name
+- new_name: New name when renaming
+- content: Tab content (optional)
+
+For custom_option_management, extract:
+- operation: "create", "update", "delete"
+- option_type: "text", "textarea", "dropdown", "checkbox", "radio"
+- option_name: Name of the option (e.g., "Engraving Text", "Gift Wrap")
+- product_filter: Which products to add option to
+- values: For dropdown/radio - the available options
+
+For customer_management, extract:
+- operation: "blacklist", "unblacklist", "get_details", "update"
+- customer_identifier: Email or customer ID
+- reason: Reason for blacklisting (optional)
+
+For cms_management, extract:
+- operation: "create_page", "update_page", "delete_page", "create_block", "update_block", "delete_block"
+- title: Page or block title
+- identifier: URL slug or block identifier
+- content: HTML or text content
 
 Return JSON:
 { "intent": "layout_modify", "details": { "sourceElement": "product_title", "targetElement": "price_container", "position": "after" } }
@@ -3894,6 +3937,397 @@ If showing products/customers, include names and key metrics.`;
           success: true,
           message: `I couldn't complete the category operation: ${categoryError.message}. Please try again.`,
           data: { type: 'category_error', error: categoryError.message },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+    } else if (intent.intent === 'attribute_management') {
+      // Handle attribute creation and management
+      console.log('[AI Chat] Entering attribute_management handler');
+      const ConnectionManager = require('../services/database/ConnectionManager');
+
+      if (!resolvedStoreId) {
+        return res.status(400).json({ success: false, message: 'store_id is required' });
+      }
+
+      const operation = intent.details?.operation || 'create_attribute';
+      const attributeName = intent.details?.attribute_name;
+      const values = intent.details?.values || [];
+
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
+
+        if (operation === 'create_attribute') {
+          // Check if attribute exists
+          const existing = await tenantDb('attributes')
+            .whereRaw('LOWER(name) = ?', [attributeName.toLowerCase()])
+            .first();
+
+          if (existing) {
+            return res.json({
+              success: true,
+              message: `Attribute "${attributeName}" already exists. Use "add value X to ${attributeName}" to add values.`,
+              creditsDeducted: creditsUsed
+            });
+          }
+
+          // Create attribute
+          const [newAttr] = await tenantDb('attributes').insert({
+            name: attributeName,
+            code: attributeName.toLowerCase().replace(/\s+/g, '_'),
+            type: 'select',
+            is_filterable: true,
+            is_visible: true,
+            created_at: new Date().toISOString()
+          }).returning('*');
+
+          // Add values if provided
+          if (values.length > 0) {
+            for (let i = 0; i < values.length; i++) {
+              await tenantDb('attribute_values').insert({
+                attribute_id: newAttr.id,
+                value: values[i],
+                sort_order: i,
+                created_at: new Date().toISOString()
+              });
+            }
+          }
+
+          res.json({
+            success: true,
+            message: `Created attribute "${attributeName}"${values.length > 0 ? ` with values: ${values.join(', ')}` : ''}.`,
+            data: { type: 'attribute_created', attribute: newAttr, values },
+            creditsDeducted: creditsUsed
+          });
+          return;
+
+        } else if (operation === 'add_value') {
+          const valueToAdd = intent.details?.value_to_add || intent.details?.values?.[0];
+          const attr = await tenantDb('attributes')
+            .whereRaw('LOWER(name) LIKE ?', [`%${attributeName.toLowerCase()}%`])
+            .first();
+
+          if (!attr) {
+            return res.json({
+              success: true,
+              message: `Attribute "${attributeName}" not found.`,
+              creditsDeducted: creditsUsed
+            });
+          }
+
+          await tenantDb('attribute_values').insert({
+            attribute_id: attr.id,
+            value: valueToAdd,
+            created_at: new Date().toISOString()
+          });
+
+          res.json({
+            success: true,
+            message: `Added "${valueToAdd}" to ${attr.name} attribute.`,
+            data: { type: 'attribute_value_added', attribute: attr.name, value: valueToAdd },
+            creditsDeducted: creditsUsed
+          });
+          return;
+        }
+
+      } catch (attrError) {
+        console.error('[AI Chat] Attribute management error:', attrError);
+        return res.json({
+          success: true,
+          message: `Couldn't manage attribute: ${attrError.message}`,
+          creditsDeducted: creditsUsed
+        });
+      }
+
+    } else if (intent.intent === 'product_label_management') {
+      // Handle product label/badge management
+      console.log('[AI Chat] Entering product_label_management handler');
+      const ConnectionManager = require('../services/database/ConnectionManager');
+
+      if (!resolvedStoreId) {
+        return res.status(400).json({ success: false, message: 'store_id is required' });
+      }
+
+      const operation = intent.details?.operation || 'create';
+      const labelName = intent.details?.label_name;
+      const labelColor = intent.details?.label_color || '#FF5722';
+
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
+
+        if (operation === 'create') {
+          const [newLabel] = await tenantDb('product_labels').insert({
+            name: labelName,
+            color: labelColor,
+            is_active: true,
+            created_at: new Date().toISOString()
+          }).returning('*');
+
+          res.json({
+            success: true,
+            message: `Created product label "${labelName}" with color ${labelColor}.`,
+            data: { type: 'label_created', label: newLabel },
+            creditsDeducted: creditsUsed
+          });
+          return;
+        }
+
+      } catch (labelError) {
+        console.error('[AI Chat] Label management error:', labelError);
+        return res.json({
+          success: true,
+          message: `Couldn't manage label: ${labelError.message}`,
+          creditsDeducted: creditsUsed
+        });
+      }
+
+    } else if (intent.intent === 'product_tab_management') {
+      // Handle product tab management
+      console.log('[AI Chat] Entering product_tab_management handler');
+      const ConnectionManager = require('../services/database/ConnectionManager');
+
+      if (!resolvedStoreId) {
+        return res.status(400).json({ success: false, message: 'store_id is required' });
+      }
+
+      const operation = intent.details?.operation || 'create';
+      const tabName = intent.details?.tab_name;
+      const newName = intent.details?.new_name;
+
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
+
+        if (operation === 'create') {
+          const maxSort = await tenantDb('product_tabs').max('sort_order as max').first();
+          const [newTab] = await tenantDb('product_tabs').insert({
+            name: tabName,
+            slug: tabName.toLowerCase().replace(/\s+/g, '-'),
+            is_active: true,
+            sort_order: (maxSort?.max || 0) + 1,
+            created_at: new Date().toISOString()
+          }).returning('*');
+
+          res.json({
+            success: true,
+            message: `Created product tab "${tabName}".`,
+            data: { type: 'tab_created', tab: newTab },
+            creditsDeducted: creditsUsed
+          });
+          return;
+
+        } else if (operation === 'update' && newName) {
+          const tab = await tenantDb('product_tabs')
+            .whereRaw('LOWER(name) LIKE ?', [`%${tabName.toLowerCase()}%`])
+            .first();
+
+          if (!tab) {
+            return res.json({
+              success: true,
+              message: `Tab "${tabName}" not found.`,
+              creditsDeducted: creditsUsed
+            });
+          }
+
+          await tenantDb('product_tabs')
+            .where('id', tab.id)
+            .update({ name: newName, updated_at: new Date().toISOString() });
+
+          res.json({
+            success: true,
+            message: `Renamed tab "${tab.name}" to "${newName}".`,
+            data: { type: 'tab_updated', old_name: tab.name, new_name: newName },
+            creditsDeducted: creditsUsed
+          });
+          return;
+        }
+
+      } catch (tabError) {
+        console.error('[AI Chat] Tab management error:', tabError);
+        return res.json({
+          success: true,
+          message: `Couldn't manage tab: ${tabError.message}`,
+          creditsDeducted: creditsUsed
+        });
+      }
+
+    } else if (intent.intent === 'customer_management') {
+      // Handle customer operations (blacklist, etc.)
+      console.log('[AI Chat] Entering customer_management handler');
+      const ConnectionManager = require('../services/database/ConnectionManager');
+
+      if (!resolvedStoreId) {
+        return res.status(400).json({ success: false, message: 'store_id is required' });
+      }
+
+      const operation = intent.details?.operation || 'get_details';
+      const customerIdentifier = intent.details?.customer_identifier;
+      const reason = intent.details?.reason || 'Blocked by admin';
+
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
+
+        // Find customer by email or ID
+        let customer = await tenantDb('users')
+          .where('email', customerIdentifier)
+          .orWhere('id', customerIdentifier)
+          .first();
+
+        if (!customer) {
+          return res.json({
+            success: true,
+            message: `Customer "${customerIdentifier}" not found.`,
+            creditsDeducted: creditsUsed
+          });
+        }
+
+        if (operation === 'blacklist') {
+          await tenantDb('users')
+            .where('id', customer.id)
+            .update({
+              is_blacklisted: true,
+              blacklist_reason: reason,
+              updated_at: new Date().toISOString()
+            });
+
+          res.json({
+            success: true,
+            message: `Blacklisted customer ${customer.email}. Reason: ${reason}`,
+            data: { type: 'customer_blacklisted', customer_email: customer.email },
+            creditsDeducted: creditsUsed
+          });
+          return;
+
+        } else if (operation === 'unblacklist') {
+          await tenantDb('users')
+            .where('id', customer.id)
+            .update({
+              is_blacklisted: false,
+              blacklist_reason: null,
+              updated_at: new Date().toISOString()
+            });
+
+          res.json({
+            success: true,
+            message: `Removed ${customer.email} from blacklist.`,
+            data: { type: 'customer_unblacklisted', customer_email: customer.email },
+            creditsDeducted: creditsUsed
+          });
+          return;
+
+        } else if (operation === 'get_details') {
+          // Get customer orders
+          const orders = await tenantDb('orders')
+            .where('customer_id', customer.id)
+            .select('id', 'total', 'status', 'created_at')
+            .orderBy('created_at', 'desc')
+            .limit(5);
+
+          const totalSpent = orders.reduce((sum, o) => sum + parseFloat(o.total || 0), 0);
+
+          res.json({
+            success: true,
+            message: `Customer: ${customer.first_name} ${customer.last_name} (${customer.email})\nTotal orders: ${orders.length}\nTotal spent: ${totalSpent.toFixed(2)}\nBlacklisted: ${customer.is_blacklisted ? 'Yes' : 'No'}`,
+            data: { type: 'customer_details', customer, orders, total_spent: totalSpent },
+            creditsDeducted: creditsUsed
+          });
+          return;
+        }
+
+      } catch (custError) {
+        console.error('[AI Chat] Customer management error:', custError);
+        return res.json({
+          success: true,
+          message: `Couldn't manage customer: ${custError.message}`,
+          creditsDeducted: creditsUsed
+        });
+      }
+
+    } else if (intent.intent === 'cms_management') {
+      // Handle CMS pages and blocks
+      console.log('[AI Chat] Entering cms_management handler');
+      const ConnectionManager = require('../services/database/ConnectionManager');
+
+      if (!resolvedStoreId) {
+        return res.status(400).json({ success: false, message: 'store_id is required' });
+      }
+
+      const operation = intent.details?.operation || 'create_page';
+      const title = intent.details?.title;
+      const identifier = intent.details?.identifier || title?.toLowerCase().replace(/\s+/g, '-');
+      const contentText = intent.details?.content || '';
+
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
+
+        if (operation === 'create_page') {
+          const [newPage] = await tenantDb('cms_pages').insert({
+            title: title,
+            identifier: identifier,
+            content: contentText,
+            is_active: true,
+            store_id: resolvedStoreId,
+            created_at: new Date().toISOString()
+          }).returning('*');
+
+          res.json({
+            success: true,
+            message: `Created CMS page "${title}" (URL: /${identifier}).`,
+            data: { type: 'cms_page_created', page: newPage },
+            creditsDeducted: creditsUsed
+          });
+          return;
+
+        } else if (operation === 'create_block') {
+          const [newBlock] = await tenantDb('cms_blocks').insert({
+            title: title,
+            identifier: identifier,
+            content: contentText,
+            is_active: true,
+            store_id: resolvedStoreId,
+            created_at: new Date().toISOString()
+          }).returning('*');
+
+          res.json({
+            success: true,
+            message: `Created CMS block "${title}" (identifier: ${identifier}).`,
+            data: { type: 'cms_block_created', block: newBlock },
+            creditsDeducted: creditsUsed
+          });
+          return;
+
+        } else if (operation === 'update_page') {
+          const page = await tenantDb('cms_pages')
+            .whereRaw('LOWER(title) LIKE ?', [`%${title.toLowerCase()}%`])
+            .first();
+
+          if (!page) {
+            return res.json({
+              success: true,
+              message: `CMS page "${title}" not found.`,
+              creditsDeducted: creditsUsed
+            });
+          }
+
+          const updates = { updated_at: new Date().toISOString() };
+          if (contentText) updates.content = contentText;
+          if (intent.details?.new_title) updates.title = intent.details.new_title;
+
+          await tenantDb('cms_pages').where('id', page.id).update(updates);
+
+          res.json({
+            success: true,
+            message: `Updated CMS page "${page.title}".`,
+            data: { type: 'cms_page_updated', page_id: page.id },
+            creditsDeducted: creditsUsed
+          });
+          return;
+        }
+
+      } catch (cmsError) {
+        console.error('[AI Chat] CMS management error:', cmsError);
+        return res.json({
+          success: true,
+          message: `Couldn't manage CMS content: ${cmsError.message}`,
           creditsDeducted: creditsUsed
         });
       }
