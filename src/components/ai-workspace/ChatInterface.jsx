@@ -176,7 +176,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
         console.log('[ChatInterface] Response data type:', response.data?.type);
 
         // Auto-refresh preview and editor after styling/layout changes
-        const refreshTypes = ['styling_applied', 'styling_preview', 'multi_intent', 'layout_modified'];
+        const refreshTypes = ['styling_applied', 'styling_preview', 'multi_intent', 'layout_modified', 'settings_updated'];
         if (refreshTypes.includes(response.data?.type)) {
           console.log('[ChatInterface] Triggering refresh for:', response.data?.type);
           setTimeout(() => {
@@ -196,6 +196,17 @@ const ChatInterface = ({ onPluginCloned, context }) => {
               key: 'slot_config_updated',
               newValue: JSON.stringify({ storeId, pageType, timestamp: Date.now() })
             }));
+
+            // For settings updates, also broadcast to StoreProvider channel to refresh store settings
+            if (response.data?.type === 'settings_updated') {
+              try {
+                const storeChannel = new BroadcastChannel('store_settings_update');
+                storeChannel.postMessage({ type: 'clear_cache' });
+                storeChannel.close();
+              } catch (e) {
+                console.warn('BroadcastChannel not supported:', e);
+              }
+            }
           }, 500);
         }
       } else {
