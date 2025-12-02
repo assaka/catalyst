@@ -791,11 +791,31 @@ User message: "${message}"
 
 Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}
 
-Determine the intent and respond with JSON:
+IMPORTANT: Users may request MULTIPLE actions in one message. If the message contains multiple distinct requests, return an array of intents.
+
+Respond with JSON - either a single intent OR an array of intents:
+
+Single intent:
 {
   "intent": "plugin|translation|layout|layout_modify|styling|admin_entity|code|chat",
   "action": "generate|modify|chat",
   "details": { ... }
+}
+
+Multiple intents (when user asks for multiple things):
+{
+  "intents": [
+    { "intent": "layout_modify", "action": "modify", "details": { ... } },
+    { "intent": "styling", "action": "modify", "details": { ... } }
+  ]
+}
+
+Example: "move sku above price and make it red" should return:
+{
+  "intents": [
+    { "intent": "layout_modify", "action": "modify", "details": { "pageType": "product", "action": "move", "sourceElement": "sku", "targetElement": "price", "position": "before" } },
+    { "intent": "styling", "action": "modify", "details": { "pageType": "product", "element": "product_sku", "property": "color", "value": "red" } }
+  ]
 }
 
 INTENT DEFINITIONS:
@@ -902,15 +922,79 @@ Return ONLY valid JSON.`;
       tokens: intentResult.usage
     });
 
-    let intent;
+    let parsedIntent;
     try {
       const jsonMatch = intentResult.content.match(/\{[\s\S]*\}/);
-      intent = JSON.parse(jsonMatch ? jsonMatch[0] : intentResult.content);
+      parsedIntent = JSON.parse(jsonMatch ? jsonMatch[0] : intentResult.content);
     } catch (error) {
       // Default to chat if can't parse
-      intent = { intent: 'chat', action: 'chat' };
+      parsedIntent = { intent: 'chat', action: 'chat' };
     }
 
+    // Handle MULTIPLE intents if AI detected them
+    if (parsedIntent.intents && Array.isArray(parsedIntent.intents) && parsedIntent.intents.length > 1) {
+      console.log('[AI Chat] Detected MULTIPLE intents:', parsedIntent.intents.length);
+
+      const results = [];
+      let totalCredits = intentResult.creditsDeducted;
+
+      // Process each intent by making recursive-like calls to intent handlers
+      for (const singleIntent of parsedIntent.intents) {
+        console.log('[AI Chat] Processing sub-intent:', singleIntent.intent);
+
+        // Create a mock response collector
+        let subResult = { success: false, message: '', data: null };
+
+        try {
+          // For layout_modify intents
+          if (singleIntent.intent === 'layout_modify') {
+            subResult = {
+              success: true,
+              message: `Layout change: ${singleIntent.details?.action || 'modify'} ${singleIntent.details?.sourceElement || 'element'}`,
+              data: { type: 'layout_modify', details: singleIntent.details }
+            };
+          }
+          // For styling intents
+          else if (singleIntent.intent === 'styling') {
+            subResult = {
+              success: true,
+              message: `Style change: ${singleIntent.details?.property || 'property'} = ${singleIntent.details?.value || 'value'}`,
+              data: { type: 'styling', details: singleIntent.details }
+            };
+          }
+          // For other intents, note them
+          else {
+            subResult = {
+              success: true,
+              message: `Queued: ${singleIntent.intent}`,
+              data: { type: singleIntent.intent }
+            };
+          }
+
+          results.push(subResult);
+        } catch (err) {
+          console.error('[AI Chat] Error processing sub-intent:', err);
+          results.push({ success: false, message: `Failed: ${singleIntent.intent}`, error: err.message });
+        }
+      }
+
+      // For now, return a summary - full implementation will process each properly
+      const summaryMessages = results.map((r, i) => `${i + 1}. ${r.message}`).join('\n');
+
+      return res.json({
+        success: true,
+        message: `I detected ${parsedIntent.intents.length} actions in your request:\n\n${summaryMessages}\n\nNote: Multiple actions in one message is a new feature. For now, please send each action separately for full execution.`,
+        data: {
+          type: 'multi_intent',
+          intents: parsedIntent.intents,
+          results: results
+        },
+        creditsDeducted: totalCredits
+      });
+    }
+
+    // Single intent processing (existing behavior)
+    const intent = parsedIntent;
     console.log('[AI Chat] Detected intent:', JSON.stringify(intent));
     console.log('[AI Chat] Store ID:', resolvedStoreId);
 

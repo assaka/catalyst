@@ -42,7 +42,9 @@ import {
   Webhook,
   LayoutDashboard,
   Terminal,
-  RefreshCw
+  RefreshCw,
+  Copy,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,6 +104,36 @@ export default function Plugins() {
   const [flashMessage, setFlashMessage] = useState(null);
   const [showHowToDialog, setShowHowToDialog] = useState(false);
   const [showCreatePluginDialog, setShowCreatePluginDialog] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(null);
+
+  // CodeBlock component with copy functionality
+  const CodeBlock = ({ code, language = 'javascript', title }) => {
+    const copyToClipboard = async () => {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(null), 2000);
+    };
+
+    return (
+      <div className="relative group">
+        {title && <div className="text-xs text-gray-400 mb-1">{title}</div>}
+        <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
+          <button
+            onClick={copyToClipboard}
+            className="absolute top-2 right-2 p-1.5 rounded bg-gray-700 hover:bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Copy code"
+          >
+            {copiedCode === code ? (
+              <Check className="w-3.5 h-3.5 text-green-400" />
+            ) : (
+              <Copy className="w-3.5 h-3.5 text-gray-300" />
+            )}
+          </button>
+          <pre className="whitespace-pre-wrap">{code}</pre>
+        </div>
+      </div>
+    );
+  };
   const [newPluginData, setNewPluginData] = useState({
     name: '',
     description: '',
@@ -1475,13 +1507,31 @@ export default function Plugins() {
                 </h3>
                 <p className="text-gray-600 mb-2">A plugin can have these files:</p>
                 <div className="bg-gray-50 rounded-lg p-3 font-mono text-xs">
-                  <div className="text-gray-500">backend/plugins/my-plugin/</div>
-                  <div className="ml-4">├── <span className="text-blue-600">manifest.json</span> <span className="text-gray-400">← Required: Plugin info</span></div>
-                  <div className="ml-4">├── <span className="text-green-600">index.js</span> <span className="text-gray-400">← Required: Main plugin code</span></div>
-                  <div className="ml-4">├── <span className="text-purple-600">controllers/</span> <span className="text-gray-400">← Optional: API route handlers</span></div>
-                  <div className="ml-4">├── <span className="text-orange-600">migrations/</span> <span className="text-gray-400">← Optional: Database migrations</span></div>
-                  <div className="ml-4">├── <span className="text-pink-600">events/</span> <span className="text-gray-400">← Optional: Event handlers</span></div>
-                  <div className="ml-4">└── <span className="text-cyan-600">styles.css</span> <span className="text-gray-400">← Optional: Custom styles</span></div>
+                  <div className="text-gray-500">my-plugin/</div>
+                  <div className="ml-4">├── <span className="text-blue-600">manifest.json</span> <span className="text-gray-400">← Required: Plugin metadata & configuration</span></div>
+                  <div className="ml-4">├── <span className="text-green-600">index.js</span> <span className="text-gray-400">← Required: Main plugin class with hook handlers</span></div>
+                  <div className="ml-4">├── <span className="text-purple-600">components/</span> <span className="text-gray-400">← UI components (React/HTML)</span></div>
+                  <div className="ml-4">├── <span className="text-yellow-600">services/</span> <span className="text-gray-400">← Business logic classes</span></div>
+                  <div className="ml-4">├── <span className="text-cyan-600">controllers/</span> <span className="text-gray-400">← API route handlers</span></div>
+                  <div className="ml-4">├── <span className="text-indigo-600">utils/</span> <span className="text-gray-400">← Helper functions</span></div>
+                  <div className="ml-4">├── <span className="text-orange-600">migrations/</span> <span className="text-gray-400">← Database schema changes</span></div>
+                  <div className="ml-4">├── <span className="text-pink-600">events/</span> <span className="text-gray-400">← Event listeners</span></div>
+                  <div className="ml-4">└── <span className="text-rose-600">styles.css</span> <span className="text-gray-400">← Custom CSS styles</span></div>
+                </div>
+              </div>
+
+              {/* File Types Explained */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-800 mb-3">File Types Explained</h4>
+                <div className="space-y-2 text-xs">
+                  <div><span className="font-medium text-blue-600">manifest.json</span> - Defines your plugin's name, version, hooks, routes, cron jobs, and configuration schema. This is the "contract" of what your plugin does.</div>
+                  <div><span className="font-medium text-green-600">index.js</span> - The main entry point. Exports a class with handler methods that are called by hooks defined in manifest.</div>
+                  <div><span className="font-medium text-purple-600">components/</span> - Reusable UI pieces. Return HTML strings or React components. Called from hooks to render UI.</div>
+                  <div><span className="font-medium text-yellow-600">services/</span> - Business logic classes (e.g., EmailService, UserService). Handles data operations, API calls, calculations.</div>
+                  <div><span className="font-medium text-cyan-600">controllers/</span> - Handle HTTP requests for your plugin's API routes. Process req/res and return JSON.</div>
+                  <div><span className="font-medium text-indigo-600">utils/</span> - Pure helper functions (formatDate, escapeHTML, validateEmail). No side effects, reusable everywhere.</div>
+                  <div><span className="font-medium text-orange-600">migrations/</span> - Database schema changes. Run once on plugin install to create tables.</div>
+                  <div><span className="font-medium text-pink-600">events/</span> - React to system events (order.completed, user.registered). Fire-and-forget, don't return values.</div>
                 </div>
               </div>
 
@@ -1489,10 +1539,10 @@ export default function Plugins() {
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <FileCode className="w-4 h-4 text-orange-600" />
-                  manifest.json (Full Example)
+                  manifest.json
                 </h3>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`{
+                <p className="text-gray-600 mb-2">The manifest defines everything about your plugin - metadata, hooks, routes, and configuration:</p>
+                <CodeBlock code={`{
   "name": "My Plugin",
   "slug": "my-plugin",
   "version": "1.0.0",
@@ -1500,8 +1550,8 @@ export default function Plugins() {
   "author": "Your Name",
   "category": "display",
   "hooks": {
-    "homepage_header": "renderHeader",
-    "homepage_content": "renderContent"
+    "cart.processLoadedItems": "onCartLoaded",
+    "app.ready": "onAppReady"
   },
   "routes": [
     { "path": "/api/plugins/my-plugin/data", "method": "GET", "handler": "getData" },
@@ -1522,51 +1572,92 @@ export default function Plugins() {
       "enabled": { "type": "boolean", "default": true }
     }
   }
-}`}</pre>
-                </div>
+}`} />
               </div>
 
               {/* HOOKS EXAMPLE */}
               <div className="border-t pt-4">
                 <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <Code className="w-4 h-4 text-blue-600" />
-                  Hooks Example
+                  Hooks
                 </h3>
-                <p className="text-gray-600 mb-2">Display content on specific parts of the page:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// manifest.json
-{
-  "hooks": {
-    "homepage_header": "renderHeader",
-    "homepage_content": "renderContent"
-  }
-}
+                <p className="text-gray-600 mb-2">Hooks are <strong>filter functions</strong> that intercept and modify data. They receive data, can transform it, and <strong>must return a value</strong>.</p>
 
-// index.js
-class MyPlugin {
-  renderHeader(config, context) {
-    return \`<div class="banner">\${config.message}</div>\`;
+                <div className="space-y-3">
+                  <CodeBlock title="cart.processLoadedItems - Modify cart items or show modals" code={`function(items, context) {
+  // Show a coupon modal when cart is empty
+  if (items.length === 0) {
+    const modal = document.createElement('div');
+    modal.innerHTML = \`
+      <div class="coupon-modal">
+        <h2>Your Cart is Empty!</h2>
+        <p>Use code WELCOME20 for 20% off!</p>
+        <button onclick="this.parentElement.remove()">Shop Now</button>
+      </div>
+    \`;
+    document.body.appendChild(modal);
   }
 
-  renderContent(config, context) {
-    const storeName = context.store?.name || 'Store';
-    return \`<p>Welcome to \${storeName}!</p>\`;
+  // IMPORTANT: Hooks must return a value
+  return items;
+}`} />
+
+                  <CodeBlock title="app.ready - Initialize plugin when app loads" code={`function(context) {
+  try {
+    const TestComponent = require('./components/TestComponent');
+    const TestService = require('./services/TestService');
+
+    const testService = new TestService();
+    const message = testService.getTestMessage();
+
+    // Render component to page
+    const html = TestComponent({ message });
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    document.body.appendChild(container);
+  } catch (error) {
+    console.error('Error in plugin:', error);
   }
-}
-module.exports = MyPlugin;`}</pre>
+
+  return context;
+}`} />
+
+                  <CodeBlock title="page.render - Inject content into pages" code={`async function(context) {
+  const { page, user } = context;
+
+  // Don't inject on admin pages
+  if (page.path.startsWith('/admin')) {
+    return context;
+  }
+
+  // Inject chat widget
+  if (!context.bodyScripts) {
+    context.bodyScripts = [];
+  }
+  context.bodyScripts.push('<div id="chat-widget"></div>');
+
+  return context;
+}`} />
                 </div>
-                <p className="text-gray-500 text-xs mt-2">Available hooks: <code className="bg-gray-100 px-1 rounded">homepage_header</code>, <code className="bg-gray-100 px-1 rounded">homepage_content</code></p>
+
+                <div className="mt-3 bg-blue-50 rounded p-3">
+                  <p className="text-xs font-medium text-blue-800 mb-2">Available Hooks:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {['app.ready', 'app.init', 'cart.processLoadedItems', 'checkout.processLoadedItems', 'page.render', 'page.onRender', 'product.processInventory', 'order.processShipment', 'frontend.render'].map(hook => (
+                      <code key={hook} className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs">{hook}</code>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* CRON EXAMPLE */}
               <div className="border-t pt-4">
                 <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <Clock className="w-4 h-4 text-purple-600" />
-                  Cron Jobs Example
+                  Cron Jobs
                 </h3>
-                <p className="text-gray-600 mb-2">Run tasks on a schedule:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// manifest.json
+                <p className="text-gray-600 mb-2">Schedule tasks to run automatically. Define in manifest, implement handler in index.js:</p>
+                <CodeBlock code={`// manifest.json
 {
   "cron": [
     {
@@ -1576,10 +1667,9 @@ module.exports = MyPlugin;`}</pre>
       "description": "Sends report every day at 9 AM"
     },
     {
-      "name": "Cleanup",
+      "name": "Weekly Cleanup",
       "schedule": "0 0 * * 0",
-      "handler": "weeklyCleanup",
-      "description": "Runs every Sunday at midnight"
+      "handler": "weeklyCleanup"
     }
   ]
 }
@@ -1587,17 +1677,19 @@ module.exports = MyPlugin;`}</pre>
 // index.js
 class MyPlugin {
   async sendDailyReport() {
-    console.log('Sending daily report...');
-    // Your logic here
+    const stats = await this.db.query('SELECT COUNT(*) FROM orders WHERE date = TODAY');
+    await this.services.email.send({
+      to: this.config.adminEmail,
+      subject: 'Daily Sales Report',
+      body: \`Today's orders: \${stats.count}\`
+    });
   }
 
   async weeklyCleanup() {
-    console.log('Running weekly cleanup...');
-    // Your logic here
+    await this.db.query('DELETE FROM sessions WHERE expires_at < NOW()');
+    console.log('Old sessions cleaned up');
   }
-}
-module.exports = MyPlugin;`}</pre>
-                </div>
+}`} />
                 <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                   <div className="bg-purple-50 rounded p-2">
                     <div className="font-mono text-purple-700">* * * * *</div>
@@ -1622,93 +1714,227 @@ module.exports = MyPlugin;`}</pre>
               <div className="border-t pt-4">
                 <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-green-600" />
-                  API Routes / Controllers
+                  API Routes & Controllers
                 </h3>
-                <p className="text-gray-600 mb-2">Create custom API endpoints:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// manifest.json
-{
-  "routes": [
-    {
-      "path": "/api/plugins/my-plugin/items",
-      "method": "GET",
-      "handler": "getItems"
-    },
-    {
-      "path": "/api/plugins/my-plugin/items",
-      "method": "POST",
-      "handler": "createItem"
-    },
-    {
-      "path": "/api/plugins/my-plugin/items/:id",
-      "method": "DELETE",
-      "handler": "deleteItem"
-    }
-  ]
-}
+                <p className="text-gray-600 mb-2">Create REST API endpoints. Controllers handle HTTP requests and return JSON responses:</p>
+                <CodeBlock title="controllers/ItemController.js" code={`class ItemController {
+  constructor(db) {
+    this.db = db;
+  }
 
-// index.js
-class MyPlugin {
   async getItems(req, res) {
-    const items = [{ id: 1, name: 'Item 1' }];
-    return { success: true, items };
+    const { store_id } = req.params;
+    const items = await this.db.query(
+      'SELECT * FROM plugin_items WHERE store_id = $1',
+      [store_id]
+    );
+    return { success: true, items: items.rows };
   }
 
   async createItem(req, res) {
-    const { name } = req.body;
-    // Save to database...
-    return { success: true, item: { id: 2, name } };
+    const { name, description } = req.body;
+    const result = await this.db.query(
+      'INSERT INTO plugin_items (name, description) VALUES ($1, $2) RETURNING *',
+      [name, description]
+    );
+    return { success: true, item: result.rows[0] };
   }
 
   async deleteItem(req, res) {
     const { id } = req.params;
-    // Delete from database...
+    await this.db.query('DELETE FROM plugin_items WHERE id = $1', [id]);
     return { success: true, deleted: id };
   }
-}
-module.exports = MyPlugin;`}</pre>
-                </div>
+}`} />
+                <CodeBlock title="manifest.json routes" code={`{
+  "routes": [
+    { "path": "/api/plugins/my-plugin/items", "method": "GET", "handler": "getItems" },
+    { "path": "/api/plugins/my-plugin/items", "method": "POST", "handler": "createItem" },
+    { "path": "/api/plugins/my-plugin/items/:id", "method": "DELETE", "handler": "deleteItem" }
+  ]
+}`} />
               </div>
 
               {/* MIGRATIONS */}
               <div className="border-t pt-4">
                 <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <Database className="w-4 h-4 text-orange-600" />
-                  Database Migrations
+                  Migrations
                 </h3>
-                <p className="text-gray-600 mb-2">Create database tables for your plugin:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// migrations/001_create_my_table.js
-module.exports = {
+                <p className="text-gray-600 mb-2">Create database tables for your plugin. Migrations run automatically on install and can be rolled back:</p>
+                <CodeBlock title="migrations/001_create_my_table.js" code={`module.exports = {
   up: async (knex) => {
     await knex.schema.createTable('my_plugin_items', (table) => {
       table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
       table.string('name').notNullable();
       table.text('description');
+      table.decimal('price', 10, 2);
       table.boolean('is_active').defaultTo(true);
-      table.uuid('store_id').references('id').inTable('stores');
+      table.uuid('store_id').references('id').inTable('stores').onDelete('CASCADE');
+      table.jsonb('metadata').defaultTo('{}');
       table.timestamps(true, true);
+    });
+
+    // Add indexes for performance
+    await knex.schema.alterTable('my_plugin_items', (table) => {
+      table.index(['store_id', 'is_active']);
     });
   },
 
   down: async (knex) => {
     await knex.schema.dropTableIfExists('my_plugin_items');
   }
-};`}</pre>
-                </div>
-                <p className="text-gray-500 text-xs mt-2">Migrations run automatically when the plugin is installed.</p>
+};`} />
+                <p className="text-gray-500 text-xs mt-2">Naming: <code className="bg-gray-100 px-1 rounded">001_description.js</code>, <code className="bg-gray-100 px-1 rounded">002_add_column.js</code> - prefix with number for order.</p>
               </div>
 
-              {/* EVENTS */}
+              {/* COMPONENTS */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <LayoutDashboard className="w-4 h-4 text-purple-600" />
+                  Components
+                </h3>
+                <p className="text-gray-600 mb-2">Reusable UI pieces. Return HTML strings that hooks inject into pages:</p>
+                <CodeBlock title="components/NewsletterSignup.js" code={`// components/NewsletterSignup.js
+function NewsletterSignup(config) {
+  return \`
+    <div class="newsletter-signup" style="padding: 20px; background: #f0f9ff; border-radius: 8px;">
+      <h3>\${config.title || 'Subscribe to our Newsletter'}</h3>
+      <p>\${config.description || 'Get updates on new products and sales!'}</p>
+      <form id="newsletter-form">
+        <input type="email" placeholder="your@email.com" required />
+        <button type="submit">Subscribe</button>
+      </form>
+    </div>
+  \`;
+}
+
+module.exports = NewsletterSignup;`} />
+
+                <CodeBlock title="components/UsernameAlert.js" code={`// components/UsernameAlert.js
+function UsernameAlert({ username }) {
+  return \`
+    <div class="welcome-alert" style="
+      position: fixed; top: 20px; right: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white; padding: 16px 24px; border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    ">
+      <span style="font-size: 24px;">👋</span>
+      <span>Welcome back, <strong>\${username}</strong>!</span>
+    </div>
+  \`;
+}
+
+module.exports = UsernameAlert;`} />
+              </div>
+
+              {/* SERVICES */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-yellow-600" />
+                  Services
+                </h3>
+                <p className="text-gray-600 mb-2">Business logic classes. Handle data operations, API calls, and complex calculations:</p>
+                <CodeBlock title="services/UserService.js" code={`// services/UserService.js
+class UserService {
+  constructor(context) {
+    this.context = context;
+    this.db = context.db;
+  }
+
+  getCurrentUser() {
+    return this.context.user || null;
+  }
+
+  async getUserByEmail(email) {
+    const result = await this.db.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    );
+    return result.rows[0];
+  }
+
+  async updateUserPreferences(userId, preferences) {
+    await this.db.query(
+      'UPDATE users SET preferences = $1 WHERE id = $2',
+      [JSON.stringify(preferences), userId]
+    );
+  }
+}
+
+module.exports = UserService;`} />
+
+                <CodeBlock title="services/EmailService.js" code={`// services/EmailService.js
+class EmailService {
+  constructor(config) {
+    this.config = config;
+  }
+
+  async getCustomerEmail(context) {
+    return context.user?.email || context.session?.email || null;
+  }
+
+  async send({ to, subject, body }) {
+    // Integration with email provider
+    console.log(\`Sending email to \${to}: \${subject}\`);
+    // await this.provider.send({ to, subject, body });
+  }
+}
+
+module.exports = EmailService;`} />
+              </div>
+
+              {/* UTILS */}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Code className="w-4 h-4 text-indigo-600" />
+                  Utils
+                </h3>
+                <p className="text-gray-600 mb-2">Pure helper functions. No side effects, can be used anywhere:</p>
+                <CodeBlock title="utils/helpers.js" code={`// utils/helpers.js
+const helpers = {
+  formatPrice(amount, currency = 'USD') {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency', currency
+    }).format(amount);
+  },
+
+  escapeHTML(str) {
+    if (typeof str !== 'string') return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  },
+
+  generateId() {
+    return crypto.randomUUID();
+  },
+
+  logMessage(msg) {
+    console.log(\`[Plugin] \${new Date().toISOString()}: \${msg}\`);
+  }
+};
+
+module.exports = helpers;`} />
+              </div>
+
+              {/* EVENTS / LIFECYCLE */}
               <div className="border-t pt-4">
                 <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <Webhook className="w-4 h-4 text-pink-600" />
-                  Events
+                  Lifecycle Events
                 </h3>
-                <p className="text-gray-600 mb-2">React to system events:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// index.js
+                <p className="text-gray-600 mb-2">React to plugin lifecycle changes. These methods are called automatically:</p>
+                <CodeBlock code={`// index.js
 class MyPlugin {
+  // Called when plugin is installed
+  async install() {
+    console.log('Plugin installed - run setup tasks');
+  }
+
   // Called when plugin is enabled
   onEnable() {
     console.log('Plugin enabled!');
@@ -1716,26 +1942,22 @@ class MyPlugin {
 
   // Called when plugin is disabled
   onDisable() {
-    console.log('Plugin disabled!');
+    console.log('Plugin disabled - cleanup');
   }
 
-  // Called when config changes
+  // Called when config changes in admin
   onConfigUpdate(newConfig, oldConfig) {
-    console.log('Config updated:', newConfig);
+    if (newConfig.apiKey !== oldConfig.apiKey) {
+      this.reconnectAPI(newConfig.apiKey);
+    }
   }
 
-  // Called on plugin install
-  async install() {
-    console.log('Plugin installed!');
-  }
-
-  // Called on plugin uninstall
+  // Called when plugin is uninstalled
   async uninstall() {
-    console.log('Plugin uninstalled!');
+    console.log('Plugin uninstalled - remove data');
   }
 }
-module.exports = MyPlugin;`}</pre>
-                </div>
+module.exports = MyPlugin;`} />
               </div>
 
               {/* ADMIN NAVIGATION */}
@@ -1745,9 +1967,7 @@ module.exports = MyPlugin;`}</pre>
                   Admin Navigation
                 </h3>
                 <p className="text-gray-600 mb-2">Add a page to the admin menu:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// manifest.json
-{
+                <CodeBlock title="manifest.json" code={`{
   "adminNavigation": {
     "enabled": true,
     "label": "My Plugin Settings",
@@ -1756,8 +1976,7 @@ module.exports = MyPlugin;`}</pre>
     "order": 100,
     "description": "Configure my plugin"
   }
-}`}</pre>
-                </div>
+}`} />
                 <p className="text-gray-500 text-xs mt-2">Available icons: Settings, BarChart3, Mail, CreditCard, Truck, Puzzle, Code2, and more from Lucide.</p>
               </div>
 
@@ -1768,9 +1987,7 @@ module.exports = MyPlugin;`}</pre>
                   Configuration Schema
                 </h3>
                 <p className="text-gray-600 mb-2">Define settings for store owners to configure:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// manifest.json
-{
+                <CodeBlock title="manifest.json" code={`{
   "configSchema": {
     "properties": {
       "welcomeMessage": {
@@ -1796,8 +2013,7 @@ module.exports = MyPlugin;`}</pre>
       }
     }
   }
-}`}</pre>
-                </div>
+}`} />
                 <div className="mt-2 grid grid-cols-4 gap-2 text-xs">
                   <div className="bg-blue-50 rounded p-2">
                     <div className="font-medium text-blue-700">string</div>
@@ -1816,345 +2032,6 @@ module.exports = MyPlugin;`}</pre>
                     <div className="text-orange-600">Dropdown</div>
                   </div>
                 </div>
-              </div>
-
-              {/* SERVICES */}
-              <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-yellow-600" />
-                  Services
-                </h3>
-                <p className="text-gray-600 mb-2">Reusable business logic for your plugin:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// services/LoyaltyService.js
-class LoyaltyService {
-  constructor(db) {
-    this.db = db;
-  }
-
-  async addPoints(customerId, amount, type, description) {
-    // Add points to customer balance
-    await this.db.query(
-      'UPDATE loyalty_points SET points = points + $1 WHERE customer_id = $2',
-      [amount, customerId]
-    );
-
-    // Record the transaction
-    await this.db.query(
-      \`INSERT INTO points_transactions (customer_id, amount, type, description)
-       VALUES ($1, $2, $3, $4)\`,
-      [customerId, amount, type, description]
-    );
-
-    // Check for tier upgrade
-    await this.checkTierUpgrade(customerId);
-  }
-
-  async redeemPoints(customerId, amount) {
-    const balance = await this.getBalance(customerId);
-    if (balance < amount) {
-      throw new Error('Insufficient points');
-    }
-
-    await this.db.query(
-      'UPDATE loyalty_points SET points = points - $1 WHERE customer_id = $2',
-      [amount, customerId]
-    );
-
-    return { discount: amount * 0.01 }; // 100 points = $1
-  }
-
-  async getBalance(customerId) {
-    const result = await this.db.query(
-      'SELECT points FROM loyalty_points WHERE customer_id = $1',
-      [customerId]
-    );
-    return result.rows[0]?.points || 0;
-  }
-}
-module.exports = LoyaltyService;`}</pre>
-                </div>
-              </div>
-
-              {/* UTILITIES */}
-              <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <Code className="w-4 h-4 text-indigo-600" />
-                  Utilities
-                </h3>
-                <p className="text-gray-600 mb-2">Helper functions for common operations:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// utils/helpers.js
-const helpers = {
-  // Format price with currency
-  formatPrice(amount, currency = 'USD') {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency
-    }).format(amount);
-  },
-
-  // Generate unique ID
-  generateId() {
-    return crypto.randomUUID();
-  },
-
-  // Escape HTML to prevent XSS
-  escapeHTML(str) {
-    if (typeof str !== 'string') return '';
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  },
-
-  // Validate email format
-  isValidEmail(email) {
-    return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
-  },
-
-  // Calculate percentage
-  calculatePercentage(value, total) {
-    if (total === 0) return 0;
-    return ((value / total) * 100).toFixed(2);
-  }
-};
-
-module.exports = helpers;`}</pre>
-                </div>
-              </div>
-
-              {/* MODELS */}
-              <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <Database className="w-4 h-4 text-emerald-600" />
-                  Models
-                </h3>
-                <p className="text-gray-600 mb-2">Database models for your plugin data:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// models/ProductReview.js
-class ProductReview {
-  constructor(db) {
-    this.db = db;
-  }
-
-  async create(data) {
-    const { productId, customerId, rating, text, photos } = data;
-    const result = await this.db.query(
-      \`INSERT INTO product_reviews
-       (id, product_id, customer_id, rating, review_text, photos)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)
-       RETURNING *\`,
-      [productId, customerId, rating, text, JSON.stringify(photos)]
-    );
-    return result.rows[0];
-  }
-
-  async findByProduct(productId) {
-    const result = await this.db.query(
-      'SELECT * FROM product_reviews WHERE product_id = $1 ORDER BY created_at DESC',
-      [productId]
-    );
-    return result.rows;
-  }
-
-  async getAverageRating(productId) {
-    const result = await this.db.query(
-      'SELECT AVG(rating)::numeric(10,2) as avg FROM product_reviews WHERE product_id = $1',
-      [productId]
-    );
-    return parseFloat(result.rows[0]?.avg) || 0;
-  }
-
-  async delete(id) {
-    await this.db.query('DELETE FROM product_reviews WHERE id = $1', [id]);
-  }
-}
-module.exports = ProductReview;`}</pre>
-                </div>
-              </div>
-
-              {/* ADMIN PAGE COMPONENT */}
-              <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <LayoutDashboard className="w-4 h-4 text-blue-600" />
-                  Admin Page Component
-                </h3>
-                <p className="text-gray-600 mb-2">React component for your admin page:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// components/ReviewsAdminPage.jsx
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Star, Trash2 } from 'lucide-react';
-
-const ReviewsAdminPage = () => {
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchReviews();
-  }, []);
-
-  const fetchReviews = async () => {
-    const res = await fetch('/api/plugins/product-reviews/reviews');
-    const data = await res.json();
-    setReviews(data.reviews);
-    setLoading(false);
-  };
-
-  const deleteReview = async (id) => {
-    await fetch(\`/api/plugins/product-reviews/reviews/\${id}\`, {
-      method: 'DELETE'
-    });
-    setReviews(reviews.filter(r => r.id !== id));
-  };
-
-  if (loading) return <div>Loading...</div>;
-
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Product Reviews</h1>
-
-      <div className="grid gap-4">
-        {reviews.map(review => (
-          <Card key={review.id}>
-            <CardContent className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-1 mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={\`w-4 h-4 \${
-                          i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                        }\`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-gray-600">{review.review_text}</p>
-                  <p className="text-sm text-gray-400 mt-2">
-                    By {review.customer_name} • {new Date(review.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => deleteReview(review.id)}>
-                  <Trash2 className="w-4 h-4 text-red-500" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export default ReviewsAdminPage;`}</pre>
-                </div>
-              </div>
-
-              {/* EVENT LISTENERS */}
-              <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <Webhook className="w-4 h-4 text-rose-600" />
-                  Event Listeners
-                </h3>
-                <p className="text-gray-600 mb-2">Listen to system events and react:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// events/listeners.js
-module.exports = {
-  // When an order is completed
-  'order.completed': async function(order) {
-    // Award loyalty points
-    const points = Math.floor(order.total * 10);
-    await this.services.loyalty.addPoints(
-      order.customer_id,
-      points,
-      'purchase',
-      \`Order #\${order.id}\`
-    );
-  },
-
-  // When a review is created
-  'review.created': async function(review) {
-    // Notify store owner
-    await this.services.email.send({
-      to: this.config.ownerEmail,
-      subject: 'New Product Review',
-      body: \`New \${review.rating}-star review on \${review.product.name}\`
-    });
-  },
-
-  // When a customer signs up
-  'customer.registered': async function(customer) {
-    // Give welcome bonus
-    await this.services.loyalty.addPoints(
-      customer.id,
-      100,
-      'welcome_bonus',
-      'Welcome bonus for signing up'
-    );
-  },
-
-  // When tier is upgraded
-  'tier.upgraded': async function({ customer, newTier }) {
-    await this.services.email.send({
-      to: customer.email,
-      subject: 'Congratulations! You\\'ve been upgraded!',
-      body: \`You've reached \${newTier} tier! Enjoy exclusive benefits.\`
-    });
-  }
-};`}</pre>
-                </div>
-                <p className="text-gray-500 text-xs mt-2">Available events: <code className="bg-gray-100 px-1 rounded">order.completed</code>, <code className="bg-gray-100 px-1 rounded">customer.registered</code>, <code className="bg-gray-100 px-1 rounded">product.viewed</code>, <code className="bg-gray-100 px-1 rounded">cart.updated</code></p>
-              </div>
-
-              {/* SYSTEM HOOKS */}
-              <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 text-teal-600" />
-                  System Hooks
-                </h3>
-                <p className="text-gray-600 mb-2">Modify data before it's rendered or saved:</p>
-                <div className="bg-gray-900 rounded-lg p-3 font-mono text-xs text-gray-100 overflow-x-auto">
-                  <pre>{`// hooks/productHooks.js
-module.exports = {
-  // Add review data to product before rendering
-  'product.render': async function(product) {
-    const reviews = await this.models.Review.findByProduct(product.id);
-    const avgRating = await this.models.Review.getAverageRating(product.id);
-
-    return {
-      ...product,
-      reviews,
-      average_rating: avgRating,
-      review_count: reviews.length
-    };
-  },
-
-  // Modify cart totals to apply points discount
-  'cart.calculate': async function(cart) {
-    if (cart.points_to_redeem > 0) {
-      const discount = cart.points_to_redeem * 0.01;
-      cart.discount += discount;
-      cart.total -= discount;
-    }
-    return cart;
-  },
-
-  // Add custom data to checkout
-  'checkout.render': async function(checkout) {
-    const points = await this.services.loyalty.getBalance(checkout.customer_id);
-    return {
-      ...checkout,
-      available_points: points,
-      points_value: points * 0.01
-    };
-  }
-};`}</pre>
-                </div>
-                <p className="text-gray-500 text-xs mt-2">Hooks can modify and return data. Events are fire-and-forget.</p>
               </div>
 
               {/* Tips */}
