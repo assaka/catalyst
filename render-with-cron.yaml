@@ -117,6 +117,12 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: MASTER_DB_URL
+        sync: false
+      - key: MASTER_SUPABASE_URL
+        sync: false
+      - key: MASTER_SUPABASE_SERVICE_KEY
+        sync: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
