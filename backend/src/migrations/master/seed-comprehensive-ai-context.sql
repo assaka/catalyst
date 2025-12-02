@@ -404,6 +404,91 @@ TRIGGERING IMPORT:
 -- SETTINGS & CONFIGURATION
 -- ============================================
 
+('settings', 'Slot Configuration vs Store Settings',
+'TWO TYPES OF VISUAL SETTINGS:
+
+1. SLOT CONFIGURATIONS (slot_configurations table):
+   - Per-page layout (product, category, cart, checkout, header)
+   - Slot positions, order, visibility
+   - Slot styling (colors, fonts, sizes)
+   - Slot content (text, images, components)
+   - Stored in: slot_configurations.configuration JSONB
+   - Changed via: AI layout_modify or styling intents
+
+2. STORE SETTINGS (stores.settings JSONB):
+   - Global store behavior settings
+   - Theme colors and fonts
+   - Feature toggles (enable/disable)
+   - Not slot-specific - affects entire store
+   - Changed via: AI settings_update intent
+
+WHEN USER SAYS:
+- "move title below price" → SLOT CONFIG (layout_modify)
+- "make title red" → SLOT CONFIG (styling)
+- "hide stock label" → STORE SETTINGS (settings_update)
+- "hide quantity selector" → STORE SETTINGS (settings_update)
+- "hide currency symbol" → STORE SETTINGS (settings_update)
+
+SLOT RENDERER DATA FLOW:
+1. Page loads slot_configurations from database
+2. Page loads stores.settings for behavior flags
+3. UnifiedSlotRenderer receives both as context
+4. Slots render based on configuration
+5. Settings control conditional display (if show_stock_label, etc.)
+
+VARIABLE CONTEXT IN SLOTS:
+- {{product.name}} → Product data
+- {{settings.show_stock_label}} → Store setting
+- {{settings.currency_symbol}} → Currency from settings
+- {{settings.hide_quantity_selector}} → Feature toggle',
+'core', '["slots", "settings", "configuration", "rendering"]', 100, 'all', true),
+
+('settings', 'Store Settings Reference - Feature Toggles',
+'STORE SETTINGS (stores.settings.*):
+
+STOCK SETTINGS:
+- enable_inventory (boolean) - Track inventory levels
+- display_out_of_stock (boolean) - Show out of stock products
+- hide_stock_quantity (boolean) - Hide exact stock numbers
+- display_low_stock_threshold (number) - When to show "low stock"
+- show_stock_label (boolean) - Show "In Stock"/"Out of Stock" badge
+
+DISPLAY SETTINGS:
+- hide_currency_category (boolean) - Hide currency on category pages
+- hide_currency_product (boolean) - Hide currency on product pages
+- hide_quantity_selector (boolean) - Hide qty +/- on product page
+- hide_header_cart (boolean) - Hide cart icon in header
+- hide_header_checkout (boolean) - Hide checkout in header
+- show_permanent_search (boolean) - Always show search bar
+- show_category_in_breadcrumb (boolean) - Include category in breadcrumbs
+- show_language_selector (boolean) - Show language picker in header
+
+CHECKOUT SETTINGS:
+- allow_guest_checkout (boolean) - Allow checkout without account
+- require_shipping_address (boolean) - Require shipping address
+- collect_phone_number_at_checkout (boolean) - Ask for phone
+- phone_number_required_at_checkout (boolean) - Phone is required
+
+CATEGORY PAGE SETTINGS:
+- enable_product_filters (boolean) - Show filter sidebar
+- collapse_filters (boolean) - Filters collapsed by default
+- max_visible_attributes (number) - Max filters to show
+- enable_view_mode_toggle (boolean) - Show grid/list toggle
+- default_view_mode (string) - "grid" or "list"
+
+PRODUCT GALLERY SETTINGS:
+- product_gallery_layout (string) - "horizontal" or "vertical"
+- vertical_gallery_position (string) - "left" or "right"
+- mobile_gallery_layout (string) - "below" or "slider"
+
+COMMAND MAPPING:
+"hide stock label" → show_stock_label = false
+"hide currency" → hide_currency_product = true
+"hide quantity selector" → hide_quantity_selector = true
+"enable guest checkout" → allow_guest_checkout = true
+"show filters" → enable_product_filters = true',
+'settings', '["settings", "toggles", "features", "hide", "show"]', 98, 'all', true),
+
 ('settings', 'Theme and Layout Settings',
 'THEME SETTINGS (stores.settings.theme JSONB):
 

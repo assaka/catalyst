@@ -836,7 +836,7 @@ INTENTS:
 - styling: Changing appearance (e.g., "make title red", "change color")
 - analytics_query: Data questions about sales, products, customers (e.g., "best selling product", "total revenue", "how many orders today")
 - job_trigger: Triggering background tasks (e.g., "import from akeneo", "run sync", "start export")
-- settings_update: Theme/appearance settings (e.g., "change breadcrumb color", "set primary color", "hide breadcrumb icon")
+- settings_update: Theme/appearance/catalog settings (e.g., "change breadcrumb color", "hide stock label", "enable inventory tracking")
 - admin_entity: Store entity CRUD (e.g., "rename tab", "create coupon", "disable payment method")
 - plugin: Creating new features
 - translation: Language translations
@@ -856,8 +856,17 @@ For job_trigger, extract:
 - priority: "normal", "high", "urgent"
 
 For settings_update, extract:
-- setting_path: e.g., "theme.breadcrumb_item_text_color", "theme.primary_color"
-- value: the new value (color hex, boolean, string)
+- setting_path: The setting key. Can be:
+  - Top-level: "show_stock_label", "hide_currency_product", "hide_quantity_selector"
+  - Nested under theme: "theme.breadcrumb_item_text_color", "theme.primary_color"
+- value: the new value (boolean for hide/show, color hex for colors, string for text)
+
+Common settings_update mappings:
+- "hide stock label" → setting_path: "show_stock_label", value: false
+- "show stock label" → setting_path: "show_stock_label", value: true
+- "hide currency" → setting_path: "hide_currency_product", value: true
+- "hide quantity selector" → setting_path: "hide_quantity_selector", value: true
+- "change breadcrumb color to blue" → setting_path: "theme.breadcrumb_item_text_color", value: "#0000FF"
 
 Return JSON:
 { "intent": "layout_modify", "details": { "sourceElement": "product_title", "targetElement": "price_container", "position": "after" } }
@@ -3517,7 +3526,7 @@ If showing products/customers, include names and key metrics.`;
       if (!settingPath || newValue === undefined) {
         return res.json({
           success: true,
-          message: "I couldn't determine which setting you want to change. You can update:\n• **Theme colors**: 'set primary color to blue', 'change breadcrumb color to #333'\n• **Typography**: 'change font to Roboto'\n• **Breadcrumbs**: 'hide breadcrumb home icon', 'set breadcrumb font size to 14px'\n\nPlease be specific about what you want to change.",
+          message: "I couldn't determine which setting you want to change. You can update:\n\n**Display toggles:**\n• 'hide stock label' / 'show stock label'\n• 'hide currency on product page'\n• 'hide quantity selector'\n\n**Theme colors:**\n• 'change breadcrumb color to blue'\n• 'set primary color to #FF5500'\n\n**Features:**\n• 'enable guest checkout'\n• 'show product filters'\n\nPlease be specific about what you want to change.",
           data: { type: 'settings_clarification' },
           creditsDeducted: creditsUsed
         });
