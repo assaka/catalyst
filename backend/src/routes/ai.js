@@ -1219,37 +1219,40 @@ Return ONLY valid JSON.`;
         }
       }
 
-      // Let AI generate natural response
+      // Let AI generate varied, natural response
       const successCount = successfulChanges.length;
       const needsClarification = results.filter(r => r.needsClarification);
+      const allNotFound = needsClarification.flatMap(r => r.notFound || []);
 
-      // Build simple direct response
-      let responseMessage = '';
+      // Build context for AI
+      const whatWasDone = successfulChanges.map(r => r.message).join('; ');
+      const whatFailed = allNotFound.map(nf =>
+        `couldn't find "${nf.name}"${nf.suggestions?.length ? ` (maybe ${nf.suggestions[0]}?)` : ''}`
+      ).join('; ');
 
-      if (successCount > 0) {
-        const successMessages = successfulChanges.map(r => r.message.toLowerCase());
-        responseMessage = `Done - ${successMessages.join(', ')}.`;
-      }
+      const responsePrompt = `User asked: "${message}"
+${whatWasDone ? `Done: ${whatWasDone}` : ''}
+${whatFailed ? `Problem: ${whatFailed}` : ''}
 
-      // Add clarification questions if needed
-      if (needsClarification.length > 0) {
-        const allNotFound = needsClarification.flatMap(r => r.notFound || []);
-        const questions = allNotFound
-          .filter(nf => nf.suggestions?.length > 0)
-          .map(nf => `Did you mean ${nf.suggestions[0]} instead of "${nf.name}"?`);
+Reply in 1 short sentence. Be natural and varied.
+NEVER use: "Great", "I've updated", "Let me know", "Feel free", "Happy to help"
+NEVER mention: refreshing, preview, anything else
+Just confirm what happened naturally, like talking to a friend.`;
 
-        if (questions.length > 0) {
-          responseMessage += (responseMessage ? ' ' : '') + questions.join(' ');
-        }
-      }
-
-      if (!responseMessage) {
-        responseMessage = "Couldn't find those elements. Try being more specific?";
-      }
+      const responseResult = await aiService.generate({
+        userId,
+        operationType: 'general',
+        prompt: responsePrompt,
+        systemPrompt: 'Reply casually in ONE short sentence. No fluff. Vary your style.',
+        maxTokens: 50,
+        temperature: 1.0,
+        metadata: { type: 'response', storeId: resolvedStoreId }
+      });
+      totalCredits += responseResult.creditsDeducted;
 
       return res.json({
         success: successCount > 0,
-        message: responseMessage,
+        message: responseResult.content,
         data: {
           type: 'multi_intent',
           intents: parsedIntent.intents,

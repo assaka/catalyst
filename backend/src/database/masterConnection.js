@@ -51,121 +51,61 @@ if (!masterDbUrl) {
   }
 }
 
-// Parse MASTER_DB_URL manually to handle Supabase pooler URLs correctly
-// Supabase URLs use format: postgresql://postgres.PROJECT_REF:PASSWORD@host:port/database
-let parsedDbConfig = null;
-if (useMasterDbUrl) {
-  try {
-    // Replace postgresql:// with http:// for URL parsing (Node.js URL class handles http better)
-    const urlForParsing = masterDbUrl.replace(/^postgres(ql)?:\/\//, 'http://');
-    const dbUrl = new URL(urlForParsing);
-    parsedDbConfig = {
-      host: dbUrl.hostname,
-      port: parseInt(dbUrl.port) || 5432,
-      database: dbUrl.pathname.substring(1) || 'postgres',
-      username: decodeURIComponent(dbUrl.username), // Handle URL-encoded characters
-      password: decodeURIComponent(dbUrl.password)  // Handle URL-encoded characters
-    };
-    console.log('🔧 [MASTER CONNECTION] Parsed DB config for Sequelize:');
-    console.log('   - Host:', parsedDbConfig.host);
-    console.log('   - Port:', parsedDbConfig.port);
-    console.log('   - Database:', parsedDbConfig.database);
-    console.log('   - Username:', parsedDbConfig.username);
-    console.log('   - Password length:', parsedDbConfig.password?.length || 0);
-
-    // Verify username was parsed correctly (should contain '.' for Supabase pooler)
-    if (parsedDbConfig.username === 'postgres' && masterDbUrl.includes('postgres.')) {
-      console.warn('⚠️ [MASTER CONNECTION] Username may be truncated! Expected postgres.PROJECT_REF');
-    }
-  } catch (parseError) {
-    console.error('❌ Failed to parse MASTER_DB_URL for Sequelize:', parseError.message);
-    console.error('❌ URL (first 50 chars):', masterDbUrl?.substring(0, 50));
+// Create Sequelize connection - use connection string directly if available
+const sequelizeOptions = {
+  dialect: 'postgres',
+  logging: process.env.NODE_ENV === 'development' ? console.log : false,
+  timezone: '+00:00',
+  define: {
+    timestamps: true,
+    underscored: false,
+    freezeTableName: true
+  },
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    },
+    // Disable prepared statements for Supabase transaction pooler (PgBouncer)
+    prepareBeforeExecute: false
+  },
+  pool: {
+    max: 20,
+    min: 5,
+    acquire: 30000,
+    idle: 10000
+  },
+  retry: {
+    max: 3,
+    match: [
+      /SequelizeConnectionError/,
+      /SequelizeConnectionRefusedError/,
+      /SequelizeHostNotFoundError/,
+      /SequelizeHostNotReachableError/,
+      /SequelizeInvalidConnectionError/,
+      /SequelizeConnectionTimedOutError/,
+      /TimeoutError/
+    ]
   }
+};
+
+let masterSequelize;
+if (useMasterDbUrl) {
+  // Use connection string directly - Sequelize handles parsing
+  console.log('🔧 [MASTER CONNECTION] Using connection string directly with Sequelize');
+  masterSequelize = new Sequelize(masterDbUrl, sequelizeOptions);
+} else {
+  // Fallback to individual env vars
+  console.log('🔧 [MASTER CONNECTION] Using individual env vars for Sequelize');
+  masterSequelize = new Sequelize({
+    ...sequelizeOptions,
+    host: process.env.MASTER_DB_HOST,
+    port: process.env.MASTER_DB_PORT || 5432,
+    database: process.env.MASTER_DB_NAME || 'postgres',
+    username: process.env.MASTER_DB_USER,
+    password: process.env.MASTER_DB_PASSWORD
+  });
 }
-
-const masterSequelize = parsedDbConfig
-  ? new Sequelize({
-      dialect: 'postgres',
-      host: parsedDbConfig.host,
-      port: parsedDbConfig.port,
-      database: parsedDbConfig.database,
-      username: parsedDbConfig.username,
-      password: parsedDbConfig.password,
-      logging: process.env.NODE_ENV === 'development' ? console.log : false,
-      timezone: '+00:00',
-      define: {
-        timestamps: true,
-        underscored: false,
-        freezeTableName: true
-      },
-      dialectOptions: {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false
-        }
-      },
-
-      // Connection pool settings
-      pool: {
-        max: 20,          // Maximum connections in pool
-        min: 5,           // Minimum connections in pool
-        acquire: 30000,   // Maximum time to acquire connection (30s)
-        idle: 10000       // Maximum time connection can be idle (10s)
-      },
-
-      // Retry logic
-      retry: {
-        max: 3,
-        match: [
-          /SequelizeConnectionError/,
-          /SequelizeConnectionRefusedError/,
-          /SequelizeHostNotFoundError/,
-          /SequelizeHostNotReachableError/,
-          /SequelizeInvalidConnectionError/,
-          /SequelizeConnectionTimedOutError/,
-          /TimeoutError/
-        ]
-      }
-    })
-  : new Sequelize({
-      dialect: 'postgres',
-      host: process.env.MASTER_DB_HOST,
-      port: process.env.MASTER_DB_PORT || 5432,
-      database: process.env.MASTER_DB_NAME || 'postgres',
-      username: process.env.MASTER_DB_USER,
-      password: process.env.MASTER_DB_PASSWORD,
-      pool: {
-        max: 20,
-        min: 5,
-        acquire: 30000,
-        idle: 10000
-      },
-      logging: process.env.NODE_ENV === 'development' ? console.log : false,
-      timezone: '+00:00',
-      define: {
-        timestamps: true,
-        underscored: false,
-        freezeTableName: true
-      },
-      retry: {
-        max: 3,
-        match: [
-          /SequelizeConnectionError/,
-          /SequelizeConnectionRefusedError/,
-          /SequelizeHostNotFoundError/,
-          /SequelizeHostNotReachableError/,
-          /SequelizeInvalidConnectionError/,
-          /SequelizeConnectionTimedOutError/,
-          /TimeoutError/
-        ]
-      },
-      dialectOptions: {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false
-        }
-      }
-    });
 
 // ============================================
 // SUPABASE CLIENT (if using Supabase for master DB)
@@ -261,14 +201,12 @@ async function closeMasterConnection() {
 
 // Test connection on startup (ALWAYS - even in production, for diagnostics)
 console.log('🔧 Testing master database connection on startup...');
-console.log('🔧 Attempting to authenticate with:');
-console.log('   - Dialect:', masterSequelize.config.dialect);
+console.log('🔧 Sequelize config:');
+console.log('   - Dialect:', masterSequelize.getDialect());
 console.log('   - Host:', masterSequelize.config.host);
 console.log('   - Port:', masterSequelize.config.port);
 console.log('   - Database:', masterSequelize.config.database);
-console.log('   - Username:', masterSequelize.config.username);
-console.log('   - Has Password:', !!masterSequelize.config.password);
-console.log('   - Password Length:', masterSequelize.config.password?.length || 0);
+console.log('   - Using connection string:', useMasterDbUrl);
 
 testMasterConnection()
   .then(() => {
