@@ -86,7 +86,7 @@ const handleImportOperation = async (storeId, req, res, importFunction) => {
     // Update sync status
     const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
     if (integrationConfig) {
-      await integrationConfig.updateSyncStatus('syncing');
+      await IntegrationConfig.updateSyncStatus(integrationConfig.id, storeId, 'syncing');
     }
 
     try {
@@ -137,7 +137,7 @@ const handleImportOperation = async (storeId, req, res, importFunction) => {
       
       // Update sync status based on result
       if (integrationConfig) {
-        await integrationConfig.updateSyncStatus(result.success ? 'success' : 'error', result.error || null);
+        await IntegrationConfig.updateSyncStatus(integrationConfig.id, storeId, result.success ? 'success' : 'error', result.error || null);
         
         // Track section-specific last import dates
         if (result.success && req.path.includes('/import-')) {
@@ -153,11 +153,11 @@ const handleImportOperation = async (storeId, req, res, importFunction) => {
           
           if (section) {
             lastImportDates[section] = new Date().toISOString();
-            integrationConfig.config_data = {
+            const updatedConfigData = {
               ...currentConfig,
               lastImportDates
             };
-            await integrationConfig.save();
+            await IntegrationConfig.createOrUpdate(storeId, 'akeneo', updatedConfigData);
           }
         }
       }
@@ -166,7 +166,7 @@ const handleImportOperation = async (storeId, req, res, importFunction) => {
     } catch (importError) {
       // Update sync status on error
       if (integrationConfig) {
-        await integrationConfig.updateSyncStatus('error', importError.message);
+        await IntegrationConfig.updateSyncStatus(integrationConfig.id, storeId, 'error', importError.message);
       }
       throw importError;
     }
@@ -230,7 +230,7 @@ router.post('/akeneo/test-connection',
         
         // Save failed connection status
         if (integrationConfig) {
-          await integrationConfig.updateConnectionStatus('failed', errorMessage);
+          await IntegrationConfig.updateConnectionStatus(integrationConfig.id, storeId, 'failed', errorMessage);
         }
         
         return res.status(400).json({
@@ -243,17 +243,16 @@ router.post('/akeneo/test-connection',
 
       // Save successful connection status
       if (integrationConfig) {
-        await integrationConfig.updateConnectionStatus('success', null);
+        await IntegrationConfig.updateConnectionStatus(integrationConfig.id, storeId, 'success', null);
       }
 
       res.json(result);
     } catch (syncError) {
       // Save failed connection status for sync initialization errors
       try {
-        const IntegrationConfig = require('../models/IntegrationConfig');
-        let integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
-        if (integrationConfig) {
-          await integrationConfig.updateConnectionStatus('failed', syncError.message);
+        let integrationConfigForError = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
+        if (integrationConfigForError) {
+          await IntegrationConfig.updateConnectionStatus(integrationConfigForError.id, storeId, 'failed', syncError.message);
         }
       } catch (statusUpdateError) {
         console.error('Failed to update connection status:', statusUpdateError);
