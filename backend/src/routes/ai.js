@@ -2231,7 +2231,26 @@ Return ONLY valid JSON.`;
 
       console.log('[AI Chat] Successfully updated layout order:', updatedData.id);
 
-      // Simple direct response - no extra AI call needed
+      // Let AI generate varied response
+      const responsePrompt = `User asked: "${message}"
+Done: ${analysis.description}
+
+Reply in 1 short sentence. Be natural and varied.
+NEVER use: "Great", "I've updated", "Let me know", "Feel free", "Happy to help"
+NEVER mention: refreshing, preview, anything else
+Just confirm what happened naturally.`;
+
+      const responseResult = await aiService.generate({
+        userId,
+        operationType: 'general',
+        prompt: responsePrompt,
+        systemPrompt: 'Reply casually in ONE short sentence. No fluff. Vary your style.',
+        maxTokens: 50,
+        temperature: 1.0,
+        metadata: { type: 'response', storeId: resolvedStoreId }
+      });
+      creditsUsed += responseResult.creditsDeducted;
+
       responseData = {
         type: 'layout_modified',
         pageType,
@@ -2245,7 +2264,7 @@ Return ONLY valid JSON.`;
 
       res.json({
         success: true,
-        message: `Done - ${analysis.description.toLowerCase()}.`,
+        message: responseResult.content,
         data: responseData,
         creditsDeducted: creditsUsed
       });
@@ -2864,10 +2883,27 @@ Return ONLY valid JSON.`;
       console.log('[AI Chat] Successfully updated slot config:', updatedData.id);
       console.log('[AI Chat] Changes applied:', allChangeDescriptions);
 
-      // Simple direct response - build naturally from what was done
-      const changesSummary = appliedChanges.length === 1
-        ? appliedChanges[0].description.toLowerCase()
-        : appliedChanges.map(c => c.description.toLowerCase()).join(', ');
+      // Let AI generate varied response
+      const changesSummary = appliedChanges.map(c => c.description).join('; ');
+
+      const responsePrompt = `User asked: "${message}"
+Done: ${changesSummary}
+
+Reply in 1 short sentence. Be natural and varied.
+NEVER use: "Great", "I've updated", "Let me know", "Feel free", "Happy to help"
+NEVER mention: refreshing, preview, anything else
+Just confirm what happened naturally.`;
+
+      const responseResult = await aiService.generate({
+        userId,
+        operationType: 'general',
+        prompt: responsePrompt,
+        systemPrompt: 'Reply casually in ONE short sentence. No fluff. Vary your style.',
+        maxTokens: 50,
+        temperature: 1.0,
+        metadata: { type: 'response', storeId: resolvedStoreId }
+      });
+      creditsUsed += responseResult.creditsDeducted;
 
       responseData = {
         type: 'styling_applied',
@@ -2881,7 +2917,7 @@ Return ONLY valid JSON.`;
 
       res.json({
         success: true,
-        message: `Done - ${changesSummary}.`,
+        message: responseResult.content,
         data: responseData,
         creditsDeducted: creditsUsed
       });
