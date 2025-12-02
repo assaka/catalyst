@@ -818,82 +818,23 @@ Example: "move sku above price and make it red" should return:
   ]
 }
 
-INTENT DEFINITIONS:
+AVAILABLE INTENTS:
+- styling: Visual appearance changes (how things look)
+- layout: Creating new page sections from scratch
+- layout_modify: Reorganizing existing elements (move, swap, reorder)
+- translation: Language translations
+- plugin: New interactive functionality/behavior (things that DO something)
+- admin_entity: Store settings, products, coupons, payment config
+- code: Direct source code changes
+- chat: Questions or conversation
 
-1. **styling** - Changing visual properties of EXISTING elements (colors, fonts, sizes, spacing):
-   - "change the product title color to red" → styling
-   - "make the price blue" → styling
-   - "set the button background to green" → styling
-   - "increase the font size of the title" → styling
-   Details: { pageType, element, property, value }
+Think about WHAT the user wants to achieve, not the words they use:
+- Changing appearance/feel/look → styling
+- Moving things around → layout_modify
+- Adding new behavior/interaction → plugin
+- Configuring store data → admin_entity
 
-2. **layout** - Adding NEW sections/components OR generating a new page layout from scratch:
-   - "add a hero section to the homepage" → layout (action: "generate")
-   - "create a new layout for the product page" → layout (action: "generate")
-   - "generate a modern homepage layout" → layout (action: "generate")
-   Details: { configType, description, action: "generate" }
-
-3. **layout_modify** - Reordering, moving, swapping, or removing EXISTING elements within a page:
-   - "move the sku above the stock label" → layout_modify
-   - "swap the price and title positions" → layout_modify
-   - "reorder the product info section" → layout_modify
-   - "remove the breadcrumbs from the product page" → layout_modify
-   - "put the add to cart button before the price" → layout_modify
-   Details: {
-     pageType: "product|category|homepage|cart|checkout|account|login|success",
-     action: "move|swap|reorder|remove",
-     sourceElement: "element to move",
-     targetElement: "element to move relative to (for move/swap)",
-     position: "before|after|above|below" (for move operations)
-   }
-
-4. **translation** - Translating text to other languages:
-   - "translate add to cart to French" → translation
-   Details: { text, targetLanguages, entities }
-
-5. **plugin** - Creating new functionality/features:
-   - "create a wishlist plugin" → plugin
-   Details: { description, category }
-
-6. **code** - Modifying source code directly:
-   - "add error handling to this function" → code
-   Details: { operation }
-
-7. **admin_entity** - Modifying admin settings, product tabs, categories, coupons, and other database entities:
-   - "rename the specs tab to Technical Details" → admin_entity
-   - "change store name to My Awesome Store" → admin_entity
-   - "create a 20% discount coupon SUMMER20" → admin_entity
-   - "disable PayPal payments" → admin_entity
-   - "add a new attribute called Brand" → admin_entity
-   - "set VAT to 21%" → admin_entity
-   Details: {
-     entity: "product_tabs|categories|attributes|coupons|payment_methods|shipping_methods|languages|seo_settings|store_settings|tax_settings|cms_pages|email_templates|translations",
-     operation: "list|get|create|update|delete",
-     search_term: "name or identifier to find the record",
-     params: { field_name: value, ... }
-   }
-
-8. **chat** - General questions or conversation
-
-STYLING DETAILS FORMAT (supports multiple changes):
-{
-  "pageType": "product|category|homepage|cart|checkout|account|login|success",
-  "changes": [
-    { "element": "product_title", "property": "fontSize", "value": "24px" },
-    { "element": "product_price", "property": "color", "value": "purple" }
-  ]
-}
-
-For single changes, you can also use the simple format:
-{
-  "pageType": "product",
-  "element": "product_title",
-  "property": "color",
-  "value": "red"
-}
-
-IMPORTANT: If user mentions color, font, size, background - it's STYLING, not layout.
-IMPORTANT: If user mentions multiple changes in one message, use the "changes" array format.
+Return details that help execute the request. Be flexible with the details structure based on what's needed.
 
 Return ONLY valid JSON.`;
 
