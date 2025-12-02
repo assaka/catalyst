@@ -643,42 +643,23 @@ router.post('/chat', authMiddleware, async (req, res) => {
       });
     }
 
-    // Check for confirmation BEFORE intent detection
-    // This prevents "yes" from being classified as a new translation intent
-    const isConfirmation = /^(yes|yeah|yep|sure|ok|okay|do it|update|apply|confirm|proceed|publish|implement|go ahead|please|make it happen)/i.test(message.trim());
-
-    if (isConfirmation && conversationHistory && conversationHistory.length > 0) {
-      console.log('🔍 Confirmation detected, checking conversation history...');
-      console.log('📝 History length:', conversationHistory.length);
-      console.log('📝 Last 2 messages:', JSON.stringify(conversationHistory.slice(-2), null, 2));
-
-      // Find the last assistant message with pending action (translation or styling)
-      const lastAssistantMessage = [...conversationHistory]
+    // Check for pending actions that need confirmation
+    let lastPendingAction = null;
+    if (conversationHistory && conversationHistory.length > 0) {
+      lastPendingAction = [...conversationHistory]
         .reverse()
-        .find(msg => msg.role === 'assistant' && (msg.data?.type === 'translation_preview' || msg.data?.type === 'styling_preview'));
+        .find(msg => msg.role === 'assistant' && msg.data?.type &&
+          ['translation_preview', 'styling_preview', 'plugin_confirmation'].includes(msg.data.type));
+    }
 
-      // If no pending structured action, find the last user message that might need re-execution
-      if (!lastAssistantMessage) {
-        const lastUserMessage = [...conversationHistory]
-          .reverse()
-          .find(msg => msg.role === 'user' && msg.content && msg.content !== message);
-
-        if (lastUserMessage) {
-          console.log('🔄 No pending action found, re-executing last user message:', lastUserMessage.content);
-          // Re-run with the previous user message instead of the confirmation
-          message = lastUserMessage.content;
-          // Remove the confirmation from history to avoid confusion
-          conversationHistory = conversationHistory.filter(m => m.content !== lastUserMessage.content && m.content !== 'yes implement');
-          // Continue to intent detection with the original command
-        }
-      }
-
-      console.log('🤖 Found pending action?', !!lastAssistantMessage);
-      console.log('🎯 Action type:', lastAssistantMessage?.data?.action);
+    // If there's a pending action, let AI determine if this is a confirmation
+    if (lastPendingAction && conversationHistory?.length > 0) {
+      console.log('🔍 Checking if message is confirmation for pending action...');
+      console.log('🎯 Pending action type:', lastPendingAction.data?.type);
 
       // Handle styling confirmation
-      if (lastAssistantMessage?.data?.action === 'publish_styling') {
-        const { configId, pageType, slotId, change } = lastAssistantMessage.data;
+      if (lastPendingAction?.data?.action === 'publish_styling') {
+        const { configId, pageType, slotId, change } = lastPendingAction.data;
         const ConnectionManager = require('../services/database/ConnectionManager');
 
         if (!resolvedStoreId) {
@@ -731,9 +712,9 @@ router.post('/chat', authMiddleware, async (req, res) => {
         });
       }
 
-      if (lastAssistantMessage?.data?.action === 'update_labels') {
+      if (lastPendingAction?.data?.action === 'update_labels') {
         // User confirmed - update the translations
-        const { translations, matchingKeys, original } = lastAssistantMessage.data;
+        const { translations, matchingKeys, original } = lastPendingAction.data;
         const ConnectionManager = require('../services/database/ConnectionManager');
         const store_id = req.headers['x-store-id'] || req.query.store_id || req.body.store_id || req.body.storeId;
 
@@ -801,65 +782,30 @@ router.post('/chat', authMiddleware, async (req, res) => {
     }
 
     // Determine intent from conversation
-    const intentPrompt = `You are the AI for Catalyst, a SLOT-BASED e-commerce website builder.
+    const intentPrompt = `Classify this user request for a slot-based e-commerce page builder.
 
-CONTEXT: Pages are built from configurable SLOTS (components like product_sku, price_container, product_title).
-Changes are made by updating slot configurations - NOT by editing HTML/CSS files.
+User: "${message}"
 
-User message: "${message}"
+INTENTS (pick the most appropriate):
+- layout_modify: Rearranging/repositioning existing page elements
+- styling: Changing visual appearance (colors, sizes, fonts, spacing)
+- plugin: Creating new functionality or features
+- translation: Language translations
+- admin_entity: Store/product/coupon settings
+- chat: Questions or unclear requests
 
-Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}
+IMPORTANT: If the user wants MULTIPLE things, return an "intents" array.
 
-Classify the intent - users may request MULTIPLE actions in one message.
+Return JSON:
 
-INTENTS:
-- layout_modify: Move/swap/reorder/position existing slots (VERY COMMON - use this for any move/above/below/swap commands!)
-- styling: Change appearance (colors, fonts, sizes) of existing slots
-- layout: Create entirely new page sections
-- plugin: Add new interactive behavior/functionality
-- translation: Translate text to other languages
-- admin_entity: Configure store settings, products, coupons
-- chat: General questions (use ONLY for questions, never for commands!)
+Single action:
+{ "intent": "layout_modify|styling|plugin|...", "details": { relevant fields } }
 
-CRITICAL RULES:
-- ANY message with "move", "above", "below", "before", "after", "swap", "reorder" = layout_modify (NEVER chat!)
-- "move sku below title" = layout_modify
-- "move sku above price" = layout_modify
-- "put title after description" = layout_modify
-- "make sku red" = styling
-- "change color to blue" = styling
-- Only use "chat" for actual QUESTIONS like "what can you do?" - never for commands!
-
-For layout_modify, ALWAYS return:
-{
-  "intent": "layout_modify",
-  "action": "modify",
-  "details": {
-    "pageType": "product",
-    "action": "move",
-    "sourceElement": "what to move",
-    "targetElement": "move relative to this",
-    "position": "before|after"
-  }
-}
-
-For styling:
-{
-  "intent": "styling",
-  "action": "modify",
-  "details": {
-    "pageType": "product",
-    "element": "slot name",
-    "property": "color|fontSize|backgroundColor",
-    "value": "the value"
-  }
-}
-
-For multiple actions in one message:
+Multiple actions (e.g. "move X and make Y red"):
 {
   "intents": [
-    { "intent": "layout_modify", "details": { "pageType": "product", "action": "move", "sourceElement": "sku", "targetElement": "title", "position": "after" } },
-    { "intent": "styling", "details": { "pageType": "product", "element": "title", "property": "color", "value": "green" } }
+    { "intent": "layout_modify", "details": { "sourceElement": "what to move", "targetElement": "relative to", "position": "before|after" } },
+    { "intent": "styling", "details": { "element": "what to style", "property": "color", "value": "red" } }
   ]
 }
 
@@ -901,7 +847,10 @@ Return ONLY valid JSON.`;
 
     // Handle MULTIPLE intents if AI detected them
     if (parsedIntent.intents && Array.isArray(parsedIntent.intents) && parsedIntent.intents.length > 1) {
+      console.log('[AI Chat] ===========================================');
       console.log('[AI Chat] Detected MULTIPLE intents:', parsedIntent.intents.length);
+      console.log('[AI Chat] FULL INTENTS ARRAY:', JSON.stringify(parsedIntent.intents, null, 2));
+      console.log('[AI Chat] ===========================================');
 
       const results = [];
       let totalCredits = intentResult.creditsDeducted;
@@ -1163,7 +1112,9 @@ Which slot matches? Reply with JUST the slot ID, nothing else. If no match, repl
             let property = singleIntent.details?.property || '';
             let value = singleIntent.details?.value || '';
 
-            console.log('[AI Chat Multi] Styling intent:', { element, property, value });
+            console.log('[AI Chat Multi] ===================');
+            console.log('[AI Chat Multi] Styling intent RAW:', JSON.stringify(singleIntent));
+            console.log('[AI Chat Multi] Styling intent PARSED:', { element, property, value });
 
             // Smart detection: if value looks like a color and no property, assume color
             const colorNames = ['red', 'blue', 'green', 'orange', 'yellow', 'purple', 'pink', 'gray', 'black', 'white'];
@@ -1243,6 +1194,9 @@ Which slot matches? Reply with JUST the slot ID, nothing else. If no match, repl
 
       // Update configuration with successful changes
       const successfulChanges = results.filter(r => r.success);
+      console.log('[AI Chat Multi] Results:', JSON.stringify(results, null, 2));
+      console.log('[AI Chat Multi] Successful changes count:', successfulChanges.length);
+
       if (successfulChanges.length > 0) {
         workingConfig.slots = slots;
         workingConfig.metadata = {
@@ -1251,6 +1205,10 @@ Which slot matches? Reply with JUST the slot ID, nothing else. If no match, repl
           lastModifiedBy: 'AI Assistant',
           lastChanges: successfulChanges.map(r => r.message)
         };
+
+        // Log what we're about to save for debugging
+        console.log('[AI Chat Multi] Saving configuration...');
+        console.log('[AI Chat Multi] Sample slot (product_title):', JSON.stringify(slots['product_title'], null, 2));
 
         const { error: updateError } = await tenantDb
           .from('slot_configurations')
@@ -1262,6 +1220,8 @@ Which slot matches? Reply with JUST the slot ID, nothing else. If no match, repl
 
         if (updateError) {
           console.error('[AI Chat] Failed to save multi-intent changes:', updateError);
+        } else {
+          console.log('[AI Chat Multi] Configuration saved successfully!');
         }
       }
 
