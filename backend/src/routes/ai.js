@@ -1086,11 +1086,47 @@ Which slot matches? Reply with JUST the slot ID, nothing else. If no match, repl
                   };
                 }
               } else {
+                // Cross-container move - move source to target's container
+                console.log('[AI Chat Multi] Cross-container move:', sourceSlot.parentId, '->', targetSlot.parentId);
+
+                const oldParentId = sourceSlot.parentId;
+                const newParentId = targetSlot.parentId;
+
+                // Update source slot's parent
+                sourceSlot.parentId = newParentId;
+
+                // Get siblings in new container and insert source
+                const newSiblings = Object.entries(slots)
+                  .filter(([id, slot]) => slot.parentId === newParentId && id !== sourceSlotId)
+                  .sort((a, b) => (a[1].position?.row ?? 999) - (b[1].position?.row ?? 999));
+
+                const newOrder = newSiblings.map(([id]) => id);
+                const targetIndex = newOrder.indexOf(targetSlotId);
+                const insertAt = position === 'after' ? targetIndex + 1 : targetIndex;
+                newOrder.splice(insertAt, 0, sourceSlotId);
+
+                // Update row positions in new container
+                newOrder.forEach((slotId, index) => {
+                  if (slots[slotId]?.position) {
+                    slots[slotId].position.row = index + 1;
+                  }
+                });
+
+                // Reorder remaining slots in old container
+                const oldSiblings = Object.entries(slots)
+                  .filter(([id, slot]) => slot.parentId === oldParentId)
+                  .sort((a, b) => (a[1].position?.row ?? 999) - (b[1].position?.row ?? 999));
+
+                oldSiblings.forEach(([slotId], index) => {
+                  if (slots[slotId]?.position) {
+                    slots[slotId].position.row = index + 1;
+                  }
+                });
+
                 subResult = {
-                  success: false,
-                  message: `I can't move ${sourceElement} next to ${targetElement} because they're in different sections.`,
-                  needsClarification: true,
-                  element: sourceElement
+                  success: true,
+                  message: `Moved ${sourceElement} ${position} ${targetElement}`,
+                  data: { type: 'layout_modify', action: 'move', source: sourceSlotId, target: targetSlotId, crossContainer: true }
                 };
               }
             } else {
@@ -2240,7 +2276,48 @@ Return ONLY valid JSON.`;
           });
         }
       } else if (sourceSlot && targetSlot) {
-        console.log('[AI Chat] Slots have different parents - cross-container move not yet supported');
+        // Cross-container move - move source to target's container
+        console.log('[AI Chat] Cross-container move:', sourceSlot.parentId, '->', targetSlot.parentId);
+
+        const oldParentId = sourceSlot.parentId;
+        const newParentId = targetSlot.parentId;
+
+        // Update source slot's parent
+        sourceSlot.parentId = newParentId;
+
+        // Get siblings in new container and insert source at right position
+        const newSiblings = Object.entries(slots)
+          .filter(([id, slot]) => slot.parentId === newParentId && id !== sourceSlotId)
+          .sort((a, b) => (a[1].position?.row ?? 999) - (b[1].position?.row ?? 999));
+
+        const newOrder = newSiblings.map(([id]) => id);
+        let targetIndex = newOrder.indexOf(targetSlotId);
+        if (analysis.action === 'move' && analysis.position === 'after') {
+          targetIndex += 1;
+        }
+        newOrder.splice(targetIndex, 0, sourceSlotId);
+
+        console.log('[AI Chat] New container order:', newOrder);
+
+        // Update row positions in new container
+        newOrder.forEach((slotId, index) => {
+          if (slots[slotId]?.position) {
+            slots[slotId].position.row = index + 1;
+          }
+        });
+
+        // Reorder remaining slots in old container
+        const oldSiblings = Object.entries(slots)
+          .filter(([id, slot]) => slot.parentId === oldParentId)
+          .sort((a, b) => (a[1].position?.row ?? 999) - (b[1].position?.row ?? 999));
+
+        oldSiblings.forEach(([slotId], index) => {
+          if (slots[slotId]?.position) {
+            slots[slotId].position.row = index + 1;
+          }
+        });
+
+        console.log('[AI Chat] Cross-container move completed');
       }
 
       // Build the updated configuration with updated slot positions
