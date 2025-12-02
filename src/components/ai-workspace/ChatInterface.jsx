@@ -124,26 +124,6 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     }
   };
 
-  // Handle arrow up/down for input history
-  const handleKeyDown = (e) => {
-    if (e.key === 'ArrowUp' && inputHistory.length > 0) {
-      e.preventDefault();
-      const newIndex = historyIndex < inputHistory.length - 1 ? historyIndex + 1 : historyIndex;
-      setHistoryIndex(newIndex);
-      setInput(inputHistory[newIndex] || '');
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (historyIndex > 0) {
-        const newIndex = historyIndex - 1;
-        setHistoryIndex(newIndex);
-        setInput(inputHistory[newIndex] || '');
-      } else {
-        setHistoryIndex(-1);
-        setInput('');
-      }
-    }
-  };
-
   const loadPluginGenerationCost = async () => {
     try {
       const response = await apiClient.get('service-credit-costs/key/custom_plugin_creation');
@@ -238,12 +218,19 @@ const ChatInterface = ({ onPluginCloned, context }) => {
 
     const userMessage = input.trim();
     setInput('');
+    setHistoryIndex(-1); // Reset history navigation
+
+    // Save to input history for arrow navigation
+    saveInputHistory(userMessage);
 
     // Add user message to chat
     setMessages(prev => [...prev, {
       role: 'user',
       content: userMessage
     }]);
+
+    // Save user message to chat history
+    saveChatMessage('user', userMessage);
 
     // Send all requests to backend - AI determines intent
     setIsProcessing(true);
@@ -278,6 +265,9 @@ const ChatInterface = ({ onPluginCloned, context }) => {
           data: response.data, // Plugin, translation, layout, styling data
           credits: response.creditsDeducted
         }]);
+
+        // Save assistant message to chat history
+        saveChatMessage('assistant', response.message, response.data, response.creditsDeducted, false);
 
         // Debug: Log response data to check type
         console.log('[ChatInterface] Response data:', response.data);
@@ -341,6 +331,23 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    } else if (e.key === 'ArrowUp' && inputHistory.length > 0 && !input.includes('\n')) {
+      // Arrow up for input history (only if not multi-line)
+      e.preventDefault();
+      const newIndex = historyIndex < inputHistory.length - 1 ? historyIndex + 1 : historyIndex;
+      setHistoryIndex(newIndex);
+      setInput(inputHistory[newIndex] || '');
+    } else if (e.key === 'ArrowDown' && historyIndex >= 0 && !input.includes('\n')) {
+      // Arrow down for input history
+      e.preventDefault();
+      if (historyIndex > 0) {
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        setInput(inputHistory[newIndex] || '');
+      } else {
+        setHistoryIndex(-1);
+        setInput('');
+      }
     }
   };
 
