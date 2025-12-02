@@ -1132,20 +1132,34 @@ Return ONLY valid JSON.`;
           // Handle styling intent
           else if (singleIntent.intent === 'styling') {
             const element = singleIntent.details?.element;
-            const property = singleIntent.details?.property;
-            const value = singleIntent.details?.value;
+            let property = singleIntent.details?.property || '';
+            let value = singleIntent.details?.value || '';
+
+            console.log('[AI Chat Multi] Styling intent:', { element, property, value });
+
+            // Smart detection: if value looks like a color and no property, assume color
+            const colorNames = ['red', 'blue', 'green', 'orange', 'yellow', 'purple', 'pink', 'gray', 'black', 'white'];
+            if (!property && value && colorNames.includes(value.toLowerCase())) {
+              property = 'color';
+            }
+            // If property is the color name, swap them
+            if (colorNames.includes(property?.toLowerCase()) && !value) {
+              value = property;
+              property = 'color';
+            }
 
             const targetSlotId = resolveSlotId(element);
+            console.log('[AI Chat Multi] Resolved slot:', targetSlotId);
 
             if (targetSlotId && slots[targetSlotId]) {
               const slot = slots[targetSlotId];
-              const propLower = property?.toLowerCase() || '';
+              const propLower = property?.toLowerCase() || 'color'; // Default to color
               const friendlyName = getFriendlyName(targetSlotId);
 
               // Initialize styles if needed
               if (!slot.styles) slot.styles = {};
 
-              // Handle common properties
+              // Handle color properties
               if (propLower.includes('color') && !propLower.includes('background')) {
                 const colorValue = value?.toLowerCase().replace(/\s+/g, '');
                 if (colorValue) {
@@ -1159,10 +1173,13 @@ Return ONLY valid JSON.`;
                     const existingClasses = (slot.className || '').split(' ');
                     const filteredClasses = existingClasses.filter(c => !c.match(/^text-(red|blue|green|orange|yellow|purple|pink|gray|black|white)(-\d+)?$/));
                     slot.className = [...filteredClasses, tailwindClass].join(' ').trim();
+                    console.log('[AI Chat Multi] Applied tailwind class:', tailwindClass);
                   } else {
                     slot.styles.color = value;
                   }
-                  subResult = { success: true, message: `Changed ${friendlyName} color to ${value}`, data: { type: 'styling', element: targetSlotId, property: 'color', value } };
+                  subResult = { success: true, message: `${friendlyName} is now ${value}`, data: { type: 'styling', element: targetSlotId, property: 'color', value } };
+                } else {
+                  subResult = { success: false, message: `No color value specified for ${element}`, needsClarification: true };
                 }
               } else if (propLower.includes('background')) {
                 slot.styles.backgroundColor = value;
@@ -1230,22 +1247,19 @@ Return ONLY valid JSON.`;
         `couldn't find "${nf.name}"${nf.suggestions?.length ? ` (maybe ${nf.suggestions[0]}?)` : ''}`
       ).join('; ');
 
-      const responsePrompt = `User asked: "${message}"
-${whatWasDone ? `Done: ${whatWasDone}` : ''}
-${whatFailed ? `Problem: ${whatFailed}` : ''}
+      const responsePrompt = `Changes made: ${whatWasDone || 'none'}
+${whatFailed ? `Failed: ${whatFailed}` : ''}
 
-Reply in 1 short sentence. Be natural and varied.
-NEVER use: "Great", "I've updated", "Let me know", "Feel free", "Happy to help"
-NEVER mention: refreshing, preview, anything else
-Just confirm what happened naturally, like talking to a friend.`;
+Confirm in 1 sentence. MUST mention the specific changes (e.g. "sku above title", "title green").
+Keep it casual. No "Great/I've/Let me know/Feel free".`;
 
       const responseResult = await aiService.generate({
         userId,
         operationType: 'general',
         prompt: responsePrompt,
-        systemPrompt: 'Reply casually in ONE short sentence. No fluff. Vary your style.',
-        maxTokens: 50,
-        temperature: 1.0,
+        systemPrompt: 'Mention the SPECIFIC changes made. One casual sentence.',
+        maxTokens: 40,
+        temperature: 0.8,
         metadata: { type: 'response', storeId: resolvedStoreId }
       });
       totalCredits += responseResult.creditsDeducted;
@@ -2232,21 +2246,17 @@ Return ONLY valid JSON.`;
       console.log('[AI Chat] Successfully updated layout order:', updatedData.id);
 
       // Let AI generate varied response
-      const responsePrompt = `User asked: "${message}"
-Done: ${analysis.description}
+      const responsePrompt = `Changes made: ${analysis.description}
 
-Reply in 1 short sentence. Be natural and varied.
-NEVER use: "Great", "I've updated", "Let me know", "Feel free", "Happy to help"
-NEVER mention: refreshing, preview, anything else
-Just confirm what happened naturally.`;
+Confirm in 1 sentence. MUST mention the specific change. Keep it casual. No "Great/I've/Let me know".`;
 
       const responseResult = await aiService.generate({
         userId,
         operationType: 'general',
         prompt: responsePrompt,
-        systemPrompt: 'Reply casually in ONE short sentence. No fluff. Vary your style.',
-        maxTokens: 50,
-        temperature: 1.0,
+        systemPrompt: 'Mention the SPECIFIC change made. One casual sentence.',
+        maxTokens: 40,
+        temperature: 0.8,
         metadata: { type: 'response', storeId: resolvedStoreId }
       });
       creditsUsed += responseResult.creditsDeducted;
@@ -2886,21 +2896,17 @@ Return ONLY valid JSON.`;
       // Let AI generate varied response
       const changesSummary = appliedChanges.map(c => c.description).join('; ');
 
-      const responsePrompt = `User asked: "${message}"
-Done: ${changesSummary}
+      const responsePrompt = `Changes made: ${changesSummary}
 
-Reply in 1 short sentence. Be natural and varied.
-NEVER use: "Great", "I've updated", "Let me know", "Feel free", "Happy to help"
-NEVER mention: refreshing, preview, anything else
-Just confirm what happened naturally.`;
+Confirm in 1 sentence. MUST mention the specific changes. Keep it casual. No "Great/I've/Let me know".`;
 
       const responseResult = await aiService.generate({
         userId,
         operationType: 'general',
         prompt: responsePrompt,
-        systemPrompt: 'Reply casually in ONE short sentence. No fluff. Vary your style.',
-        maxTokens: 50,
-        temperature: 1.0,
+        systemPrompt: 'Mention the SPECIFIC changes made. One casual sentence.',
+        maxTokens: 40,
+        temperature: 0.8,
         metadata: { type: 'response', storeId: resolvedStoreId }
       });
       creditsUsed += responseResult.creditsDeducted;
