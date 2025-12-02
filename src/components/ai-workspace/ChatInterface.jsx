@@ -27,14 +27,122 @@ const ChatInterface = ({ onPluginCloned, context }) => {
   const [templateToClone, setTemplateToClone] = useState(null);
   const [cloneName, setCloneName] = useState('');
   const [pluginGenerationCost, setPluginGenerationCost] = useState(50); // Default fallback
+  const [inputHistory, setInputHistory] = useState([]); // Arrow up/down history
+  const [historyIndex, setHistoryIndex] = useState(-1); // Current position in history
+  const [sessionId] = useState(() => `session_${Date.now()}`); // Session ID for grouping
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Load starter templates and plugin cost from API
+  // Load starter templates, plugin cost, and chat history
   useEffect(() => {
     loadStarterTemplates();
     loadPluginGenerationCost();
+    loadChatHistory();
+    loadInputHistory();
   }, []);
+
+  // Load chat history from tenant DB
+  const loadChatHistory = async () => {
+    try {
+      const storeId = getSelectedStoreId();
+      if (!storeId) return;
+
+      const response = await apiClient.get('/ai/chat/history', {
+        params: { store_id: storeId, limit: 50 }
+      });
+
+      if (response.success && response.messages?.length > 0) {
+        // Prepend welcome message, then add history
+        const historyMessages = response.messages.map(m => ({
+          role: m.role,
+          content: m.content,
+          data: m.data,
+          credits: m.credits_used,
+          error: m.is_error
+        }));
+        setMessages(prev => [...prev, ...historyMessages]);
+      }
+    } catch (error) {
+      console.error('[ChatInterface] Failed to load chat history:', error);
+    }
+  };
+
+  // Load input history for arrow navigation
+  const loadInputHistory = async () => {
+    try {
+      const storeId = getSelectedStoreId();
+      if (!storeId) return;
+
+      const response = await apiClient.get('/ai/chat/input-history', {
+        params: { store_id: storeId, limit: 20 }
+      });
+
+      if (response.success && response.inputs) {
+        setInputHistory(response.inputs);
+      }
+    } catch (error) {
+      console.error('[ChatInterface] Failed to load input history:', error);
+    }
+  };
+
+  // Save message to chat history
+  const saveChatMessage = async (role, content, data = null, creditsUsed = 0, isError = false) => {
+    try {
+      const storeId = getSelectedStoreId();
+      if (!storeId) return;
+
+      await apiClient.post('/ai/chat/history', {
+        storeId,
+        sessionId,
+        role,
+        content,
+        intent: data?.type,
+        data,
+        creditsUsed,
+        isError
+      });
+    } catch (error) {
+      console.error('[ChatInterface] Failed to save chat message:', error);
+    }
+  };
+
+  // Save input to history
+  const saveInputHistory = async (inputText) => {
+    try {
+      const storeId = getSelectedStoreId();
+      if (!storeId) return;
+
+      await apiClient.post('/ai/chat/input-history', {
+        storeId,
+        input: inputText
+      });
+
+      // Update local state
+      setInputHistory(prev => [inputText, ...prev.slice(0, 19)]);
+    } catch (error) {
+      console.error('[ChatInterface] Failed to save input history:', error);
+    }
+  };
+
+  // Handle arrow up/down for input history
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowUp' && inputHistory.length > 0) {
+      e.preventDefault();
+      const newIndex = historyIndex < inputHistory.length - 1 ? historyIndex + 1 : historyIndex;
+      setHistoryIndex(newIndex);
+      setInput(inputHistory[newIndex] || '');
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIndex > 0) {
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        setInput(inputHistory[newIndex] || '');
+      } else {
+        setHistoryIndex(-1);
+        setInput('');
+      }
+    }
+  };
 
   const loadPluginGenerationCost = async () => {
     try {

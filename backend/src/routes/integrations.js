@@ -1064,19 +1064,19 @@ router.post('/akeneo/schedules', authMiddleware, storeResolver(), async (req, re
 
     if (req.body.id) {
       // Update existing schedule
-      const schedule = await AkeneoSchedule.findByPk(req.body.id);
-      if (!schedule || schedule.store_id !== storeId) {
+      const existingSchedule = await AkeneoSchedule.findByPk(req.body.id);
+      if (!existingSchedule || existingSchedule.store_id !== storeId) {
         return res.status(404).json({
           success: false,
           message: 'Schedule not found'
         });
       }
-      
-      await schedule.update(scheduleData);
+
+      const updatedSchedule = await AkeneoSchedule.update(req.body.id, scheduleData);
       res.json({
         success: true,
         message: 'Schedule updated successfully',
-        schedule
+        schedule: updatedSchedule
       });
     } else {
       // Create new schedule
@@ -1106,15 +1106,15 @@ router.delete('/akeneo/schedules/:id', authMiddleware, storeResolver(), async (r
     const storeId = req.storeId;
     const AkeneoSchedule = require('../models/AkeneoSchedule');
     
-    const schedule = await AkeneoSchedule.findByPk(req.params.id);
-    if (!schedule || schedule.store_id !== storeId) {
+    const scheduleToDelete = await AkeneoSchedule.findByPk(req.params.id);
+    if (!scheduleToDelete || scheduleToDelete.store_id !== storeId) {
       return res.status(404).json({
         success: false,
         message: 'Schedule not found'
       });
     }
 
-    await schedule.destroy();
+    await AkeneoSchedule.destroy(req.params.id);
     res.json({
       success: true,
       message: 'Schedule deleted successfully'

@@ -4687,4 +4687,172 @@ router.post('/code/patch', authMiddleware, async (req, res) => {
   }
 });
 
+// ============================================
+// CHAT HISTORY ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/ai/chat/history
+ * Get chat history for current user
+ */
+router.get('/chat/history', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const storeId = req.headers['x-store-id'] || req.query.store_id;
+    const limit = parseInt(req.query.limit) || 50;
+    const sessionId = req.query.session_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
+
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    let query = tenantDb
+      .from('ai_chat_sessions')
+      .select('id, role, content, intent, data, credits_used, is_error, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (sessionId) {
+      query = query.eq('session_id', sessionId);
+    }
+
+    const { data: messages, error } = await query;
+
+    if (error) {
+      console.error('[AI Chat History] Error fetching:', error);
+      return res.json({ success: true, messages: [] });
+    }
+
+    // Reverse to show oldest first
+    res.json({
+      success: true,
+      messages: (messages || []).reverse()
+    });
+  } catch (error) {
+    console.error('[AI Chat History] Error:', error);
+    res.json({ success: true, messages: [] });
+  }
+});
+
+/**
+ * POST /api/ai/chat/history
+ * Save a chat message to history
+ */
+router.post('/chat/history', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const storeId = req.headers['x-store-id'] || req.body.storeId;
+    const { sessionId, role, content, intent, data, creditsUsed, isError } = req.body;
+
+    if (!storeId || !role || !content) {
+      return res.status(400).json({ success: false, message: 'storeId, role, and content are required' });
+    }
+
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { error } = await tenantDb
+      .from('ai_chat_sessions')
+      .insert({
+        user_id: userId,
+        session_id: sessionId || `session_${Date.now()}`,
+        role,
+        content,
+        intent: intent || null,
+        data: data || {},
+        credits_used: creditsUsed || 0,
+        is_error: isError || false,
+        created_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('[AI Chat History] Error saving:', error);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[AI Chat History] Error:', error);
+    res.json({ success: true }); // Don't fail the main flow
+  }
+});
+
+/**
+ * GET /api/ai/chat/input-history
+ * Get input history for arrow up/down navigation
+ */
+router.get('/chat/input-history', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const storeId = req.headers['x-store-id'] || req.query.store_id;
+    const limit = parseInt(req.query.limit) || 20;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
+
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { data: inputs, error } = await tenantDb
+      .from('ai_input_history')
+      .select('input, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('[AI Input History] Error:', error);
+      return res.json({ success: true, inputs: [] });
+    }
+
+    res.json({
+      success: true,
+      inputs: (inputs || []).map(i => i.input)
+    });
+  } catch (error) {
+    console.error('[AI Input History] Error:', error);
+    res.json({ success: true, inputs: [] });
+  }
+});
+
+/**
+ * POST /api/ai/chat/input-history
+ * Save input to history for arrow navigation
+ */
+router.post('/chat/input-history', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const storeId = req.headers['x-store-id'] || req.body.storeId;
+    const { input } = req.body;
+
+    if (!storeId || !input) {
+      return res.status(400).json({ success: false, message: 'storeId and input are required' });
+    }
+
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { error } = await tenantDb
+      .from('ai_input_history')
+      .insert({
+        user_id: userId,
+        input,
+        created_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('[AI Input History] Error saving:', error);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[AI Input History] Error:', error);
+    res.json({ success: true });
+  }
+});
+
 module.exports = router;

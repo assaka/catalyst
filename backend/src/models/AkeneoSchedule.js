@@ -10,6 +10,46 @@ const AkeneoSchedule = {
   tableName: 'akeneo_schedules',
 
   /**
+   * Create a new schedule
+   */
+  async create(scheduleData) {
+    const { data, error } = await masterDbClient
+      .from(this.tableName)
+      .insert({
+        id: uuidv4(),
+        ...scheduleData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating schedule:', error);
+      throw new Error(`Failed to create schedule: ${error.message}`);
+    }
+
+    return data;
+  },
+
+  /**
+   * Delete a schedule by id
+   */
+  async destroy(id) {
+    const { error } = await masterDbClient
+      .from(this.tableName)
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting schedule:', error);
+      throw new Error(`Failed to delete schedule: ${error.message}`);
+    }
+
+    return true;
+  },
+
+  /**
    * Find schedule by primary key
    */
   async findByPk(id) {
