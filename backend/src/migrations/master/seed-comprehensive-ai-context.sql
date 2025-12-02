@@ -485,14 +485,20 @@ These are at the root level (just the key name):
 - default_view_mode (string) - "grid" or "list"
 - product_gallery_layout (string) - "horizontal" or "vertical"
 
-COMMAND → PATH MAPPING:
+COMMAND → PATH MAPPING (pay attention to value logic!):
 "hide stock label" → stock_settings.show_stock_label = false
 "show stock label" → stock_settings.show_stock_label = true
-"change stock label color" → stock_settings.in_stock_text_color = "#hexcolor"
 "hide currency" → hide_currency_product = true
+"show currency" → hide_currency_product = false (NOT true!)
 "hide quantity selector" → hide_quantity_selector = true
+"show quantity selector" → hide_quantity_selector = false (NOT true!)
 "change breadcrumb color" → theme.breadcrumb_item_text_color = "#hexcolor"
-"change add to cart color" → theme.add_to_cart_button_color = "#hexcolor"',
+"change add to cart color" → theme.add_to_cart_button_color = "#hexcolor"
+
+VALUE LOGIC RULES:
+- For "show_*" settings: "show X" = true, "hide X" = false
+- For "hide_*" settings: "hide X" = true, "show X" = false
+The setting NAME determines the logic, not the user command!',
 'settings', '["settings", "toggles", "features", "hide", "show", "paths"]', 98, 'all', true),
 
 ('settings', 'Theme and Layout Settings',

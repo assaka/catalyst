@@ -861,12 +861,18 @@ For settings_update, extract:
   - Nested under theme: "theme.breadcrumb_item_text_color", "theme.primary_color"
 - value: the new value (boolean for hide/show, color hex for colors, string for text)
 
-Common settings_update mappings:
+Common settings_update mappings (IMPORTANT - pay attention to value logic):
 - "hide stock label" → setting_path: "stock_settings.show_stock_label", value: false
 - "show stock label" → setting_path: "stock_settings.show_stock_label", value: true
 - "hide currency" → setting_path: "hide_currency_product", value: true
+- "show currency" → setting_path: "hide_currency_product", value: false
 - "hide quantity selector" → setting_path: "hide_quantity_selector", value: true
+- "show quantity selector" → setting_path: "hide_quantity_selector", value: false
 - "change breadcrumb color to blue" → setting_path: "theme.breadcrumb_item_text_color", value: "#0000FF"
+
+VALUE LOGIC:
+- For "show_*" settings: "show X" = true, "hide X" = false
+- For "hide_*" settings: "hide X" = true, "show X" = false
 
 Return JSON:
 { "intent": "layout_modify", "details": { "sourceElement": "product_title", "targetElement": "price_container", "position": "after" } }
