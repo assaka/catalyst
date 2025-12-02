@@ -481,8 +481,9 @@ PRODUCT GALLERY SETTINGS:
 - vertical_gallery_position (string) - "left" or "right"
 - mobile_gallery_layout (string) - "below" or "slider"
 
-COMMAND MAPPING:
-"hide stock label" → show_stock_label = false
+COMMAND MAPPING (use these exact paths):
+"hide stock label" → stock_settings.show_stock_label = false
+"show stock label" → stock_settings.show_stock_label = true
 "hide currency" → hide_currency_product = true
 "hide quantity selector" → hide_quantity_selector = true
 "enable guest checkout" → allow_guest_checkout = true

@@ -862,8 +862,8 @@ For settings_update, extract:
 - value: the new value (boolean for hide/show, color hex for colors, string for text)
 
 Common settings_update mappings:
-- "hide stock label" → setting_path: "show_stock_label", value: false
-- "show stock label" → setting_path: "show_stock_label", value: true
+- "hide stock label" → setting_path: "stock_settings.show_stock_label", value: false
+- "show stock label" → setting_path: "stock_settings.show_stock_label", value: true
 - "hide currency" → setting_path: "hide_currency_product", value: true
 - "hide quantity selector" → setting_path: "hide_quantity_selector", value: true
 - "change breadcrumb color to blue" → setting_path: "theme.breadcrumb_item_text_color", value: "#0000FF"
