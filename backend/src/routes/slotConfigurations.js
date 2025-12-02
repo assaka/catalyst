@@ -4,6 +4,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const ConnectionManager = require('../services/database/ConnectionManager');
 const abTestingService = require('../services/analytics/ABTestingServiceSupabase');
 const path = require('path');
+const { pathToFileURL } = require('url');
 
 // Helper functions to load configuration files from the frontend config directory
 async function loadPageConfig(pageType) {
@@ -39,7 +40,9 @@ async function loadPageConfig(pageType) {
         throw new Error(`Unknown page type '${pageType}'. Supported types: cart, category, product, checkout, success`);
     }
 
-    const configModule = await import(configPath);
+    // Convert to file:// URL for cross-platform ESM import compatibility
+    const configUrl = pathToFileURL(configPath).href;
+    const configModule = await import(configUrl);
     const config = configModule[configExport];
 
     if (!config) {
