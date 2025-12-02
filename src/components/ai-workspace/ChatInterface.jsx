@@ -610,29 +610,29 @@ const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePl
             </p>
           )}
 
-          {/* Feedback Buttons */}
-          {!isUser && !isError && !message.confirmAction && (
-            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+          {/* Feedback Buttons - only show for actual AI responses (has credits or data from API) */}
+          {!isUser && !isError && !message.confirmAction && (message.data !== undefined || message.credits !== undefined) && (
+            <div className="flex items-center gap-3 mt-3 pt-2 border-t border-gray-300 dark:border-gray-600">
               {feedbackGiven ? (
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-600 dark:text-gray-400">
                   {feedbackGiven === 'helpful' ? '👍 Thanks for your feedback!' : '👎 Thanks, we\'ll improve'}
                 </span>
               ) : (
                 <>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">Was this helpful?</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Was this helpful?</span>
                   <button
                     onClick={() => handleFeedback(true)}
-                    className="p-1 hover:bg-green-100 dark:hover:bg-green-900 rounded transition-colors"
-                    title="Helpful"
+                    className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-md transition-colors border border-transparent hover:border-green-300"
+                    title="Yes, helpful"
                   >
-                    <ThumbsUp className="w-4 h-4 text-gray-400 hover:text-green-600" />
+                    <ThumbsUp className="w-4 h-4 text-gray-500 hover:text-green-600" />
                   </button>
                   <button
                     onClick={() => handleFeedback(false)}
-                    className="p-1 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-colors"
+                    className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-md transition-colors border border-transparent hover:border-red-300"
                     title="Not helpful"
                   >
-                    <ThumbsDown className="w-4 h-4 text-gray-400 hover:text-red-600" />
+                    <ThumbsDown className="w-4 h-4 text-gray-500 hover:text-red-600" />
                   </button>
                 </>
               )}
