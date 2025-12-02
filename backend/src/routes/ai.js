@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const aiService = require('../services/AIService');
 const aiEntityService = require('../services/aiEntityService');
+const aiContextService = require('../services/aiContextService');
 const { authMiddleware } = require('../middleware/authMiddleware');
 
 /**
@@ -642,6 +643,19 @@ router.post('/chat', authMiddleware, async (req, res) => {
         message: 'message is required'
       });
     }
+
+    // Generate session ID for tracking this conversation
+    const sessionId = req.body.sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Save user message for learning (async, don't block)
+    aiContextService.saveChatMessage({
+      userId,
+      storeId: resolvedStoreId,
+      sessionId,
+      role: 'user',
+      content: message,
+      metadata: { conversationLength: conversationHistory?.length || 0 }
+    }).catch(err => console.error('Failed to save user message:', err));
 
     // Check for pending actions that need confirmation
     let lastPendingAction = null;
@@ -1321,6 +1335,24 @@ Confirm in 1 sentence. MUST mention the specific changes. Keep it casual.`;
         metadata: { type: 'response', storeId: resolvedStoreId }
       });
       totalCredits += responseResult.creditsDeducted;
+
+      // Save AI response for learning
+      aiContextService.saveChatMessage({
+        userId,
+        storeId: resolvedStoreId,
+        sessionId,
+        role: 'assistant',
+        content: responseResult.content,
+        intent: 'multi_intent',
+        operation: parsedIntent.intents.map(i => i.intent).join(','),
+        wasSuccessful: successCount > 0,
+        metadata: {
+          intents: parsedIntent.intents,
+          successCount,
+          failedCount: results.length - successCount,
+          clarificationNeeded: clarificationNeeded.length > 0
+        }
+      }).catch(err => console.error('Failed to save AI response:', err));
 
       return res.json({
         success: successCount > 0,
@@ -2398,6 +2430,24 @@ Confirm in 1 sentence. MUST mention the specific change. Keep it casual. No "Gre
         configId: slotConfig.id
       };
 
+      // Save layout response for learning
+      aiContextService.saveChatMessage({
+        userId,
+        storeId: resolvedStoreId,
+        sessionId,
+        role: 'assistant',
+        content: responseResult.content,
+        intent: 'layout_modify',
+        operation: analysis.action,
+        wasSuccessful: true,
+        metadata: {
+          sourceElement: analysis.source,
+          targetElement: analysis.target,
+          position: analysis.position,
+          pageType
+        }
+      }).catch(err => console.error('Failed to save layout response:', err));
+
       res.json({
         success: true,
         message: responseResult.content,
@@ -3047,6 +3097,23 @@ Confirm in 1 sentence. MUST mention the specific changes. Keep it casual. No "Gr
         detectedIntent: intent
       };
 
+      // Save styling response for learning
+      aiContextService.saveChatMessage({
+        userId,
+        storeId: resolvedStoreId,
+        sessionId,
+        role: 'assistant',
+        content: responseResult.content,
+        intent: 'styling',
+        operation: 'styling_applied',
+        wasSuccessful: appliedChanges.length > 0,
+        metadata: {
+          appliedChanges,
+          failedChanges: failedChanges.length,
+          pageType
+        }
+      }).catch(err => console.error('Failed to save styling response:', err));
+
       res.json({
         success: true,
         message: responseResult.content,
@@ -3089,6 +3156,18 @@ Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}`;
         temperature: 0.7,
         metadata: { type: 'chat', storeId: resolvedStoreId }
       });
+
+      // Save chat response for learning
+      aiContextService.saveChatMessage({
+        userId,
+        storeId: resolvedStoreId,
+        sessionId,
+        role: 'assistant',
+        content: chatResult.content,
+        intent: 'chat',
+        wasSuccessful: true,
+        metadata: { type: 'general_chat' }
+      }).catch(err => console.error('Failed to save chat response:', err));
 
       res.json({
         success: true,
