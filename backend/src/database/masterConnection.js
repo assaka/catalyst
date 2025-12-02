@@ -98,12 +98,12 @@ const masterSequelize = parsedDbConfig
         underscored: false,
         freezeTableName: true
       },
-      dialectOptions: process.env.NODE_ENV === 'production' ? {
+      dialectOptions: {
         ssl: {
           require: true,
           rejectUnauthorized: false
         }
-      } : {},
+      },
 
       // Connection pool settings
       pool: {
@@ -159,12 +159,12 @@ const masterSequelize = parsedDbConfig
           /TimeoutError/
         ]
       },
-      dialectOptions: process.env.NODE_ENV === 'production' ? {
+      dialectOptions: {
         ssl: {
           require: true,
           rejectUnauthorized: false
         }
-      } : {}
+      }
     });
 
 // ============================================
