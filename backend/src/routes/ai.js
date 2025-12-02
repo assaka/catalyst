@@ -834,15 +834,30 @@ COMMON SLOT NAMES (use these exact IDs):
 INTENTS:
 - layout_modify: Moving/repositioning elements (e.g., "move sku above price")
 - styling: Changing appearance (e.g., "make title red", "change color")
+- analytics_query: Data questions about sales, products, customers (e.g., "best selling product", "total revenue", "how many orders today")
+- job_trigger: Triggering background tasks (e.g., "import from akeneo", "run sync", "start export")
+- settings_update: Theme/appearance settings (e.g., "change breadcrumb color", "set primary color", "hide breadcrumb icon")
+- admin_entity: Store entity CRUD (e.g., "rename tab", "create coupon", "disable payment method")
 - plugin: Creating new features
 - translation: Language translations
-- admin_entity: Store settings
-- chat: Questions only
+- chat: Questions or general help
 
 For layout_modify, extract:
 - sourceElement: what to move (e.g., "title" → "product_title")
 - targetElement: move relative to (e.g., "price" → "price_container")
 - position: "before" (above) or "after" (below)
+
+For analytics_query, extract:
+- query_type: "best_selling", "revenue", "orders", "customers", "inventory"
+- filters: { period: "today/week/month/year", limit: number }
+
+For job_trigger, extract:
+- job_type: "akeneo:import:products", "shopify:import:products", "export:products", etc.
+- priority: "normal", "high", "urgent"
+
+For settings_update, extract:
+- setting_path: e.g., "theme.breadcrumb_item_text_color", "theme.primary_color"
+- value: the new value (color hex, boolean, string)
 
 Return JSON:
 { "intent": "layout_modify", "details": { "sourceElement": "product_title", "targetElement": "price_container", "position": "after" } }
@@ -3179,6 +3194,407 @@ Confirm in 1 sentence. MUST mention the specific changes. Keep it casual. No "Gr
       });
       return;
 
+    } else if (intent.intent === 'analytics_query') {
+      // Handle analytics/data queries
+      console.log('[AI Chat] Entering analytics_query handler');
+      console.log('[AI Chat] Analytics details:', JSON.stringify(intent.details));
+      const ConnectionManager = require('../services/database/ConnectionManager');
+
+      if (!resolvedStoreId) {
+        return res.status(400).json({
+          success: false,
+          message: 'store_id is required for analytics queries'
+        });
+      }
+
+      const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
+      const queryType = intent.details?.query_type || 'general';
+      const filters = intent.details?.filters || {};
+      const limit = filters.limit || 10;
+
+      let queryResult = null;
+      let queryDescription = '';
+
+      try {
+        // Build date filter based on period
+        let dateFilter = null;
+        if (filters.period) {
+          const now = new Date();
+          switch (filters.period) {
+            case 'today':
+              dateFilter = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+              break;
+            case 'week':
+              dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+              break;
+            case 'month':
+              dateFilter = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+              break;
+            case 'year':
+              dateFilter = new Date(now.getFullYear(), 0, 1).toISOString();
+              break;
+          }
+        }
+
+        switch (queryType) {
+          case 'best_selling':
+            // Get best selling products by purchase_count
+            let bestSellingQuery = tenantDb
+              .from('products')
+              .select('id, sku, price, stock_quantity, purchase_count, view_count, status')
+              .eq('store_id', resolvedStoreId)
+              .order('purchase_count', { ascending: false })
+              .limit(limit);
+
+            const { data: products } = await bestSellingQuery;
+
+            // Get translations for product names
+            if (products && products.length > 0) {
+              const productIds = products.map(p => p.id);
+              const { data: translations } = await tenantDb
+                .from('product_translations')
+                .select('product_id, name')
+                .in('product_id', productIds)
+                .eq('locale', 'en');
+
+              const nameMap = {};
+              (translations || []).forEach(t => { nameMap[t.product_id] = t.name; });
+              products.forEach(p => { p.name = nameMap[p.id] || 'Unnamed'; });
+            }
+
+            queryResult = products || [];
+            queryDescription = `Top ${limit} best selling products`;
+            break;
+
+          case 'revenue':
+            // Get total revenue from paid orders
+            let revenueQuery = tenantDb
+              .from('sales_orders')
+              .select('total_amount, created_at')
+              .eq('store_id', resolvedStoreId)
+              .eq('payment_status', 'paid');
+
+            if (dateFilter) {
+              revenueQuery = revenueQuery.gte('created_at', dateFilter);
+            }
+
+            const { data: revenueOrders } = await revenueQuery;
+            const totalRevenue = (revenueOrders || []).reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+            const orderCount = (revenueOrders || []).length;
+
+            queryResult = {
+              total_revenue: totalRevenue.toFixed(2),
+              order_count: orderCount,
+              average_order_value: orderCount > 0 ? (totalRevenue / orderCount).toFixed(2) : '0.00',
+              period: filters.period || 'all time'
+            };
+            queryDescription = `Revenue summary${filters.period ? ` for ${filters.period}` : ''}`;
+            break;
+
+          case 'orders':
+            // Get order statistics
+            let ordersQuery = tenantDb
+              .from('sales_orders')
+              .select('id, order_number, status, payment_status, total_amount, customer_email, created_at')
+              .eq('store_id', resolvedStoreId)
+              .order('created_at', { ascending: false })
+              .limit(limit);
+
+            if (dateFilter) {
+              ordersQuery = ordersQuery.gte('created_at', dateFilter);
+            }
+
+            const { data: orders } = await ordersQuery;
+
+            // Get counts by status
+            const { data: statusCounts } = await tenantDb
+              .from('sales_orders')
+              .select('status')
+              .eq('store_id', resolvedStoreId);
+
+            const statusBreakdown = {};
+            (statusCounts || []).forEach(o => {
+              statusBreakdown[o.status] = (statusBreakdown[o.status] || 0) + 1;
+            });
+
+            queryResult = {
+              recent_orders: orders || [],
+              status_breakdown: statusBreakdown,
+              total_count: (statusCounts || []).length
+            };
+            queryDescription = `Order statistics${filters.period ? ` for ${filters.period}` : ''}`;
+            break;
+
+          case 'customers':
+            // Get customer data
+            let customersQuery = tenantDb
+              .from('customers')
+              .select('id, email, first_name, last_name, total_spent, total_orders, last_order_date, created_at')
+              .eq('store_id', resolvedStoreId)
+              .order('total_spent', { ascending: false })
+              .limit(limit);
+
+            const { data: customers } = await customersQuery;
+
+            queryResult = {
+              top_customers: customers || [],
+              total_count: (customers || []).length
+            };
+            queryDescription = `Top ${limit} customers by spending`;
+            break;
+
+          case 'inventory':
+            // Get low stock and out of stock products
+            const { data: lowStock } = await tenantDb
+              .from('products')
+              .select('id, sku, stock_quantity, low_stock_threshold, status')
+              .eq('store_id', resolvedStoreId)
+              .eq('manage_stock', true)
+              .eq('status', 'active')
+              .order('stock_quantity', { ascending: true })
+              .limit(20);
+
+            // Get translations for product names
+            if (lowStock && lowStock.length > 0) {
+              const productIds = lowStock.map(p => p.id);
+              const { data: translations } = await tenantDb
+                .from('product_translations')
+                .select('product_id, name')
+                .in('product_id', productIds)
+                .eq('locale', 'en');
+
+              const nameMap = {};
+              (translations || []).forEach(t => { nameMap[t.product_id] = t.name; });
+              lowStock.forEach(p => { p.name = nameMap[p.id] || 'Unnamed'; });
+            }
+
+            const outOfStock = (lowStock || []).filter(p => p.stock_quantity <= 0);
+            const lowStockItems = (lowStock || []).filter(p => p.stock_quantity > 0 && p.stock_quantity <= (p.low_stock_threshold || 5));
+
+            queryResult = {
+              out_of_stock: outOfStock,
+              low_stock: lowStockItems,
+              out_of_stock_count: outOfStock.length,
+              low_stock_count: lowStockItems.length
+            };
+            queryDescription = 'Inventory status report';
+            break;
+
+          default:
+            // General query - let AI interpret
+            queryResult = { message: 'Query type not recognized. Try: best selling products, revenue, orders, customers, or inventory.' };
+            queryDescription = 'Unknown query type';
+        }
+
+        // Generate natural language response
+        const analyticsResponsePrompt = `User asked: "${message}"
+
+I queried the database and found:
+${JSON.stringify(queryResult, null, 2)}
+
+Generate a concise, helpful summary of these results. Use bullet points for lists.
+Don't include raw JSON - present the data naturally.
+If showing products/customers, include names and key metrics.`;
+
+        const analyticsResponse = await aiService.generate({
+          userId,
+          operationType: 'general',
+          prompt: analyticsResponsePrompt,
+          systemPrompt: 'Present analytics data clearly and concisely. Use bullet points and formatting.',
+          maxTokens: 800,
+          temperature: 0.5,
+          metadata: { type: 'analytics-response', storeId: resolvedStoreId }
+        });
+        creditsUsed += analyticsResponse.creditsDeducted;
+
+        res.json({
+          success: true,
+          message: analyticsResponse.content,
+          data: {
+            type: 'analytics_result',
+            query_type: queryType,
+            description: queryDescription,
+            result: queryResult
+          },
+          creditsDeducted: creditsUsed
+        });
+        return;
+
+      } catch (queryError) {
+        console.error('[AI Chat] Analytics query error:', queryError);
+        return res.json({
+          success: true,
+          message: `I encountered an error while running that query: ${queryError.message}. Please try a different question.`,
+          data: { type: 'analytics_error', error: queryError.message },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+    } else if (intent.intent === 'job_trigger') {
+      // Handle background job triggering
+      console.log('[AI Chat] Entering job_trigger handler');
+      console.log('[AI Chat] Job details:', JSON.stringify(intent.details));
+
+      if (!resolvedStoreId) {
+        return res.status(400).json({
+          success: false,
+          message: 'store_id is required for job operations'
+        });
+      }
+
+      const jobType = intent.details?.job_type;
+      const priority = intent.details?.priority || 'normal';
+
+      if (!jobType) {
+        return res.json({
+          success: true,
+          message: "I couldn't determine which job you want to run. Available jobs:\n• **akeneo:import:products** - Import products from Akeneo\n• **akeneo:import:categories** - Import categories from Akeneo\n• **shopify:import:products** - Import from Shopify\n• **export:products** - Export product data\n\nExample: 'run akeneo product import'",
+          data: { type: 'job_clarification' },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      try {
+        // Create job in master database
+        const Job = require('../models/Job');
+
+        const job = await Job.create({
+          type: jobType,
+          priority: priority,
+          status: 'pending',
+          store_id: resolvedStoreId,
+          user_id: userId,
+          payload: intent.details?.payload || {},
+          scheduled_at: new Date(),
+          metadata: {
+            triggered_by: 'ai_chat',
+            message: message
+          }
+        });
+
+        console.log('[AI Chat] Created job:', job.id, jobType);
+
+        res.json({
+          success: true,
+          message: `I've queued the **${jobType}** job with ${priority} priority. Job ID: \`${job.id}\`\n\nThe job will start processing shortly. You can check its status in the Jobs section of the admin panel.`,
+          data: {
+            type: 'job_created',
+            job_id: job.id,
+            job_type: jobType,
+            priority: priority,
+            status: 'pending'
+          },
+          creditsDeducted: creditsUsed
+        });
+        return;
+
+      } catch (jobError) {
+        console.error('[AI Chat] Job trigger error:', jobError);
+        return res.json({
+          success: true,
+          message: `I couldn't create the job: ${jobError.message}. Please try again or contact support.`,
+          data: { type: 'job_error', error: jobError.message },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+    } else if (intent.intent === 'settings_update') {
+      // Handle theme/store settings updates
+      console.log('[AI Chat] Entering settings_update handler');
+      console.log('[AI Chat] Settings details:', JSON.stringify(intent.details));
+      const ConnectionManager = require('../services/database/ConnectionManager');
+
+      if (!resolvedStoreId) {
+        return res.status(400).json({
+          success: false,
+          message: 'store_id is required for settings updates'
+        });
+      }
+
+      const settingPath = intent.details?.setting_path;
+      const newValue = intent.details?.value;
+
+      if (!settingPath || newValue === undefined) {
+        return res.json({
+          success: true,
+          message: "I couldn't determine which setting you want to change. You can update:\n• **Theme colors**: 'set primary color to blue', 'change breadcrumb color to #333'\n• **Typography**: 'change font to Roboto'\n• **Breadcrumbs**: 'hide breadcrumb home icon', 'set breadcrumb font size to 14px'\n\nPlease be specific about what you want to change.",
+          data: { type: 'settings_clarification' },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
+
+        // Fetch current store settings
+        const { data: store, error: fetchError } = await tenantDb
+          .from('stores')
+          .select('id, settings')
+          .eq('id', resolvedStoreId)
+          .single();
+
+        if (fetchError || !store) {
+          throw new Error('Could not fetch store settings');
+        }
+
+        // Parse the setting path (e.g., "theme.breadcrumb_item_text_color")
+        const pathParts = settingPath.split('.');
+        let currentSettings = JSON.parse(JSON.stringify(store.settings || {}));
+
+        // Navigate to the parent and set the value
+        let target = currentSettings;
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          if (!target[pathParts[i]]) {
+            target[pathParts[i]] = {};
+          }
+          target = target[pathParts[i]];
+        }
+
+        const lastKey = pathParts[pathParts.length - 1];
+        const oldValue = target[lastKey];
+        target[lastKey] = newValue;
+
+        // Update the store settings
+        const { error: updateError } = await tenantDb
+          .from('stores')
+          .update({
+            settings: currentSettings,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', resolvedStoreId);
+
+        if (updateError) {
+          throw new Error(`Failed to update settings: ${updateError.message}`);
+        }
+
+        console.log('[AI Chat] Updated setting:', settingPath, 'from', oldValue, 'to', newValue);
+
+        // Generate friendly response
+        const settingName = lastKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+        res.json({
+          success: true,
+          message: `Done! I've updated **${settingName}** to \`${newValue}\`.\n\nRefresh the page to see the changes.`,
+          data: {
+            type: 'settings_updated',
+            setting_path: settingPath,
+            old_value: oldValue,
+            new_value: newValue
+          },
+          creditsDeducted: creditsUsed
+        });
+        return;
+
+      } catch (settingsError) {
+        console.error('[AI Chat] Settings update error:', settingsError);
+        return res.json({
+          success: true,
+          message: `I couldn't update that setting: ${settingsError.message}. Please try again.`,
+          data: { type: 'settings_error', error: settingsError.message },
+          creditsDeducted: creditsUsed
+        });
+      }
+
     } else {
       // Just chat - provide context about our slot-based system
       const chatSystemPrompt = `You are the AI assistant for Catalyst, a visual e-commerce website builder.
@@ -3195,12 +3611,18 @@ Common slots: product_title, product_sku, price_container, product_gallery, add_
 What you can help with:
 - STYLING: "make sku red" → I modify the product_sku slot's color property
 - LAYOUT: "move sku above price" → I reorder slots by updating position values
+- ANALYTICS: "which product sold most" → I query the database and show results
+- SETTINGS: "change breadcrumb color to blue" → I update theme settings
+- JOBS: "import products from akeneo" → I trigger background import jobs
+- ADMIN: "create 20% discount coupon" → I create/update store entities
 - PLUGINS: "add a wishlist button" → I generate custom functionality
 - TRANSLATIONS: "translate to French" → I update language strings
-- SETTINGS: "change store name" → I update store configuration
 
 When users ask about styling or layout, ALWAYS explain that you'll modify their slot configuration.
 NEVER suggest editing HTML files or CSS stylesheets directly - that's not how Catalyst works.
+
+If users ask data questions (best seller, revenue, customers), tell them you can query the database.
+If users ask about settings/appearance, tell them you can update theme settings directly.
 
 Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}`;
 
