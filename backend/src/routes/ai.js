@@ -1184,47 +1184,40 @@ Return ONLY valid JSON.`;
         }
       }
 
-      // Build friendly response
+      // Let AI generate natural response
       const successCount = successfulChanges.length;
       const needsClarification = results.filter(r => r.needsClarification);
 
-      let responseMessage = '';
+      const resultsSummary = results.map(r => {
+        if (r.success) return `SUCCESS: ${r.message}`;
+        if (r.notFound) return `NOT_FOUND: ${r.notFound.map(nf => `"${nf.name}"${nf.suggestions?.length ? ` (similar elements: ${nf.suggestions.join(', ')})` : ''}`).join(', ')}`;
+        return `FAILED: ${r.message || 'Unknown error'}`;
+      }).join('\n');
 
-      if (successCount > 0) {
-        responseMessage = successCount === 1
-          ? `Done! ${successfulChanges[0].message}.`
-          : `Done! I made these changes:\n${successfulChanges.map(r => `• ${r.message}`).join('\n')}`;
-      }
+      const responsePrompt = `User asked: "${message}"
 
-      // Handle elements that weren't found - ask clarifying questions
-      if (needsClarification.length > 0) {
-        const allNotFound = needsClarification.flatMap(r => r.notFound || []);
-        const uniqueNotFound = [...new Map(allNotFound.map(item => [item.name, item])).values()];
+Results:
+${resultsSummary}
 
-        if (uniqueNotFound.length > 0) {
-          const clarifications = uniqueNotFound.map(nf => {
-            if (nf.suggestions && nf.suggestions.length > 0) {
-              return `I couldn't find "${nf.name}" - did you mean ${nf.suggestions.slice(0, 2).join(' or ')}?`;
-            }
-            return `I couldn't find an element called "${nf.name}".`;
-          });
+Generate a helpful response (2-3 sentences). Be conversational.
+- Confirm what was done if successful
+- If elements weren't found but similar ones exist, ask if they meant those
+- If successful, mention refreshing the preview`;
 
-          if (responseMessage) {
-            responseMessage += '\n\n';
-          }
-          responseMessage += clarifications.join('\n');
-        }
-      }
-
-      if (!responseMessage) {
-        responseMessage = "I wasn't able to make those changes. Could you try rephrasing what you'd like to do?";
-      } else if (successCount > 0) {
-        responseMessage += '\n\nRefresh the preview to see your updates!';
-      }
+      const responseResult = await aiService.generate({
+        userId,
+        operationType: 'general',
+        prompt: responsePrompt,
+        systemPrompt: 'You are a helpful website editor assistant. Be brief and friendly. No markdown, no emojis.',
+        maxTokens: 150,
+        temperature: 0.7,
+        metadata: { type: 'response-generation', storeId: resolvedStoreId }
+      });
+      totalCredits += responseResult.creditsDeducted;
 
       return res.json({
         success: successCount > 0,
-        message: responseMessage,
+        message: responseResult.content,
         data: {
           type: 'multi_intent',
           intents: parsedIntent.intents,
