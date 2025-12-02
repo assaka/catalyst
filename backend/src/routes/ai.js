@@ -620,7 +620,7 @@ User request: ${prompt}`,
  */
 router.post('/chat', authMiddleware, async (req, res) => {
   try {
-    const { message, conversationHistory, storeId } = req.body;
+    let { message, conversationHistory, storeId } = req.body;
     const userId = req.user.id;
 
     // Resolve store_id from various sources (header takes priority)
@@ -645,7 +645,7 @@ router.post('/chat', authMiddleware, async (req, res) => {
 
     // Check for confirmation BEFORE intent detection
     // This prevents "yes" from being classified as a new translation intent
-    const isConfirmation = /^(yes|yeah|yep|sure|ok|okay|do it|update|apply|confirm|proceed|publish)/i.test(message.trim());
+    const isConfirmation = /^(yes|yeah|yep|sure|ok|okay|do it|update|apply|confirm|proceed|publish|implement|go ahead|please|make it happen)/i.test(message.trim());
 
     if (isConfirmation && conversationHistory && conversationHistory.length > 0) {
       console.log('🔍 Confirmation detected, checking conversation history...');
@@ -656,6 +656,22 @@ router.post('/chat', authMiddleware, async (req, res) => {
       const lastAssistantMessage = [...conversationHistory]
         .reverse()
         .find(msg => msg.role === 'assistant' && (msg.data?.type === 'translation_preview' || msg.data?.type === 'styling_preview'));
+
+      // If no pending structured action, find the last user message that might need re-execution
+      if (!lastAssistantMessage) {
+        const lastUserMessage = [...conversationHistory]
+          .reverse()
+          .find(msg => msg.role === 'user' && msg.content && msg.content !== message);
+
+        if (lastUserMessage) {
+          console.log('🔄 No pending action found, re-executing last user message:', lastUserMessage.content);
+          // Re-run with the previous user message instead of the confirmation
+          message = lastUserMessage.content;
+          // Remove the confirmation from history to avoid confusion
+          conversationHistory = conversationHistory.filter(m => m.content !== lastUserMessage.content && m.content !== 'yes implement');
+          // Continue to intent detection with the original command
+        }
+      }
 
       console.log('🤖 Found pending action?', !!lastAssistantMessage);
       console.log('🎯 Action type:', lastAssistantMessage?.data?.action);
@@ -797,38 +813,53 @@ Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}
 Classify the intent - users may request MULTIPLE actions in one message.
 
 INTENTS:
+- layout_modify: Move/swap/reorder/position existing slots (VERY COMMON - use this for any move/above/below/swap commands!)
 - styling: Change appearance (colors, fonts, sizes) of existing slots
-- layout_modify: Move/swap/reorder existing slots
 - layout: Create entirely new page sections
 - plugin: Add new interactive behavior/functionality
 - translation: Translate text to other languages
 - admin_entity: Configure store settings, products, coupons
-- chat: General questions (use sparingly - prefer action intents)
+- chat: General questions (use ONLY for questions, never for commands!)
 
-IMPORTANT:
-- "make sku red" = styling (not chat!)
-- "move price above title" = layout_modify (not chat!)
-- If user wants to change how something looks → styling
-- If user wants to move/reorder things → layout_modify
-- Only use "chat" for actual questions that don't involve changes
+CRITICAL RULES:
+- ANY message with "move", "above", "below", "before", "after", "swap", "reorder" = layout_modify (NEVER chat!)
+- "move sku below title" = layout_modify
+- "move sku above price" = layout_modify
+- "put title after description" = layout_modify
+- "make sku red" = styling
+- "change color to blue" = styling
+- Only use "chat" for actual QUESTIONS like "what can you do?" - never for commands!
 
-Respond with JSON:
+For layout_modify, ALWAYS return:
 {
-  "intent": "styling|layout_modify|layout|plugin|translation|admin_entity|chat",
-  "action": "modify|generate|chat",
+  "intent": "layout_modify",
+  "action": "modify",
   "details": {
-    "pageType": "product|category|cart|checkout|homepage",
-    "element": "slot name user referenced",
-    "property": "what to change",
-    "value": "new value"
+    "pageType": "product",
+    "action": "move",
+    "sourceElement": "what to move",
+    "targetElement": "move relative to this",
+    "position": "before|after"
   }
 }
 
-For multiple actions:
+For styling:
+{
+  "intent": "styling",
+  "action": "modify",
+  "details": {
+    "pageType": "product",
+    "element": "slot name",
+    "property": "color|fontSize|backgroundColor",
+    "value": "the value"
+  }
+}
+
+For multiple actions in one message:
 {
   "intents": [
-    { "intent": "layout_modify", "details": { "action": "move", "sourceElement": "sku", "targetElement": "price", "position": "before" } },
-    { "intent": "styling", "details": { "element": "sku", "property": "color", "value": "red" } }
+    { "intent": "layout_modify", "details": { "pageType": "product", "action": "move", "sourceElement": "sku", "targetElement": "title", "position": "after" } },
+    { "intent": "styling", "details": { "pageType": "product", "element": "title", "property": "color", "value": "green" } }
   ]
 }
 
