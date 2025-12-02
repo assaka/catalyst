@@ -1153,9 +1153,14 @@ Which slot matches? Reply with JUST the slot ID, nothing else. If no match, repl
                     const existingClasses = (slot.className || '').split(' ');
                     const filteredClasses = existingClasses.filter(c => !c.match(/^text-(red|blue|green|orange|yellow|purple|pink|gray|black|white)(-\d+)?$/));
                     slot.className = [...filteredClasses, tailwindClass].join(' ').trim();
+                    // Remove conflicting inline style
+                    if (slot.styles?.color) delete slot.styles.color;
                     console.log('[AI Chat Multi] Applied tailwind class:', tailwindClass);
                   } else {
                     slot.styles.color = value;
+                    // Remove conflicting tailwind classes when using inline style
+                    const existingClasses = (slot.className || '').split(' ');
+                    slot.className = existingClasses.filter(c => !c.match(/^text-(red|blue|green|orange|yellow|purple|pink|gray|black|white)(-\d+)?$/)).join(' ').trim();
                   }
                   subResult = { success: true, message: `${friendlyName} is now ${value}`, data: { type: 'styling', element: targetSlotId, property: 'color', value } };
                 } else {
