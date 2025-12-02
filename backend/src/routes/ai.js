@@ -1267,6 +1267,7 @@ Keep it casual. No "Great/I've/Let me know/Feel free".`;
         message: responseResult.content,
         data: {
           type: 'multi_intent',
+          pageType,
           intents: parsedIntent.intents,
           results: results,
           successCount,
