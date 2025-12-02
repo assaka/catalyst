@@ -4166,8 +4166,8 @@ If showing products/customers, include names and key metrics.`;
       try {
         const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
 
-        // Find customer by email or ID
-        let customer = await tenantDb('users')
+        // Find customer by email or ID (customers table has blacklist columns)
+        let customer = await tenantDb('customers')
           .where('email', customerIdentifier)
           .orWhere('id', customerIdentifier)
           .first();
@@ -4181,7 +4181,7 @@ If showing products/customers, include names and key metrics.`;
         }
 
         if (operation === 'blacklist') {
-          await tenantDb('users')
+          await tenantDb('customers')
             .where('id', customer.id)
             .update({
               is_blacklisted: true,
@@ -4198,7 +4198,7 @@ If showing products/customers, include names and key metrics.`;
           return;
 
         } else if (operation === 'unblacklist') {
-          await tenantDb('users')
+          await tenantDb('customers')
             .where('id', customer.id)
             .update({
               is_blacklisted: false,
