@@ -3478,17 +3478,17 @@ Confirm in 1 sentence. MUST mention the specific changes. Keep it casual. No "Gr
               throw new Error(`Failed to query products: ${oosError.message}`);
             }
 
-            // Get names
+            // Get names from product_translations (uses language_code, not locale)
             if (outOfStockProducts && outOfStockProducts.length > 0) {
               const oosIds = outOfStockProducts.map(p => p.id);
               const { data: oosNames } = await tenantDb
                 .from('product_translations')
                 .select('product_id, name')
                 .in('product_id', oosIds)
-                .eq('locale', 'en');
+                .eq('language_code', 'en');
               const oosNameMap = {};
               (oosNames || []).forEach(t => { oosNameMap[t.product_id] = t.name; });
-              outOfStockProducts.forEach(p => { p.name = oosNameMap[p.id] || 'Unnamed'; });
+              outOfStockProducts.forEach(p => { p.name = oosNameMap[p.id] || p.sku || 'Unnamed'; });
             }
 
             queryResult = {
@@ -3524,10 +3524,10 @@ Confirm in 1 sentence. MUST mention the specific changes. Keep it casual. No "Gr
                 .from('product_translations')
                 .select('product_id, name')
                 .in('product_id', lsIds)
-                .eq('locale', 'en');
+                .eq('language_code', 'en');
               const lsNameMap = {};
               (lsNames || []).forEach(t => { lsNameMap[t.product_id] = t.name; });
-              filteredLowStock.forEach(p => { p.name = lsNameMap[p.id] || 'Unnamed'; });
+              filteredLowStock.forEach(p => { p.name = lsNameMap[p.id] || p.sku || 'Unnamed'; });
             }
 
             queryResult = {
