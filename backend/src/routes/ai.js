@@ -3527,7 +3527,30 @@ If showing products/customers, include names and key metrics.`;
       }
 
       const settingPath = intent.details?.setting_path;
-      const newValue = intent.details?.value;
+      let newValue = intent.details?.value;
+
+      // Server-side fix: Correct value logic for hide_/show_ settings
+      // This corrects AI mistakes where "show X" for "hide_X" setting returns true instead of false
+      const lastPathPart = settingPath?.split('.').pop() || '';
+      const userMessage = message.toLowerCase();
+
+      if (lastPathPart.startsWith('hide_')) {
+        // For hide_* settings: "show" = false (not hiding), "hide" = true (hiding)
+        if (userMessage.includes('show') && !userMessage.includes('hide')) {
+          newValue = false;
+          console.log('[AI Chat] Corrected hide_* setting: show -> false');
+        } else if (userMessage.includes('hide')) {
+          newValue = true;
+        }
+      } else if (lastPathPart.startsWith('show_') || lastPathPart.includes('show_')) {
+        // For show_* settings: "show" = true, "hide" = false
+        if (userMessage.includes('show') && !userMessage.includes('hide')) {
+          newValue = true;
+        } else if (userMessage.includes('hide')) {
+          newValue = false;
+          console.log('[AI Chat] Corrected show_* setting: hide -> false');
+        }
+      }
 
       if (!settingPath || newValue === undefined) {
         return res.json({
