@@ -925,6 +925,45 @@ Return ONLY valid JSON.`;
       let workingConfig = JSON.parse(JSON.stringify(slotConfig.configuration || {}));
       let slots = workingConfig.slots || {};
 
+      console.log('[AI Chat Multi] Slots count:', Object.keys(slots).length);
+
+      // Auto-recover empty slots from default config
+      if (Object.keys(slots).length === 0) {
+        console.log('[AI Chat Multi] Empty slots, attempting auto-recovery...');
+        try {
+          const path = require('path');
+          const configsDir = path.resolve(__dirname, '../../../src/components/editor/slot/configs');
+          const configMap = {
+            'product': { file: 'product-config.js', export: 'productConfig' },
+            'category': { file: 'category-config.js', export: 'categoryConfig' },
+            'cart': { file: 'cart-config.js', export: 'cartConfig' },
+            'checkout': { file: 'checkout-config.js', export: 'checkoutConfig' },
+            'header': { file: 'header-config.js', export: 'headerConfig' }
+          };
+
+          const configInfo = configMap[pageType] || { file: `${pageType}-config.js`, export: `${pageType}Config` };
+          const configPath = path.join(configsDir, configInfo.file);
+          const configModule = await import(configPath);
+          const defaultConfig = configModule[configInfo.export];
+
+          if (defaultConfig?.slots) {
+            console.log(`[AI Chat Multi] Loaded ${Object.keys(defaultConfig.slots).length} slots from ${configInfo.file}`);
+            slots = defaultConfig.slots;
+            workingConfig.slots = slots;
+
+            // Save recovered slots to database
+            await tenantDb
+              .from('slot_configurations')
+              .update({ configuration: workingConfig, updated_at: new Date().toISOString() })
+              .eq('id', slotConfig.id);
+          }
+        } catch (err) {
+          console.error('[AI Chat Multi] Auto-recovery failed:', err.message);
+        }
+      }
+
+      console.log('[AI Chat Multi] Available slots:', Object.keys(slots).slice(0, 10));
+
       // Build slot name map for resolution
       const slotNameMap = {};
       Object.entries(slots).forEach(([id, slot]) => {
@@ -1184,36 +1223,33 @@ Return ONLY valid JSON.`;
       const successCount = successfulChanges.length;
       const needsClarification = results.filter(r => r.needsClarification);
 
-      const resultsSummary = results.map(r => {
-        if (r.success) return `SUCCESS: ${r.message}`;
-        if (r.notFound) return `NOT_FOUND: ${r.notFound.map(nf => `"${nf.name}"${nf.suggestions?.length ? ` (similar elements: ${nf.suggestions.join(', ')})` : ''}`).join(', ')}`;
-        return `FAILED: ${r.message || 'Unknown error'}`;
-      }).join('\n');
+      // Build simple direct response
+      let responseMessage = '';
 
-      const responsePrompt = `User asked: "${message}"
+      if (successCount > 0) {
+        const successMessages = successfulChanges.map(r => r.message.toLowerCase());
+        responseMessage = `Done - ${successMessages.join(', ')}.`;
+      }
 
-Results:
-${resultsSummary}
+      // Add clarification questions if needed
+      if (needsClarification.length > 0) {
+        const allNotFound = needsClarification.flatMap(r => r.notFound || []);
+        const questions = allNotFound
+          .filter(nf => nf.suggestions?.length > 0)
+          .map(nf => `Did you mean ${nf.suggestions[0]} instead of "${nf.name}"?`);
 
-Generate a helpful response (2-3 sentences). Be conversational.
-- Confirm what was done if successful
-- If elements weren't found but similar ones exist, ask if they meant those
-- If successful, mention refreshing the preview`;
+        if (questions.length > 0) {
+          responseMessage += (responseMessage ? ' ' : '') + questions.join(' ');
+        }
+      }
 
-      const responseResult = await aiService.generate({
-        userId,
-        operationType: 'general',
-        prompt: responsePrompt,
-        systemPrompt: 'You are a helpful website editor assistant. Be brief and friendly. No markdown, no emojis.',
-        maxTokens: 150,
-        temperature: 0.7,
-        metadata: { type: 'response-generation', storeId: resolvedStoreId }
-      });
-      totalCredits += responseResult.creditsDeducted;
+      if (!responseMessage) {
+        responseMessage = "Couldn't find those elements. Try being more specific?";
+      }
 
       return res.json({
         success: successCount > 0,
-        message: responseResult.content,
+        message: responseMessage,
         data: {
           type: 'multi_intent',
           intents: parsedIntent.intents,
@@ -2192,25 +2228,7 @@ Return ONLY valid JSON.`;
 
       console.log('[AI Chat] Successfully updated layout order:', updatedData.id);
 
-      // Generate natural AI response
-      const responsePrompt = `The user asked: "${message}"
-
-I modified the layout on the ${pageType} page:
-${analysis.description}
-
-Generate a brief, friendly confirmation message (1-2 sentences). Be conversational and helpful. Mention that the preview will refresh to show the changes.`;
-
-      const responseResult = await aiService.generate({
-        userId,
-        operationType: 'general',
-        prompt: responsePrompt,
-        systemPrompt: 'You are a helpful AI assistant. Generate brief, friendly responses. No markdown, no emojis, just natural text.',
-        maxTokens: 150,
-        temperature: 0.7,
-        metadata: { type: 'response-generation', storeId: resolvedStoreId }
-      });
-      creditsUsed += responseResult.creditsDeducted;
-
+      // Simple direct response - no extra AI call needed
       responseData = {
         type: 'layout_modified',
         pageType,
@@ -2219,19 +2237,12 @@ Generate a brief, friendly confirmation message (1-2 sentences). Be conversation
         targetSlotId: analysis.targetSlotId,
         position: analysis.position,
         description: analysis.description,
-        configId: slotConfig.id,
-        // Include resolved info for debugging
-        resolved: {
-          source: analysis.source,
-          target: analysis.target,
-          sourceSlotId: analysis.sourceSlotId,
-          targetSlotId: analysis.targetSlotId
-        }
+        configId: slotConfig.id
       };
 
       res.json({
         success: true,
-        message: responseResult.content,
+        message: `Done - ${analysis.description.toLowerCase()}.`,
         data: responseData,
         creditsDeducted: creditsUsed
       });
@@ -2850,34 +2861,10 @@ Return ONLY valid JSON.`;
       console.log('[AI Chat] Successfully updated slot config:', updatedData.id);
       console.log('[AI Chat] Changes applied:', allChangeDescriptions);
 
-      // Generate natural AI response for all changes
-      const changesListForPrompt = appliedChanges.map(c => `- ${c.description} (${c.element})`).join('\n');
-      const responsePrompt = `The user asked: "${message}"
-
-I applied these styling changes on the ${pageType} page:
-${changesListForPrompt}
-
-Generate a brief, friendly confirmation message (1-2 sentences). Be conversational and helpful. Mention that the preview will refresh to show the changes.`;
-
-      const responseResult = await aiService.generate({
-        userId,
-        operationType: 'general',
-        prompt: responsePrompt,
-        systemPrompt: 'You are a helpful AI assistant. Generate brief, friendly responses. No markdown, no emojis, just natural text.',
-        maxTokens: 150,
-        temperature: 0.7,
-        metadata: { type: 'response-generation', storeId: resolvedStoreId }
-      });
-      creditsUsed += responseResult.creditsDeducted;
-
-      aiConversations.push({
-        step: 'response-generation',
-        provider: 'anthropic',
-        model: responseResult.usage?.model || 'claude-3-haiku',
-        prompt: responsePrompt,
-        response: responseResult.content,
-        tokens: responseResult.usage
-      });
+      // Simple direct response - build naturally from what was done
+      const changesSummary = appliedChanges.length === 1
+        ? appliedChanges[0].description.toLowerCase()
+        : appliedChanges.map(c => c.description.toLowerCase()).join(', ');
 
       responseData = {
         type: 'styling_applied',
@@ -2891,7 +2878,7 @@ Generate a brief, friendly confirmation message (1-2 sentences). Be conversation
 
       res.json({
         success: true,
-        message: responseResult.content,
+        message: `Done - ${changesSummary}.`,
         data: responseData,
         creditsDeducted: creditsUsed
       });
