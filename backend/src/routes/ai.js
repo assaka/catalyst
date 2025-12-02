@@ -824,28 +824,31 @@ router.post('/chat', authMiddleware, async (req, res) => {
 
 User: "${message}"
 
-INTENTS (pick the most appropriate):
-- layout_modify: Rearranging/repositioning existing page elements
-- styling: Changing visual appearance (colors, sizes, fonts, spacing)
-- plugin: Creating new functionality or features
-- translation: Language translations
-- admin_entity: Store/product/coupon settings
-- chat: Questions or unclear requests
+${ragContext ? `SYSTEM KNOWLEDGE:\n${ragContext}\n` : ''}
 
-IMPORTANT: If the user wants MULTIPLE things, return an "intents" array.
+COMMON SLOT NAMES (use these exact IDs):
+- product_title, product_sku, product_price, price_container
+- stock_status, product_short_description, add_to_cart_button
+- info_container, content_area, product_gallery_container
+
+INTENTS:
+- layout_modify: Moving/repositioning elements (e.g., "move sku above price")
+- styling: Changing appearance (e.g., "make title red", "change color")
+- plugin: Creating new features
+- translation: Language translations
+- admin_entity: Store settings
+- chat: Questions only
+
+For layout_modify, extract:
+- sourceElement: what to move (e.g., "title" → "product_title")
+- targetElement: move relative to (e.g., "price" → "price_container")
+- position: "before" (above) or "after" (below)
 
 Return JSON:
+{ "intent": "layout_modify", "details": { "sourceElement": "product_title", "targetElement": "price_container", "position": "after" } }
 
-Single action:
-{ "intent": "layout_modify|styling|plugin|...", "details": { relevant fields } }
-
-Multiple actions (e.g. "move X and make Y red"):
-{
-  "intents": [
-    { "intent": "layout_modify", "details": { "sourceElement": "what to move", "targetElement": "relative to", "position": "before|after" } },
-    { "intent": "styling", "details": { "element": "what to style", "property": "color", "value": "red" } }
-  ]
-}
+Or for multiple:
+{ "intents": [...] }
 
 Return ONLY valid JSON.`;
 
