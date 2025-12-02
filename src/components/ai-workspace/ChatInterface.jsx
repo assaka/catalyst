@@ -129,10 +129,6 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     if (!input.trim() || isProcessing) return;
 
     const userMessage = input.trim();
-
-    // Detect if user is asking to create/generate a plugin
-    const isPluginRequest = /create|generate|build|make|add.*plugin/i.test(userMessage);
-
     setInput('');
 
     // Add user message to chat
@@ -141,21 +137,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
       content: userMessage
     }]);
 
-    // If it's a plugin creation request, show confirmation first
-    if (isPluginRequest) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `🤖 I can generate a plugin for you!\n\n⚠️ **Cost:** ${pluginGenerationCost} credits for AI generation\n\nAfter generation, you can:\n• Preview the code\n• Edit if needed\n• Save to database automatically\n\nDo you want me to generate this plugin?`,
-        confirmAction: {
-          type: 'generate-plugin',
-          prompt: userMessage,
-          cost: pluginGenerationCost
-        }
-      }]);
-      return;
-    }
-
-    // For non-plugin requests, proceed normally
+    // Send all requests to backend - AI determines intent
     setIsProcessing(true);
 
     try {
@@ -167,6 +149,20 @@ const ChatInterface = ({ onPluginCloned, context }) => {
       });
 
       if (response.success) {
+        // Check if this is a plugin confirmation request
+        if (response.data?.type === 'plugin_confirmation') {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: response.message,
+            confirmAction: {
+              type: 'generate-plugin',
+              prompt: response.data.prompt,
+              category: response.data.category
+            }
+          }]);
+          return;
+        }
+
         // Add AI response with any generated content
         setMessages(prev => [...prev, {
           role: 'assistant',
@@ -232,11 +228,12 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     setIsProcessing(true);
 
     try {
-      // Send to AI chat endpoint for plugin generation
+      // Send confirmed plugin generation request
       const response = await apiClient.post('/ai/chat', {
         message: prompt,
         conversationHistory: messages,
-        storeId: getSelectedStoreId()
+        storeId: getSelectedStoreId(),
+        confirmedPlugin: true  // This tells backend to actually generate, not ask again
       });
 
       if (response.success) {

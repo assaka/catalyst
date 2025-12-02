@@ -222,7 +222,7 @@ const WorkspaceAIPanel = () => {
     };
   };
 
-  // Generate plugin via AI
+  // Generate plugin via AI (after user confirms)
   const handleGeneratePlugin = async (prompt) => {
     setIsProcessingAi(true);
 
@@ -230,7 +230,8 @@ const WorkspaceAIPanel = () => {
       const response = await apiClient.post('/ai/chat', {
         message: prompt,
         conversationHistory: chatMessages.slice(-10),
-        storeId: storeId
+        storeId: storeId,
+        confirmedPlugin: true  // This tells backend to actually generate, not ask again
       });
 
       if (response.success) {
@@ -286,29 +287,13 @@ const WorkspaceAIPanel = () => {
     setInputValue('');
     setCommandStatus(null);
 
-    // Detect if user is asking to create/generate a plugin
-    const isPluginRequest = /create|generate|build|make|add.*plugin/i.test(userMessage);
-
     // Add user message to chat
     addChatMessage({
       role: 'user',
       content: userMessage
     });
 
-    // If it's a plugin creation request, show confirmation first
-    if (isPluginRequest) {
-      addChatMessage({
-        role: 'assistant',
-        content: `🤖 I can generate a plugin for you!\n\n⚠️ **Cost:** ${pluginGenerationCost} credits for AI generation\n\nAfter generation, you can:\n• Preview the code\n• Edit if needed\n• Save to database automatically\n\nDo you want me to generate this plugin?`,
-        confirmAction: {
-          type: 'generate-plugin',
-          prompt: userMessage,
-          cost: pluginGenerationCost
-        }
-      });
-      return;
-    }
-
+    // Send all requests to backend - AI determines intent
     setIsProcessingAi(true);
 
     try {
@@ -331,6 +316,21 @@ const WorkspaceAIPanel = () => {
         storeId: storeId,
         slotContext // Pass current layout info
       });
+
+      // Check if this is a plugin confirmation request from backend
+      if (response.data?.type === 'plugin_confirmation') {
+        addChatMessage({
+          role: 'assistant',
+          content: response.message,
+          confirmAction: {
+            type: 'generate-plugin',
+            prompt: response.data.prompt,
+            category: response.data.category
+          }
+        });
+        setIsProcessingAi(false);
+        return;
+      }
 
       // Check if response contains slot commands
       let commands = response.commands || [];

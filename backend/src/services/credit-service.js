@@ -71,6 +71,37 @@ class CreditService {
       throw new Error('Failed to deduct credits');
     }
 
+    // Log credit usage to tenant DB for reporting
+    if (storeId) {
+      try {
+        const ConnectionManager = require('./database/ConnectionManager');
+        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+        const { v4: uuidv4 } = require('uuid');
+
+        await tenantDb
+          .from('credit_usage')
+          .insert({
+            id: uuidv4(),
+            user_id: userId,
+            store_id: storeId,
+            credits_used: creditAmount,
+            usage_type: referenceType || 'general',
+            reference_id: referenceId,
+            reference_type: referenceType,
+            description: description,
+            metadata: {
+              ...metadata,
+              balance_before: balance,
+              balance_after: newBalance,
+              charged_at: new Date().toISOString()
+            }
+          });
+      } catch (logError) {
+        // Log but don't fail the deduction if credit_usage insert fails
+        console.error('Failed to log credit_usage to tenant DB:', logError.message);
+      }
+    }
+
     return {
       success: true,
       credits_deducted: creditAmount,
@@ -320,7 +351,8 @@ class CreditService {
       'store_publishing'
     );
 
-    // Insert records into tenant DB for reporting
+    // Insert store_uptime record into tenant DB for reporting
+    // Note: credit_usage is now handled by the deduct() method
     if (deductResult.success) {
       try {
         const ConnectionManager = require('./database/ConnectionManager');
@@ -348,29 +380,9 @@ class CreditService {
             onConflict: 'store_id,charged_date',
             ignoreDuplicates: true
           });
-
-        // Insert into credit_usage table
-        await tenantDb
-          .from('credit_usage')
-          .insert({
-            id: uuidv4(),
-            user_id: userId,
-            store_id: storeId,
-            credits_used: dailyCost,
-            usage_type: 'store_publishing',
-            reference_id: storeId,
-            reference_type: 'store',
-            description: `Daily publishing fee for store ${store.slug}`,
-            metadata: {
-              charge_type: 'daily_publishing',
-              charge_date: chargeDate,
-              balance_before: balanceBefore,
-              balance_after: deductResult.remaining_balance
-            }
-          });
       } catch (uptimeError) {
-        // Log but don't fail the charge if record insertion fails
-        console.error('Failed to insert store_uptime/credit_usage record:', uptimeError.message);
+        // Log but don't fail the charge if store_uptime insert fails
+        console.error('Failed to insert store_uptime record:', uptimeError.message);
       }
     }
 

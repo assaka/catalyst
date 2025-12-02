@@ -1239,7 +1239,39 @@ Generate a helpful response (2-3 sentences). Be conversational.
     let creditsUsed = intentResult.creditsDeducted;
 
     if (intent.intent === 'plugin' && intent.action === 'generate') {
-      // Generate plugin
+      // Check if this is a confirmed plugin generation request
+      const isConfirmed = req.body.confirmedPlugin === true;
+
+      if (!isConfirmed) {
+        // Return confirmation request - let AI generate the confirmation message
+        const confirmPrompt = `User wants: "${message}"
+This requires generating a plugin which costs credits.
+Generate a brief, friendly message asking if they want to proceed. Mention it will create custom functionality for their store.`;
+
+        const confirmResult = await aiService.generate({
+          userId,
+          operationType: 'general',
+          prompt: confirmPrompt,
+          systemPrompt: 'Be brief and helpful. Ask for confirmation to generate a plugin. No markdown, no emojis.',
+          maxTokens: 100,
+          temperature: 0.7,
+          metadata: { type: 'plugin-confirmation', storeId }
+        });
+        creditsUsed += confirmResult.creditsDeducted;
+
+        return res.json({
+          success: true,
+          message: confirmResult.content,
+          data: {
+            type: 'plugin_confirmation',
+            prompt: message,
+            category: intent.details?.category || 'general'
+          },
+          creditsDeducted: creditsUsed
+        });
+      }
+
+      // Generate plugin (confirmed)
       const pluginResult = await aiService.generatePlugin(userId, message, {
         category: intent.details?.category || 'general',
         storeId
