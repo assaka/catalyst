@@ -3467,54 +3467,72 @@ Confirm in 1 sentence. MUST mention the specific changes. Keep it casual. No "Gr
 
           case 'out_of_stock':
             // Get only out of stock products
-            const outOfStockProducts = await tenantDb('products')
-              .select('id', 'sku', 'stock_quantity')
-              .where('stock_quantity', '<=', 0)
-              .where('status', 'active')
+            const { data: outOfStockProducts, error: oosError } = await tenantDb
+              .from('products')
+              .select('id, sku, stock_quantity')
+              .lte('stock_quantity', 0)
+              .eq('status', 'active')
               .limit(filters.limit || 50);
 
+            if (oosError) {
+              throw new Error(`Failed to query products: ${oosError.message}`);
+            }
+
             // Get names
-            if (outOfStockProducts.length > 0) {
+            if (outOfStockProducts && outOfStockProducts.length > 0) {
               const oosIds = outOfStockProducts.map(p => p.id);
-              const oosNames = await tenantDb('product_translations')
-                .select('product_id', 'name')
-                .whereIn('product_id', oosIds)
-                .where('locale', 'en');
+              const { data: oosNames } = await tenantDb
+                .from('product_translations')
+                .select('product_id, name')
+                .in('product_id', oosIds)
+                .eq('locale', 'en');
               const oosNameMap = {};
-              oosNames.forEach(t => { oosNameMap[t.product_id] = t.name; });
+              (oosNames || []).forEach(t => { oosNameMap[t.product_id] = t.name; });
               outOfStockProducts.forEach(p => { p.name = oosNameMap[p.id] || 'Unnamed'; });
             }
 
             queryResult = {
-              products: outOfStockProducts,
-              count: outOfStockProducts.length
+              products: outOfStockProducts || [],
+              count: (outOfStockProducts || []).length
             };
             queryDescription = 'Out of stock products';
             break;
 
           case 'low_stock':
             // Get only low stock products (not out of stock)
-            const lowStockProducts = await tenantDb('products')
-              .select('id', 'sku', 'stock_quantity', 'low_stock_threshold')
-              .where('stock_quantity', '>', 0)
-              .whereRaw('stock_quantity <= COALESCE(low_stock_threshold, 5)')
-              .where('status', 'active')
+            // Note: Supabase doesn't support COALESCE in filters, so we get all low quantity and filter
+            const { data: lowStockProducts, error: lsError } = await tenantDb
+              .from('products')
+              .select('id, sku, stock_quantity, low_stock_threshold')
+              .gt('stock_quantity', 0)
+              .lte('stock_quantity', 10) // Default threshold
+              .eq('status', 'active')
               .limit(filters.limit || 50);
 
-            if (lowStockProducts.length > 0) {
-              const lsIds = lowStockProducts.map(p => p.id);
-              const lsNames = await tenantDb('product_translations')
-                .select('product_id', 'name')
-                .whereIn('product_id', lsIds)
-                .where('locale', 'en');
+            if (lsError) {
+              throw new Error(`Failed to query products: ${lsError.message}`);
+            }
+
+            // Filter by actual threshold
+            const filteredLowStock = (lowStockProducts || []).filter(p =>
+              p.stock_quantity <= (p.low_stock_threshold || 5)
+            );
+
+            if (filteredLowStock.length > 0) {
+              const lsIds = filteredLowStock.map(p => p.id);
+              const { data: lsNames } = await tenantDb
+                .from('product_translations')
+                .select('product_id, name')
+                .in('product_id', lsIds)
+                .eq('locale', 'en');
               const lsNameMap = {};
-              lsNames.forEach(t => { lsNameMap[t.product_id] = t.name; });
-              lowStockProducts.forEach(p => { p.name = lsNameMap[p.id] || 'Unnamed'; });
+              (lsNames || []).forEach(t => { lsNameMap[t.product_id] = t.name; });
+              filteredLowStock.forEach(p => { p.name = lsNameMap[p.id] || 'Unnamed'; });
             }
 
             queryResult = {
-              products: lowStockProducts,
-              count: lowStockProducts.length
+              products: filteredLowStock,
+              count: filteredLowStock.length
             };
             queryDescription = 'Low stock products';
             break;
