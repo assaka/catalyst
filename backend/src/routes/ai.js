@@ -1069,6 +1069,7 @@ Which slot matches? Reply with JUST the slot ID, nothing else. If no match, repl
             // Use AI-driven resolution for both elements
             const sourceSlotId = resolveSlotId(sourceElement) || await resolveSlotIdWithAI(sourceElement);
             const targetSlotId = resolveSlotId(targetElement) || await resolveSlotIdWithAI(targetElement);
+            console.log('[AI Chat Multi] layout_modify - resolved:', { sourceElement, sourceSlotId, targetElement, targetSlotId });
 
             if (sourceSlotId && targetSlotId && slots[sourceSlotId] && slots[targetSlotId]) {
               const sourceSlot = slots[sourceSlotId];
