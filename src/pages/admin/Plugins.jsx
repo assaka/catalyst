@@ -594,17 +594,16 @@ export default function Plugins() {
               Install from GitHub
             </Button>
           </div>
-          <div className="flex justify-end mb-8">
-            <Button
-                onClick={() => setShowHowToDialog(true)}
-                variant="default"
-            >
-              <HelpCircle className="w-4 h-4 mr-2" />
-              How-To
-            </Button>
-          </div>
         </div>
-
+        <div className="flex justify-end mb-8">
+          <Button
+              onClick={() => setShowHowToDialog(true)}
+              variant="default"
+          >
+            <HelpCircle className="w-4 h-4 mr-2" />
+            How-To
+          </Button>
+        </div>
         <Tabs defaultValue="my-plugins" className="space-y-6">
           {/*
           <TabsList className="grid w-full grid-cols-3">
