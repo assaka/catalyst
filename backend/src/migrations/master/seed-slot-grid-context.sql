@@ -1,5 +1,10 @@
 -- Seed Slot Grid Context for AI RAG System
 -- This provides detailed slot hierarchy information for AI understanding
+--
+-- SAFE TO RE-RUN: Deletes existing slot_grid entries before inserting
+
+-- Cleanup existing slot grid context
+DELETE FROM ai_context_documents WHERE type IN ('slot_grid', 'intent_guide');
 
 -- Product Page Slot Grid
 INSERT INTO ai_context_documents (type, title, content, category, tags, priority, mode, is_active) VALUES
