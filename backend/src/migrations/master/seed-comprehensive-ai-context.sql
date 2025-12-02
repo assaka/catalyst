@@ -1,6 +1,14 @@
 -- Comprehensive AI RAG Context Data
 -- This provides extensive knowledge for the AI to understand the entire Catalyst platform
 -- Categories: database_schema, e-commerce, analytics, jobs, settings, integrations
+--
+-- SAFE TO RE-RUN: This script deletes existing entries before inserting
+
+-- ============================================
+-- CLEANUP: Remove existing comprehensive context entries
+-- ============================================
+DELETE FROM ai_context_documents WHERE type IN ('database_schema', 'e-commerce', 'analytics', 'jobs', 'settings', 'integrations', 'plugins', 'cron', 'intent_examples');
+DELETE FROM ai_entity_definitions WHERE entity_name IN ('products', 'orders', 'customers', 'attributes', 'categories', 'payment_methods', 'shipping_methods', 'coupons', 'theme_settings');
 
 -- ============================================
 -- DATABASE STRUCTURE OVERVIEW
