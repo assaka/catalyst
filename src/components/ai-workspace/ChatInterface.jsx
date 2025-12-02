@@ -175,9 +175,10 @@ const ChatInterface = ({ onPluginCloned, context }) => {
         console.log('[ChatInterface] Response data:', response.data);
         console.log('[ChatInterface] Response data type:', response.data?.type);
 
-        // Auto-refresh preview and editor after styling changes are applied
-        if (response.data?.type === 'styling_applied' || response.data?.type === 'styling_preview') {
-          console.log('[ChatInterface] Triggering refresh for styling change');
+        // Auto-refresh preview and editor after styling/layout changes
+        const refreshTypes = ['styling_applied', 'styling_preview', 'multi_intent', 'layout_modified'];
+        if (refreshTypes.includes(response.data?.type)) {
+          console.log('[ChatInterface] Triggering refresh for:', response.data?.type);
           setTimeout(() => {
             refreshPreview?.();
             triggerConfigurationRefresh?.();

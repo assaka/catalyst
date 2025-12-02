@@ -243,7 +243,8 @@ const WorkspaceAIPanel = () => {
         });
 
         // Auto-refresh preview and editor after styling or layout changes
-        if (response.data?.type === 'styling_applied' || response.data?.type === 'styling_preview' || response.data?.type === 'layout_modified') {
+        const refreshTypes = ['styling_applied', 'styling_preview', 'layout_modified', 'multi_intent'];
+        if (refreshTypes.includes(response.data?.type)) {
           setTimeout(() => {
             refreshPreview?.();
             triggerConfigurationRefresh?.();
@@ -360,7 +361,8 @@ const WorkspaceAIPanel = () => {
       });
 
       // Auto-refresh preview and editor after styling or layout changes
-      if (response.data?.type === 'styling_applied' || response.data?.type === 'styling_preview' || response.data?.type === 'layout_modified') {
+      const refreshTypes = ['styling_applied', 'styling_preview', 'layout_modified', 'multi_intent'];
+      if (refreshTypes.includes(response.data?.type)) {
         setTimeout(() => {
           refreshPreview?.();
           triggerConfigurationRefresh?.();
