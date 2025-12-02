@@ -875,7 +875,15 @@ COMMON SLOT NAMES (use these exact IDs):
 INTENTS:
 - layout_modify: Moving/repositioning elements (e.g., "move sku above price")
 - styling: Changing appearance (e.g., "make title red", "change color")
-- analytics_query: Data questions about sales, products, customers (e.g., "best selling product", "total revenue", "how many orders today")
+- analytics_query: DATABASE QUERIES about products, sales, inventory, customers. USE THIS for any question asking for DATA from the store like:
+  * "which products are out of stock" → query_type: "out_of_stock"
+  * "show me out of stock products" → query_type: "out_of_stock"
+  * "what products have no stock" → query_type: "out_of_stock"
+  * "give me the SKUs of out of stock products" → query_type: "out_of_stock"
+  * "best selling products" → query_type: "best_selling"
+  * "total revenue" → query_type: "revenue"
+  * "how many orders today" → query_type: "orders"
+  * "low stock items" → query_type: "low_stock"
 - job_trigger: Triggering background tasks (e.g., "import from akeneo", "run sync", "start export")
 - settings_update: Theme/appearance/catalog settings (e.g., "change breadcrumb color", "hide stock label", "enable inventory tracking")
 - admin_entity: Store entity CRUD (e.g., "rename tab", "create coupon", "disable payment method")
@@ -888,7 +896,9 @@ INTENTS:
 - cms_management: Create/update CMS pages and blocks (e.g., "create About Us page", "add shipping info block", "update FAQ page")
 - plugin: Creating new features
 - translation: Language translations
-- chat: Questions or general help
+- chat: ONLY for general questions about how to use the system, NOT for data queries
+
+IMPORTANT: If user asks for product data, inventory, sales, or any information from the database - use analytics_query, NOT chat!
 
 For layout_modify, extract:
 - sourceElement: what to move (e.g., "title" → "product_title")
