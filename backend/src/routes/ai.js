@@ -855,11 +855,14 @@ For layout_modify, extract:
 - position: "before" (above) or "after" (below)
 
 For analytics_query, extract:
-- query_type: "best_selling", "revenue", "orders", "customers", "inventory", "out_of_stock", "low_stock", "products_by_attribute_set"
-- filters: { period: "today/week/month/year", limit: number, attribute_set: "set name" }
+- query_type: "best_selling", "revenue", "orders", "customers", "inventory", "out_of_stock", "low_stock", "products_by_attribute_set", "product_sales", "top_margin", "sales_by_product"
+- filters: { period: "today/week/month/year", limit: number, attribute_set: "set name", product_name: "name" }
 Examples:
 - "show out of stock products" → query_type: "out_of_stock"
 - "get products with attribute set Snowboards" → query_type: "products_by_attribute_set", filters: { attribute_set: "Snowboards" }
+- "what are the sales figures for Blue T-Shirt" → query_type: "product_sales", filters: { product_name: "Blue T-Shirt" }
+- "show products with highest margin" → query_type: "top_margin"
+- "bestsellers this month" → query_type: "best_selling", filters: { period: "month" }
 
 For job_trigger, extract:
 - job_type: "akeneo:import:products", "shopify:import:products", "export:products", etc.
@@ -3537,9 +3540,131 @@ Confirm in 1 sentence. MUST mention the specific changes. Keep it casual. No "Gr
             queryDescription = 'Inventory status report';
             break;
 
+          case 'product_sales':
+            // Get sales figures for specific product or all products
+            const productNameFilter = filters.product_name;
+            let salesQuery = tenantDb('order_items')
+              .select('order_items.product_id')
+              .sum('order_items.quantity as total_sold')
+              .sum('order_items.total as total_revenue')
+              .groupBy('order_items.product_id')
+              .orderBy('total_revenue', 'desc')
+              .limit(filters.limit || 20);
+
+            const productSales = await salesQuery;
+
+            if (productSales.length > 0) {
+              // Get product names
+              const psIds = productSales.map(p => p.product_id);
+              const psProducts = await tenantDb('products')
+                .select('id', 'sku', 'price', 'cost_price')
+                .whereIn('id', psIds);
+              const psNames = await tenantDb('product_translations')
+                .select('product_id', 'name')
+                .whereIn('product_id', psIds)
+                .where('locale', 'en');
+
+              const psNameMap = {};
+              const psProdMap = {};
+              psNames.forEach(t => { psNameMap[t.product_id] = t.name; });
+              psProducts.forEach(p => { psProdMap[p.id] = p; });
+
+              productSales.forEach(ps => {
+                ps.name = psNameMap[ps.product_id] || 'Unnamed';
+                ps.sku = psProdMap[ps.product_id]?.sku || '';
+                ps.price = psProdMap[ps.product_id]?.price || 0;
+              });
+
+              // Filter by product name if specified
+              if (productNameFilter) {
+                const filtered = productSales.filter(ps =>
+                  ps.name.toLowerCase().includes(productNameFilter.toLowerCase()) ||
+                  ps.sku.toLowerCase().includes(productNameFilter.toLowerCase())
+                );
+                queryResult = filtered.length > 0 ? filtered : { message: `No sales found for "${productNameFilter}"` };
+              } else {
+                queryResult = productSales;
+              }
+            } else {
+              queryResult = { message: 'No sales data found' };
+            }
+            queryDescription = productNameFilter ? `Sales for "${productNameFilter}"` : 'Product sales report';
+            break;
+
+          case 'top_margin':
+            // Get products with highest profit margin
+            const marginProducts = await tenantDb('products')
+              .select('id', 'sku', 'price', 'cost_price', 'purchase_count')
+              .whereNotNull('cost_price')
+              .where('cost_price', '>', 0)
+              .where('status', 'active')
+              .orderByRaw('(price - cost_price) DESC')
+              .limit(filters.limit || 20);
+
+            if (marginProducts.length > 0) {
+              const mIds = marginProducts.map(p => p.id);
+              const mNames = await tenantDb('product_translations')
+                .select('product_id', 'name')
+                .whereIn('product_id', mIds)
+                .where('locale', 'en');
+
+              const mNameMap = {};
+              mNames.forEach(t => { mNameMap[t.product_id] = t.name; });
+
+              marginProducts.forEach(p => {
+                p.name = mNameMap[p.id] || 'Unnamed';
+                p.margin = parseFloat(p.price) - parseFloat(p.cost_price);
+                p.margin_percent = ((p.margin / parseFloat(p.price)) * 100).toFixed(1);
+              });
+            }
+
+            queryResult = marginProducts;
+            queryDescription = 'Products with highest profit margin';
+            break;
+
+          case 'sales_by_product':
+            // Comprehensive sales report by product
+            const salesReport = await tenantDb('order_items')
+              .select('product_id')
+              .sum('quantity as units_sold')
+              .sum('total as revenue')
+              .count('* as order_count')
+              .groupBy('product_id')
+              .orderBy('revenue', 'desc')
+              .limit(filters.limit || 50);
+
+            if (salesReport.length > 0) {
+              const srIds = salesReport.map(s => s.product_id);
+              const srProducts = await tenantDb('products')
+                .select('id', 'sku', 'price', 'cost_price')
+                .whereIn('id', srIds);
+              const srNames = await tenantDb('product_translations')
+                .select('product_id', 'name')
+                .whereIn('product_id', srIds)
+                .where('locale', 'en');
+
+              const srNameMap = {};
+              const srProdMap = {};
+              srNames.forEach(t => { srNameMap[t.product_id] = t.name; });
+              srProducts.forEach(p => { srProdMap[p.id] = p; });
+
+              salesReport.forEach(sr => {
+                sr.name = srNameMap[sr.product_id] || 'Unnamed';
+                sr.sku = srProdMap[sr.product_id]?.sku || '';
+                const costPrice = parseFloat(srProdMap[sr.product_id]?.cost_price || 0);
+                const unitPrice = parseFloat(srProdMap[sr.product_id]?.price || 0);
+                sr.profit = costPrice > 0 ? (parseFloat(sr.revenue) - (costPrice * parseInt(sr.units_sold))).toFixed(2) : 'N/A';
+                sr.avg_order_value = (parseFloat(sr.revenue) / parseInt(sr.order_count)).toFixed(2);
+              });
+            }
+
+            queryResult = salesReport;
+            queryDescription = 'Sales report by product';
+            break;
+
           default:
             // General query - let AI interpret
-            queryResult = { message: 'Query type not recognized. Try: best selling products, revenue, orders, customers, or inventory.' };
+            queryResult = { message: 'Query type not recognized. Try: best selling products, revenue, orders, customers, inventory, product_sales, top_margin, or sales_by_product.' };
             queryDescription = 'Unknown query type';
         }
 
