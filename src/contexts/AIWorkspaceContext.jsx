@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import slotConfigurationService from '@/services/slotConfigurationService';
 
 /**
  * AIWorkspaceContext - Shared state management for the AI Workspace
@@ -53,6 +55,8 @@ export const AI_OPERATIONS = {
 
 export const AIWorkspaceProvider = ({ children }) => {
   const location = useLocation();
+  const { getSelectedStoreId } = useStoreSelection();
+  const draftsProvisionedRef = useRef(false);
 
   // Page/Editor State
   const [selectedPageType, setSelectedPageType] = useState(PAGE_TYPES.PRODUCT);
@@ -101,6 +105,33 @@ export const AIWorkspaceProvider = ({ children }) => {
 
   // Preview refresh trigger (increments to signal storefront preview to reload)
   const [previewRefreshTrigger, setPreviewRefreshTrigger] = useState(0);
+
+  // Provision all slot configuration drafts when entering AI Workspace
+  useEffect(() => {
+    const provisionDrafts = async () => {
+      const storeId = getSelectedStoreId();
+      if (!storeId || draftsProvisionedRef.current) return;
+
+      console.log('[AIWorkspace] Provisioning slot configuration drafts for store:', storeId);
+      draftsProvisionedRef.current = true;
+
+      // Provision drafts for all page types in parallel
+      const pageTypes = ['product', 'category', 'cart', 'checkout', 'success'];
+      try {
+        await Promise.all(
+          pageTypes.map(pageType =>
+            slotConfigurationService.getDraftConfiguration(storeId, pageType)
+              .catch(err => console.warn(`[AIWorkspace] Failed to provision ${pageType} draft:`, err))
+          )
+        );
+        console.log('[AIWorkspace] All drafts provisioned successfully');
+      } catch (error) {
+        console.error('[AIWorkspace] Error provisioning drafts:', error);
+      }
+    };
+
+    provisionDrafts();
+  }, [getSelectedStoreId]);
 
   // Check for plugin passed via location state (from Plugins page Edit button)
   useEffect(() => {

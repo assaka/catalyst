@@ -46,7 +46,16 @@ async function loadPageConfig(pageType) {
       throw new Error(`Config export '${configExport}' not found in ${configPath}`);
     }
 
-    return config;
+    // Strip non-serializable data (React components, functions) for JSON storage
+    const serializableConfig = JSON.parse(JSON.stringify(config, (key, value) => {
+      // Skip functions and React components
+      if (typeof value === 'function') return undefined;
+      // Skip $$typeof (React element marker)
+      if (key === '$$typeof') return undefined;
+      return value;
+    }));
+
+    return serializableConfig;
   } catch (error) {
     console.error(`Failed to load ${pageType}-config.js:`, error);
     // Fallback to minimal config if import fails
@@ -54,6 +63,8 @@ async function loadPageConfig(pageType) {
       page_name: pageType.charAt(0).toUpperCase() + pageType.slice(1),
       slot_type: `${pageType}_layout`,
       slots: {},
+      rootSlots: [],
+      slotDefinitions: {},
       metadata: {}
     };
   }
@@ -214,15 +225,13 @@ async function upsertDraft(userId, storeId, pageType, configuration = null, isNe
       configurationToUse = latestPublished.configuration;
       statusToUse = 'draft'; // Set to draft since it's already populated from published
     } else {
-      // Load configuration from the appropriate config file
+      // Load full configuration from the appropriate config file
       const pageConfig = await loadPageConfig(pageType);
+      // Use the full config as-is, only add/update metadata
       configurationToUse = {
-        page_name: pageConfig.page_name || pageType.charAt(0).toUpperCase() + pageType.slice(1),
-        slot_type: pageConfig.slot_type || `${pageType}_layout`,
-        slots: pageConfig.slots || {},
-        rootSlots: pageConfig.rootSlots || [],
-        slotDefinitions: pageConfig.slotDefinitions || {},
+        ...pageConfig,
         metadata: {
+          ...(pageConfig.metadata || {}),
           created: new Date().toISOString(),
           lastModified: new Date().toISOString(),
           source: `${pageType}-config.js`,
