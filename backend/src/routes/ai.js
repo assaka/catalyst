@@ -4,7 +4,36 @@ const router = express.Router();
 const aiService = require('../services/AIService');
 const aiEntityService = require('../services/aiEntityService');
 const aiContextService = require('../services/aiContextService');
+const aiLearningService = require('../services/aiLearningService');
 const { authMiddleware } = require('../middleware/authMiddleware');
+
+/**
+ * Track successful operations for self-learning
+ * This automatically records successful patterns without requiring user feedback
+ */
+async function trackSuccessfulOperation(storeId, userId, userMessage, intent, entity, operation, response) {
+  try {
+    // Record as positive feedback (automatic success)
+    await aiLearningService.recordFeedback({
+      storeId,
+      userId,
+      conversationId: `auto_${Date.now()}`,
+      messageId: `success_${Date.now()}`,
+      userMessage,
+      aiResponse: response?.substring?.(0, 500) || 'Operation successful',
+      intent,
+      entity,
+      operation,
+      wasHelpful: true, // Automatic success = helpful
+      feedbackText: 'Auto-recorded: operation completed successfully',
+      metadata: { autoRecorded: true }
+    });
+    console.log(`[AI Learning] Auto-tracked success: ${intent}/${entity}/${operation}`);
+  } catch (error) {
+    // Don't fail the main operation if learning fails
+    console.error('[AI Learning] Failed to track success:', error);
+  }
+}
 
 /**
  * POST /api/ai/generate
@@ -819,12 +848,24 @@ router.post('/chat', authMiddleware, async (req, res) => {
       console.error('[AI Chat] Failed to load RAG context:', err);
     }
 
+    // Fetch learned examples from successful operations (self-learning)
+    let learnedExamples = '';
+    try {
+      learnedExamples = await aiLearningService.getLearnedExamplesForPrompt();
+      if (learnedExamples) {
+        console.log('[AI Chat] Learned examples loaded:', learnedExamples.length, 'chars');
+      }
+    } catch (err) {
+      console.error('[AI Chat] Failed to load learned examples:', err);
+    }
+
     // Determine intent from conversation
     const intentPrompt = `Classify this user request for a slot-based e-commerce page builder.
 
 User: "${message}"
 
 ${ragContext ? `SYSTEM KNOWLEDGE:\n${ragContext}\n` : ''}
+${learnedExamples ? learnedExamples : ''}
 
 COMMON SLOT NAMES (use these exact IDs):
 - product_title, product_sku, product_price, price_container
@@ -3877,6 +3918,17 @@ If showing products/customers, include names and key metrics.`;
         // Generate friendly response
         const settingName = lastKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
+        // Track successful operation for self-learning
+        trackSuccessfulOperation(
+          resolvedStoreId,
+          req.user.id,
+          message,
+          'settings_update',
+          'store_settings',
+          'update',
+          `Updated ${settingPath} to ${newValue}`
+        );
+
         res.json({
           success: true,
           message: `Done! I've updated **${settingName}** to \`${newValue}\`.\n\nRefresh the page to see the changes.`,
@@ -4017,6 +4069,19 @@ If showing products/customers, include names and key metrics.`;
             ? `Done! I've added ${assignedCount} product(s) to the "${targetCategory.name}" category.${alreadyAssignedCount > 0 ? ` (${alreadyAssignedCount} were already in this category)` : ''}`
             : `All ${alreadyAssignedCount} product(s) were already in the "${targetCategory.name}" category.`;
 
+          // Track successful operation for self-learning
+          if (assignedCount > 0) {
+            trackSuccessfulOperation(
+              resolvedStoreId,
+              req.user.id,
+              message,
+              'category_management',
+              'category',
+              'add_products',
+              `Added ${assignedCount} products to ${targetCategory.name}`
+            );
+          }
+
           res.json({
             success: true,
             message: message,
@@ -4038,6 +4103,19 @@ If showing products/customers, include names and key metrics.`;
               .where({ product_id: product.id, category_id: targetCategory.id })
               .delete();
             if (deleted) removedCount++;
+          }
+
+          // Track successful operation for self-learning
+          if (removedCount > 0) {
+            trackSuccessfulOperation(
+              resolvedStoreId,
+              req.user.id,
+              message,
+              'category_management',
+              'category',
+              'remove_products',
+              `Removed ${removedCount} products from ${targetCategory.name}`
+            );
           }
 
           res.json({

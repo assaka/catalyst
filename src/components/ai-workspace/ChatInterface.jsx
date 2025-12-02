@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Sparkles, User, Bot, Code, Eye, Package, Download } from 'lucide-react';
+import { Send, Loader2, Sparkles, User, Bot, Code, Eye, Package, Download, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
 import { User as UserEntity } from '@/api/entities';
@@ -291,6 +291,35 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     ]);
   };
 
+  // Handle feedback submission for self-learning
+  const handleFeedback = async (message, wasHelpful) => {
+    try {
+      const storeId = getSelectedStoreId();
+
+      // Find the user message that prompted this response
+      const messageIndex = messages.indexOf(message);
+      const userMessage = messageIndex > 0 ? messages[messageIndex - 1] : null;
+
+      await apiClient.post('/ai-learning/feedback', {
+        storeId,
+        conversationId: Date.now().toString(), // Simple session ID
+        messageId: messageIndex.toString(),
+        userMessage: userMessage?.content || '',
+        aiResponse: message.content,
+        intent: message.data?.type || 'chat',
+        entity: message.data?.entity || null,
+        operation: message.data?.operation || null,
+        wasHelpful,
+        feedbackText: null
+      });
+
+      console.log('[AI Learning] Feedback recorded:', wasHelpful ? 'helpful' : 'not helpful');
+    } catch (error) {
+      console.error('[AI Learning] Failed to record feedback:', error);
+      // Don't show error to user - feedback is non-critical
+    }
+  };
+
   const handleRemoveConfirmAction = (message) => {
     // Remove confirmAction from message
     setMessages(prev => prev.map(m =>
@@ -350,6 +379,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
             onGeneratePlugin={handleGeneratePlugin}
             onCancelConfirmation={handleCancelConfirmation}
             onRemoveConfirmAction={handleRemoveConfirmAction}
+            onFeedback={handleFeedback}
           />
         ))}
 
@@ -527,12 +557,20 @@ const ChatInterface = ({ onPluginCloned, context }) => {
 /**
  * MessageBubble - Renders individual chat messages with generated content
  */
-const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePlugin, onCancelConfirmation, onRemoveConfirmAction }) => {
+const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePlugin, onCancelConfirmation, onRemoveConfirmAction, onFeedback }) => {
   const [showCode, setShowCode] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [feedbackGiven, setFeedbackGiven] = useState(null); // 'helpful' or 'not_helpful'
   const isUser = message.role === 'user';
   const isError = message.error;
+
+  const handleFeedback = async (wasHelpful) => {
+    setFeedbackGiven(wasHelpful ? 'helpful' : 'not_helpful');
+    if (onFeedback) {
+      onFeedback(message, wasHelpful);
+    }
+  };
 
   return (
     <div className={cn("flex items-start gap-3", isUser && "flex-row-reverse")}>
@@ -570,6 +608,35 @@ const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePl
             <p className="text-xs mt-2 opacity-70">
               {message.credits} credits used
             </p>
+          )}
+
+          {/* Feedback Buttons */}
+          {!isUser && !isError && !message.confirmAction && (
+            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+              {feedbackGiven ? (
+                <span className="text-xs text-gray-500">
+                  {feedbackGiven === 'helpful' ? '👍 Thanks for your feedback!' : '👎 Thanks, we\'ll improve'}
+                </span>
+              ) : (
+                <>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">Was this helpful?</span>
+                  <button
+                    onClick={() => handleFeedback(true)}
+                    className="p-1 hover:bg-green-100 dark:hover:bg-green-900 rounded transition-colors"
+                    title="Helpful"
+                  >
+                    <ThumbsUp className="w-4 h-4 text-gray-400 hover:text-green-600" />
+                  </button>
+                  <button
+                    onClick={() => handleFeedback(false)}
+                    className="p-1 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-colors"
+                    title="Not helpful"
+                  >
+                    <ThumbsDown className="w-4 h-4 text-gray-400 hover:text-red-600" />
+                  </button>
+                </>
+              )}
+            </div>
           )}
 
           {/* Confirmation Actions */}
