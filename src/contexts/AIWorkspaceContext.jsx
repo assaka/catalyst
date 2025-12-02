@@ -112,7 +112,6 @@ export const AIWorkspaceProvider = ({ children }) => {
       const storeId = getSelectedStoreId();
       if (!storeId || draftsProvisionedRef.current) return;
 
-      console.log('[AIWorkspace] Provisioning slot configuration drafts for store:', storeId);
       draftsProvisionedRef.current = true;
 
       // Provision drafts for all page types in parallel
@@ -124,9 +123,7 @@ export const AIWorkspaceProvider = ({ children }) => {
               .catch(err => console.warn(`[AIWorkspace] Failed to provision ${pageType} draft:`, err))
           )
         );
-        console.log('[AIWorkspace] All drafts provisioned successfully');
       } catch (error) {
-        console.error('[AIWorkspace] Error provisioning drafts:', error);
       }
     };
 

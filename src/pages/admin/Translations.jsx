@@ -632,19 +632,14 @@ export default function Translations() {
       setLoadingProductLabels(true);
       const response = await api.get(`/product-labels?store_id=${storeId}&limit=1000`);
 
-      console.log('Product labels response:', response);
-
       if (response && response.success && response.data) {
         // Response.data contains { product_labels: [...] }
         const labels = response.data.product_labels || [];
-        console.log('Setting product labels:', labels);
         setProductLabels(Array.isArray(labels) ? labels : []);
       } else {
-        console.warn('Unexpected product labels response format:', response);
         setProductLabels([]);
       }
     } catch (error) {
-      console.error('Failed to load product labels:', error);
       showMessage('Failed to load product labels', 'error');
       setProductLabels([]);
     } finally {
@@ -666,27 +661,16 @@ export default function Translations() {
       setLoadingCookieConsent(true);
       const response = await api.get(`/cookie-consent-settings?store_id=${storeId}`);
 
-      console.log('Cookie consent response:', response);
-
       if (response && response.success && response.data) {
         // Response.data is an array of settings (might be multiple per store or one)
         const settings = Array.isArray(response.data) ? response.data : [];
-        console.log('Setting cookie consent:', settings);
-
-        // Log categories for each setting
-        settings.forEach(s => {
-          console.log('Cookie consent setting:', s.id, 'has categories:', s.categories);
-          console.log('Cookie consent translations:', s.translations);
-        });
 
         // Filter out any null/undefined and only keep valid settings
         setCookieConsent(settings.filter(s => s && s.id));
       } else {
-        console.warn('Unexpected cookie consent response format:', response);
         setCookieConsent([]);
       }
     } catch (error) {
-      console.error('Failed to load cookie consent:', error);
       showMessage('Failed to load cookie consent', 'error');
       setCookieConsent([]);
     } finally {
@@ -744,19 +728,15 @@ export default function Translations() {
       setLoadingCustomOptions(true);
       const response = await api.get(`/custom-option-rules?store_id=${storeId}&limit=1000`);
 
-      console.log('Custom options response:', response);
 
       // Custom options API returns array directly, not wrapped in success/data
       if (response) {
         const options = Array.isArray(response) ? response : [];
-        console.log('Setting custom options:', options);
         setCustomOptions(options);
       } else {
-        console.warn('Unexpected custom options response format:', response);
         setCustomOptions([]);
       }
     } catch (error) {
-      console.error('Failed to load custom options:', error);
       showMessage('Failed to load custom options', 'error');
       setCustomOptions([]);
     } finally {
@@ -782,7 +762,6 @@ export default function Translations() {
         setEntityStats(response.data.stats || []);
       }
     } catch (error) {
-      console.error('Failed to load entity stats:', error);
       showMessage('Failed to load translation statistics', 'error');
     } finally {
       setLoadingEntityStats(false);
@@ -818,8 +797,6 @@ export default function Translations() {
       }
 
       // Use api client which automatically handles authentication
-      console.log(`🌐 Frontend: Calling bulk-translate endpoint: ${endpoint}/bulk-translate`);
-      console.log(`📋 Frontend: Payload:`, { store_id: storeId, fromLang, toLang });
 
       const data = await api.post(`${endpoint}/bulk-translate`, {
         store_id: storeId,
@@ -827,14 +804,11 @@ export default function Translations() {
         toLang
       });
 
-      console.log(`✅ Frontend: Received response:`, data);
-
       // Reload entity stats to update progress
       await loadEntityStats();
 
       return data;
     } catch (error) {
-      console.error('Entity translate error:', error);
       return { success: false, message: error.message };
     }
   };
@@ -873,7 +847,6 @@ export default function Translations() {
 
       return data;
     } catch (error) {
-      console.error('Multi-entity translate error:', error);
       return { success: false, message: error.message };
     }
   };
@@ -932,7 +905,6 @@ export default function Translations() {
                 translatedValue = response.data.translated;
               }
             } catch (error) {
-              console.error(`Failed to translate to ${lang.code}:`, error);
               // Skip this language if translation fails
               continue;
             }
@@ -992,7 +964,6 @@ export default function Translations() {
       setShowBulkAddForm(false);
       setAutoTranslate(false);
     } catch (error) {
-      console.error('Failed to add bulk translations:', error);
       showMessage('Failed to add translations', 'error');
     } finally {
       setSaving(false);

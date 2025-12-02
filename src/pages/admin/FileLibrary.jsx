@@ -160,11 +160,6 @@ const FileLibrary = () => {
       const uploadedFiles = [];
 
       for (const file of filesArray) {
-        console.log('📤 FileLibrary: Uploading file:', {
-          name: file.name,
-          size: file.size,
-          type: file.type
-        });
 
         // Validate file before uploading
         if (!file || !file.name || file.size === 0) {

@@ -99,13 +99,6 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
         Attribute.filter({ store_id: storeId })
       ]);
 
-      console.log('CouponForm loadData results:', {
-        categories: categoriesData?.length || 0,
-        products: productsData?.length || 0,
-        attributeSets: attributeSetsData?.length || 0,
-        attributes: attributesData?.length || 0
-      });
-
       setCategories(categoriesData || []);
       setProducts(productsData || []);
       setAttributeSets(attributeSetsData || []);

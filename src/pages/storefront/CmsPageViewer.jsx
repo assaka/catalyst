@@ -55,7 +55,6 @@ export default function CmsPageViewer() {
             const fetchPage = async () => {
                 // Prevent duplicate calls (React Strict Mode runs effects twice)
                 if (fetchingRef.current) {
-                    console.log('⏭️ CmsPageViewer: Already fetching, skipping duplicate call');
                     return;
                 }
 
@@ -63,21 +62,14 @@ export default function CmsPageViewer() {
                     fetchingRef.current = true;
                     setLoading(true);
                     const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
-                    console.log('🌍 CmsPageViewer: Fetching page with language:', currentLanguage);
 
                     // Fetch CMS page using StorefrontCmsPage which uses public API (better performance)
-                    console.log('🔍 CmsPageViewer: store object:', store);
-                    console.log('🔍 CmsPageViewer: store.id:', store?.id);
                     if (!store?.id) {
-                        console.warn('⚠️ CmsPageViewer: store_id not available yet, skipping API call');
                         setLoading(false);
                         fetchingRef.current = false;
                         return;
                     }
-                    console.log('✅ CmsPageViewer: store_id available, proceeding with API call');
                     const pages = await StorefrontCmsPage.filter({ slug: slug, store_id: store.id });
-
-                    console.log('📥 CmsPageViewer: Received page:', pages.length > 0 ? pages[0].slug : 'not found');
 
                     if (pages && pages.length > 0) {
                         const currentPage = pages[0];
@@ -92,11 +84,9 @@ export default function CmsPageViewer() {
                         }
                     } else {
                         // Global redirect handler already checked - just show 404
-                        console.warn(`CMS page with slug '${slug}' not found.`);
                         setPage(null);
                     }
                 } catch (error) {
-                    console.error("Error fetching CMS page:", error);
                 } finally {
                     setLoading(false);
                     fetchingRef.current = false;
@@ -110,18 +100,15 @@ export default function CmsPageViewer() {
     useEffect(() => {
         const handleLanguageChange = (event) => {
             const newLanguage = event.detail?.language;
-            console.log('🌍 CmsPageViewer: Language changed to:', newLanguage);
 
             // Refetch the page with new language
             if (slug) {
                 const fetchPage = async () => {
                     try {
                         setLoading(true);
-                        console.log('🔄 CmsPageViewer: Refetching page for language:', newLanguage);
 
                         // Use StorefrontCmsPage which uses public API (better performance)
                         if (!store?.id) {
-                            console.warn('⚠️ CmsPageViewer: store_id not available, skipping API call');
                             return;
                         }
                         const pages = await StorefrontCmsPage.filter({ slug: slug, store_id: store.id });
@@ -129,10 +116,8 @@ export default function CmsPageViewer() {
                         if (pages && pages.length > 0) {
                             const currentPage = pages[0];
                             setPage(currentPage);
-                            console.log('✅ CmsPageViewer: Page updated with new language');
                         }
                     } catch (error) {
-                        console.error("Error refetching CMS page:", error);
                     } finally {
                         setLoading(false);
                     }

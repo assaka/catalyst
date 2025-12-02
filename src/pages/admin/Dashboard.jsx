@@ -126,7 +126,6 @@ export default function Dashboard() {
         try {
           // Check Stripe Connect status - backend returns: onboardingComplete, details_submitted, charges_enabled
           const { data } = await checkStripeConnectStatus(selectedStore.id);
-          console.log('Stripe Connect status:', data);
 
           // Check if onboarding is complete
           if (data.onboardingComplete) {

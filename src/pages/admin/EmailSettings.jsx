@@ -28,19 +28,8 @@ export default function EmailSettings() {
         const apiData = store?.data || store;
         const storeData = apiData?.tenantData || apiData;
 
-        console.log('📧 EmailSettings - Loaded store data:', {
-          rawData: fullStoreData,
-          apiData,
-          storeData,
-          hasContactDetails: !!storeData?.contact_details,
-          contactEmail: storeData?.contact_details?.email,
-          fallbackEmail: storeData?.contact_email,
-          storeName: storeData?.name
-        });
-
         setFullStore(storeData);
       } catch (error) {
-        console.error('Error loading store data:', error);
       } finally {
         setLoading(false);
       }
@@ -61,8 +50,6 @@ export default function EmailSettings() {
                      fullStore?.settings?.contact_details?.email ||
                      '';
   const storeName = fullStore?.name || selectedStore?.name || '';
-
-  console.log('📧 EmailSettings - Rendering with:', { storeEmail, storeName });
 
   return (
     <div className="min-h-screen bg-gray-50">

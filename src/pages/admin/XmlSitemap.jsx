@@ -180,12 +180,6 @@ export default function XmlSitemap() {
             const categories = categoriesResult?.data || [];
             const pages = pagesResult?.data || [];
 
-            console.log('Sitemap data loaded:', {
-                products: products.length,
-                categories: categories.length,
-                pages: pages.length
-            });
-
             // Generate standard sitemap (includes images, videos, news when enabled)
             const standardSitemap = generateStandardSitemap(products, categories, pages);
             setSitemapXml(standardSitemap.xml);

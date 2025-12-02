@@ -22,8 +22,6 @@ class WidgetRegistry {
       icon: widgetDefinition.icon,
       category: widgetDefinition.category
     });
-
-    console.log(`✅ Widget registered: ${widgetId}`);
   }
 
   /**
@@ -61,8 +59,6 @@ class WidgetRegistry {
     }
 
     toRemove.forEach(id => this.widgets.delete(id));
-
-    console.log(`🗑️ Unregistered ${toRemove.length} widgets from plugin ${pluginId}`);
   }
 }
 

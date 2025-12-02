@@ -31,8 +31,6 @@ class MigrationValidator {
       userConfig
     } = options;
 
-    console.log(`🔍 Validating migration for user ${userId}, component ${componentName}`);
-
     try {
       // Render original component
       const originalOutput = await this.renderComponent(OriginalComponent, testProps);
@@ -84,13 +82,10 @@ class MigrationValidator {
       result.recommendations = this.generateRecommendations(result);
 
       this.validationResults.set(`${userId}-${componentName}`, result);
-      
-      console.log(`${result.success ? '✅' : '❌'} Validation ${result.success ? 'passed' : 'failed'} with score ${result.score.toFixed(2)}`);
-      
+
       return result;
 
     } catch (error) {
-      console.error(`❌ Validation failed for user ${userId}:`, error);
       return {
         userId,
         componentName,

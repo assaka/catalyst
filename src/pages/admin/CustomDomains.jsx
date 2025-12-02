@@ -252,9 +252,7 @@ const CustomDomains = () => {
       }
 
       // Show results
-      console.log('DNS Check Results:', response.records);
     } catch (error) {
-      console.error('Error checking DNS:', error);
       toast.error('Failed to check DNS configuration');
     }
   };

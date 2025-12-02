@@ -75,13 +75,6 @@ const MediaStorage = () => {
       // apiClient returns the response directly
       if (response && response.success) {
         setBucketsEnsured(true);
-        
-        // Log bucket creation results for transparency
-        if (response.bucketsCreated && response.bucketsCreated.length > 0) {
-          console.log('Created buckets:', response.bucketsCreated.join(', '));
-        } else if (response.message) {
-          console.log('Bucket status:', response.message);
-        }
       }
     } catch (error) {
       console.error('Error ensuring buckets:', error);
@@ -94,7 +87,6 @@ const MediaStorage = () => {
       // apiClient returns the response directly, not wrapped in .data
       setDefaultProvider(response?.provider);
     } catch (error) {
-      console.error('Error fetching default media storage provider:', error);
     }
   };
 

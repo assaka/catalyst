@@ -343,9 +343,6 @@ export default function ThemeLayout() {
             }, 500); // Small delay to let API load first
 
             // Handle database response structure
-            console.log('📦 ThemeLayout loadStore - fullStore.settings.theme:', fullStore?.settings?.theme);
-            console.log('📦 ThemeLayout loadStore - custom_fonts:', fullStore?.settings?.theme?.custom_fonts);
-
             // Ensure settings object and its nested properties exist with defaults
             const settings = {
                 ...(fullStore?.settings || {}),

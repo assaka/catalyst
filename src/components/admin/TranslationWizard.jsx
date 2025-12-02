@@ -137,8 +137,6 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
   const loadLanguages = async () => {
     try {
       const response = await api.get('languages');
-      console.log('Languages API response:', response);
-
       if (response.success && response.data && response.data.languages) {
         setLanguages(response.data.languages.filter(l => l.is_active));
       } else if (response.success && response.data) {
@@ -147,7 +145,6 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
         setLanguages(response.filter(l => l.is_active));
       }
     } catch (error) {
-      console.error('Error loading languages:', error);
       toast.error('Failed to load languages');
     }
   };
@@ -168,7 +165,6 @@ export default function TranslationWizard({ isOpen, onClose, storeId, userCredit
       setStats(data.data || data);
       setStep(3);
     } catch (error) {
-      console.error('Error getting preview:', error);
       toast.error('Failed to get translation preview');
     } finally {
       setLoading(false);

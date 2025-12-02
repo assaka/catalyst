@@ -95,7 +95,6 @@ export default function MultiEntityTranslateDialog({
   const handleClose = () => {
     // If translation happened, reload credits in sidebar
     if (results && results.creditsDeducted > 0) {
-      console.log('🔄 MultiEntityTranslateDialog: Closing after translation, reloading credits');
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('creditsUpdated'));
       }, 200);

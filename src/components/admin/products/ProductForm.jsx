@@ -513,16 +513,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         images: imagesArray
       };
 
-      console.log('🔄 Auto-saving product images:', {
-        productId: product.id,
-        storeId,
-        imagesCount: imagesArray.length,
-        images: imagesArray
-      });
-
       const response = await apiClient.put(`/products/${product.id}`, updateData);
-
-      console.log('✅ Auto-save response:', response);
 
       if (!response.success) {
         throw new Error('Failed to save product images');

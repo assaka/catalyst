@@ -21,10 +21,6 @@ const useDraftConfiguration = (storeId, pageType = 'cart') => {
     try {
       const response = await slotConfigurationService.getDraftConfiguration(storeId, pageType);
 
-      console.log('📝 EDITOR: Draft config loaded:', response);
-      console.log('📝 EDITOR: cart_items slot:', response.data?.configuration?.slots?.cart_items);
-      console.log('📝 EDITOR: order_summary slot:', response.data?.configuration?.slots?.order_summary);
-
       if (response.success) {
         setDraftConfig(response.data);
         currentConfigRef.current = response.data;
@@ -33,7 +29,6 @@ const useDraftConfiguration = (storeId, pageType = 'cart') => {
         setError(response.error || 'Failed to load draft configuration');
       }
     } catch (err) {
-      console.error('Error loading draft configuration:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -55,10 +50,6 @@ const useDraftConfiguration = (storeId, pageType = 'cart') => {
     saveTimeoutRef.current = setTimeout(async () => {
       setIsSaving(true);
 
-      console.log('💾 EDITOR: Saving draft config...');
-      console.log('💾 EDITOR: cart_items before save:', configuration?.slots?.cart_items);
-      console.log('💾 EDITOR: order_summary before save:', configuration?.slots?.order_summary);
-
       try {
         const response = await slotConfigurationService.updateDraftConfiguration(
           draftConfig.id,
@@ -67,9 +58,6 @@ const useDraftConfiguration = (storeId, pageType = 'cart') => {
         );
         
         if (response.success) {
-          console.log('✅ EDITOR: Draft saved successfully');
-          console.log('✅ EDITOR: cart_items after save:', response.data?.configuration?.slots?.cart_items);
-          console.log('✅ EDITOR: order_summary after save:', response.data?.configuration?.slots?.order_summary);
 
           setDraftConfig(response.data);
           currentConfigRef.current = response.data;
@@ -79,7 +67,6 @@ const useDraftConfiguration = (storeId, pageType = 'cart') => {
           setError(response.error || 'Failed to save configuration');
         }
       } catch (err) {
-        console.error('Error saving draft configuration:', err);
         setError(err.message);
       } finally {
         setIsSaving(false);

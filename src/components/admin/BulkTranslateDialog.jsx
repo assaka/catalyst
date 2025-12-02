@@ -175,23 +175,12 @@ export default function BulkTranslateDialog({
         setTranslationProgress({ current: i + 1, total: translateToLangs.length });
 
         // For UI Labels, pass progress callback to get item-level updates
-        console.log(`🔍 Checking entityName: "${entityName}" === "UI Labels": ${entityName === 'UI Labels'}`);
         const progressCallback = (entityName === 'UI Labels') ? (progress) => {
-          console.log('📊 Progress callback triggered:', progress);
           setItemProgress(progress);
         } : null;
-        console.log(`📞 Calling onTranslate with progressCallback:`, progressCallback !== null ? 'YES' : 'NO');
 
         const result = await onTranslate(translateFromLang, toLang, progressCallback);
         allResults.push(result);
-
-        console.log(`📥 BulkTranslateDialog: Full result object for ${toLang}:`, result);
-        console.log(`📥 BulkTranslateDialog: Parsed result:`, {
-          success: result.success,
-          translated: result.data?.translated,
-          skipped: result.data?.skipped,
-          creditsDeducted: result.creditsDeducted || result.data?.creditsDeducted
-        });
 
         if (result.success) {
           totalTranslated += result.data.translated || 0;
@@ -199,7 +188,6 @@ export default function BulkTranslateDialog({
           totalFailed += result.data.failed || 0;
           const creditsFromResponse = result.creditsDeducted || result.data?.creditsDeducted || 0;
           totalCreditsDeducted += creditsFromResponse;
-          console.log(`💰 BulkTranslateDialog: Added ${creditsFromResponse} credits, total now: ${totalCreditsDeducted}`);
           if (result.data.errors && result.data.errors.length > 0) {
             allErrors.push(...result.data.errors.map(err => ({ ...err, toLang })));
           }
@@ -208,14 +196,11 @@ export default function BulkTranslateDialog({
         }
       }
 
-      console.log(`📊 BulkTranslateDialog: Final totals - Translated: ${totalTranslated}, Skipped: ${totalSkipped}, Credits: ${totalCreditsDeducted}`);
-
       // Check if any result indicates background processing (for UI Labels)
       const hasBackgroundProcessing = allResults.some(result => result.data?.backgroundProcessing);
 
       if (hasBackgroundProcessing) {
         // Background processing mode - show message and close after 3 seconds
-        console.log('🔄 Background processing detected for UI Labels');
 
         // Show the background message in modal
         setShowBackgroundMessage(true);
@@ -227,15 +212,11 @@ export default function BulkTranslateDialog({
 
         // Update local credits for display
         if (totalCreditsDeducted > 0) {
-          console.log(`💰 BulkTranslateDialog: Credits deducted: ${totalCreditsDeducted}, updating local balance`);
           setLocalCredits(prev => Math.max(0, (prev || 0) - totalCreditsDeducted));
         }
 
         // Wait 5 seconds before closing to let user see the message
-        console.log('⏸️ Waiting 5 seconds before closing modal...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        console.log('✅ 5 seconds elapsed, closing modal now');
-
+        await new Promise(resolve => setTimeout(resolve, 5000))
         // Reset states
         setShowBackgroundMessage(false);
         setTranslationProgress({ current: 0, total: 0 });
@@ -252,7 +233,6 @@ export default function BulkTranslateDialog({
 
         // Reload credits in sidebar
         setTimeout(() => {
-          console.log('🔄 BulkTranslateDialog: Modal closed, reloading credits in sidebar');
           window.dispatchEvent(new CustomEvent('creditsUpdated'));
         }, 150);
 
@@ -262,10 +242,8 @@ export default function BulkTranslateDialog({
       // Regular processing mode - show results and wait before closing
       // Update local credits for display in modal
       if (totalCreditsDeducted > 0) {
-        console.log(`💰 BulkTranslateDialog: Credits deducted: ${totalCreditsDeducted}, updating local balance`);
         setLocalCredits(prev => Math.max(0, (prev || 0) - totalCreditsDeducted));
       } else {
-        console.log('⚠️ BulkTranslateDialog: No credits deducted');
       }
 
       if (totalTranslated > 0) {
@@ -287,9 +265,7 @@ export default function BulkTranslateDialog({
       }
 
       // Wait 3 seconds before closing to let user see the message
-      console.log('⏸️ Waiting 3 seconds before closing modal...');
       await new Promise(resolve => setTimeout(resolve, 3000));
-      console.log('✅ 3 seconds elapsed, closing modal now');
 
       // Reset states first
       setIsTranslating(false);
@@ -301,9 +277,7 @@ export default function BulkTranslateDialog({
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Then close dialog
-      console.log('🔒 Calling onOpenChange(false) to close modal');
       onOpenChange(false);
-      console.log('✅ onOpenChange(false) called');
 
       // Reload data and credits after closing dialog
       if (onComplete) {
@@ -312,11 +286,9 @@ export default function BulkTranslateDialog({
 
       // Reload credits in sidebar after modal closes
       setTimeout(() => {
-        console.log('🔄 BulkTranslateDialog: Modal closed, reloading credits in sidebar');
         window.dispatchEvent(new CustomEvent('creditsUpdated'));
       }, 150);
     } catch (error) {
-      console.error('Bulk translate error:', error);
       toast.error(`Failed to translate ${entityType}`);
       // Reset states on error too
       setIsTranslating(false);

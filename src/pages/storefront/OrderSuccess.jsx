@@ -96,7 +96,6 @@ export default function OrderSuccess() {
     const checkAuth = () => {
       // Use storefrontApiClient to check customer-specific authentication
       const isCustomerAuth = storefrontApiClient.isCustomerAuthenticated();
-      console.log('🔍 Customer authentication check:', isCustomerAuth);
       setIsAuthenticated(isCustomerAuth);
     };
     checkAuth();

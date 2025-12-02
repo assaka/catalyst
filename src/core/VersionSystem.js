@@ -68,11 +68,6 @@ class VersionSystem {
 
       // Emit event
       eventSystem.emit('version.releaseCreated', { release });
-
-      if (this.debug) {
-        console.log(`📦 Release created: ${release.name} (${release.version})`);
-      }
-
       return release;
 
     } catch (error) {
@@ -131,10 +126,6 @@ class VersionSystem {
         release,
         previousVersion
       });
-
-      if (this.debug) {
-        console.log(`🚀 Release published: ${release.name} (${release.version})`);
-      }
 
       return release;
 
@@ -413,10 +404,6 @@ class VersionSystem {
       }
     }
     
-    if (this.debug && archivedCount > 0) {
-      console.log(`📁 Archived ${archivedCount} old versions`);
-    }
-    
     return archivedCount;
   }
 
@@ -467,10 +454,6 @@ class VersionSystem {
     this.versions.clear();
     this.releases.clear();
     this.currentVersion = null;
-    
-    if (this.debug) {
-      console.log('🧹 Version system cleared');
-    }
   }
 }
 

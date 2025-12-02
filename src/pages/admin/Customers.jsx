@@ -210,7 +210,6 @@ export default function Customers() {
                                     'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
                                 }
                             });
-                            console.log('Email removed from blacklist_emails table');
                         }
                     }
                 } catch (emailError) {

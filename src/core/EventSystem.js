@@ -25,11 +25,7 @@ class EventSystem {
     
     // Sort by priority (lower number = higher priority)
     listeners.sort((a, b) => a.priority - b.priority);
-    
-    if (this.debug) {
-      console.log(`📡 Event listener added: ${eventName} (priority: ${priority})`);
-    }
-    
+
     return () => this.off(eventName, listener);
   }
 
@@ -56,9 +52,6 @@ class EventSystem {
     
     if (index !== -1) {
       listeners.splice(index, 1);
-      if (this.debug) {
-        console.log(`📡 Event listener removed: ${eventName}`);
-      }
     }
   }
 
@@ -70,23 +63,15 @@ class EventSystem {
     this.recordEvent(eventName, args);
     
     if (!this.listeners.has(eventName)) {
-      if (this.debug) {
-        console.log(`📡 Event emitted (no listeners): ${eventName}`);
-      }
       return;
     }
     
     const listeners = this.listeners.get(eventName);
-    
-    if (this.debug) {
-      console.log(`📡 Event emitted: ${eventName}`, { listeners: listeners.length, data: args });
-    }
-    
+
     for (const { listener } of listeners) {
       try {
         listener(...args);
       } catch (error) {
-        console.error(`❌ Event listener error in ${eventName}:`, error);
         // Continue with other listeners
       }
     }
@@ -100,23 +85,15 @@ class EventSystem {
     this.recordEvent(eventName, args);
     
     if (!this.listeners.has(eventName)) {
-      if (this.debug) {
-        console.log(`📡 Async event emitted (no listeners): ${eventName}`);
-      }
       return;
     }
     
     const listeners = this.listeners.get(eventName);
-    
-    if (this.debug) {
-      console.log(`📡 Async event emitted: ${eventName}`, { listeners: listeners.length, data: args });
-    }
-    
+
     const promises = listeners.map(async ({ listener }) => {
       try {
         await listener(...args);
       } catch (error) {
-        console.error(`❌ Async event listener error in ${eventName}:`, error);
       }
     });
     
@@ -158,14 +135,8 @@ class EventSystem {
   removeAllListeners(eventName) {
     if (eventName) {
       this.listeners.delete(eventName);
-      if (this.debug) {
-        console.log(`📡 All listeners removed for: ${eventName}`);
-      }
     } else {
       this.listeners.clear();
-      if (this.debug) {
-        console.log('📡 All event listeners removed');
-      }
     }
   }
 
@@ -181,9 +152,6 @@ class EventSystem {
    */
   clearHistory() {
     this.eventHistory = [];
-    if (this.debug) {
-      console.log('📡 Event history cleared');
-    }
   }
 
   /**

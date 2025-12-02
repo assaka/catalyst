@@ -98,7 +98,6 @@ export const useWishlist = (storeId, options = {}) => {
         const items = await CustomerWishlist.getItems(storeId);
         return Array.isArray(items) ? items : [];
       } catch (error) {
-        console.warn('Failed to load wishlist:', error);
         return [];
       }
     },
@@ -165,7 +164,6 @@ export const useTranslations = (storeId, language, options = {}) => {
     queryKey: queryKeys.translation.uiLabels(language, storeId),
     queryFn: async () => {
       if (!storeId) {
-        console.warn('No store_id provided to useTranslations hook');
         return {};
       }
 
@@ -403,11 +401,6 @@ export const useSlotConfiguration = (storeId, pageType, options = {}) => {
   // Use context if available, otherwise fall back to URL check
   const isPreviewDraftMode = contextPreviewMode || urlPreviewMode;
 
-  // Log for debugging
-  if (isPreviewDraftMode) {
-    console.log('[useSlotConfiguration] DRAFT MODE:', { pageType, contextPreviewMode, urlPreviewMode });
-  }
-
   return useQuery({
     // Use different query key for draft mode to avoid cache conflicts
     queryKey: isPreviewDraftMode
@@ -417,12 +410,9 @@ export const useSlotConfiguration = (storeId, pageType, options = {}) => {
       const { default: slotConfigurationService } = await import('@/services/slotConfigurationService');
 
       // Load draft or published configuration based on preview mode
-      console.log('[useSlotConfiguration] Fetching:', { pageType, mode: isPreviewDraftMode ? 'DRAFT' : 'PUBLISHED' });
       const response = isPreviewDraftMode
         ? await slotConfigurationService.getDraftConfiguration(storeId, pageType)
         : await slotConfigurationService.getPublishedConfiguration(storeId, pageType);
-
-      console.log('[useSlotConfiguration] Response:', { pageType, isPreviewDraftMode, success: response.success, hasData: !!response.data });
 
       if (response.success && response.data &&
           response.data.configuration &&

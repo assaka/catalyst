@@ -23,11 +23,7 @@ class HookSystem {
     
     // Sort by priority (lower number = higher priority)
     handlers.sort((a, b) => a.priority - b.priority);
-    
-    if (this.debug) {
-      console.log(`🪝 Hook registered: ${hookName} (priority: ${priority})`);
-    }
-    
+
     return () => this.unregister(hookName, handler);
   }
 
@@ -42,9 +38,6 @@ class HookSystem {
     
     if (index !== -1) {
       handlers.splice(index, 1);
-      if (this.debug) {
-        console.log(`🪝 Hook unregistered: ${hookName}`);
-      }
     }
   }
 
@@ -59,10 +52,6 @@ class HookSystem {
     const handlers = this.hooks.get(hookName);
     let result = value;
     
-    if (this.debug) {
-      console.log(`🪝 Applying filter hook: ${hookName}`, { originalValue: value, handlers: handlers.length });
-    }
-    
     for (const { handler } of handlers) {
       try {
         const newResult = handler(result, ...args);
@@ -70,15 +59,9 @@ class HookSystem {
           result = newResult;
         }
       } catch (error) {
-        console.error(`❌ Hook handler error in ${hookName}:`, error);
         // Continue with other handlers
       }
     }
-    
-    if (this.debug && result !== value) {
-      console.log(`🪝 Hook ${hookName} transformed:`, { from: value, to: result });
-    }
-    
     return result;
   }
 
@@ -91,16 +74,11 @@ class HookSystem {
     }
     
     const handlers = this.hooks.get(hookName);
-    
-    if (this.debug) {
-      console.log(`🪝 Executing action hook: ${hookName}`, { handlers: handlers.length });
-    }
-    
+
     for (const { handler } of handlers) {
       try {
         handler(...args);
       } catch (error) {
-        console.error(`❌ Hook handler error in ${hookName}:`, error);
         // Continue with other handlers
       }
     }
@@ -116,11 +94,7 @@ class HookSystem {
     
     const handlers = this.hooks.get(hookName);
     let result = value;
-    
-    if (this.debug) {
-      console.log(`🪝 Applying async filter hook: ${hookName}`, { originalValue: value, handlers: handlers.length });
-    }
-    
+
     for (const { handler } of handlers) {
       try {
         const newResult = await handler(result, ...args);
@@ -128,7 +102,6 @@ class HookSystem {
           result = newResult;
         }
       } catch (error) {
-        console.error(`❌ Async hook handler error in ${hookName}:`, error);
         // Continue with other handlers
       }
     }
@@ -145,16 +118,11 @@ class HookSystem {
     }
     
     const handlers = this.hooks.get(hookName);
-    
-    if (this.debug) {
-      console.log(`🪝 Executing async action hook: ${hookName}`, { handlers: handlers.length });
-    }
-    
+
     for (const { handler } of handlers) {
       try {
         await handler(...args);
       } catch (error) {
-        console.error(`❌ Async hook handler error in ${hookName}:`, error);
         // Continue with other handlers
       }
     }

@@ -1915,9 +1915,6 @@ const helpers = {
     return crypto.randomUUID();
   },
 
-  logMessage(msg) {
-    console.log(\`[Plugin] \${new Date().toISOString()}: \${msg}\`);
-  }
 };
 
 module.exports = helpers;`} />

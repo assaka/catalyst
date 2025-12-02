@@ -28,7 +28,6 @@ const AIContextWindowPage = () => {
 
   // Handle slot editor selection from SlotEnabledFileSelector
   const handleFileSelect = useCallback((slotFile) => {
-    console.log('Slot editor selected:', slotFile);
     setSelectedSlotEditor(slotFile);
   }, []);
 
@@ -95,10 +94,8 @@ const AIContextWindowPage = () => {
                         try {
                           const storeId = getSelectedStoreId();
                           const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, selectedSlotEditor.pageType);
-                          console.log('✅ Configuration saved successfully:', response);
                           return response;
                         } catch (error) {
-                          console.error(`❌ Failed to save ${selectedSlotEditor.pageType} configuration:`, error);
                           throw error;
                         }
                       };
@@ -256,10 +253,8 @@ const AIContextWindowPage = () => {
                           try {
                             const storeId = getSelectedStoreId();
                             const response = await slotConfigurationService.saveConfiguration(storeId, configToSave, selectedSlotEditor.pageType);
-                            console.log('✅ Configuration saved successfully:', response);
                             return response;
                           } catch (error) {
-                            console.error(`❌ Failed to save ${selectedSlotEditor.pageType} configuration:`, error);
                             throw error;
                           }
                         };

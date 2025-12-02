@@ -181,12 +181,6 @@ export default function SeoCanonical() {
       return;
     }
 
-    console.log('💾 Saving canonical settings:', {
-      storeId,
-      seoSettingId,
-      canonicalSettings
-    });
-
     setSaving(true);
     setSaveSuccess(false);
 
@@ -196,16 +190,10 @@ export default function SeoCanonical() {
         canonical_settings: canonicalSettings
       };
 
-      console.log('📤 Payload to save:', payload);
-
       if (seoSettingId) {
-        console.log('🔄 Updating existing SEO setting:', seoSettingId);
         const result = await SeoSetting.update(seoSettingId, payload);
-        console.log('✅ Update result:', result);
       } else {
-        console.log('➕ Creating new SEO setting');
         const created = await SeoSetting.create(payload);
-        console.log('✅ Create result:', created);
         setSeoSettingId(created.id || (Array.isArray(created) && created[0]?.id));
       }
 

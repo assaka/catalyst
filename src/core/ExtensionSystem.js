@@ -36,13 +36,8 @@ class ExtensionSystem {
       
       this.extensions.set(extensionId, extensionModule);
       
-      if (this.debug) {
-        console.log(`🔌 Extension registered: ${extensionId}`);
-      }
-      
       return extensionId;
     } catch (error) {
-      console.error(`❌ Failed to register extension:`, error);
       throw error;
     }
   }
@@ -52,9 +47,6 @@ class ExtensionSystem {
    */
   async load(extensionId) {
     if (this.loadedExtensions.has(extensionId)) {
-      if (this.debug) {
-        console.log(`🔌 Extension already loaded: ${extensionId}`);
-      }
       return;
     }
     
@@ -97,12 +89,7 @@ class ExtensionSystem {
       // Emit extension loaded event
       eventSystem.emit('extension.loaded', { extensionId, extension });
       
-      if (this.debug) {
-        console.log(`✅ Extension loaded: ${extensionId}`);
-      }
-      
     } catch (error) {
-      console.error(`❌ Failed to load extension ${extensionId}:`, error);
       throw error;
     }
   }
@@ -112,9 +99,6 @@ class ExtensionSystem {
    */
   async unload(extensionId) {
     if (!this.loadedExtensions.has(extensionId)) {
-      if (this.debug) {
-        console.log(`🔌 Extension not loaded: ${extensionId}`);
-      }
       return;
     }
     
@@ -145,13 +129,7 @@ class ExtensionSystem {
       
       // Emit extension unloaded event
       eventSystem.emit('extension.unloaded', { extensionId, extension });
-      
-      if (this.debug) {
-        console.log(`🔌 Extension unloaded: ${extensionId}`);
-      }
-      
     } catch (error) {
-      console.error(`❌ Failed to unload extension ${extensionId}:`, error);
       throw error;
     }
   }
@@ -198,7 +176,6 @@ class ExtensionSystem {
       await this.load(extensionId);
       
     } catch (error) {
-      console.error(`❌ Failed to load extension from config:`, config, error);
       throw error;
     }
   }

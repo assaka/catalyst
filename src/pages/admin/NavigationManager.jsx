@@ -257,7 +257,6 @@ const NavigationManager = () => {
 
       if (dropOnItem && targetItem.key !== draggedItem.parent_key) {
         // Dropping ON an item - make it a child of that item
-        console.log(`Making ${draggedItem.label} a child of ${targetItem.label}`);
         newItems[draggedIndex] = {
           ...draggedItem,
           parent_key: targetItem.key

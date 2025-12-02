@@ -161,7 +161,6 @@ export default function Stores() {
 
       // Reload data to confirm and get any other changes
       await loadData();
-      console.log('✅ Data reloaded successfully');
 
       // Close confirmation modal if open
       setShowPublishConfirm(false);
