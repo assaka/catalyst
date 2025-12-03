@@ -14,8 +14,8 @@ export default function Header() {
 
                     {/* Navigation - Centered */}
                     <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
-                        <a href="#community" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors">
-                            Community
+                        <a href="https://discord.gg/J3BCegpX" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors">
+                            Discord
                         </a>
                         <a href="#pricing" className="text-slate-600 hover:text-indigo-600 font-medium transition-colors">
                             Pricing
