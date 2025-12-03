@@ -360,8 +360,6 @@ export default function StorefrontLayout({ children }) {
       }
     `;
 
-    const cookieConsentSettings = settings?.cookie_consent;
-
     // Check if store is paused (published === false)
     // But don't show paused modal if store owner is logged in viewing their own store
     const storeOwnerData = getUserDataForRole('store_owner') || getUserDataForRole('admin');
