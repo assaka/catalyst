@@ -36,6 +36,292 @@ function PageWrapper({ Component, pageName }) {
   );
 }
 
+// Initialize database-driven plugins
+async function initializeDatabasePlugins() {
+  try {
+    // Skip plugin loading if no store is selected (e.g., on auth page)
+    const selectedStoreId = localStorage.getItem('selectedStoreId');
+    if (!selectedStoreId) {
+      console.log('⏭️ Skipping plugin initialization - no store selected yet');
+      return;
+    }
+
+    // Only load plugins on storefront pages, not admin pages
+    // Admin plugin management is handled separately in the Plugins page
+    const isAdminPage = window.location.pathname.includes('/admin/');
+    const isPluginsPage = window.location.pathname.includes('/plugins');
+
+    if (isAdminPage && !isPluginsPage) {
+      console.log('⏭️ Skipping plugin initialization - admin page (plugins load only on storefront)');
+      return;
+    }
+
+    // Get store_id from localStorage (set by StoreSelection or storefront bootstrap)
+    const storeId = localStorage.getItem('selectedStoreId') || localStorage.getItem('storeId');
+
+    if (!storeId) {
+      console.log('⏭️ No store_id available - skipping plugin initialization');
+      return;
+    }
+
+    // Fetch active plugins from database (uses normalized tables structure)
+    // Add timestamp to bust cache
+    // Try new endpoint first, fallback to legacy if not deployed yet
+    let response = await fetch(`/api/plugins/active?store_id=${storeId}&_t=${Date.now()}`);
+
+    const result = await response.json();
+
+    if (!result.success) {
+      console.error('❌ Failed to load plugins from database:', result);
+      return;
+    }
+
+    const activePlugins = result.data || [];
+
+    // Only load hooks, events, and scripts on storefront (not on plugins management page)
+    const isStorefrontContext = !window.location.pathname.includes('/plugins');
+
+    // Helper to strip ES module syntax for eval compatibility
+    const makeEvalSafe = (code) => {
+      if (!code) return code;
+      // Remove 'export default ' from the beginning
+      return code.replace(/^\s*export\s+default\s+/, '');
+    };
+
+    // Process plugins - hooks and events are ALREADY in the response!
+    // No need to fetch each plugin individually
+    const loadPromise = Promise.all(
+      activePlugins.map(async (plugin) => {
+        // Use hooks and events from the response (no additional API call!)
+        // Only register hooks on storefront pages
+        if (plugin.hooks && Array.isArray(plugin.hooks) && isStorefrontContext) {
+          plugin.hooks.forEach(hook => {
+            try {
+              if (hook.handler_code && hook.enabled !== false) {
+                const safeCode = makeEvalSafe(hook.handler_code);
+                const handlerFn = eval(`(${safeCode})`);
+                hookSystem.register(hook.hook_name, handlerFn);
+              }
+            } catch (error) {
+              console.error(`Error registering hook ${hook.hook_name}:`, error);
+            }
+          });
+        }
+
+        // Register events from response (no additional API call!)
+        // Only register events on storefront pages
+        if (plugin.events && Array.isArray(plugin.events) && isStorefrontContext) {
+          plugin.events.forEach(event => {
+            try {
+              if (event.listener_code && event.enabled !== false) {
+                const safeCode = makeEvalSafe(event.listener_code);
+                const listenerFn = eval(`(${safeCode})`);
+                eventSystem.on(event.event_name, listenerFn);
+              }
+            } catch (error) {
+              console.error(`Error registering event ${event.event_name}:`, error);
+            }
+          });
+        }
+
+        // Load frontend scripts from response (no additional API call!)
+        // Only load scripts on storefront pages (not on plugins management page)
+        if (plugin.frontendScripts && Array.isArray(plugin.frontendScripts) && isStorefrontContext) {
+          plugin.frontendScripts.forEach(script => {
+            try {
+              if (!script.content || script.content.trim().startsWith('<')) {
+                console.error(`Script ${script.name} contains HTML, not JavaScript. Skipping.`);
+                return;
+              }
+
+              // Skip Node.js backend scripts
+              const scriptContent = script.content.trim();
+              if (scriptContent.includes('require(') || scriptContent.includes('module.exports')) {
+                console.warn(`Skipping backend script ${script.name}`);
+                return;
+              }
+
+              // Create and inject script
+              const scriptElement = document.createElement('script');
+              scriptElement.type = 'module';
+              scriptElement.textContent = script.content;
+              scriptElement.setAttribute('data-plugin-id', plugin.id);
+              scriptElement.setAttribute('data-script-name', script.name);
+              document.head.appendChild(scriptElement);
+            } catch (error) {
+              console.error(`Error loading script ${script.name}:`, error);
+            }
+          });
+        }
+      })
+    );
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Plugin loading timeout (10s)')), 10000)
+    );
+
+    await Promise.race([loadPromise, timeoutPromise]);
+
+    // Set global flag to true so components can check it immediately
+    window.__pluginsReady = true;
+
+  } catch (error) {
+    console.error('❌ Error initializing database plugins:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error name:', error.name);
+    // Continue anyway - don't block the app
+  }
+}
+
+// Load hooks and events for a specific plugin
+async function loadPluginHooksAndEvents(pluginId) {
+  try {
+    // Get store_id from localStorage
+    const storeId = localStorage.getItem('selectedStoreId') || localStorage.getItem('storeId');
+
+    if (!storeId) {
+      console.log('⏭️ No store_id available - skipping plugin load');
+      return;
+    }
+
+    // Add timestamp to bust cache
+    // Try new endpoint first, fallback to legacy if not deployed yet
+    let response = await fetch(`/api/plugins/active/${pluginId}?store_id=${storeId}&_t=${Date.now()}`);
+
+    const result = await response.json();
+
+    if (result.success && result.data) {
+      const plugin = result.data;
+
+      // Register hooks from database
+      if (plugin.hooks) {
+        for (const hook of plugin.hooks) {
+          if (hook.enabled) {
+            try {
+              const handlerFunction = createHandlerFromDatabaseCode(hook.handler_code);
+              hookSystem.register(hook.hook_name, handlerFunction, hook.priority);
+            } catch (error) {
+              console.error(`❌ Failed to register hook ${hook.hook_name}:`, error.message);
+              // Continue with other hooks
+            }
+          }
+        }
+      }
+
+      // Register events from database
+      if (plugin.events) {
+        for (const event of plugin.events) {
+          if (event.enabled) {
+            try {
+              const listenerFunction = createHandlerFromDatabaseCode(event.listener_code);
+              eventSystem.on(event.event_name, listenerFunction);
+            } catch (error) {
+              console.error(`❌ Failed to register event ${event.event_name}:`, error.message);
+              // Continue with other events
+            }
+          }
+        }
+      }
+    } else {
+      console.error(`❌ Failed to load plugin ${pluginId}:`, result);
+    }
+  } catch (error) {
+    console.error(`❌ Error loading plugin ${pluginId}:`, error);
+    console.error('Error stack:', error.stack);
+    // Don't throw - continue with other plugins
+  }
+}
+
+// Load frontend scripts for a specific plugin
+async function loadPluginFrontendScripts(pluginId) {
+  try {
+    // Fetch scripts from normalized plugin_scripts table
+    const response = await fetch(`/api/plugins/${pluginId}/scripts?scope=frontend&_t=${Date.now()}`);
+
+    if (!response.ok) {
+      console.warn(`  ⚠️ Failed to load scripts for ${pluginId}: ${response.status}`);
+      return;
+    }
+
+    const result = await response.json();
+
+    if (result.success && result.data && result.data.length > 0) {
+      for (const script of result.data) {
+        try {
+          // Validate script content is actually JavaScript
+          if (!script.content || script.content.trim().startsWith('<')) {
+            console.error(`  ❌ Script ${script.name} contains HTML, not JavaScript. Skipping.`);
+            continue;
+          }
+
+          // Skip Node.js backend scripts (they contain require/module.exports)
+          const scriptContent = script.content.trim();
+          if (scriptContent.includes('require(') ||
+              scriptContent.includes('module.exports') ||
+              scriptContent.includes('require.') ||
+              scriptContent.match(/const\s+\{\s*\w+\s*\}\s*=\s*require\(/)) {
+            console.warn(`  ⚠️ Skipping backend script ${script.name} (contains Node.js syntax)`);
+            continue;
+          }
+
+          // Create a script tag and inject the code
+          const scriptElement = document.createElement('script');
+          scriptElement.type = 'module'; // Use module to support ES6 import/export
+          scriptElement.textContent = script.content;
+          scriptElement.setAttribute('data-plugin-id', pluginId);
+          scriptElement.setAttribute('data-script-name', script.name);
+
+          document.head.appendChild(scriptElement);
+
+        } catch (error) {
+          console.error(`  ❌ Error executing script ${script.name}:`, error);
+        }
+      }
+    } else {
+      console.warn(`  ⚠️ No frontend scripts found for ${pluginId}`);
+    }
+  } catch (error) {
+    console.error(`❌ Error loading frontend scripts for ${pluginId}:`, error);
+    // Don't throw - continue with other plugins
+  }
+}
+
+// Create executable function from database-stored code
+function createHandlerFromDatabaseCode(code) {
+  try {
+    // Remove 'export default' if present (database may have full function declarations)
+    let cleanCode = code.trim();
+    if (cleanCode.startsWith('export default')) {
+      cleanCode = cleanCode.replace(/^export\s+default\s+/, '');
+    }
+
+    // Remove trailing semicolon if present
+    cleanCode = cleanCode.replace(/;[\s]*$/, '');
+
+    // If it's a function declaration (named or anonymous), convert to expression
+    if (cleanCode.startsWith('async function') || cleanCode.startsWith('function')) {
+      cleanCode = '(' + cleanCode + ')';
+    }
+    // If it's already wrapped (like arrow functions with parens), no need to wrap again
+    else if (!cleanCode.startsWith('(')) {
+      // For arrow functions like: eventData => {...} or (eventData) => {...}
+      // Wrap them to ensure they're treated as expressions
+      cleanCode = '(' + cleanCode + ')';
+    }
+
+    // Use Function constructor to evaluate the function string
+    const handler = new Function('return ' + cleanCode)();
+    return handler;
+  } catch (error) {
+    console.error('❌ Error creating handler from database code:', error);
+    console.error('Failed code:', code);
+    return () => {
+      console.warn('⚠️ Fallback handler called - original code had syntax error');
+    };
+  }
+}
+
 function App() {
   // Initialize the new hook-based architecture
   useEffect(() => {
