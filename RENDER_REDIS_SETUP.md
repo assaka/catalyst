@@ -175,7 +175,7 @@ With BullMQ/Redis properly configured:
 ### Test 1: Create a Test Job
 ```bash
 # Via your backend API (if you have a job creation endpoint)
-curl -X POST https://daino.onrender.com/api/jobs/schedule \
+curl -X POST https://backend.dainostore.com/api/jobs/schedule \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -d '{

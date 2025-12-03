@@ -27,15 +27,15 @@ async function analyzeWithoutPuppeteer() {
   const tests = [
     {
       name: 'Backend Health Check',
-      url: 'https://daino.onrender.com/health',
+      url: 'https://backend.dainostore.com/health',
     },
     {
       name: 'Cache Health Check',
-      url: 'https://daino.onrender.com/health/cache',
+      url: 'https://backend.dainostore.com/health/cache',
     },
     {
       name: 'Database Health Check',
-      url: 'https://daino.onrender.com/health/db',
+      url: 'https://backend.dainostore.com/health/db',
     },
   ];
 

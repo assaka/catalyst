@@ -26,17 +26,17 @@ OR by checking the URL when viewing a storefront page:
 
 **Using cURL:**
 ```bash
-curl "https://daino.onrender.com/api/public/storefront/bootstrap?slug=YOUR_STORE_SLUG&lang=en"
+curl "https://backend.dainostore.com/api/public/storefront/bootstrap?slug=YOUR_STORE_SLUG&lang=en"
 ```
 
 **Using Browser:**
 ```
-https://daino.onrender.com/api/public/storefront/bootstrap?slug=YOUR_STORE_SLUG&lang=en
+https://backend.dainostore.com/api/public/storefront/bootstrap?slug=YOUR_STORE_SLUG&lang=en
 ```
 
 **Using Postman/Insomnia:**
 - Method: GET
-- URL: `https://daino.onrender.com/api/public/storefront/bootstrap`
+- URL: `https://backend.dainostore.com/api/public/storefront/bootstrap`
 - Query Params:
   - slug: `YOUR_STORE_SLUG`
   - lang: `en`
@@ -119,19 +119,19 @@ Check that the response includes:
 
 **Missing slug parameter:**
 ```bash
-curl "https://daino.onrender.com/api/public/storefront/bootstrap?lang=en"
+curl "https://backend.dainostore.com/api/public/storefront/bootstrap?lang=en"
 ```
 Expected: `400 Bad Request` with error message
 
 **Invalid store slug:**
 ```bash
-curl "https://daino.onrender.com/api/public/storefront/bootstrap?slug=nonexistent-store&lang=en"
+curl "https://backend.dainostore.com/api/public/storefront/bootstrap?slug=nonexistent-store&lang=en"
 ```
 Expected: `404 Not Found` with error message
 
 **Invalid language code:**
 ```bash
-curl "https://daino.onrender.com/api/public/storefront/bootstrap?slug=YOUR_STORE_SLUG&lang=xx"
+curl "https://backend.dainostore.com/api/public/storefront/bootstrap?slug=YOUR_STORE_SLUG&lang=xx"
 ```
 Expected: `200 OK` with empty translations (fallback behavior)
 

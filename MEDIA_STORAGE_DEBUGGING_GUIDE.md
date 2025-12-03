@@ -196,8 +196,8 @@ For production (Render.com, Vercel, etc.), update these URLs:
 
 ```env
 # Production URLs
-BACKEND_URL=https://daino.onrender.com
-SUPABASE_OAUTH_REDIRECT_URI=https://daino.onrender.com/api/supabase/callback
+BACKEND_URL=https://backend.dainostore.com
+SUPABASE_OAUTH_REDIRECT_URI=https://backend.dainostore.com/api/supabase/callback
 FRONTEND_URL=https://daino-pearl.vercel.app
 ```
 

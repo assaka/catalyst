@@ -15,7 +15,7 @@ Your comprehensive testing system is **100% compatible** with Render + Vercel + 
 - ✅ **Transformation Bug Prevention** - Specifically monitors the custom mappings endpoint that had the bug
 
 ### **Integration Points:**
-- **Health Endpoint**: `https://daino.onrender.com/health`
+- **Health Endpoint**: `https://backend.dainostore.com/health`
 - **Critical Endpoints**: All your API endpoints are monitored
 - **Alert Thresholds**: 5-second response time alerts (higher for serverless cold starts)
 - **Deployment Monitoring**: Automatic health checks after deployments
@@ -212,7 +212,7 @@ The live test shows:
 ```bash
 # Enable monitoring in your current deployment
 export MONITORING_ENABLED=true
-export RENDER_BACKEND_URL=https://daino.onrender.com
+export RENDER_BACKEND_URL=https://backend.dainostore.com
 export VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app
 
 # Run health check

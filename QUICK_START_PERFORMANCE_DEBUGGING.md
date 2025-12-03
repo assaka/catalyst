@@ -283,7 +283,7 @@ performance.getEntriesByType('resource')
 
 ```bash
 # Visit this URL:
-https://daino.onrender.com/health/cache
+https://backend.dainostore.com/health/cache
 
 # Check "keys" value (should be growing)
 ```

@@ -254,7 +254,7 @@ const allowedOrigins = [
   'https://daino-pearl.vercel.app',
   'https://daino-ecommerce.vercel.app',
   'https://daino-683t6upsk-hamids-projects-1928df2f.vercel.app',
-  'https://daino.onrender.com', // Allow backend for preview pages
+  'https://backend.dainostore.com', // Allow backend for preview pages
   process.env.CORS_ORIGIN
 ].filter(Boolean);
 

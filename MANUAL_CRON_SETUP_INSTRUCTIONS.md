@@ -393,7 +393,7 @@ INSERT INTO jobs (
 
 **Trigger translation via your API:**
 ```bash
-curl -X POST https://daino.onrender.com/api/translations/ui-labels/bulk \
+curl -X POST https://backend.dainostore.com/api/translations/ui-labels/bulk \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{

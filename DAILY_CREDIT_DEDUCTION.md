@@ -129,7 +129,7 @@ node test-daily-credit-deduction.js
 
 **Via API (Admin only):**
 ```bash
-POST https://daino.onrender.com/api/credits/trigger-daily-deduction
+POST https://backend.dainostore.com/api/credits/trigger-daily-deduction
 Authorization: Bearer <admin-token>
 ```
 

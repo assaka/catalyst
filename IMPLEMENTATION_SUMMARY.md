@@ -269,20 +269,20 @@
 
 ### Step 1: Verify Redis Connection
 ```
-URL: https://daino.onrender.com/health/cache
+URL: https://backend.dainostore.com/health/cache
 Expected: "connected": true, "keys": > 0
 ```
 
 ### Step 2: Test Cache Headers
 ```
-URL: https://daino.onrender.com/api/cache-test/test
+URL: https://backend.dainostore.com/api/cache-test/test
 Action: Load twice, check x-cache header
 Expected: MISS → HIT
 ```
 
 ### Step 3: Test Product Caching
 ```
-URL: https://daino.onrender.com/api/public/products?limit=5
+URL: https://backend.dainostore.com/api/public/products?limit=5
 Action: Load twice within 3 minutes
 Expected: x-cache: MISS → x-cache: HIT
 ```
@@ -372,7 +372,7 @@ Expected: Shows duplicate calls, cache hit rate, slow requests
 ### Test 1: Cache Test Endpoint
 
 **Firefox:**
-1. Open: https://daino.onrender.com/api/cache-test/test
+1. Open: https://backend.dainostore.com/api/cache-test/test
 2. F12 → Network → Reload
 3. Click "test" → Headers → Look for `x-cache: MISS`
 4. Reload again → Should see `x-cache: HIT`
@@ -383,7 +383,7 @@ Expected: Shows duplicate calls, cache hit rate, slow requests
 
 **Open:**
 ```
-https://daino.onrender.com/health/cache
+https://backend.dainostore.com/health/cache
 ```
 
 **Look for:**

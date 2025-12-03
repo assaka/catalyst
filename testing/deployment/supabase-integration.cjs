@@ -6,7 +6,7 @@ class SupabaseIntegration {
     this.supabaseUrl = process.env.SUPABASE_URL;
     this.supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
     this.supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    this.backendUrl = process.env.RENDER_BACKEND_URL || 'https://daino.onrender.com';
+    this.backendUrl = process.env.RENDER_BACKEND_URL || 'https://backend.dainostore.com';
   }
 
   // Check Supabase database connectivity through your backend

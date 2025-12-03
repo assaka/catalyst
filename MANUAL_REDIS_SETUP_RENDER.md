@@ -165,7 +165,7 @@ If BullMQ NOT available:
 #### D. Test with a Job
 1. **Trigger a translation job** (via your UI or API):
    ```bash
-   curl -X POST https://daino.onrender.com/api/translations/ui-labels/bulk \
+   curl -X POST https://backend.dainostore.com/api/translations/ui-labels/bulk \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer YOUR_TOKEN" \
      -d '{

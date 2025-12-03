@@ -33,10 +33,10 @@
 ### Check Redis Connection
 ```bash
 # Check if Redis is enabled
-curl https://daino.onrender.com/api/health
+curl https://backend.dainostore.com/api/health
 
 # Or if you have a jobs status endpoint:
-curl https://daino.onrender.com/api/jobs/status
+curl https://backend.dainostore.com/api/jobs/status
 ```
 
 ### Check Database for Jobs
@@ -162,7 +162,7 @@ Your `render.yaml` already includes Redis configuration. When you deploy:
 ### Create a test job:
 ```bash
 # Via API (if you have an endpoint)
-curl -X POST https://daino.onrender.com/api/jobs/schedule \
+curl -X POST https://backend.dainostore.com/api/jobs/schedule \
   -H "Content-Type: application/json" \
   -d '{
     "type": "system:cleanup",

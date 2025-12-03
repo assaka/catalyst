@@ -50,7 +50,7 @@ npx vercel --prod
 
 ```bash
 # Required Environment Variables
-RENDER_BACKEND_URL=https://daino.onrender.com
+RENDER_BACKEND_URL=https://backend.dainostore.com
 VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app
 MONITORING_ENABLED=true
 
@@ -140,7 +140,7 @@ npm run dev
 #### **3. Test Transformation Bug Detection**
 ```bash
 # Test the critical monitoring endpoint
-curl https://daino.onrender.com/api/integrations/akeneo/custom-mappings
+curl https://backend.dainostore.com/api/integrations/akeneo/custom-mappings
 
 # If returns array [] instead of object {}, monitoring will alert:
 # "🚨 CRITICAL: Custom mappings returned array - TRANSFORMATION BUG IS BACK!"
@@ -194,10 +194,10 @@ node test-local.js
 ```bash
 # Check backend URL in environment variables
 echo $RENDER_BACKEND_URL
-# Should output: https://daino.onrender.com
+# Should output: https://backend.dainostore.com
 
 # Test backend directly
-curl https://daino.onrender.com/api/health
+curl https://backend.dainostore.com/api/health
 ```
 
 **2. "Monitoring dashboard not updating" error:**
@@ -1000,7 +1000,7 @@ useEffect(() => {
 │  └─ Monitoring: https://monitoring.vercel.app             │
 │                                                             │
 │  🎯 RENDER (Backend)                                       │
-│  └─ API: https://daino.onrender.com       │
+│  └─ API: https://backend.dainostore.com       │
 │                                                             │
 │  🗄️  SUPABASE (Database)                                   │
 │  └─ PostgreSQL + Storage                                   │
@@ -1032,7 +1032,7 @@ useEffect(() => {
 #### **Monitoring Dashboard Environment Variables**
 ```bash
 # monitoring-dashboard/.env.production
-RENDER_BACKEND_URL=https://daino.onrender.com
+RENDER_BACKEND_URL=https://backend.dainostore.com
 VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app
 MONITORING_ENABLED=true
 ALERT_WEBHOOK_URL=https://hooks.slack.com/your-webhook

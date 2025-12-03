@@ -14,7 +14,7 @@ async function testMonitoringDashboard() {
           healthy: true,
           status: 200,
           responseTime: 850,
-          url: 'https://daino.onrender.com'
+          url: 'https://backend.dainostore.com'
         },
         vercel: {
           healthy: true,
@@ -123,7 +123,7 @@ async function testMonitoringDashboard() {
     console.log('2. npm install');
     console.log('3. npx vercel --prod');
     console.log('4. Set environment variables in Vercel dashboard:');
-    console.log('   - RENDER_BACKEND_URL=https://daino.onrender.com');
+    console.log('   - RENDER_BACKEND_URL=https://backend.dainostore.com');
     console.log('   - VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app');
     console.log('\n🎯 Result: Live monitoring dashboard at https://your-dashboard.vercel.app');
 

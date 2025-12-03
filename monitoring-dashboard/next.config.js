@@ -5,7 +5,7 @@ const nextConfig = {
   
   // Environment variables for the monitoring dashboard
   env: {
-    RENDER_BACKEND_URL: process.env.RENDER_BACKEND_URL || 'https://daino.onrender.com',
+    RENDER_BACKEND_URL: process.env.RENDER_BACKEND_URL || 'https://backend.dainostore.com',
     VERCEL_FRONTEND_URL: process.env.VERCEL_FRONTEND_URL || 'https://daino-pearl.vercel.app',
     MONITORING_ENABLED: 'true'
   },

@@ -131,7 +131,7 @@ class VercelIntegration {
       
       // Since we can't directly check client-side code execution,
       // we'll test the API endpoints that our frontend calls
-      const backendUrl = process.env.RENDER_BACKEND_URL || 'https://daino.onrender.com';
+      const backendUrl = process.env.RENDER_BACKEND_URL || 'https://backend.dainostore.com';
       
       const apiTests = [
         {

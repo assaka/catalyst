@@ -133,8 +133,8 @@ Frontend bundle likely loading all components at once:
 
 ```html
 <head>
-  <link rel="preconnect" href="https://daino.onrender.com">
-  <link rel="dns-prefetch" href="https://daino.onrender.com">
+  <link rel="preconnect" href="https://backend.dainostore.com">
+  <link rel="dns-prefetch" href="https://backend.dainostore.com">
 </head>
 ```
 
@@ -355,7 +355,7 @@ npx lighthouse https://daino-pearl.vercel.app/public/hamid2/product/kenwood... -
 ```bash
 # Test product API speed
 curl -w "\nTime: %{time_total}s\n" -o /dev/null -s \
-  "https://daino.onrender.com/api/public/products/by-slug/product-slug/full?store_id=STORE_UUID"
+  "https://backend.dainostore.com/api/public/products/by-slug/product-slug/full?store_id=STORE_UUID"
 
 # Test image loading
 curl -w "\nSize: %{size_download} bytes\nTime: %{time_total}s\n" -o /dev/null -s \

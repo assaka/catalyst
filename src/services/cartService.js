@@ -17,7 +17,7 @@ const invalidateCartCache = () => {
 // Simplified Cart Service
 class CartService {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'https://daino.onrender.com';
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'https://backend.dainostore.com';
     this.endpoint = `${this.baseURL}/api/cart`;
   }
 

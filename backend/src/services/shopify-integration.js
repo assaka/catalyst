@@ -13,7 +13,7 @@ class ShopifyIntegration {
     this.clientId = process.env.SHOPIFY_CLIENT_ID;
     this.clientSecret = process.env.SHOPIFY_CLIENT_SECRET;
     this.redirectUri = process.env.SHOPIFY_REDIRECT_URI ||
-                      `${process.env.BACKEND_URL || 'https://daino.onrender.com'}/api/shopify/callback`;
+                      `${process.env.BACKEND_URL || 'https://backend.dainostore.com'}/api/shopify/callback`;
 
     // Direct access token support (for custom/private apps)
     this.directAccessToken = process.env.SHOPIFY_ACCESS_TOKEN;

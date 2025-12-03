@@ -10,7 +10,7 @@
 
 **Open in Firefox:**
 ```
-https://daino.onrender.com/api/cache-test/test
+https://backend.dainostore.com/api/cache-test/test
 ```
 
 You'll see JSON like:
@@ -64,7 +64,7 @@ Response Headers:
 
 **Step 1:** In Firefox, open:
 ```
-https://daino.onrender.com/api/public/products?limit=5
+https://backend.dainostore.com/api/public/products?limit=5
 ```
 
 **Step 2:** F12 → Network tab → Reload (Ctrl+R)
@@ -89,7 +89,7 @@ x-cache: HIT   (cached!)
 
 **Open this URL:**
 ```
-https://daino.onrender.com/health/cache
+https://backend.dainostore.com/health/cache
 ```
 
 **Before using cache:**
@@ -162,7 +162,7 @@ Right Panel (after clicking):
 
 **Check 2: Is Redis connected?**
 ```
-Visit: https://daino.onrender.com/health/cache
+Visit: https://backend.dainostore.com/health/cache
 Should show: "connected": true
 ```
 
@@ -199,7 +199,7 @@ If it doesn't, cache middleware isn't loading
 
 After 5 minutes, do this:
 
-- [ ] Visit: https://daino.onrender.com/api/cache-test/test
+- [ ] Visit: https://backend.dainostore.com/api/cache-test/test
 - [ ] F12 → Network tab → Reload
 - [ ] Click "test" request → Headers
 - [ ] Look for `x-cache: MISS`
@@ -242,5 +242,5 @@ After 5 minutes, do this:
 
 **Set a timer for 5 minutes, then test the cache endpoint!** ⏰
 
-🔗 Test URL: https://daino.onrender.com/api/cache-test/test
+🔗 Test URL: https://backend.dainostore.com/api/cache-test/test
 

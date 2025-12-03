@@ -54,7 +54,7 @@ node src/database/migrations/run-migration.js
 
 ### Method 2: Using API Endpoint
 ```bash
-curl -X POST https://daino.onrender.com/api/stores/migrate
+curl -X POST https://backend.dainostore.com/api/stores/migrate
 ```
 
 ### Method 3: Manual SQL Execution
@@ -86,7 +86,7 @@ After running the migration, verify success by:
 
 3. **Test API endpoint**:
    ```bash
-   curl https://daino.onrender.com/api/stores/debug
+   curl https://backend.dainostore.com/api/stores/debug
    ```
 
 ## Demo Data

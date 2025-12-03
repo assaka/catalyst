@@ -4,7 +4,7 @@
 class RenderIntegration {
   constructor() {
     this.renderApiUrl = 'https://api.render.com/v1';
-    this.backendUrl = process.env.RENDER_BACKEND_URL || 'https://daino.onrender.com';
+    this.backendUrl = process.env.RENDER_BACKEND_URL || 'https://backend.dainostore.com';
     this.apiKey = process.env.RENDER_API_KEY; // Optional for private API access
   }
 

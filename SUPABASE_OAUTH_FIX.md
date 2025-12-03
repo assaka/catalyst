@@ -44,7 +44,7 @@ Make sure these environment variables are set on Render.com:
 # Supabase OAuth Configuration (Required)
 SUPABASE_OAUTH_CLIENT_ID=your_client_id_here
 SUPABASE_OAUTH_CLIENT_SECRET=your_client_secret_here
-SUPABASE_OAUTH_REDIRECT_URI=https://daino.onrender.com/api/supabase/callback
+SUPABASE_OAUTH_REDIRECT_URI=https://backend.dainostore.com/api/supabase/callback
 
 # Frontend URL (Required for OAuth callback)
 FRONTEND_URL=https://daino-pearl.vercel.app

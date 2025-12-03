@@ -4,7 +4,7 @@
 // Use built-in fetch (Node.js 18+) or fallback
 
 const FRONTEND_URL = 'https://daino-six-ashy.vercel.app';
-const BACKEND_URL = 'https://daino.onrender.com';
+const BACKEND_URL = 'https://backend.dainostore.com';
 
 // Test if JavaScript APIs are working by simulating browser behavior
 async function testStorefrontAPIs() {

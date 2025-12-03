@@ -61,7 +61,7 @@ The error "new row violates row-level security policy" occurs when uploading to 
 
 2. **Update configuration:**
    ```bash
-   curl -X POST "https://daino.onrender.com/api/supabase/update-config" \
+   curl -X POST "https://backend.dainostore.com/api/supabase/update-config" \
      -H "Authorization: Bearer YOUR_JWT_TOKEN" \
      -H "Content-Type: application/json" \
      -H "x-store-id: 157d4590-49bf-4b0b-bd77-abe131909528" \

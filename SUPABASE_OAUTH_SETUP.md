@@ -7,7 +7,7 @@
 3. Fill in the following details:
    - **Application name**: DainoStore E-commerce Platform
    - **Homepage URL**: https://daino-pearl.vercel.app
-   - **Redirect URL**: https://daino.onrender.com/api/supabase/callback
+   - **Redirect URL**: https://backend.dainostore.com/api/supabase/callback
    - **Description**: E-commerce platform integration for database and storage management
 
 4. After creation, you'll receive:
@@ -22,7 +22,7 @@ Go to your Render.com dashboard and add these environment variables:
 # Supabase OAuth Configuration
 SUPABASE_OAUTH_CLIENT_ID=your_client_id_here
 SUPABASE_OAUTH_CLIENT_SECRET=your_client_secret_here
-SUPABASE_OAUTH_REDIRECT_URI=https://daino.onrender.com/api/supabase/callback
+SUPABASE_OAUTH_REDIRECT_URI=https://backend.dainostore.com/api/supabase/callback
 
 # Frontend URL for redirect after OAuth
 FRONTEND_URL=https://daino-pearl.vercel.app

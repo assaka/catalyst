@@ -14,7 +14,7 @@ class SupabaseMediaStorageOAuth {
     this.clientId = process.env.SUPABASE_CLIENT_ID;
     this.clientSecret = process.env.SUPABASE_CLIENT_SECRET;
     this.redirectUri = process.env.SUPABASE_STORAGE_REDIRECT_URI ||
-                      `${process.env.BACKEND_URL || 'https://daino.onrender.com'}/api/supabase/storage/callback`;
+                      `${process.env.BACKEND_URL || 'https://backend.dainostore.com'}/api/supabase/storage/callback`;
 
     // Minimal scopes needed for media storage only
     this.scopes = 'email profile projects:read storage:read storage:write secrets:read';

@@ -63,7 +63,7 @@ Instead of multiple cron services or a 24/7 worker, we use **one simple cron** t
 
 7. **Environment Variables:**
    - `NODE_ENV` = `production`
-   - `BACKEND_URL` = `https://daino.onrender.com`
+   - `BACKEND_URL` = `https://backend.dainostore.com`
    - `CRON_SECRET` = (same value as in backend)
 
 8. Click "Create Cron Job"
@@ -256,7 +256,7 @@ Database Crons (various schedules)
 
 **Via API:**
 ```bash
-curl https://daino.onrender.com/api/jobs/status
+curl https://backend.dainostore.com/api/jobs/status
 ```
 
 **Response:**

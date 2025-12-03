@@ -7,7 +7,7 @@ import util from 'util';
 const execPromise = util.promisify(exec);
 
 const FRONTEND_URL = 'https://daino-six-ashy.vercel.app';
-const BACKEND_URL = 'https://daino.onrender.com';
+const BACKEND_URL = 'https://backend.dainostore.com';
 
 // Test functions
 async function testBackendHealth() {

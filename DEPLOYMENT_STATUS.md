@@ -11,7 +11,7 @@
 The error `Network error: Unable to connect to server` happens because:
 
 ```
-Frontend tries: DELETE https://daino.onrender.com/api/plugins/registry/:id/files
+Frontend tries: DELETE https://backend.dainostore.com/api/plugins/registry/:id/files
                                                                         ^^^^^^^^^^^^^^^^
                                                                         Endpoint doesn't exist yet!
 ```
@@ -72,7 +72,7 @@ Run these SQL files in Supabase dashboard:
 
 **Test DELETE endpoint:**
 ```bash
-curl -X DELETE https://daino.onrender.com/api/plugins/registry/test-id/files \
+curl -X DELETE https://backend.dainostore.com/api/plugins/registry/test-id/files \
   -H "Content-Type: application/json" \
   -d '{"path": "/test.js"}'
 ```

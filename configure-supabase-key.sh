@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-API_URL="https://daino.onrender.com"
+API_URL="https://backend.dainostore.com"
 STORE_ID="157d4590-49bf-4b0b-bd77-abe131909528"
 
 # You need to provide these:

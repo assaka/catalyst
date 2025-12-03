@@ -15,7 +15,7 @@ class SupabaseIntegration {
     this.clientId = process.env.SUPABASE_OAUTH_CLIENT_ID || 'pending_configuration';
     this.clientSecret = process.env.SUPABASE_OAUTH_CLIENT_SECRET || 'pending_configuration';
     this.redirectUri = process.env.SUPABASE_OAUTH_REDIRECT_URI ||
-                      `${process.env.BACKEND_URL || 'https://daino.onrender.com'}/api/supabase/callback`;
+                      `${process.env.BACKEND_URL || 'https://backend.dainostore.com'}/api/supabase/callback`;
     this.authorizationBaseUrl = 'https://api.supabase.com/v1/oauth/authorize';
     this.tokenUrl = 'https://api.supabase.com/v1/oauth/token';
 

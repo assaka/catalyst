@@ -161,7 +161,7 @@ Once Render deployment completes:
 4. **Manual Test:**
    ```bash
    curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-        https://daino.onrender.com/api/supabase/status
+        https://backend.dainostore.com/api/supabase/status
    ```
 
 ## Additional Notes

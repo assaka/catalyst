@@ -563,7 +563,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                 <ol className="list-decimal list-inside space-y-1">
                   <li>Go to <a href="https://supabase.com/dashboard/account/apps" target="_blank" rel="noopener noreferrer" className="underline">Supabase OAuth Apps</a></li>
                   <li>Create a new OAuth application</li>
-                  <li>Set redirect URL to: <code className="bg-yellow-100 px-1">https://daino.onrender.com/api/supabase/callback</code></li>
+                  <li>Set redirect URL to: <code className="bg-yellow-100 px-1">https://backend.dainostore.com/api/supabase/callback</code></li>
                   <li>Add the credentials to your server environment</li>
                 </ol>
               </div>
