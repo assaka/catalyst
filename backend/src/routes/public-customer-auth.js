@@ -87,7 +87,7 @@ router.post('/customer/forgot-password', [
     // Build reset URL
     const baseUrl = store?.domain
       ? `https://${store.domain}`
-      : (process.env.CORS_ORIGIN || 'https://daino-pearl.vercel.app');
+      : (process.env.CORS_ORIGIN || 'https://www..dainostore.com');
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
     // Send password reset email

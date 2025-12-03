@@ -126,7 +126,7 @@ Add: DB_QUERY_LOG=true
 ### TEST 3: Frontend Network Requests
 
 **Action:**
-1. Visit: https://daino-pearl.vercel.app/public/hamid2/product/kenwood...
+1. Visit: https://www..dainostore.com/public/hamid2/product/kenwood...
 2. F12 → Network tab
 3. Reload page
 4. Filter by "api"
@@ -148,7 +148,7 @@ Add: DB_QUERY_LOG=true
 
 **Run Lighthouse:**
 ```bash
-npx lighthouse https://daino-pearl.vercel.app/public/hamid2/product/kenwood... --only-categories=performance --view
+npx lighthouse https://www..dainostore.com/public/hamid2/product/kenwood... --only-categories=performance --view
 ```
 
 **What to check:**

@@ -49,7 +49,7 @@ npx vercel --prod
 
 # Set environment variables in Vercel dashboard:
 # - RENDER_BACKEND_URL=https://backend.dainostore.com  
-# - VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app
+# - VERCEL_FRONTEND_URL=https://www..dainostore.com
 ```
 
 ### 3. Environment Variables
@@ -58,7 +58,7 @@ Set these in your Vercel dashboard:
 
 ```bash
 RENDER_BACKEND_URL=https://backend.dainostore.com
-VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app
+VERCEL_FRONTEND_URL=https://www..dainostore.com
 MONITORING_ENABLED=true
 ```
 

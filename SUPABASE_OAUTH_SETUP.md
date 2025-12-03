@@ -6,7 +6,7 @@
 2. Click "New OAuth Application"
 3. Fill in the following details:
    - **Application name**: DainoStore E-commerce Platform
-   - **Homepage URL**: https://daino-pearl.vercel.app
+   - **Homepage URL**: https://www..dainostore.com
    - **Redirect URL**: https://backend.dainostore.com/api/supabase/callback
    - **Description**: E-commerce platform integration for database and storage management
 
@@ -25,7 +25,7 @@ SUPABASE_OAUTH_CLIENT_SECRET=your_client_secret_here
 SUPABASE_OAUTH_REDIRECT_URI=https://backend.dainostore.com/api/supabase/callback
 
 # Frontend URL for redirect after OAuth
-FRONTEND_URL=https://daino-pearl.vercel.app
+FRONTEND_URL=https://www..dainostore.com
 
 # Encryption key for storing tokens (generate a secure random string)
 SUPABASE_TOKEN_ENCRYPTION_KEY=your-secure-encryption-key-here

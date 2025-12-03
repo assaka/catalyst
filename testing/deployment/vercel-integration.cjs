@@ -4,7 +4,7 @@
 class VercelIntegration {
   constructor() {
     this.vercelApiUrl = 'https://api.vercel.com/v2';
-    this.frontendUrl = process.env.VERCEL_FRONTEND_URL || 'https://daino-pearl.vercel.app';
+    this.frontendUrl = process.env.VERCEL_FRONTEND_URL || 'https://www..dainostore.com';
     this.projectId = process.env.VERCEL_PROJECT_ID;
     this.teamId = process.env.VERCEL_TEAM_ID;
     this.apiToken = process.env.VERCEL_API_TOKEN; // Optional for deployment API access

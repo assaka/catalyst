@@ -44,7 +44,7 @@ app.use(testing.createExpressMiddleware());
 - ✅ **Build Status Monitoring** - Integration with Vercel deployment API
 
 ### **Integration Points:**
-- **Frontend URL**: `https://daino-pearl.vercel.app`
+- **Frontend URL**: `https://www..dainostore.com`
 - **Critical Routes**: Admin panels, integrations, product management
 - **Performance**: Sub-3-second response time monitoring
 - **API Debugging**: Works in development mode, disabled in production
@@ -213,7 +213,7 @@ The live test shows:
 # Enable monitoring in your current deployment
 export MONITORING_ENABLED=true
 export RENDER_BACKEND_URL=https://backend.dainostore.com
-export VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app
+export VERCEL_FRONTEND_URL=https://www..dainostore.com
 
 # Run health check
 node testing/deployment/deployment-monitor.cjs

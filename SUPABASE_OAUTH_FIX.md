@@ -47,7 +47,7 @@ SUPABASE_OAUTH_CLIENT_SECRET=your_client_secret_here
 SUPABASE_OAUTH_REDIRECT_URI=https://backend.dainostore.com/api/supabase/callback
 
 # Frontend URL (Required for OAuth callback)
-FRONTEND_URL=https://daino-pearl.vercel.app
+FRONTEND_URL=https://www..dainostore.com
 
 # Optional - Encryption key for storing tokens
 SUPABASE_TOKEN_ENCRYPTION_KEY=your-secure-encryption-key-here
@@ -66,7 +66,7 @@ SUPABASE_TOKEN_ENCRYPTION_KEY=your-secure-encryption-key-here
    - Go to https://dashboard.render.com
    - Select your backend service
    - Go to "Environment" tab
-   - Ensure `FRONTEND_URL=https://daino-pearl.vercel.app` is set
+   - Ensure `FRONTEND_URL=https://www..dainostore.com` is set
    - Ensure all Supabase OAuth variables are configured
 
 3. **Test the OAuth flow:**

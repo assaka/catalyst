@@ -198,7 +198,7 @@ For production (Render.com, Vercel, etc.), update these URLs:
 # Production URLs
 BACKEND_URL=https://backend.dainostore.com
 SUPABASE_OAUTH_REDIRECT_URI=https://backend.dainostore.com/api/supabase/callback
-FRONTEND_URL=https://daino-pearl.vercel.app
+FRONTEND_URL=https://www..dainostore.com
 ```
 
 And update your Supabase OAuth app registration to match the production callback URL.

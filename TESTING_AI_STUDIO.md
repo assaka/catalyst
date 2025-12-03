@@ -3,7 +3,7 @@
 ## Prerequisites
 
 1. **Backend Running**: Render backend at `https://backend.dainostore.com`
-2. **Frontend Running**: Vercel frontend at `https://daino-pearl.vercel.app`
+2. **Frontend Running**: Vercel frontend at `https://www..dainostore.com`
 3. **Database**: Supabase database with tables
 4. **Environment**: `ANTHROPIC_API_KEY` set in backend
 

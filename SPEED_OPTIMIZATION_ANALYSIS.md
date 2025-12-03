@@ -1,6 +1,6 @@
 # Speed Optimization Analysis
 
-**Page Analyzed:** https://daino-pearl.vercel.app/public/hamid2/product/kenwood-ksbsb23-amerikaanse-koelkast-177cm-o0517
+**Page Analyzed:** https://www..dainostore.com/public/hamid2/product/kenwood-ksbsb23-amerikaanse-koelkast-177cm-o0517
 
 **Date:** 2025-11-08
 **Status:** Phase 1 Complete ✅ + Diagnostic Tools Added
@@ -311,11 +311,11 @@ Run these tests to establish baseline:
 
 ```bash
 # Lighthouse test
-npx lighthouse https://daino-pearl.vercel.app/public/hamid2/product/kenwood... --view
+npx lighthouse https://www..dainostore.com/public/hamid2/product/kenwood... --view
 
 # WebPageTest
 # Visit: https://webpagetest.org
-# Test URL: https://daino-pearl.vercel.app/public/hamid2/product/...
+# Test URL: https://www..dainostore.com/public/hamid2/product/...
 ```
 
 **Expected Current Metrics:**
@@ -366,7 +366,7 @@ npm run build
 ls -lh dist/assets/*.js
 
 # Lighthouse test
-npx lighthouse https://daino-pearl.vercel.app/public/hamid2/product/... --only-categories=performance --view
+npx lighthouse https://www..dainostore.com/public/hamid2/product/... --only-categories=performance --view
 ```
 
 ---

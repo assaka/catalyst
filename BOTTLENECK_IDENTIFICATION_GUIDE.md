@@ -25,7 +25,7 @@ Already enabled in your app! Just need to open it.
 
 **Step 2: Open DevTools**
 
-1. Visit your product page: https://daino-pearl.vercel.app/public/hamid2/product/...
+1. Visit your product page: https://www..dainostore.com/public/hamid2/product/...
 2. Look for **React Query DevTools** icon (bottom-right corner, red flower icon)
 3. Click to expand
 

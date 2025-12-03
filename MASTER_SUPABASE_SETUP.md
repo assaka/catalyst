@@ -161,7 +161,7 @@ INTEGRATION_ENCRYPTION_KEY=[generate-random-32-char-string]
 SESSION_SECRET=[generate-random-32-char-string]
 
 # Frontend URL (for OAuth callbacks)
-FRONTEND_URL=https://daino-pearl.vercel.app
+FRONTEND_URL=https://www..dainostore.com
 ```
 
 **Generate Secure Keys:**

@@ -1460,7 +1460,7 @@ app.get('/preview/:storeId', async (req, res) => {
     const hasExtensions = currentVersionResult.success && currentVersionResult.version;
 
     // Redirect to main application
-    const publicStoreBaseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://daino-pearl.vercel.app';
+    const publicStoreBaseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://www..dainostore.com';
     const routePath = '';
 
     // Add extension system parameters instead of patches

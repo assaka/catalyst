@@ -10,7 +10,7 @@
 
 **Step 1:** Visit your slow page
 ```
-https://daino-pearl.vercel.app/public/hamid2/product/kenwood...
+https://www..dainostore.com/public/hamid2/product/kenwood...
 ```
 
 **Step 2:** Open browser console (F12)
@@ -233,7 +233,7 @@ isFetching: false  ← Using cache! ✅
 **Run Lighthouse:**
 
 ```bash
-npx lighthouse https://daino-pearl.vercel.app/public/hamid2/product/kenwood... --view
+npx lighthouse https://www..dainostore.com/public/hamid2/product/kenwood... --view
 ```
 
 **Or in Chrome DevTools:**
@@ -415,7 +415,7 @@ const { data } = useBatchProductTranslations([id1, id2, id3], lang);
 
 **🎯 START HERE:**
 
-1. Open https://daino-pearl.vercel.app/public/hamid2/product/kenwood...
+1. Open https://www..dainostore.com/public/hamid2/product/kenwood...
 2. Press F12 → Console tab
 3. Paste: scripts/browser-performance-check.js (full content)
 4. Wait 5 seconds

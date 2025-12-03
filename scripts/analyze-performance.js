@@ -5,7 +5,7 @@
  * Identifies bottlenecks, duplicate calls, and slow queries
  *
  * Usage:
- *   node scripts/analyze-performance.js https://daino-pearl.vercel.app/public/hamid2/product/kenwood...
+ *   node scripts/analyze-performance.js https://www..dainostore.com/public/hamid2/product/kenwood...
  *
  * Or install puppeteer first:
  *   npm install --save-dev puppeteer
@@ -14,7 +14,7 @@
 const https = require('https');
 const http = require('http');
 
-const TARGET_URL = process.argv[2] || 'https://daino-pearl.vercel.app';
+const TARGET_URL = process.argv[2] || 'https://www..dainostore.com';
 
 console.log('🔍 Performance Analysis Tool');
 console.log('============================\n');

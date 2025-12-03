@@ -34,7 +34,7 @@ Once configured, store owners can connect their own Neon or PlanetScale database
 
 Before starting, ensure you have:
 
-- ✅ Access to your production domain (e.g., `https://daino-pearl.vercel.app`)
+- ✅ Access to your production domain (e.g., `https://www..dainostore.com`)
 - ✅ Access to your Render dashboard (backend service)
 - ✅ Neon account (free at https://neon.tech)
 - ✅ PlanetScale account (free at https://planetscale.com)
@@ -59,7 +59,7 @@ Fill in the following details:
 | Field | Value |
 |-------|-------|
 | **Application Name** | `DainoStore Platform` (or your platform name) |
-| **Redirect URI** | `https://daino-pearl.vercel.app/oauth/neon/callback` |
+| **Redirect URI** | `https://www..dainostore.com/oauth/neon/callback` |
 | **Description** | `Database integration for DainoStore e-commerce platform` |
 | **Application Logo** | (Optional) Upload your logo |
 
@@ -98,8 +98,8 @@ Fill in the following details:
 | Field | Value |
 |-------|-------|
 | **Application Name** | `DainoStore Platform` |
-| **Homepage URL** | `https://daino-pearl.vercel.app` |
-| **Authorization Callback URL** | `https://daino-pearl.vercel.app/oauth/planetscale/callback` |
+| **Homepage URL** | `https://www..dainostore.com` |
+| **Authorization Callback URL** | `https://www..dainostore.com/oauth/planetscale/callback` |
 | **Description** | `Database integration for DainoStore stores` |
 | **Application Logo** | (Optional) Upload your logo |
 
@@ -152,7 +152,7 @@ Value: neon_secret_xyz789abc123def456ghi789
 **Variable 3:**
 ```
 Key:   NEON_REDIRECT_URI
-Value: https://daino-pearl.vercel.app/oauth/neon/callback
+Value: https://www..dainostore.com/oauth/neon/callback
        ↑ Use your actual production domain
 ```
 
@@ -175,7 +175,7 @@ Value: ps_secret_xyz789abc123def456ghi789
 **Variable 6:**
 ```
 Key:   PLANETSCALE_REDIRECT_URI
-Value: https://daino-pearl.vercel.app/oauth/planetscale/callback
+Value: https://www..dainostore.com/oauth/planetscale/callback
        ↑ Use your actual production domain
 ```
 
@@ -208,7 +208,7 @@ Value: https://daino-pearl.vercel.app/oauth/planetscale/callback
 
 ### 4.2 Test Neon Integration
 
-1. Go to your platform: `https://daino-pearl.vercel.app`
+1. Go to your platform: `https://www..dainostore.com`
 2. Login as a store owner
 3. Navigate to: **Admin → Integrations → Database**
 4. Click the **"Neon"** tab
@@ -255,12 +255,12 @@ Once connected, test that the database works:
 # Neon PostgreSQL OAuth
 NEON_CLIENT_ID=your-neon-client-id-from-console
 NEON_CLIENT_SECRET=your-neon-client-secret-from-console
-NEON_REDIRECT_URI=https://daino-pearl.vercel.app/oauth/neon/callback
+NEON_REDIRECT_URI=https://www..dainostore.com/oauth/neon/callback
 
 # PlanetScale MySQL OAuth
 PLANETSCALE_CLIENT_ID=your-planetscale-client-id-from-console
 PLANETSCALE_CLIENT_SECRET=your-planetscale-client-secret-from-console
-PLANETSCALE_REDIRECT_URI=https://daino-pearl.vercel.app/oauth/planetscale/callback
+PLANETSCALE_REDIRECT_URI=https://www..dainostore.com/oauth/planetscale/callback
 ```
 
 **⚠️ CRITICAL NOTES:**
@@ -295,12 +295,12 @@ PLANETSCALE_REDIRECT_URI=https://daino-pearl.vercel.app/oauth/planetscale/callba
 2. Check OAuth app settings in Neon/PlanetScale
 3. Ensure they match EXACTLY:
    ```
-   Registered:  https://daino-pearl.vercel.app/oauth/neon/callback
-   Render env:  https://daino-pearl.vercel.app/oauth/neon/callback
+   Registered:  https://www..dainostore.com/oauth/neon/callback
+   Render env:  https://www..dainostore.com/oauth/neon/callback
    ✓ MATCH
 
-   Registered:  https://daino-pearl.vercel.app/oauth/neon/callback
-   Render env:  https://daino-pearl.vercel.app/oauth/neon/callback/
+   Registered:  https://www..dainostore.com/oauth/neon/callback
+   Render env:  https://www..dainostore.com/oauth/neon/callback/
    ✗ MISMATCH (trailing slash)
    ```
 
@@ -413,8 +413,8 @@ PLANETSCALE_REDIRECT_URI=http://localhost:5179/oauth/planetscale/callback
 
 ```bash
 # Render environment variables
-NEON_REDIRECT_URI=https://daino-pearl.vercel.app/oauth/neon/callback
-PLANETSCALE_REDIRECT_URI=https://daino-pearl.vercel.app/oauth/planetscale/callback
+NEON_REDIRECT_URI=https://www..dainostore.com/oauth/neon/callback
+PLANETSCALE_REDIRECT_URI=https://www..dainostore.com/oauth/planetscale/callback
 ```
 
 **Use separate OAuth apps** with production redirect URIs.

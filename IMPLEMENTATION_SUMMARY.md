@@ -289,7 +289,7 @@ Expected: x-cache: MISS → x-cache: HIT
 
 ### Step 4: Test Frontend
 ```
-URL: https://daino-pearl.vercel.app/public/hamid2/product/kenwood...
+URL: https://www..dainostore.com/public/hamid2/product/kenwood...
 Action: Check Network tab for image lazy loading
 Expected: Images load only when scrolling
 ```
@@ -400,7 +400,7 @@ https://backend.dainostore.com/health/cache
 
 **Open:**
 ```
-https://daino-pearl.vercel.app/public/hamid2/product/kenwood...
+https://www..dainostore.com/public/hamid2/product/kenwood...
 ```
 
 **Check:**

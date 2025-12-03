@@ -194,9 +194,9 @@ if (isCustomDomain) {
 ## URL Examples
 
 ### Traditional URLs (still work):
-- `https://daino-pearl.vercel.app/public/hamid2`
-- `https://daino-pearl.vercel.app/public/hamid2/product/abc`
-- `https://daino-pearl.vercel.app/public/hamid2/cart`
+- `https://www..dainostore.com/public/hamid2`
+- `https://www..dainostore.com/public/hamid2/product/abc`
+- `https://www..dainostore.com/public/hamid2/cart`
 
 ### Custom Domain URLs (new):
 - `https://www.myshop.com`

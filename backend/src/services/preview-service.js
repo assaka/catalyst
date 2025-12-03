@@ -99,7 +99,7 @@ class PreviewService {
       }
 
       // Fetch the original page
-      const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://daino-pearl.vercel.app';
+      const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://www..dainostore.com';
       
       // Handle store lookup with UUID validation
       let storeSlug = 'store'; // Default fallback
@@ -244,7 +244,7 @@ class PreviewService {
     let modifiedHtml = htmlContent;
     
     // Replace relative asset paths with absolute URLs to the original site
-    const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://daino-pearl.vercel.app';
+    const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://www..dainostore.com';
     modifiedHtml = modifiedHtml.replace(
       /href="\/assets\//g, 
       `href="${baseUrl}/assets/`
@@ -375,7 +375,7 @@ class PreviewService {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Preview: ${session.fileName}</title>
     <!-- Load actual CSS from the live cart page -->
-    <link rel="stylesheet" crossorigin href="https://daino-pearl.vercel.app/assets/index-DsosPPHy.css">
+    <link rel="stylesheet" crossorigin href="https://www.dainostore.com/assets/index-DsosPPHy.css">
     
     <style>
       /* Reset and base styles for preview */

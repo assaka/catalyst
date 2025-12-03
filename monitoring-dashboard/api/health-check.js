@@ -25,7 +25,7 @@ export default async function handler(req, res) {
 
     // Get environment variables
     const renderUrl = process.env.RENDER_BACKEND_URL || 'https://backend.dainostore.com';
-    const vercelUrl = process.env.VERCEL_FRONTEND_URL || 'https://daino-pearl.vercel.app';
+    const vercelUrl = process.env.VERCEL_FRONTEND_URL || 'https://www..dainostore.com';
 
     // Check Render Backend
     console.log('Checking Render backend...');

@@ -51,7 +51,7 @@ npx vercel --prod
 ```bash
 # Required Environment Variables
 RENDER_BACKEND_URL=https://backend.dainostore.com
-VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app
+VERCEL_FRONTEND_URL=https://www..dainostore.com
 MONITORING_ENABLED=true
 
 # Optional Environment Variables
@@ -996,7 +996,7 @@ useEffect(() => {
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  🌐 VERCEL (Frontend)                                      │
-│  ├─ Main App: https://daino-pearl.vercel.app           │
+│  ├─ Main App: https://www..dainostore.com           │
 │  └─ Monitoring: https://monitoring.vercel.app             │
 │                                                             │
 │  🎯 RENDER (Backend)                                       │
@@ -1033,7 +1033,7 @@ useEffect(() => {
 ```bash
 # monitoring-dashboard/.env.production
 RENDER_BACKEND_URL=https://backend.dainostore.com
-VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app
+VERCEL_FRONTEND_URL=https://www..dainostore.com
 MONITORING_ENABLED=true
 ALERT_WEBHOOK_URL=https://hooks.slack.com/your-webhook
 ```
