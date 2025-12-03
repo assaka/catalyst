@@ -23,6 +23,7 @@ import { useStoreBootstrap, useStoreSlugById, determineStoreSlug } from '@/hooks
 import { fetchAdditionalStoreData, fetchCookieConsentSettings } from '@/hooks/useStoreData';
 import { mergeStoreSettings } from '@/utils/storeSettingsDefaults';
 import { clearCache, deleteCacheKey } from '@/utils/cacheUtils';
+import {PageLoader} from "@/components/ui/page-loader.jsx";
 
 const StoreContext = createContext(null);
 export const useStore = () => useContext(StoreContext);
@@ -289,10 +290,8 @@ export const StoreProvider = ({ children }) => {
           {children}
         </TranslationProvider>
       ) : (
-        // Show loading spinner while bootstrap data loads
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-        </div>
+        // show loading spinner
+          <PageLoader size="lg" className="h-screen" />
       )}
     </StoreContext.Provider>
   );
