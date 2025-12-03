@@ -801,7 +801,7 @@ export default function StorefrontLayout({ children }) {
                         </div>
                     </div>
                     <div className="mt-8 border-t border-gray-700 pt-8 text-center">
-                        <p className="text-base text-gray-400">&copy; {new Date().getFullYear()} {store?.name || 'DainoStore Commerce'}. All rights reserved.</p>
+                        <p className="text-base text-gray-400">&copy; {new Date().getFullYear()} {store?.name || 'DainoStore'}. All rights reserved.</p>
                     </div>
                 </div>
             </footer>
