@@ -21,6 +21,7 @@ export default function Hero() {
         "in any language",
         "in minutes",
         "without coding",
+        "and AI powered",
         "that stands out",
         "lightning fast",
         "that scales",
@@ -32,9 +33,7 @@ export default function Hero() {
         "analytics included",
         "in one click",
         "your way",
-        "100+ integrations",
-        "AI powered",
-        "AI chat built-in"
+        "super integrated"
     ];
 
     useEffect(() => {
@@ -100,7 +99,7 @@ export default function Hero() {
                     transition={{ duration: 0.6, delay: 0.1 }}
                     className="text-lg text-slate-400 font-medium mb-8"
                 >
-                    Start with a prompt or dive into pro editing tools, your next store is just a step away.
+                    "Don't build from scratch - use ai and enhance what works"
                 </motion.p>
 
                 {/* AI Prompt Input */}
