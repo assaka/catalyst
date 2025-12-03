@@ -30,7 +30,7 @@ export default function StoreGallery() {
                         Created by our community
                     </h2>
                     <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-                        Discover what others have built with ShopAI. Get inspired and start your own store today.
+                        Discover what others have built with DainoStore. Get inspired and start your own store today.
                     </p>
                 </motion.div>
 

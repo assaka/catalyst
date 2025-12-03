@@ -168,22 +168,6 @@ export default function Hero() {
                     ))}
                 </motion.div>
                 </div>
-
-                {/* Right side - Growing Tree Animation */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.8, delay: 0.3 }}
-                    className="hidden lg:flex justify-center items-center"
-                >
-                    <GrowingTree
-                        className="w-full max-w-lg"
-                        duration={5000}
-                        leafColor="#4f46e5"
-                        trunkColor="#64748b"
-                        groundColor="#475569"
-                    />
-                </motion.div>
             </div>
         </section>
     );

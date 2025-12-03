@@ -9,7 +9,7 @@ export default function Header() {
                 <div className="flex items-center justify-between">
                     {/* Logo */}
                     <div className="flex items-center gap-2">
-                        <span className="text-xl font-black text-neutral-900 tracking-tight">SHOPAI</span>
+                        <span className="text-xl font-black text-neutral-900 tracking-tight">DainoStore</span>
                     </div>
 
                     {/* Navigation - Centered */}
