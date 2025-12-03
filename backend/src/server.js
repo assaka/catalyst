@@ -251,9 +251,8 @@ app.options('/api/*', async (req, res, next) => {
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://daino-pearl.vercel.app',
-  'https://daino-ecommerce.vercel.app',
-  'https://daino-683t6upsk-hamids-projects-1928df2f.vercel.app',
+  'https://www.dainostore.com',
+  'https://dainostore.com',
   'https://backend.dainostore.com', // Allow backend for preview pages
   'https://daino.onrender.com', // Allow backend for preview pages
   process.env.CORS_ORIGIN
