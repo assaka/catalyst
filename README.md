@@ -4,7 +4,7 @@
 2. Click "New Project"
 3. Fill in project details:
    - Organization: Select your organization
-   - Name: catalyst-db
+   - Name: daino-db
    - Database Password: Generate a strong password (save it!)
    - Region: Choose closest to your users
 4. Wait for project creation (2-3 minutes)
@@ -18,9 +18,9 @@
 
 1. Go to https://render.com and sign up/login
 2. Click "New +" → "Web Service"
-3. Connect GitHub and select your catalyst repository
+3. Connect GitHub and select your daino repository
 4. Configure the service:
-   - Name: catalyst-backend
+   - Name: daino-backend
    - Environment: Node
    - Region: Choose same as Supabase
    - Branch: main
@@ -38,7 +38,7 @@
    CORS_ORIGIN=*
 6. Click "Create Web Service"
 7. Wait for deployment (5-10 minutes)
-8. Note your backend URL: https://catalyst-backend-xxxx.onrender.com
+8. Note your backend URL: https://daino-backend-xxxx.onrender.com
 
 🚀 STEP 3: Deploy Frontend to Vercel.com
 
@@ -52,18 +52,18 @@
    - Output Directory: dist
 5. Add Environment Variables:
    VITE_NODE_ENV=production
-   VITE_API_BASE_URL=https://catalyst-backend-xxxx.onrender.com
+   VITE_API_BASE_URL=https://daino-backend-xxxx.onrender.com
    VITE_API_VERSION=v1
-   VITE_APP_NAME=Catalyst
+   VITE_APP_NAME=DainoStore
 6. Click "Deploy"
 7. Wait for deployment (3-5 minutes)
-8. Note your frontend URL: https://catalyst-xxxx.vercel.app
+8. Note your frontend URL: https://daino-xxxx.vercel.app
 
 🚀 STEP 4: Update CORS Settings
 
 1. Go back to Render.com → Your backend service
 2. Go to Environment and update:
-   CORS_ORIGIN=https://catalyst-xxxx.vercel.app
+   CORS_ORIGIN=https://daino-xxxx.vercel.app
 3. Redeploy the service
 
 ✅ Test Your Deployment
@@ -71,9 +71,9 @@
 Once both are deployed, test the full stack:
 
 1. Backend Health Check:
-   curl https://catalyst-backend-xxxx.onrender.com/health
+   curl https://daino-backend-xxxx.onrender.com/health
 2. Frontend Access:
-   - Visit https://catalyst-xxxx.vercel.app
+   - Visit https://daino-xxxx.vercel.app
    - Try registering a new user
    - Test login functionality
 3. Database Check:

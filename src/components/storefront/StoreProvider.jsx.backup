@@ -588,18 +588,18 @@ export const StoreProvider = ({ children }) => {
       setStore({ ...selectedStore, settings: mergedSettings });
 
       // Initialize language based on store settings
-      const savedLang = localStorage.getItem('catalyst_language');
+      const savedLang = localStorage.getItem('daino_language');
       if (!savedLang) {
         // No language saved, set to store's default language
         const defaultLang = mergedSettings.default_language || 'en';
-        localStorage.setItem('catalyst_language', defaultLang);
+        localStorage.setItem('daino_language', defaultLang);
       } else {
         // Check if saved language is in active languages
         const activeLanguages = mergedSettings.active_languages || ['en'];
         if (!activeLanguages.includes(savedLang)) {
           // Saved language is not active, reset to default
           const defaultLang = mergedSettings.default_language || 'en';
-          localStorage.setItem('catalyst_language', defaultLang);
+          localStorage.setItem('daino_language', defaultLang);
         }
       }
 
@@ -708,7 +708,7 @@ export const StoreProvider = ({ children }) => {
 
       // Load UI translations for the storefront
       try {
-        const currentLang = localStorage.getItem('catalyst_language') || mergedSettings.default_language || 'en';
+        const currentLang = localStorage.getItem('daino_language') || mergedSettings.default_language || 'en';
         const translationsCacheKey = `ui-translations-${currentLang}`;
 
         // Check if we should bypass cache (after translation update)
@@ -732,7 +732,7 @@ export const StoreProvider = ({ children }) => {
         const translationsData = await cachedApiCall(translationsCacheKey, async () => {
           // Add cache-busting timestamp to force fresh data
           const cacheBuster = Date.now();
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/translations/ui-labels?store_id=${selectedStore.id}&lang=${currentLang}&_=${cacheBuster}`, {
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://daino.onrender.com'}/api/translations/ui-labels?store_id=${selectedStore.id}&lang=${currentLang}&_=${cacheBuster}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -766,14 +766,14 @@ export const StoreProvider = ({ children }) => {
         
         // MEDIUM cache (5 minutes) - semi-static data
         // Include language in cache key to ensure proper translation switching
-        cachedApiCall(`categories-${selectedStore.id}-${localStorage.getItem('catalyst_language') || 'en'}`, async () => {
+        cachedApiCall(`categories-${selectedStore.id}-${localStorage.getItem('daino_language') || 'en'}`, async () => {
           const result = await StorefrontCategory.filter({ store_id: selectedStore.id, limit: 1000 });
           return Array.isArray(result) ? result : [];
         }, CACHE_DURATION_MEDIUM),
         
         // SHORT cache (1 minute) - frequently updated by admin
         // Include language in cache key to ensure proper translation switching
-        cachedApiCall(`labels-${selectedStore.id}-${localStorage.getItem('catalyst_language') || 'en'}`, async () => {
+        cachedApiCall(`labels-${selectedStore.id}-${localStorage.getItem('daino_language') || 'en'}`, async () => {
           try {
             const result = await StorefrontProductLabel.filter({ store_id: selectedStore.id });
             const activeLabels = Array.isArray(result) ? result.filter(label => label.is_active !== false) : [];

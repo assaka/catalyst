@@ -61,7 +61,7 @@ export default function CmsPageViewer() {
                 try {
                     fetchingRef.current = true;
                     setLoading(true);
-                    const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
+                    const currentLanguage = localStorage.getItem('daino_language') || 'en';
 
                     // Fetch CMS page using StorefrontCmsPage which uses public API (better performance)
                     if (!store?.id) {

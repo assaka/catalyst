@@ -34,7 +34,7 @@ class AkeneoIntegration {
   }
 
   /**
-   * Import categories from Akeneo to Catalyst
+   * Import categories from Akeneo to DainoStore
    */
   async importCategories(storeId, options = {}) {
     const { locale = 'en_US', dryRun = false, filters = {}, settings = {} } = options;
@@ -101,15 +101,15 @@ class AkeneoIntegration {
 
       console.log(`Found ${akeneoCategories.length} categories in Akeneo`);
 
-      // Transform categories to Catalyst format
-      const catalystCategories = akeneoCategories.map(akeneoCategory => 
+      // Transform categories to DainoStore format
+      const dainoCategories = akeneoCategories.map(akeneoCategory => 
         this.mapping.transformCategory(akeneoCategory, storeId, locale, settings)
       );
 
       // Build category hierarchy
       const hierarchicalCategories = this.mapping.buildCategoryHierarchy(
         akeneoCategories, 
-        catalystCategories
+        dainoCategories
       );
 
       // Import categories (respecting hierarchy - parents first)
@@ -319,7 +319,7 @@ class AkeneoIntegration {
   }
 
   /**
-   * Import products from Akeneo to Catalyst
+   * Import products from Akeneo to DainoStore
    * This method now automatically imports product models as configurable products
    * and links variants to their parent products
    */
@@ -329,7 +329,7 @@ class AkeneoIntegration {
   }
 
   /**
-   * Legacy method: Import products from Akeneo to Catalyst (without product model support)
+   * Legacy method: Import products from Akeneo to DainoStore (without product model support)
    * This is kept for backward compatibility but importProducts() now uses importProductsWithModels()
    */
   async importProductsLegacy(storeId, options = {}) {
@@ -430,63 +430,63 @@ class AkeneoIntegration {
               console.log(`📊 Processing product ${processed}/${akeneoProducts.length}: ${akeneoProduct.identifier || akeneoProduct.uuid || 'Unknown'}`);
             }
             
-            // Transform product to Catalyst format (now async)
-            const catalystProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client);
+            // Transform product to DainoStore format (now async)
+            const dainoProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client);
             
             // Apply product settings
             if (enhancedSettings.status === 'disabled') {
-              catalystProduct.status = 'inactive';
+              dainoProduct.status = 'inactive';
             } else if (enhancedSettings.status === 'enabled') {
-              catalystProduct.status = 'active';
+              dainoProduct.status = 'active';
             }
             
             // Handle image inclusion setting
             if (!enhancedSettings.includeImages) {
-              catalystProduct.images = [];
+              dainoProduct.images = [];
             }
             
             // Handle file inclusion setting (if implemented in transformProduct)
             if (!enhancedSettings.includeFiles) {
-              if (catalystProduct.files) {
-                catalystProduct.files = [];
+              if (dainoProduct.files) {
+                dainoProduct.files = [];
               }
             }
             
             // Handle stock inclusion setting
             if (!enhancedSettings.includeStock) {
-              catalystProduct.stock_quantity = 0;
-              catalystProduct.manage_stock = true;
-              catalystProduct.infinite_stock = false;
-              if (catalystProduct.stock_data) {
-                delete catalystProduct.stock_data;
+              dainoProduct.stock_quantity = 0;
+              dainoProduct.manage_stock = true;
+              dainoProduct.infinite_stock = false;
+              if (dainoProduct.stock_data) {
+                delete dainoProduct.stock_data;
               }
             }
             
             // Map category IDs
             const originalCategoryIds = akeneoProduct.categories || [];
-            catalystProduct.category_ids = this.mapping.mapCategoryIds(originalCategoryIds, categoryMapping);
+            dainoProduct.category_ids = this.mapping.mapCategoryIds(originalCategoryIds, categoryMapping);
             
-            if (originalCategoryIds.length > 0 && catalystProduct.category_ids.length === 0) {
-              console.warn(`⚠️ Product ${catalystProduct.sku}: No valid category mappings found for ${originalCategoryIds.join(', ')}`);
+            if (originalCategoryIds.length > 0 && dainoProduct.category_ids.length === 0) {
+              console.warn(`⚠️ Product ${dainoProduct.sku}: No valid category mappings found for ${originalCategoryIds.join(', ')}`);
             }
             
             // Map family to attribute set
             if (akeneoProduct.family && familyMapping[akeneoProduct.family]) {
-              catalystProduct.attribute_set_id = familyMapping[akeneoProduct.family];
+              dainoProduct.attribute_set_id = familyMapping[akeneoProduct.family];
             } else if (akeneoProduct.family) {
-              console.warn(`⚠️ Product ${catalystProduct.sku}: No valid family mapping found for ${akeneoProduct.family}`);
+              console.warn(`⚠️ Product ${dainoProduct.sku}: No valid family mapping found for ${akeneoProduct.family}`);
             }
 
             // Validate product
-            const validationErrors = this.mapping.validateProduct(catalystProduct);
+            const validationErrors = this.mapping.validateProduct(dainoProduct);
             if (validationErrors.length > 0) {
               this.importStats.products.failed++;
               this.importStats.errors.push({
                 type: 'product',
-                akeneo_identifier: catalystProduct.akeneo_identifier,
+                akeneo_identifier: dainoProduct.akeneo_identifier,
                 errors: validationErrors
               });
-              console.error(`❌ Validation failed for ${catalystProduct.sku}: ${validationErrors.join(', ')}`);
+              console.error(`❌ Validation failed for ${dainoProduct.sku}: ${validationErrors.join(', ')}`);
               continue;
             }
 
@@ -498,52 +498,52 @@ class AkeneoIntegration {
                 .from('products')
                 .select('*')
                 .eq('store_id', storeId)
-                .eq('sku', catalystProduct.sku)
+                .eq('sku', dainoProduct.sku)
                 .limit(1);
 
               const existingProduct = existingProducts && existingProducts.length > 0 ? existingProducts[0] : null;
 
               if (existingProduct) {
                 // Log image data for debugging
-                if (catalystProduct.images && catalystProduct.images.length > 0) {
-                  console.log(`[Akeneo] Images for product ${catalystProduct.sku}:`, catalystProduct.images);
+                if (dainoProduct.images && dainoProduct.images.length > 0) {
+                  console.log(`[Akeneo] Images for product ${dainoProduct.sku}:`, dainoProduct.images);
                 } else {
-                  console.log(`[Akeneo] No images for product ${catalystProduct.sku}`);
+                  console.log(`[Akeneo] No images for product ${dainoProduct.sku}`);
                 }
                 
                 // Prepare update data
                 const updateData = {
-                  name: catalystProduct.name,
-                  description: catalystProduct.description,
-                  short_description: catalystProduct.short_description,
-                  price: catalystProduct.price,
-                  compare_price: catalystProduct.compare_price,
-                  cost_price: catalystProduct.cost_price,
-                  weight: catalystProduct.weight,
-                  dimensions: catalystProduct.dimensions,
-                  images: catalystProduct.images,
-                  status: catalystProduct.status,
-                  visibility: catalystProduct.visibility,
-                  featured: catalystProduct.featured,
-                  tags: catalystProduct.tags,
-                  attributes: catalystProduct.attributes,
-                  seo: catalystProduct.seo,
-                  category_ids: catalystProduct.category_ids,
+                  name: dainoProduct.name,
+                  description: dainoProduct.description,
+                  short_description: dainoProduct.short_description,
+                  price: dainoProduct.price,
+                  compare_price: dainoProduct.compare_price,
+                  cost_price: dainoProduct.cost_price,
+                  weight: dainoProduct.weight,
+                  dimensions: dainoProduct.dimensions,
+                  images: dainoProduct.images,
+                  status: dainoProduct.status,
+                  visibility: dainoProduct.visibility,
+                  featured: dainoProduct.featured,
+                  tags: dainoProduct.tags,
+                  attributes: dainoProduct.attributes,
+                  seo: dainoProduct.seo,
+                  category_ids: dainoProduct.category_ids,
                   // Include stock-related fields
-                  manage_stock: catalystProduct.manage_stock,
-                  stock_quantity: catalystProduct.stock_quantity,
-                  allow_backorders: catalystProduct.allow_backorders,
-                  low_stock_threshold: catalystProduct.low_stock_threshold,
-                  infinite_stock: catalystProduct.infinite_stock
+                  manage_stock: dainoProduct.manage_stock,
+                  stock_quantity: dainoProduct.stock_quantity,
+                  allow_backorders: dainoProduct.allow_backorders,
+                  low_stock_threshold: dainoProduct.low_stock_threshold,
+                  infinite_stock: dainoProduct.infinite_stock
                 };
 
                 // Check if prevent URL key override is enabled
                 const preventOverride = settings.preventUrlKeyOverride || false;
                 if (!preventOverride || !existingProduct.slug) {
                   // Update slug only if setting is disabled or existing product has no slug
-                  updateData.slug = catalystProduct.slug;
+                  updateData.slug = dainoProduct.slug;
                   if (processed <= 5 || processed % 25 === 0) {
-                    console.log(`  🔗 Updating slug to: ${catalystProduct.slug}`);
+                    console.log(`  🔗 Updating slug to: ${dainoProduct.slug}`);
                   }
                 } else {
                   if (processed <= 5 || processed % 25 === 0) {
@@ -612,11 +612,11 @@ class AkeneoIntegration {
                   .eq('id', existingProduct.id);
                 
                 if (processed <= 5 || processed % 25 === 0) {
-                  console.log(`✅ Updated product: ${catalystProduct.name} (${catalystProduct.sku})`);
+                  console.log(`✅ Updated product: ${dainoProduct.name} (${dainoProduct.sku})`);
                 }
               } else {
                 // Prepare product data for creation
-                const productData = { ...catalystProduct };
+                const productData = { ...dainoProduct };
                 delete productData._originalSlug; // Remove temporary slug field
                 // Remove Akeneo-specific fields that don't exist in Product model
                 delete productData.akeneo_uuid;
@@ -687,12 +687,12 @@ class AkeneoIntegration {
                   .from('products')
                   .insert(productData);
                 if (processed <= 5 || processed % 25 === 0) {
-                  console.log(`✅ Created product: ${catalystProduct.name} (${catalystProduct.sku})`);
+                  console.log(`✅ Created product: ${dainoProduct.name} (${dainoProduct.sku})`);
                 }
               }
             } else {
               if (processed <= 5) {
-                console.log(`🔍 Dry run - would process product: ${catalystProduct.name} (${catalystProduct.sku})`);
+                console.log(`🔍 Dry run - would process product: ${dainoProduct.name} (${dainoProduct.sku})`);
               }
             }
 
@@ -765,7 +765,7 @@ class AkeneoIntegration {
   }
 
   /**
-   * Import attributes from Akeneo to Catalyst
+   * Import attributes from Akeneo to DainoStore
    */
   async importAttributes(storeId, options = {}) {
     const { dryRun = false, filters = {}, settings = {} } = options;
@@ -843,9 +843,9 @@ class AkeneoIntegration {
       });
       console.log('🏷️ Sample attribute types:', attributeTypes);
 
-      // Transform attributes to Catalyst format
-      console.log('🔄 Transforming attributes to Catalyst format...');
-      const catalystAttributes = [];
+      // Transform attributes to DainoStore format
+      console.log('🔄 Transforming attributes to DainoStore format...');
+      const dainoAttributes = [];
       
       // Check if attribute options should be included (default: true)
       const includeAttributeOptions = settings.includeAttributeOptions !== false;
@@ -870,18 +870,18 @@ class AkeneoIntegration {
         
         // Transform the attribute with fetched options
         const transformedAttribute = this.mapping.transformAttribute(akeneoAttribute, storeId, 'en_US', attributeOptions);
-        catalystAttributes.push(transformedAttribute);
+        dainoAttributes.push(transformedAttribute);
       }
 
-      console.log(`✅ Transformed ${catalystAttributes.length} attributes`);
+      console.log(`✅ Transformed ${dainoAttributes.length} attributes`);
 
       // Import attributes
       console.log('💾 Starting database import process...');
       let processed = 0;
-      for (const attribute of catalystAttributes) {
+      for (const attribute of dainoAttributes) {
         processed++;
         if (processed % 50 === 0) {
-          console.log(`📊 Progress: ${processed}/${catalystAttributes.length} attributes processed`);
+          console.log(`📊 Progress: ${processed}/${dainoAttributes.length} attributes processed`);
         }
         try {
           // Validate attribute
@@ -1092,7 +1092,7 @@ class AkeneoIntegration {
   }
 
   /**
-   * Import families from Akeneo to Catalyst AttributeSets
+   * Import families from Akeneo to DainoStore AttributeSets
    */
   async importFamilies(storeId, options = {}) {
     const { dryRun = false, filters = {} } = options;
@@ -1117,8 +1117,8 @@ class AkeneoIntegration {
 
       console.log(`Found ${akeneoFamilies.length} families to import`);
 
-      // Transform families to Catalyst format
-      const catalystFamilies = akeneoFamilies.map(akeneoFamily => 
+      // Transform families to DainoStore format
+      const dainoFamilies = akeneoFamilies.map(akeneoFamily => 
         this.mapping.transformFamily(akeneoFamily, storeId)
       );
 
@@ -1126,7 +1126,7 @@ class AkeneoIntegration {
       const attributeMapping = await this.buildAttributeMapping(storeId);
 
       // Import families
-      for (const family of catalystFamilies) {
+      for (const family of dainoFamilies) {
         try {
           // Validate family
           const validationErrors = this.mapping.validateFamily(family);
@@ -1311,7 +1311,7 @@ class AkeneoIntegration {
   }
 
   /**
-   * Build mapping from Akeneo category codes to Catalyst category IDs
+   * Build mapping from Akeneo category codes to DainoStore category IDs
    * Uses dedicated akeneo_mappings table for flexible mapping
    */
   async buildCategoryMapping(storeId) {
@@ -1341,7 +1341,7 @@ class AkeneoIntegration {
   }
 
   /**
-   * Build mapping from Akeneo family codes to Catalyst AttributeSet IDs
+   * Build mapping from Akeneo family codes to DainoStore AttributeSet IDs
    */
   async buildFamilyMapping(storeId) {
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
@@ -1366,7 +1366,7 @@ class AkeneoIntegration {
   }
 
   /**
-   * Build mapping from Akeneo attribute codes to Catalyst attribute IDs
+   * Build mapping from Akeneo attribute codes to DainoStore attribute IDs
    */
   async buildAttributeMapping(storeId) {
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
@@ -1457,7 +1457,7 @@ class AkeneoIntegration {
   }
 
   /**
-   * Import products and product models from Akeneo to Catalyst
+   * Import products and product models from Akeneo to DainoStore
    *
    * Import behavior:
    * - Standalone products: ALWAYS imported as simple products
@@ -1546,7 +1546,7 @@ class AkeneoIntegration {
       });
 
       // Track created products by their Akeneo identifier/code
-      const createdProducts = {}; // Maps akeneo identifier/code to Catalyst product ID
+      const createdProducts = {}; // Maps akeneo identifier/code to DainoStore product ID
       let processed = 0;
 
       // STEP 1: Import standalone simple products first
@@ -1560,42 +1560,42 @@ class AkeneoIntegration {
           for (const akeneoProduct of batch) {
             processed++;
             try {
-              // Transform product to Catalyst format
-              const catalystProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client);
+              // Transform product to DainoStore format
+              const dainoProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client);
 
               // Apply settings
               if (enhancedSettings.status === 'disabled') {
-                catalystProduct.status = 'inactive';
+                dainoProduct.status = 'inactive';
               } else if (enhancedSettings.status === 'enabled') {
-                catalystProduct.status = 'active';
+                dainoProduct.status = 'active';
               }
 
               // Map category IDs and family
-              catalystProduct.category_ids = this.mapping.mapCategoryIds(akeneoProduct.categories || [], categoryMapping);
+              dainoProduct.category_ids = this.mapping.mapCategoryIds(akeneoProduct.categories || [], categoryMapping);
               if (akeneoProduct.family && familyMapping[akeneoProduct.family]) {
-                catalystProduct.attribute_set_id = familyMapping[akeneoProduct.family];
+                dainoProduct.attribute_set_id = familyMapping[akeneoProduct.family];
               }
 
               // Validate product
-              const validationErrors = this.mapping.validateProduct(catalystProduct);
+              const validationErrors = this.mapping.validateProduct(dainoProduct);
               if (validationErrors.length > 0) {
                 this.importStats.products.failed++;
                 this.importStats.errors.push({
                   type: 'product',
-                  akeneo_identifier: catalystProduct.akeneo_identifier,
+                  akeneo_identifier: dainoProduct.akeneo_identifier,
                   errors: validationErrors
                 });
-                console.error(`❌ Validation failed for ${catalystProduct.sku}: ${validationErrors.join(', ')}`);
+                console.error(`❌ Validation failed for ${dainoProduct.sku}: ${validationErrors.join(', ')}`);
                 continue;
               }
 
               if (!dryRun) {
-                const result = await this.importSingleProduct(catalystProduct, storeId);
+                const result = await this.importSingleProduct(dainoProduct, storeId);
                 if (result.success) {
                   createdProducts[akeneoProduct.identifier] = result.productId;
                   this.importStats.products.imported++;
                   if (processed <= 5 || processed % 25 === 0) {
-                    console.log(`✅ ${result.action} standalone product: ${catalystProduct.name} (${catalystProduct.sku})`);
+                    console.log(`✅ ${result.action} standalone product: ${dainoProduct.name} (${dainoProduct.sku})`);
                   }
                 } else {
                   this.importStats.products.failed++;
@@ -1633,45 +1633,45 @@ class AkeneoIntegration {
             processed++;
             try {
               // Transform variant as a simple product (for now, we'll link to parent later)
-              const catalystProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client);
+              const dainoProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client);
 
               // Ensure it's marked as simple
-              catalystProduct.type = 'simple';
+              dainoProduct.type = 'simple';
 
               // Apply settings
               if (enhancedSettings.status === 'disabled') {
-                catalystProduct.status = 'inactive';
+                dainoProduct.status = 'inactive';
               } else if (enhancedSettings.status === 'enabled') {
-                catalystProduct.status = 'active';
+                dainoProduct.status = 'active';
               }
 
               // Map category IDs and family
-              catalystProduct.category_ids = this.mapping.mapCategoryIds(akeneoProduct.categories || [], categoryMapping);
+              dainoProduct.category_ids = this.mapping.mapCategoryIds(akeneoProduct.categories || [], categoryMapping);
               if (akeneoProduct.family && familyMapping[akeneoProduct.family]) {
-                catalystProduct.attribute_set_id = familyMapping[akeneoProduct.family];
+                dainoProduct.attribute_set_id = familyMapping[akeneoProduct.family];
               }
 
               // Validate product
-              const validationErrors = this.mapping.validateProduct(catalystProduct);
+              const validationErrors = this.mapping.validateProduct(dainoProduct);
               if (validationErrors.length > 0) {
                 this.importStats.products.failed++;
                 this.importStats.errors.push({
                   type: 'product',
-                  akeneo_identifier: catalystProduct.akeneo_identifier,
+                  akeneo_identifier: dainoProduct.akeneo_identifier,
                   errors: validationErrors
                 });
-                console.error(`❌ Validation failed for variant ${catalystProduct.sku}: ${validationErrors.join(', ')}`);
+                console.error(`❌ Validation failed for variant ${dainoProduct.sku}: ${validationErrors.join(', ')}`);
                 continue;
               }
 
               if (!dryRun) {
-                const result = await this.importSingleProduct(catalystProduct, storeId);
+                const result = await this.importSingleProduct(dainoProduct, storeId);
                 if (result.success) {
                   // Store variant product ID for later linking to parent
                   createdProducts[akeneoProduct.identifier] = result.productId;
                   this.importStats.products.imported++;
                   if (processed <= 5 || processed % 25 === 0) {
-                    console.log(`✅ ${result.action} variant product: ${catalystProduct.name} (${catalystProduct.sku}) - parent: ${akeneoProduct.parent}`);
+                    console.log(`✅ ${result.action} variant product: ${dainoProduct.name} (${dainoProduct.sku}) - parent: ${akeneoProduct.parent}`);
                   }
                 } else {
                   this.importStats.products.failed++;

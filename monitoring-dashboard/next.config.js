@@ -5,8 +5,8 @@ const nextConfig = {
   
   // Environment variables for the monitoring dashboard
   env: {
-    RENDER_BACKEND_URL: process.env.RENDER_BACKEND_URL || 'https://catalyst-backend-fzhu.onrender.com',
-    VERCEL_FRONTEND_URL: process.env.VERCEL_FRONTEND_URL || 'https://catalyst-pearl.vercel.app',
+    RENDER_BACKEND_URL: process.env.RENDER_BACKEND_URL || 'https://daino.onrender.com',
+    VERCEL_FRONTEND_URL: process.env.VERCEL_FRONTEND_URL || 'https://daino-pearl.vercel.app',
     MONITORING_ENABLED: 'true'
   },
 

@@ -1,4 +1,4 @@
-# 🔧 Catalyst Monitoring System - Technical Documentation
+# 🔧 DainoStore Monitoring System - Technical Documentation
 
 ## 📋 Table of Contents
 1. [Installation Instructions](#installation-instructions)
@@ -33,13 +33,13 @@ npx vercel --prod
 # ? Set up and deploy "~/monitoring-dashboard"? Y
 # ? Which scope do you want to deploy to? (Your account)
 # ? Link to existing project? N
-# ? What's your project's name? catalyst-monitoring
+# ? What's your project's name? daino-monitoring
 # ? In which directory is your code located? ./
 ```
 
 #### **Option 2: One-Click Deploy**
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/catalyst-monitoring)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/daino-monitoring)
 
 ### ⚙️ **Environment Variables Setup**
 
@@ -50,8 +50,8 @@ npx vercel --prod
 
 ```bash
 # Required Environment Variables
-RENDER_BACKEND_URL=https://catalyst-backend-fzhu.onrender.com
-VERCEL_FRONTEND_URL=https://catalyst-pearl.vercel.app
+RENDER_BACKEND_URL=https://daino.onrender.com
+VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app
 MONITORING_ENABLED=true
 
 # Optional Environment Variables
@@ -64,7 +64,7 @@ HEALTH_CHECK_TIMEOUT=10000
 
 #### **Step 1: Install Dependencies** (If not already present)
 ```bash
-# In your main catalyst project
+# In your main daino project
 npm install axios  # Already installed
 ```
 
@@ -140,7 +140,7 @@ npm run dev
 #### **3. Test Transformation Bug Detection**
 ```bash
 # Test the critical monitoring endpoint
-curl https://catalyst-backend-fzhu.onrender.com/api/integrations/akeneo/custom-mappings
+curl https://daino.onrender.com/api/integrations/akeneo/custom-mappings
 
 # If returns array [] instead of object {}, monitoring will alert:
 # "🚨 CRITICAL: Custom mappings returned array - TRANSFORMATION BUG IS BACK!"
@@ -194,10 +194,10 @@ node test-local.js
 ```bash
 # Check backend URL in environment variables
 echo $RENDER_BACKEND_URL
-# Should output: https://catalyst-backend-fzhu.onrender.com
+# Should output: https://daino.onrender.com
 
 # Test backend directly
-curl https://catalyst-backend-fzhu.onrender.com/api/health
+curl https://daino.onrender.com/api/health
 ```
 
 **2. "Monitoring dashboard not updating" error:**
@@ -996,11 +996,11 @@ useEffect(() => {
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  🌐 VERCEL (Frontend)                                      │
-│  ├─ Main App: https://catalyst-pearl.vercel.app           │
+│  ├─ Main App: https://daino-pearl.vercel.app           │
 │  └─ Monitoring: https://monitoring.vercel.app             │
 │                                                             │
 │  🎯 RENDER (Backend)                                       │
-│  └─ API: https://catalyst-backend-fzhu.onrender.com       │
+│  └─ API: https://daino.onrender.com       │
 │                                                             │
 │  🗄️  SUPABASE (Database)                                   │
 │  └─ PostgreSQL + Storage                                   │
@@ -1032,8 +1032,8 @@ useEffect(() => {
 #### **Monitoring Dashboard Environment Variables**
 ```bash
 # monitoring-dashboard/.env.production
-RENDER_BACKEND_URL=https://catalyst-backend-fzhu.onrender.com
-VERCEL_FRONTEND_URL=https://catalyst-pearl.vercel.app
+RENDER_BACKEND_URL=https://daino.onrender.com
+VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app
 MONITORING_ENABLED=true
 ALERT_WEBHOOK_URL=https://hooks.slack.com/your-webhook
 ```

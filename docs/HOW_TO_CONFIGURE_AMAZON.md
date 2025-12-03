@@ -1,6 +1,6 @@
 # 🛒 How to Configure Amazon Marketplace Integration
 
-Complete step-by-step guide to connect your Catalyst store to Amazon and start exporting products.
+Complete step-by-step guide to connect your DainoStore store to Amazon and start exporting products.
 
 ---
 
@@ -79,11 +79,11 @@ Choose based on where you sell:
 
 ---
 
-## 🔧 **Step 2: Configure in Catalyst**
+## 🔧 **Step 2: Configure in DainoStore**
 
 ### **Access the Marketplace Hub**
 
-1. Log in to your Catalyst admin panel
+1. Log in to your DainoStore admin panel
 2. Navigate to: **Import & Export** → **Marketplace Hub**
 3. Click the **Amazon** tab
 
@@ -129,7 +129,7 @@ You should see a success message: ✅ "Amazon configuration saved successfully!"
 
 ## ⚡ **Step 3: Configure AI Optimization (Optional)**
 
-Catalyst includes AI-powered features that Channable doesn't have!
+DainoStore includes AI-powered features that Channable doesn't have!
 
 ### **Enable AI Optimization:**
 
@@ -308,7 +308,7 @@ Keep your Amazon inventory updated:
 ### **Price Updates**
 
 To update prices:
-1. Update prices in your Catalyst catalog
+1. Update prices in your DainoStore catalog
 2. Re-export products to Amazon
 3. Only price feed will be submitted
 
@@ -368,7 +368,7 @@ To update prices:
 - AI generates better titles, descriptions, and keywords
 
 ### **3. Optimize Product Data Before Export**
-- Add detailed descriptions in Catalyst
+- Add detailed descriptions in DainoStore
 - Upload high-quality images
 - Fill in all attributes
 - Better input = better AI output!
@@ -389,7 +389,7 @@ To update prices:
 
 ### **Category Mapping**
 
-Map your Catalyst categories to Amazon categories:
+Map your DainoStore categories to Amazon categories:
 
 ```javascript
 export_settings: {
@@ -440,4 +440,4 @@ Once configured, you can:
 ---
 
 *Last updated: 2025-11-13*
-*Catalyst Version: 2.0+*
+*DainoStore Version: 2.0+*

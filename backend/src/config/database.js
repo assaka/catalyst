@@ -48,7 +48,7 @@ const getMasterDatabaseConfig = () => {
       } : false,
       keepAlive: true,
       keepAliveInitialDelayMs: 0,
-      ...(isPooler && { application_name: 'catalyst-master' })
+      ...(isPooler && { application_name: 'daino-master' })
     },
 
     pool: {
@@ -151,7 +151,7 @@ const getDatabaseConfig = () => {
       keepAlive: true,
       keepAliveInitialDelayMs: 0,
       // Add application_name for pooler connections
-      ...(isPooler && { application_name: 'catalyst-backend' })
+      ...(isPooler && { application_name: 'daino-backend' })
     },
     
     pool: {

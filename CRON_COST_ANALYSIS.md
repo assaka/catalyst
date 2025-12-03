@@ -63,7 +63,7 @@ cost = $1.96/month
 **Current (Worker):**
 ```yaml
 - type: worker
-  name: catalyst-background-worker
+  name: daino-background-worker
   startCommand: node worker.cjs
 ```
 - Cost: 720 hours/month = $16.80/month (paid) or 96% of free tier
@@ -73,7 +73,7 @@ cost = $1.96/month
 **Alternative (Cron Every Minute):**
 ```yaml
 - type: cron
-  name: catalyst-job-processor
+  name: daino-job-processor
   schedule: "* * * * *"  # Every minute
   startCommand: node process-jobs.cjs
 ```
@@ -97,20 +97,20 @@ cost = $1.96/month
 ```yaml
 # Worker for user-triggered jobs (translations, imports)
 - type: worker
-  name: catalyst-background-worker
+  name: daino-background-worker
   startCommand: node worker.cjs
   # Cost: 720 hours/month
 
 # Cron for cleanup (every 5 minutes)
 - type: cron
-  name: catalyst-cleanup-processor
+  name: daino-cleanup-processor
   schedule: "*/5 * * * *"  # Every 5 minutes
   startCommand: node process-cleanup-jobs.cjs
   # Cost: ~17 hours/month
 
 # Cron for daily tasks
 - type: cron
-  name: catalyst-daily-maintenance
+  name: daino-daily-maintenance
   schedule: "0 2 * * *"  # Daily at 2 AM
   startCommand: node daily-maintenance.cjs
   # Cost: ~0.06 hours/month
@@ -131,28 +131,28 @@ cost = $1.96/month
 ```yaml
 # High priority: Every 2 minutes (user-facing)
 - type: cron
-  name: catalyst-priority-jobs
+  name: daino-priority-jobs
   schedule: "*/2 * * * *"
   startCommand: node process-priority-jobs.cjs
   # Cost: ~42 hours/month
 
 # Medium priority: Every 5 minutes
 - type: cron
-  name: catalyst-medium-jobs
+  name: daino-medium-jobs
   schedule: "*/5 * * * *"
   startCommand: node process-medium-jobs.cjs
   # Cost: ~17 hours/month
 
 # Low priority: Every 15 minutes
 - type: cron
-  name: catalyst-low-jobs
+  name: daino-low-jobs
   schedule: "*/15 * * * *"
   startCommand: node process-low-jobs.cjs
   # Cost: ~5.6 hours/month
 
 # Maintenance: Daily
 - type: cron
-  name: catalyst-daily-tasks
+  name: daino-daily-tasks
   schedule: "0 2 * * *"
   startCommand: node daily-tasks.cjs
   # Cost: ~0.06 hours/month
@@ -399,12 +399,12 @@ if (queueSize > 100) {
 
 ### Current Setup (Best for User Experience)
 ```yaml
-✅ catalyst-background-worker (worker) - $7/mo
+✅ daino-background-worker (worker) - $7/mo
   - Instant processing
   - User-triggered jobs
   - High priority
 
-✅ catalyst-daily-credit-deduction (cron) - ~$0/mo
+✅ daino-daily-credit-deduction (cron) - ~$0/mo
   - Scheduled maintenance
   - Low cost
 ```
@@ -413,13 +413,13 @@ if (queueSize > 100) {
 
 ### Budget Alternative (Acceptable Tradeoffs)
 ```yaml
-❌ Remove catalyst-background-worker
+❌ Remove daino-background-worker
 
-✅ catalyst-job-processor (cron every 2 min) - ~$0.40/mo
+✅ daino-job-processor (cron every 2 min) - ~$0.40/mo
   - Process user jobs
   - 0-2 minute latency
 
-✅ catalyst-daily-tasks (cron daily) - ~$0/mo
+✅ daino-daily-tasks (cron daily) - ~$0/mo
   - Maintenance tasks
 ```
 

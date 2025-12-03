@@ -14,7 +14,7 @@ class StoreProvisioningService {
     this.reservedSubdomains = [
       'www', 'api', 'admin', 'dashboard', 'app', 'mail', 'blog', 
       'support', 'help', 'docs', 'cdn', 'assets', 'static',
-      'catalyst', 'platform', 'system', 'root', 'dev', 'test',
+      'daino', 'platform', 'system', 'root', 'dev', 'test',
       'staging', 'prod', 'production'
     ];
   }
@@ -142,13 +142,13 @@ class StoreProvisioningService {
       {
         type: 'CNAME',
         name: subdomain,
-        value: 'catalyst.app', // Your main domain
+        value: 'daino.app', // Your main domain
         ttl: 300
       },
       {
         type: 'TXT',
         name: `_verification.${subdomain}`,
-        value: `catalyst-store-${Date.now()}`,
+        value: `daino-store-${Date.now()}`,
         ttl: 300
       }
     ];
@@ -159,7 +159,7 @@ class StoreProvisioningService {
     return {
       success: true,
       records,
-      domain: `${subdomain}.catalyst.app`
+      domain: `${subdomain}.daino.app`
     };
   }
 
@@ -244,7 +244,7 @@ class StoreProvisioningService {
       
       // 1. Generate unique subdomain
       const subdomain = await this.generateUniqueSubdomain(storeData.name, userData.id);
-      const domain = `${subdomain}.catalyst.app`;
+      const domain = `${subdomain}.daino.app`;
       
       console.log(`🌐 Generated subdomain: ${subdomain}`);
 

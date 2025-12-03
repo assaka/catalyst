@@ -1,5 +1,5 @@
 -- Create integration_attribute_mappings table for cross-platform attribute mapping
--- This maps external platform attributes (Shopify, Magento, Akeneo, etc.) to Catalyst attributes
+-- This maps external platform attributes (Shopify, Magento, Akeneo, etc.) to DainoStore attributes
 -- Prevents duplicate attributes and enables consistent mapping across platforms
 
 CREATE TABLE IF NOT EXISTS integration_attribute_mappings (
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS integration_attribute_mappings (
   external_attribute_name VARCHAR(255), -- Human-readable name from external platform
   external_attribute_type VARCHAR(50), -- Type in external system ('text', 'select', etc.)
 
-  -- Catalyst Side (Internal)
+  -- DainoStore Side (Internal)
   internal_attribute_id UUID NOT NULL REFERENCES attributes(id) ON DELETE CASCADE,
   internal_attribute_code VARCHAR(255) NOT NULL, -- Denormalized for quick lookups
 
@@ -46,10 +46,10 @@ CREATE TABLE IF NOT EXISTS integration_attribute_mappings (
 );
 
 -- Add comments for documentation
-COMMENT ON TABLE integration_attribute_mappings IS 'Maps external platform attributes to internal Catalyst attributes for multi-platform integration';
+COMMENT ON TABLE integration_attribute_mappings IS 'Maps external platform attributes to internal DainoStore attributes for multi-platform integration';
 COMMENT ON COLUMN integration_attribute_mappings.integration_source IS 'External platform: shopify, magento, akeneo, woocommerce, etc.';
 COMMENT ON COLUMN integration_attribute_mappings.external_attribute_code IS 'Attribute identifier in external system (e.g., "vendor", "pa_color", "brand")';
-COMMENT ON COLUMN integration_attribute_mappings.internal_attribute_id IS 'Reference to Catalyst attributes table';
+COMMENT ON COLUMN integration_attribute_mappings.internal_attribute_id IS 'Reference to DainoStore attributes table';
 COMMENT ON COLUMN integration_attribute_mappings.mapping_source IS 'How mapping was created: auto (system), manual (user), ai (suggested)';
 COMMENT ON COLUMN integration_attribute_mappings.confidence_score IS 'Confidence in auto-mapping (1.00 = certain, <0.80 = needs review)';
 COMMENT ON COLUMN integration_attribute_mappings.value_transformation IS 'JSON rules for value transformation (unit conversion, format, etc.)';
@@ -73,10 +73,10 @@ CREATE TRIGGER trigger_integration_attribute_mappings_updated_at
 -- Example mappings (these would be created during first import or configured by user)
 COMMENT ON TABLE integration_attribute_mappings IS
 'Example mappings:
-1. Shopify "vendor" → Catalyst "brand"
-2. Magento "manufacturer" → Catalyst "brand"
-3. WooCommerce "pa_color" → Catalyst "color"
-4. Akeneo "tv_screen_size" → Catalyst "screen_size"
-5. BigCommerce "product_type" → Catalyst "product_type"
+1. Shopify "vendor" → DainoStore "brand"
+2. Magento "manufacturer" → DainoStore "brand"
+3. WooCommerce "pa_color" → DainoStore "color"
+4. Akeneo "tv_screen_size" → DainoStore "screen_size"
+5. BigCommerce "product_type" → DainoStore "product_type"
 
 This allows consistent attribute management across all platforms.';

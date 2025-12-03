@@ -30,13 +30,13 @@ We use a **two-layer mapping system** to handle different types of integrations:
 
 **Example:**
 ```javascript
-// Shopify → Catalyst
+// Shopify → DainoStore
 integration_attribute_mappings:
   shopify."vendor" → brand
   shopify."product_type" → product_type
   shopify."tags" → tags
 
-// WooCommerce → Catalyst
+// WooCommerce → DainoStore
 integration_attribute_mappings:
   woocommerce."pa_color" → color
   woocommerce."pa_size" → size
@@ -76,13 +76,13 @@ akeneo_mappings (
 akeneo_category_mappings (
   akeneo_category_code,
   akeneo_parent_code,   -- Hierarchy support
-  catalyst_category_id,
+  daino_category_id,
   locale_mappings JSONB  -- Multi-locale support
 )
 
 akeneo_family_mappings (
   akeneo_family_code,
-  catalyst_attribute_set_id,
+  daino_attribute_set_id,
   attribute_mappings JSONB  -- Which attributes belong to this family
 )
 ```
@@ -98,14 +98,14 @@ magento_mappings (
 
 magento_attribute_set_mappings (
   magento_attribute_set_id,
-  catalyst_attribute_set_id,
+  daino_attribute_set_id,
   attribute_group_mappings JSONB  -- Attribute groups within sets
 )
 
 magento_category_mappings (
   magento_category_id,
   magento_path,       -- Full category path
-  catalyst_category_id,
+  daino_category_id,
   store_view_id      -- Multi-store support
 )
 ```
@@ -201,12 +201,12 @@ magento_category_mappings (
 // Uses: BOTH layers
 
 // 1. Platform-Specific Layer (akeneo_family_mappings)
-family: "clothing" → catalyst_attribute_set_id: "uuid-123"
+family: "clothing" → daino_attribute_set_id: "uuid-123"
 
 // 2. Platform-Specific Layer (akeneo_category_mappings)
 categories: ["master", "men", "men_shirts"]
   → Resolves hierarchy
-  → catalyst_category_ids: ["uuid-a", "uuid-b", "uuid-c"]
+  → daino_category_ids: ["uuid-a", "uuid-b", "uuid-c"]
 
 // 3. Generic Layer (integration_attribute_mappings) ← YES, Akeneo uses this too!
 Check table for akeneo mappings:
@@ -248,12 +248,12 @@ Check table for akeneo mappings:
 // Uses: BOTH layers
 
 // 1. Platform-Specific Layer (magento_attribute_set_mappings)
-attribute_set_id: 4 → catalyst_attribute_set_id: "uuid-456"
+attribute_set_id: 4 → daino_attribute_set_id: "uuid-456"
 
 // 2. Platform-Specific Layer (magento_category_mappings)
 category_ids: [2, 5, 12]
-  → Maps Magento category IDs to Catalyst
-  → catalyst_category_ids: ["uuid-x", "uuid-y", "uuid-z"]
+  → Maps Magento category IDs to DainoStore
+  → daino_category_ids: ["uuid-x", "uuid-y", "uuid-z"]
 
 // 3. Platform-Specific Layer (magento_attribute_option_mappings)
 color: 45 → "Blue" (lookup option value)
@@ -311,21 +311,21 @@ color → color
    - Generic entity mappings (legacy, can be deprecated)
 
 3. akeneo_family_mappings
-   - Akeneo family → Catalyst attribute_set
+   - Akeneo family → DainoStore attribute_set
    - Includes attribute group configurations
 
 4. akeneo_category_mappings
-   - Akeneo category tree → Catalyst categories
+   - Akeneo category tree → DainoStore categories
    - Supports hierarchies and locales
 
 5. akeneo_channel_mappings
-   - Akeneo channels (ecommerce, mobile, etc.) → Catalyst configuration
+   - Akeneo channels (ecommerce, mobile, etc.) → DainoStore configuration
 
 6. akeneo_locale_mappings
-   - Akeneo locales (en_US, fr_FR) → Catalyst languages
+   - Akeneo locales (en_US, fr_FR) → DainoStore languages
 
 7. akeneo_attribute_option_mappings (if needed)
-   - Akeneo option codes → Catalyst option values
+   - Akeneo option codes → DainoStore option values
 ```
 
 ### Magento-Specific Tables
@@ -334,21 +334,21 @@ color → color
    - Generic entity mappings
 
 9. magento_attribute_set_mappings
-   - Magento attribute set → Catalyst attribute_set
+   - Magento attribute set → DainoStore attribute_set
    - Includes attribute group mappings
 
 10. magento_category_mappings
-    - Magento categories → Catalyst categories
+    - Magento categories → DainoStore categories
     - Supports multi-store and paths
 
 11. magento_store_view_mappings
-    - Magento store views → Catalyst languages/currencies
+    - Magento store views → DainoStore languages/currencies
 
 12. magento_customer_group_mappings (if needed)
-    - Magento customer groups → Catalyst customer segments
+    - Magento customer groups → DainoStore customer segments
 
 13. magento_attribute_option_mappings
-    - Magento option IDs → Catalyst option values
+    - Magento option IDs → DainoStore option values
 ```
 
 ### Shopify/WooCommerce (Simple Platforms)

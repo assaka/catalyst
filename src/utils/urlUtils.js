@@ -373,7 +373,7 @@ export function getExternalStoreUrl(storeSlug, path = '', customBaseUrl = null) 
   // Priority: customBaseUrl > environment variable > default
   const baseUrl = customBaseUrl || 
                   import.meta.env.VITE_PUBLIC_STORE_BASE_URL || 
-                  'https://catalyst-pearl.vercel.app';
+                  'https://daino-pearl.vercel.app';
   
   const publicPath = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug || 'store'}`;
   const fullPath = path ? `${publicPath}/${path}` : `${publicPath}/`;
@@ -398,7 +398,7 @@ export function getStoreBaseUrl(store = null) {
   }
   
   // Fall back to environment variable or default
-  return import.meta.env.VITE_PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+  return import.meta.env.VITE_PUBLIC_STORE_BASE_URL || 'https://daino-pearl.vercel.app';
 }
 
 /**

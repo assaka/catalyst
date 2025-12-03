@@ -1,7 +1,7 @@
 # Cart and Inventory System - Complete Analysis
 
 ## Overview
-This document provides a comprehensive analysis of the cart and inventory management system in the Catalyst e-commerce platform.
+This document provides a comprehensive analysis of the cart and inventory management system in the DainoStore e-commerce platform.
 
 ## Cart Functionality
 

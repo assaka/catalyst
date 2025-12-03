@@ -275,7 +275,7 @@ function printSummary(type, results) {
  */
 async function main() {
   console.log(`\n${'='.repeat(60)}`);
-  console.log(`🌍 Catalyst Bulk Translation Tool`);
+  console.log(`🌍 DainoStore Bulk Translation Tool`);
   console.log(`${'='.repeat(60)}`);
   console.log(`Type:         ${type}`);
   console.log(`From:         ${from}`);

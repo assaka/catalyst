@@ -6,7 +6,7 @@
 ## 🎯 Executive Summary
 
 Build a comprehensive plugin system for the e-commerce platform that enables:
-- **AI-powered plugin generation** using existing CatalystAIStudio
+- **AI-powered plugin generation** using existing DainoStoreAIStudio
 - **Magento-inspired hooks & events** using existing HookSystem & EventSystem
 - **Dynamic admin navigation** loaded from database
 - **Widget integration** with existing slot editor
@@ -2361,7 +2361,7 @@ export default function AdminSidebar() {
 import { useState, useEffect } from 'react';
 import FileTreeNavigator from '@/components/editor/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/editor/ai-context/CodeEditor';
-import CatalystAIStudio from '@/components/admin/CatalystAIStudio';
+import DainoStoreAIStudio from '@/components/admin/DainoStoreAIStudio';
 import DiffPreviewSystem from '@/components/editor/ai-context/DiffPreviewSystem';
 import FileTabs from './FileTabs';
 
@@ -2614,7 +2614,7 @@ export default function PluginCodeEditorWrapper({ plugin, onSave }) {
       </div>
 
       {/* RIGHT: AI Assistant */}
-      <CatalystAIStudio initialContext="plugins" />
+      <DainoStoreAIStudio initialContext="plugins" />
     </div>
   );
 }
@@ -3072,7 +3072,7 @@ export const PLUGIN_HOOKS = {
 ### Phase 3: Frontend Tools (Week 5-6)
 11. ✅ Create PluginCodeEditorWrapper
 12. ✅ Adapt FileTreeNavigator for plugins
-13. ✅ Adapt CatalystAIStudio for plugins mode
+13. ✅ Adapt DainoStoreAIStudio for plugins mode
 14. ✅ Create FileTabs component
 15. ✅ Create HookEventSelector
 
@@ -3083,7 +3083,7 @@ export const PLUGIN_HOOKS = {
 
 ### Phase 5: AI Generation (Week 8)
 19. ✅ Create AIPluginGenerator
-20. ✅ Integrate with CatalystAIStudio
+20. ✅ Integrate with DainoStoreAIStudio
 21. ✅ Test AI-powered plugin creation
 
 ### Phase 6: Marketplace (Week 9-10)

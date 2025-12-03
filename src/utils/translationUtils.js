@@ -247,7 +247,7 @@ export function getProductTabContent(tab, lang = 'en') {
  */
 export function getCurrentLanguage() {
   // Try localStorage first
-  const savedLang = localStorage.getItem('catalyst_language');
+  const savedLang = localStorage.getItem('daino_language');
   if (savedLang) return savedLang;
 
   // Try browser language

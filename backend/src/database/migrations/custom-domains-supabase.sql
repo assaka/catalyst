@@ -144,7 +144,7 @@ CREATE INDEX IF NOT EXISTS idx_ssl_renewals_expires_at ON ssl_certificate_renewa
 CREATE OR REPLACE FUNCTION generate_domain_verification_token()
 RETURNS VARCHAR AS $$
 BEGIN
-  RETURN 'catalyst-verify-' || substr(md5(random()::text || clock_timestamp()::text), 1, 32);
+  RETURN 'daino-verify-' || substr(md5(random()::text || clock_timestamp()::text), 1, 32);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -183,5 +183,5 @@ COMMENT ON TABLE domain_verification_logs IS 'Logs of domain verification attemp
 COMMENT ON TABLE ssl_certificate_renewals IS 'SSL certificate renewal history';
 
 COMMENT ON COLUMN custom_domains.verification_token IS 'Unique token for domain verification';
-COMMENT ON COLUMN custom_domains.cname_target IS 'The CNAME target (e.g., stores.catalyst.app)';
+COMMENT ON COLUMN custom_domains.cname_target IS 'The CNAME target (e.g., stores.daino.app)';
 COMMENT ON COLUMN custom_domains.dns_records IS 'Required DNS records for this domain';

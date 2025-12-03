@@ -1,6 +1,6 @@
 # Translation Guide: AI Studio Chat, Bulk Scripts, and Single Field Translations
 
-This guide shows you how to translate content in your Catalyst platform using three different approaches.
+This guide shows you how to translate content in your DainoStore platform using three different approaches.
 
 ---
 
@@ -364,7 +364,7 @@ function printSummary(type, results) {
  */
 async function main() {
   console.log(`\n${'='.repeat(60)}`);
-  console.log(`🌍 Catalyst Bulk Translation Tool`);
+  console.log(`🌍 DainoStore Bulk Translation Tool`);
   console.log(`${'='.repeat(60)}`);
   console.log(`Type:         ${type}`);
   console.log(`From:         ${from}`);

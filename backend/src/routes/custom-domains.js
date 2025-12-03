@@ -577,9 +577,9 @@ router.get('/:id/debug-dns', authMiddleware, storeResolver(), async (req, res) =
 
     // Check TXT record - try multiple possible names
     const txtRecordNames = [
-      `_catalyst-verification.${domain.domain}`,
-      `_catalyst-verification.www.${domain.domain}`.replace('www.www.', 'www.'),
-      domain.domain.replace('www.', '_catalyst-verification.www.')
+      `_daino-verification.${domain.domain}`,
+      `_daino-verification.www.${domain.domain}`.replace('www.www.', 'www.'),
+      domain.domain.replace('www.', '_daino-verification.www.')
     ];
 
     let txtFound = false;
@@ -655,7 +655,7 @@ function getRequiredDNSRecords(domain) {
   // TXT record for verification
   records.push({
     type: 'TXT',
-    name: '_catalyst-verification',
+    name: '_daino-verification',
     value: domain.verification_token,
     ttl: 3600
   });
@@ -699,7 +699,7 @@ function getRecommendations(debugInfo) {
   if (!debugInfo.actual_records.txt?.found) {
     recommendations.push({
       type: 'error',
-      message: `TXT record not found. Add: Type=TXT, Name=_catalyst-verification.www, Value=${debugInfo.verification_token}`
+      message: `TXT record not found. Add: Type=TXT, Name=_daino-verification.www, Value=${debugInfo.verification_token}`
     });
   } else if (debugInfo.actual_records.txt?.found && !debugInfo.actual_records.txt?.matches_expected) {
     recommendations.push({

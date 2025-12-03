@@ -99,7 +99,7 @@ class PreviewService {
       }
 
       // Fetch the original page
-      const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+      const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://daino-pearl.vercel.app';
       
       // Handle store lookup with UUID validation
       let storeSlug = 'store'; // Default fallback
@@ -160,7 +160,7 @@ class PreviewService {
       const response = await axios.get(targetUrl, {
         timeout: 10000,
         headers: {
-          'User-Agent': 'Catalyst Preview Service/1.0',
+          'User-Agent': 'DainoStore Preview Service/1.0',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
         }
       });
@@ -244,7 +244,7 @@ class PreviewService {
     let modifiedHtml = htmlContent;
     
     // Replace relative asset paths with absolute URLs to the original site
-    const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+    const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://daino-pearl.vercel.app';
     modifiedHtml = modifiedHtml.replace(
       /href="\/assets\//g, 
       `href="${baseUrl}/assets/`
@@ -290,7 +290,7 @@ class PreviewService {
     
     // Step 3: Add preview indicator
     const previewIndicator = `
-    <div id="catalyst-preview-indicator" style="
+    <div id="daino-preview-indicator" style="
       position: fixed;
       top: 10px;
       right: 10px;
@@ -375,7 +375,7 @@ class PreviewService {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Preview: ${session.fileName}</title>
     <!-- Load actual CSS from the live cart page -->
-    <link rel="stylesheet" crossorigin href="https://catalyst-pearl.vercel.app/assets/index-DsosPPHy.css">
+    <link rel="stylesheet" crossorigin href="https://daino-pearl.vercel.app/assets/index-DsosPPHy.css">
     
     <style>
       /* Reset and base styles for preview */

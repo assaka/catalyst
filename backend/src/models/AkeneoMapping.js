@@ -18,16 +18,16 @@ const AkeneoMapping = sequelize.define('AkeneoMapping', {
     allowNull: false,
     comment: 'Type of Akeneo entity (category, product, attribute, etc.)'
   },
-  // Catalyst side
+  // DainoStore side
   entity_type: {
     type: DataTypes.STRING(50),
     allowNull: false,
-    comment: 'Type of Catalyst entity being mapped to'
+    comment: 'Type of DainoStore entity being mapped to'
   },
   entity_id: {
     type: DataTypes.UUID,
     allowNull: false,
-    comment: 'UUID of the Catalyst entity'
+    comment: 'UUID of the DainoStore entity'
   },
   entity_slug: {
     type: DataTypes.STRING,
@@ -193,18 +193,18 @@ AkeneoMapping.getImageMappings = async function(storeId) {
   // If no mappings exist, return default structure
   if (mappings.length === 0) {
     return [
-      { akeneoField: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
-      { akeneoField: 'image_0', catalystField: 'gallery_0', enabled: true, priority: 2 },
-      { akeneoField: 'image_1', catalystField: 'gallery_1', enabled: true, priority: 3 },
-      { akeneoField: 'image_2', catalystField: 'gallery_2', enabled: true, priority: 4 },
-      { akeneoField: 'image_3', catalystField: 'gallery_3', enabled: true, priority: 5 }
+      { akeneoField: 'image', dainoField: 'main_image', enabled: true, priority: 1 },
+      { akeneoField: 'image_0', dainoField: 'gallery_0', enabled: true, priority: 2 },
+      { akeneoField: 'image_1', dainoField: 'gallery_1', enabled: true, priority: 3 },
+      { akeneoField: 'image_2', dainoField: 'gallery_2', enabled: true, priority: 4 },
+      { akeneoField: 'image_3', dainoField: 'gallery_3', enabled: true, priority: 5 }
     ];
   }
   
   // Convert database mappings to expected format
   return mappings.map(m => ({
     akeneoField: m.akeneo_code,
-    catalystField: m.entity_slug,
+    dainoField: m.entity_slug,
     enabled: m.is_active,
     priority: m.sort_order || m.metadata?.position || 999
   }));
@@ -228,7 +228,7 @@ AkeneoMapping.saveImageMappings = async function(storeId, imageMappings) {
       akeneo_type: 'image_attribute',
       entity_type: 'product_image',
       entity_id: require('crypto').randomUUID(),
-      entity_slug: mapping.catalystField || `image_${index}`,
+      entity_slug: mapping.dainoField || `image_${index}`,
       store_id: storeId,
       is_active: true,
       mapping_source: 'manual',
@@ -238,7 +238,7 @@ AkeneoMapping.saveImageMappings = async function(storeId, imageMappings) {
         is_primary: index === 0,
         fallback_attributes: []
       },
-      notes: `Image mapping: ${mapping.akeneoField} -> ${mapping.catalystField}`
+      notes: `Image mapping: ${mapping.akeneoField} -> ${mapping.dainoField}`
     }));
   
   if (mappingsToCreate.length > 0) {

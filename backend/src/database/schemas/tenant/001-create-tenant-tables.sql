@@ -972,7 +972,7 @@ CREATE TABLE IF NOT EXISTS integration_attribute_mappings (
   external_attribute_name VARCHAR(255), -- Human-readable name from external platform
   external_attribute_type VARCHAR(50), -- Type in external system ('text', 'select', etc.)
 
-  -- Catalyst Side (Internal)
+  -- DainoStore Side (Internal)
   internal_attribute_id UUID NOT NULL,
   internal_attribute_code VARCHAR(255) NOT NULL, -- Denormalized for quick lookups
 

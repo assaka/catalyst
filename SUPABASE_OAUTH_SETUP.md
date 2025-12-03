@@ -5,9 +5,9 @@
 1. Go to https://supabase.com/dashboard/account/apps
 2. Click "New OAuth Application"
 3. Fill in the following details:
-   - **Application name**: Catalyst E-commerce Platform
-   - **Homepage URL**: https://catalyst-pearl.vercel.app
-   - **Redirect URL**: https://catalyst-backend-fzhu.onrender.com/api/supabase/callback
+   - **Application name**: DainoStore E-commerce Platform
+   - **Homepage URL**: https://daino-pearl.vercel.app
+   - **Redirect URL**: https://daino.onrender.com/api/supabase/callback
    - **Description**: E-commerce platform integration for database and storage management
 
 4. After creation, you'll receive:
@@ -22,10 +22,10 @@ Go to your Render.com dashboard and add these environment variables:
 # Supabase OAuth Configuration
 SUPABASE_OAUTH_CLIENT_ID=your_client_id_here
 SUPABASE_OAUTH_CLIENT_SECRET=your_client_secret_here
-SUPABASE_OAUTH_REDIRECT_URI=https://catalyst-backend-fzhu.onrender.com/api/supabase/callback
+SUPABASE_OAUTH_REDIRECT_URI=https://daino.onrender.com/api/supabase/callback
 
 # Frontend URL for redirect after OAuth
-FRONTEND_URL=https://catalyst-pearl.vercel.app
+FRONTEND_URL=https://daino-pearl.vercel.app
 
 # Encryption key for storing tokens (generate a secure random string)
 SUPABASE_TOKEN_ENCRYPTION_KEY=your-secure-encryption-key-here

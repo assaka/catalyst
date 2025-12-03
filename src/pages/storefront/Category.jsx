@@ -216,8 +216,8 @@ export default function Category() {
       setActiveFilters({});
 
       // Track category view
-      if (typeof window !== 'undefined' && window.catalyst?.trackEvent) {
-        window.catalyst.trackEvent('page_view', {
+      if (typeof window !== 'undefined' && window.daino?.trackEvent) {
+        window.daino.trackEvent('page_view', {
           page_type: 'category',
           category_name: getCategoryName(categoryData.category, getCurrentLanguage()),
           category_id: categoryData.category.id,

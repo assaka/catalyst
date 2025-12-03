@@ -11,7 +11,7 @@ module.exports = {
     const documents = [
       {
         type: 'architecture',
-        title: 'Catalyst Plugin Architecture Overview',
+        title: 'DainoStore Plugin Architecture Overview',
         content: `# CATALYST PLUGIN ARCHITECTURE
 
 ## Tech Stack

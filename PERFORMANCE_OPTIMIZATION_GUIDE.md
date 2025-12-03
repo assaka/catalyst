@@ -1,6 +1,6 @@
 # Performance Optimization Guide
 
-Complete guide for optimizing Catalyst e-commerce platform performance through Redis caching, Cloudflare CDN, database indexing, and query optimization.
+Complete guide for optimizing DainoStore e-commerce platform performance through Redis caching, Cloudflare CDN, database indexing, and query optimization.
 
 ## Table of Contents
 
@@ -58,7 +58,7 @@ The `render.yaml` file has been pre-configured with Redis:
 
 ```yaml
 databases:
-  - name: catalyst-redis
+  - name: daino-redis
     plan: starter  # $7/month for 100MB
     ipAllowList: []
 ```
@@ -178,7 +178,7 @@ tcp-keepalive 300
 ```yaml
 services:
   - type: web
-    name: catalyst-redis-server
+    name: daino-redis-server
     env: docker
     rootDir: backend/redis
     dockerfilePath: ./Dockerfile
@@ -198,7 +198,7 @@ services:
 In `backend/.env`:
 
 ```env
-REDIS_HOST=catalyst-redis-server
+REDIS_HOST=daino-redis-server
 REDIS_PORT=6379
 REDIS_PASSWORD=your-generated-password
 REDIS_ENABLED=true
@@ -536,7 +536,7 @@ Expected response:
 #### Check Redis Keys
 ```bash
 # SSH into Render shell
-redis-cli -h catalyst-redis -a your-password
+redis-cli -h daino-redis -a your-password
 
 # List all keys
 KEYS *
@@ -556,7 +556,7 @@ INFO memory
 curl -X DELETE https://your-app.onrender.com/api/cache/clear
 
 # Via Redis CLI
-redis-cli -h catalyst-redis -a password FLUSHDB
+redis-cli -h daino-redis -a password FLUSHDB
 ```
 
 ### Common Issues
@@ -689,7 +689,7 @@ Set `DB_QUERY_LOG=true` to see all SQL queries and execution times.
 
 2. **Add new environment variables:**
    ```env
-   REDIS_HOST=catalyst-redis-server
+   REDIS_HOST=daino-redis-server
    REDIS_PORT=6379
    REDIS_PASSWORD=generated-password
    ```
@@ -804,7 +804,7 @@ Monitor these metrics in production:
 
 ### Problem: N+1 Queries on Translation Tables
 
-The Catalyst platform uses normalized translation tables:
+The DainoStore platform uses normalized translation tables:
 - `product_translations`
 - `category_translations`
 - `attribute_translations`

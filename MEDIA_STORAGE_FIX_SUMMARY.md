@@ -142,7 +142,7 @@ Once Render deployment completes:
 
 1. **Check Render Logs:**
    ```
-   https://dashboard.render.com → catalyst-backend → Logs
+   https://dashboard.render.com → daino-backend → Logs
    Search for: "store_databases", "connectionStatus", "getProjects"
    ```
 
@@ -161,7 +161,7 @@ Once Render deployment completes:
 4. **Manual Test:**
    ```bash
    curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-        https://catalyst-backend-fzhu.onrender.com/api/supabase/status
+        https://daino.onrender.com/api/supabase/status
    ```
 
 ## Additional Notes

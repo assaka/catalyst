@@ -845,12 +845,12 @@ export const categoryConfig = {
                 // NOTE: cartService.addItem() already dispatches cartUpdated event, no need to duplicate
 
                 // Track add to cart event
-                if (window.catalyst?.trackAddToCart) {
-                  window.catalyst.trackAddToCart(product, 1);
+                if (window.daino?.trackAddToCart) {
+                  window.daino.trackAddToCart(product, 1);
                 }
 
                 // Show success message
-                const currentLang = localStorage.getItem('catalyst_language') || 'en';
+                const currentLang = localStorage.getItem('daino_language') || 'en';
                 const successMessage = variableContext?.translations?.['common.added_to_cart']
                   || variableContext?.settings?.ui_translations?.[currentLang]?.common?.added_to_cart
                   || variableContext?.settings?.ui_translations?.en?.common?.added_to_cart
@@ -866,7 +866,7 @@ export const categoryConfig = {
               }
             } catch (error) {
               console.error('Failed to add to cart:', error);
-              const currentLang = localStorage.getItem('catalyst_language') || 'en';
+              const currentLang = localStorage.getItem('daino_language') || 'en';
               const errorMessage = variableContext?.translations?.['common.error_adding_to_cart']
                 || variableContext?.settings?.ui_translations?.[currentLang]?.common?.error_adding_to_cart
                 || variableContext?.settings?.ui_translations?.en?.common?.error_adding_to_cart
@@ -1035,12 +1035,12 @@ export const categoryConfig = {
                 // NOTE: cartService.addItem() already dispatches cartUpdated event
 
                 // Track add to cart event
-                if (window.catalyst?.trackAddToCart) {
-                  window.catalyst.trackAddToCart({ id: productId, name: productName, price: productPrice }, 1);
+                if (window.daino?.trackAddToCart) {
+                  window.daino.trackAddToCart({ id: productId, name: productName, price: productPrice }, 1);
                 }
 
                 // Show success message
-                const currentLang = localStorage.getItem('catalyst_language') || 'en';
+                const currentLang = localStorage.getItem('daino_language') || 'en';
                 const successMessage = variableContext?.translations?.['common.added_to_cart']
                   || variableContext?.settings?.ui_translations?.[currentLang]?.common?.added_to_cart
                   || variableContext?.settings?.ui_translations?.en?.common?.added_to_cart
@@ -1056,7 +1056,7 @@ export const categoryConfig = {
               }
             } catch (error) {
               console.error('Failed to add to cart:', error);
-              const currentLang = localStorage.getItem('catalyst_language') || 'en';
+              const currentLang = localStorage.getItem('daino_language') || 'en';
               const errorMessage = variableContext?.translations?.['common.error_adding_to_cart']
                 || variableContext?.settings?.ui_translations?.[currentLang]?.common?.error_adding_to_cart
                 || variableContext?.settings?.ui_translations?.en?.common?.error_adding_to_cart

@@ -1,7 +1,7 @@
 {
-  "name": "catalyst-monitoring-dashboard",
+  "name": "daino-monitoring-dashboard",
   "version": "1.0.0",
-  "description": "Real-time monitoring dashboard for Catalyst e-commerce platform deployed on Vercel",
+  "description": "Real-time monitoring dashboard for Daino e-commerce platform deployed on Vercel",
   "type": "module",
   "scripts": {
     "dev": "next dev",

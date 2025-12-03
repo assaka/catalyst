@@ -10,7 +10,7 @@
 
 **Open in Firefox:**
 ```
-https://catalyst-backend-fzhu.onrender.com/api/cache-test/test
+https://daino.onrender.com/api/cache-test/test
 ```
 
 You'll see JSON like:
@@ -64,7 +64,7 @@ Response Headers:
 
 **Step 1:** In Firefox, open:
 ```
-https://catalyst-backend-fzhu.onrender.com/api/public/products?limit=5
+https://daino.onrender.com/api/public/products?limit=5
 ```
 
 **Step 2:** F12 → Network tab → Reload (Ctrl+R)
@@ -89,7 +89,7 @@ x-cache: HIT   (cached!)
 
 **Open this URL:**
 ```
-https://catalyst-backend-fzhu.onrender.com/health/cache
+https://daino.onrender.com/health/cache
 ```
 
 **Before using cache:**
@@ -156,19 +156,19 @@ Right Panel (after clicking):
 **Check 1: Is backend deployed?**
 ```bash
 # Check deployment status
-# Go to: dashboard.render.com → catalyst-backend → Events
+# Go to: dashboard.render.com → daino-backend → Events
 # Should show: "Deploy live" (green checkmark)
 ```
 
 **Check 2: Is Redis connected?**
 ```
-Visit: https://catalyst-backend-fzhu.onrender.com/health/cache
+Visit: https://daino.onrender.com/health/cache
 Should show: "connected": true
 ```
 
 **Check 3: Check backend logs**
 ```
-Render Dashboard → catalyst-backend → Logs
+Render Dashboard → daino-backend → Logs
 Look for:
   ✅ Redis: Connected successfully
   ❌ Error loading cache middleware
@@ -199,7 +199,7 @@ If it doesn't, cache middleware isn't loading
 
 After 5 minutes, do this:
 
-- [ ] Visit: https://catalyst-backend-fzhu.onrender.com/api/cache-test/test
+- [ ] Visit: https://daino.onrender.com/api/cache-test/test
 - [ ] F12 → Network tab → Reload
 - [ ] Click "test" request → Headers
 - [ ] Look for `x-cache: MISS`
@@ -234,7 +234,7 @@ After 5 minutes, do this:
 3. ✅ Check Render logs for "Cache hit" messages
 
 **If cache doesn't work:**
-1. Share the error from Render logs (catalyst-backend → Logs)
+1. Share the error from Render logs (daino-backend → Logs)
 2. Check if Redis is connected (/health/cache)
 3. I'll help debug
 
@@ -242,5 +242,5 @@ After 5 minutes, do this:
 
 **Set a timer for 5 minutes, then test the cache endpoint!** ⏰
 
-🔗 Test URL: https://catalyst-backend-fzhu.onrender.com/api/cache-test/test
+🔗 Test URL: https://daino.onrender.com/api/cache-test/test
 

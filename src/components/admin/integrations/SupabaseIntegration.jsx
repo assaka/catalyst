@@ -563,7 +563,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                 <ol className="list-decimal list-inside space-y-1">
                   <li>Go to <a href="https://supabase.com/dashboard/account/apps" target="_blank" rel="noopener noreferrer" className="underline">Supabase OAuth Apps</a></li>
                   <li>Create a new OAuth application</li>
-                  <li>Set redirect URL to: <code className="bg-yellow-100 px-1">https://catalyst-backend-fzhu.onrender.com/api/supabase/callback</code></li>
+                  <li>Set redirect URL to: <code className="bg-yellow-100 px-1">https://daino.onrender.com/api/supabase/callback</code></li>
                   <li>Add the credentials to your server environment</li>
                 </ol>
               </div>
@@ -682,7 +682,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                   Authorization May Still Be Active
                 </h4>
                 <p className="text-sm text-orange-700 mb-3">
-                  You disconnected Catalyst from Supabase, but the app may still be authorized in your Supabase account.
+                  You disconnected DainoStore from Supabase, but the app may still be authorized in your Supabase account.
                 </p>
                 <div className="space-y-2">
                   <p className="text-sm text-orange-700">
@@ -690,7 +690,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
                   </p>
                   <ol className="text-sm text-orange-700 list-decimal list-inside space-y-1">
                     <li>Go to <a href="https://supabase.com/dashboard/account/apps" target="_blank" rel="noopener noreferrer" className="underline">Supabase Authorized Apps</a></li>
-                    <li>Find "Catalyst" in the list</li>
+                    <li>Find "DainoStore" in the list</li>
                     <li>Click "Revoke Access"</li>
                   </ol>
                 </div>
@@ -1224,7 +1224,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
 
             <div className="text-xs text-gray-500 max-w-md mx-auto">
               <p>
-                By connecting, you authorize Catalyst to access your Supabase project for 
+                By connecting, you authorize DainoStore to access your Supabase project for
                 database operations and file storage management.
               </p>
             </div>

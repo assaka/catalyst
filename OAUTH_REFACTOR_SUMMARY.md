@@ -108,7 +108,7 @@ This will show exactly where the connection check fails.
 
 ### Check Render Logs:
 1. Go to https://dashboard.render.com
-2. Select `catalyst-backend` service
+2. Select `daino-backend` service
 3. Click "Logs" tab
 4. Access Media Storage page in your app
 5. Look for `[getConnectionStatus]` logs

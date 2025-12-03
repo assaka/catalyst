@@ -15,25 +15,25 @@ We're using a **hybrid approach** that combines:
 │                     Render.com Services                      │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
-│  catalyst-backend (web)                                      │
+│  daino-backend (web)                                      │
 │  ├─ Handles HTTP requests                                    │
 │  ├─ Creates jobs in database                                 │
 │  ├─ Returns immediately to user                              │
 │  └─ Uses Redis for caching (session, cache, etc.)           │
 │                                                               │
-│  catalyst-redis (database/redis)                             │
+│  daino-redis (database/redis)                             │
 │  ├─ Session storage                                          │
 │  ├─ Application caching                                      │
 │  └─ Ready for BullMQ if needed later                         │
 │                                                               │
-│  catalyst-translation-processor (cron) ← NEW                 │
+│  daino-translation-processor (cron) ← NEW                 │
 │  ├─ Runs every minute (* * * * *)                            │
 │  ├─ Checks database for pending translation jobs             │
 │  ├─ Processes one job per run                                │
 │  ├─ Sends email when complete                                │
 │  └─ Exits after 50 seconds                                   │
 │                                                               │
-│  catalyst-daily-credit-deduction (cron)                      │
+│  daino-daily-credit-deduction (cron)                      │
 │  ├─ Runs once daily at midnight                              │
 │  └─ Deducts credits from stores                              │
 │                                                               │
@@ -43,12 +43,12 @@ We're using a **hybrid approach** that combines:
 ## What Changed
 
 ### Removed:
-- ❌ `catalyst-background-worker` (worker service)
+- ❌ `daino-background-worker` (worker service)
 - ❌ BullMQ job queue processing
 - ❌ Real-time progress updates
 
 ### Added:
-- ✅ `catalyst-translation-processor` (cron running every minute)
+- ✅ `daino-translation-processor` (cron running every minute)
 - ✅ Database-driven job queue
 - ✅ Email notifications on completion
 
@@ -62,11 +62,11 @@ We're using a **hybrid approach** that combines:
 
 | Service | Type | Cost |
 |---------|------|------|
-| catalyst-backend | Web | Included in free tier |
-| catalyst-redis | Redis | $0 (free tier) |
-| catalyst-translation-processor | Cron (every min) | ~$0.82/mo |
-| catalyst-daily-credit-deduction | Cron (daily) | ~$0/mo |
-| ~~catalyst-background-worker~~ | ~~Worker~~ | ~~$7/mo~~ **REMOVED** |
+| daino-backend | Web | Included in free tier |
+| daino-redis | Redis | $0 (free tier) |
+| daino-translation-processor | Cron (every min) | ~$0.82/mo |
+| daino-daily-credit-deduction | Cron (daily) | ~$0/mo |
+| ~~daino-background-worker~~ | ~~Worker~~ | ~~$7/mo~~ **REMOVED** |
 | **Total** | | **~$0.82/month** |
 
 **Savings: $6.18/month (88% reduction)**
@@ -181,7 +181,7 @@ BullMQ: Redis connection established
 SELECT * FROM jobs WHERE type='translation:ui-labels:bulk' ORDER BY created_at DESC LIMIT 1;
 
 # Wait ~60 seconds
-# Check cron logs: catalyst-translation-processor → Logs
+# Check cron logs: daino-translation-processor → Logs
 # Should see: "Processing job X..."
 
 # Check database again - status should be 'completed'
@@ -197,7 +197,7 @@ SELECT * FROM jobs WHERE type='translation:ui-labels:bulk' ORDER BY created_at D
 
 ### Check Cron Status:
 ```
-Render Dashboard → catalyst-translation-processor → Logs
+Render Dashboard → daino-translation-processor → Logs
 
 Expected every minute:
 🔍 Checking for pending translation jobs...
@@ -233,13 +233,13 @@ WHERE type = 'translation:ui-labels:bulk'
 ```yaml
 # Process imports every 5 minutes
 - type: cron
-  name: catalyst-import-processor
+  name: daino-import-processor
   schedule: "*/5 * * * *"
   startCommand: node scripts/process-import-jobs.cjs
 
 # Process exports every 5 minutes
 - type: cron
-  name: catalyst-export-processor
+  name: daino-export-processor
   schedule: "*/5 * * * *"
   startCommand: node scripts/process-export-jobs.cjs
 ```
@@ -249,7 +249,7 @@ WHERE type = 'translation:ui-labels:bulk'
 Simply uncomment in render.yaml:
 ```yaml
 - type: worker
-  name: catalyst-background-worker
+  name: daino-background-worker
   env: node
   rootDir: backend
   buildCommand: npm install

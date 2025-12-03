@@ -108,7 +108,7 @@ Perceived: Faster (content appears sooner)
 ### Check Render Logs:
 
 1. Go to Render Dashboard
-2. catalyst-backend → **Logs** tab
+2. daino-backend → **Logs** tab
 3. Look for:
    ```
    ❌ Error loading cache middleware

@@ -39,7 +39,7 @@ class PluginAIService {
    * - Code patterns (migrations, API endpoints)
    *
    * The fetched context is injected into the system prompt, so the AI knows:
-   * - How Catalyst plugins work (architecture)
+   * - How DainoStore plugins work (architecture)
    * - What similar plugins look like (examples)
    * - How to implement specific features (patterns)
    *
@@ -61,7 +61,7 @@ class PluginAIService {
   async generatePlugin(mode, userPrompt, context = {}) {
     // ⚡ RAG: Fetch relevant context from database (5 docs + 3 examples + 5 patterns)
     // This gives the AI knowledge about:
-    // - How to build Catalyst plugins (docs)
+    // - How to build DainoStore plugins (docs)
     // - Similar working plugins (examples)
     // - Code snippets for specific tasks (patterns)
     const dynamicContext = await aiContextService.getContextForQuery({
@@ -148,7 +148,7 @@ Focus on practical, actionable advice.`
    *
    * This context is injected BEFORE the base prompt, so the AI has all the
    * knowledge it needs about:
-   * - How Catalyst plugins are structured
+   * - How DainoStore plugins are structured
    * - What similar plugins look like
    * - How to implement specific features
    *
@@ -308,7 +308,7 @@ async registerRoutes() {
 \`\`\`
 `;
 
-    const basePrompt = `You are an intelligent AI assistant for the Catalyst e-commerce plugin builder.
+    const basePrompt = `You are an intelligent AI assistant for the DainoStore e-commerce plugin builder.
 You can have conversations, answer questions, AND generate plugins when needed.
 
 ${pluginArchitectureContext}`;
@@ -405,7 +405,7 @@ YOUR CAPABILITIES:
 2. Help users configure features step-by-step
 3. Explain technical concepts in simple terms
 4. Suggest best practices and improvements
-5. Generate plugin code following the Catalyst structure
+5. Generate plugin code following the DainoStore structure
 
 CONVERSATION GUIDELINES:
 - Be helpful and conversational
@@ -446,7 +446,7 @@ For code generation: Return ONLY valid JSON in this format:
   "generatedFiles": [
     {
       "name": "index.js",
-      "code": "// Complete plugin code following Catalyst structure"
+      "code": "// Complete plugin code following DainoStore structure"
     },
     {
       "name": "README.md",
@@ -457,7 +457,7 @@ For code generation: Return ONLY valid JSON in this format:
   "improvements": ["Suggested optimizations or enhancements"]
 }
 
-IMPORTANT: Always generate complete, production-ready plugins following the Catalyst Plugin architecture above.`
+IMPORTANT: Always generate complete, production-ready plugins following the DainoStore Plugin architecture above.`
     };
 
     return modePrompts[mode] || basePrompt;

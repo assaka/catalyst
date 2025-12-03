@@ -1,4 +1,4 @@
-# 🚀 Catalyst Monitoring Dashboard
+# 🚀 DainoStore Monitoring Dashboard
 
 **Real-time monitoring dashboard for your Render + Vercel + Supabase stack, deployed on Vercel.**
 
@@ -33,7 +33,7 @@ This is a **dedicated monitoring dashboard** that runs independently from your m
 
 ### 1. Quick Deploy
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/catalyst-monitoring-dashboard)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/daino-monitoring-dashboard)
 
 ### 2. Manual Deploy
 
@@ -48,8 +48,8 @@ npm install
 npx vercel --prod
 
 # Set environment variables in Vercel dashboard:
-# - RENDER_BACKEND_URL=https://catalyst-backend-fzhu.onrender.com  
-# - VERCEL_FRONTEND_URL=https://catalyst-pearl.vercel.app
+# - RENDER_BACKEND_URL=https://daino.onrender.com  
+# - VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app
 ```
 
 ### 3. Environment Variables
@@ -57,8 +57,8 @@ npx vercel --prod
 Set these in your Vercel dashboard:
 
 ```bash
-RENDER_BACKEND_URL=https://catalyst-backend-fzhu.onrender.com
-VERCEL_FRONTEND_URL=https://catalyst-pearl.vercel.app
+RENDER_BACKEND_URL=https://daino.onrender.com
+VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app
 MONITORING_ENABLED=true
 ```
 

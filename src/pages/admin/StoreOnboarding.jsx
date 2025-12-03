@@ -397,7 +397,7 @@ export default function StoreOnboarding() {
                   className="mt-2 font-mono"
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  {storeData.slug || 'your-store'}.catalyst.com
+                  {storeData.slug || 'your-store'}.daino.com
                 </p>
               </div>
 

@@ -1,7 +1,7 @@
-# Catalyst AI Studio - Future Implementation TODO
+# DainoStore AI Studio - Future Implementation TODO
 
 ## 🎯 Overview
-This document tracks future implementation tasks for Catalyst AI Studio features that will be built after the core plugin architecture is complete.
+This document tracks future implementation tasks for DainoStore AI Studio features that will be built after the core plugin architecture is complete.
 
 ---
 
@@ -243,7 +243,7 @@ router.get('/preview/:storeId', async (req, res) => {
 ```javascript
 // Deploy to temporary URL for preview
 POST /api/ai/code/:id/deploy-preview
-  → Creates temporary URL: preview-abc123.catalyst.dev
+  → Creates temporary URL: preview-abc123.daino.dev
   → Deploys code to preview environment
   → Returns URL
 
@@ -384,7 +384,7 @@ class PreviewService {
       <Card className="p-6 shadow-2xl">
         <div className="flex items-center gap-2 mb-4 pb-4 border-b">
           <Wand2 className="h-5 w-5 text-purple-600" />
-          <h3 className="font-semibold">Catalyst AI Studio</h3>
+          <h3 className="font-semibold">DainoStore AI Studio</h3>
         </div>
 
         <div className="space-y-3 mb-4">
@@ -503,7 +503,7 @@ class PreviewService {
 <section className="py-20">
   <div className="max-w-6xl mx-auto px-4">
     <h2 className="text-3xl font-bold text-center mb-12">
-      Why Catalyst AI?
+      Why DainoStore AI?
     </h2>
 
     <div className="overflow-x-auto">
@@ -513,7 +513,7 @@ class PreviewService {
             <th className="text-left p-4">Feature</th>
             <th className="text-center p-4">Lovable</th>
             <th className="text-center p-4">Bolt</th>
-            <th className="text-center p-4 bg-purple-50">Catalyst AI</th>
+            <th className="text-center p-4 bg-purple-50">DainoStore AI</th>
           </tr>
         </thead>
         <tbody>
@@ -624,7 +624,7 @@ class PreviewService {
 ## 🔗 Related Documents
 
 - `CATALYST_AI_USP.md` - Marketing & positioning
-- `src/components/admin/CatalystAIStudio.jsx` - UI component
+- `src/components/admin/DainoStoreAIStudio.jsx` - UI component
 - `backend/src/services/translation-service.js` - Translation AI (already integrated)
 
 ---

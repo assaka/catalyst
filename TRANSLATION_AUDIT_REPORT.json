@@ -12,9 +12,9 @@
       "fallbackValue": null,
       "usageCount": 5,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/admin-client.js",
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/client.js",
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/client.js"
+        "C:/Users/info/PhpstormProjects/daino/src/api/admin-client.js",
+        "C:/Users/info/PhpstormProjects/daino/src/api/client.js",
+        "C:/Users/info/PhpstormProjects/daino/src/api/client.js"
       ]
     },
     {
@@ -22,8 +22,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/admin-client.js",
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/entities.js"
+        "C:/Users/info/PhpstormProjects/daino/src/api/admin-client.js",
+        "C:/Users/info/PhpstormProjects/daino/src/api/entities.js"
       ]
     },
     {
@@ -31,9 +31,9 @@
       "fallbackValue": null,
       "usageCount": 6,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/admin-entities.js",
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/admin-entities.js",
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/client.js"
+        "C:/Users/info/PhpstormProjects/daino/src/api/admin-entities.js",
+        "C:/Users/info/PhpstormProjects/daino/src/api/admin-entities.js",
+        "C:/Users/info/PhpstormProjects/daino/src/api/client.js"
       ]
     },
     {
@@ -41,7 +41,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/client.js"
+        "C:/Users/info/PhpstormProjects/daino/src/api/client.js"
       ]
     },
     {
@@ -49,7 +49,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/entities.js"
+        "C:/Users/info/PhpstormProjects/daino/src/api/entities.js"
       ]
     },
     {
@@ -57,7 +57,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/entities.js"
+        "C:/Users/info/PhpstormProjects/daino/src/api/entities.js"
       ]
     },
     {
@@ -65,9 +65,9 @@
       "fallbackValue": null,
       "usageCount": 23,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/entities.js",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/ProductImageUpload.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/ProductImageUpload.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/api/entities.js",
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/ProductImageUpload.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/ProductImageUpload.jsx"
       ]
     },
     {
@@ -75,7 +75,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/functions.js"
+        "C:/Users/info/PhpstormProjects/daino/src/api/functions.js"
       ]
     },
     {
@@ -83,7 +83,7 @@
       "fallbackValue": "cart/clear",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/api/storefront-entities.js"
+        "C:/Users/info/PhpstormProjects/daino/src/api/storefront-entities.js"
       ]
     },
     {
@@ -91,9 +91,9 @@
       "fallbackValue": null,
       "usageCount": 12,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/App.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/App.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/SeoHeadManager.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/App.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/App.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/SeoHeadManager.jsx"
       ]
     },
     {
@@ -101,9 +101,9 @@
       "fallbackValue": null,
       "usageCount": 17,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/App.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/App.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/App.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/App.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/EditorSidebar.jsx"
       ]
     },
     {
@@ -111,8 +111,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/App.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/ResponsiveIframe.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/App.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/ResponsiveIframe.jsx"
       ]
     },
     {
@@ -120,9 +120,9 @@
       "fallbackValue": null,
       "usageCount": 7,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/ab-testing/ABTestEditor.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/ab-testing/ABTestEditor.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/ab-testing/ABTestEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/ab-testing/ABTestEditor.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/ab-testing/ABTestEditor.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/ab-testing/ABTestEditor.jsx"
       ]
     },
     {
@@ -130,7 +130,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/BulkTranslateDialog.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/BulkTranslateDialog.jsx"
       ]
     },
     {
@@ -138,7 +138,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/BulkTranslateDialog.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/BulkTranslateDialog.jsx"
       ]
     },
     {
@@ -146,9 +146,9 @@
       "fallbackValue": null,
       "usageCount": 8,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/BulkTranslateDialog.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/BulkTranslateDialog.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/MultiEntityTranslateDialog.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/BulkTranslateDialog.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/BulkTranslateDialog.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/MultiEntityTranslateDialog.jsx"
       ]
     },
     {
@@ -156,7 +156,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/CloudflareCDN.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/CloudflareCDN.jsx"
       ]
     },
     {
@@ -164,8 +164,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/CloudflareCDN.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/CloudflareCDN.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/shared/AuthMiddleware.jsx"
       ]
     },
     {
@@ -173,7 +173,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/CloudflareCDN.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/CloudflareCDN.jsx"
       ]
     },
     {
@@ -181,7 +181,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/CloudflareCDN.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/CloudflareCDN.jsx"
       ]
     },
     {
@@ -189,9 +189,9 @@
       "fallbackValue": null,
       "usageCount": 4,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/cms/MediaBrowser.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/integrations/SupabaseIntegration.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/ui/FilePickerModal.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/cms/MediaBrowser.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/integrations/SupabaseIntegration.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/ui/FilePickerModal.jsx"
       ]
     },
     {
@@ -199,9 +199,9 @@
       "fallbackValue": null,
       "usageCount": 17,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/coupons/CouponForm.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/coupons/CouponForm.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/heatmap/HeatmapVisualization.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/coupons/CouponForm.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/coupons/CouponForm.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/heatmap/HeatmapVisualization.jsx"
       ]
     },
     {
@@ -209,8 +209,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/heatmap/HeatmapVisualization.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/heatmap/HeatmapVisualization.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/heatmap/HeatmapVisualization.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/heatmap/HeatmapVisualization.jsx"
       ]
     },
     {
@@ -218,7 +218,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/heatmap/HeatmapVisualization.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/heatmap/HeatmapVisualization.jsx"
       ]
     },
     {
@@ -226,9 +226,9 @@
       "fallbackValue": null,
       "usageCount": 8,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/heatmap/HeatmapVisualization.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/VersionCompareModal.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AnalyticsSettings.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/heatmap/HeatmapVisualization.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/ai-studio/VersionCompareModal.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/AnalyticsSettings.jsx"
       ]
     },
     {
@@ -236,7 +236,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/heatmap/HeatmapVisualization.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/heatmap/HeatmapVisualization.jsx"
       ]
     },
     {
@@ -244,9 +244,9 @@
       "fallbackValue": null,
       "usageCount": 5,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/integrations/SupabaseIntegration.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/store/StoreSetupWizard.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/store/StoreSetupWizard.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/integrations/SupabaseIntegration.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/store/StoreSetupWizard.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/store/StoreSetupWizard.jsx"
       ]
     },
     {
@@ -254,7 +254,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/integrations/SupabaseIntegration.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/integrations/SupabaseIntegration.jsx"
       ]
     },
     {
@@ -262,8 +262,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/integrations/SupabaseIntegration.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/ui/FilePickerModal.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/integrations/SupabaseIntegration.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/ui/FilePickerModal.jsx"
       ]
     },
     {
@@ -271,7 +271,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/MultiEntityTranslateDialog.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/MultiEntityTranslateDialog.jsx"
       ]
     },
     {
@@ -279,9 +279,9 @@
       "fallbackValue": null,
       "usageCount": 14,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/products/CustomOptionRuleForm.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/products/ProductOptionRuleForm.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/products/CustomOptionRuleForm.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/products/ProductOptionRuleForm.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/shared/AuthMiddleware.jsx"
       ]
     },
     {
@@ -289,9 +289,9 @@
       "fallbackValue": null,
       "usageCount": 9,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/products/ProductForm.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/FileTreeNavigator.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/FileTreeNavigator.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/products/ProductForm.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/FileTreeNavigator.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/FileTreeNavigator.jsx"
       ]
     },
     {
@@ -299,9 +299,9 @@
       "fallbackValue": null,
       "usageCount": 3,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/products/ProductForm.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/Layout.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/Layout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/products/ProductForm.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/Layout.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/Layout.jsx"
       ]
     },
     {
@@ -309,7 +309,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/QuickTranslateDialog.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/QuickTranslateDialog.jsx"
       ]
     },
     {
@@ -317,7 +317,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/admin/TranslationWizard.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/admin/TranslationWizard.jsx"
       ]
     },
     {
@@ -325,7 +325,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/ChatInterface.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/ai-studio/ChatInterface.jsx"
       ]
     },
     {
@@ -333,7 +333,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/ChatInterface.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/ai-studio/ChatInterface.jsx"
       ]
     },
     {
@@ -341,7 +341,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/ChatInterface.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/ai-studio/ChatInterface.jsx"
       ]
     },
     {
@@ -349,9 +349,9 @@
       "fallbackValue": null,
       "usageCount": 27,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/CodeEditor.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/CodeEditor.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/ai-studio/CodeEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/ai-studio/CodeEditor.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/ai-studio/CodeEditor.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/ai-studio/CodeEditor.jsx"
       ]
     },
     {
@@ -359,7 +359,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/FileTreeNavigator.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/FileTreeNavigator.jsx"
       ]
     },
     {
@@ -367,9 +367,9 @@
       "fallbackValue": null,
       "usageCount": 4,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/ResponsiveIframe.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/SlotComponents.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/SeoHeadManager.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/ResponsiveIframe.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/SlotComponents.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/SeoHeadManager.jsx"
       ]
     },
     {
@@ -377,9 +377,9 @@
       "fallbackValue": null,
       "usageCount": 23,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/AccountLoginSlotComponents.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/EditorSidebar.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/EditorSidebar.jsx"
       ]
     },
     {
@@ -387,7 +387,7 @@
       "fallbackValue": "Password must be at least 8 characters long",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/AccountLoginSlotComponents.jsx"
       ]
     },
     {
@@ -395,7 +395,7 @@
       "fallbackValue": "Password must contain at least one uppercase letter",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/AccountLoginSlotComponents.jsx"
       ]
     },
     {
@@ -403,7 +403,7 @@
       "fallbackValue": "Password must contain at least one lowercase letter",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/AccountLoginSlotComponents.jsx"
       ]
     },
     {
@@ -411,7 +411,7 @@
       "fallbackValue": "Password must contain at least one number",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/AccountLoginSlotComponents.jsx"
       ]
     },
     {
@@ -419,7 +419,7 @@
       "fallbackValue": "Password must contain at least one special character",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/AccountLoginSlotComponents.jsx"
       ]
     },
     {
@@ -427,7 +427,7 @@
       "fallbackValue": "Passwords do not match",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/AccountLoginSlotComponents.jsx"
       ]
     },
     {
@@ -435,7 +435,7 @@
       "fallbackValue": "Registration successful!",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/AccountLoginSlotComponents.jsx"
       ]
     },
     {
@@ -443,8 +443,8 @@
       "fallbackValue": "Registration failed. Please try again.",
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/AccountLoginSlotComponents.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/AccountLoginSlotComponents.jsx"
       ]
     },
     {
@@ -452,7 +452,7 @@
       "fallbackValue": "Creating Account...",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/AccountLoginSlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/AccountLoginSlotComponents.jsx"
       ]
     },
     {
@@ -460,7 +460,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/CategorySlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/CategorySlotComponents.jsx"
       ]
     },
     {
@@ -468,7 +468,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/CategorySlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/CategorySlotComponents.jsx"
       ]
     },
     {
@@ -476,7 +476,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/CategorySlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/CategorySlotComponents.jsx"
       ]
     },
     {
@@ -484,7 +484,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/EditorSidebar.jsx"
       ]
     },
     {
@@ -492,7 +492,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/EditorSidebar.jsx"
       ]
     },
     {
@@ -500,7 +500,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/EditorSidebar.jsx"
       ]
     },
     {
@@ -508,7 +508,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/EditorSidebar.jsx"
       ]
     },
     {
@@ -516,8 +516,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/EditorSidebar.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/EditorSidebar.jsx"
       ]
     },
     {
@@ -525,8 +525,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/EditorSidebar.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useSlotConfiguration.js"
       ]
     },
     {
@@ -534,7 +534,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/EditorSidebar.jsx"
       ]
     },
     {
@@ -542,8 +542,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/EditorSidebar.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/EditorSidebar.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/EditorSidebar.jsx"
       ]
     },
     {
@@ -551,7 +551,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/SlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/SlotComponents.jsx"
       ]
     },
     {
@@ -559,7 +559,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/SlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/SlotComponents.jsx"
       ]
     },
     {
@@ -567,7 +567,7 @@
       "fallbackValue": "New text content",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/SlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/SlotComponents.jsx"
       ]
     },
     {
@@ -575,8 +575,8 @@
       "fallbackValue": "Click me",
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/SlotComponents.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/SlotComponents.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useSlotConfiguration.js"
       ]
     },
     {
@@ -584,7 +584,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/UnifiedSlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/UnifiedSlotComponents.jsx"
       ]
     },
     {
@@ -592,7 +592,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/UnifiedSlotComponents.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/UnifiedSlotComponents.jsx"
       ]
     },
     {
@@ -600,7 +600,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/UnifiedSlotRenderer.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/UnifiedSlotRenderer.jsx"
       ]
     },
     {
@@ -608,7 +608,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/editor/slot/UnifiedSlotRenderer.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/editor/slot/UnifiedSlotRenderer.jsx"
       ]
     },
     {
@@ -616,7 +616,7 @@
       "fallbackValue": "error",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx"
       ]
     },
     {
@@ -624,7 +624,7 @@
       "fallbackValue": "success",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx"
       ]
     },
     {
@@ -632,7 +632,7 @@
       "fallbackValue": "error",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx"
       ]
     },
     {
@@ -640,8 +640,8 @@
       "fallbackValue": "error",
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx"
       ]
     },
     {
@@ -649,7 +649,7 @@
       "fallbackValue": "error",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx"
       ]
     },
     {
@@ -657,8 +657,8 @@
       "fallbackValue": "error",
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx"
       ]
     },
     {
@@ -666,7 +666,7 @@
       "fallbackValue": "error",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx"
       ]
     },
     {
@@ -674,7 +674,7 @@
       "fallbackValue": "error",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx"
       ]
     },
     {
@@ -682,7 +682,7 @@
       "fallbackValue": "error",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx"
       ]
     },
     {
@@ -690,7 +690,7 @@
       "fallbackValue": "error",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx"
       ]
     },
     {
@@ -698,7 +698,7 @@
       "fallbackValue": "error",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx"
       ]
     },
     {
@@ -706,7 +706,7 @@
       "fallbackValue": "error",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx"
       ]
     },
     {
@@ -714,7 +714,7 @@
       "fallbackValue": "info",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/plugins/DeveloperPluginEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/plugins/DeveloperPluginEditor.jsx"
       ]
     },
     {
@@ -722,7 +722,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/shared/AuthMiddleware.jsx"
       ]
     },
     {
@@ -730,7 +730,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/shared/AuthMiddleware.jsx"
       ]
     },
     {
@@ -738,7 +738,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/shared/AuthMiddleware.jsx"
       ]
     },
     {
@@ -746,7 +746,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/shared/AuthMiddleware.jsx"
       ]
     },
     {
@@ -754,7 +754,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/shared/AuthMiddleware.jsx"
       ]
     },
     {
@@ -762,8 +762,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/shared/AuthMiddleware.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/shared/AuthMiddleware.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/shared/AuthMiddleware.jsx"
       ]
     },
     {
@@ -771,7 +771,7 @@
       "fallbackValue": "Your cart is empty",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CartSlotRenderer.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/CartSlotRenderer.jsx"
       ]
     },
     {
@@ -779,7 +779,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CategorySlotRenderer.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/CategorySlotRenderer.jsx"
       ]
     },
     {
@@ -787,7 +787,7 @@
       "fallbackValue": "We use cookies to enhance your browsing experience.",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CookieConsentBanner.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/CookieConsentBanner.jsx"
       ]
     },
     {
@@ -795,7 +795,7 @@
       "fallbackValue": "Accept All",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CookieConsentBanner.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/CookieConsentBanner.jsx"
       ]
     },
     {
@@ -803,7 +803,7 @@
       "fallbackValue": "Reject All",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CookieConsentBanner.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/CookieConsentBanner.jsx"
       ]
     },
     {
@@ -811,7 +811,7 @@
       "fallbackValue": "Manage Preferences",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CookieConsentBanner.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/CookieConsentBanner.jsx"
       ]
     },
     {
@@ -819,7 +819,7 @@
       "fallbackValue": "Save Preferences",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CookieConsentBanner.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/CookieConsentBanner.jsx"
       ]
     },
     {
@@ -827,7 +827,7 @@
       "fallbackValue": "Privacy Policy",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/CookieConsentBanner.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/CookieConsentBanner.jsx"
       ]
     },
     {
@@ -835,7 +835,7 @@
       "fallbackValue": "Show Less",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/LayeredNavigation.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/LayeredNavigation.jsx"
       ]
     },
     {
@@ -843,7 +843,7 @@
       "fallbackValue": "more",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/LayeredNavigation.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/LayeredNavigation.jsx"
       ]
     },
     {
@@ -851,8 +851,8 @@
       "fallbackValue": "This product is currently out of stock.",
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/ProductItemCard.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/ProductItemCard.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/ProductItemCard.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/ProductItemCard.jsx"
       ]
     },
     {
@@ -860,7 +860,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/SeoHeadManager.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/SeoHeadManager.jsx"
       ]
     },
     {
@@ -868,8 +868,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/SeoHeadManager.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/SeoHeadManager.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/SeoHeadManager.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/SeoHeadManager.jsx"
       ]
     },
     {
@@ -877,9 +877,9 @@
       "fallbackValue": null,
       "usageCount": 4,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/SeoSettingsProvider.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/OrderSuccess.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/services/cartService.js"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/SeoSettingsProvider.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/OrderSuccess.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/services/cartService.js"
       ]
     },
     {
@@ -887,7 +887,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/storefront/StorefrontLayout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/storefront/StorefrontLayout.jsx"
       ]
     },
     {
@@ -895,7 +895,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/ui/FilePickerModal.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/ui/FilePickerModal.jsx"
       ]
     },
     {
@@ -903,8 +903,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/ui/resize-element-wrapper.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/components/ui/resize-element-wrapper.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/components/ui/resize-element-wrapper.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/components/ui/resize-element-wrapper.jsx"
       ]
     },
     {
@@ -912,7 +912,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/contexts/TranslationContext.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/contexts/TranslationContext.jsx"
       ]
     },
     {
@@ -920,9 +920,9 @@
       "fallbackValue": null,
       "usageCount": 4,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/contexts/TranslationContext.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/ThemeLayout.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/utils/translationUtils.js"
+        "C:/Users/info/PhpstormProjects/daino/src/contexts/TranslationContext.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/ThemeLayout.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/utils/translationUtils.js"
       ]
     },
     {
@@ -930,8 +930,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/contexts/TranslationContext.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/contexts/TranslationContext.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/contexts/TranslationContext.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/contexts/TranslationContext.jsx"
       ]
     },
     {
@@ -939,7 +939,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/core/monitoring/MigrationValidator.js"
+        "C:/Users/info/PhpstormProjects/daino/src/core/monitoring/MigrationValidator.js"
       ]
     },
     {
@@ -947,7 +947,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useABTest.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useABTest.jsx"
       ]
     },
     {
@@ -955,7 +955,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useABTest.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useABTest.jsx"
       ]
     },
     {
@@ -963,7 +963,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useABTest.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useABTest.jsx"
       ]
     },
     {
@@ -971,9 +971,9 @@
       "fallbackValue": null,
       "usageCount": 4,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useApiQueries.js",
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useApiQueries.js",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/CustomerDashboard.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useApiQueries.js",
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useApiQueries.js",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/CustomerDashboard.jsx"
       ]
     },
     {
@@ -981,7 +981,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useApiQueries.js"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useApiQueries.js"
       ]
     },
     {
@@ -989,7 +989,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useApiQueries.js"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useApiQueries.js"
       ]
     },
     {
@@ -997,8 +997,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useCookieConsent.js",
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useCookieConsent.js"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useCookieConsent.js",
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useCookieConsent.js"
       ]
     },
     {
@@ -1006,7 +1006,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useCookieConsent.js"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useCookieConsent.js"
       ]
     },
     {
@@ -1014,7 +1014,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useCookieConsent.js"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useCookieConsent.js"
       ]
     },
     {
@@ -1022,7 +1022,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useSlotConfiguration.js"
       ]
     },
     {
@@ -1030,8 +1030,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js",
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useSlotConfiguration.js",
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useSlotConfiguration.js"
       ]
     },
     {
@@ -1039,8 +1039,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/editor/CategorySlotsEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useSlotConfiguration.js",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/editor/CategorySlotsEditor.jsx"
       ]
     },
     {
@@ -1048,8 +1048,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/editor/ProductSlotsEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useSlotConfiguration.js",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/editor/ProductSlotsEditor.jsx"
       ]
     },
     {
@@ -1057,7 +1057,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useSlotConfiguration.js"
       ]
     },
     {
@@ -1065,7 +1065,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useSlotConfiguration.js"
       ]
     },
     {
@@ -1073,7 +1073,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useSlotConfiguration.js"
       ]
     },
     {
@@ -1081,7 +1081,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useSlotConfiguration.js"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useSlotConfiguration.js"
       ]
     },
     {
@@ -1089,7 +1089,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useUrlUtils.js"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useUrlUtils.js"
       ]
     },
     {
@@ -1097,7 +1097,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/hooks/useUrlUtils.js"
+        "C:/Users/info/PhpstormProjects/daino/src/hooks/useUrlUtils.js"
       ]
     },
     {
@@ -1105,7 +1105,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/ABTesting.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/ABTesting.jsx"
       ]
     },
     {
@@ -1113,7 +1113,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/ABTesting.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/ABTesting.jsx"
       ]
     },
     {
@@ -1121,7 +1121,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/AkeneoIntegration.jsx"
       ]
     },
     {
@@ -1129,7 +1129,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/AkeneoIntegration.jsx"
       ]
     },
     {
@@ -1137,7 +1137,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/AkeneoIntegration.jsx"
       ]
     },
     {
@@ -1145,7 +1145,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/AkeneoIntegration.jsx"
       ]
     },
     {
@@ -1153,7 +1153,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/AkeneoIntegration.jsx"
       ]
     },
     {
@@ -1161,7 +1161,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/AkeneoIntegration.jsx"
       ]
     },
     {
@@ -1169,7 +1169,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/AkeneoIntegration.jsx"
       ]
     },
     {
@@ -1177,7 +1177,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/AkeneoIntegration.jsx"
       ]
     },
     {
@@ -1185,7 +1185,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AkeneoIntegration.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/AkeneoIntegration.jsx"
       ]
     },
     {
@@ -1193,7 +1193,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/AnalyticsSettings.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/AnalyticsSettings.jsx"
       ]
     },
     {
@@ -1201,7 +1201,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomDomains.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/CustomDomains.jsx"
       ]
     },
     {
@@ -1209,7 +1209,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/CustomerActivity.jsx"
       ]
     },
     {
@@ -1217,7 +1217,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/CustomerActivity.jsx"
       ]
     },
     {
@@ -1225,7 +1225,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/CustomerActivity.jsx"
       ]
     },
     {
@@ -1233,7 +1233,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/CustomerActivity.jsx"
       ]
     },
     {
@@ -1241,7 +1241,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/CustomerActivity.jsx"
       ]
     },
     {
@@ -1249,7 +1249,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/CustomerActivity.jsx"
       ]
     },
     {
@@ -1257,7 +1257,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/CustomerActivity.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/CustomerActivity.jsx"
       ]
     },
     {
@@ -1265,7 +1265,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Customers.jsx"
       ]
     },
     {
@@ -1273,7 +1273,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Customers.jsx"
       ]
     },
     {
@@ -1281,8 +1281,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/EmailVerification.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Customers.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/EmailVerification.jsx"
       ]
     },
     {
@@ -1290,7 +1290,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Customers.jsx"
       ]
     },
     {
@@ -1298,7 +1298,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Customers.jsx"
       ]
     },
     {
@@ -1306,7 +1306,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Customers.jsx"
       ]
     },
     {
@@ -1314,7 +1314,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Customers.jsx"
       ]
     },
     {
@@ -1322,7 +1322,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Customers.jsx"
       ]
     },
     {
@@ -1330,7 +1330,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Customers.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Customers.jsx"
       ]
     },
     {
@@ -1338,7 +1338,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Dashboard.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Dashboard.jsx"
       ]
     },
     {
@@ -1346,7 +1346,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/DatabaseIntegrations.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/DatabaseIntegrations.jsx"
       ]
     },
     {
@@ -1354,7 +1354,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/DatabaseIntegrations.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/DatabaseIntegrations.jsx"
       ]
     },
     {
@@ -1362,7 +1362,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/DatabaseIntegrations.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/DatabaseIntegrations.jsx"
       ]
     },
     {
@@ -1370,7 +1370,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/DatabaseIntegrations.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/DatabaseIntegrations.jsx"
       ]
     },
     {
@@ -1378,7 +1378,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/DatabaseIntegrations.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/DatabaseIntegrations.jsx"
       ]
     },
     {
@@ -1386,7 +1386,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/FileLibrary.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/FileLibrary.jsx"
       ]
     },
     {
@@ -1394,7 +1394,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/MediaStorage.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/MediaStorage.jsx"
       ]
     },
     {
@@ -1402,7 +1402,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/MediaStorage.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/MediaStorage.jsx"
       ]
     },
     {
@@ -1410,7 +1410,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/MediaStorage.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/MediaStorage.jsx"
       ]
     },
     {
@@ -1418,7 +1418,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/MediaStorage.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/MediaStorage.jsx"
       ]
     },
     {
@@ -1426,7 +1426,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/MediaStorage.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/MediaStorage.jsx"
       ]
     },
     {
@@ -1434,7 +1434,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/NavigationManager.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/NavigationManager.jsx"
       ]
     },
     {
@@ -1442,7 +1442,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/NavigationManager.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/NavigationManager.jsx"
       ]
     },
     {
@@ -1450,8 +1450,8 @@
       "fallbackValue": "plugins",
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Plugins.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Plugins.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Plugins.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Plugins.jsx"
       ]
     },
     {
@@ -1459,7 +1459,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Plugins.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Plugins.jsx"
       ]
     },
     {
@@ -1467,7 +1467,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Plugins.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Plugins.jsx"
       ]
     },
     {
@@ -1475,7 +1475,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Plugins.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Plugins.jsx"
       ]
     },
     {
@@ -1483,7 +1483,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/RobotsTxt.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/RobotsTxt.jsx"
       ]
     },
     {
@@ -1491,7 +1491,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/ScheduledJobs.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/ScheduledJobs.jsx"
       ]
     },
     {
@@ -1499,7 +1499,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/SeoRobots.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/SeoRobots.jsx"
       ]
     },
     {
@@ -1507,8 +1507,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/SeoRobots.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/SeoRobots.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/SeoRobots.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/SeoRobots.jsx"
       ]
     },
     {
@@ -1516,7 +1516,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/SeoRobots.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/SeoRobots.jsx"
       ]
     },
     {
@@ -1524,7 +1524,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Stores.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Stores.jsx"
       ]
     },
     {
@@ -1532,7 +1532,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Stores.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Stores.jsx"
       ]
     },
     {
@@ -1540,7 +1540,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/Translations.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/Translations.jsx"
       ]
     },
     {
@@ -1548,7 +1548,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/admin/UptimeReport.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/admin/UptimeReport.jsx"
       ]
     },
     {
@@ -1556,7 +1556,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/editor/CategorySlotsEditor.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/editor/CategorySlotsEditor.jsx"
       ]
     },
     {
@@ -1564,7 +1564,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/Layout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/Layout.jsx"
       ]
     },
     {
@@ -1572,9 +1572,9 @@
       "fallbackValue": null,
       "usageCount": 3,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/Layout.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/Layout.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/CustomerDashboard.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/Layout.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/Layout.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/CustomerDashboard.jsx"
       ]
     },
     {
@@ -1582,7 +1582,7 @@
       "fallbackValue": "Failed to apply coupon. Please try again.",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Cart.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Cart.jsx"
       ]
     },
     {
@@ -1590,7 +1590,7 @@
       "fallbackValue": "My Cart",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Cart.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Cart.jsx"
       ]
     },
     {
@@ -1598,7 +1598,7 @@
       "fallbackValue": "Successfully logged in! Your cart has been updated.",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1606,7 +1606,7 @@
       "fallbackValue": "Successfully logged out. You can continue as a guest.",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1614,7 +1614,7 @@
       "fallbackValue": "Failed to log out. Please try again.",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1622,7 +1622,7 @@
       "fallbackValue": "Your cart is empty",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1630,7 +1630,7 @@
       "fallbackValue": "Payment",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1638,7 +1638,7 @@
       "fallbackValue": "Shipping",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1646,7 +1646,7 @@
       "fallbackValue": "Payment",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1654,7 +1654,7 @@
       "fallbackValue": "Logged in as",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1662,9 +1662,9 @@
       "fallbackValue": "Login",
       "usageCount": 3,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1672,7 +1672,7 @@
       "fallbackValue": "Street Address",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1680,7 +1680,7 @@
       "fallbackValue": "Enter coupon code",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1688,7 +1688,7 @@
       "fallbackValue": "Apply",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1696,7 +1696,7 @@
       "fallbackValue": "Order Summary",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1704,7 +1704,7 @@
       "fallbackValue": "each",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1712,7 +1712,7 @@
       "fallbackValue": "Discount",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1720,7 +1720,7 @@
       "fallbackValue": "Checkout",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1728,7 +1728,7 @@
       "fallbackValue": "Logging in...",
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Checkout.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Checkout.jsx"
       ]
     },
     {
@@ -1736,7 +1736,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/EmailVerification.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/EmailVerification.jsx"
       ]
     },
     {
@@ -1744,7 +1744,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Homepage.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Homepage.jsx"
       ]
     },
     {
@@ -1752,7 +1752,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/OrderSuccess.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/OrderSuccess.jsx"
       ]
     },
     {
@@ -1760,8 +1760,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/OrderSuccess.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/OrderSuccess.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/OrderSuccess.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/OrderSuccess.jsx"
       ]
     },
     {
@@ -1769,8 +1769,8 @@
       "fallbackValue": null,
       "usageCount": 2,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/OrderSuccess.jsx",
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/OrderSuccess.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/OrderSuccess.jsx",
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/OrderSuccess.jsx"
       ]
     },
     {
@@ -1778,7 +1778,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/ProductDetail.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/ProductDetail.jsx"
       ]
     },
     {
@@ -1786,7 +1786,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/ProductDetail.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/ProductDetail.jsx"
       ]
     },
     {
@@ -1794,7 +1794,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/pages/storefront/Storefront.jsx"
+        "C:/Users/info/PhpstormProjects/daino/src/pages/storefront/Storefront.jsx"
       ]
     },
     {
@@ -1802,7 +1802,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/services/cartService.js"
+        "C:/Users/info/PhpstormProjects/daino/src/services/cartService.js"
       ]
     },
     {
@@ -1810,7 +1810,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/services/pricingService.js"
+        "C:/Users/info/PhpstormProjects/daino/src/services/pricingService.js"
       ]
     },
     {
@@ -1818,7 +1818,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/services/slotConfigurationService.js"
+        "C:/Users/info/PhpstormProjects/daino/src/services/slotConfigurationService.js"
       ]
     },
     {
@@ -1826,7 +1826,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/services/slotConfigurationService.js"
+        "C:/Users/info/PhpstormProjects/daino/src/services/slotConfigurationService.js"
       ]
     },
     {
@@ -1834,7 +1834,7 @@
       "fallbackValue": null,
       "usageCount": 1,
       "files": [
-        "C:/Users/info/PhpstormProjects/catalyst/src/utils/aiService.js"
+        "C:/Users/info/PhpstormProjects/daino/src/utils/aiService.js"
       ]
     }
   ],

@@ -17,7 +17,7 @@ Complete setup guide for implementing the comprehensive testing and debugging st
 
 ```bash
 # Navigate to project root
-cd /path/to/catalyst
+cd /path/to/daino
 
 # Install main testing dependencies
 npm install --save-dev \
@@ -47,7 +47,7 @@ npx playwright install
 # Create testing environment file
 cat > .env.testing << EOF
 NODE_ENV=test
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/catalyst_test
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/daino_test
 API_BASE_URL=http://localhost:5000
 FRONTEND_URL=http://localhost:5173
 MONITORING_ENABLED=true
@@ -100,7 +100,7 @@ Add these scripts to your main `package.json`:
 
 ```bash
 # Create test database
-createdb catalyst_test
+createdb daino_test
 
 # Run migrations
 cd backend
@@ -406,10 +406,10 @@ npx playwright install
 pg_isready -h localhost -p 5432
 
 # Test connection
-psql postgresql://postgres:postgres@localhost:5432/catalyst_test -c "SELECT version();"
+psql postgresql://postgres:postgres@localhost:5432/daino_test -c "SELECT version();"
 
 # Reset database
-dropdb catalyst_test && createdb catalyst_test
+dropdb daino_test && createdb daino_test
 cd backend && NODE_ENV=test npm run migrate
 ```
 

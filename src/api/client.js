@@ -148,7 +148,7 @@ class ApiClient {
     }
 
     // Add X-Language header from localStorage
-    const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
+    const currentLanguage = localStorage.getItem('daino_language') || 'en';
     headers['X-Language'] = currentLanguage;
 
     // Add X-Store-Id header from localStorage (selected store)
@@ -171,7 +171,7 @@ class ApiClient {
     const url = this.buildUrl(publicEndpoint);
 
     // Add X-Language header from localStorage
-    const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
+    const currentLanguage = localStorage.getItem('daino_language') || 'en';
 
     const headers = {
       'Content-Type': 'application/json',

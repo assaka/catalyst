@@ -1,4 +1,4 @@
--- Complete Database Migration Script for Catalyst E-commerce Platform
+-- Complete Database Migration Script for DainoStore E-commerce Platform
 -- This script creates all tables based on the Sequelize models
 -- Updated: 2025-01-16
 -- Compatible with: Supabase PostgreSQL
@@ -540,13 +540,13 @@ CREATE TRIGGER update_custom_option_rules_updated_at BEFORE UPDATE ON custom_opt
 -- Insert default data
 INSERT INTO users (email, password, first_name, last_name, role, account_type, is_active, email_verified, credits) 
 VALUES 
-    ('admin@catalyst.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'User', 'admin', 'agency', true, true, 1000),
-    ('demo@catalyst.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Demo', 'User', 'store_owner', 'individual', true, true, 100)
+    ('admin@daino.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'User', 'admin', 'agency', true, true, 1000),
+    ('demo@daino.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Demo', 'User', 'store_owner', 'individual', true, true, 100)
 ON CONFLICT (email) DO NOTHING;
 
 -- Insert a demo store for testing
 INSERT INTO stores (name, slug, description, owner_email, is_active, theme_color, currency, timezone)
-VALUES ('Demo Store', 'demo-store', 'A demo store for testing purposes', 'demo@catalyst.com', true, '#3B82F6', 'USD', 'UTC')
+VALUES ('Demo Store', 'demo-store', 'A demo store for testing purposes', 'demo@daino.com', true, '#3B82F6', 'USD', 'UTC')
 ON CONFLICT (slug) DO NOTHING;
 
 -- Insert demo categories

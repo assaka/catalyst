@@ -1,7 +1,7 @@
 services:
   # Frontend Service
   - type: web
-    name: catalyst-frontend
+    name: daino-frontend
     env: node
     buildCommand: npm install && npm run build
     startCommand: npm run preview
@@ -9,18 +9,18 @@ services:
       - key: NODE_ENV
         value: production
       - key: VITE_API_BASE_URL
-        value: https://catalyst-backend-fzhu.onrender.com
+        value: https://daino.onrender.com
       - key: VITE_API_VERSION
         value: v1
       - key: VITE_APP_NAME
-        value: Catalyst
+        value: DainoStore
       - key: VITE_APP_DESCRIPTION
         value: Modern E-commerce Platform
     autoDeploy: true
 
   # Backend Service
   - type: web
-    name: catalyst-backend
+    name: daino-backend
     env: node
     rootDir: backend
     buildCommand: npm install
@@ -48,14 +48,14 @@ services:
         value: 24h
       # CORS Configuration
       - key: CORS_ORIGIN
-        value: https://catalyst-frontend-[GENERATED].onrender.com
+        value: https://daino-frontend-[GENERATED].onrender.com
       # Google OAuth Configuration
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_CALLBACK_URL
-        value: https://catalyst-backend-fzhu.onrender.com/api/auth/google/callback
+        value: https://daino.onrender.com/api/auth/google/callback
       # Session Configuration
       - key: SESSION_SECRET
         sync: false
@@ -70,7 +70,7 @@ services:
 
   # Dedicated Background Job Worker Service
   - type: worker
-    name: catalyst-background-worker
+    name: daino-background-worker
     env: node
     rootDir: backend
     buildCommand: npm install
@@ -108,7 +108,7 @@ services:
 
   # Daily Credit Deduction Cron Job (runs at midnight UTC daily)
   - type: cron
-    name: catalyst-daily-credit-deduction
+    name: daino-daily-credit-deduction
     env: node
     rootDir: backend
     schedule: "0 0 * * *"  # Every day at midnight UTC

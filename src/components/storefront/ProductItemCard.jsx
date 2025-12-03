@@ -221,8 +221,8 @@ const ProductItemCard = ({
       // CRITICAL: Use same success check as ProductDetail (result.success === true, not !== false)
       if (result.success) {
         // Track add to cart event
-        if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
-          window.catalyst.trackAddToCart(product, 1);
+        if (typeof window !== 'undefined' && window.daino?.trackAddToCart) {
+          window.daino.trackAddToCart(product, 1);
         }
 
         // Show flash message

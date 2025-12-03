@@ -2,7 +2,7 @@
 
 ## Phase 1 Implementation Complete! 🎉
 
-This guide will help you set up the master-tenant database architecture for Catalyst.
+This guide will help you set up the master-tenant database architecture for DainoStore.
 
 ---
 
@@ -49,7 +49,7 @@ This guide will help you set up the master-tenant database architecture for Cata
 1. Go to https://supabase.com/dashboard
 2. Click **"New Project"**
 3. Settings:
-   - **Name**: `catalyst-master-db`
+   - **Name**: `daino-master-db`
    - **Database Password**: Generate strong password
    - **Region**: Same as tenant DBs (e.g., `us-east-1`)
 4. Wait for provisioning (~2 minutes)

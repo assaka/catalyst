@@ -143,9 +143,9 @@ router.get('/render/:sessionId', async (req, res) => {
       res.setHeader('Expires', '0');
 
       // Add preview headers for debugging
-      res.setHeader('X-Catalyst-Preview', 'true');
-      res.setHeader('X-Catalyst-Session', sessionId);
-      res.setHeader('X-Catalyst-File', result.session.fileName);
+      res.setHeader('X-DainoStore-Preview', 'true');
+      res.setHeader('X-DainoStore-Session', sessionId);
+      res.setHeader('X-DainoStore-File', result.session.fileName);
 
       // Send the modified HTML content
       res.send(result.content);
@@ -157,7 +157,7 @@ router.get('/render/:sessionId', async (req, res) => {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Preview Error - Catalyst</title>
+          <title>Preview Error - DainoStore</title>
           <style>
             body {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;

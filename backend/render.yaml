@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: catalyst-backend
+    name: daino-backend
     env: node
     buildCommand: npm install
     startCommand: npm start
@@ -27,14 +27,14 @@ services:
         value: 24h
       # CORS Configuration
       - key: CORS_ORIGIN
-        value: https://catalyst-6va7w047u-hamids-projects-1928df2f.vercel.app
+        value: https://daino-6va7w047u-hamids-projects-1928df2f.vercel.app
       # Google OAuth Configuration
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_CALLBACK_URL
-        value: https://catalyst-backend-fzhu.onrender.com/api/auth/google/callback
+        value: https://daino.onrender.com/api/auth/google/callback
       # Session Configuration
       - key: SESSION_SECRET
         sync: false
@@ -49,7 +49,7 @@ services:
 
   # Dedicated Background Job Worker Service
   - type: worker
-    name: catalyst-background-worker
+    name: daino-background-worker
     env: node
     buildCommand: npm install
     startCommand: node worker.cjs

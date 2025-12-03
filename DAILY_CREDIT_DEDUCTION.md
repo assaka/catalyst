@@ -47,7 +47,7 @@ Automatically deducts 1 credit per day from every published store's owner.
 **Render Config:**
 ```yaml
 - type: worker
-  name: catalyst-background-worker
+  name: daino-background-worker
   startCommand: node worker.cjs
 ```
 
@@ -73,7 +73,7 @@ Automatically deducts 1 credit per day from every published store's owner.
 **Render Config:**
 ```yaml
 - type: cron
-  name: catalyst-daily-credit-deduction
+  name: daino-daily-credit-deduction
   schedule: "0 0 * * *"  # Midnight UTC daily
   startCommand: node scripts/run-daily-credit-deduction.js
 ```
@@ -85,12 +85,12 @@ Automatically deducts 1 credit per day from every published store's owner.
 ```yaml
 # Worker for Akeneo imports, plugins, etc.
 - type: worker
-  name: catalyst-background-worker
+  name: daino-background-worker
   startCommand: node worker.cjs
 
 # Cron for guaranteed daily billing
 - type: cron
-  name: catalyst-daily-credit-deduction
+  name: daino-daily-credit-deduction
   schedule: "0 0 * * *"
   startCommand: node scripts/run-daily-credit-deduction.js
 ```
@@ -129,12 +129,12 @@ node test-daily-credit-deduction.js
 
 **Via API (Admin only):**
 ```bash
-POST https://catalyst-backend-fzhu.onrender.com/api/credits/trigger-daily-deduction
+POST https://daino.onrender.com/api/credits/trigger-daily-deduction
 Authorization: Bearer <admin-token>
 ```
 
 **Via Render Dashboard:**
-1. Go to `catalyst-daily-credit-deduction` service
+1. Go to `daino-daily-credit-deduction` service
 2. Click **"Trigger Job"** button
 3. View logs to see results
 
@@ -143,7 +143,7 @@ Authorization: Bearer <admin-token>
 ### View Cron Job Logs
 
 1. Go to https://dashboard.render.com
-2. Click `catalyst-daily-credit-deduction`
+2. Click `daino-daily-credit-deduction`
 3. Click **"Logs"** tab
 
 **Expected output:**
@@ -224,12 +224,12 @@ schedule: "0 0,12 * * *"
 **Check 1: Is the cron job deployed?**
 ```bash
 # Render Dashboard > Services
-# You should see "catalyst-daily-credit-deduction"
+# You should see "daino-daily-credit-deduction"
 ```
 
 **Check 2: View logs**
 ```bash
-# Render Dashboard > catalyst-daily-credit-deduction > Logs
+# Render Dashboard > daino-daily-credit-deduction > Logs
 ```
 
 **Check 3: Check environment variables**

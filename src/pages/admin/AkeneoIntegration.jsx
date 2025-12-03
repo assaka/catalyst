@@ -385,7 +385,7 @@ const AkeneoIntegration = () => {
     setCustomMappings(prev => {
       const newMapping = {
         akeneoAttribute: '',
-        catalystField: '',
+        dainoField: '',
         enabled: true
       };
       
@@ -543,14 +543,14 @@ const AkeneoIntegration = () => {
         if (shouldUseDefaults) {
           const defaultMappings = {
             attributes: [
-              { akeneoAttribute: 'name', catalystField: 'name', enabled: true },
-              { akeneoAttribute: 'description', catalystField: 'description', enabled: true },
-              { akeneoAttribute: 'price', catalystField: 'price', enabled: true },
-              { akeneoAttribute: 'sku', catalystField: 'sku', enabled: true }
+              { akeneoAttribute: 'name', dainoField: 'name', enabled: true },
+              { akeneoAttribute: 'description', dainoField: 'description', enabled: true },
+              { akeneoAttribute: 'price', dainoField: 'price', enabled: true },
+              { akeneoAttribute: 'sku', dainoField: 'sku', enabled: true }
             ],
             images: [
-              { akeneoAttribute: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
-              { akeneoAttribute: 'gallery', catalystField: 'image_gallery', enabled: true, priority: 2 }
+              { akeneoAttribute: 'image', dainoField: 'main_image', enabled: true, priority: 1 },
+              { akeneoAttribute: 'gallery', dainoField: 'image_gallery', enabled: true, priority: 2 }
             ],
             files: []
           };
@@ -568,14 +568,14 @@ const AkeneoIntegration = () => {
       // Fall back to defaults on error
       const fallbackMappings = {
         attributes: [
-          { akeneoAttribute: 'name', catalystField: 'name', enabled: true },
-          { akeneoAttribute: 'description', catalystField: 'description', enabled: true },
-          { akeneoAttribute: 'price', catalystField: 'price', enabled: true },
-          { akeneoAttribute: 'sku', catalystField: 'sku', enabled: true }
+          { akeneoAttribute: 'name', dainoField: 'name', enabled: true },
+          { akeneoAttribute: 'description', dainoField: 'description', enabled: true },
+          { akeneoAttribute: 'price', dainoField: 'price', enabled: true },
+          { akeneoAttribute: 'sku', dainoField: 'sku', enabled: true }
         ],
         images: [
-          { akeneoAttribute: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
-          { akeneoAttribute: 'gallery', catalystField: 'image_gallery', enabled: true, priority: 2 }
+          { akeneoAttribute: 'image', dainoField: 'main_image', enabled: true, priority: 1 },
+          { akeneoAttribute: 'gallery', dainoField: 'image_gallery', enabled: true, priority: 2 }
         ],
         files: []
       };
@@ -1883,7 +1883,7 @@ const AkeneoIntegration = () => {
               Akeneo PIM Integration
             </h1>
             <p className="text-gray-600 mt-1">
-              Import categories and products from your Akeneo PIM system into Catalyst.
+              Import categories and products from your Akeneo PIM system into DainoStore.
             </p>
           </div>
         </div>
@@ -3229,7 +3229,7 @@ const AkeneoIntegration = () => {
                   <Separator />
                   <div className="space-y-4">
                     <h4 className="font-medium">Custom Field Mapping</h4>
-                    <p className="text-sm text-gray-600">Configure custom mappings between Akeneo and Catalyst fields</p>
+                    <p className="text-sm text-gray-600">Configure custom mappings between Akeneo and DainoStore fields</p>
                     
                     {/* Attribute Mapping */}
                     <div className="space-y-2">
@@ -3251,10 +3251,10 @@ const AkeneoIntegration = () => {
                                 setCustomMappings(prev => ({
                                   ...prev,
                                   attributes: [
-                                    { akeneoAttribute: 'name', catalystField: 'name', enabled: true },
-                                    { akeneoAttribute: 'description', catalystField: 'description', enabled: true },
-                                    { akeneoAttribute: 'price', catalystField: 'price', enabled: true },
-                                    { akeneoAttribute: 'sku', catalystField: 'sku', enabled: true }
+                                    { akeneoAttribute: 'name', dainoField: 'name', enabled: true },
+                                    { akeneoAttribute: 'description', dainoField: 'description', enabled: true },
+                                    { akeneoAttribute: 'price', dainoField: 'price', enabled: true },
+                                    { akeneoAttribute: 'sku', dainoField: 'sku', enabled: true }
                                   ]
                                 }));
                               }
@@ -3285,7 +3285,7 @@ const AkeneoIntegration = () => {
                             <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 mb-2 sticky top-0 bg-gray-50 pb-2">
                               <div className="col-span-1">#</div>
                               <div className="col-span-4">Akeneo Field</div>
-                              <div className="col-span-4">Catalyst Field</div>
+                              <div className="col-span-4">DainoStore Field</div>
                               <div className="col-span-2 text-center">Active</div>
                               <div className="col-span-1"></div>
                             </div>
@@ -3305,8 +3305,8 @@ const AkeneoIntegration = () => {
                                 <div className="col-span-4">
                                   <Input
                                     size="sm"
-                                    value={mapping.catalystField || ''}
-                                    onChange={(e) => updateMapping('attributes', index, 'catalystField', e.target.value)}
+                                    value={mapping.dainoField || ''}
+                                    onChange={(e) => updateMapping('attributes', index, 'dainoField', e.target.value)}
                                     placeholder="e.g. brand, color, size"
                                     className="h-8 text-xs"
                                     disabled={!mapping.enabled}
@@ -3374,8 +3374,8 @@ const AkeneoIntegration = () => {
                                 setCustomMappings(prev => ({
                                   ...prev,
                                   images: [
-                                    { akeneoAttribute: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
-                                    { akeneoAttribute: 'gallery', catalystField: 'image_gallery', enabled: true, priority: 2 }
+                                    { akeneoAttribute: 'image', dainoField: 'main_image', enabled: true, priority: 1 },
+                                    { akeneoAttribute: 'gallery', dainoField: 'image_gallery', enabled: true, priority: 2 }
                                   ]
                                 }));
                               }
@@ -3406,7 +3406,7 @@ const AkeneoIntegration = () => {
                             <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 mb-2 sticky top-0 bg-gray-50 pb-2">
                               <div className="col-span-1">#</div>
                               <div className="col-span-3">Akeneo Field</div>
-                              <div className="col-span-3">Catalyst Field</div>
+                              <div className="col-span-3">DainoStore Field</div>
                               <div className="col-span-2">Priority</div>
                               <div className="col-span-2 text-center">Active</div>
                               <div className="col-span-1"></div>
@@ -3427,8 +3427,8 @@ const AkeneoIntegration = () => {
                                 <div className="col-span-3">
                                   <Input
                                     size="sm"
-                                    value={mapping.catalystField || ''}
-                                    onChange={(e) => updateMapping('images', index, 'catalystField', e.target.value)}
+                                    value={mapping.dainoField || ''}
+                                    onChange={(e) => updateMapping('images', index, 'dainoField', e.target.value)}
                                     placeholder="e.g. main_image"
                                     className="h-8 text-xs"
                                     disabled={!mapping.enabled}
@@ -3495,8 +3495,8 @@ const AkeneoIntegration = () => {
                                 setCustomMappings(prev => ({
                                   ...prev,
                                   files: [
-                                    { akeneoAttribute: 'attachments', catalystField: 'files', enabled: true },
-                                    { akeneoAttribute: 'documents', catalystField: 'downloads', enabled: true }
+                                    { akeneoAttribute: 'attachments', dainoField: 'files', enabled: true },
+                                    { akeneoAttribute: 'documents', dainoField: 'downloads', enabled: true }
                                   ]
                                 }));
                               }
@@ -3527,7 +3527,7 @@ const AkeneoIntegration = () => {
                             <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 mb-2 sticky top-0 bg-gray-50 pb-2">
                               <div className="col-span-1">#</div>
                               <div className="col-span-4">Akeneo Field</div>
-                              <div className="col-span-4">Catalyst Field</div>
+                              <div className="col-span-4">DainoStore Field</div>
                               <div className="col-span-2 text-center">Active</div>
                               <div className="col-span-1"></div>
                             </div>
@@ -3547,8 +3547,8 @@ const AkeneoIntegration = () => {
                                 <div className="col-span-4">
                                   <Input
                                     size="sm"
-                                    value={mapping.catalystField || ''}
-                                    onChange={(e) => updateMapping('files', index, 'catalystField', e.target.value)}
+                                    value={mapping.dainoField || ''}
+                                    onChange={(e) => updateMapping('files', index, 'dainoField', e.target.value)}
                                     placeholder="e.g. product_files"
                                     className="h-8 text-xs"
                                     disabled={!mapping.enabled}

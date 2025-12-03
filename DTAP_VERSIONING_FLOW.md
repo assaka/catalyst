@@ -1,6 +1,6 @@
 # DTAP Versioning Flow for Slot Configurations
 
-This document outlines the enhanced Development, Test, Acceptance, Production (DTAP) workflow implemented for slot configurations in the Catalyst e-commerce platform.
+This document outlines the enhanced Development, Test, Acceptance, Production (DTAP) workflow implemented for slot configurations in the DainoStore e-commerce platform.
 
 ## 🎯 Overview
 

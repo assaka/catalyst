@@ -6,8 +6,8 @@ import util from 'util';
 
 const execPromise = util.promisify(exec);
 
-const FRONTEND_URL = 'https://catalyst-six-ashy.vercel.app';
-const BACKEND_URL = 'https://catalyst-backend-fzhu.onrender.com';
+const FRONTEND_URL = 'https://daino-six-ashy.vercel.app';
+const BACKEND_URL = 'https://daino.onrender.com';
 
 // Test functions
 async function testBackendHealth() {

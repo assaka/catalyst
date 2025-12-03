@@ -193,7 +193,7 @@ export function HeaderSlotRenderer({
                 <ShoppingBag className="h-6 md:h-8 w-6 md:w-8 text-blue-600" />
               )}
               <span className="text-base md:text-xl font-bold text-gray-800 truncate" style={{ color: styles?.color, fontSize: styles?.fontSize, fontWeight: styles?.fontWeight }}>
-                {store?.name || 'Catalyst'}
+                {store?.name || 'Daino'}
               </span>
             </Link>
           </div>
@@ -283,7 +283,7 @@ export function HeaderSlotRenderer({
               value={currentLanguage}
               onChange={(e) => {
                 const newLang = e.target.value;
-                localStorage.setItem('catalyst_language', newLang);
+                localStorage.setItem('daino_language', newLang);
                 // Reload page to fetch new translations
                 window.location.reload();
               }}

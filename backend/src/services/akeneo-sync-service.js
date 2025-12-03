@@ -296,13 +296,13 @@ class AkeneoSyncService {
             );
 
             if (processedImages.length > 0) {
-              // Convert to Catalyst format
-              const catalystImages = this.imageProcessor.convertToCatalystFormat(processedImages);
+              // Convert to DainoStore format
+              const dainoImages = this.imageProcessor.convertToDainoStoreFormat(processedImages);
 
               // Update product in tenant database
               const { error: updateError } = await tenantDb
                 .from('products')
-                .update({ images: catalystImages })
+                .update({ images: dainoImages })
                 .eq('id', product.id);
 
               if (updateError) {

@@ -1,10 +1,10 @@
-# Catalyst AI Studio - Unique Selling Proposition
+# DainoStore AI Studio - Unique Selling Proposition
 
 ## 🎯 Market Positioning
 
 ### **The Problem with Existing AI Builders**
 
-| Platform | Limitation | Catalyst Solution |
+| Platform | Limitation | DainoStore Solution |
 |----------|-----------|-------------------|
 | **Lovable.dev** | Generic web apps, no e-commerce focus | E-commerce specialized AI with built-in shopping features |
 | **Bolt.new** | Code-heavy, requires deployment | True no-code + instant deployment |
@@ -66,9 +66,9 @@ Time: 2 minutes
    Hire developer → Wait weeks → Pay $$$
 ```
 
-### **Scene 2: The Catalyst Way** (30 seconds)
+### **Scene 2: The DainoStore Way** (30 seconds)
 ```
-✓ Open Catalyst AI Studio
+✓ Open DainoStore AI Studio
 
 User: "Create a coffee shop store with dark brown theme,
        product subscriptions, and French translations"
@@ -91,7 +91,7 @@ AI: [2 minutes later]
 - Still need payment processor
 - Still need plugins
 
-### **Catalyst: $29/month (everything included)**
+### **DainoStore: $29/month (everything included)**
 - ✓ AI Builder
 - ✓ Hosting & CDN
 - ✓ Payment processing
@@ -149,7 +149,7 @@ AI: [2 minutes later]
 
 ### **Social Proof**
 ```
-"I built my store in 10 minutes with Catalyst AI.
+"I built my store in 10 minutes with DainoStore AI.
  Already made my first sale!"
  — Sarah J., Coffee Shop Owner
 ```
@@ -159,7 +159,7 @@ AI: [2 minutes later]
 ## 🏆 **Competitive Advantages**
 
 ### **1. E-Commerce Specialized**
-Unlike Lovable/Bolt (generic builders), Catalyst AI understands:
+Unlike Lovable/Bolt (generic builders), DainoStore AI understands:
 - Shopping carts & checkout flows
 - Product variants & inventory
 - Shipping calculations
@@ -176,7 +176,7 @@ Unlike Lovable/Bolt (generic builders), Catalyst AI understands:
 ### **3. All-In-One**
 ```
 Other platforms: Builder + Hosting + Payment + Plugins + Apps
-Catalyst: Everything in one platform
+DainoStore: Everything in one platform
 ```
 
 ### **4. AI That Actually Works**
@@ -190,13 +190,13 @@ Catalyst: Everything in one platform
 ## 📊 **Launch Strategy**
 
 ### **Phase 1: Product Hunt Launch**
-- **Title**: "Catalyst AI - Build Your Online Store in Minutes with AI"
+- **Title**: "DainoStore AI - Build Your Online Store in Minutes with AI"
 - **Tagline**: "The first AI that actually understands e-commerce"
 - **Demo**: Live video of building a store in 2 minutes
 
 ### **Phase 2: Content Marketing**
 - **Blog**: "We Built 1000 Stores with AI - Here's What We Learned"
-- **YouTube**: "Lovable vs Bolt vs Catalyst - AI Builder Comparison"
+- **YouTube**: "Lovable vs Bolt vs DainoStore - AI Builder Comparison"
 - **Twitter**: Daily AI store building demos
 
 ### **Phase 3: Partnerships**
@@ -214,7 +214,7 @@ Catalyst: Everything in one platform
 "I have a candle business. I want to sell online but
  I don't know how to code."
 
-[Opens Catalyst AI Studio]
+[Opens DainoStore AI Studio]
 
 User: "Create a cozy candle shop store with beige colors
        and natural photography style"
@@ -240,7 +240,7 @@ AI: "✓ Your store is live at yourcandles.com
 ```
 "I'm a developer. I want speed but also control."
 
-[Opens Catalyst AI Studio]
+[Opens DainoStore AI Studio]
 
 User: "Create a tech gadget store with dark mode,
        custom product filters, and Shopify import"
@@ -336,4 +336,4 @@ User: "Show code"
 **Remember**: We're not just building a store builder.
 We're building the future of e-commerce - where anyone can create a professional online business in minutes, not months.
 
-🚀 **Catalyst AI: Your Store, Your Way, Right Away**
+🚀 **DainoStore AI: Your Store, Your Way, Right Away**

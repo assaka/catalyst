@@ -160,8 +160,8 @@ export default function ProductDetail() {
       setCustomOptions(productData.customOptions || []);
 
       // Track product view with enhanced analytics
-      if (typeof window !== 'undefined' && window.catalyst?.trackProductView) {
-        window.catalyst.trackProductView(productData.product);
+      if (typeof window !== 'undefined' && window.daino?.trackProductView) {
+        window.daino.trackProductView(productData.product);
       }
 
       // Send Google Analytics 'view_item' event
@@ -629,8 +629,8 @@ export default function ProductDetail() {
 
       if (result.success) {
         // Track add to cart with enhanced analytics
-        if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
-          window.catalyst.trackAddToCart(product, quantity);
+        if (typeof window !== 'undefined' && window.daino?.trackAddToCart) {
+          window.daino.trackAddToCart(product, quantity);
         }
 
         // Send Google Analytics 'add_to_cart' event

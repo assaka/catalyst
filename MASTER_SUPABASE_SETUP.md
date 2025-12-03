@@ -49,7 +49,7 @@
 
 2. **Project Settings**
    ```
-   Name: catalyst-master
+   Name: daino-master
    Database Password: [Generate strong password - SAVE THIS!]
    Region: Choose closest to your servers
    Pricing Plan: Pro (recommended for production)
@@ -161,7 +161,7 @@ INTEGRATION_ENCRYPTION_KEY=[generate-random-32-char-string]
 SESSION_SECRET=[generate-random-32-char-string]
 
 # Frontend URL (for OAuth callbacks)
-FRONTEND_URL=https://catalyst-pearl.vercel.app
+FRONTEND_URL=https://daino-pearl.vercel.app
 ```
 
 **Generate Secure Keys:**
@@ -339,7 +339,7 @@ const { User, PlatformAdmin } = require('./src/models');
 
 async function createPlatformAdmin() {
   // Find or create user
-  const user = await User.findOne({ where: { email: 'admin@catalyst.com' } });
+  const user = await User.findOne({ where: { email: 'admin@daino.com' } });
 
   if (!user) {
     console.error('User not found. Create user first.');

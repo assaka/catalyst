@@ -1,7 +1,7 @@
 {
-  "name": "catalyst-backend",
+  "name": "daino-backend",
   "version": "1.0.3",
-  "description": "Backend API for Catalyst E-commerce Platform",
+  "description": "Backend API for DainoStore E-commerce Platform",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -84,6 +84,6 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "author": "Catalyst Team",
+  "author": "DainoStore Team",
   "license": "MIT"
 }

@@ -12,7 +12,7 @@
 ### Worker Service (`type: worker`)
 ```yaml
 - type: worker
-  name: catalyst-background-worker
+  name: daino-background-worker
   startCommand: node worker.cjs
 ```
 
@@ -41,7 +41,7 @@ Job arrives → Process it → Wait for next job → Repeat forever
 ### Cron Service (`type: cron`)
 ```yaml
 - type: cron
-  name: catalyst-daily-credit-deduction
+  name: daino-daily-credit-deduction
   schedule: "0 0 * * *"  # Daily at midnight
   startCommand: node scripts/run-daily-credit-deduction.js
 ```
@@ -127,23 +127,23 @@ Cost: 24 hours of compute per day for 2 minutes of work!
 │                     Render.com Services                      │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
-│  catalyst-backend (web)                                      │
+│  daino-backend (web)                                      │
 │  ├─ Handles HTTP requests                                    │
 │  ├─ Creates jobs in database + BullMQ                        │
 │  └─ Returns immediately to user                              │
 │                                                               │
-│  catalyst-redis (database/redis)                             │
+│  daino-redis (database/redis)                             │
 │  ├─ Stores BullMQ job queues                                 │
 │  ├─ Provides pub/sub for job events                          │
 │  └─ Persistent storage for job state                         │
 │                                                               │
-│  catalyst-background-worker (worker) ← YOU NEED THIS         │
+│  daino-background-worker (worker) ← YOU NEED THIS         │
 │  ├─ Runs 24/7, waiting for jobs                              │
 │  ├─ Connected to BullMQ/Redis                                │
 │  ├─ Processes on-demand jobs immediately                     │
 │  └─ Handles: translations, imports, exports, plugins         │
 │                                                               │
-│  catalyst-daily-credit-deduction (cron) ← KEEP THIS TOO      │
+│  daino-daily-credit-deduction (cron) ← KEEP THIS TOO      │
 │  ├─ Runs once daily at midnight                              │
 │  ├─ Deducts credits from stores                              │
 │  └─ Exits after completion                                   │
@@ -213,7 +213,7 @@ Cost: 24 hours of compute per day for 2 minutes of work!
 
 ## Cost Comparison
 
-### Worker Service (catalyst-background-worker)
+### Worker Service (daino-background-worker)
 ```
 Free Tier: 750 hours/month shared across all services
 Paid: $7/month (starter) for 24/7 uptime
@@ -242,13 +242,13 @@ Monthly Cost Breakdown:
 ```yaml
 # Worker for on-demand jobs
 - type: worker
-  name: catalyst-background-worker
+  name: daino-background-worker
   startCommand: node worker.cjs
   # Processes: translations, imports, exports, plugins
 
 # Cron for scheduled tasks
 - type: cron
-  name: catalyst-daily-credit-deduction
+  name: daino-daily-credit-deduction
   schedule: "0 0 * * *"
   startCommand: node scripts/run-daily-credit-deduction.js
 ```
@@ -257,19 +257,19 @@ Monthly Cost Breakdown:
 ```yaml
 # Cleanup old jobs (weekly)
 - type: cron
-  name: catalyst-cleanup-old-jobs
+  name: daino-cleanup-old-jobs
   schedule: "0 2 * * 0"  # Sundays at 2 AM
   startCommand: node scripts/cleanup-old-jobs.js
 
 # Database backup (daily)
 - type: cron
-  name: catalyst-database-backup
+  name: daino-database-backup
   schedule: "0 3 * * *"  # Daily at 3 AM
   startCommand: node scripts/backup-database.js
 
 # Send weekly reports (weekly)
 - type: cron
-  name: catalyst-weekly-reports
+  name: daino-weekly-reports
   schedule: "0 9 * * 1"  # Mondays at 9 AM
   startCommand: node scripts/send-weekly-reports.js
 ```
@@ -300,7 +300,7 @@ Your system has **two types** of cron jobs:
 - Managed by CronScheduler service
 - Checked every 60 seconds
 - Creates jobs in BullMQ
-- **Processed by: catalyst-background-worker**
+- **Processed by: daino-background-worker**
 - **Use for: User-configurable scheduled tasks**
 
 **Both need the worker!** Database crons create jobs that the worker processes.
@@ -313,7 +313,7 @@ Your system has **two types** of cron jobs:
 ```yaml
 # Use smaller instance
 - type: worker
-  name: catalyst-background-worker
+  name: daino-background-worker
   plan: starter  # Instead of default
 ```
 **Impact:** Slower job processing, but still instant trigger
@@ -322,12 +322,12 @@ Your system has **two types** of cron jobs:
 ```yaml
 # Keep worker for instant jobs
 - type: worker
-  name: catalyst-background-worker
+  name: daino-background-worker
   # Only processes: translations, imports triggered by users
 
 # Add cron for bulk operations
 - type: cron
-  name: catalyst-nightly-processing
+  name: daino-nightly-processing
   schedule: "0 2 * * *"
   startCommand: node scripts/process-bulk-operations.js
   # Processes: bulk imports, large reports, data migrations
@@ -358,17 +358,17 @@ Not supported by Render directly, but could:
 
 **Keep your current setup with BOTH:**
 
-1. ✅ **catalyst-background-worker** (worker)
+1. ✅ **daino-background-worker** (worker)
    - For UI labels translations
    - For imports/exports
    - For plugin installations
    - For any user-triggered jobs
 
-2. ✅ **catalyst-daily-credit-deduction** (cron)
+2. ✅ **daino-daily-credit-deduction** (cron)
    - For daily credit deductions
    - Add more crons for other scheduled tasks
 
-3. ✅ **catalyst-redis** (database)
+3. ✅ **daino-redis** (database)
    - For BullMQ job queues
    - For worker to pull jobs from
 
@@ -376,7 +376,7 @@ Not supported by Render directly, but could:
 
 ## Questions Answered
 
-**Q: Can we use catalyst-cron instead of a worker service?**
+**Q: Can we use daino-cron instead of a worker service?**
 **A:** No. Cron runs once at scheduled time then exits. Worker runs continuously to process on-demand jobs. You need both for different purposes.
 
 **Q: Why do I need both?**

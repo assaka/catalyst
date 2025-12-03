@@ -1,13 +1,13 @@
 # Akeneo PIM Integration
 
-This integration allows you to import categories and products from Akeneo PIM into your Catalyst e-commerce platform.
+This integration allows you to import categories and products from Akeneo PIM into your DainoStore e-commerce platform.
 
 ## Features
 
 - **OAuth2 Authentication**: Secure connection to Akeneo PIM using OAuth2 flow
 - **Category Import**: Import hierarchical categories with all metadata
 - **Product Import**: Import products with attributes, images, and category assignments
-- **Data Mapping**: Flexible mapping system to transform Akeneo data to Catalyst format
+- **Data Mapping**: Flexible mapping system to transform Akeneo data to DainoStore format
 - **Batch Processing**: Efficient batch processing for large catalogs
 - **Dry Run Mode**: Test imports without making actual changes
 - **Error Handling**: Comprehensive error handling and logging
@@ -20,7 +20,7 @@ This integration allows you to import categories and products from Akeneo PIM in
 1. Log into your Akeneo PIM admin panel
 2. Go to **System** → **API connections**
 3. Create a new connection:
-   - **Label**: Catalyst Integration
+   - **Label**: DainoStore Integration
    - **Flow type**: Other
 4. Save the connection and note down:
    - **Client ID**
@@ -42,7 +42,7 @@ AKENEO_PASSWORD=your_api_password
 
 ### 3. Access the Integration
 
-1. Navigate to your Catalyst admin panel
+1. Navigate to your DainoStore admin panel
 2. Go to **Store** → **Akeneo Integration**
 3. Enter your Akeneo credentials
 4. Test the connection
@@ -190,7 +190,7 @@ Make sure to update the test configuration with your credentials before running.
    - Provides methods for categories and products endpoints
 
 2. **AkeneoMapping** (`src/services/akeneo-mapping.js`)
-   - Transforms Akeneo data structures to Catalyst format
+   - Transforms Akeneo data structures to DainoStore format
    - Handles localization and attribute mapping
    - Validates transformed data
 

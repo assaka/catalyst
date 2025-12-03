@@ -2,7 +2,7 @@
   "name": "Akeneo PIM Integration",
   "version": "1.2.0",
   "description": "Complete integration with Akeneo PIM for product, category, and attribute synchronization",
-  "author": "Catalyst Team",
+  "author": "DainoStore Team",
   "category": "integration",
   "type": "pim",
   "dependencies": {

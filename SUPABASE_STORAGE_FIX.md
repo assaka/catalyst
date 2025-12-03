@@ -13,7 +13,7 @@ The error "new row violates row-level security policy" occurs when uploading to 
    - Navigate to **Settings → API**
    - Copy the **anon key** (public key)
 
-2. **Configure the key in Catalyst:**
+2. **Configure the key in DainoStore:**
 
    **For Windows (PowerShell):**
    ```powershell
@@ -34,7 +34,7 @@ The error "new row violates row-level security policy" occurs when uploading to 
 
 1. **Go to Supabase Dashboard:**
    - Navigate to **Storage → Buckets**
-   - Click on your bucket (likely `catalyst-products` or `catalyst-products-public`)
+   - Click on your bucket (likely `daino-products` or `daino-products-public`)
 
 2. **Disable RLS:**
    - Click on the bucket settings (⚙️ icon)
@@ -48,7 +48,7 @@ The error "new row violates row-level security policy" occurs when uploading to 
    -- Allow authenticated uploads
    CREATE POLICY "Allow authenticated uploads" ON storage.objects
    FOR INSERT WITH CHECK (
-     bucket_id = 'catalyst-products-public' AND
+     bucket_id = 'daino-products-public' AND
      auth.role() = 'anon'
    );
    ```
@@ -61,7 +61,7 @@ The error "new row violates row-level security policy" occurs when uploading to 
 
 2. **Update configuration:**
    ```bash
-   curl -X POST "https://catalyst-backend-fzhu.onrender.com/api/supabase/update-config" \
+   curl -X POST "https://daino.onrender.com/api/supabase/update-config" \
      -H "Authorization: Bearer YOUR_JWT_TOKEN" \
      -H "Content-Type: application/json" \
      -H "x-store-id: 157d4590-49bf-4b0b-bd77-abe131909528" \

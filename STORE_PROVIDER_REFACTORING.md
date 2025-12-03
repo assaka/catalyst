@@ -407,7 +407,7 @@ export const StoreProvider = ({ children }) => {
 
   // Determine store slug from URL or localStorage
   const storeSlug = determineStoreSlug(location);
-  const language = localStorage.getItem('catalyst_language') || 'en';
+  const language = localStorage.getItem('daino_language') || 'en';
 
   // LAYER 1: Bootstrap data (global, cached 15min)
   const { data: bootstrap, isLoading: bootstrapLoading } = useStoreBootstrap(storeSlug, language);

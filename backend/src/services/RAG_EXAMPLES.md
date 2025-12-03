@@ -41,7 +41,7 @@ async function generateReviewsPlugin(userPrompt) {
   });
 
   // Use context in AI prompt
-  const systemPrompt = `You are a Catalyst plugin builder.
+  const systemPrompt = `You are a DainoStore plugin builder.
 
 ${context}
 
@@ -146,7 +146,7 @@ async function helpWithDesign(userMessage, capabilities) {
     limit: 5                      // Moderate context for chat
   });
 
-  const systemPrompt = `You are Catalyst AI Studio.
+  const systemPrompt = `You are DainoStore AI Studio.
 
 ${ragContext}
 

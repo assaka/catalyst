@@ -21,10 +21,10 @@
    - If not connected:
      - Click **"Connect account"**
      - Authorize GitHub/GitLab
-     - Select your `catalyst` repository
+     - Select your `daino` repository
 
 2. **Configure repository settings:**
-   - Repository: `your-username/catalyst`
+   - Repository: `your-username/daino`
    - Branch: `main` (or your default branch)
 
 ### Step 4: Configure Basic Settings
@@ -33,7 +33,7 @@ Fill in the following fields:
 
 **Name:**
 ```
-catalyst-translation-processor
+daino-translation-processor
 ```
 
 **Region:**
@@ -114,39 +114,39 @@ Click **"Add Environment Variable"** for each of the following:
 **2. SUPABASE_URL**
 - Key: `SUPABASE_URL`
 - Click **"Sync from existing service"**
-- Select: `catalyst-backend`
+- Select: `daino-backend`
 - Choose: `SUPABASE_URL`
 
 **3. SUPABASE_ANON_KEY**
 - Key: `SUPABASE_ANON_KEY`
-- Sync from: `catalyst-backend`
+- Sync from: `daino-backend`
 
 **4. SUPABASE_SERVICE_ROLE_KEY**
 - Key: `SUPABASE_SERVICE_ROLE_KEY`
-- Sync from: `catalyst-backend`
+- Sync from: `daino-backend`
 
 **5. SUPABASE_DB_URL**
 - Key: `SUPABASE_DB_URL`
-- Sync from: `catalyst-backend`
+- Sync from: `daino-backend`
 
 **6. DATABASE_URL**
 - Key: `DATABASE_URL`
-- Sync from: `catalyst-backend`
+- Sync from: `daino-backend`
 
 **7. JWT_SECRET**
 - Key: `JWT_SECRET`
-- Sync from: `catalyst-backend`
+- Sync from: `daino-backend`
 
 **8. ANTHROPIC_API_KEY**
 - Key: `ANTHROPIC_API_KEY`
-- Sync from: `catalyst-backend`
+- Sync from: `daino-backend`
 
 #### Optional (Recommended):
 
 **9. REDIS_URL** (if using Redis)
 - Key: `REDIS_URL`
 - Click **"Add from Redis"**
-- Select: `catalyst-redis`
+- Select: `daino-redis`
 
 **10. REDIS_ENABLED**
 - Key: `REDIS_ENABLED`
@@ -174,7 +174,7 @@ Click **"Add Environment Variable"** for each of the following:
 ### Step 11: Verify It's Working
 
 1. **Check Logs:**
-   - Click on `catalyst-translation-processor`
+   - Click on `daino-translation-processor`
    - Go to **"Logs"** tab
    - Wait up to 1 minute
    - You should see:
@@ -379,7 +379,7 @@ INSERT INTO jobs (
 ```
 
 **Watch it get processed:**
-1. Check Render logs for `catalyst-translation-processor`
+1. Check Render logs for `daino-translation-processor`
 2. Within 1 minute, you should see:
    ```
    🔍 Checking for pending translation jobs...
@@ -393,7 +393,7 @@ INSERT INTO jobs (
 
 **Trigger translation via your API:**
 ```bash
-curl -X POST https://catalyst-backend-fzhu.onrender.com/api/translations/ui-labels/bulk \
+curl -X POST https://daino.onrender.com/api/translations/ui-labels/bulk \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -447,7 +447,7 @@ LIMIT 10;
 ### Check Cron is Running
 
 **In Render Dashboard:**
-1. Go to `catalyst-translation-processor`
+1. Go to `daino-translation-processor`
 2. Check status badge: Should be **"Live"** (green)
 3. Check "Last Run": Should be less than 1 minute ago
 4. Check "Next Run": Should be coming up soon
@@ -474,7 +474,7 @@ LIMIT 10;
 - **Solution:**
   - Go to cron service → Environment tab
   - Verify all required variables are set
-  - Re-sync from catalyst-backend if needed
+  - Re-sync from daino-backend if needed
   - Click "Save Changes" and redeploy
 
 **Issue 4: Script not found**
@@ -495,7 +495,7 @@ LIMIT 10;
 ### Viewing Logs
 
 **Live Logs:**
-1. Go to `catalyst-translation-processor`
+1. Go to `daino-translation-processor`
 2. Click **"Logs"** tab
 3. Logs update in real-time
 4. Use search/filter to find specific entries
@@ -508,7 +508,7 @@ LIMIT 10;
 ### Alerts & Notifications
 
 **Set up failure alerts:**
-1. Go to `catalyst-translation-processor`
+1. Go to `daino-translation-processor`
 2. Click **"Notifications"** tab
 3. Add email addresses
 4. Enable "Notify on failure"
@@ -576,7 +576,7 @@ If all checked, your translation cron is working! ✅
 
 ## Quick Reference
 
-**Service Name:** `catalyst-translation-processor`
+**Service Name:** `daino-translation-processor`
 **Schedule:** `* * * * *` (every minute)
 **Root Directory:** `backend`
 **Start Command:** `node scripts/process-translation-jobs.cjs`
@@ -593,4 +593,4 @@ If all checked, your translation cron is working! ✅
 - ANTHROPIC_API_KEY
 
 **Check Status:**
-Render Dashboard → catalyst-translation-processor → Logs
+Render Dashboard → daino-translation-processor → Logs

@@ -1,5 +1,5 @@
 -- Add support for image attribute mappings in akeneo_mappings table
--- This allows flexible mapping of Akeneo image attributes to Catalyst image positions
+-- This allows flexible mapping of Akeneo image attributes to DainoStore image positions
 
 -- Add metadata column to store additional configuration for mappings
 ALTER TABLE akeneo_mappings 

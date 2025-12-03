@@ -11,7 +11,7 @@
 The error `Network error: Unable to connect to server` happens because:
 
 ```
-Frontend tries: DELETE https://catalyst-backend-fzhu.onrender.com/api/plugins/registry/:id/files
+Frontend tries: DELETE https://daino.onrender.com/api/plugins/registry/:id/files
                                                                         ^^^^^^^^^^^^^^^^
                                                                         Endpoint doesn't exist yet!
 ```
@@ -41,7 +41,7 @@ These tables need to be created:
 
 **Manual Deployment:**
 1. Go to https://dashboard.render.com
-2. Find service: `catalyst-backend-fzhu`
+2. Find service: `daino-backend-fzhu`
 3. Click **"Manual Deploy"**
 4. Select **"Deploy latest commit"**
 5. Wait for deployment (~2-5 minutes)
@@ -72,7 +72,7 @@ Run these SQL files in Supabase dashboard:
 
 **Test DELETE endpoint:**
 ```bash
-curl -X DELETE https://catalyst-backend-fzhu.onrender.com/api/plugins/registry/test-id/files \
+curl -X DELETE https://daino.onrender.com/api/plugins/registry/test-id/files \
   -H "Content-Type: application/json" \
   -d '{"path": "/test.js"}'
 ```

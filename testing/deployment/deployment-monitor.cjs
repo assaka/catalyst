@@ -201,7 +201,7 @@ class DeploymentMonitor {
         checkInterval: 300000, // 5 minutes
         platforms: ['vercel', 'supabase'],
         criticalEndpoints: [
-          'https://catalyst-pearl.vercel.app'
+          'https://daino-pearl.vercel.app'
         ]
       }
     };

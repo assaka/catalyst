@@ -1,6 +1,6 @@
 # Comprehensive Testing & Debugging Stack
 
-A production-ready testing and monitoring system for the Catalyst e-commerce platform, designed to prevent critical bugs like the custom mappings transformation issue and provide real-time debugging capabilities.
+A production-ready testing and monitoring system for the DainoStore e-commerce platform, designed to prevent critical bugs like the custom mappings transformation issue and provide real-time debugging capabilities.
 
 ## 🎯 Overview
 
@@ -87,7 +87,7 @@ cp .env.example .env.testing
 # Configure testing environment
 echo "
 NODE_ENV=test
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/catalyst_test
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/daino_test
 API_BASE_URL=http://localhost:5000
 FRONTEND_URL=http://localhost:5173
 MONITORING_ENABLED=true

@@ -1,7 +1,7 @@
 # API Call Optimization Summary
 
 ## Overview
-This document summarizes the comprehensive API optimization implemented to reduce excessive API calls in the Catalyst application. The optimization uses React Query (TanStack Query) to provide automatic request deduplication, intelligent caching, and optimized retry logic.
+This document summarizes the comprehensive API optimization implemented to reduce excessive API calls in the DainoStore application. The optimization uses React Query (TanStack Query) to provide automatic request deduplication, intelligent caching, and optimized retry logic.
 
 ## Problem Analysis
 

@@ -31,7 +31,7 @@ class CustomDomainService {
       const crypto = require('crypto');
       const verification_token = crypto
         .createHash('sha256')
-        .update(`catalyst-verify-${domainName.toLowerCase()}-${storeId}`)
+        .update(`daino-verify-${domainName.toLowerCase()}-${storeId}`)
         .digest('hex');
 
       // Create domain record
@@ -249,7 +249,7 @@ class CustomDomainService {
    */
   static async _verifyTXTRecord(domain) {
     try {
-      const recordName = domain.verification_record_name || `_catalyst-verification.${domain.domain}`;
+      const recordName = domain.verification_record_name || `_daino-verification.${domain.domain}`;
       const txtRecords = await dns.resolveTxt(recordName);
       const flatRecords = txtRecords.flat();
       return flatRecords.some(record => record.includes(domain.verification_token));
@@ -316,7 +316,7 @@ class CustomDomainService {
       const https = require('https');
 
       return new Promise((resolve) => {
-        const url = `https://${domain.domain}/.well-known/catalyst-verification.txt`;
+        const url = `https://${domain.domain}/.well-known/daino-verification.txt`;
 
         https.get(url, { timeout: 5000 }, (res) => {
           let data = '';
@@ -401,7 +401,7 @@ class CustomDomainService {
         },
         {
           type: 'TXT',
-          name: `_catalyst-verification.${domain.domain}`,
+          name: `_daino-verification.${domain.domain}`,
           value: domain.verification_token,
           required: true
         }
@@ -635,7 +635,7 @@ class CustomDomainService {
    * @private
    */
   static _getVerificationInstructions(domain) {
-    const platformDomain = process.env.PLATFORM_DOMAIN || 'catalyst.app';
+    const platformDomain = process.env.PLATFORM_DOMAIN || 'daino.app';
 
     return {
       method: domain.verification_method,
@@ -654,7 +654,7 @@ class CustomDomainService {
             },
             {
               type: 'TXT',
-              name: '_catalyst-verification',
+              name: '_daino-verification',
               value: domain.verification_token,
               ttl: 300,
               note: 'Used to verify domain ownership'

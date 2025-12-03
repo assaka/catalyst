@@ -182,7 +182,7 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
   const changeLanguage = useCallback(async (langCode) => {
 
     // Save to localStorage
-    localStorage.setItem('catalyst_language', langCode);
+    localStorage.setItem('daino_language', langCode);
 
     // Update state
     setCurrentLanguage(langCode);
@@ -293,7 +293,7 @@ export function TranslationProvider({ children, storeId: propStoreId, initialLan
       await loadAvailableLanguages();
 
       // Check for saved language preference
-      const savedLang = localStorage.getItem('catalyst_language');
+      const savedLang = localStorage.getItem('daino_language');
       const browserLang = navigator.language?.split('-')[0];
       const initialLang = savedLang || browserLang || 'en';
 

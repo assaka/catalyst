@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "catalyst-monitoring-dashboard",
+  "name": "daino-monitoring-dashboard",
   "builds": [
     {
       "src": "pages/**/*.js",

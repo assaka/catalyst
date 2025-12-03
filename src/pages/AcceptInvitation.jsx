@@ -65,7 +65,7 @@ export default function AcceptInvitation() {
       setError(null);
 
       // Use direct fetch for public endpoint (no auth required)
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://catalyst-backend-fzhu.onrender.com';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://daino.onrender.com';
       const response = await fetch(`${apiUrl}/api/invitations/${token}`);
       const data = await response.json();
 
@@ -167,7 +167,7 @@ export default function AcceptInvitation() {
       setAccepting(true);
 
       // Call the combined endpoint that handles signup/login + accept invitation
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://catalyst-backend-fzhu.onrender.com';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://daino.onrender.com';
       const response = await fetch(`${apiUrl}/api/invitations/${token}/accept-with-auth`, {
         method: 'POST',
         headers: {

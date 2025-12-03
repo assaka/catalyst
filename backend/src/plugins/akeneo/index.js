@@ -21,7 +21,7 @@ class AkeneoPlugin extends Plugin {
       slug: 'akeneo',
       version: '1.2.0',
       description: 'Comprehensive integration with Akeneo PIM for product information management',
-      author: 'Catalyst Team',
+      author: 'DainoStore Team',
       category: 'integration',
       dependencies: [],
       permissions: ['products:write', 'categories:write', 'attributes:write']

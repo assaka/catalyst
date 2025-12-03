@@ -50,8 +50,8 @@ export default function Homepage() {
       }
 
       // Track homepage view
-      if (typeof window !== 'undefined' && window.catalyst?.trackEvent) {
-        window.catalyst.trackEvent('page_view', {
+      if (typeof window !== 'undefined' && window.daino?.trackEvent) {
+        window.daino.trackEvent('page_view', {
           page_type: searchQuery ? 'search_results' : 'homepage',
           store_name: store.name,
           store_id: store.id,

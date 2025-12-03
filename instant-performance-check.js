@@ -81,7 +81,7 @@
     console.log('❌ DUPLICATE API CALLS FOUND:\n');
     uniqueDuplicates.forEach(url => {
       const count = apiUrls.filter(u => u === url).length;
-      const endpoint = url.replace('https://catalyst-backend-fzhu.onrender.com', '');
+      const endpoint = url.replace('https://daino.onrender.com', '');
       console.log(`   ${count}x ${endpoint}`);
     });
     console.log('\n');
@@ -90,7 +90,7 @@
   // List all API calls
   console.log('📡 ALL API CALLS:\n');
   apiCalls.forEach((call, i) => {
-    const endpoint = call.name.replace('https://catalyst-backend-fzhu.onrender.com', '').substring(0, 80);
+    const endpoint = call.name.replace('https://daino.onrender.com', '').substring(0, 80);
     const duration = Math.round(call.duration);
     const size = call.transferSize ? `${(call.transferSize/1024).toFixed(1)}KB` : 'cached';
     console.log(`   ${i+1}. ${duration}ms - ${size} - ${endpoint}`);

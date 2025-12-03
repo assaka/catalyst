@@ -4,7 +4,7 @@ const path = require('path');
 
 class GCSStorageService {
   constructor() {
-    this.bucketName = 'catalyst-product-images';
+    this.bucketName = 'daino-product-images';
   }
 
   /**

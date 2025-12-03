@@ -14,7 +14,7 @@ on:
 
 env:
   NODE_VERSION: '18'
-  POSTGRES_DB: catalyst_test
+  POSTGRES_DB: daino_test
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
 
@@ -29,7 +29,7 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: catalyst_test
+          POSTGRES_DB: daino_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -66,7 +66,7 @@ jobs:
           sleep 10
         env:
           NODE_ENV: test
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/catalyst_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/daino_test
 
       - name: Run Contract Tests
         run: |
@@ -126,7 +126,7 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: catalyst_test
+          POSTGRES_DB: daino_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -170,7 +170,7 @@ jobs:
           sleep 10
         env:
           NODE_ENV: test
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/catalyst_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/daino_test
           MONITORING_ENABLED: true
 
       - name: Run performance tests
@@ -218,7 +218,7 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: catalyst_test
+          POSTGRES_DB: daino_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -258,7 +258,7 @@ jobs:
           sleep 10
         env:
           NODE_ENV: test
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/catalyst_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/daino_test
 
       - name: Build frontend
         run: npm run build

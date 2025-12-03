@@ -30,8 +30,8 @@ export default async function handler(req, res) {
   };
 
   try {
-    const renderUrl = process.env.RENDER_BACKEND_URL || 'https://catalyst-backend-fzhu.onrender.com';
-    const vercelUrl = process.env.VERCEL_FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
+    const renderUrl = process.env.RENDER_BACKEND_URL || 'https://daino.onrender.com';
+    const vercelUrl = process.env.VERCEL_FRONTEND_URL || 'https://daino-pearl.vercel.app';
 
     // Render Backend Status
     try {

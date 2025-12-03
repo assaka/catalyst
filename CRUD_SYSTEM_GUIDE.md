@@ -1,6 +1,6 @@
 # Complete CRUD System Guide - 100% Database-Driven
 
-This guide documents how to build a complete CRUD (Create, Read, Update, Delete) system using the Catalyst plugin architecture. Everything is stored in database tables - no hardcoded routes, components, or forms!
+This guide documents how to build a complete CRUD (Create, Read, Update, Delete) system using the DainoStore plugin architecture. Everything is stored in database tables - no hardcoded routes, components, or forms!
 
 ## Table of Contents
 1. [Overview](#overview)
@@ -15,7 +15,7 @@ This guide documents how to build a complete CRUD (Create, Read, Update, Delete)
 
 ## Overview
 
-A complete CRUD system in Catalyst requires **5 database tables**:
+A complete CRUD system in DainoStore requires **5 database tables**:
 
 | Table | Purpose | What It Stores |
 |-------|---------|----------------|
@@ -1065,7 +1065,7 @@ routes/emails.js  →  controllers/emailController.js  →  models/Email.js
 Changes require: Code deployment, server restart, testing
 ```
 
-**Database-Driven (Catalyst):**
+**Database-Driven (DainoStore):**
 ```
 plugin_controllers.handler_code  →  cart_emails table
 └─ In database                      └─ In database
@@ -1077,7 +1077,7 @@ Changes require: Database update only!
 
 ## Summary
 
-Building a CRUD system in Catalyst:
+Building a CRUD system in DainoStore:
 
 1. **Entity** → Define table structure in `plugin_entities`
 2. **Controllers** → Create 6 endpoints in `plugin_controllers`

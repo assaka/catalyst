@@ -1,23 +1,23 @@
 {
-  "name": "@catalyst/plugin-cli",
+  "name": "@daino/plugin-cli",
   "version": "1.0.0",
-  "description": "CLI tool for creating Catalyst plugins",
+  "description": "CLI tool for creating DainoStore plugins",
   "main": "index.js",
   "bin": {
-    "catalyst-plugin": "./bin/catalyst-plugin.js"
+    "daino-plugin": "./bin/daino-plugin.js"
   },
   "scripts": {
     "test": "jest",
     "build": "ncc build index.js -o dist",
-    "dev": "node bin/catalyst-plugin.js"
+    "dev": "node bin/daino-plugin.js"
   },
   "keywords": [
-    "catalyst",
+    "daino",
     "plugin",
     "cli",
     "generator"
   ],
-  "author": "Catalyst Team",
+  "author": "DainoStore Team",
   "license": "MIT",
   "dependencies": {
     "commander": "^11.0.0",
@@ -37,10 +37,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/catalyst/plugin-cli.git"
+    "url": "https://github.com/daino/plugin-cli.git"
   },
   "bugs": {
-    "url": "https://github.com/catalyst/plugin-cli/issues"
+    "url": "https://github.com/daino/plugin-cli/issues"
   },
-  "homepage": "https://docs.catalyst.com/plugin-cli"
+  "homepage": "https://docs.daino.com/plugin-cli"
 }

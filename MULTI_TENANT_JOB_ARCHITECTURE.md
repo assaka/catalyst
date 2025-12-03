@@ -4,7 +4,7 @@
 ## Problem
 
 **Architecture:**
-- Main Catalyst database (stores user accounts, subscriptions)
+- Main DainoStore database (stores user accounts, subscriptions)
 - Store Owner 1 → Supabase DB 1 (their products, orders, jobs)
 - Store Owner 2 → Supabase DB 2 (their products, orders, jobs)
 - Store Owner N → Supabase DB N
@@ -57,10 +57,10 @@
 └──────────────┘ └──────────────┘ └──────────────┘
 ```
 
-### Schema: Main Catalyst Database
+### Schema: Main DainoStore Database
 
 ```sql
--- Central job queue in main Catalyst database
+-- Central job queue in main DainoStore database
 CREATE TABLE job_queue (
   id SERIAL PRIMARY KEY,
   store_id INTEGER NOT NULL REFERENCES stores(id),
@@ -550,7 +550,7 @@ FROM connection_pool_stats;
 ## Recommended Architecture
 
 **Best approach:**
-1. ✅ Centralized job queue in main Catalyst DB
+1. ✅ Centralized job queue in main DainoStore DB
 2. ✅ Store database URLs encrypted in main DB
 3. ✅ Connection pooling with LRU cache
 4. ✅ Batch processing by store

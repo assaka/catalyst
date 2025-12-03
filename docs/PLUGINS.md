@@ -1,6 +1,6 @@
-# Creating Plugins for Catalyst
+# Creating Plugins for DainoStore
 
-This guide explains how to create plugins for Catalyst. Plugins let you add custom features to your store.
+This guide explains how to create plugins for DainoStore. Plugins let you add custom features to your store.
 
 ---
 
@@ -468,13 +468,13 @@ You can create plugins faster using the CLI:
 
 ```bash
 # Create a new plugin
-npx catalyst-plugin create my-plugin
+npx daino-plugin create my-plugin
 
 # Validate your plugin
-npx catalyst-plugin validate ./backend/plugins/my-plugin
+npx daino-plugin validate ./backend/plugins/my-plugin
 
 # Build for production
-npx catalyst-plugin build
+npx daino-plugin build
 ```
 
 ---

@@ -2,7 +2,7 @@
  * StoreHostname Model (Master Database)
  *
  * Maps hostnames/domains to stores for fast tenant resolution
- * Enables hostname-based routing: myshop.catalyst.com → store_id
+ * Enables hostname-based routing: myshop.daino.com → store_id
  */
 
 const { DataTypes } = require('sequelize');
@@ -27,7 +27,7 @@ const StoreHostname = masterSequelize.define('StoreHostname', {
     type: DataTypes.STRING(255),
     allowNull: false,
     unique: true,
-    comment: 'Full hostname: myshop.catalyst.com or custom.domain.com',
+    comment: 'Full hostname: myshop.daino.com or custom.domain.com',
     validate: {
       isValidHostname(value) {
         // Basic hostname validation
@@ -54,7 +54,7 @@ const StoreHostname = masterSequelize.define('StoreHostname', {
   is_custom_domain: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
-    comment: 'True if custom domain, false if catalyst subdomain'
+    comment: 'True if custom domain, false if daino subdomain'
   },
   ssl_enabled: {
     type: DataTypes.BOOLEAN,
@@ -188,7 +188,7 @@ StoreHostname.createMapping = async function(storeId, hostname, slug, options = 
  */
 StoreHostname.extractSlug = function(hostname) {
   // Extract subdomain from hostname
-  // myshop.catalyst.com → myshop
+  // myshop.daino.com → myshop
   // www.custom.com → custom
   const parts = hostname.split('.');
   if (parts.length >= 2) {

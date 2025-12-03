@@ -121,7 +121,7 @@ import { mergeStoreSettings } from '@/utils/storeSettingsDefaults';
 export const StoreProvider = ({ children }) => {
   // Get store slug and language
   const storeSlug = determineStoreSlug(location);
-  const language = localStorage.getItem('catalyst_language') || 'en';
+  const language = localStorage.getItem('daino_language') || 'en';
 
   // LAYER 1: Bootstrap (global data - 1 API call)
   const { data: bootstrap, isLoading } = useStoreBootstrap(storeSlug, language);

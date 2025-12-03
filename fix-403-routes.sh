@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}Starting comprehensive 403 fix...${NC}"
 
 # Navigate to backend routes directory
-cd "C:/Users/info/PhpstormProjects/catalyst/backend/src/routes" || exit 1
+cd "C:/Users/info/PhpstormProjects/daino/backend/src/routes" || exit 1
 
 # Function to add authorize import and middleware to a file
 fix_file() {

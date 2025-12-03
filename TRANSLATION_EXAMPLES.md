@@ -1,6 +1,6 @@
 # Real Translation Examples - Practical Guide
 
-This guide shows you **real working examples** for translating specific UI elements, text, and content in your Catalyst platform.
+This guide shows you **real working examples** for translating specific UI elements, text, and content in your DainoStore platform.
 
 ---
 

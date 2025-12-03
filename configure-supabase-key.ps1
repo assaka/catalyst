@@ -1,6 +1,6 @@
 # PowerShell script to configure Supabase anon key
 
-$API_URL = "https://catalyst-backend-fzhu.onrender.com"
+$API_URL = "https://daino.onrender.com"
 $STORE_ID = "157d4590-49bf-4b0b-bd77-abe131909528"
 
 # Get JWT token

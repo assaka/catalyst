@@ -77,7 +77,7 @@ class HelloWorldExamplePlugin {
           font-size: 1em;
           line-height: 1.4;
         ">
-          This message was created by a store owner using the Catalyst Plugin Builder! 🎉
+          This message was created by a store owner using the DainoStore Plugin Builder! 🎉
         </p>
         <small style="
           display: block;

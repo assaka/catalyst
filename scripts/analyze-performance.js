@@ -5,7 +5,7 @@
  * Identifies bottlenecks, duplicate calls, and slow queries
  *
  * Usage:
- *   node scripts/analyze-performance.js https://catalyst-pearl.vercel.app/public/hamid2/product/kenwood...
+ *   node scripts/analyze-performance.js https://daino-pearl.vercel.app/public/hamid2/product/kenwood...
  *
  * Or install puppeteer first:
  *   npm install --save-dev puppeteer
@@ -14,7 +14,7 @@
 const https = require('https');
 const http = require('http');
 
-const TARGET_URL = process.argv[2] || 'https://catalyst-pearl.vercel.app';
+const TARGET_URL = process.argv[2] || 'https://daino-pearl.vercel.app';
 
 console.log('🔍 Performance Analysis Tool');
 console.log('============================\n');
@@ -27,15 +27,15 @@ async function analyzeWithoutPuppeteer() {
   const tests = [
     {
       name: 'Backend Health Check',
-      url: 'https://catalyst-backend-fzhu.onrender.com/health',
+      url: 'https://daino.onrender.com/health',
     },
     {
       name: 'Cache Health Check',
-      url: 'https://catalyst-backend-fzhu.onrender.com/health/cache',
+      url: 'https://daino.onrender.com/health/cache',
     },
     {
       name: 'Database Health Check',
-      url: 'https://catalyst-backend-fzhu.onrender.com/health/db',
+      url: 'https://daino.onrender.com/health/db',
     },
   ];
 
@@ -105,7 +105,7 @@ function testEndpoint(name, url) {
 
     console.log('\n\n📋 RECOMMENDATIONS:\n');
     console.log('1. Check Render logs for slow queries:');
-    console.log('   Dashboard → catalyst-backend → Logs');
+    console.log('   Dashboard → daino-backend → Logs');
     console.log('   Look for: "SLOW QUERY" or queries >100ms\n');
 
     console.log('2. Enable database query logging:');

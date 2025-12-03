@@ -24,8 +24,8 @@ export default async function handler(req, res) {
     console.log('🔍 Running health check from Vercel...');
 
     // Get environment variables
-    const renderUrl = process.env.RENDER_BACKEND_URL || 'https://catalyst-backend-fzhu.onrender.com';
-    const vercelUrl = process.env.VERCEL_FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
+    const renderUrl = process.env.RENDER_BACKEND_URL || 'https://daino.onrender.com';
+    const vercelUrl = process.env.VERCEL_FRONTEND_URL || 'https://daino-pearl.vercel.app';
 
     // Check Render Backend
     console.log('Checking Render backend...');
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     try {
       const renderResponse = await fetch(`${renderUrl}/health`, {
         method: 'GET',
-        headers: { 'User-Agent': 'Catalyst-Monitor-Vercel' },
+        headers: { 'User-Agent': 'DainoStore-Monitor-Vercel' },
         signal: AbortSignal.timeout(10000) // 10 second timeout
       });
       
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     try {
       const mappingsResponse = await fetch(`${renderUrl}/api/integrations/akeneo/custom-mappings`, {
         method: 'GET',
-        headers: { 'User-Agent': 'Catalyst-Monitor-Vercel' },
+        headers: { 'User-Agent': 'DainoStore-Monitor-Vercel' },
         signal: AbortSignal.timeout(10000)
       });
       
@@ -99,7 +99,7 @@ export default async function handler(req, res) {
     try {
       const vercelResponse = await fetch(vercelUrl, {
         method: 'GET',
-        headers: { 'User-Agent': 'Catalyst-Monitor-Vercel' },
+        headers: { 'User-Agent': 'DainoStore-Monitor-Vercel' },
         signal: AbortSignal.timeout(10000)
       });
       
@@ -123,7 +123,7 @@ export default async function handler(req, res) {
     try {
       const dbTestResponse = await fetch(`${renderUrl}/api/products`, {
         method: 'GET',
-        headers: { 'User-Agent': 'Catalyst-Monitor-Vercel' },
+        headers: { 'User-Agent': 'DainoStore-Monitor-Vercel' },
         signal: AbortSignal.timeout(15000) // Longer timeout for DB operations
       });
       

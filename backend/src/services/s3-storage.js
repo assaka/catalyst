@@ -4,7 +4,7 @@ const path = require('path');
 
 class S3StorageService {
   constructor() {
-    this.defaultBucketName = 'catalyst-product-images';
+    this.defaultBucketName = 'daino-product-images';
   }
 
   /**

@@ -1,6 +1,6 @@
 /**
  * Data Migration Service
- * Handles actual data transfer from Catalyst DB to store owner's Supabase
+ * Handles actual data transfer from DainoStore DB to store owner's Supabase
  */
 
 const { createClient } = require('@supabase/supabase-js');

@@ -28,7 +28,7 @@
    - Select the repository with your backend code
 
 2. **Configure Service**:
-   - **Name**: `catalyst-backend`
+   - **Name**: `daino-backend`
    - **Environment**: `Node`
    - **Region**: Choose closest to your users
    - **Branch**: `main` (or your default branch)

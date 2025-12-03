@@ -11,7 +11,7 @@ echo ""
 
 STORE_SLUG="hamid2"
 PRODUCT_SLUG="kenwood-ksbsb23-amerikaanse-koelkast-177cm-o0517"
-BACKEND="https://catalyst-backend-fzhu.onrender.com"
+BACKEND="https://daino.onrender.com"
 
 echo "📍 Test 1: Storefront Bootstrap (Initial Load)"
 echo "----------------------------------------------"

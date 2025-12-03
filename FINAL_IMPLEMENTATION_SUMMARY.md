@@ -183,7 +183,7 @@ git pull  # Already pushed!
 
 ## 🔥 **Features Better Than Channable:**
 
-| Feature | Channable | Catalyst |
+| Feature | Channable | DainoStore |
 |---------|-----------|----------|
 | Multi-marketplace | ✅ | ✅ |
 | Feed generation | ✅ | ✅ |
@@ -379,4 +379,4 @@ Everything is:
 
 *Implementation Date: November 13, 2025*
 *Total Development Time: ~2 hours*
-*Catalyst Version: 2.0+*
+*DainoStore Version: 2.0+*

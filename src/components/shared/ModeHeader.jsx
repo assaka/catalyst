@@ -52,7 +52,7 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
           {hideModeSwitcher && (
             <div className="flex items-center space-x-2">
               <ShoppingBag className="w-5 h-5 text-blue-600" />
-              <span className="text-lg font-bold text-gray-900">Catalyst</span>
+              <span className="text-lg font-bold text-gray-900">DainoStore</span>
             </div>
           )}
 
@@ -113,7 +113,7 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
           {hideModeSwitcher && (
             <div className="flex items-center space-x-2">
               <ShoppingBag className="w-6 h-6 text-blue-600" />
-              <span className="text-xl font-bold text-gray-900">Catalyst</span>
+              <span className="text-xl font-bold text-gray-900">Daino</span>
             </div>
           )}
 

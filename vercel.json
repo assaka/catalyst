@@ -7,23 +7,23 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://catalyst-backend-fzhu.onrender.com/api/$1"
+      "destination": "https://daino.onrender.com/api/$1"
     },
     {
       "source": "/robots.txt",
-      "destination": "https://catalyst-backend-fzhu.onrender.com/robots.txt"
+      "destination": "https://daino.onrender.com/robots.txt"
     },
     {
       "source": "/sitemap.xml",
-      "destination": "https://catalyst-backend-fzhu.onrender.com/sitemap.xml"
+      "destination": "https://daino.onrender.com/sitemap.xml"
     },
     {
       "source": "/public/:storeSlug/robots.txt",
-      "destination": "https://catalyst-backend-fzhu.onrender.com/public/:storeSlug/robots.txt"
+      "destination": "https://daino.onrender.com/public/:storeSlug/robots.txt"
     },
     {
       "source": "/public/:storeSlug/sitemap.xml",
-      "destination": "https://catalyst-backend-fzhu.onrender.com/public/:storeSlug/sitemap.xml"
+      "destination": "https://daino.onrender.com/public/:storeSlug/sitemap.xml"
     },
     {
       "source": "/(.*)",

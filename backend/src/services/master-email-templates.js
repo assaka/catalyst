@@ -5,9 +5,9 @@
  * These templates are independent of tenant/store configurations.
  */
 
-const PLATFORM_NAME = process.env.PLATFORM_NAME || 'Catalyst';
-const PLATFORM_URL = process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@catalyst.com';
+const PLATFORM_NAME = process.env.PLATFORM_NAME || 'DainoStore';
+const PLATFORM_URL = process.env.FRONTEND_URL || 'https://daino-pearl.vercel.app';
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@daino.com';
 
 /**
  * Master Email Header Component

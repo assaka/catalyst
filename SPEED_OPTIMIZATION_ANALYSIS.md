@@ -1,6 +1,6 @@
 # Speed Optimization Analysis
 
-**Page Analyzed:** https://catalyst-pearl.vercel.app/public/hamid2/product/kenwood-ksbsb23-amerikaanse-koelkast-177cm-o0517
+**Page Analyzed:** https://daino-pearl.vercel.app/public/hamid2/product/kenwood-ksbsb23-amerikaanse-koelkast-177cm-o0517
 
 **Date:** 2025-11-08
 **Status:** Phase 1 Complete ✅ + Diagnostic Tools Added
@@ -133,8 +133,8 @@ Frontend bundle likely loading all components at once:
 
 ```html
 <head>
-  <link rel="preconnect" href="https://catalyst-backend-fzhu.onrender.com">
-  <link rel="dns-prefetch" href="https://catalyst-backend-fzhu.onrender.com">
+  <link rel="preconnect" href="https://daino.onrender.com">
+  <link rel="dns-prefetch" href="https://daino.onrender.com">
 </head>
 ```
 
@@ -311,11 +311,11 @@ Run these tests to establish baseline:
 
 ```bash
 # Lighthouse test
-npx lighthouse https://catalyst-pearl.vercel.app/public/hamid2/product/kenwood... --view
+npx lighthouse https://daino-pearl.vercel.app/public/hamid2/product/kenwood... --view
 
 # WebPageTest
 # Visit: https://webpagetest.org
-# Test URL: https://catalyst-pearl.vercel.app/public/hamid2/product/...
+# Test URL: https://daino-pearl.vercel.app/public/hamid2/product/...
 ```
 
 **Expected Current Metrics:**
@@ -355,7 +355,7 @@ npx lighthouse https://catalyst-pearl.vercel.app/public/hamid2/product/kenwood..
 ```bash
 # Test product API speed
 curl -w "\nTime: %{time_total}s\n" -o /dev/null -s \
-  "https://catalyst-backend-fzhu.onrender.com/api/public/products/by-slug/product-slug/full?store_id=STORE_UUID"
+  "https://daino.onrender.com/api/public/products/by-slug/product-slug/full?store_id=STORE_UUID"
 
 # Test image loading
 curl -w "\nSize: %{size_download} bytes\nTime: %{time_total}s\n" -o /dev/null -s \
@@ -366,7 +366,7 @@ npm run build
 ls -lh dist/assets/*.js
 
 # Lighthouse test
-npx lighthouse https://catalyst-pearl.vercel.app/public/hamid2/product/... --only-categories=performance --view
+npx lighthouse https://daino-pearl.vercel.app/public/hamid2/product/... --only-categories=performance --view
 ```
 
 ---

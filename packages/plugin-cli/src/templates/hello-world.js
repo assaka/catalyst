@@ -167,17 +167,17 @@ module.exports = {{#lambda.pascalCase}}{{slug}}{{/lambda.pascalCase}}Plugin;`,
   "main": "index.js",
   "scripts": {
     "test": "echo \\"No tests specified\\" && exit 0",
-    "build": "catalyst-plugin build",
-    "validate": "catalyst-plugin validate"
+    "build": "daino-plugin build",
+    "validate": "daino-plugin validate"
   },
   "keywords": [
-    "catalyst",
+    "daino",
     "plugin",
     "{{category}}"
   ],
   "author": "{{author}}",
   "license": "MIT",
-  "catalyst": {
+  "daino": {
     "pluginType": "display",
     "hooks": [{{#hooks}}"{{.}}"{{#lambda.notLast}}, {{/lambda.notLast}}{{/hooks}}]
   }
@@ -208,7 +208,7 @@ This plugin supports the following configuration options:
 
 ## Installation
 
-### Via Catalyst Admin Panel
+### Via DainoStore Admin Panel
 
 1. Go to **Admin** → **Plugins** → **Create New Plugin**
 2. Choose **Upload ZIP** method
@@ -233,10 +233,10 @@ npm run validate
 npm install
 
 # Start development server
-catalyst-plugin dev
+daino-plugin dev
 
 # Build for production
-catalyst-plugin build --zip
+daino-plugin build --zip
 \`\`\`
 
 ## Hooks

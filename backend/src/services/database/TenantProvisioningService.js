@@ -699,8 +699,8 @@ VALUES (
         // Use custom domain if available
         baseUrl = customDomain.startsWith('http') ? customDomain : `https://${customDomain}`;
       } else {
-        // Fallback to public URL pattern: https://catalyst-pearl.vercel.app/public/{slug}
-        baseUrl = `https://catalyst-pearl.vercel.app/public/${slug}`;
+        // Fallback to public URL pattern: https://daino-pearl.vercel.app/public/{slug}
+        baseUrl = `https://daino-pearl.vercel.app/public/${slug}`;
       }
 
       // Generate default robots.txt content with dynamic sitemap
@@ -773,7 +773,7 @@ Sitemap: ${baseUrl}/sitemap.xml`;
       if (options.customDomain) {
         baseUrl = options.customDomain.startsWith('http') ? options.customDomain : `https://${options.customDomain}`;
       } else {
-        baseUrl = `https://catalyst-pearl.vercel.app/public/${slug}`;
+        baseUrl = `https://daino-pearl.vercel.app/public/${slug}`;
       }
 
       // Generate default robots.txt content

@@ -200,7 +200,7 @@ router.post('/test-connection', [
           <html>
             <body style="font-family: Arial, sans-serif; padding: 20px;">
               <h2>Brevo Connection Test</h2>
-              <p>This is a test email from your Catalyst email system.</p>
+              <p>This is a test email from your DainoStore email system.</p>
               <p>If you received this email, your Brevo integration is working correctly!</p>
               <p>Account: ${result.account.email}</p>
               <p>Company: ${result.account.companyName || 'N/A'}</p>

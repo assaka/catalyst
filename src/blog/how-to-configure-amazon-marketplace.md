@@ -2,7 +2,7 @@
 
 **Expand your reach and boost sales by listing your products on Amazon - the world's largest online marketplace.**
 
-With Catalyst's Marketplace Hub, you can export your entire product catalog to Amazon in minutes, with AI-powered optimization that helps your products stand out.
+With DainoStore's Marketplace Hub, you can export your entire product catalog to Amazon in minutes, with AI-powered optimization that helps your products stand out.
 
 ---
 
@@ -52,13 +52,13 @@ Don't worry - this sounds technical but it's straightforward! You need 4 pieces 
 3. Click **Account Info**
 4. Look for **"Merchant Token"** or **"Seller ID"**
    - Looks like: `A1234567890ABC`
-5. **Copy this** - you'll paste it into Catalyst
+5. **Copy this** - you'll paste it into DainoStore
 
 ---
 
 ### **2. MWS Auth Token** ⭐ Important!
 
-**What it is:** This gives Catalyst permission to manage your Amazon listings
+**What it is:** This gives DainoStore permission to manage your Amazon listings
 
 **How to get it:**
 1. In Seller Central, go to **Settings** → **User Permissions**
@@ -120,13 +120,13 @@ Don't worry - this sounds technical but it's straightforward! You need 4 pieces 
 
 ---
 
-## 🎨 **Step 2: Configure in Your Catalyst Store**
+## 🎨 **Step 2: Configure in Your DainoStore Store**
 
 Now the fun part - connect everything!
 
 ### **1. Open Marketplace Hub**
 
-In your Catalyst admin:
+In your DainoStore admin:
 1. Click **"Import & Export"** in sidebar
 2. Click **"Marketplace Hub"**
 3. Click the **"Amazon"** tab
@@ -173,7 +173,7 @@ The status badge will change from ⚪ **"Not Configured"** to 🟢 **"Connected"
 
 ## ⚡ **Step 3: Supercharge with AI (Optional)**
 
-This is where Catalyst beats tools like Channable!
+This is where DainoStore beats tools like Channable!
 
 ### **Why Use AI Optimization?**
 
@@ -340,7 +340,7 @@ Congratulations! Your products are now listed on the world's largest marketplace
 - Example: +20% adjustment = original margin preserved
 
 ### **4. High-Quality Product Data Wins**
-- Add detailed descriptions in your Catalyst catalog
+- Add detailed descriptions in your DainoStore catalog
 - Upload multiple images (5-8 is ideal)
 - Include dimensions, weight, specifications
 - Better data = better AI optimization = more sales!

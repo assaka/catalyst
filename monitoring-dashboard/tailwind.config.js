@@ -8,10 +8,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'catalyst-blue': '#2563eb',
-        'catalyst-green': '#059669',
-        'catalyst-red': '#dc2626',
-        'catalyst-yellow': '#d97706'
+        'daino-blue': '#2563eb',
+        'daino-green': '#059669',
+        'daino-red': '#dc2626',
+        'daino-yellow': '#d97706'
       }
     },
   },

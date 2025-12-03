@@ -1,4 +1,4 @@
-// Integration Middleware for Existing Catalyst Application
+// Integration Middleware for Existing DainoStore Application
 // Easy drop-in integration for monitoring and testing
 
 const DashboardServer = require('./monitoring/dashboard-server');

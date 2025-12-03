@@ -51,7 +51,7 @@ Response: 404 "File not found"
 ## How to Check Render Logs
 
 1. Go to https://dashboard.render.com
-2. Find `catalyst-backend-fzhu` service
+2. Find `daino-backend-fzhu` service
 3. Click "Logs" tab
 4. Look for recent DELETE request
 5. Find the detailed logs we added

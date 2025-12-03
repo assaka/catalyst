@@ -1,5 +1,5 @@
 -- Create akeneo_mapping table for flexible Akeneo integration
--- This allows mapping between Akeneo codes and Catalyst entities (categories, products, etc.)
+-- This allows mapping between Akeneo codes and DainoStore entities (categories, products, etc.)
 
 CREATE TABLE IF NOT EXISTS akeneo_mappings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS akeneo_mappings (
   akeneo_code VARCHAR(255) NOT NULL,
   akeneo_type VARCHAR(50) NOT NULL, -- 'category', 'product', 'attribute', etc.
   
-  -- Catalyst side  
+  -- DainoStore side
   entity_type VARCHAR(50) NOT NULL, -- 'category', 'product', 'attribute', etc.
   entity_id UUID NOT NULL,
   entity_slug VARCHAR(255), -- For human-readable reference
@@ -33,11 +33,11 @@ CREATE TABLE IF NOT EXISTS akeneo_mappings (
 );
 
 -- Add comments for documentation
-COMMENT ON TABLE akeneo_mappings IS 'Maps Akeneo codes to Catalyst entities for flexible integration';
+COMMENT ON TABLE akeneo_mappings IS 'Maps Akeneo codes to DainoStore entities for flexible integration';
 COMMENT ON COLUMN akeneo_mappings.akeneo_code IS 'The code/identifier used in Akeneo PIM';
 COMMENT ON COLUMN akeneo_mappings.akeneo_type IS 'Type of Akeneo entity (category, product, attribute, etc.)';
-COMMENT ON COLUMN akeneo_mappings.entity_type IS 'Type of Catalyst entity being mapped to';
-COMMENT ON COLUMN akeneo_mappings.entity_id IS 'UUID of the Catalyst entity';
+COMMENT ON COLUMN akeneo_mappings.entity_type IS 'Type of DainoStore entity being mapped to';
+COMMENT ON COLUMN akeneo_mappings.entity_id IS 'UUID of the DainoStore entity';
 COMMENT ON COLUMN akeneo_mappings.entity_slug IS 'Human-readable slug for reference and fallback matching';
 COMMENT ON COLUMN akeneo_mappings.mapping_source IS 'How this mapping was created (auto, manual, import)';
 

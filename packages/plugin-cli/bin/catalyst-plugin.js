@@ -13,7 +13,7 @@ const validateCommand = require('../src/commands/validate');
 // ASCII Art Banner
 const banner = `
 ${chalk.cyan('╔══════════════════════════════════════╗')}
-${chalk.cyan('║')}     ${chalk.bold.white('🚀 Catalyst Plugin CLI')}        ${chalk.cyan('║')}
+${chalk.cyan('║')}     ${chalk.bold.white('🚀 DainoStore Plugin CLI')}        ${chalk.cyan('║')}
 ${chalk.cyan('║')}    ${chalk.gray('Create plugins effortlessly')}     ${chalk.cyan('║')}
 ${chalk.cyan('╚══════════════════════════════════════╝')}
 `;
@@ -21,8 +21,8 @@ ${chalk.cyan('╚═════════════════════
 console.log(banner);
 
 program
-  .name('catalyst-plugin')
-  .description('CLI tool for creating and managing Catalyst plugins')
+  .name('daino-plugin')
+  .description('CLI tool for creating and managing DainoStore plugins')
   .version(packageJson.version);
 
 // Create command
@@ -53,8 +53,8 @@ program
 // Publish command
 program
   .command('publish')
-  .description('Publish plugin to Catalyst marketplace')
-  .option('--store-url <url>', 'Catalyst store URL')
+  .description('Publish plugin to DainoStore marketplace')
+  .option('--store-url <url>', 'DainoStore store URL')
   .option('--api-key <key>', 'API key for authentication')
   .action(publishCommand);
 
@@ -110,8 +110,8 @@ program.parse();
 if (!process.argv.slice(2).length) {
   program.outputHelp();
   console.log(chalk.gray('\nExamples:'));
-  console.log(chalk.gray('  $ catalyst-plugin create my-plugin'));
-  console.log(chalk.gray('  $ catalyst-plugin create banner-plugin --template banner'));
-  console.log(chalk.gray('  $ catalyst-plugin validate'));
-  console.log(chalk.gray('  $ catalyst-plugin build --zip'));
+  console.log(chalk.gray('  $ daino-plugin create my-plugin'));
+  console.log(chalk.gray('  $ daino-plugin create banner-plugin --template banner'));
+  console.log(chalk.gray('  $ daino-plugin validate'));
+  console.log(chalk.gray('  $ daino-plugin build --zip'));
 }

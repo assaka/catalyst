@@ -11,7 +11,7 @@ test.describe('Authentication Flow', () => {
   });
 
   test('should display login form', async ({ page }) => {
-    await expect(page).toHaveTitle(/Catalyst/);
+    await expect(page).toHaveTitle(/DainoStore/);
     
     // Check login form elements
     await expect(page.locator('input[type="email"]')).toBeVisible();

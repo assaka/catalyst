@@ -94,7 +94,7 @@ class StorefrontApiClient {
     };
 
     // Add language header from localStorage
-    const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
+    const currentLanguage = localStorage.getItem('daino_language') || 'en';
     headers['X-Language'] = currentLanguage;
 
     // Add store ID header if available
@@ -118,7 +118,7 @@ class StorefrontApiClient {
     }
 
     // Add language header from localStorage
-    const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
+    const currentLanguage = localStorage.getItem('daino_language') || 'en';
     headers['X-Language'] = currentLanguage;
 
     return headers;

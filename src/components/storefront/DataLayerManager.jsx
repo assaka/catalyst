@@ -551,7 +551,7 @@ export default function DataLayerManager() {
       window.__STORE_CONTEXT__ = { store, settings };
       
       // Make tracking functions globally available
-      window.catalyst = {
+      window.daino = {
         // Core tracking
         trackEvent,
         trackActivity,

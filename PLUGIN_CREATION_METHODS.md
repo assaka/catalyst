@@ -2,7 +2,7 @@
 
 ## Overview
 
-Catalyst now provides **4 different methods** for store owners to create custom plugins without needing direct access to the codebase. Each method is designed for different skill levels and use cases.
+DainoStore now provides **4 different methods** for store owners to create custom plugins without needing direct access to the codebase. Each method is designed for different skill levels and use cases.
 
 ## 🎯 What You Can Create
 
@@ -138,13 +138,13 @@ module.exports = MyCustomPlugin;
 
 ### Installation:
 ```bash
-npm install -g @catalyst/plugin-cli
+npm install -g @daino/plugin-cli
 ```
 
 ### Usage:
 ```bash
 # Create new plugin
-catalyst-plugin create my-awesome-plugin
+daino-plugin create my-awesome-plugin
 
 # Interactive setup
 ? Plugin name: My Awesome Plugin
@@ -159,7 +159,7 @@ catalyst-plugin create my-awesome-plugin
 ✅ Added configuration schema
 
 # Deploy to store
-catalyst-plugin deploy --store-id your-store-id
+daino-plugin deploy --store-id your-store-id
 ```
 
 ## 🔧 Plugin Configuration
@@ -214,7 +214,7 @@ All plugin creation methods include:
 ## 🆘 Need Help?
 
 - **Documentation:** Full API reference available
-- **Community:** Join the Catalyst Plugin Community
+- **Community:** Join the DainoStore Plugin Community
 - **Support:** Contact support for technical issues
 - **Examples:** Browse the plugin marketplace for inspiration
 

@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# Fetch Render.com logs for catalyst-backend service
+# Fetch Render.com logs for daino-backend service
 # Make sure you have the Render CLI installed and authenticated
 
-echo "Fetching Render.com logs for catalyst-backend..."
+echo "Fetching Render.com logs for daino-backend..."
 echo "Looking for /api/cart errors and 500 status codes..."
 echo "================================================"
 
-# Replace 'catalyst-backend' with your exact service name if different
+# Replace 'daino-backend' with your exact service name if different
 # Fetch last 1000 lines and filter for cart-related errors
-render logs catalyst-backend --tail 1000 | grep -E "(500|/api/cart|merge|Error|Exception)" > render-cart-errors.log
+render logs daino-backend --tail 1000 | grep -E "(500|/api/cart|merge|Error|Exception)" > render-cart-errors.log
 
 echo "Logs saved to render-cart-errors.log"
 echo ""

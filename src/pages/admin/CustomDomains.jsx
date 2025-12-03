@@ -140,9 +140,9 @@ const CustomDomains = () => {
   const getTxtRecordName = (domain) => {
     const dnsName = getDnsRecordName(domain);
     if (dnsName === '@') {
-      return '_catalyst-verification';
+      return '_daino-verification';
     }
-    return `_catalyst-verification.${dnsName}`;
+    return `_daino-verification.${dnsName}`;
   };
 
   // Check if domain is root (can't use CNAME)

@@ -36,7 +36,7 @@ async function getGeoFromIP(ipAddress) {
     const response = await axios.get(`https://ipapi.co/${ipAddress}/json/`, {
       timeout: 2000,
       headers: {
-        'User-Agent': 'Catalyst-Analytics/1.0'
+        'User-Agent': 'DainoStore-Analytics/1.0'
       }
     });
 

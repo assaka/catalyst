@@ -15,7 +15,7 @@ const IntegrationConfig = {};
 IntegrationConfig.getEncryptionKey = () => {
   // Use environment variable or generate a key
   // In production, this should be a secure, consistent key
-  return process.env.INTEGRATION_ENCRYPTION_KEY || 'catalyst-integration-default-key-change-in-production';
+  return process.env.INTEGRATION_ENCRYPTION_KEY || 'daino-integration-default-key-change-in-production';
 };
 
 IntegrationConfig.getSensitiveFields = (integrationType) => {

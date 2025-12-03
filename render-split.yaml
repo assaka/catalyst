@@ -1,7 +1,7 @@
 services:
   # Backend API Service
   - type: web
-    name: catalyst-api
+    name: daino-api
     env: node
     buildCommand: cd backend && npm install
     startCommand: cd backend && npm start
@@ -20,14 +20,14 @@ services:
         value: 24h
       # CORS Configuration (allow both admin and storefront)
       - key: CORS_ORIGIN
-        value: https://catalyst-admin.onrender.com,https://catalyst-storefront.onrender.com
+        value: https://daino-admin.onrender.com,https://daino-storefront.onrender.com
       # OAuth Configuration
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_CALLBACK_URL
-        value: https://catalyst-api.onrender.com/api/auth/google/callback
+        value: https://daino-api.onrender.com/api/auth/google/callback
       # Session Configuration
       - key: SESSION_SECRET
         sync: false
@@ -49,24 +49,24 @@ services:
 
   # Admin Interface (with storefront capability)
   - type: web  
-    name: catalyst-admin
+    name: daino-admin
     env: static
     buildCommand: |
       npm install
       # Build with admin API endpoint
-      echo "VITE_API_URL=https://catalyst-api.onrender.com" > .env.production
+      echo "VITE_API_URL=https://daino-api.onrender.com" > .env.production
       npm run build
     staticPublishPath: ./dist
     pullRequestPreviewsEnabled: true
     
   # Dedicated Storefront
   - type: web
-    name: catalyst-storefront  
+    name: daino-storefront  
     env: static
     buildCommand: |
       npm install
       # Build storefront-optimized version
-      echo "VITE_API_URL=https://catalyst-api.onrender.com" > .env.production
+      echo "VITE_API_URL=https://daino-api.onrender.com" > .env.production
       echo "VITE_MODE=storefront" >> .env.production
       npm run build
     staticPublishPath: ./dist

@@ -101,7 +101,7 @@ CREATE INDEX IF NOT EXISTS idx_store_databases_active ON store_databases(is_acti
 CREATE TABLE IF NOT EXISTS store_hostnames (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
-  hostname VARCHAR(255) UNIQUE NOT NULL, -- 'myshop.catalyst.com'
+  hostname VARCHAR(255) UNIQUE NOT NULL, -- 'myshop.daino.com'
   slug VARCHAR(255) NOT NULL,            -- 'myshop'
   is_primary BOOLEAN DEFAULT true,
   is_custom_domain BOOLEAN DEFAULT false,

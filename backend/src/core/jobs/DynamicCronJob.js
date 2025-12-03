@@ -448,7 +448,7 @@ class DynamicCronJob extends BaseJobHandler {
       method: method.toUpperCase(),
       url,
       headers: {
-        'User-Agent': 'Catalyst-CronJob/1.0',
+        'User-Agent': 'DainoStore-CronJob/1.0',
         ...headers
       },
       timeout: timeout * 1000
@@ -532,7 +532,7 @@ class DynamicCronJob extends BaseJobHandler {
       url,
       headers: {
         'Authorization': `Bearer ${process.env.INTERNAL_API_TOKEN || ''}`,
-        'User-Agent': 'Catalyst-CronJob/1.0',
+        'User-Agent': 'DainoStore-CronJob/1.0',
         ...headers
       },
       timeout: 30000

@@ -1,6 +1,6 @@
 # Database Migration Guide
 
-This directory contains the complete database migration scripts for the Catalyst E-commerce Platform.
+This directory contains the complete database migration scripts for the DainoStore E-commerce Platform.
 
 ## Files
 
@@ -54,7 +54,7 @@ node src/database/migrations/run-migration.js
 
 ### Method 2: Using API Endpoint
 ```bash
-curl -X POST https://catalyst-backend-fzhu.onrender.com/api/stores/migrate
+curl -X POST https://daino.onrender.com/api/stores/migrate
 ```
 
 ### Method 3: Manual SQL Execution
@@ -86,14 +86,14 @@ After running the migration, verify success by:
 
 3. **Test API endpoint**:
    ```bash
-   curl https://catalyst-backend-fzhu.onrender.com/api/stores/debug
+   curl https://daino.onrender.com/api/stores/debug
    ```
 
 ## Demo Data
 
 The migration includes demo data for testing:
-- Admin user: `admin@catalyst.com` / `password`
-- Demo user: `demo@catalyst.com` / `password`
+- Admin user: `admin@daino.com` / `password`
+- Demo user: `demo@daino.com` / `password`
 - Demo store: "Demo Store" with sample products
 - Basic categories, shipping, and tax settings
 

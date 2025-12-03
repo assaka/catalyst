@@ -48,7 +48,7 @@ const fetchStoreData = useCallback(async (selectedStore) => {
   if (!selectedStore) return;
 
   try {
-    const currentLang = localStorage.getItem('catalyst_language') ||
+    const currentLang = localStorage.getItem('daino_language') ||
                        selectedStore.settings?.default_language || 'en';
 
     // STEP 1: Call bootstrap endpoint FIRST

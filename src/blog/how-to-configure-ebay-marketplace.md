@@ -2,7 +2,7 @@
 
 **Reach millions of buyers worldwide by listing your products on eBay - one of the world's largest online marketplaces.**
 
-With Catalyst's Marketplace Hub, you can create professional eBay listings in minutes, complete with AI-enhanced descriptions that sell!
+With DainoStore's Marketplace Hub, you can create professional eBay listings in minutes, complete with AI-enhanced descriptions that sell!
 
 ---
 
@@ -99,11 +99,11 @@ This is the most important one!
 
 ---
 
-## 🎨 **Step 2: Configure in Your Catalyst Store**
+## 🎨 **Step 2: Configure in Your DainoStore Store**
 
 ### **1. Open Marketplace Hub**
 
-In your Catalyst admin:
+In your DainoStore admin:
 1. Click **"Import & Export"** in sidebar
 2. Click **"Marketplace Hub"**
 3. Click the **"eBay"** tab
@@ -301,7 +301,7 @@ eBay fees: 16%
 Selling price: $10 + $5 + $2.40 (fees) = $17.40
 ```
 
-Use Catalyst's price adjustment to auto-calculate!
+Use DainoStore's price adjustment to auto-calculate!
 
 ### **3. Great Photos = More Sales**
 
@@ -346,7 +346,7 @@ eBay has thousands of categories. Our system:
 
 ### **Update Prices**
 
-When you change prices in Catalyst:
+When you change prices in DainoStore:
 1. Re-export affected products
 2. Listings update on eBay
 3. No need to manually edit each listing!
@@ -362,7 +362,7 @@ When stock changes:
 ### **Update Descriptions**
 
 Made product improvements?
-1. Update in your Catalyst catalog
+1. Update in your DainoStore catalog
 2. Re-export to eBay
 3. Listings get refreshed with new info
 
@@ -447,7 +447,7 @@ Plan your pricing with eBay fees in mind:
 | $50 | $6.50 | $1.50 | $8.00 | $42.00 |
 | $100 | $13.00 | $3.00 | $16.00 | $84.00 |
 
-**Use price adjustment** in Catalyst to auto-add markup!
+**Use price adjustment** in DainoStore to auto-add markup!
 
 ---
 
@@ -464,7 +464,7 @@ You now have:
 
 ---
 
-## 🌟 **Why Catalyst Beats Other Tools**
+## 🌟 **Why DainoStore Beats Other Tools**
 
 **vs. Channable:**
 - ✅ AI product optimization (they don't have this!)

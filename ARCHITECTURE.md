@@ -1,4 +1,4 @@
-# Catalyst E-commerce Platform - Architecture Documentation
+# DainoStore E-commerce Platform - Architecture Documentation
 
 ## Table of Contents
 - [Overview](#overview)
@@ -15,7 +15,7 @@
 
 ## Overview
 
-Catalyst is a headless e-commerce platform with a **slot-based page builder** system that allows visual customization of storefront pages through drag-and-drop editing. The architecture is designed to support:
+DainoStore is a headless e-commerce platform with a **slot-based page builder** system that allows visual customization of storefront pages through drag-and-drop editing. The architecture is designed to support:
 
 1. **WYSIWYG Page Editing**: Visual editor with live preview
 2. **Dual-Mode Rendering**: Same components work in editor and storefront
@@ -763,7 +763,7 @@ if (context === 'editor') {
 
 ## Summary
 
-The Catalyst architecture is built around:
+The DainoStore architecture is built around:
 
 1. **Slot-based page builder** for visual customization
 2. **Dual-mode rendering** (editor + storefront) using same components

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the new URL architecture implemented for the Catalyst e-commerce platform. The new structure provides better SEO, cleaner separation between admin and public areas, and supports advanced features like layered navigation and UTM tracking.
+This document describes the new URL architecture implemented for the DainoStore e-commerce platform. The new structure provides better SEO, cleaner separation between admin and public areas, and supports advanced features like layered navigation and UTM tracking.
 
 ## URL Structure
 

@@ -1,6 +1,6 @@
 # Entity Translation Guide
 
-This guide explains how to manage multilingual content for Products, Categories, CMS Pages, and CMS Blocks in Catalyst.
+This guide explains how to manage multilingual content for Products, Categories, CMS Pages, and CMS Blocks in DainoStore.
 
 ## Overview
 

@@ -50,7 +50,7 @@ BACKEND_URL=http://localhost:5000
 1. **Go to Supabase OAuth Apps**: https://supabase.com/dashboard/org/_/apps
 2. **Click "New OAuth Application"**
 3. **Fill in details**:
-   - **Application name**: `Catalyst Media Storage`
+   - **Application name**: `DainoStore Media Storage`
    - **Homepage URL**: `http://localhost:5179` (local) or your production URL
    - **Redirect URL**: `http://localhost:5000/api/supabase/callback` (local) or your production callback
    - **Scopes**: Select the following:
@@ -196,9 +196,9 @@ For production (Render.com, Vercel, etc.), update these URLs:
 
 ```env
 # Production URLs
-BACKEND_URL=https://catalyst-backend-fzhu.onrender.com
-SUPABASE_OAUTH_REDIRECT_URI=https://catalyst-backend-fzhu.onrender.com/api/supabase/callback
-FRONTEND_URL=https://catalyst-pearl.vercel.app
+BACKEND_URL=https://daino.onrender.com
+SUPABASE_OAUTH_REDIRECT_URI=https://daino.onrender.com/api/supabase/callback
+FRONTEND_URL=https://daino-pearl.vercel.app
 ```
 
 And update your Supabase OAuth app registration to match the production callback URL.

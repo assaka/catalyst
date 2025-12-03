@@ -6,7 +6,7 @@ class GitHubIntegration {
     this.baseUrl = 'https://api.github.com';
     this.clientId = process.env.GITHUB_CLIENT_ID;
     this.clientSecret = process.env.GITHUB_CLIENT_SECRET;
-    this.templateRepo = 'catalyst-ecommerce/store-template';
+    this.templateRepo = 'daino-ecommerce/store-template';
   }
 
   /**

@@ -24,7 +24,7 @@
    VITE_STRIPE_PUBLISHABLE_KEY=pk_live_your_stripe_publishable_key
    
    # App Configuration
-   VITE_APP_NAME=Catalyst
+   VITE_APP_NAME=DainoStore
    VITE_APP_DESCRIPTION=Modern E-commerce Platform
    ```
 
@@ -60,7 +60,7 @@
    VITE_SUPABASE_URL=https://your-project.supabase.co
    VITE_SUPABASE_ANON_KEY=your-anon-key
    VITE_STRIPE_PUBLISHABLE_KEY=pk_live_your_stripe_publishable_key
-   VITE_APP_NAME=Catalyst
+   VITE_APP_NAME=DainoStore
    VITE_APP_DESCRIPTION=Modern E-commerce Platform
    ```
 
@@ -90,7 +90,7 @@
    # - Set up and deploy? Yes
    # - Which scope? Your username/team
    # - Link to existing project? No
-   # - Project name: catalyst-frontend
+   # - Project name: daino-frontend
    # - Directory: ./
    # - Override settings? No
    ```

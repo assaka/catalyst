@@ -98,12 +98,12 @@ If manual deployment needed:
 
 **Backend (Render):**
 - Go to https://dashboard.render.com
-- Find the catalyst backend service
+- Find the daino backend service
 - Click "Manual Deploy" → "Deploy latest commit"
 
 **Frontend (Vercel):**
 - Go to https://vercel.com/dashboard
-- Find catalyst project
+- Find daino project
 - Should auto-deploy, or click "Redeploy"
 
 **Database (Supabase):**

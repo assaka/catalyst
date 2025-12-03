@@ -67,7 +67,7 @@ export const StoreProvider = ({ children }) => {
     }
   }, [fetchedSlug, resolvedSlug]);
 
-  const language = localStorage.getItem('catalyst_language') || 'en';
+  const language = localStorage.getItem('daino_language') || 'en';
 
   // LAYER 1: Bootstrap data (global data - 1 API call)
   const { data: bootstrap, isLoading: bootstrapLoading, refetch: refetchBootstrap, error: bootstrapError } = useStoreBootstrap(resolvedSlug, language);
@@ -96,15 +96,15 @@ export const StoreProvider = ({ children }) => {
         storefrontApiClient.setStoreContext(store.slug, store.id);
 
         // Initialize language
-        const savedLang = localStorage.getItem('catalyst_language');
+        const savedLang = localStorage.getItem('daino_language');
         if (!savedLang) {
           const defaultLang = mergedSettings.default_language || 'en';
-          localStorage.setItem('catalyst_language', defaultLang);
+          localStorage.setItem('daino_language', defaultLang);
         } else {
           const activeLanguages = mergedSettings.active_languages || ['en'];
           if (!activeLanguages.includes(savedLang)) {
             const defaultLang = mergedSettings.default_language || 'en';
-            localStorage.setItem('catalyst_language', defaultLang);
+            localStorage.setItem('daino_language', defaultLang);
           }
         }
 
@@ -135,7 +135,7 @@ export const StoreProvider = ({ children }) => {
         }
 
         // Load UI translations (from bootstrap)
-        const currentLang = localStorage.getItem('catalyst_language') || mergedSettings.default_language || 'en';
+        const currentLang = localStorage.getItem('daino_language') || mergedSettings.default_language || 'en';
         if (!mergedSettings.ui_translations) {
           mergedSettings.ui_translations = {};
         }

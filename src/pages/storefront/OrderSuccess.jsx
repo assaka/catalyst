@@ -202,8 +202,8 @@ export default function OrderSuccess() {
             setOrderItems(items);
 
             // Track purchase event with items
-            if (typeof window !== 'undefined' && window.catalyst?.trackPurchase) {
-              window.catalyst.trackPurchase(orderData);
+            if (typeof window !== 'undefined' && window.daino?.trackPurchase) {
+              window.daino.trackPurchase(orderData);
             }
           } else {
             // If no items found, try to reload the data after a short delay
@@ -226,8 +226,8 @@ export default function OrderSuccess() {
                     setOrder(retryOrderData);
 
                     // Track purchase event after retry with items
-                    if (typeof window !== 'undefined' && window.catalyst?.trackPurchase) {
-                      window.catalyst.trackPurchase(retryOrderData);
+                    if (typeof window !== 'undefined' && window.daino?.trackPurchase) {
+                      window.daino.trackPurchase(retryOrderData);
                     }
                   } else {
                     setOrderItems([]);

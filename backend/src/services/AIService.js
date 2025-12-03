@@ -470,9 +470,9 @@ class AIService {
       limit: 13 // 5 docs + 3 examples + 5 patterns
     });
 
-    const systemPrompt = `You are an expert plugin developer for the Catalyst e-commerce platform.
+    const systemPrompt = `You are an expert plugin developer for the DainoStore e-commerce platform.
 
-${ragContext || '# Catalyst Plugin Architecture\n\nPlugins are JavaScript classes that extend the base Plugin class with hooks, events, and controllers.'}
+${ragContext || '# DainoStore Plugin Architecture\n\nPlugins are JavaScript classes that extend the base Plugin class with hooks, events, and controllers.'}
 
 Generate a complete, production-ready plugin based on the user's description.
 
@@ -872,7 +872,7 @@ Example generatedFiles:
       // Generate README.md content
       const readmeContent = `# ${pluginData.name}
 
-${pluginData.description || 'AI-generated plugin for Catalyst e-commerce platform'}
+${pluginData.description || 'AI-generated plugin for DainoStore e-commerce platform'}
 
 ## Features
 

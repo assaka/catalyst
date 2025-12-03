@@ -1,4 +1,4 @@
-# Plugin Ecosystem Architecture for Catalyst
+# Plugin Ecosystem Architecture for DainoStore
 
 ## 1. Enhanced Uninstall System
 
@@ -108,7 +108,7 @@ Plugin Repository Structure:
 ```javascript
 class PluginRegistry {
   constructor() {
-    this.registryEndpoint = 'https://registry.catalyst.dev';
+    this.registryEndpoint = 'https://registry.daino.dev';
     this.githubRepos = new Map(); // GitHub repo cache
   }
   
@@ -143,10 +143,10 @@ class PluginRegistry {
 ### Plugin Development Kit (PDK)
 ```bash
 # CLI tool for plugin development
-npx @catalyst/pdk create my-plugin
-npx @catalyst/pdk test
-npx @catalyst/pdk publish
-npx @catalyst/pdk validate
+npx @daino/pdk create my-plugin
+npx @daino/pdk test
+npx @daino/pdk publish
+npx @daino/pdk validate
 ```
 
 ### Plugin Templates
@@ -277,7 +277,7 @@ class PluginVersionManager {
 - **Plugin ratings & reviews**
 - **Usage statistics & analytics**
 - **Plugin recommendations** based on store type
-- **Featured plugins** curated by Catalyst team
+- **Featured plugins** curated by DainoStore team
 - **Plugin collections** (e.g., "E-commerce Essentials")
 
 ### Monetization Support

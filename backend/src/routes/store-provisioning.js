@@ -131,7 +131,7 @@ router.get('/check-subdomain/:subdomain', async (req, res) => {
       data: {
         subdomain,
         available: isAvailable,
-        domain: isAvailable ? `${subdomain}.catalyst.app` : null,
+        domain: isAvailable ? `${subdomain}.daino.app` : null,
         checked_at: new Date().toISOString()
       }
     });

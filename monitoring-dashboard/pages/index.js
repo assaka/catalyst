@@ -1,5 +1,5 @@
 // Monitoring Dashboard - Main Page
-// Real-time monitoring for Catalyst e-commerce platform
+// Real-time monitoring for DainoStore e-commerce platform
 
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
@@ -63,8 +63,8 @@ export default function MonitoringDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
-        <title>Catalyst Monitoring Dashboard</title>
-        <meta name="description" content="Real-time monitoring for Catalyst e-commerce platform" />
+        <title>DainoStore Monitoring Dashboard</title>
+        <meta name="description" content="Real-time monitoring for DainoStore e-commerce platform" />
       </Head>
 
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -72,7 +72,7 @@ export default function MonitoringDashboard() {
         <div className="px-4 py-6 sm:px-0">
           <div className="border-b border-gray-200 pb-5">
             <h1 className="text-3xl font-bold leading-6 text-gray-900">
-              🚀 Catalyst Monitoring Dashboard
+              🚀 DainoStore Monitoring Dashboard
             </h1>
             <p className="mt-2 max-w-4xl text-sm text-gray-500">
               Real-time monitoring of Render + Vercel + Supabase deployment stack

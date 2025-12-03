@@ -51,7 +51,7 @@ If BullMQ NOT available:
 
 3. **Configure Redis**
    ```
-   Name: catalyst-redis
+   Name: daino-redis
    Region: Oregon (US West) ← Choose same region as your backend!
    Plan: Free (25MB, 10 connections) ← Start here
    Maxmemory Policy: allkeys-lru ← Recommended
@@ -63,7 +63,7 @@ If BullMQ NOT available:
    - Status will change from "Creating..." to "Available"
 
 5. **Copy Connection String**
-   - Once available, click on `catalyst-redis`
+   - Once available, click on `daino-redis`
    - You'll see: **Internal Redis URL** and **External Redis URL**
    - Copy the **Internal Redis URL** (faster, more secure)
    - Format: `redis://red-xxxxxxxxxxxxx:6379`
@@ -71,7 +71,7 @@ If BullMQ NOT available:
 ### Step 2: Link Redis to Backend Service
 
 1. **Go to Backend Service**
-   - In Render dashboard, click on **`catalyst-backend`**
+   - In Render dashboard, click on **`daino-backend`**
 
 2. **Add Environment Variable**
    - Click **"Environment"** tab (left sidebar)
@@ -79,7 +79,7 @@ If BullMQ NOT available:
 
 3. **Add REDIS_URL**
    - Click **"Add from Redis"** button
-   - Select **`catalyst-redis`** from dropdown
+   - Select **`daino-redis`** from dropdown
    - It will create:
      ```
      Key: REDIS_URL
@@ -102,10 +102,10 @@ If BullMQ NOT available:
 ### Step 3: Link Redis to Worker Service
 
 1. **Go to Worker Service**
-   - In Render dashboard, click on **`catalyst-background-worker`**
+   - In Render dashboard, click on **`daino-background-worker`**
 
 2. **Repeat Step 2**
-   - Add REDIS_URL from catalyst-redis
+   - Add REDIS_URL from daino-redis
    - Verify REDIS_ENABLED=true
    - Save changes
 
@@ -116,7 +116,7 @@ If BullMQ NOT available:
 ### Step 4: Verify Setup
 
 #### A. Check Redis Service
-1. Click on **`catalyst-redis`** in dashboard
+1. Click on **`daino-redis`** in dashboard
 2. You should see:
    - ✅ Status: Available
    - ✅ Memory Used: ~1-2 MB (very low initially)
@@ -124,7 +124,7 @@ If BullMQ NOT available:
    - ✅ Commands/sec: Should show activity when jobs run
 
 #### B. Check Backend Logs
-1. Go to **`catalyst-backend`** → **Logs** tab
+1. Go to **`daino-backend`** → **Logs** tab
 2. Look for these lines (scroll to recent deployment):
    ```
    ==> Building...
@@ -150,7 +150,7 @@ If BullMQ NOT available:
    → Redis is NOT connected. Go back and check REDIS_URL is set correctly.
 
 #### C. Check Worker Logs
-1. Go to **`catalyst-background-worker`** → **Logs** tab
+1. Go to **`daino-background-worker`** → **Logs** tab
 2. Look for:
    ```
    🔧 Starting Background Job Worker...
@@ -165,7 +165,7 @@ If BullMQ NOT available:
 #### D. Test with a Job
 1. **Trigger a translation job** (via your UI or API):
    ```bash
-   curl -X POST https://catalyst-backend-fzhu.onrender.com/api/translations/ui-labels/bulk \
+   curl -X POST https://daino.onrender.com/api/translations/ui-labels/bulk \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer YOUR_TOKEN" \
      -d '{
@@ -192,14 +192,14 @@ If BullMQ NOT available:
 ### Step 5: Monitor and Maintain
 
 #### Redis Metrics
-- Go to **`catalyst-redis`** in dashboard
+- Go to **`daino-redis`** in dashboard
 - Monitor:
   - **Memory Usage**: Should stay well under 25MB on free tier
   - **Connected Clients**: Should be 2-4 normally (backend + worker)
   - **Commands/sec**: Increases when jobs are active
 
 #### Set Up Alerts (Optional)
-1. In `catalyst-redis` settings
+1. In `daino-redis` settings
 2. Click **"Notifications"**
 3. Add email alerts for:
    - Memory usage > 80%
@@ -250,7 +250,7 @@ BullMQ: Failed to initialize: connect ECONNREFUSED
 - No worker log activity
 
 **Solutions:**
-1. Check `catalyst-background-worker` service is running
+1. Check `daino-background-worker` service is running
 2. Check worker service has REDIS_URL set
 3. Check worker logs for startup errors
 4. Verify job type is registered (check BackgroundJobManager.js:76-110)
@@ -288,7 +288,7 @@ Instead of manual setup, I already updated your `render.yaml` to include Redis:
 
 ```yaml
 databases:
-  - name: catalyst-redis
+  - name: daino-redis
     plan: free
     region: oregon
 ```
@@ -307,8 +307,8 @@ git push
 ```
 
 Render will automatically:
-1. Create `catalyst-redis` instance
-2. Link it to `catalyst-backend` and `catalyst-background-worker`
+1. Create `daino-redis` instance
+2. Link it to `daino-backend` and `daino-background-worker`
 3. Set REDIS_URL environment variables
 4. Redeploy services with Redis connection
 
@@ -341,9 +341,9 @@ User action → API → Database + Redis queue → Worker picks up instantly →
 
 After completing manual setup, verify:
 
-- [ ] Redis service `catalyst-redis` exists and is "Available"
-- [ ] `catalyst-backend` has REDIS_URL and REDIS_ENABLED=true
-- [ ] `catalyst-background-worker` has REDIS_URL and REDIS_ENABLED=true
+- [ ] Redis service `daino-redis` exists and is "Available"
+- [ ] `daino-backend` has REDIS_URL and REDIS_ENABLED=true
+- [ ] `daino-background-worker` has REDIS_URL and REDIS_ENABLED=true
 - [ ] Backend logs show "BullMQ: Redis connection established"
 - [ ] Worker logs show "BullMQ: Redis connection established"
 - [ ] Backend logs show multiple "BullMQ: Created worker for..." messages

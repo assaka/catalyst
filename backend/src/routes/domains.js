@@ -69,7 +69,7 @@ router.get('/storefront-url', async (req, res) => {
     
     // Final fallback to slug-based URL
     if (!storefrontUrl) {
-      storefrontUrl = `https://${store.slug}.catalyst.com`;
+      storefrontUrl = `https://${store.slug}.daino.com`;
       source = 'slug_fallback';
     }
 
@@ -669,7 +669,7 @@ async function checkDomainStatus(domain) {
     let wwwPointsToUs = false;
     try {
       const wwwRecords = await dns.resolveCname(`www.${domain}`);
-      wwwPointsToUs = wwwRecords.some(cname => cname.includes('catalyst') || cname.includes('pages.dev'));
+      wwwPointsToUs = wwwRecords.some(cname => cname.includes('daino') || cname.includes('pages.dev'));
     } catch (error) {
       // CNAME not found, which is OK
     }
@@ -794,7 +794,7 @@ function getRequiredDNSRecords(storeId) {
     {
       type: 'CNAME',
       name: 'www',
-      value: 'catalyst.pages.dev',
+      value: 'daino.pages.dev',
       description: 'Points www subdomain to our CDN'
     }
   ];

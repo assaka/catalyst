@@ -180,8 +180,8 @@ const CustomDomain = sequelize.define('CustomDomain', {
 // Instance methods
 CustomDomain.prototype.generateVerificationToken = function() {
   const crypto = require('crypto');
-  this.verification_token = `catalyst-verify-${crypto.randomBytes(16).toString('hex')}`;
-  this.verification_record_name = `_catalyst-verification.${this.domain}`;
+  this.verification_token = `daino-verify-${crypto.randomBytes(16).toString('hex')}`;
+  this.verification_record_name = `_daino-verification.${this.domain}`;
   this.verification_record_value = this.verification_token;
   return this.verification_token;
 };
@@ -229,7 +229,7 @@ CustomDomain.prototype.getRequiredDNSRecords = function() {
     // TXT record for verification (always required)
     {
       type: 'TXT',
-      name: `_catalyst-verification.${subdomain}`,
+      name: `_daino-verification.${subdomain}`,
       value: this.verification_token,
       ttl: 300,
       required: true,

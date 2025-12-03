@@ -251,10 +251,10 @@ app.options('/api/*', async (req, res, next) => {
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://catalyst-pearl.vercel.app',
-  'https://catalyst-ecommerce.vercel.app',
-  'https://catalyst-683t6upsk-hamids-projects-1928df2f.vercel.app',
-  'https://catalyst-backend-fzhu.onrender.com', // Allow backend for preview pages
+  'https://daino-pearl.vercel.app',
+  'https://daino-ecommerce.vercel.app',
+  'https://daino-683t6upsk-hamids-projects-1928df2f.vercel.app',
+  'https://daino.onrender.com', // Allow backend for preview pages
   process.env.CORS_ORIGIN
 ].filter(Boolean);
 
@@ -1460,7 +1460,7 @@ app.get('/preview/:storeId', async (req, res) => {
     const hasExtensions = currentVersionResult.success && currentVersionResult.version;
 
     // Redirect to main application
-    const publicStoreBaseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+    const publicStoreBaseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://daino-pearl.vercel.app';
     const routePath = '';
 
     // Add extension system parameters instead of patches

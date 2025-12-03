@@ -1040,12 +1040,12 @@ export function UnifiedSlotRenderer({
               // CRITICAL: Use same success check as ProductItemCard (result.success === true, not !== false)
               if (result.success) {
                 // Track add to cart event
-                if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
-                  window.catalyst.trackAddToCart(product, 1);
+                if (typeof window !== 'undefined' && window.daino?.trackAddToCart) {
+                  window.daino.trackAddToCart(product, 1);
                 }
 
                 // Get translation from ui_translations
-                const currentLang = localStorage.getItem('catalyst_language') || 'en';
+                const currentLang = localStorage.getItem('daino_language') || 'en';
                 const translations = variableContext?.settings?.ui_translations || {};
                 const addedToCartMessage = translations[currentLang]?.common?.added_to_cart ||
                                           translations['en']?.common?.added_to_cart ||
@@ -1063,7 +1063,7 @@ export function UnifiedSlotRenderer({
               console.error('Failed to add to cart:', error);
 
               // Get translation from ui_translations
-              const currentLang = localStorage.getItem('catalyst_language') || 'en';
+              const currentLang = localStorage.getItem('daino_language') || 'en';
               const translations = variableContext?.settings?.ui_translations || {};
               const errorMessage = translations[currentLang]?.common?.error_adding_to_cart ||
                                   translations['en']?.common?.error_adding_to_cart ||

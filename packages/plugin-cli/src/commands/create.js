@@ -179,9 +179,9 @@ module.exports = async (pluginName, options) => {
       
       console.log(chalk.blue('\n📋 Next steps:'));
       console.log(chalk.gray(`  1. cd ${pluginName}`));
-      console.log(chalk.gray('  2. catalyst-plugin validate'));
-      console.log(chalk.gray('  3. catalyst-plugin build --zip'));
-      console.log(chalk.gray('  4. Upload the ZIP to your Catalyst store'));
+      console.log(chalk.gray('  2. daino-plugin validate'));
+      console.log(chalk.gray('  3. daino-plugin build --zip'));
+      console.log(chalk.gray('  4. Upload the ZIP to your DainoStore store'));
 
       console.log(chalk.blue('\n📁 Plugin structure:'));
       console.log(chalk.gray('  ├── manifest.json    # Plugin configuration'));
@@ -191,9 +191,9 @@ module.exports = async (pluginName, options) => {
       console.log(chalk.gray('  └── README.md        # Documentation'));
 
       console.log(chalk.blue('\n🔧 Development commands:'));
-      console.log(chalk.gray('  catalyst-plugin dev         # Start dev server'));
-      console.log(chalk.gray('  catalyst-plugin validate    # Check plugin'));
-      console.log(chalk.gray('  catalyst-plugin build       # Build for production'));
+      console.log(chalk.gray('  daino-plugin dev         # Start dev server'));
+      console.log(chalk.gray('  daino-plugin validate    # Check plugin'));
+      console.log(chalk.gray('  daino-plugin build       # Build for production'));
 
     } catch (error) {
       spinner.fail('Failed to create plugin files');

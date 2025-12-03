@@ -13,7 +13,7 @@ This guide will walk you through integrating and testing the master-tenant archi
 1. Go to https://supabase.com/dashboard
 2. Click **"New Project"**
 3. Settings:
-   - Name: `catalyst-master-db`
+   - Name: `daino-master-db`
    - Password: Generate strong password (save it!)
    - Region: `us-east-1` (same as tenant DBs)
 4. Wait ~2 minutes for provisioning
@@ -383,7 +383,7 @@ curl -X POST http://localhost:3000/api/stores/$STORE_ID/connect-database \
       "status": "active",
       "is_active": true
     },
-    "hostname": "my-awesome-store.catalyst.com",
+    "hostname": "my-awesome-store.daino.com",
     "provisioning": {
       "tablesCreated": [...],
       "dataSeeded": [...]
@@ -494,11 +494,11 @@ curl -X GET "http://localhost:3000/api/credits/transactions?limit=10" \
 ## Part 8: Test Hostname Resolution
 
 ### Prerequisites
-Your store now has hostname: `my-awesome-store.catalyst.com`
+Your store now has hostname: `my-awesome-store.daino.com`
 
 For local testing, add to `/etc/hosts` (Mac/Linux) or `C:\Windows\System32\drivers\etc\hosts` (Windows):
 ```
-127.0.0.1  my-awesome-store.catalyst.com
+127.0.0.1  my-awesome-store.daino.com
 ```
 
 ### Test Tenant Resolver

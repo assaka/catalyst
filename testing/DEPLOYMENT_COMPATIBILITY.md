@@ -15,7 +15,7 @@ Your comprehensive testing system is **100% compatible** with Render + Vercel + 
 - ✅ **Transformation Bug Prevention** - Specifically monitors the custom mappings endpoint that had the bug
 
 ### **Integration Points:**
-- **Health Endpoint**: `https://catalyst-backend-fzhu.onrender.com/health`
+- **Health Endpoint**: `https://daino.onrender.com/health`
 - **Critical Endpoints**: All your API endpoints are monitored
 - **Alert Thresholds**: 5-second response time alerts (higher for serverless cold starts)
 - **Deployment Monitoring**: Automatic health checks after deployments
@@ -44,7 +44,7 @@ app.use(testing.createExpressMiddleware());
 - ✅ **Build Status Monitoring** - Integration with Vercel deployment API
 
 ### **Integration Points:**
-- **Frontend URL**: `https://catalyst-pearl.vercel.app`
+- **Frontend URL**: `https://daino-pearl.vercel.app`
 - **Critical Routes**: Admin panels, integrations, product management
 - **Performance**: Sub-3-second response time monitoring
 - **API Debugging**: Works in development mode, disabled in production
@@ -212,8 +212,8 @@ The live test shows:
 ```bash
 # Enable monitoring in your current deployment
 export MONITORING_ENABLED=true
-export RENDER_BACKEND_URL=https://catalyst-backend-fzhu.onrender.com
-export VERCEL_FRONTEND_URL=https://catalyst-pearl.vercel.app
+export RENDER_BACKEND_URL=https://daino.onrender.com
+export VERCEL_FRONTEND_URL=https://daino-pearl.vercel.app
 
 # Run health check
 node testing/deployment/deployment-monitor.cjs

@@ -259,7 +259,7 @@ function processTranslations(content, context, pageData) {
 
   return content.replace(translationRegex, (match, key) => {
     const currentLang = typeof localStorage !== 'undefined'
-      ? localStorage.getItem('catalyst_language') || 'en'
+      ? localStorage.getItem('daino_language') || 'en'
       : 'en';
 
     const uiTranslations = context?.settings?.ui_translations || pageData?.settings?.ui_translations || {};

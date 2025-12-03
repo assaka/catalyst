@@ -1,6 +1,6 @@
 # Performance Optimization Implementation Summary
 
-**Project:** Catalyst E-commerce Platform
+**Project:** DainoStore E-commerce Platform
 **Date:** 2025-11-08
 **Status:** Phase 1 Complete ✅ | Deploying to Production
 
@@ -254,13 +254,13 @@
 ### Render.com Deployment
 
 **Auto-deploying:**
-- catalyst-backend (building now, ~3-5 minutes)
+- daino-backend (building now, ~3-5 minutes)
 - Includes all backend optimizations
 
 ### Vercel Deployment
 
 **Auto-deploying:**
-- catalyst-frontend (building now, ~2 minutes)
+- daino-frontend (building now, ~2 minutes)
 - Includes preconnect, lazy loading, React Query optimization
 
 ---
@@ -269,27 +269,27 @@
 
 ### Step 1: Verify Redis Connection
 ```
-URL: https://catalyst-backend-fzhu.onrender.com/health/cache
+URL: https://daino.onrender.com/health/cache
 Expected: "connected": true, "keys": > 0
 ```
 
 ### Step 2: Test Cache Headers
 ```
-URL: https://catalyst-backend-fzhu.onrender.com/api/cache-test/test
+URL: https://daino.onrender.com/api/cache-test/test
 Action: Load twice, check x-cache header
 Expected: MISS → HIT
 ```
 
 ### Step 3: Test Product Caching
 ```
-URL: https://catalyst-backend-fzhu.onrender.com/api/public/products?limit=5
+URL: https://daino.onrender.com/api/public/products?limit=5
 Action: Load twice within 3 minutes
 Expected: x-cache: MISS → x-cache: HIT
 ```
 
 ### Step 4: Test Frontend
 ```
-URL: https://catalyst-pearl.vercel.app/public/hamid2/product/kenwood...
+URL: https://daino-pearl.vercel.app/public/hamid2/product/kenwood...
 Action: Check Network tab for image lazy loading
 Expected: Images load only when scrolling
 ```
@@ -372,7 +372,7 @@ Expected: Shows duplicate calls, cache hit rate, slow requests
 ### Test 1: Cache Test Endpoint
 
 **Firefox:**
-1. Open: https://catalyst-backend-fzhu.onrender.com/api/cache-test/test
+1. Open: https://daino.onrender.com/api/cache-test/test
 2. F12 → Network → Reload
 3. Click "test" → Headers → Look for `x-cache: MISS`
 4. Reload again → Should see `x-cache: HIT`
@@ -383,7 +383,7 @@ Expected: Shows duplicate calls, cache hit rate, slow requests
 
 **Open:**
 ```
-https://catalyst-backend-fzhu.onrender.com/health/cache
+https://daino.onrender.com/health/cache
 ```
 
 **Look for:**
@@ -400,7 +400,7 @@ https://catalyst-backend-fzhu.onrender.com/health/cache
 
 **Open:**
 ```
-https://catalyst-pearl.vercel.app/public/hamid2/product/kenwood...
+https://daino-pearl.vercel.app/public/hamid2/product/kenwood...
 ```
 
 **Check:**
@@ -420,7 +420,7 @@ https://catalyst-pearl.vercel.app/public/hamid2/product/kenwood...
 2. Click **"New +"** or look for **Databases** section
 3. Select **"Key-Value Store"** (this is Redis)
 4. Configure:
-   - Name: `catalyst-redis`
+   - Name: `daino-redis`
    - Plan: **Starter** ($7/month, 256MB)
    - Region: Same as backend
 5. Click **"Create Key-Value Store"**
@@ -428,10 +428,10 @@ https://catalyst-pearl.vercel.app/public/hamid2/product/kenwood...
 
 ### Link to Backend:
 
-1. Go to **catalyst-backend** → **Environment**
+1. Go to **daino-backend** → **Environment**
 2. Add or edit `REDIS_URL`:
    - Click **"From Database"**
-   - Select `catalyst-redis`
+   - Select `daino-redis`
    - Property: `connectionString`
 3. Save changes
 4. Backend will auto-redeploy (~2 min)
@@ -479,7 +479,7 @@ Add to Render environment:
 
 **3. Render Logs**
 ```
-Dashboard → catalyst-backend → Logs
+Dashboard → daino-backend → Logs
 Shows: Slow queries, high query counts, errors
 ```
 

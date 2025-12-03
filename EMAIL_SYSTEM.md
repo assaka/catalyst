@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Catalyst email management system provides a comprehensive solution for sending transactional emails using Brevo. It includes:
+The DainoStore email management system provides a comprehensive solution for sending transactional emails using Brevo. It includes:
 
 - **Multi-language email templates** with translation support
 - **Brevo API key integration** for secure email sending

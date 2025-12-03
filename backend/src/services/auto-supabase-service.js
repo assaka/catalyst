@@ -19,7 +19,7 @@ class AutoSupabaseService {
       }
 
       const projectConfig = {
-        name: `catalyst-${storeData.slug}`,
+        name: `daino-${storeData.slug}`,
         organization_id: this.organizationId,
         plan: 'free',
         region: 'us-east-1',
@@ -86,7 +86,7 @@ class AutoSupabaseService {
       success: true,
       project: {
         id: `placeholder-${storeId}`,
-        name: `catalyst-${storeData.slug}`,
+        name: `daino-${storeData.slug}`,
         url: `https://${placeholderRef}.supabase.co`,
         ref: placeholderRef,
         status: 'ACTIVE_PLACEHOLDER'

@@ -120,8 +120,8 @@ export default function HeaderSearch({ styles = {} }) {
 
     if (searchQuery.trim()) {
       // Track search event
-      if (typeof window !== 'undefined' && window.catalyst?.trackSearch) {
-        window.catalyst.trackSearch(searchQuery.trim(), searchResults.length);
+      if (typeof window !== 'undefined' && window.daino?.trackSearch) {
+        window.daino.trackSearch(searchQuery.trim(), searchResults.length);
       }
 
       // Navigate to Storefront page with search parameter

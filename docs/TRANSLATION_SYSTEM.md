@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Catalyst application uses a dual translation system to support multi-language content across the entire application. This document explains how translations work and how to troubleshoot common issues.
+The DainoStore application uses a dual translation system to support multi-language content across the entire application. This document explains how translations work and how to troubleshoot common issues.
 
 ## Architecture
 
@@ -466,12 +466,12 @@ When debugging translation issues, check these in order:
 
 Language is stored in localStorage:
 ```javascript
-localStorage.setItem('catalyst_language', 'nl'); // or 'en'
+localStorage.setItem('daino_language', 'nl'); // or 'en'
 ```
 
 Both translation systems check this:
 ```javascript
-const currentLang = localStorage.getItem('catalyst_language') || 'en';
+const currentLang = localStorage.getItem('daino_language') || 'en';
 ```
 
 Fallback chain:

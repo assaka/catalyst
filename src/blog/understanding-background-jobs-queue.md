@@ -1,6 +1,6 @@
 # 📊 Understanding Your Background Jobs & Queue
 
-**Never lose progress again! Learn how Catalyst's smart job queue keeps your imports, exports, and translations running smoothly - even during updates.**
+**Never lose progress again! Learn how DainoStore's smart job queue keeps your imports, exports, and translations running smoothly - even during updates.**
 
 ---
 
@@ -20,7 +20,7 @@ Background jobs are tasks that run "behind the scenes" so you don't have to wait
 
 ---
 
-## 🚀 **What Makes Catalyst's Queue Special?**
+## 🚀 **What Makes DainoStore's Queue Special?**
 
 ### **The Problem with Most Systems:**
 
@@ -32,7 +32,7 @@ Other platforms lose progress when:
 
 **You have to start over!** Frustrating with 1,000 product imports.
 
-### **Catalyst's Solution: Persistent Queue**
+### **DainoStore's Solution: Persistent Queue**
 
 Our queue uses **BullMQ + Redis** which means:
 - ✅ **Survives server restarts** - Job resumes exactly where it left off

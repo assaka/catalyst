@@ -2,7 +2,7 @@
 
 ## Overview
 
-The RAG (Retrieval-Augmented Generation) system provides database-backed context for all AI features in Catalyst. Instead of hardcoded prompts, AI features fetch relevant knowledge from PostgreSQL tables.
+The RAG (Retrieval-Augmented Generation) system provides database-backed context for all AI features in DainoStore. Instead of hardcoded prompts, AI features fetch relevant knowledge from PostgreSQL tables.
 
 ---
 

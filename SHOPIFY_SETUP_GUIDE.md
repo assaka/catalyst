@@ -2,7 +2,7 @@
 
 ## Quick Setup for Testing
 
-To give Catalyst access to your Shopify shop and start importing data, follow these steps:
+To give DainoStore access to your Shopify shop and start importing data, follow these steps:
 
 ## Option 1: Using a Private App (Easiest for Testing)
 
@@ -21,7 +21,7 @@ To give Catalyst access to your Shopify shop and start importing data, follow th
 
 4. **Create a Private App**
    - Click "Create private app"
-   - Enter app name: `Catalyst Integration`
+   - Enter app name: `DainoStore Integration`
    - Enter your email address
 
 5. **Configure API Permissions**
@@ -39,7 +39,7 @@ To give Catalyst access to your Shopify shop and start importing data, follow th
      - **Password** (use as SHOPIFY_CLIENT_SECRET)
      - **Shared Secret**
 
-### Step 2: Configure Catalyst Backend
+### Step 2: Configure DainoStore Backend
 
 Add these to your backend `.env` file:
 
@@ -73,7 +73,7 @@ SHOPIFY_SHOP_DOMAIN=your-store.myshopify.com
 2. **Create a Custom App**
    - Click "Develop apps"
    - Click "Create an app"
-   - Name it: `Catalyst Integration`
+   - Name it: `DainoStore Integration`
 
 3. **Configure Admin API Scopes**
    - Click "Configure Admin API scopes"
@@ -92,7 +92,7 @@ SHOPIFY_SHOP_DOMAIN=your-store.myshopify.com
    - Click "Install app"
    - You'll get an Admin API access token
 
-### Step 2: Configure Catalyst
+### Step 2: Configure DainoStore
 
 ```bash
 # Add to backend .env file
@@ -115,8 +115,8 @@ SHOPIFY_API_VERSION=2024-01
 ### App Configuration
 
 1. **Basic Information**
-   - App name: `Catalyst Integration`
-   - App URL: `https://your-catalyst-frontend.com/admin/shopify-integration`
+   - App name: `DainoStore Integration`
+   - App URL: `https://your-daino-frontend.com/admin/shopify-integration`
 
 2. **App Setup**
    - Redirect URLs:
@@ -130,7 +130,7 @@ SHOPIFY_API_VERSION=2024-01
    - Client ID: `xxxxxxxxxxxx`
    - Client Secret: `xxxxxxxxxxxx`
 
-4. **Configure Catalyst Backend**
+4. **Configure DainoStore Backend**
    ```bash
    SHOPIFY_CLIENT_ID=your_client_id
    SHOPIFY_CLIENT_SECRET=your_client_secret
@@ -178,7 +178,7 @@ Run with: `node test-shopify-connection.js`
 
 ## For Your Immediate Testing
 
-Since you want to import data into Catalyst quickly, I recommend:
+Since you want to import data into DainoStore quickly, I recommend:
 
 1. **Use Option 2 (Custom App)** - It's the quickest
 2. Create a Custom App in your Shopify admin

@@ -445,7 +445,7 @@ class CloudflareOAuthService {
    * Encrypt sensitive values
    */
   encryptValue(value) {
-    const key = process.env.INTEGRATION_ENCRYPTION_KEY || 'catalyst-integration-default-key-change-in-production';
+    const key = process.env.INTEGRATION_ENCRYPTION_KEY || 'daino-integration-default-key-change-in-production';
     const cipher = crypto.createCipher('aes-256-cbc', key);
     let encrypted = cipher.update(value, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -460,7 +460,7 @@ class CloudflareOAuthService {
       return encryptedValue; // Not encrypted
     }
     
-    const key = process.env.INTEGRATION_ENCRYPTION_KEY || 'catalyst-integration-default-key-change-in-production';
+    const key = process.env.INTEGRATION_ENCRYPTION_KEY || 'daino-integration-default-key-change-in-production';
     const encrypted = encryptedValue.replace('encrypted:', '');
     const decipher = crypto.createDecipher('aes-256-cbc', key);
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');

@@ -673,22 +673,22 @@ class PluginManager {
           name: 'Google Analytics 4',
           slug: 'google-analytics-4',
           description: 'Integrate Google Analytics 4 for advanced tracking',
-          author: 'Catalyst Team',
+          author: 'DainoStore Team',
           category: 'analytics',
           version: '1.0.0',
           sourceType: 'github',
-          sourceUrl: 'https://github.com/catalyst-plugins/google-analytics-4',
+          sourceUrl: 'https://github.com/daino-plugins/google-analytics-4',
           status: 'available'
         },
         {
           name: 'Stripe Payment Gateway',
           slug: 'stripe-payment',
           description: 'Accept payments through Stripe',
-          author: 'Catalyst Team',
+          author: 'DainoStore Team',
           category: 'payment',
           version: '2.0.0',
           sourceType: 'github',
-          sourceUrl: 'https://github.com/catalyst-plugins/stripe-payment',
+          sourceUrl: 'https://github.com/daino-plugins/stripe-payment',
           status: 'available'
         }
       ];

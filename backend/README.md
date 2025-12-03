@@ -1,6 +1,6 @@
-# Catalyst Backend API
+# DainoStore Backend API
 
-A comprehensive Node.js/Express backend API for the Catalyst e-commerce platform.
+A comprehensive Node.js/Express backend API for the DainoStore e-commerce platform.
 
 ## Features
 
@@ -47,7 +47,7 @@ cp .env.example .env
 # Edit .env with your database credentials
 # DB_HOST=localhost
 # DB_PORT=5432
-# DB_NAME=catalyst_db
+# DB_NAME=daino_db
 # DB_USERNAME=postgres
 # DB_PASSWORD=your_password
 # JWT_SECRET=your_jwt_secret
@@ -57,7 +57,7 @@ cp .env.example .env
 
 ```bash
 # Create database
-createdb catalyst_db
+createdb daino_db
 
 # Run the server (will auto-sync tables in development)
 npm run dev
@@ -219,7 +219,7 @@ NODE_ENV=development
 # Database
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=catalyst_db
+DB_NAME=daino_db
 DB_USERNAME=postgres
 DB_PASSWORD=password
 

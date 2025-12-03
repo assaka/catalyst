@@ -1,5 +1,5 @@
 -- Comprehensive AI RAG Context Data
--- This provides extensive knowledge for the AI to understand the entire Catalyst platform
+-- This provides extensive knowledge for the AI to understand the entire DainoStore platform
 -- Categories: database_schema, e-commerce, analytics, jobs, settings, integrations
 --
 -- SAFE TO RE-RUN: This script deletes existing entries before inserting
@@ -618,7 +618,7 @@ INTEGRATION_CONFIGS (integration_configs table):
 - is_active, last_sync_at
 
 AKENEO_MAPPINGS (akeneo_mappings table):
-- Maps Akeneo attributes to Catalyst attributes
+- Maps Akeneo attributes to DainoStore attributes
 - source_attribute, target_attribute, mapping_type
 
 AKENEO_SCHEDULES (akeneo_schedules table):

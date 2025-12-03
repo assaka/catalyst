@@ -53,7 +53,7 @@ Updated: `render.yaml`
 
 ```yaml
 - type: cron
-  name: catalyst-translation-processor
+  name: daino-translation-processor
   schedule: "* * * * *"  # Every minute
   startCommand: node scripts/process-translation-jobs.cjs
 ```
@@ -163,14 +163,14 @@ Based on your current setup, these could also move to cron:
 1. **Update render.yaml:**
    ```yaml
    # Remove or comment out:
-   # - catalyst-background-worker (worker service)
-   # - catalyst-redis (database)
+   # - daino-background-worker (worker service)
+   # - daino-redis (database)
 
    # Add crons for each job type:
-   - catalyst-translation-processor (every 1 min)
-   - catalyst-import-processor (every 5 min)
-   - catalyst-export-processor (every 5 min)
-   - catalyst-plugin-processor (every 2 min)
+   - daino-translation-processor (every 1 min)
+   - daino-import-processor (every 5 min)
+   - daino-export-processor (every 5 min)
+   - daino-plugin-processor (every 2 min)
    ```
 
 2. **Create cron scripts:**
@@ -199,16 +199,16 @@ Based on your current setup, these could also move to cron:
 ```yaml
 # Worker for urgent, real-time jobs
 - type: worker
-  name: catalyst-urgent-worker
+  name: daino-urgent-worker
   # Only processes: payments, orders, real-time operations
 
 # Cron for batch jobs
 - type: cron
-  name: catalyst-translation-processor
+  name: daino-translation-processor
   schedule: "* * * * *"
 
 - type: cron
-  name: catalyst-import-processor
+  name: daino-import-processor
   schedule: "*/5 * * * *"
 ```
 
@@ -289,7 +289,7 @@ await Job.create({
 ### Monitor in Production:
 ```bash
 # Check cron logs in Render dashboard
-# Go to: catalyst-translation-processor → Logs
+# Go to: daino-translation-processor → Logs
 
 # You should see every minute:
 # 🔍 Checking for pending translation jobs...
@@ -346,13 +346,13 @@ If cron approach has issues, you can quickly rollback:
    ```yaml
    # Uncomment in render.yaml:
    - type: worker
-     name: catalyst-background-worker
+     name: daino-background-worker
    ```
 
 2. **Disable cron:**
    ```yaml
    # Comment out or remove:
-   # - catalyst-translation-processor
+   # - daino-translation-processor
    ```
 
 3. **Push changes:**

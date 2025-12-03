@@ -20,7 +20,7 @@ Instead of multiple cron services or a 24/7 worker, we use **one simple cron** t
 │                     Every Minute                             │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
-│  Render Cron (catalyst-job-processor)                        │
+│  Render Cron (daino-job-processor)                        │
 │  ├─ Runs: node scripts/trigger-job-processor.cjs            │
 │  ├─ Does: HTTP POST to backend endpoint                      │
 │  └─ With: X-Cron-Secret header for security                 │
@@ -41,7 +41,7 @@ Instead of multiple cron services or a 24/7 worker, we use **one simple cron** t
 
 **In Render Dashboard:**
 
-1. Go to `catalyst-backend` service
+1. Go to `daino-backend` service
 2. Click "Environment" tab
 3. Add new variable:
    - Key: `CRON_SECRET`
@@ -55,7 +55,7 @@ Instead of multiple cron services or a 24/7 worker, we use **one simple cron** t
 **Manual Setup:**
 
 1. Click "New +" → "Cron Job"
-2. **Name:** `catalyst-job-processor`
+2. **Name:** `daino-job-processor`
 3. **Schedule:** `* * * * *` (every minute)
 4. **Root Directory:** `backend`
 5. **Build Command:** `npm install`
@@ -63,7 +63,7 @@ Instead of multiple cron services or a 24/7 worker, we use **one simple cron** t
 
 7. **Environment Variables:**
    - `NODE_ENV` = `production`
-   - `BACKEND_URL` = `https://catalyst-backend-fzhu.onrender.com`
+   - `BACKEND_URL` = `https://daino.onrender.com`
    - `CRON_SECRET` = (same value as in backend)
 
 8. Click "Create Cron Job"
@@ -81,7 +81,7 @@ git push
 ### 3. Verify It's Working
 
 **Check Cron Logs:**
-1. Go to `catalyst-job-processor` in Render dashboard
+1. Go to `daino-job-processor` in Render dashboard
 2. Click "Logs"
 3. Wait for next minute
 4. Should see:
@@ -93,7 +93,7 @@ git push
    ```
 
 **Check Backend Logs:**
-1. Go to `catalyst-backend` in Render dashboard
+1. Go to `daino-backend` in Render dashboard
 2. Click "Logs"
 3. Should see every minute:
    ```
@@ -256,7 +256,7 @@ Database Crons (various schedules)
 
 **Via API:**
 ```bash
-curl https://catalyst-backend-fzhu.onrender.com/api/jobs/status
+curl https://daino.onrender.com/api/jobs/status
 ```
 
 **Response:**
@@ -411,7 +411,7 @@ Saves cost but increases latency.
 ## Summary
 
 **What You Have:**
-1. One Render cron (`catalyst-job-processor`) - runs every minute
+1. One Render cron (`daino-job-processor`) - runs every minute
 2. One endpoint (`POST /api/jobs/process-pending`) - processes jobs
 3. One secret (`CRON_SECRET`) - secures the endpoint
 

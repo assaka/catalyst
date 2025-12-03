@@ -26,14 +26,14 @@ ABSOLUTE FILE PATHS TO KEY COMPONENTS
 =====================================
 
 FRONTEND (React Component)
-- C:\Users\info\PhpstormProjects\catalyst\src\components\admin\translations\ProductTranslationRow.jsx
+- C:\Users\info\PhpstormProjects\daino\src\components\admin\translations\ProductTranslationRow.jsx
 
 BACKEND (Express Routes)
-- C:\Users\info\PhpstormProjects\catalyst\backend\src\routes\translations.js
+- C:\Users\info\PhpstormProjects\daino\backend\src\routes\translations.js
 
 SERVICES (Business Logic)
-- C:\Users\info\PhpstormProjects\catalyst\backend\src\services\translation-service.js
-- C:\Users\info\PhpstormProjects\catalyst\backend\src\services\credit-service.js
+- C:\Users\info\PhpstormProjects\daino\backend\src\services\translation-service.js
+- C:\Users\info\PhpstormProjects\daino\backend\src\services\credit-service.js
 
 CRITICAL CODE SECTIONS
 ======================

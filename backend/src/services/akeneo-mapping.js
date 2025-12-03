@@ -6,7 +6,7 @@ class AkeneoMapping {
   constructor() {
     // Default mapping configurations
     this.categoryMapping = {
-      // Akeneo field -> Catalyst field
+      // Akeneo field -> DainoStore field
       'code': 'name', // Use code as name if label not available
       'labels': 'name', // Preferred name source
       'parent': 'parent_id'
@@ -23,7 +23,7 @@ class AkeneoMapping {
   }
 
   /**
-   * Transform Akeneo category to Catalyst category format
+   * Transform Akeneo category to DainoStore category format
    */
   transformCategory(akeneoCategory, storeId, locale = 'en_US', settings = {}) {
     const categoryName = this.extractLocalizedValue(akeneoCategory.labels, locale) || akeneoCategory.code;
@@ -58,7 +58,7 @@ class AkeneoMapping {
       }
     }
     
-    const catalystCategory = {
+    const dainoCategory = {
       store_id: storeId,
       name: categoryName,
       slug: this.generateSlug(slugSource),
@@ -82,11 +82,11 @@ class AkeneoMapping {
       _originalSlug: this.generateSlug(slugSource)
     };
 
-    return catalystCategory;
+    return dainoCategory;
   }
 
   /**
-   * Transform Akeneo product to Catalyst product format
+   * Transform Akeneo product to DainoStore product format
    */
   async transformProduct(akeneoProduct, storeId, locale = 'en_US', processedImages = null, customMappings = {}, settings = {}, akeneoClient = null) {
     const values = akeneoProduct.values || {};
@@ -107,7 +107,7 @@ class AkeneoMapping {
     }
     
     // Start with default product structure
-    const catalystProduct = {
+    const dainoProduct = {
       store_id: storeId,
       name: productName,
       slug: this.generateSlug(slugSource),
@@ -168,7 +168,7 @@ class AkeneoMapping {
           // and only overwrite with raw values if no formatted version exists
           if (customAttributes.attributes) {
             Object.keys(customAttributes.attributes).forEach(attrKey => {
-              const existingAttr = catalystProduct.attributes[attrKey];
+              const existingAttr = dainoProduct.attributes[attrKey];
               const newAttr = customAttributes.attributes[attrKey];
               
               // If existing attribute is already formatted (has label/value), don't overwrite with raw value
@@ -177,7 +177,7 @@ class AkeneoMapping {
                 // Keep the existing formatted attribute - don't overwrite
               } else {
                 // Either no existing attribute or it's not formatted, so use the new value
-                catalystProduct.attributes[attrKey] = newAttr;
+                dainoProduct.attributes[attrKey] = newAttr;
                 console.log(`🔄 Updated attribute: ${attrKey} =`, newAttr);
               }
             });
@@ -195,13 +195,13 @@ class AkeneoMapping {
           
           if (productModelFields.includes(key)) {
             // This is a direct Product model field - set it directly
-            catalystProduct[key] = customAttributes[key];
+            dainoProduct[key] = customAttributes[key];
             console.log(`🎯 Mapped to Product field: ${key} = ${customAttributes[key]}`);
           } else {
-            // This should be a Catalyst attribute - put it in the attributes object
-            if (!catalystProduct.attributes[key]) {
-              catalystProduct.attributes[key] = customAttributes[key];
-              console.log(`🎯 Mapped to Catalyst attribute: ${key} = ${customAttributes[key]}`);
+            // This should be a DainoStore attribute - put it in the attributes object
+            if (!dainoProduct.attributes[key]) {
+              dainoProduct.attributes[key] = customAttributes[key];
+              console.log(`🎯 Mapped to DainoStore attribute: ${key} = ${customAttributes[key]}`);
             }
           }
         }
@@ -213,8 +213,8 @@ class AkeneoMapping {
     
     // Merge common attributes without overwriting existing values
     Object.keys(commonAttributes).forEach(key => {
-      if (catalystProduct[key] === null || catalystProduct[key] === undefined) {
-        catalystProduct[key] = commonAttributes[key];
+      if (dainoProduct[key] === null || dainoProduct[key] === undefined) {
+        dainoProduct[key] = commonAttributes[key];
       }
     });
 
@@ -246,7 +246,7 @@ class AkeneoMapping {
                       scope: item.scope,
                       locale: item.locale,
                       customMapping: true,
-                      catalystField: mapping.catalystField
+                      dainoField: mapping.dainoField
                     }
                   });
                 }
@@ -258,7 +258,7 @@ class AkeneoMapping {
       
       // Replace or merge with existing images based on mapping configuration
       if (customImages.length > 0) {
-        catalystProduct.images = [...catalystProduct.images, ...customImages];
+        dainoProduct.images = [...dainoProduct.images, ...customImages];
       }
     }
 
@@ -285,7 +285,7 @@ class AkeneoMapping {
                       scope: item.scope,
                       locale: item.locale,
                       customMapping: true,
-                      catalystField: mapping.catalystField
+                      dainoField: mapping.dainoField
                     }
                   });
                 }
@@ -297,17 +297,17 @@ class AkeneoMapping {
       
       // Add custom files to product
       if (customFiles.length > 0) {
-        catalystProduct.files = customFiles;
+        dainoProduct.files = customFiles;
       }
     }
 
     // Apply final data validation to prevent [object Object] errors
-    const sanitizedProduct = sanitizeAkeneoProduct(catalystProduct);
+    const sanitizedProduct = sanitizeAkeneoProduct(dainoProduct);
     return sanitizedProduct;
   }
 
   /**
-   * Transform Akeneo product model to Catalyst configurable product format
+   * Transform Akeneo product model to DainoStore configurable product format
    */
   async transformProductModel(akeneoProductModel, storeId, locale = 'en_US', processedImages = null, customMappings = {}, settings = {}, akeneoClient = null) {
     const values = akeneoProductModel.values || {};
@@ -379,30 +379,30 @@ class AkeneoMapping {
   }
 
   /**
-   * Apply custom field mapping to catalyst product
+   * Apply custom field mapping to daino product
    */
-  applyCustomMapping(catalystProduct, catalystField, akeneoValue, akeneoField) {
-    // Handle different types of catalyst fields
-    switch (catalystField) {
+  applyCustomMapping(dainoProduct, dainoField, akeneoValue, akeneoField) {
+    // Handle different types of daino fields
+    switch (dainoField) {
       case 'product_name':
       case 'name':
-        catalystProduct.name = akeneoValue;
-        catalystProduct.slug = this.generateSlug(akeneoValue);
+        dainoProduct.name = akeneoValue;
+        dainoProduct.slug = this.generateSlug(akeneoValue);
         break;
       
       case 'description':
-        catalystProduct.description = akeneoValue;
+        dainoProduct.description = akeneoValue;
         break;
       
       case 'short_description':
-        catalystProduct.short_description = akeneoValue;
+        dainoProduct.short_description = akeneoValue;
         break;
       
       case 'price':
         // Handle complex price objects from Akeneo (e.g., [{ amount: "29.99", currency: "USD" }])
         const numericPrice = this.extractPriceFromValue(akeneoValue);
         if (numericPrice !== null) {
-          catalystProduct.price = numericPrice;
+          dainoProduct.price = numericPrice;
         }
         break;
       
@@ -411,7 +411,7 @@ class AkeneoMapping {
         // Handle complex price objects from Akeneo (e.g., [{ amount: "29.99", currency: "USD" }])
         const numericComparePrice = this.extractPriceFromValue(akeneoValue);
         if (numericComparePrice !== null) {
-          catalystProduct.compare_price = numericComparePrice;
+          dainoProduct.compare_price = numericComparePrice;
         }
         break;
       
@@ -419,7 +419,7 @@ class AkeneoMapping {
         // Handle complex price objects from Akeneo (e.g., [{ amount: "29.99", currency: "USD" }])
         const numericCostPrice = this.extractPriceFromValue(akeneoValue);
         if (numericCostPrice !== null) {
-          catalystProduct.cost_price = numericCostPrice;
+          dainoProduct.cost_price = numericCostPrice;
         }
         break;
       
@@ -427,48 +427,48 @@ class AkeneoMapping {
         // Handle complex weight objects from Akeneo (similar to price objects)
         const numericWeight = this.extractPriceFromValue(akeneoValue);
         if (numericWeight !== null) {
-          catalystProduct.weight = numericWeight;
+          dainoProduct.weight = numericWeight;
         }
         break;
       
       case 'sku':
-        catalystProduct.sku = akeneoValue;
+        dainoProduct.sku = akeneoValue;
         break;
       
       case 'barcode':
       case 'ean':
-        catalystProduct.barcode = akeneoValue;
+        dainoProduct.barcode = akeneoValue;
         break;
       
       case 'meta_title':
-        if (!catalystProduct.seo) catalystProduct.seo = {};
-        catalystProduct.seo.meta_title = akeneoValue;
+        if (!dainoProduct.seo) dainoProduct.seo = {};
+        dainoProduct.seo.meta_title = akeneoValue;
         break;
       
       case 'meta_description':
-        if (!catalystProduct.seo) catalystProduct.seo = {};
-        catalystProduct.seo.meta_description = akeneoValue;
+        if (!dainoProduct.seo) dainoProduct.seo = {};
+        dainoProduct.seo.meta_description = akeneoValue;
         break;
       
       case 'meta_keywords':
-        if (!catalystProduct.seo) catalystProduct.seo = {};
-        catalystProduct.seo.meta_keywords = akeneoValue;
+        if (!dainoProduct.seo) dainoProduct.seo = {};
+        dainoProduct.seo.meta_keywords = akeneoValue;
         break;
       
       case 'featured':
-        catalystProduct.featured = Boolean(akeneoValue);
+        dainoProduct.featured = Boolean(akeneoValue);
         break;
       
       case 'status':
         // Map various status values
         if (typeof akeneoValue === 'boolean') {
-          catalystProduct.status = akeneoValue ? 'active' : 'inactive';
+          dainoProduct.status = akeneoValue ? 'active' : 'inactive';
         } else if (typeof akeneoValue === 'string') {
           const statusValue = akeneoValue.toLowerCase();
           if (['active', 'enabled', 'true', '1', 'yes'].includes(statusValue)) {
-            catalystProduct.status = 'active';
+            dainoProduct.status = 'active';
           } else if (['inactive', 'disabled', 'false', '0', 'no'].includes(statusValue)) {
-            catalystProduct.status = 'inactive';
+            dainoProduct.status = 'inactive';
           }
         }
         break;
@@ -477,23 +477,23 @@ class AkeneoMapping {
         // Handle complex stock quantity objects from Akeneo
         const numericStock = this.extractPriceFromValue(akeneoValue);
         if (numericStock !== null) {
-          catalystProduct.stock_quantity = Math.max(0, Math.floor(numericStock));
+          dainoProduct.stock_quantity = Math.max(0, Math.floor(numericStock));
         }
         break;
       
       case 'manage_stock':
-        catalystProduct.manage_stock = Boolean(akeneoValue);
+        dainoProduct.manage_stock = Boolean(akeneoValue);
         break;
       
       case 'infinite_stock':
-        catalystProduct.infinite_stock = Boolean(akeneoValue);
+        dainoProduct.infinite_stock = Boolean(akeneoValue);
         break;
       
       case 'low_stock_threshold':
         // Handle complex threshold objects from Akeneo (similar to price objects)
         const numericThreshold = this.extractPriceFromValue(akeneoValue);
         if (numericThreshold !== null && !isNaN(numericThreshold)) {
-          catalystProduct.low_stock_threshold = Math.max(0, Math.floor(numericThreshold));
+          dainoProduct.low_stock_threshold = Math.max(0, Math.floor(numericThreshold));
         }
         break;
       
@@ -501,20 +501,20 @@ class AkeneoMapping {
         // Handle complex special price objects from Akeneo
         const numericSpecialPrice = this.extractPriceFromValue(akeneoValue);
         if (numericSpecialPrice !== null && !isNaN(numericSpecialPrice)) {
-          catalystProduct.special_price = numericSpecialPrice;
+          dainoProduct.special_price = numericSpecialPrice;
         }
         break;
       
       
       default:
         // For any other custom fields, add to attributes object
-        if (!catalystProduct.custom_attributes) {
-          catalystProduct.custom_attributes = {};
+        if (!dainoProduct.custom_attributes) {
+          dainoProduct.custom_attributes = {};
         }
-        catalystProduct.custom_attributes[catalystField] = akeneoValue;
+        dainoProduct.custom_attributes[dainoField] = akeneoValue;
         
         // Also add to the main attributes object for backward compatibility
-        catalystProduct.attributes[akeneoField] = akeneoValue;
+        dainoProduct.attributes[akeneoField] = akeneoValue;
         break;
     }
   }
@@ -1299,7 +1299,7 @@ class AkeneoMapping {
     const explicitlyMappedAttributes = new Set();
     if (customMappings.attributes && Array.isArray(customMappings.attributes)) {
       customMappings.attributes.forEach(mapping => {
-        if (mapping.enabled && mapping.akeneoAttribute && mapping.catalystField) {
+        if (mapping.enabled && mapping.akeneoAttribute && mapping.dainoField) {
           explicitlyMappedAttributes.add(mapping.akeneoAttribute);
         }
       });
@@ -1665,21 +1665,21 @@ class AkeneoMapping {
   /**
    * Build category hierarchy from flat Akeneo categories
    */
-  buildCategoryHierarchy(akeneoCategories, catalystCategories) {
+  buildCategoryHierarchy(akeneoCategories, dainoCategories) {
     // Create a map of Akeneo codes to original Akeneo categories to check hierarchy
     const akeneoCodeToCategory = {};
     akeneoCategories.forEach(akeneoCategory => {
       akeneoCodeToCategory[akeneoCategory.code] = akeneoCategory;
     });
     
-    // Create a map of Akeneo codes to Catalyst categories
+    // Create a map of Akeneo codes to DainoStore categories
     const codeToCategory = {};
-    catalystCategories.forEach(category => {
+    dainoCategories.forEach(category => {
       codeToCategory[category._temp_akeneo_code] = category;
     });
 
     // Set parent relationships and calculate levels based on Akeneo hierarchy
-    catalystCategories.forEach(category => {
+    dainoCategories.forEach(category => {
       const akeneoCategory = akeneoCodeToCategory[category._temp_akeneo_code];
       
       if (!akeneoCategory) {
@@ -1723,13 +1723,13 @@ class AkeneoMapping {
     });
 
     // Sort by level to ensure parents are processed before children
-    catalystCategories.sort((a, b) => a.level - b.level);
+    dainoCategories.sort((a, b) => a.level - b.level);
 
-    return catalystCategories;
+    return dainoCategories;
   }
 
   /**
-   * Map Akeneo category codes to Catalyst category IDs
+   * Map Akeneo category codes to DainoStore category IDs
    */
   mapCategoryIds(akeneoCategoryCodes, categoryMapping) {
     const mappedIds = [];
@@ -1770,10 +1770,10 @@ class AkeneoMapping {
   }
 
   /**
-   * Transform Akeneo family to Catalyst AttributeSet format
+   * Transform Akeneo family to DainoStore AttributeSet format
    */
   transformFamily(akeneoFamily, storeId) {
-    const catalystAttributeSet = {
+    const dainoAttributeSet = {
       store_id: storeId,
       name: akeneoFamily.code, // Use code as name, can be enhanced with labels
       description: null,
@@ -1783,14 +1783,14 @@ class AkeneoMapping {
       akeneo_attribute_codes: akeneoFamily.attributes || []
     };
 
-    return catalystAttributeSet;
+    return dainoAttributeSet;
   }
 
   /**
-   * Transform Akeneo attribute to Catalyst Attribute format
+   * Transform Akeneo attribute to DainoStore Attribute format
    */
   transformAttribute(akeneoAttribute, storeId, locale = 'en_US', fetchedOptions = null) {
-    const catalystAttribute = {
+    const dainoAttribute = {
       store_id: storeId,
       name: this.extractLocalizedValue(akeneoAttribute.labels, locale) || akeneoAttribute.code,
       code: akeneoAttribute.code,
@@ -1809,11 +1809,11 @@ class AkeneoMapping {
       akeneo_group: akeneoAttribute.group
     };
 
-    return catalystAttribute;
+    return dainoAttribute;
   }
 
   /**
-   * Map Akeneo attribute type to Catalyst attribute type
+   * Map Akeneo attribute type to DainoStore attribute type
    */
   mapAttributeType(akeneoType) {
     const typeMapping = {
@@ -1959,20 +1959,20 @@ class AkeneoMapping {
 
   /**
    * Comprehensive attribute mapping system for any Akeneo attribute
-   * Allows flexible mapping of Akeneo attributes to Catalyst product fields
+   * Allows flexible mapping of Akeneo attributes to DainoStore product fields
    */
   mapAkeneoAttribute(akeneoProduct, attributeMapping, locale = 'en_US') {
     const { values } = akeneoProduct;
     const { 
       akeneoAttribute, 
-      catalystField, 
+      dainoField,
       dataType = 'string', 
       fallbacks = [], 
       transform = null,
       defaultValue = null 
     } = attributeMapping;
     
-    console.log(`🗺️ Mapping Akeneo attribute '${akeneoAttribute}' to Catalyst field '${catalystField}'`);
+    console.log(`🗺️ Mapping Akeneo attribute '${akeneoAttribute}' to DainoStore field '${dainoField}'`);
     
     // Try primary attribute first
     let value = this.extractProductValue(values, akeneoAttribute, locale);
@@ -1995,7 +1995,7 @@ class AkeneoMapping {
       'msrp', 'list_price', 'regular_price', 'base_price', 'unit_price',
       'discounted_price', 'promo_price'
     ];
-    const isPrice = priceFields.includes(akeneoAttribute) || priceFields.includes(catalystField);
+    const isPrice = priceFields.includes(akeneoAttribute) || priceFields.includes(dainoField);
     
     // Apply data type conversion
     if (value !== null && value !== undefined && value !== '') {
@@ -2018,7 +2018,7 @@ class AkeneoMapping {
         default:
           // Auto-detect price fields and convert to numeric even if dataType is 'string'
           if (isPrice) {
-            console.log(`💰 Auto-detected price field: ${akeneoAttribute} -> ${catalystField}, applying numeric conversion`);
+            console.log(`💰 Auto-detected price field: ${akeneoAttribute} -> ${dainoField}, applying numeric conversion`);
             value = this.convertValueToNumeric(value);
           }
           // Otherwise keep as string (already handled by extractProductValue)
@@ -2039,15 +2039,15 @@ class AkeneoMapping {
     // Use default value if still null/empty
     if ((value === null || value === undefined || value === '') && defaultValue !== null) {
       value = defaultValue;
-      console.log(`🎯 Using default value for '${catalystField}': ${defaultValue}`);
+      console.log(`🎯 Using default value for '${dainoField}': ${defaultValue}`);
     }
     
-    return { [catalystField]: value };
+    return { [dainoField]: value };
   }
 
   /**
    * Apply multiple attribute mappings to an Akeneo product
-   * If no mapping is provided for an Akeneo attribute, it will automatically map to a Catalyst field with the same name
+   * If no mapping is provided for an Akeneo attribute, it will automatically map to a DainoStore field with the same name
    */
   applyCustomAttributeMappings(akeneoProduct, mappings = [], locale = 'en_US') {
     const customAttributes = {};
@@ -2065,10 +2065,10 @@ class AkeneoMapping {
     
     // First, process all explicit mappings
     explicitMappings.forEach((mapping, akeneoAttribute) => {
-      if (mapping.catalystField && values.hasOwnProperty(akeneoAttribute)) {
+      if (mapping.dainoField && values.hasOwnProperty(akeneoAttribute)) {
         const mappedValue = this.mapAkeneoAttribute(akeneoProduct, mapping, locale);
         Object.assign(customAttributes, mappedValue);
-        console.log(`✅ Applied explicit mapping: ${akeneoAttribute} -> ${mapping.catalystField}`);
+        console.log(`✅ Applied explicit mapping: ${akeneoAttribute} -> ${mapping.dainoField}`);
       }
     });
     
@@ -2085,7 +2085,7 @@ class AkeneoMapping {
         return;
       }
       
-      // Default behavior: map to the same field name in Catalyst attributes
+      // Default behavior: map to the same field name in DainoStore attributes
       const value = this.extractProductValue(values, akeneoAttribute, locale);
       if (value !== null && value !== undefined && value !== '') {
         // Store in attributes JSON field
@@ -2106,9 +2106,9 @@ class AkeneoMapping {
           try {
             const mappedValue = this.mapAkeneoAttribute(akeneoProduct, mapping, locale);
             Object.assign(customAttributes, mappedValue);
-            console.log(`🎯 Applied mapping with default value: ${akeneoAttribute} -> ${mapping.catalystField}`);
+            console.log(`🎯 Applied mapping with default value: ${akeneoAttribute} -> ${mapping.dainoField}`);
           } catch (mappingError) {
-            console.error(`❌ Failed to map '${akeneoAttribute}' → '${mapping.catalystField}':`, mappingError.message);
+            console.error(`❌ Failed to map '${akeneoAttribute}' → '${mapping.dainoField}':`, mappingError.message);
           }
         }
       }

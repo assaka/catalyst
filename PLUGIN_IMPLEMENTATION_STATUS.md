@@ -21,7 +21,7 @@
 - ✅ `src/components/admin/plugins/PluginCodeEditorWrapper.jsx` - Unified code editor combining:
   - FileTreeNavigator (file browsing)
   - CodeEditor (Monaco editor)
-  - CatalystAIStudio (AI assistance)
+  - DainoStoreAIStudio (AI assistance)
   - DiffPreviewSystem (change preview)
   - FileTabs (multi-file editing)
 - ✅ `src/components/admin/AdminSidebar.jsx` - Dynamic navigation loading from API
@@ -56,7 +56,7 @@
 ### Phase 4: Frontend Integration (Pending)
 - [ ] Update slot editor to load plugin widgets from `/api/plugins/widgets`
 - [ ] Integrate PluginWidgetRenderer in slot editor component palette
-- [ ] Adapt CatalystAIStudio to support 'plugins' context mode
+- [ ] Adapt DainoStoreAIStudio to support 'plugins' context mode
 - [ ] Create PluginBuilder wizard with pricing step
 - [ ] Add navigation builder step to PluginBuilder
 
@@ -114,7 +114,7 @@
 ## 📁 FILE STRUCTURE CREATED
 
 ```
-catalyst/
+daino/
 ├── src/
 │   ├── constants/
 │   │   ├── PluginPricing.js          ✅ Pricing models & revenue share
@@ -180,7 +180,7 @@ catalyst/
 ## 💡 KEY DECISIONS MADE
 
 1. **Reused Existing Systems**: HookSystem, EventSystem, ExtensionSystem, VersionSystem
-2. **Component Architecture**: Combined existing components (FileTreeNavigator, CodeEditor, CatalystAIStudio, DiffPreviewSystem)
+2. **Component Architecture**: Combined existing components (FileTreeNavigator, CodeEditor, DainoStoreAIStudio, DiffPreviewSystem)
 3. **Database Separation**: Master for shared data, Tenant for isolated installations
 4. **Revenue Model**: 70/30 split favoring creators
 5. **Sandboxing Strategy**: Error boundaries + future VM isolation

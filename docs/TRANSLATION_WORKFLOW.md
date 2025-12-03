@@ -1,10 +1,10 @@
 # Translation System Workflow
 
-This guide explains how to use the Catalyst translation system to make your application multilingual.
+This guide explains how to use the DainoStore translation system to make your application multilingual.
 
 ## Overview
 
-The Catalyst translation system consists of:
+The DainoStore translation system consists of:
 
 1. **Database**: PostgreSQL `translations` table storing UI labels in multiple languages
 2. **Frontend Context**: React context (`TranslationContext`) providing translation functions
@@ -443,7 +443,7 @@ Content-Type: application/json
 
 2. Check localStorage:
    ```javascript
-   localStorage.getItem('catalyst_language')
+   localStorage.getItem('daino_language')
    ```
 
 3. Clear cache and reload

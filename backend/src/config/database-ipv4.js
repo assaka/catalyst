@@ -63,7 +63,7 @@ const getDatabaseConfig = async () => {
       keepAlive: true,
       keepAliveInitialDelayMs: 0,
       // Add application_name for pooler connections
-      ...(isPooler && { application_name: 'catalyst-backend' })
+      ...(isPooler && { application_name: 'daino-backend' })
     },
     
     pool: {

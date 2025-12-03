@@ -15,7 +15,7 @@ class SupabaseIntegration {
     this.clientId = process.env.SUPABASE_OAUTH_CLIENT_ID || 'pending_configuration';
     this.clientSecret = process.env.SUPABASE_OAUTH_CLIENT_SECRET || 'pending_configuration';
     this.redirectUri = process.env.SUPABASE_OAUTH_REDIRECT_URI ||
-                      `${process.env.BACKEND_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/supabase/callback`;
+                      `${process.env.BACKEND_URL || 'https://daino.onrender.com'}/api/supabase/callback`;
     this.authorizationBaseUrl = 'https://api.supabase.com/v1/oauth/authorize';
     this.tokenUrl = 'https://api.supabase.com/v1/oauth/token';
 
@@ -985,7 +985,7 @@ class SupabaseIntegration {
       return { 
         success: true, 
         message: 'Supabase disconnected successfully',
-        note: 'To fully revoke access, go to your Supabase account settings and remove the Catalyst app authorization.'
+        note: 'To fully revoke access, go to your Supabase account settings and remove the DainoStore app authorization.'
       };
     } catch (error) {
       console.error('Error disconnecting Supabase:', error);

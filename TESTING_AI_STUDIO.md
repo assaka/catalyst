@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-1. **Backend Running**: Render backend at `https://catalyst-backend-fzhu.onrender.com`
-2. **Frontend Running**: Vercel frontend at `https://catalyst-pearl.vercel.app`
+1. **Backend Running**: Render backend at `https://daino.onrender.com`
+2. **Frontend Running**: Vercel frontend at `https://daino-pearl.vercel.app`
 3. **Database**: Supabase database with tables
 4. **Environment**: `ANTHROPIC_API_KEY` set in backend
 

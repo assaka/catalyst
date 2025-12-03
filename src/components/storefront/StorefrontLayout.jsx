@@ -211,12 +211,12 @@ export default function StorefrontLayout({ children }) {
                 setLanguages(languagesData);
 
                 // Initialize current language from localStorage or default
-                const savedLang = localStorage.getItem('catalyst_language');
+                const savedLang = localStorage.getItem('daino_language');
                 if (savedLang && activeLanguages.includes(savedLang)) {
                     setCurrentLanguage(savedLang);
                 } else {
                     setCurrentLanguage(defaultLanguage);
-                    localStorage.setItem('catalyst_language', defaultLanguage);
+                    localStorage.setItem('daino_language', defaultLanguage);
                 }
 
                 try {
@@ -256,7 +256,7 @@ export default function StorefrontLayout({ children }) {
     // Handle language changes and reload page to fetch new translations
     useEffect(() => {
         const handleLanguageChange = (newLanguage) => {
-            localStorage.setItem('catalyst_language', newLanguage);
+            localStorage.setItem('daino_language', newLanguage);
             setCurrentLanguage(newLanguage);
             // Reload page to fetch new translations
             window.location.reload();
@@ -441,7 +441,7 @@ export default function StorefrontLayout({ children }) {
             
             <SeoHeadManager
                 pageType="storefront"
-                pageTitle={store?.name || 'Catalyst Commerce'}
+                pageTitle={store?.name || 'Daino Store'}
                 pageDescription={store?.description || 'Welcome to our store.'}
             />
 
@@ -488,7 +488,7 @@ export default function StorefrontLayout({ children }) {
                                         ) : (
                                             <ShoppingBag className="h-8 w-8 text-blue-600" />
                                         )}
-                                        <span className="text-xl font-bold text-gray-800">{store?.name || 'Catalyst'}</span>
+                                        <span className="text-xl font-bold text-gray-800">{store?.name || 'DainoStore'}</span>
                                     </Link>
                                 </div>
 
@@ -801,7 +801,7 @@ export default function StorefrontLayout({ children }) {
                         </div>
                     </div>
                     <div className="mt-8 border-t border-gray-700 pt-8 text-center">
-                        <p className="text-base text-gray-400">&copy; {new Date().getFullYear()} {store?.name || 'Catalyst Commerce'}. All rights reserved.</p>
+                        <p className="text-base text-gray-400">&copy; {new Date().getFullYear()} {store?.name || 'DainoStore Commerce'}. All rights reserved.</p>
                     </div>
                 </div>
             </footer>

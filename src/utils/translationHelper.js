@@ -12,7 +12,7 @@
 export function t(key, settings) {
   // Get current language from localStorage
   const currentLang = typeof localStorage !== 'undefined'
-    ? localStorage.getItem('catalyst_language') || 'en'
+    ? localStorage.getItem('daino_language') || 'en'
     : 'en';
 
   // Get UI translations from settings

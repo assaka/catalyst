@@ -742,8 +742,8 @@ async function performUILabelsBulkTranslation(userId, userEmail, storeId, fromLa
           // Send actual email via Brevo API
           const emailData = {
             sender: {
-              name: 'Catalyst Platform',
-              email: process.env.BREVO_SENDER_EMAIL || 'noreply@catalyst.com'
+              name: 'DainoStore Platform',
+              email: process.env.BREVO_SENDER_EMAIL || 'noreply@daino.com'
             },
             to: [
               {

@@ -363,9 +363,9 @@ class AkeneoImageProcessor {
   }
 
   /**
-   * Convert processed images to Catalyst format
+   * Convert processed images to DainoStore format
    */
-  convertToCatalystFormat(processedImages) {
+  convertToDainoStoreFormat(processedImages) {
     return processedImages.map((img, index) => ({
       url: img.primary_url,
       alt: img.alt || '',

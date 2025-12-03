@@ -57,7 +57,7 @@ const decoded = jwt.verify(token, process.env.JWT_SECRET);
 ## Solution Steps
 
 ### Step 1: Check Authentication Status
-Run this in the browser console at `https://catalyst-pearl.vercel.app`:
+Run this in the browser console at `https://daino-pearl.vercel.app`:
 
 ```javascript
 // Check if user has valid authentication tokens
@@ -84,7 +84,7 @@ if (selectedToken) {
 
 #### Scenario A: No Token Found
 **Solution**: User needs to log in
-1. Go to the login page: `https://catalyst-pearl.vercel.app/auth`
+1. Go to the login page: `https://daino-pearl.vercel.app/auth`
 2. Log in with store_owner or admin credentials
 3. Return to AI Context Window
 4. Auto-save should now work

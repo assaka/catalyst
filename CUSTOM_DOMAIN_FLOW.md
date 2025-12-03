@@ -194,9 +194,9 @@ if (isCustomDomain) {
 ## URL Examples
 
 ### Traditional URLs (still work):
-- `https://catalyst-pearl.vercel.app/public/hamid2`
-- `https://catalyst-pearl.vercel.app/public/hamid2/product/abc`
-- `https://catalyst-pearl.vercel.app/public/hamid2/cart`
+- `https://daino-pearl.vercel.app/public/hamid2`
+- `https://daino-pearl.vercel.app/public/hamid2/product/abc`
+- `https://daino-pearl.vercel.app/public/hamid2/cart`
 
 ### Custom Domain URLs (new):
 - `https://www.myshop.com`
@@ -222,8 +222,8 @@ TTL:   3600
 **2. TXT Record (Verification)**
 ```
 Type:  TXT
-Name:  _catalyst-verification
-Value: catalyst-verify-[token]
+Name:  _daino-verification
+Value: daino-verify-[token]
 TTL:   300
 ```
 
@@ -303,7 +303,7 @@ async chargeDailyCustomDomainFee(userId, domainId, domainName) {
 
 1. **Vercel Dashboard**
    - Go to: https://vercel.com/
-   - Project: `catalyst-pearl`
+   - Project: `daino-pearl`
    - Settings → Domains
 
 2. **Add Custom Domains**

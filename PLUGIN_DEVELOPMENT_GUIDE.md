@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide shows users how to create and install plugins safely without breaking the Catalyst system. We provide multiple approaches for different skill levels.
+This guide shows users how to create and install plugins safely without breaking the DainoStore system. We provide multiple approaches for different skill levels.
 
 ## 🎯 Three Ways to Create Plugins
 
@@ -54,8 +54,8 @@ const userInput = "I need a plugin that sends birthday discounts to customers";
 
 ### Step 1: Choose a Template
 ```bash
-# Using Catalyst Plugin CLI
-npx @catalyst/pdk create my-plugin --template=payment-gateway
+# Using DainoStore Plugin CLI
+npx @daino/pdk create my-plugin --template=payment-gateway
 
 Available templates:
 - payment-gateway
@@ -125,7 +125,7 @@ class MyPaymentPlugin extends Plugin {
 npm run test
 
 # Validate plugin structure
-npx @catalyst/pdk validate
+npx @daino/pdk validate
 
 # Start development server with hot reload
 npm run dev
@@ -137,7 +137,7 @@ npm run dev
 
 ### Step 1: Clone Starter Template
 ```bash
-git clone https://github.com/catalyst-plugins/starter-template my-custom-plugin
+git clone https://github.com/daino-plugins/starter-template my-custom-plugin
 cd my-custom-plugin
 npm install
 ```
@@ -160,7 +160,7 @@ npm install
     "hooks": ["order.created", "product.updated"]
   },
   "dependencies": {
-    "catalyst": ">=1.0.0",
+    "daino": ">=1.0.0",
     "axios": "^1.0.0"
   },
   "config": {
@@ -180,7 +180,7 @@ npm install
 
 ### Step 3: Implement Plugin Class
 ```javascript
-const Plugin = require('@catalyst/plugin-base');
+const Plugin = require('@daino/plugin-base');
 const axios = require('axios');
 
 class MyCustomPlugin extends Plugin {
@@ -325,7 +325,7 @@ if (dependencyCheck.conflicts.length > 0) {
 #### Step 1: Plugin Discovery
 ```
 Sources:
-✅ Official Catalyst Plugin Store
+✅ Official DainoStore Plugin Store
 ✅ GitHub Repositories (validated)
 ✅ AI-Generated Plugins
 ✅ Local Development
@@ -365,27 +365,27 @@ Installation Options:
 ### Plugin Development Kit (PDK)
 ```bash
 # Install global CLI
-npm install -g @catalyst/pdk
+npm install -g @daino/pdk
 
 # Create new plugin
-catalyst-pdk create my-plugin --template=analytics
+daino-pdk create my-plugin --template=analytics
 
 # Validate plugin
-catalyst-pdk validate
+daino-pdk validate
 
 # Test plugin
-catalyst-pdk test --coverage
+daino-pdk test --coverage
 
 # Package for distribution
-catalyst-pdk build
+daino-pdk build
 
 # Publish to store
-catalyst-pdk publish
+daino-pdk publish
 ```
 
 ### Local Development Server
 ```bash
-# Start Catalyst with plugin hot-reload
+# Start DainoStore with plugin hot-reload
 npm run dev:plugins
 
 # Watch for plugin changes
@@ -415,7 +415,7 @@ npm run test:plugins
 1. **Upload to GitHub** (public repository)
 2. **Submit to Plugin Store** (automated review)
 3. **Community Testing** (beta testers)
-4. **Final Approval** (Catalyst team review)
+4. **Final Approval** (DainoStore team review)
 5. **Publication** (available in store)
 
 ---

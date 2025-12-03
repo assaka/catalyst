@@ -69,7 +69,7 @@ class CloudflareImageService {
         timeout: 30000,
         maxContentLength: this.maxFileSize,
         headers: {
-          'User-Agent': 'Catalyst-Akeneo-Integration/1.0'
+          'User-Agent': 'DainoStore-Akeneo-Integration/1.0'
         }
       });
 

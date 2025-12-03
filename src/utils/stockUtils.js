@@ -198,7 +198,7 @@ export function getStockLabel(product, settings = {}, lang = null, globalTransla
   // Get current language if not provided
   if (!lang) {
     lang = typeof localStorage !== 'undefined'
-      ? localStorage.getItem('catalyst_language') || 'en'
+      ? localStorage.getItem('daino_language') || 'en'
       : 'en';
   }
 

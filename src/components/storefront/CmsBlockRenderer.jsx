@@ -61,7 +61,7 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 2000) => {
 
 const loadCmsBlocksWithCache = async (storeId) => {
   // Include language in cache key to ensure proper translation switching
-  const currentLanguage = localStorage.getItem('catalyst_language') || 'en';
+  const currentLanguage = localStorage.getItem('daino_language') || 'en';
   const cacheKey = `store_${storeId}_lang_${currentLanguage}`;
 
   // Check cache first

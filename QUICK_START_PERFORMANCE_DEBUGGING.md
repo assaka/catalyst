@@ -10,7 +10,7 @@
 
 **Step 1:** Visit your slow page
 ```
-https://catalyst-pearl.vercel.app/public/hamid2/product/kenwood...
+https://daino-pearl.vercel.app/public/hamid2/product/kenwood...
 ```
 
 **Step 2:** Open browser console (F12)
@@ -149,7 +149,7 @@ X-Cache: HIT   ← Cached! (Good)
 **Step 1:** Add to Render Environment
 
 1. Go to Render Dashboard
-2. catalyst-backend → Environment
+2. daino-backend → Environment
 3. Add variable:
    ```
    Key: DB_QUERY_LOG
@@ -160,7 +160,7 @@ X-Cache: HIT   ← Cached! (Good)
 
 **Step 2:** Check Logs
 
-1. catalyst-backend → **Logs** tab
+1. daino-backend → **Logs** tab
 2. Visit your product page
 3. Watch logs in real-time
 
@@ -233,7 +233,7 @@ isFetching: false  ← Using cache! ✅
 **Run Lighthouse:**
 
 ```bash
-npx lighthouse https://catalyst-pearl.vercel.app/public/hamid2/product/kenwood... --view
+npx lighthouse https://daino-pearl.vercel.app/public/hamid2/product/kenwood... --view
 ```
 
 **Or in Chrome DevTools:**
@@ -283,7 +283,7 @@ performance.getEntriesByType('resource')
 
 ```bash
 # Visit this URL:
-https://catalyst-backend-fzhu.onrender.com/health/cache
+https://daino.onrender.com/health/cache
 
 # Check "keys" value (should be growing)
 ```
@@ -301,7 +301,7 @@ https://catalyst-backend-fzhu.onrender.com/health/cache
 ### Action 4: Enable Backend Logging (2 minutes)
 
 ```
-1. Render Dashboard → catalyst-backend → Environment
+1. Render Dashboard → daino-backend → Environment
 2. Add: DB_QUERY_LOG = true
 3. Add: LOG_REQUEST_TIMING = true
 4. Save (auto-redeploys)
@@ -415,7 +415,7 @@ const { data } = useBatchProductTranslations([id1, id2, id3], lang);
 
 **🎯 START HERE:**
 
-1. Open https://catalyst-pearl.vercel.app/public/hamid2/product/kenwood...
+1. Open https://daino-pearl.vercel.app/public/hamid2/product/kenwood...
 2. Press F12 → Console tab
 3. Paste: scripts/browser-performance-check.js (full content)
 4. Wait 5 seconds

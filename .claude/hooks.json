@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '🚀 Deployment triggered - checking logs in 30 seconds...' && sleep 30 && render logs --tail 50 --service catalyst-backend-fzhu | grep -i error"
+            "command": "echo '🚀 Deployment triggered - checking logs in 30 seconds...' && sleep 30 && render logs --tail 50 --service daino-backend-fzhu | grep -i error"
           }
         ]
       }
@@ -14,7 +14,7 @@
     "Stop": [
       {
         "type": "command", 
-        "command": "echo '✅ Session ended - run: render logs --tail 20 --service catalyst-backend-fzhu to check final deployment status'"
+        "command": "echo '✅ Session ended - run: render logs --tail 20 --service daino-backend-fzhu to check final deployment status'"
       }
     ]
   }

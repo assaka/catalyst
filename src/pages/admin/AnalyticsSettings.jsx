@@ -426,7 +426,7 @@ export default function AnalyticsSettings() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `catalyst-analytics-export-${selectedStore?.name || 'store'}-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `daino-analytics-export-${selectedStore?.name || 'store'}-${new Date().toISOString().split('T')[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
     };
@@ -456,7 +456,7 @@ export default function AnalyticsSettings() {
         const testEvent = {
             event: 'test_event',
             timestamp: new Date().toISOString(),
-            test_data: 'This is a test event from Catalyst Analytics',
+            test_data: 'This is a test event from DainoStore Analytics',
             store_id: selectedStore?.id
         };
 
@@ -802,7 +802,7 @@ export default function AnalyticsSettings() {
                                 <div className="p-4 bg-green-50 border-green-200 rounded-lg">
                                     <h4 className="font-semibold text-green-900 mb-2">✅ Enhanced Tracking Available Now</h4>
                                     <p className="text-sm text-green-800 mb-3">
-                                        20+ tracking functions are ready to use in your components via <code className="px-1 py-0.5 bg-green-100 rounded">window.catalyst</code>:
+                                        20+ tracking functions are ready to use in your components via <code className="px-1 py-0.5 bg-green-100 rounded">window.daino</code>:
                                     </p>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-green-800">
                                         <div className="flex items-center gap-1">

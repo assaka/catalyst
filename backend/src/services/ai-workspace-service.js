@@ -12,7 +12,7 @@
  * - UI/UX patterns and recommendations
  *
  * WHY USE RAG:
- * - AI knows what features are available in Catalyst
+ * - AI knows what features are available in DainoStore
  * - Better design suggestions based on best practices
  * - Consistent product management recommendations
  * - Up-to-date capabilities without code changes
@@ -193,7 +193,7 @@ class AIStudioService {
    *
    * RAG USAGE:
    * Every message is processed with RAG context via _buildSystemPrompt().
-   * The AI has knowledge about what Catalyst can do and how to help users.
+   * The AI has knowledge about what DainoStore can do and how to help users.
    *
    * @param {Object} params - Message parameters
    * @param {string} params.message - User's message
@@ -255,7 +255,7 @@ class AIStudioService {
    * - UI/UX patterns and recommendations
    *
    * WHY THIS MATTERS:
-   * - AI knows what Catalyst can actually do (no hallucination)
+   * - AI knows what DainoStore can actually do (no hallucination)
    * - Suggestions are based on documented best practices
    * - Features can be added/updated in database without code changes
    * - Consistent recommendations across all AI Studio contexts
@@ -290,7 +290,7 @@ class AIStudioService {
       limit: 5                       // Keep context focused for chat
     });
 
-    const basePrompt = aiPrompts.BASE_SYSTEM_PROMPT || 'You are Catalyst AI Studio, an intelligent e-commerce assistant.';
+    const basePrompt = aiPrompts.BASE_SYSTEM_PROMPT || 'You are DainoStore AI Studio, an intelligent e-commerce assistant.';
     const contextPrompt = aiPrompts.CONTEXT_PROMPTS?.[context] || '';
 
     // ⚡ RAG INJECTION: Insert fetched context between base prompt and context prompt

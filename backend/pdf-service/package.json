@@ -1,5 +1,5 @@
 {
-  "name": "catalyst-pdf-service",
+  "name": "daino-pdf-service",
   "version": "1.0.0",
   "description": "Microservice for HTML to PDF conversion using Puppeteer",
   "main": "server.js",

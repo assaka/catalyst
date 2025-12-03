@@ -224,7 +224,7 @@ User's Domain (shop.example.com)
          ↓
     DNS Records
          ↓
-  CNAME → stores.catalyst.app
+  CNAME → stores.daino.app
          ↓
    Platform Router
          ↓
@@ -264,7 +264,7 @@ Response:
     "id": "abc-123",
     "domain": "shop.example.com",
     "verification_status": "pending",
-    "verification_token": "catalyst-verify-a1b2c3d4..."
+    "verification_token": "daino-verify-a1b2c3d4..."
   },
   "verification_instructions": {
     "steps": [...]
@@ -280,20 +280,20 @@ Go to your domain provider (Cloudflare, Namecheap, etc.) and add:
 
 | Type | Name | Value | TTL |
 |------|------|-------|-----|
-| CNAME | @ or shop | stores.catalyst.app | 3600 |
-| TXT | _catalyst-verification | catalyst-verify-a1b2c3d4... | 300 |
+| CNAME | @ or shop | stores.daino.app | 3600 |
+| TXT | _daino-verification | daino-verify-a1b2c3d4... | 300 |
 
 **Example for Cloudflare:**
 ```
 Type: CNAME
 Name: shop
-Target: stores.catalyst.app
+Target: stores.daino.app
 Proxy: Off (DNS only)
 TTL: Auto
 
 Type: TXT
-Name: _catalyst-verification.shop
-Content: catalyst-verify-a1b2c3d4e5f6g7h8i9j0
+Name: _daino-verification.shop
+Content: daino-verify-a1b2c3d4e5f6g7h8i9j0
 TTL: Auto
 ```
 
@@ -340,15 +340,15 @@ Response:
     {
       "type": "CNAME",
       "name": "@",
-      "expected": "stores.catalyst.app",
-      "actual": ["stores.catalyst.app"],
+      "expected": "stores.daino.app",
+      "actual": ["stores.daino.app"],
       "configured": true
     },
     {
       "type": "TXT",
-      "name": "_catalyst-verification",
-      "expected": "catalyst-verify-...",
-      "actual": ["catalyst-verify-..."],
+      "name": "_daino-verification",
+      "expected": "daino-verify-...",
+      "actual": ["daino-verify-..."],
       "configured": true
     }
   ]
@@ -485,7 +485,7 @@ async function renewExpiringCertificates() {
 #### Domain Not Verifying
 ```bash
 # Check DNS propagation
-dig TXT _catalyst-verification.shop.example.com
+dig TXT _daino-verification.shop.example.com
 dig CNAME shop.example.com
 
 # Common issues:
@@ -587,5 +587,5 @@ router.post('/add', requireActiveSubscription, async (req, res) => {
 
 4. Set environment variables:
    ```bash
-   PLATFORM_DOMAIN=catalyst.app
+   PLATFORM_DOMAIN=daino.app
    ```

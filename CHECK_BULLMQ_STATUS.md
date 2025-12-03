@@ -5,12 +5,12 @@
 ### A. Check Redis Service Status
 1. Go to https://dashboard.render.com
 2. Navigate to your project
-3. Look for `catalyst-redis` (Key-Value Store)
+3. Look for `daino-redis` (Key-Value Store)
 4. Status should be "Available"
 5. Note the connection string
 
 ### B. Check Backend Service Logs
-1. Click on `catalyst-backend` service
+1. Click on `daino-backend` service
 2. Go to "Logs" tab
 3. Look for these startup messages:
    ```
@@ -21,7 +21,7 @@
 4. If you see "BullMQ not available - using database queue", Redis connection failed
 
 ### C. Check Background Worker Service
-1. Click on `catalyst-background-worker` service
+1. Click on `daino-background-worker` service
 2. Check logs for:
    ```
    BullMQ: Created worker for [job-type]
@@ -33,10 +33,10 @@
 ### Check Redis Connection
 ```bash
 # Check if Redis is enabled
-curl https://catalyst-backend-fzhu.onrender.com/api/health
+curl https://daino.onrender.com/api/health
 
 # Or if you have a jobs status endpoint:
-curl https://catalyst-backend-fzhu.onrender.com/api/jobs/status
+curl https://daino.onrender.com/api/jobs/status
 ```
 
 ### Check Database for Jobs
@@ -50,14 +50,14 @@ SELECT * FROM cron_jobs WHERE is_active = true;
 ## 3. Check Environment Variables
 
 ### In Render Dashboard:
-1. Go to `catalyst-backend` service
+1. Go to `daino-backend` service
 2. Click "Environment" tab
 3. Verify:
    - ✅ `REDIS_ENABLED=true`
-   - ✅ `REDIS_URL` is set (should be auto-populated from catalyst-redis)
+   - ✅ `REDIS_URL` is set (should be auto-populated from daino-redis)
    - ✅ `SERVICE_TYPE=main`
 
-4. Go to `catalyst-background-worker` service
+4. Go to `daino-background-worker` service
 5. Verify:
    - ✅ `REDIS_ENABLED=true`
    - ✅ `REDIS_URL` is set
@@ -106,7 +106,7 @@ bullMQManager.initialize().then(result => {
 - No "Job completed" messages in logs
 
 **Solutions:**
-1. Check `catalyst-background-worker` service is running
+1. Check `daino-background-worker` service is running
 2. Check worker logs for errors
 3. Verify job types are registered (see BackgroundJobManager.js:76-110)
 4. Check database connection in worker service
@@ -129,7 +129,7 @@ Your `render.yaml` already includes Redis configuration. When you deploy:
 
 1. Push your code with render.yaml
 2. Render will automatically:
-   - Create a Redis instance named `catalyst-redis`
+   - Create a Redis instance named `daino-redis`
    - Link it to your services via `REDIS_URL`
 
 ### Option B: Manual Setup in Dashboard
@@ -137,21 +137,21 @@ Your `render.yaml` already includes Redis configuration. When you deploy:
 1. **Create Redis Instance:**
    - Go to Render dashboard
    - Click "New +" → "Redis"
-   - Name: `catalyst-redis`
+   - Name: `daino-redis`
    - Plan: Choose based on needs (Free tier available)
    - Region: Same as your backend service
    - Click "Create Redis"
 
 2. **Link to Backend Service:**
-   - Go to `catalyst-backend` service
+   - Go to `daino-backend` service
    - Click "Environment" tab
    - Add new environment variable:
      - Key: `REDIS_URL`
-     - Value: Click "Add from Redis" → Select `catalyst-redis`
+     - Value: Click "Add from Redis" → Select `daino-redis`
    - Add: `REDIS_ENABLED=true`
 
 3. **Link to Worker Service:**
-   - Go to `catalyst-background-worker` service
+   - Go to `daino-background-worker` service
    - Repeat step 2 above
 
 4. **Redeploy Services:**
@@ -162,7 +162,7 @@ Your `render.yaml` already includes Redis configuration. When you deploy:
 ### Create a test job:
 ```bash
 # Via API (if you have an endpoint)
-curl -X POST https://catalyst-backend-fzhu.onrender.com/api/jobs/schedule \
+curl -X POST https://daino.onrender.com/api/jobs/schedule \
   -H "Content-Type: application/json" \
   -d '{
     "type": "system:cleanup",

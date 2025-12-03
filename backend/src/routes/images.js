@@ -311,13 +311,13 @@ router.post('/bulk-process', authMiddleware, async (req, res) => {
           );
 
           if (processedImages.length > 0) {
-            // Convert to Catalyst format
-            const catalystImages = syncService.imageProcessor.convertToCatalystFormat(processedImages);
+            // Convert to DainoStore format
+            const dainoImages = syncService.imageProcessor.convertToDainoStoreFormat(processedImages);
 
             // Update product
             await tenantDb
               .from('products')
-              .update({ images: catalystImages, updated_at: new Date().toISOString() })
+              .update({ images: dainoImages, updated_at: new Date().toISOString() })
               .eq('id', product.id);
             return true;
           }

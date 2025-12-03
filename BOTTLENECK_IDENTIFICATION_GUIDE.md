@@ -25,7 +25,7 @@ Already enabled in your app! Just need to open it.
 
 **Step 2: Open DevTools**
 
-1. Visit your product page: https://catalyst-pearl.vercel.app/public/hamid2/product/...
+1. Visit your product page: https://daino-pearl.vercel.app/public/hamid2/product/...
 2. Look for **React Query DevTools** icon (bottom-right corner, red flower icon)
 3. Click to expand
 
@@ -490,16 +490,16 @@ GROUP BY state, application_name;
 ```
 total_connections | state  | application_name
 ------------------+--------+-----------------
-3                 | active | catalyst-backend  ← Good (within pool limit)
-2                 | idle   | catalyst-backend
+3                 | active | daino-backend  ← Good (within pool limit)
+2                 | idle   | daino-backend
 ```
 
 **Bad:**
 ```
 total_connections | state  | application_name
 ------------------+--------+-----------------
-15                | active | catalyst-backend  ← BAD! (exceeds pool max=10)
-10                | idle   | catalyst-backend  ← Connection leak!
+15                | active | daino-backend  ← BAD! (exceeds pool max=10)
+10                | idle   | daino-backend  ← Connection leak!
 ```
 
 ---

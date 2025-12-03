@@ -1,7 +1,7 @@
 services:
   # Unified Frontend + Backend Service
   - type: web
-    name: catalyst-unified
+    name: daino-unified
     env: node
     buildCommand: |
       # Install backend dependencies
@@ -29,14 +29,14 @@ services:
         value: 24h
       # CORS Configuration (allow self)
       - key: CORS_ORIGIN
-        value: https://catalyst-unified.onrender.com
+        value: https://daino-unified.onrender.com
       # OAuth Configuration
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_CALLBACK_URL
-        value: https://catalyst-unified.onrender.com/api/auth/google/callback
+        value: https://daino-unified.onrender.com/api/auth/google/callback
       # Session Configuration
       - key: SESSION_SECRET
         sync: false

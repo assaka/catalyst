@@ -2,7 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 
 /**
  * Akeneo Mapping Service
- * Handles mapping between Akeneo data structures and Catalyst entities
+ * Handles mapping between Akeneo data structures and DainoStore entities
  */
 class AkeneoMapping {
   constructor(config = {}) {
@@ -10,7 +10,7 @@ class AkeneoMapping {
   }
 
   /**
-   * Map Akeneo product to Catalyst product
+   * Map Akeneo product to DainoStore product
    */
   async mapProduct(akeneoProduct, options = {}) {
     const { locale = 'en_US', storeId, preventUrlKeyOverride = false } = options;
@@ -70,7 +70,7 @@ class AkeneoMapping {
   }
 
   /**
-   * Map Akeneo category to Catalyst category
+   * Map Akeneo category to DainoStore category
    */
   async mapCategory(akeneoCategory, options = {}) {
     const { locale = 'en_US', storeId, preventUrlKeyOverride = false, akeneoUrlField = 'url_key' } = options;
@@ -119,7 +119,7 @@ class AkeneoMapping {
   }
 
   /**
-   * Map Akeneo attribute to Catalyst attribute
+   * Map Akeneo attribute to DainoStore attribute
    */
   async mapAttribute(akeneoAttribute, options = {}) {
     const { locale = 'en_US', storeId } = options;
@@ -235,14 +235,14 @@ class AkeneoMapping {
   }
 
   /**
-   * Map Akeneo product status to Catalyst status
+   * Map Akeneo product status to DainoStore status
    */
   mapProductStatus(enabled) {
     return enabled ? 'active' : 'inactive';
   }
 
   /**
-   * Map Akeneo attribute type to Catalyst attribute type
+   * Map Akeneo attribute type to DainoStore attribute type
    */
   mapAttributeType(akeneoType) {
     const typeMapping = {
@@ -268,7 +268,7 @@ class AkeneoMapping {
    */
   async mapProductCategories(akeneoCategoryCodes, storeId) {
     // TODO: Implement category mapping lookup
-    // This should query the akeneo_mappings table to find corresponding Catalyst category IDs
+    // This should query the akeneo_mappings table to find corresponding DainoStore category IDs
     console.log(`📋 Mapping categories: ${akeneoCategoryCodes.join(', ')}`);
     return [];
   }

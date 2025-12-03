@@ -85,7 +85,7 @@ class PluginSandbox {
       decodeURI: decodeURI,
 
       // Plugin-specific APIs
-      CatalystAPI: this.createCatalystAPI(),
+      DainoStoreAPI: this.createDainoStoreAPI(),
       
       // HTML sanitization
       sanitizeHTML: this.createHTMLSanitizer(),
@@ -98,9 +98,9 @@ class PluginSandbox {
   }
 
   /**
-   * Create the Catalyst API for plugins
+   * Create the DainoStore API for plugins
    */
-  createCatalystAPI() {
+  createDainoStoreAPI() {
     return {
       // Store information (read-only)
       getStoreInfo: (storeId) => ({

@@ -72,8 +72,8 @@ function generateToken(user, storeId, options = {}) {
   const tokenOptions = {
     algorithm: JWT_ALGORITHM,
     expiresIn: options.expiresIn || JWT_EXPIRES_IN,
-    issuer: 'catalyst-platform',
-    audience: 'catalyst-api'
+    issuer: 'daino-platform',
+    audience: 'daino-api'
   };
 
   return jwt.sign(payload, JWT_SECRET, tokenOptions);
@@ -102,8 +102,8 @@ function generateRefreshToken(user, storeId) {
   const tokenOptions = {
     algorithm: JWT_ALGORITHM,
     expiresIn: '30d', // Refresh tokens last longer
-    issuer: 'catalyst-platform',
-    audience: 'catalyst-api'
+    issuer: 'daino-platform',
+    audience: 'daino-api'
   };
 
   return jwt.sign(payload, JWT_SECRET, tokenOptions);
@@ -128,8 +128,8 @@ function verifyToken(token) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET, {
       algorithms: [JWT_ALGORITHM],
-      issuer: 'catalyst-platform',
-      audience: 'catalyst-api'
+      issuer: 'daino-platform',
+      audience: 'daino-api'
     });
 
     return decoded;

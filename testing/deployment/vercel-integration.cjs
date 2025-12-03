@@ -4,7 +4,7 @@
 class VercelIntegration {
   constructor() {
     this.vercelApiUrl = 'https://api.vercel.com/v2';
-    this.frontendUrl = process.env.VERCEL_FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
+    this.frontendUrl = process.env.VERCEL_FRONTEND_URL || 'https://daino-pearl.vercel.app';
     this.projectId = process.env.VERCEL_PROJECT_ID;
     this.teamId = process.env.VERCEL_TEAM_ID;
     this.apiToken = process.env.VERCEL_API_TOKEN; // Optional for deployment API access
@@ -19,7 +19,7 @@ class VercelIntegration {
       const response = await fetch(this.frontendUrl, {
         method: 'GET',
         headers: {
-          'User-Agent': 'Catalyst-Testing-Stack'
+          'User-Agent': 'DainoStore-Testing-Stack'
         }
       });
       const responseTime = Date.now() - startTime;
@@ -131,7 +131,7 @@ class VercelIntegration {
       
       // Since we can't directly check client-side code execution,
       // we'll test the API endpoints that our frontend calls
-      const backendUrl = process.env.RENDER_BACKEND_URL || 'https://catalyst-backend-fzhu.onrender.com';
+      const backendUrl = process.env.RENDER_BACKEND_URL || 'https://daino.onrender.com';
       
       const apiTests = [
         {

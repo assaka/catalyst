@@ -540,7 +540,7 @@ await this.updateProgress(50, 'Halfway done');
 
 ## 🎉 **Summary**
 
-With Catalyst's job system, your plugins can:
+With DainoStore's job system, your plugins can:
 - ✅ Schedule recurring tasks
 - ✅ Run background jobs
 - ✅ Track progress in real-time
@@ -552,4 +552,4 @@ With Catalyst's job system, your plugins can:
 ---
 
 *Last Updated: November 2025*
-*Catalyst Version: 2.0+*
+*DainoStore Version: 2.0+*
