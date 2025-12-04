@@ -1066,6 +1066,32 @@ Return ONLY valid JSON.`;
       parsedIntent = { intent: 'chat', action: 'chat' };
     }
 
+    // Capture ALL intents to master database for training
+    const aiTrainingService = require('../services/aiTrainingService');
+    const intentCapture = await aiTrainingService.captureTrainingCandidate({
+      storeId: resolvedStoreId,
+      userId,
+      sessionId: sessionId || `session_${Date.now()}`,
+      userPrompt: message,
+      aiResponse: null, // Will be updated after response
+      detectedIntent: parsedIntent.intent || (parsedIntent.intents?.[0]?.intent),
+      detectedEntity: parsedIntent.details?.entity || parsedIntent.details?.query_type || parsedIntent.intents?.[0]?.details?.entity,
+      detectedOperation: parsedIntent.action || parsedIntent.details?.operation,
+      actionTaken: null, // Will be updated after action
+      confidenceScore: parsedIntent.confidence || 0.7,
+      metadata: {
+        modelId,
+        fullIntent: parsedIntent,
+        isMultiIntent: !!(parsedIntent.intents && parsedIntent.intents.length > 1)
+      }
+    }).catch(err => {
+      console.error('[AI Training] Failed to capture intent:', err);
+      return { captured: false };
+    });
+
+    // Store candidateId for later updates
+    const trainingCandidateId = intentCapture?.candidateId;
+
     // Handle MULTIPLE intents if AI detected them
     if (parsedIntent.intents && Array.isArray(parsedIntent.intents) && parsedIntent.intents.length > 1) {
       console.log('[AI Chat] ===========================================');
@@ -3989,27 +4015,13 @@ Be SHORT and direct. Just list the results with bullet points. No fluff, no expl
         });
         creditsUsed += analyticsResponse.creditsDeducted;
 
-        // Capture training data for this interaction
-        const aiTrainingService = require('../services/aiTrainingService');
-        const trainingCapture = await aiTrainingService.captureTrainingCandidate({
-          storeId: resolvedStoreId,
-          userId,
-          sessionId: req.sessionID || req.headers['x-session-id'],
-          userPrompt: message,
-          aiResponse: analyticsResponse.content,
-          detectedIntent: 'analytics_query',
-          detectedEntity: queryType,
-          detectedOperation: 'query',
-          actionTaken: { query_type: queryType, filters, result_count: Array.isArray(queryResult) ? queryResult.length : 1 },
-          confidenceScore: intent.confidence || 0.8,
-          metadata: { modelId, queryDescription }
-        });
-
-        // Mark as success since query executed
-        if (trainingCapture.captured && trainingCapture.candidateId) {
-          await aiTrainingService.updateOutcome(trainingCapture.candidateId, 'success', {
+        // Update training candidate with response and outcome
+        if (trainingCandidateId) {
+          await aiTrainingService.updateOutcome(trainingCandidateId, 'success', {
             query_executed: true,
-            result_count: Array.isArray(queryResult) ? queryResult.length : 1
+            query_type: queryType,
+            result_count: Array.isArray(queryResult) ? queryResult.length : (queryResult?.categories?.length || queryResult?.total || 1),
+            ai_response: analyticsResponse.content?.substring(0, 500)
           });
         }
 
