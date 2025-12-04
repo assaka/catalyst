@@ -4,6 +4,7 @@ const { masterDbClient } = require('../database/masterConnection');
 const aiContextService = require('./aiContextService'); // RAG system
 const aiProvider = require('./ai-provider-service'); // Unified AI provider
 const ServiceCreditCost = require('../models/ServiceCreditCost');
+const AIModel = require('../models/AIModel');
 
 /**
  * Centralized AI Service
@@ -74,6 +75,23 @@ class AIService {
 
   /**
    * Get model configuration from model ID
+   * First tries database, falls back to hardcoded mapping
+   */
+  async getModelConfigFromDb(modelId) {
+    try {
+      const config = await AIModel.getModelConfig(modelId);
+      if (config) {
+        return config;
+      }
+    } catch (error) {
+      console.warn(`Failed to fetch model config from DB for ${modelId}:`, error.message);
+    }
+    // Fallback to hardcoded mapping
+    return this.modelMapping[modelId] || this.modelMapping['claude-sonnet'];
+  }
+
+  /**
+   * Get model configuration from model ID (sync fallback)
    */
   getModelConfig(modelId) {
     return this.modelMapping[modelId] || this.modelMapping['claude-sonnet'];
@@ -192,7 +210,7 @@ class AIService {
     console.log(`💳 Credits deducted: ${cost} for ${operationType} (user: ${userId}, store: ${storeId})`);
 
     // Log credit usage to tenant DB
-    if (storeId && storeId !== '00000000-0000-0000-0000-000000000000') {
+    if (storeId) {
       try {
         const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
