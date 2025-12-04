@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const aiService = require('../services/AIService');
+const aiProvider = require('../services/ai-provider-service');
 const aiEntityService = require('../services/aiEntityService');
 const aiContextService = require('../services/aiContextService');
 const aiLearningService = require('../services/aiLearningService');
@@ -1696,18 +1697,75 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
 
         const styleValue = colorMap[value?.toLowerCase()] || value;
 
-        // Get or create slot configuration
-        const { data: config } = await db
+        // Look for draft first, then published
+        let { data: draftConfig } = await db
           .from('slot_configurations')
-          .select('id, configuration')
+          .select('id, configuration, version_number')
           .eq('store_id', storeId)
           .eq('page_type', page)
-          .eq('status', 'published')
+          .eq('status', 'draft')
           .order('version_number', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        let configuration = config?.configuration || { slots: {} };
+        let configId;
+        let configuration;
+
+        if (draftConfig) {
+          // Update existing draft
+          configuration = draftConfig.configuration || { slots: {} };
+          configId = draftConfig.id;
+        } else {
+          // No draft - check for published to clone from
+          const { data: publishedConfig } = await db
+            .from('slot_configurations')
+            .select('id, configuration, version_number')
+            .eq('store_id', storeId)
+            .eq('page_type', page)
+            .eq('status', 'published')
+            .order('version_number', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (publishedConfig) {
+            // Clone from published to create new draft
+            configuration = JSON.parse(JSON.stringify(publishedConfig.configuration || { slots: {} }));
+            const { data: newDraft } = await db
+              .from('slot_configurations')
+              .insert({
+                store_id: storeId,
+                user_id: userId,
+                page_type: page,
+                configuration,
+                status: 'draft',
+                is_active: true,
+                version_number: (publishedConfig.version_number || 1) + 1,
+                parent_version_id: publishedConfig.id
+              })
+              .select('id')
+              .single();
+            configId = newDraft?.id;
+          } else {
+            // No config at all - create fresh draft
+            configuration = { slots: {} };
+            const { data: newDraft } = await db
+              .from('slot_configurations')
+              .insert({
+                store_id: storeId,
+                user_id: userId,
+                page_type: page,
+                configuration,
+                status: 'draft',
+                is_active: true,
+                version_number: 1
+              })
+              .select('id')
+              .single();
+            configId = newDraft?.id;
+          }
+        }
+
+        // Ensure slots structure exists
         if (!configuration.slots) configuration.slots = {};
         if (!configuration.slots[slotId]) configuration.slots[slotId] = { styles: {} };
         if (!configuration.slots[slotId].styles) configuration.slots[slotId].styles = {};
@@ -1715,35 +1773,29 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
         // Apply the style
         configuration.slots[slotId].styles[styleProp] = styleValue;
 
-        if (config) {
-          // Update existing
-          await db
-            .from('slot_configurations')
-            .update({
-              configuration,
-              updated_at: new Date().toISOString(),
-              has_unpublished_changes: true
-            })
-            .eq('id', config.id);
-        } else {
-          // Create new
-          await db
-            .from('slot_configurations')
-            .insert({
-              store_id: storeId,
-              user_id: userId,
-              page_type: page,
-              configuration,
-              status: 'published',
-              is_active: true
-            });
-        }
+        // Update the draft
+        await db
+          .from('slot_configurations')
+          .update({
+            configuration,
+            updated_at: new Date().toISOString(),
+            has_unpublished_changes: true
+          })
+          .eq('id', configId);
 
         const friendlyElement = element.replace(/_/g, ' ');
         return {
           success: true,
-          message: `Changed ${friendlyElement} ${styleProp} to ${value}. Refresh your storefront to see the changes.`,
-          data: { type: 'styling', element: slotId, property: styleProp, value: styleValue }
+          message: `Changed ${friendlyElement} ${styleProp} to ${value}.`,
+          data: {
+            type: 'styling_applied',
+            configId,
+            pageType: page,
+            slotId,
+            property: styleProp,
+            value: styleValue,
+            refreshPreview: true
+          }
         };
       }
 
@@ -1811,18 +1863,70 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
         const targetSlot = elementMap[target?.toLowerCase()] || target;
         const normalizedPosition = ['above', 'before'].includes(position?.toLowerCase()) ? 'before' : 'after';
 
-        // Get or create slot configuration
-        const { data: config } = await db
+        // Look for draft first, then published
+        let { data: draftConfig } = await db
           .from('slot_configurations')
-          .select('id, configuration')
+          .select('id, configuration, version_number')
           .eq('store_id', storeId)
           .eq('page_type', page)
-          .eq('status', 'published')
+          .eq('status', 'draft')
           .order('version_number', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        let configuration = config?.configuration || { slots: {}, layout: [] };
+        let configId;
+        let configuration;
+
+        if (draftConfig) {
+          configuration = draftConfig.configuration || { slots: {}, layout: [] };
+          configId = draftConfig.id;
+        } else {
+          const { data: publishedConfig } = await db
+            .from('slot_configurations')
+            .select('id, configuration, version_number')
+            .eq('store_id', storeId)
+            .eq('page_type', page)
+            .eq('status', 'published')
+            .order('version_number', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (publishedConfig) {
+            configuration = JSON.parse(JSON.stringify(publishedConfig.configuration || { slots: {}, layout: [] }));
+            const { data: newDraft } = await db
+              .from('slot_configurations')
+              .insert({
+                store_id: storeId,
+                user_id: userId,
+                page_type: page,
+                configuration,
+                status: 'draft',
+                is_active: true,
+                version_number: (publishedConfig.version_number || 1) + 1,
+                parent_version_id: publishedConfig.id
+              })
+              .select('id')
+              .single();
+            configId = newDraft?.id;
+          } else {
+            configuration = { slots: {}, layout: [] };
+            const { data: newDraft } = await db
+              .from('slot_configurations')
+              .insert({
+                store_id: storeId,
+                user_id: userId,
+                page_type: page,
+                configuration,
+                status: 'draft',
+                is_active: true,
+                version_number: 1
+              })
+              .select('id')
+              .single();
+            configId = newDraft?.id;
+          }
+        }
+
         if (!configuration.slots) configuration.slots = {};
         if (!configuration.layout) configuration.layout = [];
 
@@ -1833,33 +1937,26 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           placement: normalizedPosition
         };
 
-        if (config) {
-          await db
-            .from('slot_configurations')
-            .update({
-              configuration,
-              updated_at: new Date().toISOString(),
-              has_unpublished_changes: true
-            })
-            .eq('id', config.id);
-        } else {
-          await db
-            .from('slot_configurations')
-            .insert({
-              store_id: storeId,
-              user_id: userId,
-              page_type: page,
-              configuration,
-              status: 'published',
-              is_active: true
-            });
-        }
+        await db
+          .from('slot_configurations')
+          .update({
+            configuration,
+            updated_at: new Date().toISOString(),
+            has_unpublished_changes: true
+          })
+          .eq('id', configId);
 
         const posWord = normalizedPosition === 'before' ? 'above' : 'below';
         return {
           success: true,
-          message: `Moved ${element.replace(/_/g, ' ')} ${posWord} ${target.replace(/_/g, ' ')}. Refresh your storefront to see the changes.`,
-          data: { type: 'layout', source: sourceSlot, target: targetSlot, position: normalizedPosition }
+          message: `Moved ${element.replace(/_/g, ' ')} ${posWord} ${target.replace(/_/g, ' ')}.`,
+          data: {
+            type: 'styling_applied',
+            configId,
+            pageType: page,
+            slotId: sourceSlot,
+            refreshPreview: true
+          }
         };
       }
 
@@ -2129,6 +2226,251 @@ router.post('/generate/stream', authMiddleware, async (req, res) => {
         success: false,
         message: error.message || 'AI streaming failed'
       });
+    }
+  }
+});
+
+/**
+ * POST /api/ai/stream-thinking
+ * Stream AI response with extended thinking and tool usage display
+ * Shows Claude's thinking process and tool calls in real-time
+ */
+router.post('/stream-thinking', authMiddleware, async (req, res) => {
+  try {
+    const {
+      message,
+      history = [],
+      systemPrompt,
+      enableTools = true,
+      thinkingBudget = 8000
+    } = req.body;
+
+    const userId = req.user.id;
+    const storeId = req.headers['x-store-id'] || req.body.storeId;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: 'message is required'
+      });
+    }
+
+    // Check credits first
+    const creditCheck = await aiService.checkCredits(userId, 'general', 'ai_chat_claude_sonnet');
+    if (!creditCheck.hasCredits) {
+      return res.status(402).json({
+        success: false,
+        code: 'INSUFFICIENT_CREDITS',
+        message: `Insufficient credits. Required: ${creditCheck.required}, Available: ${creditCheck.available}`
+      });
+    }
+
+    console.log('🧠 Extended Thinking Stream started');
+    console.log('📝 Message:', message.substring(0, 100));
+
+    // Set headers for SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+
+    // Build messages array from history
+    const messages = [
+      ...history.map(h => ({
+        role: h.role,
+        content: h.content
+      })),
+      { role: 'user', content: message }
+    ];
+
+    // Get tools if enabled
+    const tools = enableTools ? aiProvider.getWebshopTools() : [];
+
+    // Build system prompt for webshop assistant
+    const fullSystemPrompt = systemPrompt || `You are an AI assistant for a webshop management platform.
+You help store managers with:
+- Product management and catalog optimization
+- Order processing and fulfillment
+- Customer insights and analytics
+- Store configuration and settings
+
+When answering questions about the store, use the available tools to query real data.
+Always explain what you're checking/searching before using a tool.
+Be concise but helpful.`;
+
+    // Create tool execution handler for when AI requests tools
+    const toolResults = {};
+    let pendingToolUse = null;
+
+    // Stream with extended thinking
+    const stream = aiProvider.streamWithThinking(messages, {
+      model: 'claude-sonnet-4-20250514',
+      maxTokens: 16000,
+      systemPrompt: fullSystemPrompt,
+      tools,
+      thinkingBudget
+    });
+
+    let totalUsage = { input_tokens: 0, output_tokens: 0 };
+
+    for await (const event of stream) {
+      // Send event to client
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+
+      // Track tool usage for execution
+      if (event.type === 'tool_start') {
+        pendingToolUse = {
+          name: event.tool,
+          id: event.id,
+          input: ''
+        };
+      }
+
+      if (event.type === 'tool_input' && pendingToolUse) {
+        pendingToolUse.input += event.json || '';
+      }
+
+      if (event.type === 'block_stop' && event.blockType === 'tool_use' && pendingToolUse) {
+        // Parse tool input and execute
+        try {
+          const toolInput = JSON.parse(pendingToolUse.input || '{}');
+          const toolName = pendingToolUse.name;
+
+          // Execute tool based on name
+          let toolResult = null;
+
+          if (storeId) {
+            const ConnectionManager = require('../services/database/ConnectionManager');
+            const tenantDb = await ConnectionManager.getConnection(storeId);
+
+            if (toolName === 'query_products') {
+              let query = tenantDb.from('products').select('id, name, price, status, stock_quantity');
+              if (toolInput.search) {
+                query = query.ilike('name', `%${toolInput.search}%`);
+              }
+              if (toolInput.category) {
+                query = query.eq('category_id', toolInput.category);
+              }
+              if (toolInput.min_price) {
+                query = query.gte('price', toolInput.min_price);
+              }
+              if (toolInput.max_price) {
+                query = query.lte('price', toolInput.max_price);
+              }
+              const { data } = await query.limit(toolInput.limit || 10);
+              toolResult = data || [];
+            }
+
+            if (toolName === 'query_orders') {
+              let query = tenantDb.from('orders').select('id, status, total_amount, created_at');
+              if (toolInput.status) {
+                query = query.eq('status', toolInput.status);
+              }
+              if (toolInput.date_from) {
+                query = query.gte('created_at', toolInput.date_from);
+              }
+              if (toolInput.date_to) {
+                query = query.lte('created_at', toolInput.date_to);
+              }
+              const { data } = await query.order('created_at', { ascending: false }).limit(toolInput.limit || 10);
+              toolResult = data || [];
+            }
+
+            if (toolName === 'query_customers') {
+              let query = tenantDb.from('customers').select('id, email, first_name, last_name, created_at');
+              if (toolInput.search) {
+                query = query.or(`email.ilike.%${toolInput.search}%,first_name.ilike.%${toolInput.search}%,last_name.ilike.%${toolInput.search}%`);
+              }
+              const { data } = await query.limit(toolInput.limit || 10);
+              toolResult = data || [];
+            }
+
+            if (toolName === 'get_store_stats') {
+              const { data: products } = await tenantDb.from('products').select('id', { count: 'exact', head: true });
+              const { data: orders } = await tenantDb.from('orders').select('id', { count: 'exact', head: true });
+              const { data: revenue } = await tenantDb.from('orders').select('total_amount').eq('status', 'completed');
+              toolResult = {
+                total_products: products?.length || 0,
+                total_orders: orders?.length || 0,
+                total_revenue: revenue?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0
+              };
+            }
+
+            if (toolName === 'query_categories') {
+              let query = tenantDb.from('categories').select('id, name, slug, parent_id');
+              if (toolInput.parent_id) {
+                query = query.eq('parent_id', toolInput.parent_id);
+              }
+              const { data } = await query;
+              toolResult = data || [];
+            }
+          } else {
+            toolResult = { error: 'No store context available' };
+          }
+
+          // Store result and send to client
+          toolResults[pendingToolUse.id] = toolResult;
+          res.write(`data: ${JSON.stringify({
+            type: 'tool_result',
+            id: pendingToolUse.id,
+            tool: toolName,
+            result: toolResult
+          })}\n\n`);
+
+        } catch (toolError) {
+          console.error('Tool execution error:', toolError);
+          res.write(`data: ${JSON.stringify({
+            type: 'tool_error',
+            id: pendingToolUse.id,
+            error: toolError.message
+          })}\n\n`);
+        }
+
+        pendingToolUse = null;
+      }
+
+      // Track usage
+      if (event.type === 'done' && event.usage) {
+        totalUsage = event.usage;
+      }
+    }
+
+    // Deduct credits after streaming completes
+    try {
+      await aiService.deductCredits(userId, 'general', {
+        storeId,
+        modelId: 'claude-sonnet',
+        serviceKey: 'ai_chat_claude_sonnet',
+        tokensInput: totalUsage.input_tokens,
+        tokensOutput: totalUsage.output_tokens
+      });
+    } catch (creditError) {
+      console.error('Failed to deduct credits:', creditError);
+    }
+
+    // Send completion
+    const creditsRemaining = await aiService.getRemainingCredits(userId);
+    res.write(`data: ${JSON.stringify({
+      type: 'complete',
+      usage: totalUsage,
+      creditsRemaining,
+      creditsDeducted: await aiService.getOperationCost('general', 'ai_chat_claude_sonnet')
+    })}\n\n`);
+
+    res.write('data: [DONE]\n\n');
+    res.end();
+
+  } catch (error) {
+    console.error('Extended thinking stream error:', error);
+
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Extended thinking stream failed'
+      });
+    } else {
+      res.write(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`);
+      res.end();
     }
   }
 });
