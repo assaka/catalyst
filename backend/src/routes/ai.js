@@ -704,8 +704,12 @@ router.post('/chat', authMiddleware, async (req, res) => {
       resolved: resolvedStoreId
     });
 
-    // Log model selection
-    console.log('🤖 AI Chat - Model selection:', { modelId, serviceKey });
+    // Log model selection with clear visibility
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🤖 AI CHAT REQUEST');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📍 Model Selection:', { modelId, serviceKey });
+    console.log('📝 Message:', message?.substring(0, 100) + (message?.length > 100 ? '...' : ''));
 
     if (!message) {
       return res.status(400).json({
