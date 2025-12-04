@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import { Button } from "@/components/ui/button";
 import {ChevronDown, LogOut, Settings, Sparkles, User as UserIcon} from 'lucide-react';
 import {
@@ -8,10 +8,38 @@ import {
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu.jsx";
 import {createPageUrl} from "@/utils/index.js";
-import {Auth} from "@/api/entities.js";
+import {Auth, User} from "@/api/entities.js";
 import {Link} from "react-router-dom";
 
 export default function Header() {
+
+    const [user, setUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        checkAuthStatus();
+    }, []);
+
+    const checkAuthStatus = async () => {
+        try {
+            const userData = await User.me();
+
+            // Only show admin users as logged in on admin pages like Landing
+            // Customers should not appear as logged in on admin areas
+            if (userData && (userData.role === 'store_owner' || userData.role === 'admin' || userData.account_type === 'agency')) {
+                setUser(userData);
+            } else {
+                // Customers should not appear as logged in on admin landing page
+                setUser(null);
+            }
+        } catch (error) {
+            // User not authenticated - this is fine for landing page
+            setUser(null);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-neutral-200">
             <div className="max-w-7xl mx-auto px-6 py-4">
