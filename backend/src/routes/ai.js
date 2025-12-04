@@ -485,14 +485,26 @@ Return ONLY valid JSON.`;
     // ═══════════════════════════════════════════════════════════════════
     // STEP 9: Return response with any pending action for confirmation
     // ═══════════════════════════════════════════════════════════════════
+    // Bubble up styling_applied/layout types for frontend refresh detection
+    const resultType = executionResult?.data?.type;
+    const stylingTypes = ['styling_applied', 'styling_preview', 'layout_modified'];
+    const responseType = executionResult?.needsConfirmation
+      ? 'confirmation_needed'
+      : (stylingTypes.includes(resultType) ? resultType : (toolCall ? 'tool_executed' : 'chat'));
+
     res.json({
       success: true,
       message: responseMessage,
       data: {
-        type: executionResult?.needsConfirmation ? 'confirmation_needed' : (toolCall ? 'tool_executed' : 'chat'),
+        type: responseType,
         tool: toolCall?.tool,
         result: executionResult?.data,
-        candidateId: executionResult?.candidateId
+        candidateId: executionResult?.candidateId,
+        // Include these at top level for frontend refresh detection
+        pageType: executionResult?.data?.pageType,
+        slotId: executionResult?.data?.slotId,
+        configId: executionResult?.data?.configId,
+        refreshPreview: executionResult?.data?.refreshPreview
       },
       pendingAction: executionResult?.pendingAction, // For "yes" confirmation flow
       creditsDeducted: response.creditsDeducted
