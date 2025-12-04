@@ -806,6 +806,37 @@ const WorkspaceAIPanel = () => {
                       </div>
                     )}
 
+                    {/* Clarification Options - Interactive Selection */}
+                    {message.data?.type === 'clarification_needed' && message.data?.clarification && (
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                          {message.data.clarification.question}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {message.data.clarification.options.map((option, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                // Send the action as a new message
+                                setInputValue(option.action);
+                                setTimeout(() => handleSend(), 100);
+                              }}
+                              className="flex flex-col items-start px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-700 rounded-md transition-colors text-left"
+                            >
+                              <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                                {option.label}
+                              </span>
+                              {option.sublabel && (
+                                <span className="text-[10px] text-purple-500 dark:text-purple-400">
+                                  {option.sublabel}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Slot command execution result */}
                     {message.executionResult && (
                       <div className={cn(

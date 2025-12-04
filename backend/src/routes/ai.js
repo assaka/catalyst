@@ -1206,7 +1206,12 @@ INTENTS:
 - job_trigger: Triggering background tasks (e.g., "import from akeneo", "run sync", "start export")
 - settings_update: Theme/appearance/catalog settings (e.g., "change breadcrumb color", "hide stock label", "enable inventory tracking")
 - admin_entity: Store entity CRUD (e.g., "rename tab", "create coupon", "disable payment method")
-- category_management: Adding/removing products to/from categories (e.g., "add all products to snowboard category", "remove product from category", "assign products to category")
+- category_management: Adding/removing products to/from categories. USE THIS for ANY request about adding products to categories or removing them. Examples:
+  * "add all products to snowboard category"
+  * "add The Videographer Snowboard to snowboard category" → product_filter: "The Videographer Snowboard", category_name: "snowboard"
+  * "add Blue T-Shirt to clothing" → product_filter: "Blue T-Shirt", category_name: "clothing"
+  * "remove product X from category Y"
+  * "assign products to category"
 - attribute_management: Create/update attributes and values (e.g., "create attribute Color with values Red, Blue, Green", "add XL to Size attribute")
 - product_label_management: Create/update product labels/badges (e.g., "create a Sale label", "add New Arrival label to products")
 - product_tab_management: Create/update product detail tabs (e.g., "create a Care Instructions tab", "rename Specs tab to Technical Details")
@@ -1249,7 +1254,12 @@ For job_trigger, extract:
 For category_management, extract:
 - operation: "add" or "remove"
 - category_name: The target category name (e.g., "snowboard", "accessories")
-- product_filter: "all", "out_of_stock", or specific product name/SKU
+- product_filter: "all", "out_of_stock", or the EXACT product name/SKU from user's message
+  * IMPORTANT: If user mentions a specific product name like "The Videographer Snowboard", use that EXACT name as product_filter
+  * Examples:
+    - "add all products to snowboard" → product_filter: "all", category_name: "snowboard"
+    - "add The Videographer Snowboard to snowboard category" → product_filter: "The Videographer Snowboard", category_name: "snowboard"
+    - "add Blue Widget to accessories" → product_filter: "Blue Widget", category_name: "accessories"
 - attribute_set: (optional) Filter by attribute set name (e.g., "add products with attribute set Snowboards to category")
 
 For settings_update, extract:
@@ -4551,10 +4561,29 @@ Be SHORT and direct. Just list the results with bullet points. No fluff, no expl
       const productFilter = intent.details?.product_filter || 'all';
 
       if (!categoryName) {
+        // Fetch available categories to show as options
+        const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
+        const availableCategories = await tenantDb('categories')
+          .select('id', 'name')
+          .where('is_active', true)
+          .orderBy('name')
+          .limit(6);
+
         return res.json({
           success: true,
-          message: "I need to know which category you want to work with. Please specify the category name, e.g., 'add all products to Snowboards category'.",
-          data: { type: 'category_clarification' },
+          message: "Which category would you like to work with?",
+          data: {
+            type: 'clarification_needed',
+            clarification: {
+              type: 'category_select',
+              question: 'Select a category:',
+              options: availableCategories.map(c => ({
+                label: c.name,
+                value: c.name,
+                action: `${operation} products to ${c.name} category`
+              }))
+            }
+          },
           creditsDeducted: creditsUsed
         });
       }
@@ -4568,20 +4597,48 @@ Be SHORT and direct. Just list the results with bullet points. No fluff, no expl
           .select('id', 'name');
 
         if (categories.length === 0) {
+          // Get all categories to suggest
+          const allCategories = await tenantDb('categories')
+            .select('id', 'name')
+            .where('is_active', true)
+            .orderBy('name')
+            .limit(6);
+
           return res.json({
             success: true,
-            message: `I couldn't find a category matching "${categoryName}". Please check the category name and try again.`,
-            data: { type: 'category_not_found' },
+            message: `I couldn't find a category matching "${categoryName}".`,
+            data: {
+              type: 'clarification_needed',
+              clarification: {
+                type: 'category_select',
+                question: 'Did you mean one of these categories?',
+                options: allCategories.map(c => ({
+                  label: c.name,
+                  value: c.name,
+                  action: `${operation} ${productFilter} to ${c.name} category`
+                }))
+              }
+            },
             creditsDeducted: creditsUsed
           });
         }
 
         if (categories.length > 1) {
-          const categoryList = categories.map(c => c.name).join(', ');
           return res.json({
             success: true,
-            message: `Found multiple categories matching "${categoryName}": ${categoryList}. Please be more specific.`,
-            data: { type: 'category_ambiguous', categories: categories },
+            message: `Found multiple categories matching "${categoryName}".`,
+            data: {
+              type: 'clarification_needed',
+              clarification: {
+                type: 'category_select',
+                question: 'Which category did you mean?',
+                options: categories.map(c => ({
+                  label: c.name,
+                  value: c.name,
+                  action: `${operation} ${productFilter} to ${c.name} category`
+                }))
+              }
+            },
             creditsDeducted: creditsUsed
           });
         }
@@ -4612,11 +4669,46 @@ Be SHORT and direct. Just list the results with bullet points. No fluff, no expl
         const products = await productsQuery;
 
         if (products.length === 0) {
+          if (productFilter === 'all') {
+            return res.json({
+              success: true,
+              message: "There are no products in your store to assign.",
+              data: { type: 'no_products_found' },
+              creditsDeducted: creditsUsed
+            });
+          }
+
+          // Search for similar products to suggest
+          const similarProducts = await tenantDb('products')
+            .select('id', 'name', 'sku')
+            .whereRaw('LOWER(name) LIKE ?', [`%${productFilter.toLowerCase().split(' ')[0]}%`])
+            .orWhereRaw('LOWER(sku) LIKE ?', [`%${productFilter.toLowerCase()}%`])
+            .limit(6);
+
+          if (similarProducts.length > 0) {
+            return res.json({
+              success: true,
+              message: `I couldn't find a product matching "${productFilter}".`,
+              data: {
+                type: 'clarification_needed',
+                clarification: {
+                  type: 'product_select',
+                  question: 'Did you mean one of these products?',
+                  options: similarProducts.map(p => ({
+                    label: p.name,
+                    sublabel: p.sku,
+                    value: p.name,
+                    action: `add ${p.name} to ${targetCategory.name} category`
+                  }))
+                }
+              },
+              creditsDeducted: creditsUsed
+            });
+          }
+
           return res.json({
             success: true,
-            message: productFilter === 'all'
-              ? "There are no products in your store to assign."
-              : `I couldn't find any products matching "${productFilter}".`,
+            message: `I couldn't find any products matching "${productFilter}". Please check the product name and try again.`,
             data: { type: 'no_products_found' },
             creditsDeducted: creditsUsed
           });
