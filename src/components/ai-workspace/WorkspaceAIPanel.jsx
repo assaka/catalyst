@@ -974,6 +974,17 @@ const WorkspaceAIPanel = () => {
 
       {/* Input Area */}
       <div className="p-4 border-t bg-white dark:bg-gray-800 shrink-0">
+        {/* Clear Chat Link */}
+        {chatMessages.length > 0 && (
+          <div className="flex justify-end mb-1">
+            <button
+              onClick={clearChatHistory}
+              className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              Clear chat
+            </button>
+          </div>
+        )}
         {/* Image Previews */}
         {attachedImages.length > 0 && (
           <div className="flex gap-2 mb-2 flex-wrap">
