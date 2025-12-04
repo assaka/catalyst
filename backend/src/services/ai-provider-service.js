@@ -703,6 +703,259 @@ Return ONLY the translated text, no explanations or notes.`;
     };
     return names[provider] || provider;
   }
+
+  /**
+   * Stream chat with extended thinking and tool use events (Anthropic only)
+   * Yields events for thinking, tool_use, and text content
+   *
+   * @param {Array} messages - Chat messages
+   * @param {Object} options - { model, temperature, maxTokens, systemPrompt, tools, thinkingBudget }
+   * @yields {Object} Event objects with type: 'thinking_start', 'thinking', 'tool_start', 'tool_input', 'text', 'block_stop', 'done'
+   */
+  async *streamWithThinking(messages, options = {}) {
+    const {
+      model = 'claude-sonnet-4-20250514',
+      temperature = 1, // Required for extended thinking
+      maxTokens = 16000,
+      systemPrompt = null,
+      tools = [],
+      thinkingBudget = 8000
+    } = options;
+
+    const client = this.getProvider('anthropic');
+    if (!client) {
+      throw new Error('Anthropic client not available. Extended thinking requires Anthropic.');
+    }
+
+    console.log(`🧠 Starting extended thinking stream with ${tools.length} tools`);
+
+    try {
+      const requestParams = {
+        model,
+        max_tokens: maxTokens,
+        thinking: {
+          type: 'enabled',
+          budget_tokens: thinkingBudget
+        },
+        messages,
+        stream: true
+      };
+
+      // Add system prompt if provided
+      if (systemPrompt) {
+        requestParams.system = systemPrompt;
+      }
+
+      // Add tools if provided
+      if (tools && tools.length > 0) {
+        requestParams.tools = tools;
+      }
+
+      const stream = await client.messages.stream(requestParams);
+
+      let currentBlockType = null;
+      let currentToolName = null;
+      let currentToolId = null;
+      let usage = { input_tokens: 0, output_tokens: 0 };
+
+      for await (const event of stream) {
+        // Content block started
+        if (event.type === 'content_block_start') {
+          const block = event.content_block;
+
+          if (block.type === 'thinking') {
+            currentBlockType = 'thinking';
+            yield { type: 'thinking_start', index: event.index };
+          } else if (block.type === 'tool_use') {
+            currentBlockType = 'tool_use';
+            currentToolName = block.name;
+            currentToolId = block.id;
+            yield {
+              type: 'tool_start',
+              tool: block.name,
+              id: block.id,
+              index: event.index
+            };
+          } else if (block.type === 'text') {
+            currentBlockType = 'text';
+            yield { type: 'text_start', index: event.index };
+          }
+        }
+
+        // Content block delta (streaming content)
+        if (event.type === 'content_block_delta') {
+          const delta = event.delta;
+
+          if (delta.type === 'thinking_delta') {
+            yield { type: 'thinking', text: delta.thinking };
+          } else if (delta.type === 'text_delta') {
+            yield { type: 'text', text: delta.text };
+          } else if (delta.type === 'input_json_delta') {
+            yield {
+              type: 'tool_input',
+              json: delta.partial_json,
+              tool: currentToolName,
+              id: currentToolId
+            };
+          }
+        }
+
+        // Content block stopped
+        if (event.type === 'content_block_stop') {
+          yield {
+            type: 'block_stop',
+            blockType: currentBlockType,
+            tool: currentToolName,
+            id: currentToolId
+          };
+          currentBlockType = null;
+          currentToolName = null;
+          currentToolId = null;
+        }
+
+        // Message delta (stop reason, usage)
+        if (event.type === 'message_delta') {
+          if (event.usage) {
+            usage.output_tokens = event.usage.output_tokens;
+          }
+          if (event.delta?.stop_reason) {
+            yield { type: 'stop_reason', reason: event.delta.stop_reason };
+          }
+        }
+
+        // Message start (input tokens)
+        if (event.type === 'message_start') {
+          if (event.message?.usage) {
+            usage.input_tokens = event.message.usage.input_tokens;
+          }
+        }
+
+        // Message stop
+        if (event.type === 'message_stop') {
+          yield { type: 'done', usage };
+        }
+      }
+
+    } catch (error) {
+      console.error('Extended thinking stream error:', error);
+      yield { type: 'error', error: error.message };
+      throw error;
+    }
+  }
+
+  /**
+   * Get tool definitions for webshop AI assistant
+   * These tools allow AI to query and understand the store data
+   */
+  getWebshopTools() {
+    return [
+      {
+        name: 'query_products',
+        description: 'Search and retrieve products from the webshop catalog. Use this to find products by name, category, price range, or other attributes.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            search: {
+              type: 'string',
+              description: 'Search term to find products by name or description'
+            },
+            category: {
+              type: 'string',
+              description: 'Filter by category name or slug'
+            },
+            min_price: {
+              type: 'number',
+              description: 'Minimum price filter'
+            },
+            max_price: {
+              type: 'number',
+              description: 'Maximum price filter'
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of products to return (default: 10)'
+            }
+          }
+        }
+      },
+      {
+        name: 'query_orders',
+        description: 'Search and retrieve orders from the webshop. Use this to find orders by status, date range, or customer.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            status: {
+              type: 'string',
+              description: 'Order status filter (pending, processing, completed, cancelled)'
+            },
+            date_from: {
+              type: 'string',
+              description: 'Start date for order search (ISO format)'
+            },
+            date_to: {
+              type: 'string',
+              description: 'End date for order search (ISO format)'
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of orders to return (default: 10)'
+            }
+          }
+        }
+      },
+      {
+        name: 'query_customers',
+        description: 'Search and retrieve customer information. Use this to find customers by email, name, or order history.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            search: {
+              type: 'string',
+              description: 'Search term for customer name or email'
+            },
+            has_orders: {
+              type: 'boolean',
+              description: 'Filter to customers who have placed orders'
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of customers to return (default: 10)'
+            }
+          }
+        }
+      },
+      {
+        name: 'get_store_stats',
+        description: 'Get store statistics including total products, orders, revenue, and other key metrics.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            period: {
+              type: 'string',
+              description: 'Time period for stats: today, week, month, year, all'
+            }
+          }
+        }
+      },
+      {
+        name: 'query_categories',
+        description: 'Get category hierarchy and product counts for the store.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            parent_id: {
+              type: 'string',
+              description: 'Filter by parent category ID to get subcategories'
+            },
+            include_counts: {
+              type: 'boolean',
+              description: 'Include product counts per category'
+            }
+          }
+        }
+      }
+    ];
+  }
 }
 
 // Export singleton instance

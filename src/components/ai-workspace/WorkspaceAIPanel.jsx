@@ -26,7 +26,11 @@ import {
   ThumbsUp,
   ThumbsDown,
   X,
-  Image
+  Image,
+  Brain,
+  Database,
+  Search,
+  Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import aiWorkspaceSlotProcessor from '@/services/aiWorkspaceSlotProcessor';
@@ -95,6 +99,13 @@ const WorkspaceAIPanel = () => {
   const [inputHistory, setInputHistory] = useState([]); // Previous user inputs for arrow navigation
   const [historyIndex, setHistoryIndex] = useState(-1); // Current position in history (-1 = not navigating)
   const [sessionId] = useState(() => `session_${Date.now()}`); // Session ID for grouping messages
+
+  // Extended thinking mode state
+  const [extendedThinkingEnabled, setExtendedThinkingEnabled] = useState(false);
+  const [thinkingText, setThinkingText] = useState('');
+  const [activeTool, setActiveTool] = useState(null); // { name, status: 'calling' | 'complete' }
+  const [streamingText, setStreamingText] = useState('');
+  const [toolResults, setToolResults] = useState([]); // Array of tool execution results
 
   // Get current model object
   const currentModel = AI_MODELS.find(m => m.id === selectedModel) || AI_MODELS[0];
@@ -567,11 +578,189 @@ const WorkspaceAIPanel = () => {
     }
   };
 
+  // Handle sending with extended thinking (streaming with thinking/tool display)
+  const handleSendWithThinking = async () => {
+    if ((!inputValue.trim() && attachedImages.length === 0) || isProcessingAi) return;
+
+    const userMessage = inputValue.trim();
+    setInputValue('');
+    setAttachedImages([]);
+    setCommandStatus(null);
+    setHistoryIndex(-1);
+
+    // Reset streaming state
+    setThinkingText('');
+    setActiveTool(null);
+    setStreamingText('');
+    setToolResults([]);
+
+    // Add user message to chat
+    addChatMessage({
+      role: 'user',
+      content: userMessage || '(Image attached)'
+    });
+
+    // Save user message
+    saveChatMessage('user', userMessage || '(Image attached)');
+
+    setIsProcessingAi(true);
+
+    try {
+      // Get auth token
+      const token = localStorage.getItem('token');
+
+      // Build history from recent messages
+      const history = chatMessages.slice(-10).map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
+      // Start streaming request
+      const response = await fetch('/api/ai/stream-thinking', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-store-id': storeId
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          history,
+          storeId,
+          enableTools: true,
+          thinkingBudget: 8000
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Stream request failed');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      let fullText = '';
+      let currentThinking = '';
+      let tools = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            if (dataStr === '[DONE]') continue;
+
+            try {
+              const event = JSON.parse(dataStr);
+
+              // Handle different event types
+              switch (event.type) {
+                case 'thinking_start':
+                  setThinkingText('Thinking...');
+                  break;
+
+                case 'thinking':
+                  currentThinking += event.text || '';
+                  // Show last 150 chars of thinking
+                  setThinkingText(currentThinking.slice(-150));
+                  break;
+
+                case 'tool_start':
+                  setActiveTool({ name: event.tool, status: 'calling' });
+                  tools.push({ name: event.tool, status: 'calling', id: event.id });
+                  break;
+
+                case 'tool_input':
+                  // Tool is receiving input (still calling)
+                  break;
+
+                case 'tool_result':
+                  setActiveTool({ name: event.tool, status: 'complete' });
+                  setToolResults(prev => [...prev, {
+                    name: event.tool,
+                    result: event.result,
+                    id: event.id
+                  }]);
+                  // Clear active tool after a moment
+                  setTimeout(() => setActiveTool(null), 1000);
+                  break;
+
+                case 'tool_error':
+                  setActiveTool(null);
+                  break;
+
+                case 'block_stop':
+                  if (event.blockType === 'thinking') {
+                    setThinkingText('');
+                  }
+                  break;
+
+                case 'text_start':
+                  // Text response starting
+                  break;
+
+                case 'text':
+                  fullText += event.text || '';
+                  setStreamingText(fullText);
+                  break;
+
+                case 'complete':
+                  // Stream complete
+                  break;
+
+                case 'error':
+                  throw new Error(event.error);
+              }
+            } catch (parseError) {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+
+      // Add final message
+      addChatMessage({
+        role: 'assistant',
+        content: fullText || 'Processing complete.',
+        thinkingSummary: currentThinking ? `Thought about: ${currentThinking.slice(0, 100)}...` : null,
+        toolsUsed: tools.length > 0 ? tools.map(t => t.name) : null
+      });
+
+      // Save to history
+      saveChatMessage('assistant', fullText || 'Processing complete.');
+
+      // Clear streaming state
+      setStreamingText('');
+      setThinkingText('');
+      setActiveTool(null);
+
+    } catch (error) {
+      console.error('Extended thinking error:', error);
+      addChatMessage({
+        role: 'assistant',
+        content: error.message || 'Sorry, I encountered an error processing your request.',
+        error: true
+      });
+    } finally {
+      setIsProcessingAi(false);
+    }
+  };
+
   // Handle keyboard shortcuts (Enter to send, Arrow Up/Down for history)
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      if (extendedThinkingEnabled) {
+        handleSendWithThinking();
+      } else {
+        handleSend();
+      }
     } else if (e.key === 'ArrowUp' && inputHistory.length > 0 && !inputValue.includes('\n')) {
       // Arrow up for input history navigation
       e.preventDefault();
@@ -781,6 +970,24 @@ const WorkspaceAIPanel = () => {
                     )}
                     <p className="whitespace-pre-wrap">{message.content}</p>
 
+                    {/* Tools Used Badge */}
+                    {message.toolsUsed && message.toolsUsed.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <Database className="h-3 w-3 text-blue-500" />
+                          <span className="text-xs text-gray-500">Used:</span>
+                          {message.toolsUsed.map((tool, idx) => (
+                            <span
+                              key={idx}
+                              className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded text-[10px] font-medium"
+                            >
+                              {tool.replace(/_/g, ' ')}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Credits Used */}
                     {message.credits && message.role !== 'user' && (
                       <p className="text-xs mt-2 opacity-70">
@@ -945,8 +1152,93 @@ const WorkspaceAIPanel = () => {
             ))
           )}
 
-          {/* Loading indicator */}
-          {isProcessingAi && (
+          {/* Extended Thinking & Tool Usage Display */}
+          {isProcessingAi && extendedThinkingEnabled && (
+            <div className="flex gap-3">
+              <div className="shrink-0 w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div className="flex-1 space-y-2">
+                {/* Thinking indicator */}
+                {thinkingText && (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                      <Brain className="h-3.5 w-3.5 animate-pulse" />
+                      <span className="text-xs font-medium">Thinking...</span>
+                    </div>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 italic opacity-75 line-clamp-2">
+                      {thinkingText}
+                    </p>
+                  </div>
+                )}
+
+                {/* Active tool indicator */}
+                {activeTool && (
+                  <div className={cn(
+                    "border rounded-lg px-3 py-2",
+                    activeTool.status === 'calling'
+                      ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+                      : "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                  )}>
+                    <div className="flex items-center gap-2">
+                      {activeTool.status === 'calling' ? (
+                        <>
+                          <Database className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 animate-pulse" />
+                          <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                            Querying: {activeTool.name.replace(/_/g, ' ')}
+                          </span>
+                          <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                          <span className="text-xs font-medium text-green-700 dark:text-green-300">
+                            Retrieved data from: {activeTool.name.replace(/_/g, ' ')}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tool results summary */}
+                {toolResults.length > 0 && !activeTool && (
+                  <div className="flex flex-wrap gap-1">
+                    {toolResults.map((tool, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-600 dark:text-gray-300"
+                      >
+                        <Search className="h-2.5 w-2.5" />
+                        {tool.name.replace(/_/g, ' ')}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Streaming response text */}
+                {streamingText && (
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2">
+                    <p className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+                      {streamingText}
+                      <span className="inline-block w-2 h-4 bg-purple-500 animate-pulse ml-0.5" />
+                    </p>
+                  </div>
+                )}
+
+                {/* Default loading if nothing else shows */}
+                {!thinkingText && !activeTool && !streamingText && (
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
+                    <span className="text-xs text-gray-500">Initializing extended thinking...</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Standard loading indicator (non-extended mode) */}
+          {isProcessingAi && !extendedThinkingEnabled && (
             <div className="flex gap-3">
               <div className="shrink-0 w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                 <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
@@ -1081,6 +1373,23 @@ const WorkspaceAIPanel = () => {
                 )}
               </div>
 
+              {/* Extended Thinking Toggle */}
+              <button
+                onClick={() => setExtendedThinkingEnabled(!extendedThinkingEnabled)}
+                disabled={isProcessingAi}
+                className={cn(
+                  "p-1 rounded transition-all flex items-center gap-0.5",
+                  extendedThinkingEnabled
+                    ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30"
+                    : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+                title={extendedThinkingEnabled ? "Extended thinking ON (shows reasoning & tools)" : "Enable extended thinking"}
+              >
+                <Brain className="w-3.5 h-3.5" />
+                {extendedThinkingEnabled && <Zap className="w-2.5 h-2.5" />}
+              </button>
+
               {/* Upload Button */}
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -1130,16 +1439,21 @@ const WorkspaceAIPanel = () => {
 
             {/* Right side: Submit Button */}
             <button
-              onClick={handleSend}
+              onClick={extendedThinkingEnabled ? handleSendWithThinking : handleSend}
               disabled={(!inputValue.trim() && attachedImages.length === 0) || isProcessingAi}
               className={cn(
                 "p-1.5 rounded-md transition-all",
-                "bg-blue-600 hover:bg-blue-700 text-white",
+                extendedThinkingEnabled
+                  ? "bg-amber-600 hover:bg-amber-700 text-white"
+                  : "bg-blue-600 hover:bg-blue-700 text-white",
                 "disabled:bg-gray-300 disabled:cursor-not-allowed"
               )}
+              title={extendedThinkingEnabled ? "Send with extended thinking" : "Send message"}
             >
               {isProcessingAi ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
+              ) : extendedThinkingEnabled ? (
+                <Brain className="h-4 w-4" />
               ) : (
                 <Send className="h-4 w-4" />
               )}
