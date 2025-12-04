@@ -1,6 +1,15 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Sparkles } from 'lucide-react';
+import {ChevronDown, LogOut, Settings, Sparkles, User as UserIcon} from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent, DropdownMenuItem,
+    DropdownMenuLabel, DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu.jsx";
+import {createPageUrl} from "@/utils/index.js";
+import {Auth} from "@/api/entities.js";
+import {Link} from "react-router-dom";
 
 export default function Header() {
     return (
@@ -25,6 +34,56 @@ export default function Header() {
                         </a>
                     </nav>
 
+                    <div className="flex items-center space-x-4">
+                        {user ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        size="sm"
+                                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-1"
+                                    >
+                                        <UserIcon className="w-4 h-4" />
+                                        <span>{user.first_name || user.name || user.email} ({user.role})</span>
+                                        <ChevronDown className="w-4 h-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56">
+                                    <DropdownMenuLabel>{user.first_name || user.name || user.email} ({user.role})</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => {
+                                        if (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner') {
+                                            window.location.href = createPageUrl('Dashboard');
+                                        } else {
+                                            window.location.href = createPageUrl('CustomerDashboard');
+                                        }
+                                    }}>
+                                        <Settings className="mr-2 h-4 w-4" />
+                                        <span>Dashboard</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => {
+                                        Auth.logout();
+                                        window.location.href = createPageUrl('Auth');
+                                    }}>
+                                        <LogOut className="mr-2 h-4 w-4" />
+                                        <span>Logout</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            <>
+                                <Link to="/auth">
+                                    <Button variant="ghost" className="material-ripple">
+                                        Sign In
+                                    </Button>
+                                </Link>
+                                <Link to={createPageUrl("Onboarding")}>
+                                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1">
+                                        Try Now
+                                    </Button>
+                                </Link>
+                            </>
+                        )}
+                    </div>
                     {/* Sign Up Button */}
                     <Button className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-full font-semibold shadow-md hover:shadow-lg transition-all">
                         Sign Up
