@@ -184,61 +184,108 @@ router.post('/smart-chat', authMiddleware, async (req, res) => {
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // STEP 4: Build Ultimate System Prompt (Like Lovable/Bolt/Claude Code)
+    // STEP 4: Check for confirmation responses ("yes", "ok", "do it", etc.)
     // ═══════════════════════════════════════════════════════════════════
-    const systemPrompt = `You are an expert AI assistant for DainoStore - a headless e-commerce platform. Think like Claude Code, Lovable, or Bolt - understand the architecture deeply and help users accomplish anything.
+    const confirmationPatterns = /^(yes|yeah|yep|ok|okay|sure|do it|go ahead|proceed|create it|confirm|please|y)\.?$/i;
+    const isConfirmation = confirmationPatterns.test(message.trim());
 
-ARCHITECTURE UNDERSTANDING:
-• **Frontend**: Next.js 14 + React + Tailwind CSS + shadcn/ui components
-• **Backend**: Node.js + Express + PostgreSQL (Supabase)
-• **Database**: Multi-tenant (Master DB for global, Tenant DB per store)
-• **Slot System**: Flexible page builder with slot_configurations table
-• **Plugins**: React components that inject into slots (stored in plugins table)
-
-DATABASE STRUCTURE:
-• products (id, sku, price, stock_quantity, status) + product_translations
-• categories (id, slug, is_active, level, parent_id) + category_translations
-• attributes (id, code, type, is_filterable) + attribute_translations
-• sales_orders (id, order_number, status, total_amount)
-• slot_configurations (store_id, page_type, configuration JSONB)
-• plugins (id, name, component_code, slot_target, is_active)
-
-PLUGIN SYSTEM:
-When user wants custom functionality, generate a plugin:
-\`\`\`javascript
-// Plugin structure
-{
-  name: "PluginName",
-  slot_target: "product_page|cart_page|checkout|header|footer",
-  component_code: \`
-    function PluginName({ product, cart, store }) {
-      // React + Tailwind component
-      return <div className="...">...</div>
+    // Look for pending action in conversation history
+    let pendingAction = null;
+    if (isConfirmation && history.length > 0) {
+      // Find the last assistant message with a pending action
+      for (let i = history.length - 1; i >= 0; i--) {
+        if (history[i].role === 'assistant' && history[i].pendingAction) {
+          pendingAction = history[i].pendingAction;
+          break;
+        }
+      }
     }
-  \`,
-  settings: { /* configurable options */ }
-}
-\`\`\`
 
-${knowledgeBase ? `KNOWLEDGE BASE:\n${knowledgeBase}\n` : ''}
+    // ═══════════════════════════════════════════════════════════════════
+    // STEP 5: Build Ultimate System Prompt - TOOL-BASED EXECUTION
+    // ═══════════════════════════════════════════════════════════════════
+    const systemPrompt = `You are an AI assistant for DainoStore with DIRECT DATABASE ACCESS. You EXECUTE actions, not explain them.
+
+YOU HAVE THESE TOOLS - Return JSON to execute them:
+
+TOOL: add_to_category
+Use when: "add X to Y category", "move product to category", "put X in Y"
+Return: {"tool": "add_to_category", "product": "product name", "category": "category name"}
+
+TOOL: create_category
+Use when: "create category X", "make a new category"
+Return: {"tool": "create_category", "name": "category name"}
+
+TOOL: create_and_add
+Use when: user confirms to create a category that doesn't exist and add product
+Return: {"tool": "create_and_add", "product": "product name", "category": "new category name"}
+
+TOOL: remove_from_category
+Use when: "remove X from Y", "take product out of category"
+Return: {"tool": "remove_from_category", "product": "product name", "category": "category name"}
+
+TOOL: query_data
+Use when: user asks questions about data (products, orders, categories, etc.)
+Return: {"tool": "query_data", "type": "products|categories|orders|customers", "filters": {...}}
+
+TOOL: update_product
+Use when: "change price", "update stock", "rename product"
+Return: {"tool": "update_product", "product": "name or sku", "updates": {"field": "value"}}
+
+TOOL: ask_confirmation
+Use when: something doesn't exist and you need to ask if user wants to create it
+Return: {"tool": "ask_confirmation", "question": "Category X doesn't exist. Create it?", "pending_action": {"tool": "create_and_add", ...}}
+
+CURRENT STORE DATA:${storeData || '\nNo store data loaded.'}
+${knowledgeBase ? `\nKNOWLEDGE:\n${knowledgeBase}` : ''}
 ${learnedExamples}
 
-CURRENT STORE DATA:${storeData || '\nNo specific data requested yet.'}
+RULES:
+1. ALWAYS return valid JSON with a "tool" field for actions
+2. For questions/chat, return: {"tool": "chat", "message": "your response"}
+3. If product/category not found, use ask_confirmation with create option
+4. NEVER explain SQL or how to do things - just DO them
+5. Be conversational but action-oriented
 
-HOW TO RESPOND:
-1. **Data questions** → Show the actual data with insights
-2. **Create/Build requests** → Generate working code, explain briefly, ask to proceed
-3. **Management tasks** → Execute directly or explain what you'll do
-4. **Analysis** → Provide actionable insights, not just numbers
-5. **Unclear requests** → Ask ONE clarifying question
-${images && images.length > 0 ? `6. **Image analysis** → Extract colors (with hex codes), identify layout patterns, describe visual style, and suggest how to apply to the store` : ''}
+Examples:
+User: "add Blue T-Shirt to Sale category"
+→ {"tool": "add_to_category", "product": "Blue T-Shirt", "category": "Sale"}
 
-${images && images.length > 0 ? 'The user has attached image(s). Analyze them to extract brand colors, layout patterns, and design elements. When they ask "use these colors" - identify the colors and explain how you can apply them.' : ''}
+User: "move Snowboard X to snowboards"
+→ {"tool": "add_to_category", "product": "Snowboard X", "category": "snowboards"}
 
-Be concise. Be helpful. Be impressive. No fluff.`;
+User: "show out of stock products"
+→ {"tool": "query_data", "type": "out_of_stock"}
+
+User: "yes" (after being asked to create category)
+→ Execute the pending action
+
+${images && images.length > 0 ? '\nUser attached image(s). Analyze for colors, patterns, and provide actionable insights.' : ''}
+
+Return ONLY valid JSON.`;
 
     // ═══════════════════════════════════════════════════════════════════
-    // STEP 5: Generate Response with Natural Reasoning
+    // STEP 6: Handle pending action confirmation (user said "yes")
+    // ═══════════════════════════════════════════════════════════════════
+    if (pendingAction && isConfirmation) {
+      console.log('🔄 Executing pending action:', pendingAction);
+      const result = await executeToolAction(pendingAction, storeId, userId, message);
+
+      // Self-learning: record successful operation
+      if (result.success) {
+        await recordSuccessfulPattern(storeId, userId, pendingAction.originalMessage || message, pendingAction, result);
+      }
+
+      return res.json({
+        success: true,
+        message: result.message,
+        data: { type: 'tool_executed', tool: pendingAction.tool, result: result.data },
+        creditsDeducted: 0
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // STEP 7: Generate AI Response (tool call)
     // ═══════════════════════════════════════════════════════════════════
     const response = await aiService.generate({
       userId,
@@ -248,39 +295,59 @@ Be concise. Be helpful. Be impressive. No fluff.`;
       prompt: message || 'Please analyze this image.',
       systemPrompt,
       conversationHistory: history.slice(-10).map(m => ({ role: m.role, content: m.content })),
-      maxTokens: 1200,
-      temperature: 0.6,
-      metadata: { type: 'ultimate-chat', storeId },
-      images // Pass images for vision support
+      maxTokens: 800,
+      temperature: 0.3, // Lower temp for more reliable JSON
+      metadata: { type: 'tool-chat', storeId },
+      images
     });
 
     // ═══════════════════════════════════════════════════════════════════
-    // STEP 6: Capture for Training (continuous improvement)
+    // STEP 8: Parse AI response and execute tool
     // ═══════════════════════════════════════════════════════════════════
-    const captureResult = await aiTrainingService.captureTrainingCandidate({
-      storeId,
-      userId,
-      userPrompt: message,
-      aiResponse: response.content,
-      detectedIntent: 'smart_chat',
-      detectedEntity: queryResults?.type || 'general',
-      confidenceScore: 0.9,
-      metadata: { queryResults: queryResults?.summary, modelId, hasStoreData: !!storeData }
-    }).catch(e => ({ captured: false }));
+    let toolCall = null;
+    let executionResult = null;
+    let responseMessage = response.content;
 
-    // Mark as success if we got data
-    if (captureResult?.candidateId && queryResults) {
-      aiTrainingService.updateOutcome(captureResult.candidateId, 'success', queryResults.summary).catch(() => {});
+    try {
+      // Try to parse JSON from response
+      const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        toolCall = JSON.parse(jsonMatch[0]);
+        console.log('🔧 Tool call detected:', toolCall.tool);
+      }
+    } catch (e) {
+      console.log('📝 No JSON tool call, treating as chat response');
     }
 
+    // Execute the tool if we have one
+    if (toolCall && toolCall.tool && toolCall.tool !== 'chat') {
+      // Add original message for learning
+      toolCall.originalMessage = message;
+
+      executionResult = await executeToolAction(toolCall, storeId, userId, message);
+      responseMessage = executionResult.message;
+
+      // Self-learning: record successful operation
+      if (executionResult.success && !executionResult.needsConfirmation) {
+        await recordSuccessfulPattern(storeId, userId, message, toolCall, executionResult);
+      }
+    } else if (toolCall?.tool === 'chat') {
+      responseMessage = toolCall.message || response.content;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // STEP 9: Return response with any pending action for confirmation
+    // ═══════════════════════════════════════════════════════════════════
     res.json({
       success: true,
-      message: response.content,
+      message: responseMessage,
       data: {
-        type: 'smart_chat',
-        queryResults: queryResults?.summary,
-        candidateId: captureResult?.candidateId
+        type: executionResult?.needsConfirmation ? 'confirmation_needed' : (toolCall ? 'tool_executed' : 'chat'),
+        tool: toolCall?.tool,
+        result: executionResult?.data,
+        candidateId: executionResult?.candidateId
       },
+      pendingAction: executionResult?.pendingAction, // For "yes" confirmation flow
       creditsDeducted: response.creditsDeducted
     });
 
@@ -289,6 +356,363 @@ Be concise. Be helpful. Be impressive. No fluff.`;
     res.status(500).json({ success: false, message: error.message || 'Failed to process request' });
   }
 });
+
+/**
+ * Execute a tool action from AI response
+ * This is the core executor that handles all database operations
+ */
+async function executeToolAction(toolCall, storeId, userId, originalMessage) {
+  const ConnectionManager = require('../services/database/ConnectionManager');
+
+  if (!storeId) {
+    return { success: false, message: 'Store ID is required for this action.' };
+  }
+
+  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+  const tool = toolCall.tool;
+
+  console.log(`🔧 Executing tool: ${tool}`, toolCall);
+
+  try {
+    switch (tool) {
+      // ═══════════════════════════════════════════════════════════════
+      // ADD PRODUCT TO CATEGORY
+      // ═══════════════════════════════════════════════════════════════
+      case 'add_to_category': {
+        const { product, category } = toolCall;
+
+        // Find product (search by name or SKU)
+        const productRecord = await tenantDb('products as p')
+          .leftJoin('product_translations as pt', function() {
+            this.on('p.id', 'pt.product_id').andOn('pt.language_code', tenantDb.raw('?', ['en']));
+          })
+          .whereRaw('LOWER(pt.name) LIKE ? OR LOWER(p.sku) LIKE ?',
+            [`%${product.toLowerCase()}%`, `%${product.toLowerCase()}%`])
+          .select('p.id', 'p.sku', 'pt.name')
+          .first();
+
+        if (!productRecord) {
+          return {
+            success: false,
+            message: `I couldn't find a product matching "${product}". Can you check the name or SKU?`
+          };
+        }
+
+        // Find category
+        const categoryRecord = await tenantDb('categories as c')
+          .leftJoin('category_translations as ct', function() {
+            this.on('c.id', 'ct.category_id').andOn('ct.language_code', tenantDb.raw('?', ['en']));
+          })
+          .whereRaw('LOWER(ct.name) LIKE ? OR LOWER(c.slug) LIKE ?',
+            [`%${category.toLowerCase()}%`, `%${category.toLowerCase()}%`])
+          .select('c.id', 'ct.name', 'c.slug')
+          .first();
+
+        if (!categoryRecord) {
+          // Category doesn't exist - ask to create
+          return {
+            success: false,
+            needsConfirmation: true,
+            message: `Category "${category}" doesn't exist. Would you like me to create it?`,
+            pendingAction: {
+              tool: 'create_and_add',
+              product: productRecord.name || product,
+              productId: productRecord.id,
+              category: category,
+              originalMessage
+            }
+          };
+        }
+
+        // Check if already in category
+        const existing = await tenantDb('product_categories')
+          .where({ product_id: productRecord.id, category_id: categoryRecord.id })
+          .first();
+
+        if (existing) {
+          return {
+            success: true,
+            message: `"${productRecord.name}" is already in the "${categoryRecord.name}" category.`,
+            data: { product: productRecord, category: categoryRecord, alreadyExists: true }
+          };
+        }
+
+        // Add to category
+        await tenantDb('product_categories').insert({
+          product_id: productRecord.id,
+          category_id: categoryRecord.id,
+          created_at: new Date().toISOString()
+        });
+
+        return {
+          success: true,
+          message: `Done! Added "${productRecord.name}" to the "${categoryRecord.name}" category.`,
+          data: { product: productRecord, category: categoryRecord }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // CREATE CATEGORY AND ADD PRODUCT
+      // ═══════════════════════════════════════════════════════════════
+      case 'create_and_add': {
+        const { product, productId, category } = toolCall;
+
+        // Create the category
+        const slug = category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const [newCategoryId] = await tenantDb('categories').insert({
+          slug,
+          url_key: slug,
+          is_active: true,
+          include_in_menu: true,
+          position: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }).returning('id');
+
+        const categoryId = newCategoryId?.id || newCategoryId;
+
+        // Add translation
+        await tenantDb('category_translations').insert({
+          category_id: categoryId,
+          language_code: 'en',
+          name: category,
+          created_at: new Date().toISOString()
+        });
+
+        // Find product if we don't have ID
+        let prodId = productId;
+        if (!prodId) {
+          const productRecord = await tenantDb('products as p')
+            .leftJoin('product_translations as pt', function() {
+              this.on('p.id', 'pt.product_id').andOn('pt.language_code', tenantDb.raw('?', ['en']));
+            })
+            .whereRaw('LOWER(pt.name) LIKE ? OR LOWER(p.sku) LIKE ?',
+              [`%${product.toLowerCase()}%`, `%${product.toLowerCase()}%`])
+            .select('p.id')
+            .first();
+          prodId = productRecord?.id;
+        }
+
+        // Add product to category if found
+        if (prodId) {
+          await tenantDb('product_categories').insert({
+            product_id: prodId,
+            category_id: categoryId,
+            created_at: new Date().toISOString()
+          });
+
+          return {
+            success: true,
+            message: `Done! Created "${category}" category and added "${product}" to it.`,
+            data: { categoryId, productId: prodId, categoryName: category }
+          };
+        }
+
+        return {
+          success: true,
+          message: `Created "${category}" category, but couldn't find "${product}" to add.`,
+          data: { categoryId, categoryName: category }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // CREATE CATEGORY ONLY
+      // ═══════════════════════════════════════════════════════════════
+      case 'create_category': {
+        const { name } = toolCall;
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+        const [newCategoryId] = await tenantDb('categories').insert({
+          slug,
+          url_key: slug,
+          is_active: true,
+          include_in_menu: true,
+          position: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }).returning('id');
+
+        const categoryId = newCategoryId?.id || newCategoryId;
+
+        await tenantDb('category_translations').insert({
+          category_id: categoryId,
+          language_code: 'en',
+          name: name,
+          created_at: new Date().toISOString()
+        });
+
+        return {
+          success: true,
+          message: `Done! Created the "${name}" category.`,
+          data: { categoryId, categoryName: name }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // REMOVE FROM CATEGORY
+      // ═══════════════════════════════════════════════════════════════
+      case 'remove_from_category': {
+        const { product, category } = toolCall;
+
+        const productRecord = await tenantDb('products as p')
+          .leftJoin('product_translations as pt', function() {
+            this.on('p.id', 'pt.product_id').andOn('pt.language_code', tenantDb.raw('?', ['en']));
+          })
+          .whereRaw('LOWER(pt.name) LIKE ? OR LOWER(p.sku) LIKE ?',
+            [`%${product.toLowerCase()}%`, `%${product.toLowerCase()}%`])
+          .select('p.id', 'pt.name')
+          .first();
+
+        const categoryRecord = await tenantDb('categories as c')
+          .leftJoin('category_translations as ct', function() {
+            this.on('c.id', 'ct.category_id').andOn('ct.language_code', tenantDb.raw('?', ['en']));
+          })
+          .whereRaw('LOWER(ct.name) LIKE ? OR LOWER(c.slug) LIKE ?',
+            [`%${category.toLowerCase()}%`, `%${category.toLowerCase()}%`])
+          .select('c.id', 'ct.name')
+          .first();
+
+        if (!productRecord || !categoryRecord) {
+          return {
+            success: false,
+            message: `Couldn't find ${!productRecord ? 'product' : 'category'} "${!productRecord ? product : category}".`
+          };
+        }
+
+        const deleted = await tenantDb('product_categories')
+          .where({ product_id: productRecord.id, category_id: categoryRecord.id })
+          .delete();
+
+        return {
+          success: true,
+          message: deleted
+            ? `Removed "${productRecord.name}" from "${categoryRecord.name}".`
+            : `"${productRecord.name}" wasn't in "${categoryRecord.name}".`,
+          data: { product: productRecord, category: categoryRecord, removed: deleted > 0 }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // QUERY DATA
+      // ═══════════════════════════════════════════════════════════════
+      case 'query_data': {
+        const { type, filters = {} } = toolCall;
+        let data, message;
+
+        switch (type) {
+          case 'out_of_stock':
+            data = await tenantDb('products as p')
+              .leftJoin('product_translations as pt', function() {
+                this.on('p.id', 'pt.product_id').andOn('pt.language_code', tenantDb.raw('?', ['en']));
+              })
+              .where('p.stock_quantity', '<=', 0)
+              .select('p.id', 'p.sku', 'p.stock_quantity', 'pt.name')
+              .limit(20);
+            message = data.length
+              ? `Found ${data.length} out of stock products:\n${data.map(p => `• ${p.name || p.sku}`).join('\n')}`
+              : 'No products are currently out of stock.';
+            break;
+
+          case 'categories':
+            data = await tenantDb('categories as c')
+              .leftJoin('category_translations as ct', function() {
+                this.on('c.id', 'ct.category_id').andOn('ct.language_code', tenantDb.raw('?', ['en']));
+              })
+              .select('c.id', 'c.slug', 'c.is_active', 'c.product_count', 'ct.name')
+              .orderBy('ct.name')
+              .limit(30);
+            message = `Found ${data.length} categories:\n${data.map(c => `• ${c.name || c.slug} (${c.product_count || 0} products)`).join('\n')}`;
+            break;
+
+          default:
+            message = `Query type "${type}" not yet implemented.`;
+            data = null;
+        }
+
+        return { success: true, message, data: { type, items: data } };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // ASK CONFIRMATION (passthrough)
+      // ═══════════════════════════════════════════════════════════════
+      case 'ask_confirmation': {
+        return {
+          success: false,
+          needsConfirmation: true,
+          message: toolCall.question,
+          pendingAction: { ...toolCall.pending_action, originalMessage }
+        };
+      }
+
+      default:
+        return {
+          success: false,
+          message: `Unknown tool "${tool}". I can help with adding products to categories, creating categories, and querying data.`
+        };
+    }
+  } catch (error) {
+    console.error(`Tool execution error (${tool}):`, error);
+    return {
+      success: false,
+      message: `Something went wrong: ${error.message}. Please try again.`
+    };
+  }
+}
+
+/**
+ * Record successful pattern for self-learning
+ * This feeds back into the RAG system so the AI learns what works
+ */
+async function recordSuccessfulPattern(storeId, userId, userMessage, toolCall, result) {
+  try {
+    // Capture as training candidate with high confidence
+    const captureResult = await aiTrainingService.captureTrainingCandidate({
+      storeId,
+      userId,
+      sessionId: `tool_${Date.now()}`,
+      userPrompt: userMessage,
+      aiResponse: result.message,
+      detectedIntent: toolCall.tool,
+      detectedEntity: toolCall.product || toolCall.category || toolCall.type || 'general',
+      detectedOperation: toolCall.tool,
+      actionTaken: toolCall,
+      confidenceScore: 0.95, // High confidence for successful executions
+      metadata: {
+        toolCall,
+        result: result.data,
+        autoLearned: true
+      }
+    });
+
+    // Immediately mark as success
+    if (captureResult?.candidateId) {
+      await aiTrainingService.updateOutcome(captureResult.candidateId, 'success', {
+        toolExecuted: toolCall.tool,
+        timestamp: new Date().toISOString()
+      });
+      console.log(`📚 Learned pattern: "${userMessage}" → ${toolCall.tool}`);
+    }
+
+    // Also record in learning feedback for pattern matching
+    await aiLearningService.recordFeedback({
+      storeId,
+      userId,
+      conversationId: `tool_${Date.now()}`,
+      messageId: `success_${Date.now()}`,
+      userMessage,
+      aiResponse: result.message,
+      intent: toolCall.tool,
+      entity: toolCall.product || toolCall.category || 'general',
+      operation: toolCall.tool,
+      wasHelpful: true,
+      feedbackText: 'Auto-learned: tool executed successfully',
+      metadata: { toolCall, autoLearned: true }
+    });
+
+  } catch (error) {
+    console.error('Failed to record successful pattern:', error);
+  }
+}
 
 /**
  * Track successful operations for self-learning AND capture as training candidate
@@ -1174,6 +1598,57 @@ router.post('/chat', authMiddleware, async (req, res) => {
       }
     } catch (err) {
       console.error('[AI Chat] Failed to load learned examples:', err);
+    }
+
+    // Pre-process: Detect common patterns before AI intent detection (more reliable)
+    const lowerMessage = message.toLowerCase();
+    let preDetectedIntent = null;
+
+    // Pattern: "add [product] to [category] category" or "add [product] to category [category]"
+    const addToCategoryPattern = /add\s+(?:product\s+)?(.+?)\s+to\s+(?:category\s+)?(.+?)(?:\s+category)?$/i;
+    const addToCategoryMatch = message.match(addToCategoryPattern);
+    if (addToCategoryMatch) {
+      const productName = addToCategoryMatch[1].trim();
+      const categoryName = addToCategoryMatch[2].trim().replace(/\s*category\s*$/i, '');
+      preDetectedIntent = {
+        intent: 'category_management',
+        details: {
+          operation: 'add',
+          product_filter: productName,
+          category_name: categoryName
+        }
+      };
+      console.log('[AI Chat] Pre-detected category_management intent:', preDetectedIntent);
+    }
+
+    // Pattern: "create category [name] and add [product]"
+    const createAndAddPattern = /create\s+category\s+(.+?)\s+and\s+add\s+(.+?)(?:\s+to\s+it)?$/i;
+    const createAndAddMatch = message.match(createAndAddPattern);
+    if (createAndAddMatch) {
+      preDetectedIntent = {
+        intent: 'category_management',
+        details: {
+          operation: 'create_and_add',
+          category_name: createAndAddMatch[1].trim(),
+          product_filter: createAndAddMatch[2].trim()
+        }
+      };
+      console.log('[AI Chat] Pre-detected create_and_add intent:', preDetectedIntent);
+    }
+
+    // Pattern: "remove [product] from [category]"
+    const removeFromCategoryPattern = /remove\s+(?:product\s+)?(.+?)\s+from\s+(?:category\s+)?(.+?)(?:\s+category)?$/i;
+    const removeFromCategoryMatch = message.match(removeFromCategoryPattern);
+    if (removeFromCategoryMatch) {
+      preDetectedIntent = {
+        intent: 'category_management',
+        details: {
+          operation: 'remove',
+          product_filter: removeFromCategoryMatch[1].trim(),
+          category_name: removeFromCategoryMatch[2].trim().replace(/\s*category\s*$/i, '')
+        }
+      };
+      console.log('[AI Chat] Pre-detected remove from category intent:', preDetectedIntent);
     }
 
     // Determine intent from conversation

@@ -435,11 +435,18 @@ const WorkspaceAIPanel = () => {
         type: img.type
       })) : undefined;
 
+      // Build history with pendingAction for "yes" confirmation flow
+      const historyWithPending = chatMessages.slice(-10).map(m => ({
+        role: m.role,
+        content: m.content,
+        pendingAction: m.pendingAction // Include any pending action
+      }));
+
       // Use Smart Chat (RAG + learned examples + real-time data)
       const response = await apiClient.post('ai/smart-chat', {
         message: userMessage || 'Please analyze this image.',
         context: selectedPageType,
-        history: chatMessages.slice(-10).map(m => ({ role: m.role, content: m.content })),
+        history: historyWithPending,
         capabilities: [
           'Add slots', 'Modify slots', 'Remove slots',
           'Resize slots', 'Move slots', 'Reorder slots',
@@ -485,13 +492,14 @@ const WorkspaceAIPanel = () => {
         setTimeout(() => setCommandStatus(null), 3000);
       }
 
-      // Add AI response to chat
+      // Add AI response to chat (include pendingAction for "yes" confirmation flow)
       addChatMessage({
         role: 'assistant',
         content: response.message || 'Processing complete.',
         slotCommand: commands.length > 0 ? commands : null,
         executionResult,
-        data: response.data
+        data: response.data,
+        pendingAction: response.pendingAction // Store for confirmation flow
       });
 
       // Save assistant message to chat history
