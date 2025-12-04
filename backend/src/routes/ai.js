@@ -2316,11 +2316,12 @@ Be concise but helpful.`;
 
     // Stream with extended thinking
     const stream = aiProvider.streamWithThinking(messages, {
-      model: 'claude-sonnet-4-20250514',
-      maxTokens: 16000,
+      model: 'claude-3-5-sonnet-latest',
+      maxTokens: 8192,
       systemPrompt: fullSystemPrompt,
       tools,
-      thinkingBudget
+      thinkingBudget,
+      enableThinking: true
     });
 
     let totalUsage = { input_tokens: 0, output_tokens: 0 };

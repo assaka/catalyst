@@ -714,12 +714,13 @@ Return ONLY the translated text, no explanations or notes.`;
    */
   async *streamWithThinking(messages, options = {}) {
     const {
-      model = 'claude-sonnet-4-20250514',
-      temperature = 1, // Required for extended thinking
-      maxTokens = 16000,
+      model = 'claude-3-5-sonnet-latest',
+      temperature = 1,
+      maxTokens = 8192,
       systemPrompt = null,
       tools = [],
-      thinkingBudget = 8000
+      thinkingBudget = 5000,
+      enableThinking = true
     } = options;
 
     const client = this.getProvider('anthropic');
@@ -727,19 +728,27 @@ Return ONLY the translated text, no explanations or notes.`;
       throw new Error('Anthropic client not available. Extended thinking requires Anthropic.');
     }
 
-    console.log(`🧠 Starting extended thinking stream with ${tools.length} tools`);
+    console.log(`🧠 Starting stream with ${tools.length} tools, thinking: ${enableThinking}`);
 
     try {
       const requestParams = {
         model,
         max_tokens: maxTokens,
-        thinking: {
-          type: 'enabled',
-          budget_tokens: thinkingBudget
-        },
-        messages,
-        stream: true
+        messages
       };
+
+      // Extended thinking only works with specific models (claude-3-5-sonnet-20241022 and newer)
+      // Try to enable it, but fall back gracefully if not supported
+      if (enableThinking) {
+        try {
+          requestParams.thinking = {
+            type: 'enabled',
+            budget_tokens: thinkingBudget
+          };
+        } catch (e) {
+          console.warn('Extended thinking not supported, continuing without');
+        }
+      }
 
       // Add system prompt if provided
       if (systemPrompt) {
@@ -750,6 +759,13 @@ Return ONLY the translated text, no explanations or notes.`;
       if (tools && tools.length > 0) {
         requestParams.tools = tools;
       }
+
+      console.log('🔧 Request params:', JSON.stringify({
+        model: requestParams.model,
+        hasThinking: !!requestParams.thinking,
+        hasTools: !!requestParams.tools?.length,
+        hasSystem: !!requestParams.system
+      }));
 
       const stream = await client.messages.stream(requestParams);
 
