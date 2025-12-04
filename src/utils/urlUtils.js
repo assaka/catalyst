@@ -375,7 +375,7 @@ export function getExternalStoreUrl(storeSlug, path = '', customBaseUrl = null) 
                   'https://www..dainostore.com';
   
   const publicPath = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug || 'store'}`;
-  const fullPath = path ? `${publicPath}/${path}` : `${publicPath}/`;
+  const fullPath = path ? `${publicPath}/${path}` : publicPath;
   return `${baseUrl}${fullPath}`;
 }
 
