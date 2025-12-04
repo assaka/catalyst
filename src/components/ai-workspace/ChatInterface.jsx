@@ -10,18 +10,40 @@ import { useAIWorkspace } from '@/contexts/AIWorkspaceContext';
  * ChatInterface - Conversational AI for AI Studio
  * User chats naturally, AI determines what to do (like Bolt, Lovable, v0)
  */
-// Available AI models with their configurations
-const AI_MODELS = [
+// All available AI models (for future model selection within providers)
+const ALL_AI_MODELS = [
   { id: 'claude-haiku', name: 'Claude Haiku', provider: 'anthropic', credits: 2, icon: '⚡', description: 'Fast & affordable', serviceKey: 'ai_chat_claude_haiku' },
-  { id: 'claude-sonnet', name: 'Claude Sonnet', provider: 'anthropic', credits: 8, icon: '🎯', description: 'Balanced', serviceKey: 'ai_chat_claude_sonnet', default: true },
+  { id: 'claude-sonnet', name: 'Claude Sonnet', provider: 'anthropic', credits: 8, icon: '🎯', description: 'Balanced', serviceKey: 'ai_chat_claude_sonnet', isProviderDefault: true },
   { id: 'claude-opus', name: 'Claude Opus', provider: 'anthropic', credits: 25, icon: '👑', description: 'Most capable', serviceKey: 'ai_chat_claude_opus' },
-  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', credits: 3, icon: '🚀', description: 'Fast & efficient', serviceKey: 'ai_chat_gpt4o_mini' },
+  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', credits: 3, icon: '🚀', description: 'Fast & efficient', serviceKey: 'ai_chat_gpt4o_mini', isProviderDefault: true },
   { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', credits: 15, icon: '🧠', description: 'Latest flagship', serviceKey: 'ai_chat_gpt4o' },
-  { id: 'gemini-flash', name: 'Gemini Flash', provider: 'gemini', credits: 1.5, icon: '💨', description: 'Ultra fast', serviceKey: 'ai_chat_gemini_flash' },
+  { id: 'gemini-flash', name: 'Gemini Flash', provider: 'gemini', credits: 1.5, icon: '💨', description: 'Ultra fast', serviceKey: 'ai_chat_gemini_flash', isProviderDefault: true },
   { id: 'gemini-pro', name: 'Gemini Pro', provider: 'gemini', credits: 10, icon: '💎', description: 'Advanced reasoning', serviceKey: 'ai_chat_gemini_pro' },
-  { id: 'groq-llama', name: 'Groq Llama', provider: 'groq', credits: 1, icon: '🦙', description: 'Lightning fast', serviceKey: 'ai_chat_groq_llama' },
+  { id: 'groq-llama', name: 'Groq Llama', provider: 'groq', credits: 1, icon: '🦙', description: 'Lightning fast', serviceKey: 'ai_chat_groq_llama', isProviderDefault: true },
   { id: 'groq-mixtral', name: 'Groq Mixtral', provider: 'groq', credits: 0.5, icon: '🌀', description: 'Fast MoE', serviceKey: 'ai_chat_groq_mixtral' },
 ];
+
+// Provider display names
+const PROVIDER_NAMES = {
+  anthropic: 'Claude',
+  openai: 'OpenAI',
+  gemini: 'Gemini',
+  groq: 'Groq'
+};
+
+// Show only default model per provider in dropdown
+const AI_MODELS = ALL_AI_MODELS.filter(m => m.isProviderDefault);
+
+// Get saved model preference from localStorage
+const getSavedModel = () => {
+  try {
+    const saved = localStorage.getItem('ai_default_model');
+    if (saved && AI_MODELS.find(m => m.id === saved)) {
+      return saved;
+    }
+  } catch (e) {}
+  return 'claude-sonnet'; // Default to Claude Sonnet
+};
 
 const ChatInterface = ({ onPluginCloned, context }) => {
   const { getSelectedStoreId } = useStoreSelection();
@@ -43,7 +65,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
   const [inputHistory, setInputHistory] = useState([]); // Arrow up/down history
   const [historyIndex, setHistoryIndex] = useState(-1); // Current position in history
   const [sessionId] = useState(() => `session_${Date.now()}`); // Session ID for grouping
-  const [selectedModel, setSelectedModel] = useState(AI_MODELS.find(m => m.default)?.id || 'claude-sonnet');
+  const [selectedModel, setSelectedModel] = useState(getSavedModel);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -596,51 +618,49 @@ const ChatInterface = ({ onPluginCloned, context }) => {
             )}
           >
             <span className="text-base">{currentModel.icon}</span>
-            <span className="font-medium text-gray-700 dark:text-gray-200">{currentModel.name}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{PROVIDER_NAMES[currentModel.provider]}</span>
             <span className="text-gray-400 dark:text-gray-500">•</span>
-            <span className="text-blue-600 dark:text-blue-400 font-medium">{currentModel.credits} credits</span>
+            <span className="text-blue-600 dark:text-blue-400 font-medium">{currentModel.credits} cr</span>
             <ChevronDown className={cn("w-3.5 h-3.5 text-gray-400 transition-transform", showModelDropdown && "rotate-180")} />
           </button>
 
           {/* Dropdown Menu */}
           {showModelDropdown && (
-            <div className="absolute bottom-full left-0 mb-1 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+            <div className="absolute bottom-full left-0 mb-1 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
               <div className="p-2 border-b border-gray-100 dark:border-gray-700">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 px-2">Select AI Model</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 px-2">Select AI Provider</p>
               </div>
-              <div className="max-h-64 overflow-y-auto py-1">
+              <div className="py-1">
                 {AI_MODELS.map((model) => (
                   <button
                     key={model.id}
                     onClick={() => {
                       setSelectedModel(model.id);
+                      localStorage.setItem('ai_default_model', model.id); // Save preference
                       setShowModelDropdown(false);
                     }}
                     className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 text-left transition-colors",
+                      "w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors",
                       selectedModel === model.id
-                        ? "bg-blue-50 dark:bg-blue-900/30"
-                        : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        ? "bg-blue-50 dark:bg-blue-900/30 border-l-2 border-blue-500"
+                        : "hover:bg-gray-50 dark:hover:bg-gray-700/50 border-l-2 border-transparent"
                     )}
                   >
-                    <span className="text-lg">{model.icon}</span>
+                    <span className="text-xl">{model.icon}</span>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className={cn(
-                          "text-sm font-medium",
-                          selectedModel === model.id ? "text-blue-600 dark:text-blue-400" : "text-gray-800 dark:text-gray-200"
-                        )}>
-                          {model.name}
-                        </span>
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                          {model.provider}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{model.description}</p>
+                      <span className={cn(
+                        "text-sm font-medium block",
+                        selectedModel === model.id ? "text-blue-600 dark:text-blue-400" : "text-gray-800 dark:text-gray-200"
+                      )}>
+                        {PROVIDER_NAMES[model.provider]}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{model.name}</span>
                     </div>
                     <div className={cn(
-                      "text-xs font-semibold whitespace-nowrap",
-                      selectedModel === model.id ? "text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-300"
+                      "text-xs font-semibold px-2 py-1 rounded-full",
+                      selectedModel === model.id
+                        ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                     )}>
                       {model.credits} cr
                     </div>
@@ -693,7 +713,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
           </button>
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-          Press Enter to send • Shift+Enter for new line • Using <span className="font-medium">{currentModel.name}</span>
+          Press Enter to send • Shift+Enter for new line
         </p>
       </div>
 
