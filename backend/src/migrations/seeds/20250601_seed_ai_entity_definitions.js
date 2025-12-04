@@ -256,16 +256,21 @@ module.exports = {
           { name: 'sort_order', type: 'integer', required: false, description: 'Display order', ai_hints: 'Lower = first' },
           { name: 'is_active', type: 'boolean', required: false, description: 'Whether category is visible', ai_hints: 'true/false' }
         ]),
-        intent_keywords: JSON.stringify(['category', 'categories', 'product category', 'subcategory', 'catalog', 'organize products']),
+        intent_keywords: JSON.stringify(['category', 'categories', 'product category', 'subcategory', 'catalog', 'organize products', 'root category', 'main category', 'top level category']),
         example_prompts: JSON.stringify([
           'create a new category called "Summer Collection"',
           'rename Electronics to Consumer Electronics',
           'add subcategory Laptops under Electronics',
-          'hide the Clearance category'
+          'hide the Clearance category',
+          'create a root category called "Test Category"',
+          'add a top level category named "New Arrivals"',
+          'create a main category for seasonal items'
         ]),
         example_responses: JSON.stringify([
           'Created the "Summer Collection" category. You can now assign products to it.',
-          'Renamed "Electronics" to "Consumer Electronics".'
+          'Renamed "Electronics" to "Consumer Electronics".',
+          'Created "Test Category" as a root category. It will appear in the main navigation.',
+          'Created "New Arrivals" as a top-level category. Products can now be assigned to it.'
         ]),
         api_endpoint: '/api/categories',
         category: 'products',
