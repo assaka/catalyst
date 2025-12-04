@@ -938,14 +938,21 @@ For layout_modify, extract:
 - position: "before" (above) or "after" (below)
 
 For analytics_query, extract:
-- query_type: "best_selling", "revenue", "orders", "customers", "inventory", "out_of_stock", "low_stock", "products_by_attribute_set", "product_sales", "top_margin", "sales_by_product"
-- filters: { period: "today/week/month/year", limit: number, attribute_set: "set name", product_name: "name" }
+- query_type: "best_selling", "revenue", "orders", "customers", "inventory", "out_of_stock", "low_stock", "products_by_attribute_set", "product_sales", "top_margin", "sales_by_product", "categories", "attributes", "payment_methods", "shipping_methods", "coupons"
+- filters: { period: "today/week/month/year", limit: number, attribute_set: "set name", product_name: "name", status: "active/inactive/all" }
 Examples:
 - "show out of stock products" → query_type: "out_of_stock"
 - "get products with attribute set Snowboards" → query_type: "products_by_attribute_set", filters: { attribute_set: "Snowboards" }
 - "what are the sales figures for Blue T-Shirt" → query_type: "product_sales", filters: { product_name: "Blue T-Shirt" }
 - "show products with highest margin" → query_type: "top_margin"
 - "bestsellers this month" → query_type: "best_selling", filters: { period: "month" }
+- "which categories are live" → query_type: "categories", filters: { status: "active" }
+- "show all categories" → query_type: "categories"
+- "list active categories" → query_type: "categories", filters: { status: "active" }
+- "what attributes do we have" → query_type: "attributes"
+- "show payment methods" → query_type: "payment_methods"
+- "list shipping options" → query_type: "shipping_methods"
+- "show active coupons" → query_type: "coupons", filters: { status: "active" }
 
 For job_trigger, extract:
 - job_type: "akeneo:import:products", "shopify:import:products", "export:products", etc.
@@ -3795,9 +3802,164 @@ Confirm in 1 sentence. MUST mention the specific changes. Keep it casual. No "Gr
             queryDescription = 'Sales report by product';
             break;
 
+          case 'categories':
+            // Get categories with hierarchy and status
+            const statusFilter = filters.status;
+            let categoriesQuery = tenantDb('categories')
+              .select(
+                'categories.id',
+                'categories.slug',
+                'categories.is_active',
+                'categories.hide_in_menu',
+                'categories.level',
+                'categories.parent_id',
+                'categories.product_count',
+                'categories.sort_order'
+              )
+              .orderBy('categories.level')
+              .orderBy('categories.sort_order');
+
+            if (statusFilter === 'active') {
+              categoriesQuery = categoriesQuery.where('categories.is_active', true);
+            } else if (statusFilter === 'inactive') {
+              categoriesQuery = categoriesQuery.where('categories.is_active', false);
+            }
+
+            const categoriesData = await categoriesQuery.limit(filters.limit || 100);
+
+            // Get translations for category names
+            if (categoriesData && categoriesData.length > 0) {
+              const categoryIds = categoriesData.map(c => c.id);
+              const categoryNames = await tenantDb('category_translations')
+                .select('category_id', 'name', 'description')
+                .whereIn('category_id', categoryIds)
+                .where('language_code', 'en');
+
+              const catNameMap = {};
+              categoryNames.forEach(t => {
+                catNameMap[t.category_id] = { name: t.name, description: t.description };
+              });
+              categoriesData.forEach(c => {
+                c.name = catNameMap[c.id]?.name || c.slug;
+                c.description = catNameMap[c.id]?.description || '';
+              });
+            }
+
+            const activeCount = categoriesData.filter(c => c.is_active).length;
+            const inactiveCount = categoriesData.filter(c => !c.is_active).length;
+            const rootCategories = categoriesData.filter(c => !c.parent_id);
+
+            queryResult = {
+              categories: categoriesData,
+              summary: {
+                total: categoriesData.length,
+                active: activeCount,
+                inactive: inactiveCount,
+                root_categories: rootCategories.length
+              }
+            };
+            queryDescription = statusFilter ? `${statusFilter} categories` : 'All categories';
+            break;
+
+          case 'attributes':
+            // Get all attributes with their options
+            const attributesData = await tenantDb('attributes')
+              .select('id', 'code', 'type', 'is_filterable', 'is_required', 'sort_order', 'is_active')
+              .orderBy('sort_order');
+
+            // Get translations
+            if (attributesData && attributesData.length > 0) {
+              const attrIds = attributesData.map(a => a.id);
+              const attrNames = await tenantDb('attribute_translations')
+                .select('attribute_id', 'name')
+                .whereIn('attribute_id', attrIds)
+                .where('language_code', 'en');
+
+              const attrNameMap = {};
+              attrNames.forEach(t => { attrNameMap[t.attribute_id] = t.name; });
+              attributesData.forEach(a => { a.name = attrNameMap[a.id] || a.code; });
+
+              // Get option counts
+              const optionCounts = await tenantDb('attribute_options')
+                .select('attribute_id')
+                .count('* as count')
+                .whereIn('attribute_id', attrIds)
+                .groupBy('attribute_id');
+
+              const countMap = {};
+              optionCounts.forEach(oc => { countMap[oc.attribute_id] = parseInt(oc.count); });
+              attributesData.forEach(a => { a.option_count = countMap[a.id] || 0; });
+            }
+
+            queryResult = {
+              attributes: attributesData,
+              total: attributesData.length,
+              filterable: attributesData.filter(a => a.is_filterable).length
+            };
+            queryDescription = 'Store attributes';
+            break;
+
+          case 'payment_methods':
+            // Get payment methods
+            const paymentMethods = await tenantDb('payment_methods')
+              .select('id', 'code', 'name', 'is_active', 'is_default', 'sort_order', 'min_order_amount', 'max_order_amount')
+              .orderBy('sort_order');
+
+            queryResult = {
+              payment_methods: paymentMethods,
+              active: paymentMethods.filter(p => p.is_active).length,
+              total: paymentMethods.length
+            };
+            queryDescription = 'Payment methods';
+            break;
+
+          case 'shipping_methods':
+            // Get shipping methods
+            const shippingMethods = await tenantDb('shipping_methods')
+              .select('id', 'code', 'name', 'is_active', 'base_rate', 'free_shipping_threshold', 'estimated_days_min', 'estimated_days_max')
+              .orderBy('sort_order');
+
+            queryResult = {
+              shipping_methods: shippingMethods,
+              active: shippingMethods.filter(s => s.is_active).length,
+              total: shippingMethods.length
+            };
+            queryDescription = 'Shipping methods';
+            break;
+
+          case 'coupons':
+            // Get coupons
+            let couponsQuery = tenantDb('coupons')
+              .select('id', 'code', 'discount_type', 'discount_value', 'is_active', 'starts_at', 'expires_at', 'usage_count', 'usage_limit')
+              .orderBy('created_at', 'desc');
+
+            if (filters.status === 'active') {
+              couponsQuery = couponsQuery.where('is_active', true);
+            }
+
+            const couponsData = await couponsQuery.limit(filters.limit || 50);
+
+            // Check validity
+            const now = new Date();
+            couponsData.forEach(c => {
+              c.is_valid = c.is_active &&
+                (!c.starts_at || new Date(c.starts_at) <= now) &&
+                (!c.expires_at || new Date(c.expires_at) >= now) &&
+                (!c.usage_limit || c.usage_count < c.usage_limit);
+            });
+
+            queryResult = {
+              coupons: couponsData,
+              active: couponsData.filter(c => c.is_active).length,
+              valid: couponsData.filter(c => c.is_valid).length,
+              total: couponsData.length
+            };
+            queryDescription = 'Store coupons';
+            break;
+
           default:
             // General query - let AI interpret
-            queryResult = { message: 'Query type not recognized. Try: best selling products, revenue, orders, customers, inventory, product_sales, top_margin, or sales_by_product.' };
+            queryResult = { message: 'Query type not recognized. Try: best selling products, revenue, orders, customers, inventory, categories, attributes, payment_methods, shipping_methods, coupons, or sales_by_product.' };
             queryDescription = 'Unknown query type';
         }
 
