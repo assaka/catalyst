@@ -5,7 +5,32 @@
 --   "add a 20% off coupon popup for empty carts"
 --   "create exit intent popup with discount"
 --
--- SAFE TO RE-RUN: Uses ON CONFLICT DO NOTHING / DO UPDATE
+-- SAFE TO RE-RUN: Deletes existing data first, then re-inserts
+
+-- =====================================================
+-- 0. CLEANUP: Delete existing event-actions data
+-- =====================================================
+DELETE FROM ai_plugin_examples WHERE slug = 'event-actions-modals-coupons';
+DELETE FROM ai_context_documents WHERE title IN (
+    'Event Actions Plugin Architecture',
+    'Creating Event Triggers for Promotions',
+    'Plugin Generation Rules - MUST FOLLOW'
+);
+DELETE FROM ai_code_patterns WHERE name IN (
+    'Event Trigger Listener',
+    'Promotional Modal Widget',
+    'Event Actions Controller',
+    'Plugin Hook - Price Modifier',
+    'Plugin Entity Definition',
+    'Plugin Component - React Widget',
+    'Plugin Utility - Session Helper',
+    'Plugin Service - API Client',
+    'Plugin Admin Page - Dashboard',
+    'Plugin Migration - Table Creation',
+    'Plugin Cron Job - Scheduled Task',
+    'Plugin README Documentation'
+);
+DELETE FROM ai_entity_definitions WHERE entity_name IN ('event_triggers', 'event_actions');
 
 -- =====================================================
 -- 1. AI PLUGIN EXAMPLE: Event Actions Plugin
