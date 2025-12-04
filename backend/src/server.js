@@ -251,24 +251,20 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // // Check for exact match first
-    // if (allowedOrigins.indexOf(origin) !== -1) {
-    //   return callback(null, true);
-    // }
+    // Allow platform domains and development environments
+    const hostname = new URL(origin).hostname;
+    const platformDomains = ['dainostore.com', 'www.dainostore.com', 'daino.ai', 'www.daino.ai', 'daino.store', 'www.daino.store'];
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isVercelApp = hostname.endsWith('.vercel.app');
+    const isRenderApp = hostname.endsWith('.onrender.com');
 
-    // Simple and permissive checks
-    // const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
-    // const isVercelApp = origin.endsWith('.vercel.app');
-    // const isRenderApp = origin.endsWith('.onrender.com');
-    //
-    // if (isLocalhost || isVercelApp || isRenderApp) {
-    //   return callback(null, true);
-    // }
+    if (platformDomains.includes(hostname) || isLocalhost || isVercelApp || isRenderApp) {
+      return callback(null, true);
+    }
 
     // Check if origin is a verified custom domain (using master DB Supabase client)
     try {
       const { masterDbClient } = require('./database/masterConnection');
-      const hostname = new URL(origin).hostname;
 
       // Check custom_domains table first
       const { data: lookupDomain, error: lookupError } = await masterDbClient
