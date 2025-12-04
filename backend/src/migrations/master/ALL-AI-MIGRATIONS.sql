@@ -1108,6 +1108,306 @@ ON CONFLICT DO NOTHING;
 
 
 -- ############################################################################
+-- PART 6: SEED EVENT ACTIONS AI CONTEXT
+-- ############################################################################
+
+-- Seed Event Actions Plugin AI Context
+-- Adds plugin examples, context documents, and code patterns for AI to generate event-driven plugins
+-- This enables the AI chat to generate event-driven plugins when users ask:
+--   "create a plugin that shows a modal when cart is empty"
+--   "add a 20% off coupon popup for empty carts"
+--   "create exit intent popup with discount"
+
+-- Cleanup existing event-actions data
+DELETE FROM ai_plugin_examples WHERE slug = 'event-actions-modals-coupons';
+DELETE FROM ai_context_documents WHERE title IN (
+    'Event Actions Plugin Architecture',
+    'Creating Event Triggers for Promotions',
+    'Plugin Generation Rules - MUST FOLLOW'
+);
+DELETE FROM ai_code_patterns WHERE name IN (
+    'Event Trigger Listener',
+    'Promotional Modal Widget',
+    'Event Actions Controller',
+    'Plugin Hook - Price Modifier',
+    'Plugin Entity Definition',
+    'Plugin Component - React Widget',
+    'Plugin Utility - Session Helper',
+    'Plugin Service - API Client',
+    'Plugin Admin Page - Dashboard',
+    'Plugin Migration - Table Creation',
+    'Plugin Cron Job - Scheduled Task',
+    'Plugin README Documentation'
+);
+DELETE FROM ai_entity_definitions WHERE entity_name IN ('event_triggers', 'event_actions');
+
+-- AI PLUGIN EXAMPLE: Event Actions Plugin
+INSERT INTO ai_plugin_examples (
+    name, slug, description, category, complexity, code, files, features, use_cases, tags, is_template, is_active, rating
+) VALUES (
+    'Event Actions - DB-Driven Modals & Coupons',
+    'event-actions-modals-coupons',
+    'Database-driven event triggers that show modals, apply coupons, notifications when specific storefront events occur (empty cart, checkout start, exit intent, product view, etc.). All configuration stored in plugin_data for 100% DB-driven behavior.',
+    'marketing',
+    'medium',
+    $CODE$
+// Event Actions Plugin - DB-Driven Triggers & Actions
+// Shows modals, applies coupons, notifications based on storefront events
+
+// PLUGIN REGISTRY ENTRY
+const pluginManifest = {
+    name: 'Event Actions',
+    slug: 'event-actions',
+    version: '1.0.0',
+    description: 'AI-driven event triggers with modals, coupons, and notifications',
+    author: 'AI Generator',
+    category: 'marketing',
+    mode: 'developer',
+    features: [
+        { type: 'api_endpoint', config: { path: '/triggers', methods: ['GET', 'POST', 'PUT', 'DELETE'] } },
+        { type: 'api_endpoint', config: { path: '/actions', methods: ['GET', 'POST', 'PUT', 'DELETE'] } },
+        { type: 'api_endpoint', config: { path: '/evaluate', methods: ['POST'] } },
+        { type: 'webhook', config: { hook: 'cart.viewed', priority: 5 } },
+        { type: 'webhook', config: { hook: 'checkout.start', priority: 5 } }
+    ]
+};
+
+// EVENTS - Listen to storefront events
+export default async function onCartViewed(data) {
+    const response = await fetch('/api/plugins/event-actions/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            eventType: 'cart.view',
+            context: {
+                cart_items_count: data.items?.length || 0,
+                cart_total: data.total || 0,
+                session_id: sessionStorage.getItem('session_id')
+            }
+        })
+    });
+    const result = await response.json();
+    if (result.actions?.length > 0) {
+        executeAction(result.actions[0], result.trigger);
+    }
+}
+
+function executeAction(action, trigger) {
+    if (action.action_type === 'show_modal') {
+        window.dispatchEvent(new CustomEvent('eventActionShowModal', {
+            detail: { ...action.modal_config, coupon_config: action.coupon_config, trigger_id: trigger.id }
+        }));
+    }
+}
+
+// WIDGET - Modal Component (React.createElement)
+function EventActionModalWidget({ config }) {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [modalData, setModalData] = React.useState(null);
+    React.useEffect(() => {
+        const handleShow = (e) => { setModalData(e.detail); setIsOpen(true); };
+        window.addEventListener('eventActionShowModal', handleShow);
+        return () => window.removeEventListener('eventActionShowModal', handleShow);
+    }, []);
+    if (!isOpen || !modalData) return null;
+    return React.createElement('div', { className: 'fixed inset-0 z-50 flex items-center justify-center bg-black/50' },
+        React.createElement('div', { className: 'bg-white rounded-xl p-6 max-w-md shadow-2xl' },
+            React.createElement('h2', { className: 'text-xl font-bold mb-2 text-center' }, modalData.title),
+            React.createElement('p', { className: 'text-gray-600 text-center mb-4' }, modalData.message),
+            modalData.coupon_code && React.createElement('div', { className: 'bg-gray-100 p-3 rounded mb-4 text-center' },
+                React.createElement('p', { className: 'text-2xl font-mono font-bold' }, modalData.coupon_code)
+            ),
+            React.createElement('div', { className: 'flex flex-col gap-2' },
+                modalData.buttons?.map((btn, i) => React.createElement('button', {
+                    key: i,
+                    onClick: () => { if (btn.action === 'apply_coupon') window.__appliedCoupon = { code: btn.coupon_code }; setIsOpen(false); },
+                    className: btn.style === 'primary' ? 'bg-blue-600 text-white py-2 rounded' : 'text-gray-500'
+                }, btn.text))
+            )
+        )
+    );
+}
+
+// SAMPLE DATA
+const sampleTrigger = {
+    id: 'trigger_empty_cart', name: 'Empty Cart Offer', slug: 'empty-cart-20-off',
+    event_type: 'cart.view', conditions: { cart_items_count: { operator: '==', value: 0 } },
+    show_once_per_session: true, is_enabled: true
+};
+const sampleAction = {
+    id: 'action_empty_cart_modal', trigger_id: 'trigger_empty_cart', action_type: 'show_modal',
+    modal_config: { title: 'Your cart is empty!', message: "Here's 20% off!", buttons: [
+        { text: 'Claim 20% Off', action: 'apply_coupon', coupon_code: 'EMPTYCART20', style: 'primary' }
+    ]},
+    coupon_config: { code: 'EMPTYCART20', discount_type: 'percentage', discount_value: 20 }, is_enabled: true
+};
+$CODE$,
+    '[]'::jsonb,
+    '["Event listeners", "DB-driven triggers", "Modal popups", "Coupon generation", "Session tracking"]'::jsonb,
+    '["Empty cart recovery", "Checkout abandonment", "Exit intent popups", "First-time visitor offers"]'::jsonb,
+    '["marketing", "modals", "coupons", "events", "triggers", "cart", "checkout"]'::jsonb,
+    true, true, 4.8
+) ON CONFLICT (slug) DO UPDATE SET code = EXCLUDED.code, features = EXCLUDED.features, updated_at = NOW();
+
+-- CRITICAL: Plugin Generation Rules (HIGH PRIORITY)
+INSERT INTO ai_context_documents (type, title, content, category, tags, priority, mode, is_active) VALUES (
+    'rules',
+    'Plugin Generation Rules - MUST FOLLOW',
+    $DOC$# CRITICAL: Plugin Generation Rules
+
+## RULE 1: NEVER ASK QUESTIONS - USE SENSIBLE DEFAULTS
+When a user asks to create a plugin, IMMEDIATELY generate it. Do NOT ask:
+- "What do you want to call this plugin?" → Generate a name from the description
+- "Which slot do you want?" → Use the most appropriate slot (cart_page for cart, checkout for checkout)
+- "What features do you want?" → Infer features from the description
+
+## RULE 2: GENERATE COMPLETE DATABASE ENTRIES
+Return a JSON response with complete database INSERT statements for ALL required tables:
+
+```json
+{
+  "type": "plugin_generation",
+  "plugin": {
+    "registry": { "name": "Coupon Modal", "slug": "coupon-modal", "description": "Shows a coupon modal when cart is empty", "category": "marketing", "version": "1.0.0" },
+    "widgets": [{ "name": "CouponModalWidget", "slot": "cart_page", "code": "function CouponModalWidget({ config }) { ... }" }],
+    "events": [{ "name": "onCartViewed", "event_type": "cart.view", "code": "export default async function onCartViewed(data) { ... }" }],
+    "hooks": [{ "hook_name": "cart.alert", "code": "..." }],
+    "data": [
+      { "key": "triggers", "value": [{ "id": "trigger_1", "event_type": "cart.view", "conditions": {"cart_items_count": {"operator": "==", "value": 0}} }] },
+      { "key": "actions", "value": [{ "id": "action_1", "trigger_id": "trigger_1", "action_type": "show_modal", "modal_config": {...} }] }
+    ]
+  },
+  "explanation": "Created a coupon modal plugin that shows 20% off when cart is empty"
+}
+```
+
+## RULE 3: DEFAULT SLOT MAPPINGS
+| Feature Type | Default Slot |
+|-------------|--------------|
+| Cart features | cart_page |
+| Checkout features | checkout |
+| Product features | product_page |
+| Site-wide modals | global |
+
+## RULE 4: DEFAULT COUPON STRUCTURE
+```json
+{ "code": "SAVE20", "discount_type": "percentage", "discount_value": 20, "auto_apply": false }
+```
+
+## RULE 5: DEFAULT MODAL STRUCTURE
+```json
+{
+  "title": "Special Offer!",
+  "message": "Description of the offer",
+  "style": { "position": "center", "theme": "light", "size": "medium" },
+  "buttons": [
+    { "text": "Claim Offer", "style": "primary", "action": "apply_coupon" },
+    { "text": "No Thanks", "style": "ghost", "action": "close" }
+  ]
+}
+```
+
+## EXAMPLE USER REQUESTS AND RESPONSES
+
+**User:** "create a coupon plugin"
+**AI Response:** Generate a complete coupon plugin with widget, event listener, default 10% discount coupon, modal with "Apply Coupon" button
+
+**User:** "show modal in cart when no products with 20% coupon"
+**AI Response:** Generate: Trigger (event_type=cart.view, conditions={cart_items_count: ==0}), Action (show_modal with 20% coupon), Widget (cart_page slot)
+
+**User:** "add a hook to Cart Alert to show a coupon modal"
+**AI Response:** Generate: Hook (hook_name=cart.alert), Widget (modal component), default coupon config
+$DOC$,
+    'core',
+    '["rules", "generation", "defaults", "critical"]'::jsonb,
+    100,
+    'all',
+    true
+) ON CONFLICT DO NOTHING;
+
+-- Event Actions Architecture Document
+INSERT INTO ai_context_documents (type, title, content, category, tags, priority, mode, is_active) VALUES (
+    'architecture',
+    'Event Actions Plugin Architecture',
+    $DOC$# Event Actions Plugin Architecture
+
+## Overview
+Event Actions is a DB-driven system for creating promotional triggers that respond to storefront events.
+
+## Key Components
+
+### 1. Triggers (plugin_data: 'triggers')
+Define WHEN an action fires:
+- **event_type**: cart.view, checkout.start, product.view, exit.intent, page.view
+- **conditions**: JSON rules like `{"cart_items_count": {"operator": "==", "value": 0}}`
+- **targeting**: User type, first purchase, page filters
+- **frequency**: show_once_per_session, max_displays_per_user
+
+### 2. Actions (plugin_data: 'actions')
+Define WHAT happens:
+- **show_modal**: Popup with title, message, buttons, coupon code
+- **apply_coupon**: Auto-apply discount code
+- **show_notification**: Toast/banner message
+- **redirect**: Navigate to URL
+
+### 3. Hooks (plugin_hooks)
+Listen to specific hooks like cart.alert, checkout.start
+
+### 4. Widget (plugin_widgets)
+React component that renders modals using React.createElement (no JSX at runtime).
+
+## Event Types
+| Event | When Fired | Common Use |
+|-------|-----------|------------|
+| cart.view | User views cart | Empty cart offers |
+| cart.alert | Cart condition met | Cart alerts |
+| checkout.start | Begin checkout | Upsells |
+| exit.intent | Mouse leaves page | Exit popups |
+
+## Condition Operators
+- `==` : Equals
+- `!=` : Not equals
+- `>` : Greater than
+- `<` : Less than
+$DOC$,
+    'plugins',
+    '["event-actions", "triggers", "modals", "coupons", "marketing", "hooks"]'::jsonb,
+    95,
+    'all',
+    true
+) ON CONFLICT DO NOTHING;
+
+-- Event Actions Entity Definitions
+INSERT INTO ai_entity_definitions (
+    entity_name, display_name, description, table_name, primary_key, tenant_column,
+    supported_operations, fields, example_prompts, api_endpoint, requires_confirmation, is_destructive
+) VALUES (
+    'event_triggers',
+    'Event Triggers',
+    'Database-driven triggers that fire when storefront events occur (cart view, checkout start, exit intent).',
+    'plugin_data', 'id', 'plugin_id',
+    '["list", "get", "create", "update", "delete"]'::jsonb,
+    '{"id": {"type": "string"}, "name": {"type": "string"}, "event_type": {"type": "string"}, "conditions": {"type": "object"}, "is_enabled": {"type": "boolean"}}'::jsonb,
+    '["create a trigger to show modal when cart is empty", "add an exit intent popup trigger", "create trigger for checkout abandonment"]'::jsonb,
+    '/api/plugins/event-actions/triggers', false, false
+) ON CONFLICT (entity_name) DO UPDATE SET display_name = EXCLUDED.display_name, description = EXCLUDED.description;
+
+INSERT INTO ai_entity_definitions (
+    entity_name, display_name, description, table_name, primary_key, tenant_column,
+    supported_operations, fields, example_prompts, api_endpoint, requires_confirmation, is_destructive
+) VALUES (
+    'event_actions',
+    'Event Actions',
+    'Actions executed when triggers fire. Supports show_modal, apply_coupon, show_notification, redirect.',
+    'plugin_data', 'id', 'plugin_id',
+    '["list", "get", "create", "update", "delete"]'::jsonb,
+    '{"id": {"type": "string"}, "trigger_id": {"type": "string"}, "action_type": {"type": "string"}, "modal_config": {"type": "object"}, "coupon_config": {"type": "object"}}'::jsonb,
+    '["add a modal action with 20% off coupon", "create action to show notification", "add redirect action"]'::jsonb,
+    '/api/plugins/event-actions/actions', false, false
+) ON CONFLICT (entity_name) DO UPDATE SET display_name = EXCLUDED.display_name, description = EXCLUDED.description;
+
+
+-- ############################################################################
 -- MIGRATION COMPLETE
 -- ############################################################################
 -- All AI tables, functions, and seed data have been created/inserted.
