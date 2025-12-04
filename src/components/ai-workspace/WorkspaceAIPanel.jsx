@@ -434,6 +434,18 @@ const WorkspaceAIPanel = () => {
       console.error('AI processing error:', error);
       setCommandStatus('error');
 
+      // Check for insufficient credits error
+      const errorResponse = error.response?.data;
+      if (errorResponse?.code === 'INSUFFICIENT_CREDITS' || error.response?.status === 402) {
+        addChatMessage({
+          role: 'assistant',
+          content: `⚠️ Insufficient credits. ${errorResponse?.message || 'Please add more credits to continue using AI features.'}`,
+          error: true
+        });
+        setIsProcessingAi(false);
+        return;
+      }
+
       // Fallback to local processing if backend fails
       const localCommands = aiWorkspaceSlotProcessor.parseAIResponse(userMessage);
 

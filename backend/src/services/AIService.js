@@ -315,7 +315,10 @@ class AIService {
 
     // Validate user has credits (with model-specific pricing)
     const creditCheck = await this.checkCredits(userId, operationType, serviceKey, modelId);
+    console.log(`💳 Credit check: userId=${userId}, required=${creditCheck.required}, available=${creditCheck.available}, hasCredits=${creditCheck.hasCredits}`);
+
     if (!creditCheck.hasCredits) {
+      console.log(`❌ Insufficient credits for user ${userId}. Required: ${creditCheck.required}, Available: ${creditCheck.available}`);
       throw new Error(
         `Insufficient credits. Required: ${creditCheck.required}, Available: ${creditCheck.available}`
       );
