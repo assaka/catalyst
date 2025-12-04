@@ -295,6 +295,28 @@ Return: {"tool": "create_coupon", "code": "SAVE20", "discount_type": "percentage
 TOOL: delete_coupon - Delete a coupon
 Return: {"tool": "delete_coupon", "code": "COUPON_CODE"}
 
+═══ LAYOUT & STYLING TOOLS ═══
+TOOL: update_styling - Change element colors, fonts, sizes on storefront pages
+Elements: product_title, price, sku, description, add_to_cart_button, quantity_selector, stock_label, breadcrumb
+Properties: color, backgroundColor, fontSize, fontWeight
+Pages: product, cart, checkout, category
+Examples:
+  {"tool": "update_styling", "element": "product_title", "property": "color", "value": "red"}
+  {"tool": "update_styling", "element": "price", "property": "color", "value": "#FF0000"}
+  {"tool": "update_styling", "element": "add_to_cart_button", "property": "backgroundColor", "value": "green"}
+
+TOOL: update_setting - Update store/catalog settings
+Settings: show_stock_label, hide_currency_product, hide_quantity_selector, theme.primary_color, theme.breadcrumb_item_text_color
+Examples:
+  {"tool": "update_setting", "setting": "show_stock_label", "value": false}
+  {"tool": "update_setting", "setting": "theme.primary_color", "value": "#FF5733"}
+  {"tool": "update_setting", "setting": "hide_quantity_selector", "value": true}
+
+TOOL: move_element - Move/reposition elements on storefront pages
+Examples:
+  {"tool": "move_element", "element": "sku", "position": "above", "target": "price"}
+  {"tool": "move_element", "element": "stock_label", "position": "below", "target": "add_to_cart_button"}
+
 ═══ OTHER TOOLS ═══
 TOOL: create_and_add - Create category and add product (after confirmation)
 Return: {"tool": "create_and_add", "product": "product name", "category": "new category name"}
@@ -372,6 +394,17 @@ Natural language variations (same as above):
 "unpaid orders" → {"tool": "list_orders", "filters": {"payment_status": "pending"}}
 "what purchases need shipping" → {"tool": "list_orders", "filters": {"status": "processing"}}
 "transactions from today" → {"tool": "list_orders", "filters": {"sort_by": "newest"}}
+
+Layout & Styling examples:
+"set product title color to red" → {"tool": "update_styling", "element": "product_title", "property": "color", "value": "red"}
+"make the title red" → {"tool": "update_styling", "element": "product_title", "property": "color", "value": "red"}
+"change price color to blue" → {"tool": "update_styling", "element": "price", "property": "color", "value": "blue"}
+"make add to cart button green" → {"tool": "update_styling", "element": "add_to_cart_button", "property": "backgroundColor", "value": "green"}
+"hide stock label" → {"tool": "update_setting", "setting": "show_stock_label", "value": false}
+"show stock label" → {"tool": "update_setting", "setting": "show_stock_label", "value": true}
+"hide quantity selector" → {"tool": "update_setting", "setting": "hide_quantity_selector", "value": true}
+"move sku above price" → {"tool": "move_element", "element": "sku", "position": "above", "target": "price"}
+"put description below the title" → {"tool": "move_element", "element": "description", "position": "below", "target": "product_title"}
 
 ${images && images.length > 0 ? '\nUser attached image(s). Analyze for colors, patterns, and provide actionable insights.' : ''}
 
@@ -1609,6 +1642,224 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           success: true,
           message: `Deleted coupon "${coupon.code}".`,
           data: { couponId: coupon.id }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // UPDATE STYLING - Change element colors, fonts, sizes
+      // ═══════════════════════════════════════════════════════════════
+      case 'update_styling': {
+        const { element, property, value, page = 'product' } = toolCall;
+
+        // Map friendly element names to slot IDs
+        const elementMap = {
+          'product_title': 'product_title',
+          'title': 'product_title',
+          'price': 'price_container',
+          'sku': 'sku_display',
+          'description': 'product_description',
+          'add_to_cart_button': 'add_to_cart_button',
+          'add_to_cart': 'add_to_cart_button',
+          'button': 'add_to_cart_button',
+          'quantity_selector': 'quantity_selector',
+          'quantity': 'quantity_selector',
+          'stock_label': 'stock_label',
+          'stock': 'stock_label',
+          'breadcrumb': 'breadcrumb'
+        };
+
+        const slotId = elementMap[element?.toLowerCase()] || element;
+
+        // Map property names
+        const propertyMap = {
+          'color': 'color',
+          'text color': 'color',
+          'background': 'backgroundColor',
+          'background color': 'backgroundColor',
+          'backgroundcolor': 'backgroundColor',
+          'font size': 'fontSize',
+          'fontsize': 'fontSize',
+          'size': 'fontSize',
+          'font weight': 'fontWeight',
+          'fontweight': 'fontWeight',
+          'bold': 'fontWeight'
+        };
+
+        const styleProp = propertyMap[property?.toLowerCase()] || property;
+
+        // Map color names to hex
+        const colorMap = {
+          'red': '#FF0000', 'blue': '#0000FF', 'green': '#00FF00',
+          'orange': '#FFA500', 'yellow': '#FFFF00', 'purple': '#800080',
+          'pink': '#FFC0CB', 'gray': '#808080', 'black': '#000000', 'white': '#FFFFFF'
+        };
+
+        const styleValue = colorMap[value?.toLowerCase()] || value;
+
+        // Get or create slot configuration
+        const { data: config } = await db
+          .from('slot_configurations')
+          .select('id, configuration')
+          .eq('store_id', storeId)
+          .eq('page_type', page)
+          .eq('status', 'published')
+          .order('version_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        let configuration = config?.configuration || { slots: {} };
+        if (!configuration.slots) configuration.slots = {};
+        if (!configuration.slots[slotId]) configuration.slots[slotId] = { styles: {} };
+        if (!configuration.slots[slotId].styles) configuration.slots[slotId].styles = {};
+
+        // Apply the style
+        configuration.slots[slotId].styles[styleProp] = styleValue;
+
+        if (config) {
+          // Update existing
+          await db
+            .from('slot_configurations')
+            .update({
+              configuration,
+              updated_at: new Date().toISOString(),
+              has_unpublished_changes: true
+            })
+            .eq('id', config.id);
+        } else {
+          // Create new
+          await db
+            .from('slot_configurations')
+            .insert({
+              store_id: storeId,
+              user_id: userId,
+              page_type: page,
+              configuration,
+              status: 'published',
+              is_active: true
+            });
+        }
+
+        const friendlyElement = element.replace(/_/g, ' ');
+        return {
+          success: true,
+          message: `Changed ${friendlyElement} ${styleProp} to ${value}. Refresh your storefront to see the changes.`,
+          data: { type: 'styling', element: slotId, property: styleProp, value: styleValue }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // UPDATE SETTING - Store/catalog settings
+      // ═══════════════════════════════════════════════════════════════
+      case 'update_setting': {
+        const { setting, value } = toolCall;
+
+        // Get current store settings
+        const { data: store } = await db
+          .from('stores')
+          .select('id, settings')
+          .eq('id', storeId)
+          .single();
+
+        if (!store) {
+          return { success: false, message: 'Store not found.' };
+        }
+
+        let settings = store.settings || {};
+
+        // Handle nested settings (e.g., "theme.primary_color")
+        if (setting.includes('.')) {
+          const parts = setting.split('.');
+          let current = settings;
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (!current[parts[i]]) current[parts[i]] = {};
+            current = current[parts[i]];
+          }
+          current[parts[parts.length - 1]] = value;
+        } else {
+          settings[setting] = value;
+        }
+
+        await db
+          .from('stores')
+          .update({ settings, updated_at: new Date().toISOString() })
+          .eq('id', storeId);
+
+        const friendlySetting = setting.replace(/_/g, ' ').replace(/\./g, ' > ');
+        return {
+          success: true,
+          message: `Updated ${friendlySetting} to ${value}. Refresh your storefront to see the changes.`,
+          data: { type: 'setting', setting, value }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // MOVE ELEMENT - Reposition elements on pages
+      // ═══════════════════════════════════════════════════════════════
+      case 'move_element': {
+        const { element, position, target, page = 'product' } = toolCall;
+
+        const elementMap = {
+          'product_title': 'product_title', 'title': 'product_title',
+          'price': 'price_container', 'sku': 'sku_display',
+          'description': 'product_description',
+          'add_to_cart_button': 'add_to_cart_button', 'add_to_cart': 'add_to_cart_button',
+          'quantity_selector': 'quantity_selector', 'quantity': 'quantity_selector',
+          'stock_label': 'stock_label', 'stock': 'stock_label'
+        };
+
+        const sourceSlot = elementMap[element?.toLowerCase()] || element;
+        const targetSlot = elementMap[target?.toLowerCase()] || target;
+        const normalizedPosition = ['above', 'before'].includes(position?.toLowerCase()) ? 'before' : 'after';
+
+        // Get or create slot configuration
+        const { data: config } = await db
+          .from('slot_configurations')
+          .select('id, configuration')
+          .eq('store_id', storeId)
+          .eq('page_type', page)
+          .eq('status', 'published')
+          .order('version_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        let configuration = config?.configuration || { slots: {}, layout: [] };
+        if (!configuration.slots) configuration.slots = {};
+        if (!configuration.layout) configuration.layout = [];
+
+        // Update layout order
+        if (!configuration.slots[sourceSlot]) configuration.slots[sourceSlot] = {};
+        configuration.slots[sourceSlot].position = {
+          relativeTo: targetSlot,
+          placement: normalizedPosition
+        };
+
+        if (config) {
+          await db
+            .from('slot_configurations')
+            .update({
+              configuration,
+              updated_at: new Date().toISOString(),
+              has_unpublished_changes: true
+            })
+            .eq('id', config.id);
+        } else {
+          await db
+            .from('slot_configurations')
+            .insert({
+              store_id: storeId,
+              user_id: userId,
+              page_type: page,
+              configuration,
+              status: 'published',
+              is_active: true
+            });
+        }
+
+        const posWord = normalizedPosition === 'before' ? 'above' : 'below';
+        return {
+          success: true,
+          message: `Moved ${element.replace(/_/g, ' ')} ${posWord} ${target.replace(/_/g, ' ')}. Refresh your storefront to see the changes.`,
+          data: { type: 'layout', source: sourceSlot, target: targetSlot, position: normalizedPosition }
         };
       }
 
