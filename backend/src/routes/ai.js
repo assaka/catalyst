@@ -19,16 +19,19 @@ router.use('/training', aiTrainingRoutes);
  */
 router.post('/smart-chat', authMiddleware, async (req, res) => {
   try {
-    const { message, history = [], modelId, serviceKey } = req.body;
+    const { message, history = [], modelId, serviceKey, images } = req.body;
     const userId = req.user?.id;
     const storeId = req.headers['x-store-id'] || req.body.storeId;
 
-    if (!message) {
-      return res.status(400).json({ success: false, message: 'message is required' });
+    if (!message && (!images || images.length === 0)) {
+      return res.status(400).json({ success: false, message: 'message or images required' });
     }
 
     console.log('🧠 ULTIMATE AI CHAT');
     console.log('📝:', message);
+    if (images && images.length > 0) {
+      console.log('📷 Images attached:', images.length);
+    }
 
     const ConnectionManager = require('../services/database/ConnectionManager');
     const { masterDbClient } = require('../database/masterConnection');
@@ -228,6 +231,9 @@ HOW TO RESPOND:
 3. **Management tasks** → Execute directly or explain what you'll do
 4. **Analysis** → Provide actionable insights, not just numbers
 5. **Unclear requests** → Ask ONE clarifying question
+${images && images.length > 0 ? `6. **Image analysis** → Extract colors (with hex codes), identify layout patterns, describe visual style, and suggest how to apply to the store` : ''}
+
+${images && images.length > 0 ? 'The user has attached image(s). Analyze them to extract brand colors, layout patterns, and design elements. When they ask "use these colors" - identify the colors and explain how you can apply them.' : ''}
 
 Be concise. Be helpful. Be impressive. No fluff.`;
 
@@ -239,12 +245,13 @@ Be concise. Be helpful. Be impressive. No fluff.`;
       operationType: 'chat',
       modelId: modelId || 'claude-sonnet',
       serviceKey: serviceKey || 'ai_chat_claude_sonnet',
-      prompt: message,
+      prompt: message || 'Please analyze this image.',
       systemPrompt,
       conversationHistory: history.slice(-10).map(m => ({ role: m.role, content: m.content })),
       maxTokens: 1200,
       temperature: 0.6,
-      metadata: { type: 'ultimate-chat', storeId }
+      metadata: { type: 'ultimate-chat', storeId },
+      images // Pass images for vision support
     });
 
     // ═══════════════════════════════════════════════════════════════════

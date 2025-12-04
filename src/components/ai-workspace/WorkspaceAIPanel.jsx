@@ -334,16 +334,19 @@ const WorkspaceAIPanel = () => {
 
   // Handle sending a message
   const handleSend = async () => {
-    if (!inputValue.trim() || isProcessingAi) return;
+    if ((!inputValue.trim() && attachedImages.length === 0) || isProcessingAi) return;
 
     const userMessage = inputValue.trim();
+    const imagesToSend = [...attachedImages];
     setInputValue('');
+    setAttachedImages([]); // Clear images after sending
     setCommandStatus(null);
 
-    // Add user message to chat
+    // Add user message to chat (with image previews)
     addChatMessage({
       role: 'user',
-      content: userMessage
+      content: userMessage || '(Image attached)',
+      images: imagesToSend.map(img => img.preview)
     });
 
     // Send all requests to backend - AI determines intent
@@ -356,9 +359,15 @@ const WorkspaceAIPanel = () => {
         currentConfiguration
       );
 
+      // Prepare images for API (base64 format)
+      const imagesForApi = imagesToSend.length > 0 ? imagesToSend.map(img => ({
+        base64: img.base64,
+        type: img.type
+      })) : undefined;
+
       // Use Smart Chat (RAG + learned examples + real-time data)
       const response = await apiClient.post('ai/smart-chat', {
-        message: userMessage,
+        message: userMessage || 'Please analyze this image.',
         context: selectedPageType,
         history: chatMessages.slice(-10).map(m => ({ role: m.role, content: m.content })),
         capabilities: [
@@ -369,7 +378,8 @@ const WorkspaceAIPanel = () => {
         storeId: storeId,
         modelId: selectedModel,
         serviceKey: currentModel.serviceKey,
-        slotContext // Pass current layout info
+        slotContext, // Pass current layout info
+        images: imagesForApi // Pass images for vision support
       });
 
       // Check if this is a plugin confirmation request from backend
@@ -658,6 +668,19 @@ const WorkspaceAIPanel = () => {
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                     )}
                   >
+                    {/* Display attached images */}
+                    {message.images && message.images.length > 0 && (
+                      <div className="flex gap-1.5 mb-2 flex-wrap">
+                        {message.images.map((imgSrc, idx) => (
+                          <img
+                            key={idx}
+                            src={imgSrc}
+                            alt={`Attached ${idx + 1}`}
+                            className="max-w-[100px] max-h-[100px] object-cover rounded border border-blue-300"
+                          />
+                        ))}
+                      </div>
+                    )}
                     <p className="whitespace-pre-wrap">{message.content}</p>
 
                     {/* Credits Used */}
@@ -812,6 +835,30 @@ const WorkspaceAIPanel = () => {
 
       {/* Input Area */}
       <div className="p-4 border-t bg-white dark:bg-gray-800 shrink-0">
+        {/* Image Previews */}
+        {attachedImages.length > 0 && (
+          <div className="flex gap-2 mb-2 flex-wrap">
+            {attachedImages.map((img, index) => (
+              <div key={index} className="relative group">
+                <img
+                  src={img.preview}
+                  alt={`Attached ${index + 1}`}
+                  className="w-12 h-12 object-cover rounded border border-gray-300 dark:border-gray-600"
+                />
+                <button
+                  onClick={() => {
+                    URL.revokeObjectURL(img.preview);
+                    setAttachedImages(prev => prev.filter((_, i) => i !== index));
+                  }}
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="relative">
           <Textarea
             ref={inputRef}
@@ -902,13 +949,30 @@ const WorkspaceAIPanel = () => {
                 ref={fileInputRef}
                 type="file"
                 className="hidden"
-                accept="image/*,.pdf,.doc,.docx,.txt,.json"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    // TODO: Handle file upload
-                    console.log('File selected:', file.name);
-                  }
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                multiple
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (!files.length) return;
+
+                  // Limit to 4 images
+                  const maxImages = 4;
+                  const remainingSlots = maxImages - attachedImages.length;
+                  const filesToProcess = files.slice(0, remainingSlots);
+
+                  const newImages = await Promise.all(
+                    filesToProcess.map(async (file) => {
+                      const preview = URL.createObjectURL(file);
+                      const base64 = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(file);
+                      });
+                      return { file, preview, base64, type: file.type };
+                    })
+                  );
+
+                  setAttachedImages(prev => [...prev, ...newImages]);
                   e.target.value = ''; // Reset to allow same file selection
                 }}
               />
@@ -917,7 +981,7 @@ const WorkspaceAIPanel = () => {
             {/* Right side: Submit Button */}
             <button
               onClick={handleSend}
-              disabled={!inputValue.trim() || isProcessingAi}
+              disabled={(!inputValue.trim() && attachedImages.length === 0) || isProcessingAi}
               className={cn(
                 "p-1.5 rounded-md transition-all",
                 "bg-blue-600 hover:bg-blue-700 text-white",
