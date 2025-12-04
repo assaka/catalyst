@@ -46,14 +46,10 @@ function generateToken(user, storeId, options = {}) {
     throw new Error('Invalid user object for token generation');
   }
 
-  if (!storeId) {
-    throw new Error('Store ID is required for token generation');
-  }
-
+  // storeId can be null for users without stores (onboarding flow)
   const payload = {
     // User identification
     userId: user.id,
-    storeId: storeId,
     email: user.email,
 
     // User attributes
@@ -68,6 +64,11 @@ function generateToken(user, storeId, options = {}) {
     type: 'access',
     iat: Math.floor(Date.now() / 1000)
   };
+
+  // Only include storeId if it exists (null for onboarding users)
+  if (storeId) {
+    payload.storeId = storeId;
+  }
 
   const tokenOptions = {
     algorithm: JWT_ALGORITHM,
@@ -93,11 +94,15 @@ function generateRefreshToken(user, storeId) {
 
   const payload = {
     userId: user.id,
-    storeId: storeId,
     email: user.email,
     type: 'refresh',
     iat: Math.floor(Date.now() / 1000)
   };
+
+  // Only include storeId if it exists (null for onboarding users)
+  if (storeId) {
+    payload.storeId = storeId;
+  }
 
   const tokenOptions = {
     algorithm: JWT_ALGORITHM,
