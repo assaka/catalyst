@@ -495,83 +495,75 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       case 'add_to_category': {
         const { product, category } = toolCall;
 
-        // Find product by name (search in translations) or SKU
-        const { data: products } = await db
+        // Find product by name in translations first (most common search)
+        const { data: byName } = await db
           .from('product_translations')
-          .select('product_id, name, products!inner(id, sku)')
+          .select('product_id, name')
           .ilike('name', `%${product}%`)
           .limit(1);
 
-        let productRecord = products?.[0];
+        let productId = byName?.[0]?.product_id;
+        let productName = byName?.[0]?.name;
 
         // If not found by name, try SKU
-        if (!productRecord) {
-          const { data: productsBySku } = await db
+        if (!productId) {
+          const { data: bySku } = await db
             .from('products')
             .select('id, sku')
             .ilike('sku', `%${product}%`)
             .limit(1);
 
-          if (productsBySku?.[0]) {
+          if (bySku?.[0]) {
+            productId = bySku[0].id;
+            // Get the name from translations
             const { data: translation } = await db
               .from('product_translations')
               .select('name')
-              .eq('product_id', productsBySku[0].id)
+              .eq('product_id', productId)
               .eq('language_code', 'en')
-              .single();
-
-            productRecord = {
-              product_id: productsBySku[0].id,
-              name: translation?.name || productsBySku[0].sku,
-              products: productsBySku[0]
-            };
+              .maybeSingle();
+            productName = translation?.name || bySku[0].sku;
           }
         }
 
-        if (!productRecord) {
+        if (!productId) {
           return {
             success: false,
             message: `I couldn't find a product matching "${product}". Can you check the name or SKU?`
           };
         }
 
-        const productId = productRecord.product_id || productRecord.products?.id;
-        const productName = productRecord.name;
-
-        // Find category by name or slug
-        const { data: categories } = await db
+        // Find category by name in translations first
+        const { data: catByName } = await db
           .from('category_translations')
-          .select('category_id, name, categories!inner(id, slug)')
+          .select('category_id, name')
           .ilike('name', `%${category}%`)
           .limit(1);
 
-        let categoryRecord = categories?.[0];
+        let categoryId = catByName?.[0]?.category_id;
+        let categoryName = catByName?.[0]?.name;
 
         // If not found by name, try slug
-        if (!categoryRecord) {
-          const { data: categoriesBySlug } = await db
+        if (!categoryId) {
+          const { data: catBySlug } = await db
             .from('categories')
             .select('id, slug')
             .ilike('slug', `%${category}%`)
             .limit(1);
 
-          if (categoriesBySlug?.[0]) {
+          if (catBySlug?.[0]) {
+            categoryId = catBySlug[0].id;
             const { data: translation } = await db
               .from('category_translations')
               .select('name')
-              .eq('category_id', categoriesBySlug[0].id)
+              .eq('category_id', categoryId)
               .eq('language_code', 'en')
-              .single();
-
-            categoryRecord = {
-              category_id: categoriesBySlug[0].id,
-              name: translation?.name || categoriesBySlug[0].slug,
-              categories: categoriesBySlug[0]
-            };
+              .maybeSingle();
+            categoryName = translation?.name || catBySlug[0].slug;
           }
         }
 
-        if (!categoryRecord) {
+        if (!categoryId) {
           // Category doesn't exist - ask to create
           return {
             success: false,
@@ -586,9 +578,6 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
             }
           };
         }
-
-        const categoryId = categoryRecord.category_id || categoryRecord.categories?.id;
-        const categoryName = categoryRecord.name;
 
         // Get current category_ids from product (uses JSONB array, not junction table)
         const { data: productData } = await db
@@ -1088,27 +1077,30 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       case 'update_product': {
         const { product, updates } = toolCall;
 
-        // Find product
-        const { data: products } = await db
-          .from('products')
-          .select('id, sku')
-          .or(`sku.ilike.%${product}%`)
+        // Find product by name first (most common search)
+        const { data: byName } = await db
+          .from('product_translations')
+          .select('product_id, name')
+          .ilike('name', `%${product}%`)
           .limit(1);
 
-        let productRecord = products?.[0];
+        let productId = byName?.[0]?.product_id;
+        let productName = byName?.[0]?.name;
 
-        if (!productRecord) {
-          const { data: byName } = await db
-            .from('product_translations')
-            .select('product_id, name')
-            .ilike('name', `%${product}%`)
+        // If not found by name, try SKU
+        if (!productId) {
+          const { data: bySku } = await db
+            .from('products')
+            .select('id, sku')
+            .ilike('sku', `%${product}%`)
             .limit(1);
-          if (byName?.[0]) {
-            productRecord = { id: byName[0].product_id, name: byName[0].name };
+          if (bySku?.[0]) {
+            productId = bySku[0].id;
+            productName = bySku[0].sku;
           }
         }
 
-        if (!productRecord) {
+        if (!productId) {
           return { success: false, message: `Product "${product}" not found.` };
         }
 
@@ -1116,14 +1108,14 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
         const { error } = await db
           .from('products')
           .update(updates)
-          .eq('id', productRecord.id);
+          .eq('id', productId);
 
         if (error) throw error;
 
         return {
           success: true,
-          message: `Updated product "${productRecord.name || productRecord.sku}": ${Object.entries(updates).map(([k, v]) => `${k}=${v}`).join(', ')}`,
-          data: { productId: productRecord.id, updates }
+          message: `Updated product "${productName}": ${Object.entries(updates).map(([k, v]) => `${k}=${v}`).join(', ')}`,
+          data: { productId, updates }
         };
       }
 
@@ -1133,36 +1125,37 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       case 'delete_product': {
         const { product } = toolCall;
 
-        // Find product
-        const { data: products } = await db
-          .from('products')
-          .select('id, sku')
-          .or(`sku.ilike.%${product}%`)
+        // Find product by name first (most common search)
+        const { data: byName } = await db
+          .from('product_translations')
+          .select('product_id, name')
+          .ilike('name', `%${product}%`)
           .limit(1);
 
-        let productRecord = products?.[0];
-        let productName = productRecord?.sku;
+        let productId = byName?.[0]?.product_id;
+        let productName = byName?.[0]?.name;
 
-        if (!productRecord) {
-          const { data: byName } = await db
-            .from('product_translations')
-            .select('product_id, name')
-            .ilike('name', `%${product}%`)
+        // If not found by name, try SKU
+        if (!productId) {
+          const { data: bySku } = await db
+            .from('products')
+            .select('id, sku')
+            .ilike('sku', `%${product}%`)
             .limit(1);
-          if (byName?.[0]) {
-            productRecord = { id: byName[0].product_id };
-            productName = byName[0].name;
+          if (bySku?.[0]) {
+            productId = bySku[0].id;
+            productName = bySku[0].sku;
           }
         }
 
-        if (!productRecord) {
+        if (!productId) {
           return { success: false, message: `Product "${product}" not found.` };
         }
 
         // Delete related data then product (no product_categories - uses category_ids JSONB on products)
-        await db.from('product_translations').delete().eq('product_id', productRecord.id);
-        await db.from('product_attribute_values').delete().eq('product_id', productRecord.id);
-        const { error } = await db.from('products').delete().eq('id', productRecord.id);
+        await db.from('product_translations').delete().eq('product_id', productId);
+        await db.from('product_attribute_values').delete().eq('product_id', productId);
+        const { error } = await db.from('products').delete().eq('id', productId);
 
         if (error) throw error;
 
