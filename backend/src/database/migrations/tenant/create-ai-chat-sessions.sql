@@ -11,8 +11,18 @@ CREATE TABLE IF NOT EXISTS ai_chat_sessions (
   data JSONB DEFAULT '{}', -- Response data (type, entity, etc.)
   credits_used INTEGER DEFAULT 0,
   is_error BOOLEAN DEFAULT false,
+  visible BOOLEAN DEFAULT true, -- false when user clears chat
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add visible column if it doesn't exist (for existing tables)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name = 'ai_chat_sessions' AND column_name = 'visible') THEN
+    ALTER TABLE ai_chat_sessions ADD COLUMN visible BOOLEAN DEFAULT true;
+  END IF;
+END $$;
 
 -- Indexes for fast queries
 CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_user ON ai_chat_sessions(user_id, created_at DESC);

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { useLocation } from 'react-router-dom';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import slotConfigurationService from '@/services/slotConfigurationService';
+import apiClient from '@/api/client';
 
 /**
  * AIWorkspaceContext - Shared state management for the AI Workspace
@@ -253,11 +254,21 @@ export const AIWorkspaceProvider = ({ children }) => {
   }, []);
 
   /**
-   * Clear chat history
+   * Clear chat history (both local state and backend)
    */
-  const clearChatHistory = useCallback(() => {
+  const clearChatHistory = useCallback(async () => {
     setChatMessages([]);
-  }, []);
+    const storeId = getSelectedStoreId();
+    if (storeId) {
+      try {
+        await apiClient.delete('/ai/chat/history', {
+          params: { store_id: storeId }
+        });
+      } catch (error) {
+        console.error('[AIWorkspace] Failed to clear chat history:', error);
+      }
+    }
+  }, [getSelectedStoreId]);
 
   /**
    * Open plugin for editing

@@ -5888,6 +5888,7 @@ router.get('/chat/history', authMiddleware, async (req, res) => {
       .from('ai_chat_sessions')
       .select('id, role, content, intent, data, credits_used, is_error, created_at')
       .eq('user_id', userId)
+      .eq('visible', true)
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -5952,6 +5953,40 @@ router.post('/chat/history', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('[AI Chat History] Error:', error);
     res.json({ success: true }); // Don't fail the main flow
+  }
+});
+
+/**
+ * DELETE /api/ai/chat/history
+ * Clear chat history by setting visible = false (soft delete)
+ */
+router.delete('/chat/history', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const storeId = req.headers['x-store-id'] || req.query.store_id;
+
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: 'store_id is required' });
+    }
+
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+    const { error } = await tenantDb
+      .from('ai_chat_sessions')
+      .update({ visible: false })
+      .eq('user_id', userId)
+      .eq('visible', true);
+
+    if (error) {
+      console.error('[AI Chat History] Error clearing:', error);
+      return res.status(500).json({ success: false, message: 'Failed to clear chat history' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[AI Chat History] Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to clear chat history' });
   }
 });
 

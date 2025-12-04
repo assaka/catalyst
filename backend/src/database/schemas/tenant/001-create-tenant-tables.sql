@@ -799,6 +799,7 @@ CREATE TABLE IF NOT EXISTS ai_chat_sessions (
     data JSONB DEFAULT '{}',
     credits_used INTEGER DEFAULT 0,
     is_error BOOLEAN DEFAULT false,
+    visible BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -4250,8 +4251,18 @@ CREATE TABLE IF NOT EXISTS ai_chat_sessions (
   data JSONB DEFAULT '{}',
   credits_used INTEGER DEFAULT 0,
   is_error BOOLEAN DEFAULT false,
+  visible BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add visible column if it doesn't exist (for existing tables)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name = 'ai_chat_sessions' AND column_name = 'visible') THEN
+    ALTER TABLE ai_chat_sessions ADD COLUMN visible BOOLEAN DEFAULT true;
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_user ON ai_chat_sessions(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_session ON ai_chat_sessions(session_id, created_at);
