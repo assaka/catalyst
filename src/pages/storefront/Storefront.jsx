@@ -1,28 +1,25 @@
 import React from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, useLocation } from "react-router-dom";
 import Homepage from "./Homepage";
 import Category from "./Category";
 import Landing from "./Landing";
-import { isPlatformDomain } from "@/utils/domainConfig";
+import { shouldSkipStoreContext } from "@/utils/domainConfig";
 
 /**
  * Storefront - Router component that determines whether to show Homepage or Category
  * based on the presence of a category slug in the URL
  *
- * On platform domains (dainostore.com, daino.ai, daino.store) shows Landing page
- * On custom store domains shows Homepage/Category
+ * Uses centralized shouldSkipStoreContext to determine if Landing should be shown
  */
 export default function Storefront() {
   const { categorySlug: routeCategorySlug } = useParams();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
 
   const categorySlug = searchParams.get('category') || routeCategorySlug;
 
-  // Check if we're on a platform domain (not a custom store domain)
-  const isPlatform = isPlatformDomain();
-
-  // On platform domains, show the Landing page (unless there's a category)
-  if (isPlatform && !categorySlug) {
+  // Use centralized config - show Landing if store context should be skipped
+  if (shouldSkipStoreContext(location.pathname) && !categorySlug) {
     return <Landing />;
   }
 

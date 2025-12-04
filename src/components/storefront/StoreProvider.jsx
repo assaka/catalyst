@@ -17,7 +17,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useLocation } from 'react-router-dom';
 import { TranslationProvider } from '@/contexts/TranslationContext';
 import { storefrontApiClient } from '@/api/storefront-entities';
-import { isPlatformDomain } from '@/utils/domainConfig';
+import { shouldSkipStoreContext } from '@/utils/domainConfig';
 
 // New utilities and hooks
 import { useStoreBootstrap, useStoreSlugById, determineStoreSlug } from '@/hooks/useStoreBootstrap';
@@ -35,16 +35,9 @@ export { cachedApiCall, clearCache, clearCacheKeys } from '@/utils/cacheUtils';
 export const StoreProvider = ({ children }) => {
   const location = useLocation();
 
-  // Skip StoreProvider initialization for auth and onboarding pages
-  const isAuthPage = location.pathname === '/admin/auth' || location.pathname === '/auth';
-  const isOnboardingPage = location.pathname === '/admin/store-onboarding' || location.pathname === '/admin/onboarding';
-
-  // Check if we're on a platform domain homepage - ALWAYS show Landing, ignore localStorage
-  const isPlatform = isPlatformDomain();
-  const isPlatformHomepage = isPlatform && location.pathname === '/';
-
-  if (isAuthPage || isOnboardingPage || isPlatformHomepage) {
-    // Return children without store context
+  // Use centralized config to decide if we should skip store context
+  // This is the SINGLE SOURCE OF TRUTH - see domainConfig.js
+  if (shouldSkipStoreContext(location.pathname)) {
     return <>{children}</>;
   }
 

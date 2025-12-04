@@ -18,7 +18,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { storefrontApiClient, StorefrontStore } from '@/api/storefront-entities';
-import { isPlatformDomain, isCustomDomain } from '@/utils/domainConfig';
+import { isPlatformDomain, isCustomDomain, shouldSkipStoreContext } from '@/utils/domainConfig';
 
 /**
  * Helper hook to fetch store slug when we only have ID
@@ -109,6 +109,11 @@ export function determineStoreSlug(location) {
   const hostname = window.location.hostname;
   const path = location?.pathname || '';
 
+  // Use centralized config - pages that skip store context return null
+  if (shouldSkipStoreContext(path, hostname)) {
+    return null;
+  }
+
   // Check for public URL pattern: /public/:slug
   const publicUrlMatch = path.match(/^\/public\/([^\/]+)/);
   if (publicUrlMatch) {
@@ -120,24 +125,10 @@ export function determineStoreSlug(location) {
     return hostname;
   }
 
-  // Check if we're on a platform domain BEFORE localStorage fallback
-  // Platform domain homepage should show Landing, not a saved store
-  const isPlatform = isPlatformDomain(hostname);
-
-  // On platform domain root path, show Landing page (no store context)
-  if (isPlatform && (path === '/' || path === '')) {
-    return null; // Storefront.jsx will show Landing page
-  }
-
-  // Fallback to localStorage (for non-root paths or non-platform domains)
+  // Fallback to localStorage
   const savedSlug = localStorage.getItem('selectedStoreSlug');
   if (savedSlug) {
     return savedSlug;
-  }
-
-  // Platform domain non-root path without savedSlug - still show Landing
-  if (isPlatform) {
-    return null;
   }
 
   // No store found - redirect to Landing page

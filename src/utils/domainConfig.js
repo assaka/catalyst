@@ -86,3 +86,48 @@ export function getAllPlatformDomainVariants() {
   });
   return variants;
 }
+
+// ============================================================================
+// Store Context Configuration - Single Source of Truth
+// ============================================================================
+
+/**
+ * Paths that should NEVER load store context from localStorage
+ * Add new paths here when they should render without store data
+ */
+export const NO_STORE_CONTEXT_PATHS = [
+  '/admin/auth',
+  '/auth',
+  '/admin/store-onboarding',
+  '/admin/onboarding',
+  '/landing',
+  '/Landing'
+];
+
+/**
+ * Check if the current page should skip loading store context
+ * This is the SINGLE SOURCE OF TRUTH for this decision.
+ *
+ * Use this in:
+ * - StoreProvider (to skip store initialization)
+ * - Layout (to skip StoreProvider wrapper)
+ * - Any component that needs to know if store context is available
+ *
+ * @param {string} pathname - Current path (e.g., location.pathname)
+ * @param {string} hostname - Optional hostname, defaults to window.location.hostname
+ * @returns {boolean} - true if store context should be skipped
+ */
+export function shouldSkipStoreContext(pathname, hostname = window.location.hostname) {
+  // Check explicit paths that never need store context
+  if (NO_STORE_CONTEXT_PATHS.includes(pathname)) {
+    return true;
+  }
+
+  // Platform domain homepage shows Landing page (no store context)
+  const isPlatform = isPlatformDomain(hostname);
+  if (isPlatform && pathname === '/') {
+    return true;
+  }
+
+  return false;
+}

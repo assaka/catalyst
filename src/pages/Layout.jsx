@@ -8,7 +8,7 @@ import { User, Auth } from "@/api/entities";
 import apiClient from "@/api/client";
 import { Store } from "@/api/entities";
 import { hasBothRolesLoggedIn, handleLogout } from "@/utils/auth";
-import { isPlatformDomain } from "@/utils/domainConfig";
+import { shouldSkipStoreContext } from "@/utils/domainConfig";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
 import useRoleProtection from '@/hooks/useRoleProtection';
@@ -349,17 +349,19 @@ function LayoutInner({ children, currentPageName }) {
   const pluginPages = ['Plugins']; // Pages that use the plugins mode
   const aiWorkspacePages = ['AIWorkspace']; // Pages that use the AI Workspace mode (full-screen editor)
 
-  // Check if we're on a platform domain homepage - ALWAYS show Landing, ignore localStorage
-  const isPlatform = isPlatformDomain();
-  const isPlatformLanding = isPlatform && location.pathname === '/';
+  // Use centralized config to check for pages that skip store context
+  const skipStoreContext = shouldSkipStoreContext(location.pathname);
 
-  const isPublicPage = publicPages.includes(currentPageName) || isPlatformLanding;
-  const isStorefrontPage = storefrontPages.includes(currentPageName) && !isPlatformLanding;
+  const isPublicPage = publicPages.includes(currentPageName) || skipStoreContext;
+  const isStorefrontPage = storefrontPages.includes(currentPageName) && !skipStoreContext;
   const isCustomerDashboard = currentPageName === 'CustomerDashboard';
   const isEditorPage = editorPages.includes(currentPageName) || location.pathname.startsWith('/editor/');
   const isPluginPage = pluginPages.includes(currentPageName) || location.pathname.startsWith('/plugins');
   const isAIWorkspacePage = aiWorkspacePages.includes(currentPageName) || location.pathname.startsWith('/ai-workspace');
-  const isOnboardingPage = currentPageName === 'StoreOnboarding' || location.pathname === '/admin/store-onboarding' || location.pathname === '/admin/onboarding';
+  // Onboarding check - included in skipStoreContext but we need this for layout decisions
+  const isOnboardingPage = currentPageName === 'StoreOnboarding' ||
+                           location.pathname === '/admin/store-onboarding' ||
+                           location.pathname === '/admin/onboarding';
   const isAdminPage = !isPublicPage && !isStorefrontPage && !isCustomerDashboard && !isEditorPage && !isPluginPage && !isAIWorkspacePage && !isOnboardingPage;
 
   // Determine current mode for ModeHeader
@@ -382,8 +384,9 @@ function LayoutInner({ children, currentPageName }) {
       );
   }
 
-  // Onboarding page - render without StoreProvider to avoid loading store from localStorage
-  if (isOnboardingPage) {
+  // Pages that skip store context - render without StoreProvider wrapper
+  // This uses the centralized shouldSkipStoreContext from domainConfig.js
+  if (skipStoreContext) {
     return (
       <div className="min-h-screen bg-gray-50">
         {children}
