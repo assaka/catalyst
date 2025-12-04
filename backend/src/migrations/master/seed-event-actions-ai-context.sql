@@ -1070,11 +1070,13 @@ $PATTERN$,
 -- 5. AI ENTITY DEFINITION for Event Actions
 -- =====================================================
 INSERT INTO ai_entity_definitions (
-    entity_name, table_name, primary_key, tenant_column,
+    entity_name, display_name, description, table_name, primary_key, tenant_column,
     supported_operations, fields, example_prompts,
     api_endpoint, requires_confirmation, is_destructive
 ) VALUES (
     'event_triggers',
+    'Event Triggers',
+    'Database-driven triggers that fire when storefront events occur (cart view, checkout start, exit intent). Configure conditions and targeting rules.',
     'plugin_data',
     'id',
     'plugin_id',
@@ -1101,15 +1103,19 @@ INSERT INTO ai_entity_definitions (
     false,
     false
 ) ON CONFLICT (entity_name) DO UPDATE SET
+    display_name = EXCLUDED.display_name,
+    description = EXCLUDED.description,
     example_prompts = EXCLUDED.example_prompts,
     fields = EXCLUDED.fields;
 
 INSERT INTO ai_entity_definitions (
-    entity_name, table_name, primary_key, tenant_column,
+    entity_name, display_name, description, table_name, primary_key, tenant_column,
     supported_operations, fields, example_prompts,
     api_endpoint, requires_confirmation, is_destructive
 ) VALUES (
     'event_actions',
+    'Event Actions',
+    'Actions executed when triggers fire. Supports show_modal, apply_coupon, show_notification, and redirect action types.',
     'plugin_data',
     'id',
     'plugin_id',
@@ -1132,6 +1138,8 @@ INSERT INTO ai_entity_definitions (
     false,
     false
 ) ON CONFLICT (entity_name) DO UPDATE SET
+    display_name = EXCLUDED.display_name,
+    description = EXCLUDED.description,
     example_prompts = EXCLUDED.example_prompts,
     fields = EXCLUDED.fields;
 
