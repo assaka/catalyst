@@ -1094,6 +1094,15 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             
             // For store owners, check if they have active stores and redirect accordingly
             console.log('✅ Store owner login successful, checking for active stores...');
+
+            // Check if backend flagged this user as needing onboarding
+            const requiresOnboarding = actualResponse.data?.requiresOnboarding;
+            if (requiresOnboarding) {
+              console.log('🔍 User requires onboarding (no stores), redirecting...');
+              navigate('/admin/onboarding');
+              return;
+            }
+
             setTimeout(async () => {
               try {
                 // Get user data which includes store_id from JWT token

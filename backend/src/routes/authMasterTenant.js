@@ -273,12 +273,8 @@ router.post('/login', async (req, res) => {
           // User is a team member
           storeId = teamMemberships[0].store_id;
         } else {
-          // No owned stores and no team memberships
-          return res.status(404).json({
-            success: false,
-            error: 'No store found for user',
-            code: 'NO_STORE'
-          });
+          // No owned stores and no team memberships - still return token for onboarding
+          storeId = null;
         }
       }
     }
@@ -314,7 +310,8 @@ router.post('/login', async (req, res) => {
         refreshToken: tokens.refreshToken,
         expiresIn: '7 days', // Match old format
         sessionRole: user.role, // Match old format
-        sessionContext: user.role === 'customer' ? 'storefront' : 'dashboard' // Match old format
+        sessionContext: user.role === 'customer' ? 'storefront' : 'dashboard', // Match old format
+        requiresOnboarding: storeId === null // Flag for frontend to redirect to onboarding
       }
     });
   } catch (error) {
