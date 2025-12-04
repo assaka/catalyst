@@ -129,6 +129,7 @@ const emailTemplatesRoutes = require('./routes/email-templates');
 const pdfTemplatesRoutes = require('./routes/pdf-templates');
 const brevoOAuthRoutes = require('./routes/brevo-oauth');
 const storefrontsRoutes = require('./routes/storefronts');
+const eventActionsRoutes = require('./routes/event-actions'); // AI-driven event actions (modals, coupons, notifications)
 
 // Import usage tracking middleware
 const {
@@ -958,6 +959,7 @@ app.use('/api/ai', aiWorkspaceRoutes);
 app.use('/api/ai', aiPluginAssistantRoutes); // AI Plugin Assistant for no-code and developer modes
 app.use('/api/ai-models', aiModelsRoutes); // AI models configuration (public endpoint)
 app.use('/api/ai-learning', aiLearningRoutes); // AI training, feedback, and documentation management
+app.use('/api/event-actions', eventActionsRoutes); // AI-driven event actions (modals, coupons, notifications)
 app.use('/api/plugins/ai', pluginAIRoutes); // Claude API integration for plugin generation
 app.use('/api/customer-activity', customerActivityRoutes);
 app.use('/api/ab-testing', abTestingRoutes);
