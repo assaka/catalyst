@@ -381,7 +381,16 @@ function LayoutInner({ children, currentPageName }) {
         </StoreProvider>
       );
   }
-  
+
+  // Onboarding page - render without StoreProvider to avoid loading store from localStorage
+  if (isOnboardingPage) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {children}
+      </div>
+    );
+  }
+
   // Role-based access control is now handled by RoleProtectedRoute at the route level
 
   // Handle admin, editor, plugin, AI Studio, and AI Workspace pages
