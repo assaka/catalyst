@@ -1343,6 +1343,17 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         status: error.status,
         data: error.data
       });
+
+      // Check if this is a NO_STORE error - redirect to onboarding instead of showing error
+      const isNoStoreError = error.data?.code === 'NO_STORE' ||
+                             error.message?.includes('No store found');
+
+      if (isNoStoreError && role !== 'customer') {
+        console.log('🔍 No store found for user, redirecting to onboarding...');
+        navigate('/admin/onboarding');
+        return;
+      }
+
       const defaultMessage = isLogin ? t('common.login_failed') : t('customer_auth.error.registration_failed');
       setError(error.message || defaultMessage);
     } finally {
