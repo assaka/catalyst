@@ -24,7 +24,9 @@ import {
   ChevronDown,
   Paperclip,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  X,
+  Image
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import aiWorkspaceSlotProcessor from '@/services/aiWorkspaceSlotProcessor';
@@ -89,6 +91,7 @@ const WorkspaceAIPanel = () => {
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [attachedImages, setAttachedImages] = useState([]); // [{file, preview, base64, type}]
 
   // Get current model object
   const currentModel = AI_MODELS.find(m => m.id === selectedModel) || AI_MODELS[0];

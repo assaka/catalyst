@@ -602,7 +602,472 @@ $PATTERN$,
 ) ON CONFLICT DO NOTHING;
 
 -- =====================================================
--- 4. AI ENTITY DEFINITION for Event Actions
+-- 4. MORE CODE PATTERNS - ALL FILE TYPES
+-- =====================================================
+
+-- Pattern: Hook - Data Transformation (plugin_hooks)
+INSERT INTO ai_code_patterns (name, pattern_type, description, code, language, framework, tags, is_active) VALUES (
+    'Price Discount Hook',
+    'hook',
+    'Hook that transforms product price data - stored in plugin_hooks table',
+    $PATTERN$
+// hooks/product_price.js - Stored in plugin_hooks table
+// hook_name: 'product.price', hook_type: 'filter', priority: 10
+function applyEventDiscount(price, product, context) {
+    // Check if there's an active coupon from event actions
+    const appliedCoupon = window.__eventActionAppliedCoupon;
+
+    if (!appliedCoupon) return price;
+
+    if (appliedCoupon.discount_type === 'percentage') {
+        return price * (1 - appliedCoupon.discount_value / 100);
+    }
+
+    if (appliedCoupon.discount_type === 'fixed') {
+        return Math.max(0, price - appliedCoupon.discount_value);
+    }
+
+    return price;
+}
+$PATTERN$,
+    'javascript',
+    'react',
+    '["hook", "filter", "price", "discount", "transformation"]'::jsonb,
+    true
+) ON CONFLICT DO NOTHING;
+
+-- Pattern: Entity Definition (plugin_entities)
+INSERT INTO ai_code_patterns (name, pattern_type, description, code, language, framework, tags, is_active) VALUES (
+    'Database Entity Schema',
+    'entity',
+    'Entity definition for creating database tables - stored in plugin_entities table',
+    $PATTERN$
+// entities/EventLog.json - Stored in plugin_entities table
+// This creates a database table for the plugin
+{
+    "entity_name": "EventLog",
+    "table_name": "plugin_event_logs",
+    "description": "Tracks all event action displays and conversions",
+    "schema_definition": {
+        "columns": [
+            { "name": "id", "type": "UUID", "primaryKey": true, "default": "gen_random_uuid()" },
+            { "name": "trigger_id", "type": "VARCHAR(100)", "nullable": false },
+            { "name": "action_id", "type": "VARCHAR(100)", "nullable": true },
+            { "name": "session_id", "type": "VARCHAR(255)", "nullable": true },
+            { "name": "user_id", "type": "UUID", "nullable": true },
+            { "name": "event_type", "type": "VARCHAR(100)", "nullable": false },
+            { "name": "action_result", "type": "VARCHAR(50)", "nullable": true, "comment": "displayed, clicked, dismissed, converted" },
+            { "name": "converted", "type": "BOOLEAN", "default": false },
+            { "name": "conversion_value", "type": "DECIMAL(10,2)", "nullable": true },
+            { "name": "page_url", "type": "TEXT", "nullable": true },
+            { "name": "created_at", "type": "TIMESTAMP", "default": "NOW()" }
+        ],
+        "indexes": [
+            { "name": "idx_event_logs_trigger", "columns": ["trigger_id"] },
+            { "name": "idx_event_logs_session", "columns": ["session_id"] },
+            { "name": "idx_event_logs_created", "columns": ["created_at"], "order": "DESC" }
+        ]
+    }
+}
+$PATTERN$,
+    'json',
+    'postgresql',
+    '["entity", "database", "table", "schema", "migration"]'::jsonb,
+    true
+) ON CONFLICT DO NOTHING;
+
+-- Pattern: Component (plugin_scripts - components folder)
+INSERT INTO ai_code_patterns (name, pattern_type, description, code, language, framework, tags, is_active) VALUES (
+    'React Component for Plugin',
+    'component',
+    'Reusable React component - stored in plugin_scripts with scope frontend',
+    $PATTERN$
+// components/CouponBadge.jsx - Stored in plugin_scripts
+// file_name: 'components/CouponBadge.jsx', scope: 'frontend', script_type: 'js'
+
+function CouponBadge({ code, discount, type }) {
+    const [copied, setCopied] = React.useState(false);
+
+    const copyCode = () => {
+        navigator.clipboard.writeText(code);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const discountText = type === 'percentage' ? discount + '% OFF' : '$' + discount + ' OFF';
+
+    return React.createElement('div', {
+        className: 'inline-flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full cursor-pointer',
+        onClick: copyCode
+    },
+        React.createElement('span', { className: 'font-mono font-bold' }, code),
+        React.createElement('span', { className: 'text-sm' }, discountText),
+        copied && React.createElement('span', { className: 'text-xs' }, 'Copied!')
+    );
+}
+
+// Export for use in other plugin files
+window.CouponBadge = CouponBadge;
+$PATTERN$,
+    'javascript',
+    'react',
+    '["component", "react", "ui", "badge", "coupon"]'::jsonb,
+    true
+) ON CONFLICT DO NOTHING;
+
+-- Pattern: Utility Function (plugin_scripts - utils folder)
+INSERT INTO ai_code_patterns (name, pattern_type, description, code, language, framework, tags, is_active) VALUES (
+    'Utility Functions',
+    'utility',
+    'Helper utility functions - stored in plugin_scripts with scope frontend',
+    $PATTERN$
+// utils/eventHelpers.js - Stored in plugin_scripts
+// file_name: 'utils/eventHelpers.js', scope: 'frontend', script_type: 'js'
+
+// Session ID management
+function getSessionId() {
+    let sessionId = sessionStorage.getItem('event_session_id');
+    if (!sessionId) {
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('event_session_id', sessionId);
+    }
+    return sessionId;
+}
+
+// Visitor ID (persists across sessions)
+function getVisitorId() {
+    let visitorId = localStorage.getItem('event_visitor_id');
+    if (!visitorId) {
+        visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('event_visitor_id', visitorId);
+    }
+    return visitorId;
+}
+
+// Condition evaluation helper
+function evaluateCondition(operator, actual, expected) {
+    switch (operator) {
+        case '==': return actual === expected;
+        case '!=': return actual !== expected;
+        case '>': return actual > expected;
+        case '<': return actual < expected;
+        case '>=': return actual >= expected;
+        case '<=': return actual <= expected;
+        case 'contains': return String(actual).includes(expected);
+        case 'in': return Array.isArray(expected) && expected.includes(actual);
+        default: return true;
+    }
+}
+
+// Export to window for plugin access
+window.EventHelpers = { getSessionId, getVisitorId, evaluateCondition };
+$PATTERN$,
+    'javascript',
+    'vanilla',
+    '["utility", "helper", "session", "visitor", "conditions"]'::jsonb,
+    true
+) ON CONFLICT DO NOTHING;
+
+-- Pattern: Service Class (plugin_scripts - services folder)
+INSERT INTO ai_code_patterns (name, pattern_type, description, code, language, framework, tags, is_active) VALUES (
+    'API Service Class',
+    'service',
+    'Service class for API calls - stored in plugin_scripts with scope frontend',
+    $PATTERN$
+// services/EventActionService.js - Stored in plugin_scripts
+// file_name: 'services/EventActionService.js', scope: 'frontend', script_type: 'js'
+
+class EventActionService {
+    constructor(pluginSlug) {
+        this.baseUrl = '/api/plugins/' + pluginSlug;
+    }
+
+    async evaluateTrigger(eventType, context) {
+        const response = await fetch(this.baseUrl + '/evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventType, context })
+        });
+        return response.json();
+    }
+
+    async logAction(triggerId, actionId, result) {
+        return fetch(this.baseUrl + '/log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                trigger_id: triggerId,
+                action_id: actionId,
+                action_result: result,
+                session_id: window.EventHelpers?.getSessionId(),
+                page_url: window.location.href
+            })
+        });
+    }
+
+    async getTriggers() {
+        const response = await fetch(this.baseUrl + '/triggers');
+        return response.json();
+    }
+
+    async createTrigger(trigger) {
+        const response = await fetch(this.baseUrl + '/triggers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trigger })
+        });
+        return response.json();
+    }
+}
+
+// Export for plugin use
+window.EventActionService = EventActionService;
+$PATTERN$,
+    'javascript',
+    'vanilla',
+    '["service", "api", "class", "fetch", "crud"]'::jsonb,
+    true
+) ON CONFLICT DO NOTHING;
+
+-- Pattern: Admin Page (plugin_admin_pages)
+INSERT INTO ai_code_patterns (name, pattern_type, description, code, language, framework, tags, is_active) VALUES (
+    'Admin Dashboard Page',
+    'admin_page',
+    'Admin panel page component - stored in plugin_admin_pages table',
+    $PATTERN$
+// admin/EventActionsDashboard.jsx - Stored in plugin_admin_pages
+// page_name: 'Event Actions Dashboard', route: '/admin/plugins/event-actions'
+
+function EventActionsDashboard({ pluginData, onSave }) {
+    const [triggers, setTriggers] = React.useState([]);
+    const [actions, setActions] = React.useState([]);
+    const [stats, setStats] = React.useState({ displays: 0, clicks: 0, conversions: 0 });
+
+    React.useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        const triggersData = await pluginData.get('triggers') || [];
+        const actionsData = await pluginData.get('actions') || [];
+        const logs = await pluginData.get('logs') || [];
+
+        setTriggers(triggersData);
+        setActions(actionsData);
+        setStats({
+            displays: logs.filter(l => l.action_result === 'displayed').length,
+            clicks: logs.filter(l => l.action_result === 'clicked').length,
+            conversions: logs.filter(l => l.converted).length
+        });
+    };
+
+    return React.createElement('div', { className: 'p-6' },
+        // Header
+        React.createElement('h1', { className: 'text-2xl font-bold mb-6' }, 'Event Actions'),
+
+        // Stats cards
+        React.createElement('div', { className: 'grid grid-cols-3 gap-4 mb-6' },
+            React.createElement('div', { className: 'bg-blue-100 p-4 rounded-lg' },
+                React.createElement('p', { className: 'text-3xl font-bold' }, stats.displays),
+                React.createElement('p', { className: 'text-sm text-gray-600' }, 'Displays')
+            ),
+            React.createElement('div', { className: 'bg-green-100 p-4 rounded-lg' },
+                React.createElement('p', { className: 'text-3xl font-bold' }, stats.clicks),
+                React.createElement('p', { className: 'text-sm text-gray-600' }, 'Clicks')
+            ),
+            React.createElement('div', { className: 'bg-purple-100 p-4 rounded-lg' },
+                React.createElement('p', { className: 'text-3xl font-bold' }, stats.conversions),
+                React.createElement('p', { className: 'text-sm text-gray-600' }, 'Conversions')
+            )
+        ),
+
+        // Triggers list
+        React.createElement('h2', { className: 'text-xl font-semibold mb-4' }, 'Triggers'),
+        React.createElement('div', { className: 'space-y-2' },
+            triggers.map(t => React.createElement('div', {
+                key: t.id,
+                className: 'flex items-center justify-between p-3 bg-white rounded border'
+            },
+                React.createElement('span', null, t.name),
+                React.createElement('span', {
+                    className: t.is_enabled ? 'text-green-600' : 'text-gray-400'
+                }, t.is_enabled ? 'Active' : 'Disabled')
+            ))
+        )
+    );
+}
+
+export default EventActionsDashboard;
+$PATTERN$,
+    'javascript',
+    'react',
+    '["admin", "dashboard", "page", "stats", "management"]'::jsonb,
+    true
+) ON CONFLICT DO NOTHING;
+
+-- Pattern: Migration SQL (plugin_migrations)
+INSERT INTO ai_code_patterns (name, pattern_type, description, code, language, framework, tags, is_active) VALUES (
+    'Database Migration',
+    'migration',
+    'SQL migration for creating plugin tables - stored in plugin_migrations table',
+    $PATTERN$
+-- migrations/20250101_create_event_logs.sql - Stored in plugin_migrations
+-- Plugin: Event Actions
+-- Version: 20250101_000000
+-- Description: Create event_logs table for tracking displays and conversions
+
+-- UP Migration
+CREATE TABLE IF NOT EXISTS plugin_event_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    plugin_id UUID NOT NULL,
+    trigger_id VARCHAR(100) NOT NULL,
+    action_id VARCHAR(100),
+    session_id VARCHAR(255),
+    user_id UUID,
+    visitor_id VARCHAR(100),
+    event_type VARCHAR(100) NOT NULL,
+    event_data JSONB DEFAULT '{}',
+    action_result VARCHAR(50),
+    converted BOOLEAN DEFAULT FALSE,
+    conversion_value DECIMAL(10,2),
+    conversion_at TIMESTAMP WITH TIME ZONE,
+    page_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_plugin_event_logs_trigger ON plugin_event_logs(trigger_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_event_logs_session ON plugin_event_logs(session_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_event_logs_created ON plugin_event_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_plugin_event_logs_plugin ON plugin_event_logs(plugin_id);
+
+-- DOWN Migration (Rollback)
+-- DROP TABLE IF EXISTS plugin_event_logs CASCADE;
+$PATTERN$,
+    'sql',
+    'postgresql',
+    '["migration", "database", "table", "create", "indexes"]'::jsonb,
+    true
+) ON CONFLICT DO NOTHING;
+
+-- Pattern: Cron Job Handler
+INSERT INTO ai_code_patterns (name, pattern_type, description, code, language, framework, tags, is_active) VALUES (
+    'Scheduled Cron Job',
+    'cron',
+    'Cron job handler for scheduled tasks - for future plugin_jobs table',
+    $PATTERN$
+// cron/cleanupOldLogs.js - Scheduled job
+// schedule: '0 0 * * *' (daily at midnight)
+// description: 'Clean up event logs older than 30 days'
+
+async function cleanupOldLogs({ db, pluginData, pluginId }) {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    try {
+        // Clean up from plugin_data logs array
+        const logs = await pluginData.get('logs') || [];
+        const recentLogs = logs.filter(log =>
+            new Date(log.created_at) > thirtyDaysAgo
+        );
+
+        const removedCount = logs.length - recentLogs.length;
+
+        if (removedCount > 0) {
+            await pluginData.set('logs', recentLogs);
+            console.log('Cleaned up ' + removedCount + ' old event logs');
+        }
+
+        // If using database table
+        if (db) {
+            const result = await db.query(
+                'DELETE FROM plugin_event_logs WHERE plugin_id = $1 AND created_at < $2',
+                [pluginId, thirtyDaysAgo]
+            );
+            console.log('Deleted ' + result.rowCount + ' records from database');
+        }
+
+        return { success: true, removed: removedCount };
+    } catch (error) {
+        console.error('Cron job failed:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+module.exports = { handler: cleanupOldLogs, schedule: '0 0 * * *' };
+$PATTERN$,
+    'javascript',
+    'node',
+    '["cron", "scheduled", "cleanup", "maintenance", "job"]'::jsonb,
+    true
+) ON CONFLICT DO NOTHING;
+
+-- Pattern: README Documentation (plugin_docs)
+INSERT INTO ai_code_patterns (name, pattern_type, description, code, language, framework, tags, is_active) VALUES (
+    'Plugin README Documentation',
+    'readme',
+    'README.md documentation - stored in plugin_docs table with doc_type readme',
+    $PATTERN$
+# Event Actions Plugin
+
+AI-driven promotional triggers that respond to storefront events.
+
+## Features
+
+- **DB-Driven Triggers**: Define when actions fire based on events and conditions
+- **Multiple Actions**: Show modals, apply coupons, notifications, redirects
+- **Session Tracking**: Control frequency per session/user
+- **Conversion Tracking**: Monitor display, click, and conversion rates
+
+## Event Types
+
+| Event | Description |
+|-------|-------------|
+| `cart.view` | User views cart page |
+| `cart.empty` | Cart has 0 items |
+| `checkout.start` | Checkout begins |
+| `exit.intent` | Mouse leaves viewport |
+| `product.view` | Product page viewed |
+
+## Configuration
+
+Triggers and actions are stored in `plugin_data`:
+
+```javascript
+// Example trigger
+{
+    id: 'trigger_empty_cart',
+    event_type: 'cart.view',
+    conditions: { cart_items_count: { operator: '==', value: 0 } },
+    show_once_per_session: true
+}
+
+// Example action
+{
+    trigger_id: 'trigger_empty_cart',
+    action_type: 'show_modal',
+    modal_config: { title: 'Your cart is empty!', ... }
+}
+```
+
+## Admin Page
+
+Navigate to `/admin/plugins/event-actions` to manage triggers and view stats.
+
+## API Endpoints
+
+- `GET /api/plugins/event-actions/triggers` - List triggers
+- `POST /api/plugins/event-actions/triggers` - Create trigger
+- `POST /api/plugins/event-actions/evaluate` - Evaluate event
+- `POST /api/plugins/event-actions/log` - Log action result
+$PATTERN$,
+    'markdown',
+    'docs',
+    '["readme", "documentation", "docs", "guide", "help"]'::jsonb,
+    true
+) ON CONFLICT DO NOTHING;
+
+-- =====================================================
+-- 5. AI ENTITY DEFINITION for Event Actions
 -- =====================================================
 INSERT INTO ai_entity_definitions (
     entity_name, table_name, primary_key, tenant_column,
