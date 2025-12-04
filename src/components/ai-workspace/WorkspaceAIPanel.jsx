@@ -20,12 +20,37 @@ import {
   Eye,
   Download,
   Maximize2,
-  Minimize2
+  Minimize2,
+  ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import aiWorkspaceSlotProcessor from '@/services/aiWorkspaceSlotProcessor';
 import apiClient from '@/api/client';
 import { User as UserEntity } from '@/api/entities';
+
+// AI Models configuration - one default per provider
+const AI_MODELS = [
+  { id: 'claude-sonnet', name: 'Claude Sonnet', provider: 'anthropic', credits: 8, icon: '🎯', serviceKey: 'ai_chat_claude_sonnet' },
+  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', credits: 3, icon: '🚀', serviceKey: 'ai_chat_gpt4o_mini' },
+  { id: 'gemini-flash', name: 'Gemini Flash', provider: 'gemini', credits: 1.5, icon: '💨', serviceKey: 'ai_chat_gemini_flash' },
+  { id: 'groq-llama', name: 'Groq Llama', provider: 'groq', credits: 1, icon: '🦙', serviceKey: 'ai_chat_groq_llama' },
+];
+
+const PROVIDER_NAMES = {
+  anthropic: 'Claude',
+  openai: 'OpenAI',
+  gemini: 'Gemini',
+  groq: 'Groq'
+};
+
+// Get saved model preference
+const getSavedModel = () => {
+  try {
+    const saved = localStorage.getItem('ai_default_model');
+    if (saved && AI_MODELS.find(m => m.id === saved)) return saved;
+  } catch (e) {}
+  return 'claude-sonnet';
+};
 
 /**
  * WorkspaceAIPanel - AI Chat panel for the workspace
@@ -55,8 +80,14 @@ const WorkspaceAIPanel = () => {
   const { getSelectedStoreId } = useStoreSelection();
   const [inputValue, setInputValue] = useState('');
   const [commandStatus, setCommandStatus] = useState(null); // 'success', 'error', null
+  const [selectedModel, setSelectedModel] = useState(getSavedModel);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
   const scrollAreaRef = useRef(null);
   const inputRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  // Get current model object
+  const currentModel = AI_MODELS.find(m => m.id === selectedModel) || AI_MODELS[0];
 
   // Plugin-related state
   const [starterTemplates, setStarterTemplates] = useState([]);

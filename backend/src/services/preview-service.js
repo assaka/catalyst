@@ -99,7 +99,7 @@ class PreviewService {
       }
 
       // Fetch the original page
-      const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://www..dainostore.com';
+      const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://www.dainostore.com';
       
       // Handle store lookup with UUID validation
       let storeSlug = 'store'; // Default fallback
@@ -244,7 +244,7 @@ class PreviewService {
     let modifiedHtml = htmlContent;
     
     // Replace relative asset paths with absolute URLs to the original site
-    const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://www..dainostore.com';
+    const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://www.dainostore.com';
     modifiedHtml = modifiedHtml.replace(
       /href="\/assets\//g, 
       `href="${baseUrl}/assets/`

@@ -957,7 +957,7 @@ router.get('/google', (req, res) => {
 // @desc    Google OAuth callback (DISABLED - needs tenant refactoring)
 // @access  Public
 router.get('/google/callback', (req, res) => {
-  const corsOrigin = process.env.CORS_ORIGIN || 'https://www..dainostore.com';
+  const corsOrigin = process.env.CORS_ORIGIN || 'https://www.dainostore.com';
   res.redirect(`${corsOrigin}/auth?error=oauth_disabled`);
 });
 
@@ -1589,7 +1589,7 @@ router.post('/customer/forgot-password', [
     // Build reset URL
     const baseUrl = store?.domain
       ? `https://${store.domain}`
-      : (process.env.CORS_ORIGIN || 'https://www..dainostore.com');
+      : (process.env.CORS_ORIGIN || 'https://www.dainostore.com');
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
     // Send password reset email

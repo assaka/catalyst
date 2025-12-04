@@ -557,7 +557,7 @@ class EmailService {
       // Use master email template
       const { teamInvitationEmail, PLATFORM_NAME } = require('./master-email-templates');
 
-      const inviteUrl = `${process.env.FRONTEND_URL || 'https://www..dainostore.com'}/accept-invitation/${invitation.invitation_token}`;
+      const inviteUrl = `${process.env.FRONTEND_URL || 'https://www.dainostore.com'}/accept-invitation/${invitation.invitation_token}`;
       const expiresDate = new Date(invitation.expires_at).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
