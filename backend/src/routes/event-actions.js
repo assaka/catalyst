@@ -8,7 +8,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
-const ConnectionManager = require('../services/ConnectionManager');
+const ConnectionManager = require('../services/database/ConnectionManager');
 
 // =====================================================
 // ADMIN ROUTES - Manage Triggers & Actions
