@@ -182,21 +182,21 @@ app.options('/api/*', async (req, res, next) => {
   const origin = req.headers.origin;
 
   // Check if origin is allowed (simplified check for OPTIONS)
-  const isVercelApp = origin && origin.endsWith('.vercel.app');
-  const isLocalhost = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
-  const isRenderApp = origin && origin.endsWith('.onrender.com');
-
-  // Quick check for known origins
-  if (isVercelApp || isLocalhost || isRenderApp) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,x-store-id,X-Store-Id,X-Language,x-session-id,X-Session-Id,Cache-Control,cache-control,Pragma,pragma,Expires,expires,params,headers');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // Browser cache
-    res.setHeader('Vary', 'Origin'); // Important for caching
-    return res.sendStatus(204);
-  }
+  // const isVercelApp = origin && origin.endsWith('.vercel.app');
+  // const isLocalhost = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
+  // const isRenderApp = origin && origin.endsWith('.onrender.com');
+  //
+  // // Quick check for known origins
+  // if (isVercelApp || isLocalhost || isRenderApp) {
+  //   res.setHeader('Access-Control-Allow-Origin', origin);
+  //   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+  //   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,x-store-id,X-Store-Id,X-Language,x-session-id,X-Session-Id,Cache-Control,cache-control,Pragma,pragma,Expires,expires,params,headers');
+  //   res.setHeader('Access-Control-Allow-Credentials', 'true');
+  //   res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+  //   res.setHeader('Cache-Control', 'public, max-age=86400'); // Browser cache
+  //   res.setHeader('Vary', 'Origin'); // Important for caching
+  //   return res.sendStatus(204);
+  // }
 
   // Check for custom domains (async lookup to master DB)
   if (origin) {
@@ -205,30 +205,15 @@ app.options('/api/*', async (req, res, next) => {
       const hostname = new URL(origin).hostname;
 
       // Check custom_domains table first
-      let { data: customDomain, error: domainError } = await masterDbClient
-        .from('custom_domains')
-        .select('id')
+      const { data: lookupDomain, error: lookupError } = await masterDbClient
+        .from('custom_domains_lookup')
+        .select('store_id')
         .eq('domain', hostname)
         .eq('is_active', true)
-        .eq('verification_status', 'verified')
+        .eq('is_verified', true)
         .maybeSingle();
 
-      // If not found, check custom_domains_lookup table (used for verified domains)
-      if (!customDomain) {
-        const { data: lookupDomain, error: lookupError } = await masterDbClient
-          .from('custom_domains_lookup')
-          .select('store_id')
-          .eq('domain', hostname)
-          .eq('is_active', true)
-          .eq('is_verified', true)
-          .maybeSingle();
-
-        if (!lookupError && lookupDomain) {
-          customDomain = lookupDomain;
-        }
-      }
-
-      if (customDomain) {
+      if (lookupDomain) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin,x-store-id,X-Store-Id,X-Language,x-session-id,X-Session-Id,Cache-Control,cache-control,Pragma,pragma,Expires,expires,params,headers');
@@ -248,15 +233,15 @@ app.options('/api/*', async (req, res, next) => {
 });
 
 // CORS configuration
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://www.dainostore.com',
-  'https://dainostore.com',
-  'https://backend.dainostore.com', // Allow backend for preview pages
-  'https://daino.onrender.com', // Allow backend for preview pages
-  process.env.CORS_ORIGIN
-].filter(Boolean);
+// const allowedOrigins = [
+//   'http://localhost:5173',
+//   'http://localhost:3000',
+//   'https://www.dainostore.com',
+//   'https://dainostore.com',
+//   'https://backend.dainostore.com', // Allow backend for preview pages
+//   'https://daino.onrender.com', // Allow backend for preview pages
+//   process.env.CORS_ORIGIN
+// ].filter(Boolean);
 
 app.use(cors({
   maxAge: 86400, // Cache OPTIONS preflight for 24 hours
@@ -266,19 +251,19 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // Check for exact match first
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      return callback(null, true);
-    }
+    // // Check for exact match first
+    // if (allowedOrigins.indexOf(origin) !== -1) {
+    //   return callback(null, true);
+    // }
 
     // Simple and permissive checks
-    const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
-    const isVercelApp = origin.endsWith('.vercel.app');
-    const isRenderApp = origin.endsWith('.onrender.com');
-
-    if (isLocalhost || isVercelApp || isRenderApp) {
-      return callback(null, true);
-    }
+    // const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+    // const isVercelApp = origin.endsWith('.vercel.app');
+    // const isRenderApp = origin.endsWith('.onrender.com');
+    //
+    // if (isLocalhost || isVercelApp || isRenderApp) {
+    //   return callback(null, true);
+    // }
 
     // Check if origin is a verified custom domain (using master DB Supabase client)
     try {
@@ -286,30 +271,15 @@ app.use(cors({
       const hostname = new URL(origin).hostname;
 
       // Check custom_domains table first
-      let { data: customDomain, error: domainError } = await masterDbClient
-        .from('custom_domains')
-        .select('id, store_id')
+      const { data: lookupDomain, error: lookupError } = await masterDbClient
+        .from('custom_domains_lookup')
+        .select('store_id')
         .eq('domain', hostname)
         .eq('is_active', true)
-        .eq('verification_status', 'verified')
+        .eq('is_verified', true)
         .maybeSingle();
 
-      // If not found, check custom_domains_lookup table (used for verified domains)
-      if (!customDomain) {
-        const { data: lookupDomain, error: lookupError } = await masterDbClient
-          .from('custom_domains_lookup')
-          .select('store_id')
-          .eq('domain', hostname)
-          .eq('is_active', true)
-          .eq('is_verified', true)
-          .maybeSingle();
-
-        if (!lookupError && lookupDomain) {
-          customDomain = lookupDomain;
-        }
-      }
-
-      if (customDomain) {
+      if (lookupDomain) {
         return callback(null, true);
       }
     } catch (error) {
@@ -1480,35 +1450,6 @@ app.get('/preview/:storeId', async (req, res) => {
     res.status(500).json({
       error: 'Preview failed',
       message: error.message
-    });
-  }
-});
-
-// Extension System Status Endpoint
-app.get('/api/extension-system-status', async (req, res) => {
-  try {
-    res.json({
-      success: true,
-      message: 'Extension system is active',
-      status: 'active',
-      features: [
-        'Hook-based architecture',
-        'Event-driven system', 
-        'Version management',
-        'Preview system',
-        'Extension modules'
-      ],
-      legacy_systems_removed: [
-        'diff-patching',
-        'overlay-patch-system',
-        'patch-service',
-        'hybrid-patch-service'
-      ]
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false,
-      error: error.message 
     });
   }
 });
