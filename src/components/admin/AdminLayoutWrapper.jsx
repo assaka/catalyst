@@ -8,6 +8,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { TranslationProvider } from '@/contexts/TranslationContext';
+import { shouldSkipStoreContext } from '@/utils/domainConfig';
 import apiClient from '@/utils/api';
 import { PageLoader } from '@/components/ui/page-loader';
 
@@ -21,8 +22,8 @@ export function AdminLayoutWrapper({ children }) {
   }, [location.pathname]);
 
   const checkStoreStatus = async () => {
-    // Skip check if on auth or onboarding pages
-    if (location.pathname === '/admin/auth' || location.pathname === '/admin/store-onboarding') {
+    // Use centralized config to skip store check for certain pages
+    if (shouldSkipStoreContext(location.pathname)) {
       setChecking(false);
       return;
     }
@@ -60,8 +61,8 @@ export function AdminLayoutWrapper({ children }) {
     return <PageLoader size="lg" />;
   }
 
-  // For auth page, provide minimal TranslationProvider with English fallback (no API calls)
-  if (location.pathname === '/admin/auth') {
+  // For pages that skip store context, provide minimal TranslationProvider with English fallback (no API calls)
+  if (shouldSkipStoreContext(location.pathname)) {
     const defaultLanguages = [
       { code: 'en', name: 'English', native_name: 'English', is_active: true, is_rtl: false }
     ];
