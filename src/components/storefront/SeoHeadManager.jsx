@@ -875,15 +875,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         // Google Tag Manager Implementation
         const analyticsSettings = store?.settings?.analytics_settings;
 
-        // DEBUG: Log GTM settings
-        console.log('🔍 GTM Debug:', {
-            analyticsSettings,
-            enable_google_tag_manager: analyticsSettings?.enable_google_tag_manager,
-            gtm_id: analyticsSettings?.gtm_id,
-            gtm_script_type: analyticsSettings?.gtm_script_type,
-            storeSettings: store?.settings
-        });
-
         // Always clean up existing GTM scripts first
         const cleanupGTM = () => {
             // Remove all GTM-related scripts and elements
@@ -901,7 +892,12 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
         // Handle custom GTM script (server-side tagging) - doesn't require GTM ID
         if (analyticsSettings?.enable_google_tag_manager && analyticsSettings.gtm_script_type === 'custom' && analyticsSettings.custom_gtm_script) {
-            console.log('✅ GTM: Adding custom server-side script');
+            // Check if GTM is already initialized to prevent duplicates
+            if (window.__gtmInitialized) {
+                return; // GTM already loaded, skip
+            }
+            window.__gtmInitialized = true;
+
             // Custom GTM Script (Server-Side Tagging) - direct injection
             // Strip <script> tags if user included them
             let customScriptContent = analyticsSettings.custom_gtm_script
@@ -910,13 +906,10 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 .replace(/<!--.*?-->/g, '')               // Remove HTML comments
                 .trim();
 
-            console.log('✅ GTM: Custom script content (first 100 chars):', customScriptContent.substring(0, 100));
-
             const script = document.createElement('script');
             script.setAttribute('data-gtm', 'head-custom');
             script.textContent = customScriptContent;
             document.head.appendChild(script);
-            console.log('✅ GTM: Custom script appended to head');
 
             // Add noscript fallback to body for custom scripts (only if GTM ID provided)
             if (analyticsSettings.gtm_id && isValidGTMId(analyticsSettings.gtm_id)) {
@@ -926,8 +919,13 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 document.body.insertBefore(noscript, document.body.firstChild);
             }
         } else if (analyticsSettings?.enable_google_tag_manager && isValidGTMId(analyticsSettings.gtm_id)) {
+            // Check if GTM is already initialized to prevent duplicates
+            if (window.__gtmInitialized) {
+                return; // GTM already loaded, skip
+            }
+            window.__gtmInitialized = true;
+
             // Standard GTM Implementation - requires valid GTM ID
-            console.log('✅ GTM: Adding default script to head for ID:', analyticsSettings.gtm_id);
             const script = document.createElement('script');
             script.setAttribute('data-gtm', 'head-default');
             script.textContent = `
@@ -938,7 +936,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 })(window,document,'script','dataLayer','${analyticsSettings.gtm_id}');
             `;
             document.head.appendChild(script);
-            console.log('✅ GTM: Script appended, checking head:', document.querySelectorAll('script[data-gtm]').length, 'GTM scripts found');
 
             // Add noscript fallback to body
             const noscript = document.createElement('noscript');
@@ -993,6 +990,8 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             document.querySelectorAll('script[data-google-ads]').forEach(el => el.remove());
             document.querySelectorAll('script[src*="googletagmanager.com/gtm.js"]').forEach(el => el.remove());
             document.querySelectorAll('script[src*="googletagmanager.com/gtag/js"]').forEach(el => el.remove());
+            // Reset GTM initialization flag so it can be reinitialized if settings change
+            window.__gtmInitialized = false;
         };
     }, [pageType, pageData, pageTitle, pageDescription, imageUrl, store, seoSettings, seoTemplates, customCanonicalUrl]);
 
