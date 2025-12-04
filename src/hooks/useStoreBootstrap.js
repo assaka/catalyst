@@ -120,7 +120,9 @@ export function determineStoreSlug(location) {
                         !hostname.includes('onrender.com') &&
                         !hostname.includes('localhost') &&
                         !hostname.includes('127.0.0.1') &&
-                        !hostname.includes('dainostore.com');
+                        !hostname.includes('dainostore.com') &&
+                        !hostname.includes('daino.store') &&
+                        !hostname.includes('daino.ai');
 
   if (isCustomDomain) {
     return hostname;
