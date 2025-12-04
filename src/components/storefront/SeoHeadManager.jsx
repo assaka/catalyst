@@ -911,7 +911,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     noscript.innerHTML = `<iframe src="https://www.googletagmanager.com/ns.html?id=${analyticsSettings.gtm_id}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`;
                     document.body.insertBefore(noscript, document.body.firstChild);
                 }
-            } else if (analyticsSettings.gtm_script_type === 'default' && analyticsSettings.gtm_id) {
+            } else if ((!analyticsSettings.gtm_script_type || analyticsSettings.gtm_script_type === 'default') && analyticsSettings.gtm_id) {
                 // Standard GTM Implementation
                 const script = document.createElement('script');
                 script.setAttribute('data-gtm', 'head-default');

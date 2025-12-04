@@ -193,7 +193,9 @@ export default function AnalyticsSettings() {
                 analytics_settings: {
                     ...store.settings.analytics_settings,
                     gtm_id: gtmSettings.container_id,
-                    enable_google_tag_manager: gtmSettings.enabled
+                    enable_google_tag_manager: gtmSettings.enabled,
+                    gtm_script_type: store.settings.analytics_settings?.gtm_script_type || 'default',
+                    custom_gtm_script: store.settings.analytics_settings?.custom_gtm_script || ''
                 }
             };
 
@@ -214,6 +216,18 @@ export default function AnalyticsSettings() {
             try {
                 localStorage.removeItem('storeProviderCache');
                 sessionStorage.removeItem('storeProviderCache');
+
+                // Broadcast cache clear to other tabs and trigger server cache clear
+                const channel = new BroadcastChannel('store_settings_update');
+                channel.postMessage({ type: 'clear_cache', storeId });
+                channel.close();
+
+                // Also call cache clear API to clear Redis cache
+                const storeSlug = store?.slug || selectedStore?.slug;
+                if (storeSlug) {
+                    await fetch(`/api/cache-test/clear-bootstrap/${storeSlug}`)
+                        .catch(err => console.warn('Failed to clear server cache:', err));
+                }
             } catch (e) {
                 console.warn('Failed to clear cache:', e);
             }
