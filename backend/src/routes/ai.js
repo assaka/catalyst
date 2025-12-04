@@ -225,8 +225,21 @@ TOOL: remove_from_category - Remove product from category
 Return: {"tool": "remove_from_category", "product": "product name", "category": "category name"}
 
 ═══ PRODUCT TOOLS ═══
-TOOL: list_products - List products (with optional filters)
-Return: {"tool": "list_products", "filters": {"status": "active", "out_of_stock": true}}
+TOOL: list_products - List/filter products with smart filters
+Filters: in_stock, out_of_stock, low_stock, featured, on_sale, category, price_min, price_max, status, sort_by, limit
+Sort options: price_asc, price_desc, newest, oldest, best_selling, popular, stock_asc, stock_desc
+Examples:
+  {"tool": "list_products"} - all products
+  {"tool": "list_products", "filters": {"in_stock": true}} - products in stock
+  {"tool": "list_products", "filters": {"out_of_stock": true}} - out of stock
+  {"tool": "list_products", "filters": {"low_stock": true}} - low stock alert
+  {"tool": "list_products", "filters": {"featured": true}} - featured products
+  {"tool": "list_products", "filters": {"on_sale": true}} - on sale
+  {"tool": "list_products", "filters": {"category": "snowboards"}} - by category
+  {"tool": "list_products", "filters": {"price_min": 50, "price_max": 200}} - price range
+  {"tool": "list_products", "filters": {"sort_by": "best_selling"}} - best sellers
+  {"tool": "list_products", "filters": {"sort_by": "newest"}} - newest first
+  {"tool": "list_products", "filters": {"sort_by": "popular"}} - most viewed
 
 TOOL: update_product - Update product fields
 Return: {"tool": "update_product", "product": "name or sku", "updates": {"price": 99.99, "stock_quantity": 10}}
@@ -245,17 +258,31 @@ TOOL: delete_attribute - Delete an attribute
 Return: {"tool": "delete_attribute", "code": "attribute_code"}
 
 ═══ CUSTOMER TOOLS ═══
-TOOL: list_customers - List customers
-Return: {"tool": "list_customers", "limit": 20}
+TOOL: list_customers - List/search customers
+Filters: email, name, is_blacklisted, has_orders, sort_by (newest, orders, spent), limit
+Examples:
+  {"tool": "list_customers"} - all customers
+  {"tool": "list_customers", "filters": {"email": "john@example.com"}} - find by email
+  {"tool": "list_customers", "filters": {"name": "john"}} - search by name
+  {"tool": "list_customers", "filters": {"is_blacklisted": true}} - blacklisted customers
+  {"tool": "list_customers", "filters": {"has_orders": true}} - customers with orders
+  {"tool": "list_customers", "filters": {"sort_by": "spent"}} - top spenders
 
 TOOL: blacklist_customer - Blacklist a customer by email
 Return: {"tool": "blacklist_customer", "email": "customer@email.com", "reason": "fraud"}
 
 ═══ ORDER TOOLS ═══
-TOOL: list_orders - List orders
-Return: {"tool": "list_orders", "status": "pending", "limit": 20}
+TOOL: list_orders - List/filter orders
+Filters: status (pending, processing, shipped, delivered, cancelled), customer_email, date_from, date_to, sort_by (newest, oldest, total), limit
+Examples:
+  {"tool": "list_orders"} - all orders
+  {"tool": "list_orders", "filters": {"status": "pending"}} - pending orders
+  {"tool": "list_orders", "filters": {"status": "processing"}} - processing orders
+  {"tool": "list_orders", "filters": {"customer_email": "john@example.com"}} - orders by customer
+  {"tool": "list_orders", "filters": {"sort_by": "newest"}} - recent orders
 
 TOOL: update_order_status - Update order status
+Statuses: pending, processing, shipped, delivered, cancelled
 Return: {"tool": "update_order_status", "order_number": "ORD-123", "status": "shipped"}
 
 ═══ COUPON TOOLS ═══
@@ -292,13 +319,23 @@ Examples:
 "delete category Sale" → {"tool": "delete_category", "name": "Sale"}
 "add Blue T-Shirt to Sale" → {"tool": "add_to_category", "product": "Blue T-Shirt", "category": "Sale"}
 "show products" → {"tool": "list_products"}
-"list out of stock products" → {"tool": "list_products", "filters": {"out_of_stock": true}}
-"delete product SKU123" → {"tool": "delete_product", "product": "SKU123"}
-"create attribute color" → {"tool": "create_attribute", "code": "color", "name": "Color", "type": "select"}
-"list attributes" → {"tool": "list_attributes"}
-"show customers" → {"tool": "list_customers"}
-"blacklist john@test.com" → {"tool": "blacklist_customer", "email": "john@test.com"}
-"list orders" → {"tool": "list_orders"}
+"products in stock" → {"tool": "list_products", "filters": {"in_stock": true}}
+"out of stock products" → {"tool": "list_products", "filters": {"out_of_stock": true}}
+"low stock alert" → {"tool": "list_products", "filters": {"low_stock": true}}
+"best selling products" → {"tool": "list_products", "filters": {"sort_by": "best_selling"}}
+"featured products" → {"tool": "list_products", "filters": {"featured": true}}
+"products on sale" → {"tool": "list_products", "filters": {"on_sale": true}}
+"products in snowboards category" → {"tool": "list_products", "filters": {"category": "snowboards"}}
+"newest products" → {"tool": "list_products", "filters": {"sort_by": "newest"}}
+"most popular products" → {"tool": "list_products", "filters": {"sort_by": "popular"}}
+"products between $50 and $100" → {"tool": "list_products", "filters": {"price_min": 50, "price_max": 100}}
+"find customer john@example.com" → {"tool": "list_customers", "filters": {"email": "john@example.com"}}
+"top spending customers" → {"tool": "list_customers", "filters": {"sort_by": "spent"}}
+"blacklisted customers" → {"tool": "list_customers", "filters": {"is_blacklisted": true}}
+"pending orders" → {"tool": "list_orders", "filters": {"status": "pending"}}
+"orders from john@example.com" → {"tool": "list_orders", "filters": {"customer_email": "john@example.com"}}
+"recent orders" → {"tool": "list_orders", "filters": {"sort_by": "newest"}}
+"ship order ORD-123" → {"tool": "update_order_status", "order_number": "ORD-123", "status": "shipped"}
 "create coupon SAVE10 for 10% off" → {"tool": "create_coupon", "code": "SAVE10", "discount_type": "percentage", "discount_value": 10}
 "yes" (after confirmation) → Execute pending action
 
@@ -868,26 +905,107 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       }
 
       // ═══════════════════════════════════════════════════════════════
-      // LIST PRODUCTS
+      // LIST PRODUCTS (Enhanced with webshop manager filters)
       // ═══════════════════════════════════════════════════════════════
       case 'list_products': {
         const filters = toolCall.filters || {};
-        let query = db.from('products').select('id, sku, price, stock_quantity, status');
+        let query = db.from('products').select('id, sku, price, compare_price, stock_quantity, low_stock_threshold, status, featured, view_count, category_ids, created_at');
 
+        // Stock filters
+        if (filters.in_stock) {
+          query = query.gt('stock_quantity', 0);
+        }
         if (filters.out_of_stock) {
           query = query.lte('stock_quantity', 0);
         }
+        if (filters.low_stock) {
+          // Products where stock <= low_stock_threshold (default 5)
+          query = query.or('stock_quantity.lte.low_stock_threshold,stock_quantity.lte.5');
+        }
+
+        // Status filter
         if (filters.status) {
           query = query.eq('status', filters.status);
+        }
+
+        // Featured filter
+        if (filters.featured) {
+          query = query.eq('featured', true);
+        }
+
+        // On sale filter (compare_price > price)
+        if (filters.on_sale) {
+          query = query.not('compare_price', 'is', null).gt('compare_price', 0);
+        }
+
+        // Price range filters
+        if (filters.price_min) {
+          query = query.gte('price', filters.price_min);
+        }
+        if (filters.price_max) {
+          query = query.lte('price', filters.price_max);
+        }
+
+        // Sorting
+        const sortBy = filters.sort_by;
+        if (sortBy === 'price_asc') {
+          query = query.order('price', { ascending: true });
+        } else if (sortBy === 'price_desc') {
+          query = query.order('price', { ascending: false });
+        } else if (sortBy === 'newest') {
+          query = query.order('created_at', { ascending: false });
+        } else if (sortBy === 'oldest') {
+          query = query.order('created_at', { ascending: true });
+        } else if (sortBy === 'popular') {
+          query = query.order('view_count', { ascending: false });
+        } else if (sortBy === 'stock_asc') {
+          query = query.order('stock_quantity', { ascending: true });
+        } else if (sortBy === 'stock_desc') {
+          query = query.order('stock_quantity', { ascending: false });
         }
 
         const { data: products } = await query.limit(filters.limit || 30);
 
         if (!products?.length) {
-          return { success: true, message: 'No products found.', data: { items: [] } };
+          return { success: true, message: 'No products found matching your criteria.', data: { items: [] } };
         }
 
-        const productIds = products.map(p => p.id);
+        // Filter by category if specified (category_ids is JSONB array)
+        let filteredProducts = products;
+        if (filters.category) {
+          // Find category ID by name
+          const { data: categories } = await db
+            .from('category_translations')
+            .select('category_id')
+            .ilike('name', `%${filters.category}%`)
+            .limit(1);
+
+          if (categories?.[0]) {
+            const catId = categories[0].category_id;
+            filteredProducts = products.filter(p => p.category_ids?.includes(catId));
+          }
+        }
+
+        // Handle best_selling sort (requires order data aggregation)
+        if (sortBy === 'best_selling') {
+          const productIds = filteredProducts.map(p => p.id);
+          const { data: salesData } = await db
+            .from('sales_order_items')
+            .select('product_id, quantity')
+            .in('product_id', productIds);
+
+          // Aggregate sales by product
+          const salesMap = new Map();
+          salesData?.forEach(item => {
+            salesMap.set(item.product_id, (salesMap.get(item.product_id) || 0) + item.quantity);
+          });
+
+          // Sort by sales
+          filteredProducts.sort((a, b) => (salesMap.get(b.id) || 0) - (salesMap.get(a.id) || 0));
+        }
+
+        // Get translations
+        const productIds = filteredProducts.map(p => p.id);
         const { data: translations } = await db
           .from('product_translations')
           .select('product_id, name')
@@ -895,12 +1013,36 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           .eq('language_code', 'en');
 
         const transMap = new Map(translations?.map(t => [t.product_id, t.name]) || []);
-        const items = products.map(p => ({ ...p, name: transMap.get(p.id) || p.sku }));
+        const items = filteredProducts.map(p => ({
+          ...p,
+          name: transMap.get(p.id) || p.sku,
+          on_sale: p.compare_price && p.compare_price > p.price
+        }));
+
+        // Build descriptive message
+        let filterDesc = '';
+        if (filters.in_stock) filterDesc = 'in stock';
+        else if (filters.out_of_stock) filterDesc = 'out of stock';
+        else if (filters.low_stock) filterDesc = 'low stock';
+        else if (filters.featured) filterDesc = 'featured';
+        else if (filters.on_sale) filterDesc = 'on sale';
+        else if (filters.category) filterDesc = `in "${filters.category}"`;
+        else if (sortBy === 'best_selling') filterDesc = 'best selling';
+        else if (sortBy === 'newest') filterDesc = 'newest';
+        else if (sortBy === 'popular') filterDesc = 'most popular';
+
+        const statusEmoji = (p) => {
+          if (p.stock_quantity <= 0) return '🔴';
+          if (p.stock_quantity <= (p.low_stock_threshold || 5)) return '🟡';
+          return '🟢';
+        };
 
         return {
           success: true,
-          message: `Found ${items.length} products:\n${items.slice(0, 20).map(p => `• ${p.name} (${p.sku}) - $${p.price} | Stock: ${p.stock_quantity}`).join('\n')}${items.length > 20 ? `\n... and ${items.length - 20} more` : ''}`,
-          data: { items }
+          message: `Found ${items.length} ${filterDesc} products:\n${items.slice(0, 20).map(p =>
+            `${statusEmoji(p)} ${p.name} (${p.sku}) - $${p.price}${p.on_sale ? ` ~~$${p.compare_price}~~` : ''} | Stock: ${p.stock_quantity}${p.featured ? ' ⭐' : ''}`
+          ).join('\n')}${items.length > 20 ? `\n... and ${items.length - 20} more` : ''}`,
+          data: { items, filterApplied: filterDesc || 'all' }
         };
       }
 
@@ -1129,22 +1271,75 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       // LIST CUSTOMERS
       // ═══════════════════════════════════════════════════════════════
       case 'list_customers': {
-        const limit = toolCall.limit || 20;
+        const filters = toolCall.filters || {};
+        const limit = filters.limit || toolCall.limit || 20;
 
-        const { data: customers } = await db
-          .from('customers')
-          .select('id, email, first_name, last_name, is_active, created_at')
-          .order('created_at', { ascending: false })
-          .limit(limit);
+        let query = db.from('customers').select('id, email, first_name, last_name, phone, is_active, is_blacklisted, total_spent, total_orders, last_order_date, created_at');
+
+        // Email filter (exact or partial match)
+        if (filters.email) {
+          query = query.ilike('email', `%${filters.email}%`);
+        }
+
+        // Name filter (search in first_name or last_name)
+        if (filters.name) {
+          query = query.or(`first_name.ilike.%${filters.name}%,last_name.ilike.%${filters.name}%`);
+        }
+
+        // Blacklisted filter
+        if (filters.is_blacklisted !== undefined) {
+          query = query.eq('is_blacklisted', filters.is_blacklisted);
+        }
+
+        // Has orders filter
+        if (filters.has_orders) {
+          query = query.gt('total_orders', 0);
+        }
+
+        // Active filter
+        if (filters.is_active !== undefined) {
+          query = query.eq('is_active', filters.is_active);
+        }
+
+        // Sorting
+        const sortBy = filters.sort_by;
+        if (sortBy === 'spent') {
+          query = query.order('total_spent', { ascending: false });
+        } else if (sortBy === 'orders') {
+          query = query.order('total_orders', { ascending: false });
+        } else if (sortBy === 'newest') {
+          query = query.order('created_at', { ascending: false });
+        } else if (sortBy === 'oldest') {
+          query = query.order('created_at', { ascending: true });
+        } else if (sortBy === 'last_order') {
+          query = query.order('last_order_date', { ascending: false, nullsFirst: false });
+        } else {
+          query = query.order('created_at', { ascending: false });
+        }
+
+        const { data: customers } = await query.limit(limit);
 
         if (!customers?.length) {
-          return { success: true, message: 'No customers found.', data: { items: [] } };
+          return { success: true, message: 'No customers found matching your criteria.', data: { items: [] } };
         }
+
+        // Build descriptive message
+        let filterDesc = '';
+        if (filters.email) filterDesc = `matching "${filters.email}"`;
+        else if (filters.name) filterDesc = `matching name "${filters.name}"`;
+        else if (filters.is_blacklisted) filterDesc = 'blacklisted';
+        else if (filters.has_orders) filterDesc = 'with orders';
+        else if (sortBy === 'spent') filterDesc = 'top spending';
+        else if (sortBy === 'orders') filterDesc = 'most orders';
+
+        const formatCurrency = (val) => val ? `$${parseFloat(val).toFixed(2)}` : '$0.00';
 
         return {
           success: true,
-          message: `Found ${customers.length} customers:\n${customers.map(c => `• ${c.first_name || ''} ${c.last_name || ''} (${c.email})${c.is_active ? '' : ' [inactive]'}`).join('\n')}`,
-          data: { items: customers }
+          message: `Found ${customers.length} ${filterDesc} customers:\n${customers.map(c =>
+            `• ${c.first_name || ''} ${c.last_name || ''} (${c.email})${c.is_blacklisted ? ' 🚫' : ''}${c.is_active ? '' : ' [inactive]'} | Orders: ${c.total_orders || 0} | Spent: ${formatCurrency(c.total_spent)}`
+          ).join('\n')}`,
+          data: { items: customers, filterApplied: filterDesc || 'all' }
         };
       }
 
@@ -1174,28 +1369,95 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       // LIST ORDERS
       // ═══════════════════════════════════════════════════════════════
       case 'list_orders': {
-        const { status, limit = 20 } = toolCall;
+        const filters = toolCall.filters || {};
+        const limit = filters.limit || toolCall.limit || 20;
 
         let query = db
           .from('sales_orders')
-          .select('id, order_number, status, total_amount, customer_email, created_at')
-          .order('created_at', { ascending: false })
-          .limit(limit);
+          .select('id, order_number, status, payment_status, fulfillment_status, total_amount, customer_email, customer_phone, shipping_method, tracking_number, created_at');
 
-        if (status) {
-          query = query.eq('status', status);
+        // Status filter
+        if (filters.status || toolCall.status) {
+          query = query.eq('status', filters.status || toolCall.status);
         }
 
-        const { data: orders } = await query;
+        // Payment status filter
+        if (filters.payment_status) {
+          query = query.eq('payment_status', filters.payment_status);
+        }
+
+        // Fulfillment status filter
+        if (filters.fulfillment_status) {
+          query = query.eq('fulfillment_status', filters.fulfillment_status);
+        }
+
+        // Customer email filter
+        if (filters.customer_email) {
+          query = query.ilike('customer_email', `%${filters.customer_email}%`);
+        }
+
+        // Date range filters
+        if (filters.date_from) {
+          query = query.gte('created_at', filters.date_from);
+        }
+        if (filters.date_to) {
+          query = query.lte('created_at', filters.date_to);
+        }
+
+        // Min/max total filters
+        if (filters.min_total) {
+          query = query.gte('total_amount', filters.min_total);
+        }
+        if (filters.max_total) {
+          query = query.lte('total_amount', filters.max_total);
+        }
+
+        // Sorting
+        const sortBy = filters.sort_by;
+        if (sortBy === 'newest') {
+          query = query.order('created_at', { ascending: false });
+        } else if (sortBy === 'oldest') {
+          query = query.order('created_at', { ascending: true });
+        } else if (sortBy === 'total_high') {
+          query = query.order('total_amount', { ascending: false });
+        } else if (sortBy === 'total_low') {
+          query = query.order('total_amount', { ascending: true });
+        } else {
+          query = query.order('created_at', { ascending: false });
+        }
+
+        const { data: orders } = await query.limit(limit);
 
         if (!orders?.length) {
-          return { success: true, message: 'No orders found.', data: { items: [] } };
+          return { success: true, message: 'No orders found matching your criteria.', data: { items: [] } };
         }
+
+        // Build descriptive message
+        let filterDesc = '';
+        if (filters.status || toolCall.status) filterDesc = `${filters.status || toolCall.status}`;
+        else if (filters.customer_email) filterDesc = `from "${filters.customer_email}"`;
+        else if (filters.payment_status) filterDesc = `payment: ${filters.payment_status}`;
+        else if (sortBy === 'total_high') filterDesc = 'highest value';
+
+        const statusEmoji = (status) => {
+          switch (status) {
+            case 'pending': return '🟡';
+            case 'processing': return '🔵';
+            case 'shipped': return '📦';
+            case 'delivered': return '✅';
+            case 'cancelled': return '❌';
+            default: return '⚪';
+          }
+        };
+
+        const formatDate = (d) => new Date(d).toLocaleDateString();
 
         return {
           success: true,
-          message: `Found ${orders.length} orders:\n${orders.map(o => `• #${o.order_number} - ${o.status} - $${o.total_amount} (${o.customer_email})`).join('\n')}`,
-          data: { items: orders }
+          message: `Found ${orders.length} ${filterDesc} orders:\n${orders.map(o =>
+            `${statusEmoji(o.status)} #${o.order_number} - ${o.status} - $${parseFloat(o.total_amount).toFixed(2)} (${o.customer_email}) - ${formatDate(o.created_at)}${o.tracking_number ? ` 📍${o.tracking_number}` : ''}`
+          ).join('\n')}`,
+          data: { items: orders, filterApplied: filterDesc || 'all' }
         };
       }
 
