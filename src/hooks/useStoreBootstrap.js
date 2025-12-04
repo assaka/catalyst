@@ -115,10 +115,12 @@ export function determineStoreSlug(location) {
   }
 
   // Check for custom domain
+  // Exclude main platform domain (dainostore.com) - it's not a custom store domain
   const isCustomDomain = !hostname.includes('vercel.app') &&
                         !hostname.includes('onrender.com') &&
                         !hostname.includes('localhost') &&
-                        !hostname.includes('127.0.0.1');
+                        !hostname.includes('127.0.0.1') &&
+                        !hostname.includes('dainostore.com');
 
   if (isCustomDomain) {
     return hostname;
