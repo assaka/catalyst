@@ -5,13 +5,18 @@ const aiService = require('../services/AIService');
 const aiEntityService = require('../services/aiEntityService');
 const aiContextService = require('../services/aiContextService');
 const aiLearningService = require('../services/aiLearningService');
+const aiTrainingService = require('../services/aiTrainingService');
+const aiTrainingRoutes = require('./ai-training');
 const { authMiddleware } = require('../middleware/authMiddleware');
 
+// Mount training routes
+router.use('/training', aiTrainingRoutes);
+
 /**
- * Track successful operations for self-learning
- * This automatically records successful patterns without requiring user feedback
+ * Track successful operations for self-learning AND capture as training candidate
+ * This automatically records successful patterns and captures them for training validation
  */
-async function trackSuccessfulOperation(storeId, userId, userMessage, intent, entity, operation, response) {
+async function trackSuccessfulOperation(storeId, userId, userMessage, intent, entity, operation, response, confidenceScore = 0.8) {
   try {
     // Record as positive feedback (automatic success)
     await aiLearningService.recordFeedback({
@@ -28,6 +33,30 @@ async function trackSuccessfulOperation(storeId, userId, userMessage, intent, en
       feedbackText: 'Auto-recorded: operation completed successfully',
       metadata: { autoRecorded: true }
     });
+
+    // Also capture as training candidate for automatic validation
+    const captureResult = await aiTrainingService.captureTrainingCandidate({
+      storeId,
+      userId,
+      sessionId: `auto_${Date.now()}`,
+      userPrompt: userMessage,
+      aiResponse: response?.substring?.(0, 500) || 'Operation successful',
+      detectedIntent: intent,
+      detectedEntity: entity,
+      detectedOperation: operation,
+      actionTaken: { intent, entity, operation },
+      confidenceScore,
+      metadata: { autoRecorded: true }
+    });
+
+    // If captured, immediately mark as success outcome
+    if (captureResult.captured && captureResult.candidateId) {
+      await aiTrainingService.updateOutcome(captureResult.candidateId, 'success', {
+        autoRecorded: true,
+        timestamp: new Date().toISOString()
+      });
+    }
+
     console.log(`[AI Learning] Auto-tracked success: ${intent}/${entity}/${operation}`);
   } catch (error) {
     // Don't fail the main operation if learning fails

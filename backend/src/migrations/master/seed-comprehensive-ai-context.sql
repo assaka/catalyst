@@ -905,3 +905,48 @@ INSERT INTO ai_entity_definitions (
 -- Update existing entries
 UPDATE ai_context_documents SET is_active = true WHERE type IN ('database_schema', 'e-commerce', 'analytics', 'jobs', 'settings', 'integrations', 'plugins', 'cron', 'intent_examples');
 UPDATE ai_entity_definitions SET is_active = true WHERE entity_name IN ('products', 'orders', 'customers', 'attributes', 'categories', 'payment_methods', 'shipping_methods', 'coupons', 'theme_settings');
+
+-- ============================================
+-- AI AUTOMATIC TRAINING SYSTEM DOCUMENTATION
+-- ============================================
+INSERT INTO ai_context_documents (type, title, content, category, tags, priority, mode, is_active) VALUES
+('system', 'AI Automatic Training System',
+'AI AUTOMATIC TRAINING SYSTEM:
+
+The system automatically captures real user prompts and validates them for training data.
+
+FLOW:
+1. User sends prompt to AI chat
+2. AI processes and executes action
+3. System captures prompt as training candidate
+4. Outcome is tracked (success/failure/reverted)
+5. Auto-validation rules check the candidate
+6. Approved candidates are promoted to entity definitions
+
+TABLES:
+- ai_training_candidates: Stores captured prompts awaiting validation
+- ai_training_validations: Tracks validation attempts
+- ai_training_rules: Configurable auto-approval rules
+- ai_training_metrics: Aggregate metrics
+
+AUTO-APPROVAL RULES:
+- 3+ successes with 0 failures → Auto-approve
+- Positive user feedback + 1 success → Auto-approve
+- Confidence < 0.6 → Flag for manual review
+- 3+ failures → Auto-reject
+- Action reverted → Auto-reject
+
+API ENDPOINTS:
+- GET /api/ai/training/candidates - List candidates for review
+- GET /api/ai/training/metrics - Get training statistics
+- POST /api/ai/training/candidates/:id/approve - Manual approve
+- POST /api/ai/training/candidates/:id/reject - Manual reject
+- POST /api/ai/training/promote - Promote approved to training data
+- POST /api/ai/training/candidates/:id/feedback - Record user feedback
+
+PROMOTION PROCESS:
+When a candidate is approved (auto or manual), it can be promoted to
+add its prompt to the entity_definitions.example_prompts array.
+This improves future intent detection for similar requests.',
+'system', '["training", "learning", "auto-training", "validation"]', 85, 'all', true)
+ON CONFLICT DO NOTHING;
