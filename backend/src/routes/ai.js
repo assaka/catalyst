@@ -565,10 +565,10 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           .from('categories')
           .insert({
             slug,
-            url_key: slug,
             is_active: true,
             hide_in_menu: false,
-            position: 0
+            sort_order: 0,
+            level: 0
           })
           .select('id')
           .single();
@@ -636,10 +636,10 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           .from('categories')
           .insert({
             slug,
-            url_key: slug,
             is_active: true,
             hide_in_menu: false,
-            position: 0
+            sort_order: 0,
+            level: 0
           })
           .select('id')
           .single();
