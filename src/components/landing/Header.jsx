@@ -105,17 +105,13 @@ export default function Header() {
                                     </Button>
                                 </Link>
                                 <Link to={createPageUrl("Onboarding")}>
-                                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1">
+                                    <Button className="bg-green-500 text-white">
                                         Try Now
                                     </Button>
                                 </Link>
                             </>
                         )}
                     </div>
-                    {/* Sign Up Button */}
-                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-full font-semibold shadow-md hover:shadow-lg transition-all">
-                        Sign Up
-                    </Button>
                 </div>
             </div>
         </header>
