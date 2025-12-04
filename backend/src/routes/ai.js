@@ -208,33 +208,72 @@ router.post('/smart-chat', authMiddleware, async (req, res) => {
 
 YOU HAVE THESE TOOLS - Return JSON to execute them:
 
-TOOL: add_to_category
-Use when: "add X to Y category", "move product to category", "put X in Y"
-Return: {"tool": "add_to_category", "product": "product name", "category": "category name"}
+═══ CATEGORY TOOLS ═══
+TOOL: list_categories - List all categories
+Return: {"tool": "list_categories"}
 
-TOOL: create_category
-Use when: "create category X", "make a new category"
+TOOL: create_category - Create a new category
 Return: {"tool": "create_category", "name": "category name"}
 
-TOOL: create_and_add
-Use when: user confirms to create a category that doesn't exist and add product
-Return: {"tool": "create_and_add", "product": "product name", "category": "new category name"}
+TOOL: delete_category - Delete a category
+Return: {"tool": "delete_category", "name": "category name"}
 
-TOOL: remove_from_category
-Use when: "remove X from Y", "take product out of category"
+TOOL: add_to_category - Add product to category
+Return: {"tool": "add_to_category", "product": "product name", "category": "category name"}
+
+TOOL: remove_from_category - Remove product from category
 Return: {"tool": "remove_from_category", "product": "product name", "category": "category name"}
 
-TOOL: query_data
-Use when: user asks questions about data (products, orders, categories, etc.)
-Return: {"tool": "query_data", "type": "products|categories|orders|customers", "filters": {...}}
+═══ PRODUCT TOOLS ═══
+TOOL: list_products - List products (with optional filters)
+Return: {"tool": "list_products", "filters": {"status": "active", "out_of_stock": true}}
 
-TOOL: update_product
-Use when: "change price", "update stock", "rename product"
-Return: {"tool": "update_product", "product": "name or sku", "updates": {"field": "value"}}
+TOOL: update_product - Update product fields
+Return: {"tool": "update_product", "product": "name or sku", "updates": {"price": 99.99, "stock_quantity": 10}}
 
-TOOL: ask_confirmation
-Use when: something doesn't exist and you need to ask if user wants to create it
-Return: {"tool": "ask_confirmation", "question": "Category X doesn't exist. Create it?", "pending_action": {"tool": "create_and_add", ...}}
+TOOL: delete_product - Delete a product
+Return: {"tool": "delete_product", "product": "name or sku"}
+
+═══ ATTRIBUTE TOOLS ═══
+TOOL: list_attributes - List all attributes
+Return: {"tool": "list_attributes"}
+
+TOOL: create_attribute - Create a new attribute
+Return: {"tool": "create_attribute", "code": "color", "name": "Color", "type": "select", "values": ["Red", "Blue", "Green"]}
+
+TOOL: delete_attribute - Delete an attribute
+Return: {"tool": "delete_attribute", "code": "attribute_code"}
+
+═══ CUSTOMER TOOLS ═══
+TOOL: list_customers - List customers
+Return: {"tool": "list_customers", "limit": 20}
+
+TOOL: blacklist_customer - Blacklist a customer by email
+Return: {"tool": "blacklist_customer", "email": "customer@email.com", "reason": "fraud"}
+
+═══ ORDER TOOLS ═══
+TOOL: list_orders - List orders
+Return: {"tool": "list_orders", "status": "pending", "limit": 20}
+
+TOOL: update_order_status - Update order status
+Return: {"tool": "update_order_status", "order_number": "ORD-123", "status": "shipped"}
+
+═══ COUPON TOOLS ═══
+TOOL: list_coupons - List coupons
+Return: {"tool": "list_coupons"}
+
+TOOL: create_coupon - Create a discount coupon
+Return: {"tool": "create_coupon", "code": "SAVE20", "discount_type": "percentage", "discount_value": 20}
+
+TOOL: delete_coupon - Delete a coupon
+Return: {"tool": "delete_coupon", "code": "COUPON_CODE"}
+
+═══ OTHER TOOLS ═══
+TOOL: create_and_add - Create category and add product (after confirmation)
+Return: {"tool": "create_and_add", "product": "product name", "category": "new category name"}
+
+TOOL: ask_confirmation - Ask user to confirm an action
+Return: {"tool": "ask_confirmation", "question": "Create category X?", "pending_action": {...}}
 
 CURRENT STORE DATA:${storeData || '\nNo store data loaded.'}
 ${knowledgeBase ? `\nKNOWLEDGE:\n${knowledgeBase}` : ''}
@@ -248,17 +287,20 @@ RULES:
 5. Be conversational but action-oriented
 
 Examples:
-User: "add Blue T-Shirt to Sale category"
-→ {"tool": "add_to_category", "product": "Blue T-Shirt", "category": "Sale"}
-
-User: "move Snowboard X to snowboards"
-→ {"tool": "add_to_category", "product": "Snowboard X", "category": "snowboards"}
-
-User: "show out of stock products"
-→ {"tool": "query_data", "type": "out_of_stock"}
-
-User: "yes" (after being asked to create category)
-→ Execute the pending action
+"create category hamid" → {"tool": "create_category", "name": "hamid"}
+"list all categories" → {"tool": "list_categories"}
+"delete category Sale" → {"tool": "delete_category", "name": "Sale"}
+"add Blue T-Shirt to Sale" → {"tool": "add_to_category", "product": "Blue T-Shirt", "category": "Sale"}
+"show products" → {"tool": "list_products"}
+"list out of stock products" → {"tool": "list_products", "filters": {"out_of_stock": true}}
+"delete product SKU123" → {"tool": "delete_product", "product": "SKU123"}
+"create attribute color" → {"tool": "create_attribute", "code": "color", "name": "Color", "type": "select"}
+"list attributes" → {"tool": "list_attributes"}
+"show customers" → {"tool": "list_customers"}
+"blacklist john@test.com" → {"tool": "blacklist_customer", "email": "john@test.com"}
+"list orders" → {"tool": "list_orders"}
+"create coupon SAVE10 for 10% off" → {"tool": "create_coupon", "code": "SAVE10", "discount_type": "percentage", "discount_value": 10}
+"yes" (after confirmation) → Execute pending action
 
 ${images && images.length > 0 ? '\nUser attached image(s). Analyze for colors, patterns, and provide actionable insights.' : ''}
 
@@ -525,7 +567,7 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
             slug,
             url_key: slug,
             is_active: true,
-            include_in_menu: true,
+            hide_in_menu: false,
             position: 0
           })
           .select('id')
@@ -596,7 +638,7 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
             slug,
             url_key: slug,
             is_active: true,
-            include_in_menu: true,
+            hide_in_menu: false,
             position: 0
           })
           .select('id')
@@ -738,6 +780,504 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       }
 
       // ═══════════════════════════════════════════════════════════════
+      // LIST CATEGORIES
+      // ═══════════════════════════════════════════════════════════════
+      case 'list_categories': {
+        const { data: cats } = await db
+          .from('categories')
+          .select('id, slug, is_active, product_count')
+          .order('id')
+          .limit(50);
+
+        if (!cats?.length) {
+          return { success: true, message: 'No categories found.', data: { items: [] } };
+        }
+
+        const catIds = cats.map(c => c.id);
+        const { data: translations } = await db
+          .from('category_translations')
+          .select('category_id, name')
+          .in('category_id', catIds)
+          .eq('language_code', 'en');
+
+        const transMap = new Map(translations?.map(t => [t.category_id, t.name]) || []);
+        const items = cats.map(c => ({ ...c, name: transMap.get(c.id) || c.slug }));
+
+        return {
+          success: true,
+          message: `Found ${items.length} categories:\n${items.map(c => `• ${c.name} (${c.product_count || 0} products)${c.is_active ? '' : ' [inactive]'}`).join('\n')}`,
+          data: { items }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // DELETE CATEGORY
+      // ═══════════════════════════════════════════════════════════════
+      case 'delete_category': {
+        const { name } = toolCall;
+
+        const { data: categories } = await db
+          .from('category_translations')
+          .select('category_id, name')
+          .ilike('name', `%${name}%`)
+          .limit(1);
+
+        if (!categories?.[0]) {
+          return { success: false, message: `Category "${name}" not found.` };
+        }
+
+        const categoryId = categories[0].category_id;
+        const categoryName = categories[0].name;
+
+        // Delete translations first, then category
+        await db.from('category_translations').delete().eq('category_id', categoryId);
+        await db.from('product_categories').delete().eq('category_id', categoryId);
+        const { error } = await db.from('categories').delete().eq('id', categoryId);
+
+        if (error) throw error;
+
+        return {
+          success: true,
+          message: `Deleted category "${categoryName}".`,
+          data: { categoryId, categoryName }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // LIST PRODUCTS
+      // ═══════════════════════════════════════════════════════════════
+      case 'list_products': {
+        const filters = toolCall.filters || {};
+        let query = db.from('products').select('id, sku, price, stock_quantity, status');
+
+        if (filters.out_of_stock) {
+          query = query.lte('stock_quantity', 0);
+        }
+        if (filters.status) {
+          query = query.eq('status', filters.status);
+        }
+
+        const { data: products } = await query.limit(filters.limit || 30);
+
+        if (!products?.length) {
+          return { success: true, message: 'No products found.', data: { items: [] } };
+        }
+
+        const productIds = products.map(p => p.id);
+        const { data: translations } = await db
+          .from('product_translations')
+          .select('product_id, name')
+          .in('product_id', productIds)
+          .eq('language_code', 'en');
+
+        const transMap = new Map(translations?.map(t => [t.product_id, t.name]) || []);
+        const items = products.map(p => ({ ...p, name: transMap.get(p.id) || p.sku }));
+
+        return {
+          success: true,
+          message: `Found ${items.length} products:\n${items.slice(0, 20).map(p => `• ${p.name} (${p.sku}) - $${p.price} | Stock: ${p.stock_quantity}`).join('\n')}${items.length > 20 ? `\n... and ${items.length - 20} more` : ''}`,
+          data: { items }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // UPDATE PRODUCT
+      // ═══════════════════════════════════════════════════════════════
+      case 'update_product': {
+        const { product, updates } = toolCall;
+
+        // Find product
+        const { data: products } = await db
+          .from('products')
+          .select('id, sku')
+          .or(`sku.ilike.%${product}%`)
+          .limit(1);
+
+        let productRecord = products?.[0];
+
+        if (!productRecord) {
+          const { data: byName } = await db
+            .from('product_translations')
+            .select('product_id, name')
+            .ilike('name', `%${product}%`)
+            .limit(1);
+          if (byName?.[0]) {
+            productRecord = { id: byName[0].product_id, name: byName[0].name };
+          }
+        }
+
+        if (!productRecord) {
+          return { success: false, message: `Product "${product}" not found.` };
+        }
+
+        // Update product
+        const { error } = await db
+          .from('products')
+          .update(updates)
+          .eq('id', productRecord.id);
+
+        if (error) throw error;
+
+        return {
+          success: true,
+          message: `Updated product "${productRecord.name || productRecord.sku}": ${Object.entries(updates).map(([k, v]) => `${k}=${v}`).join(', ')}`,
+          data: { productId: productRecord.id, updates }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // DELETE PRODUCT
+      // ═══════════════════════════════════════════════════════════════
+      case 'delete_product': {
+        const { product } = toolCall;
+
+        // Find product
+        const { data: products } = await db
+          .from('products')
+          .select('id, sku')
+          .or(`sku.ilike.%${product}%`)
+          .limit(1);
+
+        let productRecord = products?.[0];
+        let productName = productRecord?.sku;
+
+        if (!productRecord) {
+          const { data: byName } = await db
+            .from('product_translations')
+            .select('product_id, name')
+            .ilike('name', `%${product}%`)
+            .limit(1);
+          if (byName?.[0]) {
+            productRecord = { id: byName[0].product_id };
+            productName = byName[0].name;
+          }
+        }
+
+        if (!productRecord) {
+          return { success: false, message: `Product "${product}" not found.` };
+        }
+
+        // Delete related data then product
+        await db.from('product_translations').delete().eq('product_id', productRecord.id);
+        await db.from('product_categories').delete().eq('product_id', productRecord.id);
+        await db.from('product_attributes').delete().eq('product_id', productRecord.id);
+        const { error } = await db.from('products').delete().eq('id', productRecord.id);
+
+        if (error) throw error;
+
+        return {
+          success: true,
+          message: `Deleted product "${productName}".`,
+          data: { productId: productRecord.id }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // LIST ATTRIBUTES
+      // ═══════════════════════════════════════════════════════════════
+      case 'list_attributes': {
+        const { data: attrs } = await db
+          .from('attributes')
+          .select('id, code, type, is_filterable')
+          .order('code')
+          .limit(50);
+
+        if (!attrs?.length) {
+          return { success: true, message: 'No attributes found.', data: { items: [] } };
+        }
+
+        const attrIds = attrs.map(a => a.id);
+        const { data: translations } = await db
+          .from('attribute_translations')
+          .select('attribute_id, name')
+          .in('attribute_id', attrIds)
+          .eq('language_code', 'en');
+
+        const transMap = new Map(translations?.map(t => [t.attribute_id, t.name]) || []);
+        const items = attrs.map(a => ({ ...a, name: transMap.get(a.id) || a.code }));
+
+        return {
+          success: true,
+          message: `Found ${items.length} attributes:\n${items.map(a => `• ${a.name} (${a.code}) - Type: ${a.type}${a.is_filterable ? ' [filterable]' : ''}`).join('\n')}`,
+          data: { items }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // CREATE ATTRIBUTE
+      // ═══════════════════════════════════════════════════════════════
+      case 'create_attribute': {
+        const { code, name, type = 'text', values = [] } = toolCall;
+
+        const attrCode = code.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+
+        const { data: newAttr, error: attrError } = await db
+          .from('attributes')
+          .insert({
+            code: attrCode,
+            type,
+            is_filterable: type === 'select' || type === 'multiselect'
+          })
+          .select('id')
+          .single();
+
+        if (attrError) throw attrError;
+
+        // Add translation
+        await db.from('attribute_translations').insert({
+          attribute_id: newAttr.id,
+          language_code: 'en',
+          name: name || code
+        });
+
+        // Add values if provided
+        if (values.length > 0 && (type === 'select' || type === 'multiselect')) {
+          for (let i = 0; i < values.length; i++) {
+            const { data: newValue } = await db
+              .from('attribute_values')
+              .insert({ attribute_id: newAttr.id, position: i })
+              .select('id')
+              .single();
+
+            if (newValue) {
+              await db.from('attribute_value_translations').insert({
+                attribute_value_id: newValue.id,
+                language_code: 'en',
+                value: values[i]
+              });
+            }
+          }
+        }
+
+        return {
+          success: true,
+          message: `Created attribute "${name || code}" (${attrCode})${values.length ? ` with values: ${values.join(', ')}` : ''}.`,
+          data: { attributeId: newAttr.id, code: attrCode }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // DELETE ATTRIBUTE
+      // ═══════════════════════════════════════════════════════════════
+      case 'delete_attribute': {
+        const { code } = toolCall;
+
+        const { data: attr } = await db
+          .from('attributes')
+          .select('id, code')
+          .ilike('code', code)
+          .single();
+
+        if (!attr) {
+          return { success: false, message: `Attribute "${code}" not found.` };
+        }
+
+        // Delete related data
+        const { data: values } = await db.from('attribute_values').select('id').eq('attribute_id', attr.id);
+        if (values?.length) {
+          const valueIds = values.map(v => v.id);
+          await db.from('attribute_value_translations').delete().in('attribute_value_id', valueIds);
+        }
+        await db.from('attribute_values').delete().eq('attribute_id', attr.id);
+        await db.from('attribute_translations').delete().eq('attribute_id', attr.id);
+        await db.from('product_attributes').delete().eq('attribute_id', attr.id);
+        const { error } = await db.from('attributes').delete().eq('id', attr.id);
+
+        if (error) throw error;
+
+        return {
+          success: true,
+          message: `Deleted attribute "${attr.code}".`,
+          data: { attributeId: attr.id }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // LIST CUSTOMERS
+      // ═══════════════════════════════════════════════════════════════
+      case 'list_customers': {
+        const limit = toolCall.limit || 20;
+
+        const { data: customers } = await db
+          .from('customers')
+          .select('id, email, first_name, last_name, is_active, created_at')
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (!customers?.length) {
+          return { success: true, message: 'No customers found.', data: { items: [] } };
+        }
+
+        return {
+          success: true,
+          message: `Found ${customers.length} customers:\n${customers.map(c => `• ${c.first_name || ''} ${c.last_name || ''} (${c.email})${c.is_active ? '' : ' [inactive]'}`).join('\n')}`,
+          data: { items: customers }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // BLACKLIST CUSTOMER
+      // ═══════════════════════════════════════════════════════════════
+      case 'blacklist_customer': {
+        const { email, reason = 'Blacklisted by admin' } = toolCall;
+
+        const { error } = await db
+          .from('blacklist_emails')
+          .insert({ email, reason });
+
+        if (error && error.code === '23505') {
+          return { success: true, message: `Email "${email}" is already blacklisted.` };
+        }
+        if (error) throw error;
+
+        return {
+          success: true,
+          message: `Blacklisted email "${email}".`,
+          data: { email, reason }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // LIST ORDERS
+      // ═══════════════════════════════════════════════════════════════
+      case 'list_orders': {
+        const { status, limit = 20 } = toolCall;
+
+        let query = db
+          .from('sales_orders')
+          .select('id, order_number, status, total_amount, customer_email, created_at')
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (status) {
+          query = query.eq('status', status);
+        }
+
+        const { data: orders } = await query;
+
+        if (!orders?.length) {
+          return { success: true, message: 'No orders found.', data: { items: [] } };
+        }
+
+        return {
+          success: true,
+          message: `Found ${orders.length} orders:\n${orders.map(o => `• #${o.order_number} - ${o.status} - $${o.total_amount} (${o.customer_email})`).join('\n')}`,
+          data: { items: orders }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // UPDATE ORDER STATUS
+      // ═══════════════════════════════════════════════════════════════
+      case 'update_order_status': {
+        const { order_number, status } = toolCall;
+
+        const { data: order } = await db
+          .from('sales_orders')
+          .select('id, order_number, status')
+          .eq('order_number', order_number)
+          .single();
+
+        if (!order) {
+          return { success: false, message: `Order "${order_number}" not found.` };
+        }
+
+        const { error } = await db
+          .from('sales_orders')
+          .update({ status, updated_at: new Date().toISOString() })
+          .eq('id', order.id);
+
+        if (error) throw error;
+
+        return {
+          success: true,
+          message: `Updated order #${order_number} status from "${order.status}" to "${status}".`,
+          data: { orderId: order.id, oldStatus: order.status, newStatus: status }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // LIST COUPONS
+      // ═══════════════════════════════════════════════════════════════
+      case 'list_coupons': {
+        const { data: coupons } = await db
+          .from('coupons')
+          .select('id, code, discount_type, discount_value, is_active, usage_count, usage_limit')
+          .order('created_at', { ascending: false })
+          .limit(30);
+
+        if (!coupons?.length) {
+          return { success: true, message: 'No coupons found.', data: { items: [] } };
+        }
+
+        return {
+          success: true,
+          message: `Found ${coupons.length} coupons:\n${coupons.map(c => `• ${c.code}: ${c.discount_value}${c.discount_type === 'percentage' ? '%' : '$'} off${c.is_active ? '' : ' [inactive]'} (used ${c.usage_count}/${c.usage_limit || '∞'})`).join('\n')}`,
+          data: { items: coupons }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // CREATE COUPON
+      // ═══════════════════════════════════════════════════════════════
+      case 'create_coupon': {
+        const { code, discount_type = 'percentage', discount_value, usage_limit = null } = toolCall;
+
+        const { data: newCoupon, error } = await db
+          .from('coupons')
+          .insert({
+            code: code.toUpperCase(),
+            discount_type,
+            discount_value,
+            is_active: true,
+            usage_count: 0,
+            usage_limit
+          })
+          .select('id')
+          .single();
+
+        if (error) {
+          if (error.code === '23505') {
+            return { success: false, message: `Coupon code "${code}" already exists.` };
+          }
+          throw error;
+        }
+
+        return {
+          success: true,
+          message: `Created coupon "${code.toUpperCase()}" for ${discount_value}${discount_type === 'percentage' ? '%' : '$'} off.`,
+          data: { couponId: newCoupon.id, code: code.toUpperCase() }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // DELETE COUPON
+      // ═══════════════════════════════════════════════════════════════
+      case 'delete_coupon': {
+        const { code } = toolCall;
+
+        const { data: coupon } = await db
+          .from('coupons')
+          .select('id, code')
+          .ilike('code', code)
+          .single();
+
+        if (!coupon) {
+          return { success: false, message: `Coupon "${code}" not found.` };
+        }
+
+        const { error } = await db.from('coupons').delete().eq('id', coupon.id);
+
+        if (error) throw error;
+
+        return {
+          success: true,
+          message: `Deleted coupon "${coupon.code}".`,
+          data: { couponId: coupon.id }
+        };
+      }
+
+      // ═══════════════════════════════════════════════════════════════
       // ASK CONFIRMATION (passthrough)
       // ═══════════════════════════════════════════════════════════════
       case 'ask_confirmation': {
@@ -752,7 +1292,7 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       default:
         return {
           success: false,
-          message: `Unknown tool "${tool}". I can help with adding products to categories, creating categories, and querying data.`
+          message: `Unknown tool "${tool}". Available tools: list_categories, create_category, delete_category, list_products, update_product, delete_product, list_attributes, create_attribute, delete_attribute, list_customers, blacklist_customer, list_orders, update_order_status, list_coupons, create_coupon, delete_coupon, add_to_category, remove_from_category.`
         };
     }
   } catch (error) {
