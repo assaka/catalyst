@@ -252,7 +252,14 @@ app.use(cors({
     }
 
     // Allow platform domains and development environments
-    const hostname = new URL(origin).hostname;
+    let hostname;
+    try {
+      hostname = new URL(origin).hostname;
+    } catch (e) {
+      console.warn('⚠️ CORS: Invalid origin URL:', origin);
+      return callback(new Error('Invalid origin'));
+    }
+
     const platformDomains = ['dainostore.com', 'www.dainostore.com', 'daino.ai', 'www.daino.ai', 'daino.store', 'www.daino.store'];
     const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
     const isVercelApp = hostname.endsWith('.vercel.app');
