@@ -361,10 +361,17 @@ export default function StorefrontLayout({ children }) {
     `;
 
     // Check if store is paused (published === false)
-    // But don't show paused modal if store owner is logged in viewing their own store
+    // But don't show paused modal if:
+    // 1. Store owner is logged in viewing their own store
+    // 2. In AI workspace preview mode (workspace=true or preview=draft)
     const storeOwnerData = getUserDataForRole('store_owner') || getUserDataForRole('admin');
     const isStoreOwnerViewingOwnStore = storeOwnerData && storeOwnerData.store_id === store?.id;
-    const isStorePaused = store?.published === false && !isStoreOwnerViewingOwnStore;
+
+    // Check if in preview/workspace mode via URL params
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const isInPreviewMode = urlParams?.get('workspace') === 'true' || urlParams?.get('preview') === 'draft';
+
+    const isStorePaused = store?.published === false && !isStoreOwnerViewingOwnStore && !isInPreviewMode;
 
     return (
         <PreviewModeProvider>
