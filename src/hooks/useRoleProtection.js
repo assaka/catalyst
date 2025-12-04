@@ -19,7 +19,7 @@ export const useRoleProtection = (shouldApply = true) => {
         const currentPath = location.pathname.toLowerCase();
 
         // Public pages that should bypass role protection
-        const publicPages = ['/admin/auth', '/admin/store-onboarding', '/landing'];
+        const publicPages = ['/admin/auth', '/admin/onboarding', '/landing'];
         if (publicPages.some(page => currentPath.startsWith(page))) {
           return; // Skip role protection for public pages
         }

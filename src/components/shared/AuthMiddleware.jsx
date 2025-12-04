@@ -1252,7 +1252,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                     // No redirect, go to onboarding
                     console.log('⚠️ No active stores found, redirecting to onboarding...');
                     const onboardingUrl = createAdminUrl("StoreOnboarding");
-                    navigate(onboardingUrl || '/admin/store-onboarding');
+                    navigate(onboardingUrl || '/admin/onboarding');
                   }
                 }
               } catch (error) {
@@ -1268,7 +1268,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                   // On error with no redirect, redirect to onboarding (safer fallback)
                   console.log('🔍 Error occurred, redirecting to onboarding...');
                   const onboardingUrl = createAdminUrl("StoreOnboarding");
-                  navigate(onboardingUrl || '/admin/store-onboarding');
+                  navigate(onboardingUrl || '/admin/onboarding');
                 }
               }
             }, 100); // Small delay to ensure token is set

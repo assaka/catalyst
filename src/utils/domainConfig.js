@@ -98,7 +98,6 @@ export function getAllPlatformDomainVariants() {
 export const NO_STORE_CONTEXT_PATHS = [
   '/admin/auth',
   '/auth',
-  '/admin/store-onboarding',
   '/admin/onboarding',
   '/landing',
   '/Landing'

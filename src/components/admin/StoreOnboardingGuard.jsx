@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
  * Store Onboarding Guard
  *
  * Checks if user has any active stores.
- * If no stores (count = 0) → redirect to /admin/store-onboarding
+ * If no stores (count = 0) → redirect to /admin/onboarding
  * If has stores → continue to requested page
  */
 export default function StoreOnboardingGuard({ children }) {
@@ -22,7 +22,7 @@ export default function StoreOnboardingGuard({ children }) {
 
   const checkStoreStatus = async () => {
     // Don't check if already on onboarding page
-    if (location.pathname === '/admin/store-onboarding') {
+    if (location.pathname === '/admin/onboarding') {
       setChecking(false);
       setHasStores(false);
       return;
@@ -40,7 +40,7 @@ export default function StoreOnboardingGuard({ children }) {
         if (activeStoreCount === 0) {
           // No active stores - redirect to onboarding
           console.log('No active stores found, redirecting to onboarding...');
-          navigate('/admin/store-onboarding', { replace: true });
+          navigate('/admin/onboarding', { replace: true });
           return;
         } else {
           // Has active stores - allow access

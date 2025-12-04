@@ -360,7 +360,6 @@ function LayoutInner({ children, currentPageName }) {
   const isAIWorkspacePage = aiWorkspacePages.includes(currentPageName) || location.pathname.startsWith('/ai-workspace');
   // Onboarding check - included in skipStoreContext but we need this for layout decisions
   const isOnboardingPage = currentPageName === 'StoreOnboarding' ||
-                           location.pathname === '/admin/store-onboarding' ||
                            location.pathname === '/admin/onboarding';
   const isAdminPage = !isPublicPage && !isStorefrontPage && !isCustomerDashboard && !isEditorPage && !isPluginPage && !isAIWorkspacePage && !isOnboardingPage;
 

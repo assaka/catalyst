@@ -45,7 +45,7 @@ export function AdminLayoutWrapper({ children }) {
 
       if (response?.data && response.data.length === 0) {
         console.log('🔍 No stores found, redirecting to onboarding...');
-        navigate('/admin/store-onboarding', { replace: true });
+        navigate('/admin/onboarding', { replace: true });
         return;
       }
 

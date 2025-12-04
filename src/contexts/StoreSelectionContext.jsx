@@ -32,7 +32,7 @@ export const StoreSelectionProvider = ({ children }) => {
   const isAdminPage = () => {
     const path = location.pathname;
     const isAuth = path === '/admin/auth' || path === '/auth';
-    const isOnboarding = path === '/admin/store-onboarding';
+    const isOnboarding = path === '/admin/onboarding';
 
     if (isAuth || isOnboarding) {
       return false; // Don't load stores on auth/onboarding
