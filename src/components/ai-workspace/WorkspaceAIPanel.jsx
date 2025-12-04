@@ -22,7 +22,9 @@ import {
   Maximize2,
   Minimize2,
   ChevronDown,
-  Paperclip
+  Paperclip,
+  ThumbsUp,
+  ThumbsDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import aiWorkspaceSlotProcessor from '@/services/aiWorkspaceSlotProcessor';
@@ -493,6 +495,26 @@ const WorkspaceAIPanel = () => {
     });
   };
 
+  // Handle feedback on AI responses
+  const handleFeedback = async (message, wasHelpful) => {
+    const candidateId = message.data?.candidateId;
+    if (!candidateId) return;
+
+    try {
+      await apiClient.post(`ai/training/candidates/${candidateId}/feedback`, {
+        wasHelpful,
+        feedbackText: wasHelpful ? 'User marked as helpful' : 'User marked as not helpful'
+      });
+
+      // Update message to show feedback was recorded
+      message.feedbackGiven = wasHelpful ? 'positive' : 'negative';
+      // Force re-render by updating state
+      addChatMessage({ ...message, feedbackGiven: wasHelpful ? 'positive' : 'negative' });
+    } catch (error) {
+      console.error('Failed to submit feedback:', error);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Panel Header */}
@@ -684,6 +706,44 @@ const WorkspaceAIPanel = () => {
                         <pre className="text-xs bg-gray-200 dark:bg-gray-800 rounded p-2 overflow-x-auto max-h-32">
                           {JSON.stringify(message.slotCommand, null, 2)}
                         </pre>
+                      </div>
+                    )}
+
+                    {/* Feedback buttons - show for AI responses with candidateId */}
+                    {message.role === 'assistant' && message.data?.candidateId && !message.feedbackGiven && (
+                      <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 flex items-center gap-2">
+                        <span className="text-xs text-gray-500">Was this helpful?</span>
+                        <button
+                          onClick={() => handleFeedback(message, true)}
+                          className="p-1 rounded hover:bg-green-100 dark:hover:bg-green-900/30 text-gray-400 hover:text-green-600 transition-colors"
+                          title="Yes, helpful"
+                        >
+                          <ThumbsUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleFeedback(message, false)}
+                          className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-600 transition-colors"
+                          title="Not helpful"
+                        >
+                          <ThumbsDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Feedback submitted confirmation */}
+                    {message.feedbackGiven && (
+                      <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 flex items-center gap-1 text-xs text-gray-500">
+                        {message.feedbackGiven === 'positive' ? (
+                          <>
+                            <ThumbsUp className="h-3 w-3 text-green-500" />
+                            <span>Thanks for the feedback!</span>
+                          </>
+                        ) : (
+                          <>
+                            <ThumbsDown className="h-3 w-3 text-red-500" />
+                            <span>Thanks, we'll improve!</span>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

@@ -367,8 +367,9 @@ class AIContextService {
   /**
    * Save chat message for learning
    */
-  async saveChatMessage({ userId, storeId, sessionId, role, content, intent, entity, operation, wasSuccessful, metadata }) {
+  async saveChatMessage({ userId, storeId, sessionId, role, content, intent, entity, operation, wasSuccessful, metadata, creditsUsed = 0 }) {
     try {
+      // Save to master database for global learning
       const { error } = await masterDbClient.from('ai_chat_history').insert({
         user_id: userId || null,
         store_id: storeId || null,
@@ -384,7 +385,38 @@ class AIContextService {
       });
 
       if (error) {
-        console.error('Error saving chat message:', error);
+        console.error('Error saving chat message to master:', error);
+      }
+
+      // Also save to tenant database for user's chat history
+      if (storeId && userId) {
+        try {
+          const ConnectionManager = require('./database/ConnectionManager');
+          const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+
+          await tenantDb('ai_chat_sessions').insert({
+            user_id: userId,
+            session_id: sessionId || `session_${Date.now()}`,
+            role,
+            content,
+            intent: intent || null,
+            data: metadata || {},
+            credits_used: creditsUsed || 0,
+            is_error: wasSuccessful === false,
+            created_at: new Date().toISOString()
+          });
+
+          // Also save user inputs to input history for autocomplete/suggestions
+          if (role === 'user') {
+            await tenantDb('ai_input_history').insert({
+              user_id: userId,
+              input: content,
+              created_at: new Date().toISOString()
+            }).onConflict().ignore(); // Avoid duplicates
+          }
+        } catch (tenantError) {
+          console.error('Error saving chat message to tenant:', tenantError);
+        }
       }
     } catch (error) {
       console.error('Error saving chat message:', error);
@@ -415,6 +447,87 @@ class AIContextService {
     } catch (error) {
       console.error('Error fetching successful prompts:', error);
       return [];
+    }
+  }
+
+  /**
+   * Get approved training examples to improve AI responses
+   * These are real user prompts that were marked as helpful
+   */
+  async getApprovedTrainingExamples(intent, queryType = null, limit = 5) {
+    try {
+      let query = masterDbClient
+        .from('ai_training_candidates')
+        .select('user_prompt, ai_response, detected_entity, detected_operation, success_count, metadata')
+        .in('training_status', ['approved', 'promoted'])
+        .gt('success_count', 0)
+        .order('success_count', { ascending: false })
+        .limit(limit);
+
+      if (intent) {
+        query = query.eq('detected_intent', intent);
+      }
+      if (queryType) {
+        query = query.eq('detected_entity', queryType);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching approved training examples:', error);
+        return [];
+      }
+
+      return (data || []).map(example => ({
+        prompt: example.user_prompt,
+        response: example.ai_response,
+        entity: example.detected_entity,
+        operation: example.detected_operation,
+        successCount: example.success_count
+      }));
+    } catch (error) {
+      console.error('Error fetching approved training examples:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get learning context for AI - combines entity definitions with approved examples
+   */
+  async getLearningContext(intent, queryType = null) {
+    try {
+      // Get approved examples for this intent
+      const approvedExamples = await this.getApprovedTrainingExamples(intent, queryType, 5);
+
+      // Get successful historical prompts
+      const successfulPrompts = queryType ? await this.getSuccessfulPrompts(queryType, 3) : [];
+
+      if (approvedExamples.length === 0 && successfulPrompts.length === 0) {
+        return null;
+      }
+
+      let context = '';
+
+      if (approvedExamples.length > 0) {
+        context += '\nPREVIOUSLY SUCCESSFUL EXAMPLES:\n';
+        approvedExamples.forEach((ex, i) => {
+          context += `Example ${i + 1} (used ${ex.successCount}x successfully):\n`;
+          context += `  User: "${ex.prompt}"\n`;
+          context += `  Response type: ${ex.entity || ex.operation || 'general'}\n`;
+        });
+      }
+
+      if (successfulPrompts.length > 0) {
+        context += '\nUSER PROMPTS THAT WORKED WELL:\n';
+        successfulPrompts.forEach((p, i) => {
+          context += `- "${p.content}"\n`;
+        });
+      }
+
+      return context;
+    } catch (error) {
+      console.error('Error getting learning context:', error);
+      return null;
     }
   }
 

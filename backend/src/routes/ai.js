@@ -3963,15 +3963,20 @@ Confirm in 1 sentence. MUST mention the specific changes. Keep it casual. No "Gr
             queryDescription = 'Unknown query type';
         }
 
+        // Get learning context from approved training data
+        const learningContext = await aiContextService.getLearningContext('analytics_query', queryType);
+
         // Generate natural language response
         const analyticsResponsePrompt = `User asked: "${message}"
 
 I queried the database and found:
 ${JSON.stringify(queryResult, null, 2)}
+${learningContext ? `\n${learningContext}` : ''}
 
 Generate a concise, helpful summary of these results. Use bullet points for lists.
 Don't include raw JSON - present the data naturally.
-If showing products/customers, include names and key metrics.`;
+If showing products/customers, include names and key metrics.
+Learn from the successful examples above to match the user's expected response style.`;
 
         const analyticsResponse = await aiService.generate({
           userId,
@@ -3979,12 +3984,36 @@ If showing products/customers, include names and key metrics.`;
           modelId,
           serviceKey,
           prompt: analyticsResponsePrompt,
-          systemPrompt: 'Present analytics data clearly and concisely. Use bullet points and formatting.',
+          systemPrompt: 'Present analytics data clearly and concisely. Use bullet points and formatting. Adapt your response style based on what has worked well in the past.',
           maxTokens: 800,
           temperature: 0.5,
           metadata: { type: 'analytics-response', storeId: resolvedStoreId, modelId }
         });
         creditsUsed += analyticsResponse.creditsDeducted;
+
+        // Capture training data for this interaction
+        const aiTrainingService = require('../services/aiTrainingService');
+        const trainingCapture = await aiTrainingService.captureTrainingCandidate({
+          storeId: resolvedStoreId,
+          userId,
+          sessionId: req.sessionID || req.headers['x-session-id'],
+          userPrompt: message,
+          aiResponse: analyticsResponse.content,
+          detectedIntent: 'analytics_query',
+          detectedEntity: queryType,
+          detectedOperation: 'query',
+          actionTaken: { query_type: queryType, filters, result_count: Array.isArray(queryResult) ? queryResult.length : 1 },
+          confidenceScore: intent.confidence || 0.8,
+          metadata: { modelId, queryDescription }
+        });
+
+        // Mark as success since query executed
+        if (trainingCapture.captured && trainingCapture.candidateId) {
+          await aiTrainingService.updateOutcome(trainingCapture.candidateId, 'success', {
+            query_executed: true,
+            result_count: Array.isArray(queryResult) ? queryResult.length : 1
+          });
+        }
 
         res.json({
           success: true,
@@ -3993,7 +4022,8 @@ If showing products/customers, include names and key metrics.`;
             type: 'analytics_result',
             query_type: queryType,
             description: queryDescription,
-            result: queryResult
+            result: queryResult,
+            candidateId: trainingCapture.candidateId // For feedback
           },
           creditsDeducted: creditsUsed
         });
