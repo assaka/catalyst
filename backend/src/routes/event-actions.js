@@ -7,7 +7,22 @@
 
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/authMiddleware');
+
+// Optional auth - allows unauthenticated requests but adds user if token exists
+const optionalAuth = (req, res, next) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return next();
+
+  try {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+  } catch (e) {
+    // Invalid token, continue without user
+  }
+  next();
+};
 const ConnectionManager = require('../services/database/ConnectionManager');
 
 // =====================================================
@@ -18,7 +33,7 @@ const ConnectionManager = require('../services/database/ConnectionManager');
  * GET /api/event-actions/triggers
  * List all triggers for a store
  */
-router.get('/triggers', authenticateToken, async (req, res) => {
+router.get('/triggers', authMiddleware, async (req, res) => {
     try {
         const { storeId } = req.query;
         if (!storeId) {
@@ -61,7 +76,7 @@ router.get('/triggers', authenticateToken, async (req, res) => {
  * POST /api/event-actions/triggers
  * Create a new trigger
  */
-router.post('/triggers', authenticateToken, async (req, res) => {
+router.post('/triggers', authMiddleware, async (req, res) => {
     try {
         const { storeId, trigger } = req.body;
         if (!storeId) {
@@ -102,7 +117,7 @@ router.post('/triggers', authenticateToken, async (req, res) => {
  * PUT /api/event-actions/triggers/:id
  * Update a trigger
  */
-router.put('/triggers/:id', authenticateToken, async (req, res) => {
+router.put('/triggers/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { storeId, trigger } = req.body;
@@ -146,7 +161,7 @@ router.put('/triggers/:id', authenticateToken, async (req, res) => {
  * DELETE /api/event-actions/triggers/:id
  * Delete a trigger and its actions
  */
-router.delete('/triggers/:id', authenticateToken, async (req, res) => {
+router.delete('/triggers/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { storeId } = req.query;
@@ -172,7 +187,7 @@ router.delete('/triggers/:id', authenticateToken, async (req, res) => {
  * GET /api/event-actions/triggers/:id/actions
  * Get all actions for a trigger
  */
-router.get('/triggers/:id/actions', authenticateToken, async (req, res) => {
+router.get('/triggers/:id/actions', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { storeId } = req.query;
@@ -198,7 +213,7 @@ router.get('/triggers/:id/actions', authenticateToken, async (req, res) => {
  * POST /api/event-actions/actions
  * Create a new action
  */
-router.post('/actions', authenticateToken, async (req, res) => {
+router.post('/actions', authMiddleware, async (req, res) => {
     try {
         const { storeId, action } = req.body;
 
@@ -233,7 +248,7 @@ router.post('/actions', authenticateToken, async (req, res) => {
  * PUT /api/event-actions/actions/:id
  * Update an action
  */
-router.put('/actions/:id', authenticateToken, async (req, res) => {
+router.put('/actions/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { storeId, action } = req.body;
@@ -274,7 +289,7 @@ router.put('/actions/:id', authenticateToken, async (req, res) => {
  * DELETE /api/event-actions/actions/:id
  * Delete an action
  */
-router.delete('/actions/:id', authenticateToken, async (req, res) => {
+router.delete('/actions/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { storeId } = req.query;
@@ -480,7 +495,7 @@ router.post('/convert', optionalAuth, async (req, res) => {
  * GET /api/event-actions/stats
  * Get statistics for triggers
  */
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/stats', authMiddleware, async (req, res) => {
     try {
         const { storeId, triggerId, days = 30 } = req.query;
 
