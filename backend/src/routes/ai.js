@@ -13,6 +13,277 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 router.use('/training', aiTrainingRoutes);
 
 /**
+ * POST /api/ai/smart-chat
+ * Ultimate AI chat combining: RAG + Learned Examples + Real-time Data + Natural Reasoning
+ * This is the "wow effect" Claude Code-style approach
+ */
+router.post('/smart-chat', authMiddleware, async (req, res) => {
+  try {
+    const { message, history = [], modelId, serviceKey } = req.body;
+    const userId = req.user?.id;
+    const storeId = req.headers['x-store-id'] || req.body.storeId;
+
+    if (!message) {
+      return res.status(400).json({ success: false, message: 'message is required' });
+    }
+
+    console.log('🧠 ULTIMATE AI CHAT');
+    console.log('📝:', message);
+
+    const ConnectionManager = require('../services/database/ConnectionManager');
+    const { masterDbClient } = require('../database/masterConnection');
+
+    // ═══════════════════════════════════════════════════════════════════
+    // STEP 1: Load RAG Knowledge Base (store-specific docs + global docs)
+    // ═══════════════════════════════════════════════════════════════════
+    let knowledgeBase = '';
+    try {
+      const { data: docs } = await masterDbClient
+        .from('ai_context_documents')
+        .select('title, content, category')
+        .eq('is_active', true)
+        .order('priority', { ascending: false })
+        .limit(5);
+
+      if (docs?.length) {
+        knowledgeBase = docs.map(d => `[${d.category}] ${d.title}: ${d.content?.substring(0, 500)}`).join('\n');
+      }
+    } catch (e) { console.error('RAG load failed:', e); }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // STEP 2: Load Learned Examples (approved successful prompts)
+    // ═══════════════════════════════════════════════════════════════════
+    let learnedExamples = '';
+    try {
+      const { data: examples } = await masterDbClient
+        .from('ai_training_candidates')
+        .select('user_prompt, ai_response, detected_entity, success_count')
+        .in('training_status', ['approved', 'promoted'])
+        .gt('success_count', 0)
+        .order('success_count', { ascending: false })
+        .limit(5);
+
+      if (examples?.length) {
+        learnedExamples = '\nLEARNED FROM PAST SUCCESS:\n' + examples.map(e =>
+          `Q: "${e.user_prompt?.substring(0, 100)}"\nStyle: ${e.detected_entity || 'general'} (worked ${e.success_count}x)`
+        ).join('\n');
+      }
+    } catch (e) { console.error('Examples load failed:', e); }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // STEP 3: Get Real-time Store Data
+    // ═══════════════════════════════════════════════════════════════════
+    let storeData = '';
+    let queryResults = null;
+
+    if (storeId) {
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+        const msg = message.toLowerCase();
+
+        // Smart data fetching based on what user asks
+        if (/categor/i.test(msg)) {
+          const cats = await tenantDb('categories as c')
+            .leftJoin('category_translations as ct', function() {
+              this.on('c.id', 'ct.category_id').andOn('ct.language_code', tenantDb.raw('?', ['en']));
+            })
+            .select('c.id', 'c.slug', 'c.is_active', 'c.level', 'c.parent_id', 'c.product_count', 'ct.name')
+            .orderBy('c.level')
+            .limit(50);
+
+          const active = cats.filter(c => c.is_active);
+          const root = cats.filter(c => !c.parent_id);
+          queryResults = { type: 'categories', data: cats, summary: { total: cats.length, active: active.length, root: root.length } };
+          storeData = `\n📊 CATEGORIES (${cats.length} total, ${active.length} active):\n` +
+            cats.slice(0, 15).map(c => `• ${c.name || c.slug} ${c.is_active ? '✓' : '✗'} (${c.product_count || 0} products)`).join('\n');
+        }
+        else if (/out.?of.?stock|no.?stock/i.test(msg)) {
+          const prods = await tenantDb('products as p')
+            .leftJoin('product_translations as pt', function() {
+              this.on('p.id', 'pt.product_id').andOn('pt.language_code', tenantDb.raw('?', ['en']));
+            })
+            .where('p.stock_quantity', '<=', 0)
+            .select('p.id', 'p.sku', 'p.stock_quantity', 'p.price', 'pt.name')
+            .limit(30);
+
+          queryResults = { type: 'out_of_stock', data: prods, summary: { count: prods.length } };
+          storeData = `\n📊 OUT OF STOCK (${prods.length} products):\n` +
+            prods.slice(0, 10).map(p => `• ${p.sku}: ${p.name || 'Unnamed'}`).join('\n');
+        }
+        else if (/products?|inventory/i.test(msg)) {
+          const stats = await tenantDb('products')
+            .select(
+              tenantDb.raw('COUNT(*) as total'),
+              tenantDb.raw('SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END) as out_of_stock'),
+              tenantDb.raw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active', ['active'])
+            ).first();
+
+          queryResults = { type: 'products', summary: stats };
+          storeData = `\n📊 PRODUCTS: ${stats?.total || 0} total, ${stats?.active || 0} active, ${stats?.out_of_stock || 0} out of stock`;
+        }
+        else if (/orders?|sales/i.test(msg)) {
+          const orders = await tenantDb('sales_orders')
+            .select('id', 'order_number', 'status', 'total_amount', 'created_at')
+            .orderBy('created_at', 'desc')
+            .limit(10);
+
+          const stats = await tenantDb('sales_orders')
+            .select(
+              tenantDb.raw('COUNT(*) as total'),
+              tenantDb.raw('SUM(total_amount) as revenue')
+            ).first();
+
+          queryResults = { type: 'orders', data: orders, summary: stats };
+          storeData = `\n📊 ORDERS: ${stats?.total || 0} total, $${parseFloat(stats?.revenue || 0).toFixed(2)} revenue\n` +
+            'Recent:\n' + orders.slice(0, 5).map(o => `• #${o.order_number}: ${o.status} - $${o.total_amount}`).join('\n');
+        }
+        else if (/attributes?/i.test(msg)) {
+          const attrs = await tenantDb('attributes as a')
+            .leftJoin('attribute_translations as at', function() {
+              this.on('a.id', 'at.attribute_id').andOn('at.language_code', tenantDb.raw('?', ['en']));
+            })
+            .select('a.id', 'a.code', 'a.type', 'a.is_filterable', 'at.name')
+            .limit(30);
+
+          queryResults = { type: 'attributes', data: attrs, summary: { count: attrs.length } };
+          storeData = `\n📊 ATTRIBUTES (${attrs.length}):\n` +
+            attrs.slice(0, 10).map(a => `• ${a.name || a.code} (${a.type})${a.is_filterable ? ' [filterable]' : ''}`).join('\n');
+        }
+        else if (/coupons?|discounts?/i.test(msg)) {
+          const coupons = await tenantDb('coupons')
+            .select('id', 'code', 'discount_type', 'discount_value', 'is_active', 'usage_count')
+            .orderBy('created_at', 'desc')
+            .limit(20);
+
+          queryResults = { type: 'coupons', data: coupons, summary: { count: coupons.length, active: coupons.filter(c => c.is_active).length } };
+          storeData = `\n📊 COUPONS (${coupons.length}, ${coupons.filter(c => c.is_active).length} active):\n` +
+            coupons.slice(0, 8).map(c => `• ${c.code}: ${c.discount_value}${c.discount_type === 'percentage' ? '%' : '$'} off ${c.is_active ? '✓' : '✗'}`).join('\n');
+        }
+        else if (/customers?/i.test(msg)) {
+          const stats = await tenantDb('customers')
+            .select(tenantDb.raw('COUNT(*) as total')).first();
+
+          queryResults = { type: 'customers', summary: stats };
+          storeData = `\n📊 CUSTOMERS: ${stats?.total || 0} registered`;
+        }
+        else {
+          // Get general store overview
+          const [prods, cats, orders] = await Promise.all([
+            tenantDb('products').count('* as c').first(),
+            tenantDb('categories').count('* as c').first(),
+            tenantDb('sales_orders').count('* as c').first()
+          ]);
+          storeData = `\n📊 STORE: ${prods?.c || 0} products, ${cats?.c || 0} categories, ${orders?.c || 0} orders`;
+        }
+      } catch (e) {
+        console.error('Store data fetch failed:', e);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // STEP 4: Build Ultimate System Prompt (Like Lovable/Bolt/Claude Code)
+    // ═══════════════════════════════════════════════════════════════════
+    const systemPrompt = `You are an expert AI assistant for DainoStore - a headless e-commerce platform. Think like Claude Code, Lovable, or Bolt - understand the architecture deeply and help users accomplish anything.
+
+ARCHITECTURE UNDERSTANDING:
+• **Frontend**: Next.js 14 + React + Tailwind CSS + shadcn/ui components
+• **Backend**: Node.js + Express + PostgreSQL (Supabase)
+• **Database**: Multi-tenant (Master DB for global, Tenant DB per store)
+• **Slot System**: Flexible page builder with slot_configurations table
+• **Plugins**: React components that inject into slots (stored in plugins table)
+
+DATABASE STRUCTURE:
+• products (id, sku, price, stock_quantity, status) + product_translations
+• categories (id, slug, is_active, level, parent_id) + category_translations
+• attributes (id, code, type, is_filterable) + attribute_translations
+• sales_orders (id, order_number, status, total_amount)
+• slot_configurations (store_id, page_type, configuration JSONB)
+• plugins (id, name, component_code, slot_target, is_active)
+
+PLUGIN SYSTEM:
+When user wants custom functionality, generate a plugin:
+\`\`\`javascript
+// Plugin structure
+{
+  name: "PluginName",
+  slot_target: "product_page|cart_page|checkout|header|footer",
+  component_code: \`
+    function PluginName({ product, cart, store }) {
+      // React + Tailwind component
+      return <div className="...">...</div>
+    }
+  \`,
+  settings: { /* configurable options */ }
+}
+\`\`\`
+
+${knowledgeBase ? `KNOWLEDGE BASE:\n${knowledgeBase}\n` : ''}
+${learnedExamples}
+
+CURRENT STORE DATA:${storeData || '\nNo specific data requested yet.'}
+
+HOW TO RESPOND:
+1. **Data questions** → Show the actual data with insights
+2. **Create/Build requests** → Generate working code, explain briefly, ask to proceed
+3. **Management tasks** → Execute directly or explain what you'll do
+4. **Analysis** → Provide actionable insights, not just numbers
+5. **Unclear requests** → Ask ONE clarifying question
+
+Be concise. Be helpful. Be impressive. No fluff.`;
+
+    // ═══════════════════════════════════════════════════════════════════
+    // STEP 5: Generate Response with Natural Reasoning
+    // ═══════════════════════════════════════════════════════════════════
+    const response = await aiService.generate({
+      userId,
+      operationType: 'chat',
+      modelId: modelId || 'claude-sonnet',
+      serviceKey: serviceKey || 'ai_chat_claude_sonnet',
+      prompt: message,
+      systemPrompt,
+      conversationHistory: history.slice(-10).map(m => ({ role: m.role, content: m.content })),
+      maxTokens: 1200,
+      temperature: 0.6,
+      metadata: { type: 'ultimate-chat', storeId }
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // STEP 6: Capture for Training (continuous improvement)
+    // ═══════════════════════════════════════════════════════════════════
+    const captureResult = await aiTrainingService.captureTrainingCandidate({
+      storeId,
+      userId,
+      userPrompt: message,
+      aiResponse: response.content,
+      detectedIntent: 'smart_chat',
+      detectedEntity: queryResults?.type || 'general',
+      confidenceScore: 0.9,
+      metadata: { queryResults: queryResults?.summary, modelId, hasStoreData: !!storeData }
+    }).catch(e => ({ captured: false }));
+
+    // Mark as success if we got data
+    if (captureResult?.candidateId && queryResults) {
+      aiTrainingService.updateOutcome(captureResult.candidateId, 'success', queryResults.summary).catch(() => {});
+    }
+
+    res.json({
+      success: true,
+      message: response.content,
+      data: {
+        type: 'smart_chat',
+        queryResults: queryResults?.summary,
+        candidateId: captureResult?.candidateId
+      },
+      creditsDeducted: response.creditsDeducted
+    });
+
+  } catch (error) {
+    console.error('Smart chat error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to process request' });
+  }
+});
+
+/**
  * Track successful operations for self-learning AND capture as training candidate
  * This automatically records successful patterns and captures them for training validation
  */

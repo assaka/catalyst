@@ -101,6 +101,7 @@ const WorkspaceAIPanel = () => {
   const [cloneName, setCloneName] = useState('');
   const [pluginGenerationCost, setPluginGenerationCost] = useState(50);
 
+
   // Get storeId from context
   const storeId = getSelectedStoreId();
 
@@ -352,8 +353,8 @@ const WorkspaceAIPanel = () => {
         currentConfiguration
       );
 
-      // Call backend AI service
-      const response = await apiClient.post('ai/chat', {
+      // Use Smart Chat (RAG + learned examples + real-time data)
+      const response = await apiClient.post('ai/smart-chat', {
         message: userMessage,
         context: selectedPageType,
         history: chatMessages.slice(-10).map(m => ({ role: m.role, content: m.content })),
