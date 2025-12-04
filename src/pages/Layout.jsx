@@ -359,7 +359,7 @@ function LayoutInner({ children, currentPageName }) {
   const isEditorPage = editorPages.includes(currentPageName) || location.pathname.startsWith('/editor/');
   const isPluginPage = pluginPages.includes(currentPageName) || location.pathname.startsWith('/plugins');
   const isAIWorkspacePage = aiWorkspacePages.includes(currentPageName) || location.pathname.startsWith('/ai-workspace');
-  const isOnboardingPage = currentPageName === 'StoreOnboarding' || location.pathname === '/admin/store-onboarding';
+  const isOnboardingPage = currentPageName === 'StoreOnboarding' || location.pathname === '/admin/store-onboarding' || location.pathname === '/admin/onboarding';
   const isAdminPage = !isPublicPage && !isStorefrontPage && !isCustomerDashboard && !isEditorPage && !isPluginPage && !isAIWorkspacePage && !isOnboardingPage;
 
   // Determine current mode for ModeHeader

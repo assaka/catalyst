@@ -37,7 +37,7 @@ export const StoreProvider = ({ children }) => {
 
   // Skip StoreProvider initialization for auth and onboarding pages
   const isAuthPage = location.pathname === '/admin/auth' || location.pathname === '/auth';
-  const isOnboardingPage = location.pathname === '/admin/store-onboarding';
+  const isOnboardingPage = location.pathname === '/admin/store-onboarding' || location.pathname === '/admin/onboarding';
 
   // Check if we're on a platform domain homepage - ALWAYS show Landing, ignore localStorage
   const isPlatform = isPlatformDomain();
