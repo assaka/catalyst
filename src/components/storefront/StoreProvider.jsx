@@ -39,11 +39,11 @@ export const StoreProvider = ({ children }) => {
   const isAuthPage = location.pathname === '/admin/auth' || location.pathname === '/auth';
   const isOnboardingPage = location.pathname === '/admin/store-onboarding';
 
-  // Check if we're on a platform domain (shows Landing page, no store context needed)
+  // Check if we're on a platform domain homepage - ALWAYS show Landing, ignore localStorage
   const isPlatform = isPlatformDomain();
-  const hasNoStoreContext = !localStorage.getItem('selectedStoreSlug') && !localStorage.getItem('selectedStoreId');
+  const isPlatformHomepage = isPlatform && location.pathname === '/';
 
-  if (isAuthPage || isOnboardingPage || (isPlatform && hasNoStoreContext && location.pathname === '/')) {
+  if (isAuthPage || isOnboardingPage || isPlatformHomepage) {
     // Return children without store context
     return <>{children}</>;
   }

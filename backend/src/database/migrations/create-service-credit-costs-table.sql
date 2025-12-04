@@ -96,7 +96,18 @@ INSERT INTO service_credit_costs (service_key, service_name, service_category, d
 ('ai_seo_optimization', 'AI SEO Optimization', 'ai_services', 'AI-powered SEO analysis and optimization', 0.5000, 'per_use', true, true, 32, '{"note": "Per page or product"}'),
 ('ai_code_patch', 'AI Code Modification', 'ai_services', 'AI-powered code editing and patching', 25.0000, 'per_use', true, true, 33, '{"note": "Per code modification"}'),
 ('ai_layout_generation', 'AI Layout Generation', 'ai_services', 'AI-generated page layouts and designs', 40.0000, 'per_use', true, true, 34, '{"note": "Per layout generation"}'),
-('ai_chat', 'AI General Chat', 'ai_services', 'General AI assistant interactions', 10.0000, 'per_use', true, true, 35, '{"note": "Per chat session"}'),
+('ai_chat', 'AI General Chat', 'ai_services', 'General AI assistant interactions (default)', 10.0000, 'per_use', true, true, 35, '{"note": "Per chat session - default model"}'),
+
+-- AI Chat Model-Specific Costs
+('ai_chat_claude_haiku', 'AI Chat - Claude Haiku', 'ai_services', 'Claude 3 Haiku - Fast and affordable', 2.0000, 'per_use', true, true, 36, '{"provider": "anthropic", "model": "claude-3-haiku-20240307", "note": "Fastest Claude model"}'),
+('ai_chat_claude_sonnet', 'AI Chat - Claude Sonnet', 'ai_services', 'Claude 3.5 Sonnet - Balanced performance', 8.0000, 'per_use', true, true, 37, '{"provider": "anthropic", "model": "claude-3-5-sonnet-20241022", "note": "Best balance of speed and quality"}'),
+('ai_chat_claude_opus', 'AI Chat - Claude Opus', 'ai_services', 'Claude 3 Opus - Most capable', 25.0000, 'per_use', true, true, 38, '{"provider": "anthropic", "model": "claude-3-opus-20240229", "note": "Most powerful Claude model"}'),
+('ai_chat_gpt4o_mini', 'AI Chat - GPT-4o Mini', 'ai_services', 'OpenAI GPT-4o Mini - Fast and efficient', 3.0000, 'per_use', true, true, 39, '{"provider": "openai", "model": "gpt-4o-mini", "note": "Fast and affordable OpenAI model"}'),
+('ai_chat_gpt4o', 'AI Chat - GPT-4o', 'ai_services', 'OpenAI GPT-4o - Latest flagship', 15.0000, 'per_use', true, true, 40, '{"provider": "openai", "model": "gpt-4o", "note": "Most capable OpenAI model"}'),
+('ai_chat_gemini_flash', 'AI Chat - Gemini Flash', 'ai_services', 'Google Gemini 1.5 Flash - Ultra fast', 1.5000, 'per_use', true, true, 41, '{"provider": "gemini", "model": "gemini-1.5-flash", "note": "Fastest Gemini model"}'),
+('ai_chat_gemini_pro', 'AI Chat - Gemini Pro', 'ai_services', 'Google Gemini 1.5 Pro - Advanced reasoning', 10.0000, 'per_use', true, true, 42, '{"provider": "gemini", "model": "gemini-1.5-pro", "note": "Most capable Gemini model"}'),
+('ai_chat_groq_llama', 'AI Chat - Groq Llama', 'ai_services', 'Groq Llama 3.1 70B - Lightning fast', 1.0000, 'per_use', true, true, 43, '{"provider": "groq", "model": "llama-3.1-70b-versatile", "note": "Ultra-fast inference with Groq"}'),
+('ai_chat_groq_mixtral', 'AI Chat - Groq Mixtral', 'ai_services', 'Groq Mixtral 8x7B - Fast MoE model', 0.5000, 'per_use', true, true, 44, '{"provider": "groq", "model": "mixtral-8x7b-32768", "note": "Fast mixture-of-experts model"}'),
 
 -- Data Migration
 ('product_import', 'Product Import', 'data_migration', 'Bulk product import', 0.01, 'per_item', true, true, 40, '{"note": "Per product imported", "min_charge": 1}'),

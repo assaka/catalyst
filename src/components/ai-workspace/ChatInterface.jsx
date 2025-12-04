@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Sparkles, User, Bot, Code, Eye, Package, Download, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Send, Loader2, Sparkles, User, Bot, Code, Eye, Package, Download, ThumbsUp, ThumbsDown, ChevronDown, Zap, Brain, Cpu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
 import { User as UserEntity } from '@/api/entities';
@@ -10,6 +10,19 @@ import { useAIWorkspace } from '@/contexts/AIWorkspaceContext';
  * ChatInterface - Conversational AI for AI Studio
  * User chats naturally, AI determines what to do (like Bolt, Lovable, v0)
  */
+// Available AI models with their configurations
+const AI_MODELS = [
+  { id: 'claude-haiku', name: 'Claude Haiku', provider: 'anthropic', credits: 2, icon: '⚡', description: 'Fast & affordable', serviceKey: 'ai_chat_claude_haiku' },
+  { id: 'claude-sonnet', name: 'Claude Sonnet', provider: 'anthropic', credits: 8, icon: '🎯', description: 'Balanced', serviceKey: 'ai_chat_claude_sonnet', default: true },
+  { id: 'claude-opus', name: 'Claude Opus', provider: 'anthropic', credits: 25, icon: '👑', description: 'Most capable', serviceKey: 'ai_chat_claude_opus' },
+  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', credits: 3, icon: '🚀', description: 'Fast & efficient', serviceKey: 'ai_chat_gpt4o_mini' },
+  { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', credits: 15, icon: '🧠', description: 'Latest flagship', serviceKey: 'ai_chat_gpt4o' },
+  { id: 'gemini-flash', name: 'Gemini Flash', provider: 'gemini', credits: 1.5, icon: '💨', description: 'Ultra fast', serviceKey: 'ai_chat_gemini_flash' },
+  { id: 'gemini-pro', name: 'Gemini Pro', provider: 'gemini', credits: 10, icon: '💎', description: 'Advanced reasoning', serviceKey: 'ai_chat_gemini_pro' },
+  { id: 'groq-llama', name: 'Groq Llama', provider: 'groq', credits: 1, icon: '🦙', description: 'Lightning fast', serviceKey: 'ai_chat_groq_llama' },
+  { id: 'groq-mixtral', name: 'Groq Mixtral', provider: 'groq', credits: 0.5, icon: '🌀', description: 'Fast MoE', serviceKey: 'ai_chat_groq_mixtral' },
+];
+
 const ChatInterface = ({ onPluginCloned, context }) => {
   const { getSelectedStoreId } = useStoreSelection();
   const { refreshPreview, triggerConfigurationRefresh } = useAIWorkspace();
@@ -30,8 +43,11 @@ const ChatInterface = ({ onPluginCloned, context }) => {
   const [inputHistory, setInputHistory] = useState([]); // Arrow up/down history
   const [historyIndex, setHistoryIndex] = useState(-1); // Current position in history
   const [sessionId] = useState(() => `session_${Date.now()}`); // Session ID for grouping
+  const [selectedModel, setSelectedModel] = useState(AI_MODELS.find(m => m.default)?.id || 'claude-sonnet');
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   // Load starter templates, plugin cost, and chat history
   useEffect(() => {
@@ -40,6 +56,20 @@ const ChatInterface = ({ onPluginCloned, context }) => {
     loadChatHistory();
     loadInputHistory();
   }, []);
+
+  // Close model dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowModelDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Get current selected model object
+  const currentModel = AI_MODELS.find(m => m.id === selectedModel) || AI_MODELS[0];
 
   // Load chat history from tenant DB
   const loadChatHistory = async () => {
@@ -240,7 +270,9 @@ const ChatInterface = ({ onPluginCloned, context }) => {
       const response = await apiClient.post('/ai/chat', {
         message: userMessage,
         conversationHistory: messages,
-        storeId: getSelectedStoreId()
+        storeId: getSelectedStoreId(),
+        modelId: selectedModel,
+        serviceKey: currentModel.serviceKey
       });
 
       if (response.success) {
@@ -551,6 +583,74 @@ const ChatInterface = ({ onPluginCloned, context }) => {
 
       {/* Input */}
       <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800">
+        {/* Model Selection */}
+        <div className="mb-3 relative" ref={dropdownRef}>
+          <button
+            onClick={() => setShowModelDropdown(!showModelDropdown)}
+            disabled={isProcessing}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg border transition-all",
+              "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-600",
+              "hover:border-blue-400 dark:hover:border-blue-500",
+              "disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
+          >
+            <span className="text-base">{currentModel.icon}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{currentModel.name}</span>
+            <span className="text-gray-400 dark:text-gray-500">•</span>
+            <span className="text-blue-600 dark:text-blue-400 font-medium">{currentModel.credits} credits</span>
+            <ChevronDown className={cn("w-3.5 h-3.5 text-gray-400 transition-transform", showModelDropdown && "rotate-180")} />
+          </button>
+
+          {/* Dropdown Menu */}
+          {showModelDropdown && (
+            <div className="absolute bottom-full left-0 mb-1 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+              <div className="p-2 border-b border-gray-100 dark:border-gray-700">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 px-2">Select AI Model</p>
+              </div>
+              <div className="max-h-64 overflow-y-auto py-1">
+                {AI_MODELS.map((model) => (
+                  <button
+                    key={model.id}
+                    onClick={() => {
+                      setSelectedModel(model.id);
+                      setShowModelDropdown(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-2 text-left transition-colors",
+                      selectedModel === model.id
+                        ? "bg-blue-50 dark:bg-blue-900/30"
+                        : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    )}
+                  >
+                    <span className="text-lg">{model.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-sm font-medium",
+                          selectedModel === model.id ? "text-blue-600 dark:text-blue-400" : "text-gray-800 dark:text-gray-200"
+                        )}>
+                          {model.name}
+                        </span>
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                          {model.provider}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{model.description}</p>
+                    </div>
+                    <div className={cn(
+                      "text-xs font-semibold whitespace-nowrap",
+                      selectedModel === model.id ? "text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-300"
+                    )}>
+                      {model.credits} cr
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="flex items-end gap-3">
           <div className="flex-1">
             <textarea
@@ -593,7 +693,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
           </button>
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-          Press Enter to send • Shift+Enter for new line
+          Press Enter to send • Shift+Enter for new line • Using <span className="font-medium">{currentModel.name}</span>
         </p>
       </div>
 

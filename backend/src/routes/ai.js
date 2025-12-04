@@ -659,7 +659,7 @@ router.post('/chat', authMiddleware, async (req, res) => {
   };
 
   try {
-    let { message, conversationHistory, storeId } = req.body;
+    let { message, conversationHistory, storeId, modelId, serviceKey } = req.body;
     const userId = req.user.id;
 
     // Resolve store_id from various sources (header takes priority)
@@ -674,6 +674,9 @@ router.post('/chat', authMiddleware, async (req, res) => {
       user_store_id: req.user?.store_id,
       resolved: resolvedStoreId
     });
+
+    // Log model selection
+    console.log('🤖 AI Chat - Model selection:', { modelId, serviceKey });
 
     if (!message) {
       return res.status(400).json({
@@ -1518,13 +1521,15 @@ Confirm in 1 sentence. MUST mention the specific changes. Keep it casual.`;
       const responseResult = await aiService.generate({
         userId,
         operationType: 'general',
+        modelId, // Use user-selected model
+        serviceKey, // Use model-specific service key for pricing
         prompt: responsePrompt,
         systemPrompt: clarificationNeeded.length > 0
           ? 'Ask for clarification naturally. Be helpful, suggest examples.'
           : 'Mention the SPECIFIC changes made. One casual sentence.',
         maxTokens: clarificationNeeded.length > 0 ? 80 : 40,
         temperature: 0.7,
-        metadata: { type: 'response', storeId: resolvedStoreId }
+        metadata: { type: 'response', storeId: resolvedStoreId, modelId }
       });
       totalCredits += responseResult.creditsDeducted;
 
@@ -1583,11 +1588,13 @@ Generate a brief, friendly message asking if they want to proceed. Mention it wi
         const confirmResult = await aiService.generate({
           userId,
           operationType: 'general',
+          modelId, // Use user-selected model
+          serviceKey, // Use model-specific service key
           prompt: confirmPrompt,
           systemPrompt: 'Be brief and helpful. Ask for confirmation to generate a plugin. No markdown, no emojis.',
           maxTokens: 100,
           temperature: 0.7,
-          metadata: { type: 'plugin-confirmation', storeId }
+          metadata: { type: 'plugin-confirmation', storeId, modelId }
         });
         creditsUsed += confirmResult.creditsDeducted;
 
@@ -1606,7 +1613,9 @@ Generate a brief, friendly message asking if they want to proceed. Mention it wi
       // Generate plugin (confirmed)
       const pluginResult = await aiService.generatePlugin(userId, message, {
         category: intent.details?.category || 'general',
-        storeId
+        storeId,
+        modelId, // Use user-selected model for plugin generation
+        serviceKey
       });
 
       responseData = {

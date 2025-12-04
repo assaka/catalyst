@@ -26,15 +26,17 @@ class AIProviderService {
       anthropic: null,
       openai: null,
       deepseek: null,
-      gemini: null
+      gemini: null,
+      groq: null
     };
 
     // Default models for each provider
     this.defaultModels = {
       anthropic: 'claude-3-haiku-20240307',
-      openai: 'gpt-3.5-turbo',
+      openai: 'gpt-4o-mini',
       deepseek: 'deepseek-chat',
-      gemini: 'gemini-pro'
+      gemini: 'gemini-1.5-flash',
+      groq: 'llama-3.1-70b-versatile'
     };
 
     // Provider-specific API keys
@@ -42,7 +44,8 @@ class AIProviderService {
       anthropic: process.env.ANTHROPIC_API_KEY,
       openai: process.env.OPENAI_API_KEY,
       deepseek: process.env.DEEPSEEK_API_KEY,
-      gemini: process.env.GEMINI_API_KEY
+      gemini: process.env.GEMINI_API_KEY,
+      groq: process.env.GROQ_API_KEY
     };
   }
 
@@ -57,7 +60,7 @@ class AIProviderService {
    * Get the first available provider (in priority order)
    */
   getFirstAvailableProvider() {
-    const priority = ['anthropic', 'openai', 'deepseek', 'gemini'];
+    const priority = ['anthropic', 'openai', 'groq', 'gemini', 'deepseek'];
     for (const provider of priority) {
       if (this.isProviderAvailable(provider)) {
         return provider;
@@ -87,13 +90,20 @@ class AIProviderService {
         console.log('✅ Anthropic client initialized');
       } else if (providerName === 'openai') {
         // OpenAI uses fetch, no SDK initialization needed
+        this.providers.openai = { ready: true };
         console.log('✅ OpenAI client ready (fetch-based)');
-      } else if (providerName === 'deepseek') {
-        // DeepSeek setup (future)
-        console.log('⚠️  DeepSeek not yet implemented');
+      } else if (providerName === 'groq') {
+        // Groq uses OpenAI-compatible API
+        this.providers.groq = { ready: true };
+        console.log('✅ Groq client ready (OpenAI-compatible)');
       } else if (providerName === 'gemini') {
-        // Gemini setup (future)
-        console.log('⚠️  Gemini not yet implemented');
+        // Gemini uses REST API
+        this.providers.gemini = { ready: true };
+        console.log('✅ Gemini client ready (REST-based)');
+      } else if (providerName === 'deepseek') {
+        // DeepSeek uses OpenAI-compatible API
+        this.providers.deepseek = { ready: true };
+        console.log('✅ DeepSeek client ready (OpenAI-compatible)');
       }
 
       return this.providers[providerName];
@@ -139,10 +149,12 @@ class AIProviderService {
       return await this._chatAnthropic(messages, { model, temperature, maxTokens, systemPrompt });
     } else if (provider === 'openai') {
       return await this._chatOpenAI(messages, { model, temperature, maxTokens, systemPrompt });
-    } else if (provider === 'deepseek') {
-      throw new Error('DeepSeek not yet implemented');
+    } else if (provider === 'groq') {
+      return await this._chatGroq(messages, { model, temperature, maxTokens, systemPrompt });
     } else if (provider === 'gemini') {
-      throw new Error('Gemini not yet implemented');
+      return await this._chatGemini(messages, { model, temperature, maxTokens, systemPrompt });
+    } else if (provider === 'deepseek') {
+      return await this._chatDeepSeek(messages, { model, temperature, maxTokens, systemPrompt });
     } else {
       throw new Error(`Unknown provider: ${provider}`);
     }
@@ -327,6 +339,221 @@ Return ONLY the translated text, no explanations or notes.`;
   }
 
   /**
+   * Groq-specific chat implementation (OpenAI-compatible API)
+   */
+  async _chatGroq(messages, options) {
+    const apiKey = this.apiKeys.groq;
+
+    if (!apiKey) {
+      throw new Error('Groq API key not configured');
+    }
+
+    const { model, temperature, maxTokens, systemPrompt } = options;
+
+    try {
+      console.log(`   🌍 GROQ API CALL`);
+      console.log(`   🤖 Model: ${model}`);
+
+      const fetch = (await import('node-fetch')).default;
+
+      // Groq uses OpenAI-compatible format
+      const groqMessages = systemPrompt
+        ? [{ role: 'system', content: systemPrompt }, ...messages]
+        : messages;
+
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: groqMessages,
+          temperature,
+          max_tokens: maxTokens
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        const errorMessage = data.error?.message || `API request failed with status ${response.status}`;
+        throw new Error(`Groq API error: ${errorMessage}`);
+      }
+
+      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+        throw new Error('Invalid response structure from Groq API');
+      }
+
+      const content = data.choices[0].message.content;
+
+      console.log(`   ✅ GROQ API RESPONSE received`);
+      console.log(`   📊 Tokens: input=${data.usage?.prompt_tokens || 0}, output=${data.usage?.completion_tokens || 0}`);
+
+      return {
+        content,
+        usage: {
+          input_tokens: data.usage?.prompt_tokens || 0,
+          output_tokens: data.usage?.completion_tokens || 0
+        },
+        provider: 'groq',
+        model
+      };
+    } catch (error) {
+      console.error(`   ❌ GROQ API ERROR:`, error.message);
+      throw new Error(`Groq API error: ${error.message}`);
+    }
+  }
+
+  /**
+   * Gemini-specific chat implementation (Google AI API)
+   */
+  async _chatGemini(messages, options) {
+    const apiKey = this.apiKeys.gemini;
+
+    if (!apiKey) {
+      throw new Error('Gemini API key not configured');
+    }
+
+    const { model, temperature, maxTokens, systemPrompt } = options;
+
+    try {
+      console.log(`   🌍 GEMINI API CALL`);
+      console.log(`   🤖 Model: ${model}`);
+
+      const fetch = (await import('node-fetch')).default;
+
+      // Convert messages to Gemini format
+      const geminiContents = messages.map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      }));
+
+      // Gemini uses system instruction separately
+      const requestBody = {
+        contents: geminiContents,
+        generationConfig: {
+          temperature,
+          maxOutputTokens: maxTokens
+        }
+      };
+
+      if (systemPrompt) {
+        requestBody.systemInstruction = { parts: [{ text: systemPrompt }] };
+      }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        const errorMessage = data.error?.message || `API request failed with status ${response.status}`;
+        throw new Error(`Gemini API error: ${errorMessage}`);
+      }
+
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        throw new Error('Invalid response structure from Gemini API');
+      }
+
+      const content = data.candidates[0].content.parts[0].text;
+
+      console.log(`   ✅ GEMINI API RESPONSE received`);
+      console.log(`   📊 Tokens: input=${data.usageMetadata?.promptTokenCount || 0}, output=${data.usageMetadata?.candidatesTokenCount || 0}`);
+
+      return {
+        content,
+        usage: {
+          input_tokens: data.usageMetadata?.promptTokenCount || 0,
+          output_tokens: data.usageMetadata?.candidatesTokenCount || 0
+        },
+        provider: 'gemini',
+        model
+      };
+    } catch (error) {
+      console.error(`   ❌ GEMINI API ERROR:`, error.message);
+      throw new Error(`Gemini API error: ${error.message}`);
+    }
+  }
+
+  /**
+   * DeepSeek-specific chat implementation (OpenAI-compatible API)
+   */
+  async _chatDeepSeek(messages, options) {
+    const apiKey = this.apiKeys.deepseek;
+
+    if (!apiKey) {
+      throw new Error('DeepSeek API key not configured');
+    }
+
+    const { model, temperature, maxTokens, systemPrompt } = options;
+
+    try {
+      console.log(`   🌍 DEEPSEEK API CALL`);
+      console.log(`   🤖 Model: ${model}`);
+
+      const fetch = (await import('node-fetch')).default;
+
+      // DeepSeek uses OpenAI-compatible format
+      const deepseekMessages = systemPrompt
+        ? [{ role: 'system', content: systemPrompt }, ...messages]
+        : messages;
+
+      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: deepseekMessages,
+          temperature,
+          max_tokens: maxTokens
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        const errorMessage = data.error?.message || `API request failed with status ${response.status}`;
+        throw new Error(`DeepSeek API error: ${errorMessage}`);
+      }
+
+      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+        throw new Error('Invalid response structure from DeepSeek API');
+      }
+
+      const content = data.choices[0].message.content;
+
+      console.log(`   ✅ DEEPSEEK API RESPONSE received`);
+      console.log(`   📊 Tokens: input=${data.usage?.prompt_tokens || 0}, output=${data.usage?.completion_tokens || 0}`);
+
+      return {
+        content,
+        usage: {
+          input_tokens: data.usage?.prompt_tokens || 0,
+          output_tokens: data.usage?.completion_tokens || 0
+        },
+        provider: 'deepseek',
+        model
+      };
+    } catch (error) {
+      console.error(`   ❌ DEEPSEEK API ERROR:`, error.message);
+      throw new Error(`DeepSeek API error: ${error.message}`);
+    }
+  }
+
+  /**
    * Get available providers (for UI selection)
    */
   getAvailableProviders() {
@@ -347,8 +574,9 @@ Return ONLY the translated text, no explanations or notes.`;
     const names = {
       anthropic: 'Anthropic (Claude)',
       openai: 'OpenAI (GPT)',
-      deepseek: 'DeepSeek',
-      gemini: 'Google Gemini'
+      groq: 'Groq',
+      gemini: 'Google Gemini',
+      deepseek: 'DeepSeek'
     };
     return names[provider] || provider;
   }

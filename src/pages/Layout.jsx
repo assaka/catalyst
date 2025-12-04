@@ -349,10 +349,9 @@ function LayoutInner({ children, currentPageName }) {
   const pluginPages = ['Plugins']; // Pages that use the plugins mode
   const aiWorkspacePages = ['AIWorkspace']; // Pages that use the AI Workspace mode (full-screen editor)
 
-  // Check if we're on a platform domain showing Landing page (no store context needed)
+  // Check if we're on a platform domain homepage - ALWAYS show Landing, ignore localStorage
   const isPlatform = isPlatformDomain();
-  const hasNoStoreContext = !localStorage.getItem('selectedStoreSlug') && !localStorage.getItem('selectedStoreId');
-  const isPlatformLanding = isPlatform && hasNoStoreContext && location.pathname === '/';
+  const isPlatformLanding = isPlatform && location.pathname === '/';
 
   const isPublicPage = publicPages.includes(currentPageName) || isPlatformLanding;
   const isStorefrontPage = storefrontPages.includes(currentPageName) && !isPlatformLanding;

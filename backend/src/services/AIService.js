@@ -14,10 +14,18 @@ const ServiceCreditCost = require('../models/ServiceCreditCost');
 class AIService {
   constructor() {
     this.defaultModel = 'claude-3-haiku-20240307';
-    this.models = {
-      'claude-sonnet': 'claude-3-sonnet-20240229',
-      'claude-opus': 'claude-3-opus-20240229',
-      'claude-haiku': 'claude-3-haiku-20240307'
+
+    // Model ID to actual API model mapping
+    this.modelMapping = {
+      'claude-haiku': { provider: 'anthropic', model: 'claude-3-haiku-20240307' },
+      'claude-sonnet': { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+      'claude-opus': { provider: 'anthropic', model: 'claude-3-opus-20240229' },
+      'gpt-4o-mini': { provider: 'openai', model: 'gpt-4o-mini' },
+      'gpt-4o': { provider: 'openai', model: 'gpt-4o' },
+      'gemini-flash': { provider: 'gemini', model: 'gemini-1.5-flash' },
+      'gemini-pro': { provider: 'gemini', model: 'gemini-1.5-pro' },
+      'groq-llama': { provider: 'groq', model: 'llama-3.1-70b-versatile' },
+      'groq-mixtral': { provider: 'groq', model: 'mixtral-8x7b-32768' }
     };
 
     // Map operation types to service keys in service_credit_costs table
@@ -30,6 +38,19 @@ class AIService {
       'general': 'ai_chat'
     };
 
+    // Model-specific service keys (for chat with specific models)
+    this.modelServiceKeys = {
+      'claude-haiku': 'ai_chat_claude_haiku',
+      'claude-sonnet': 'ai_chat_claude_sonnet',
+      'claude-opus': 'ai_chat_claude_opus',
+      'gpt-4o-mini': 'ai_chat_gpt4o_mini',
+      'gpt-4o': 'ai_chat_gpt4o',
+      'gemini-flash': 'ai_chat_gemini_flash',
+      'gemini-pro': 'ai_chat_gemini_pro',
+      'groq-llama': 'ai_chat_groq_llama',
+      'groq-mixtral': 'ai_chat_groq_mixtral'
+    };
+
     // Fallback costs if service not found in database (in credits)
     this.fallbackCosts = {
       'plugin-generation': 50,
@@ -37,35 +58,67 @@ class AIService {
       'translation': 20,
       'layout-generation': 40,
       'code-patch': 25,
-      'general': 10
+      'general': 10,
+      // Model-specific fallbacks
+      'claude-haiku': 2,
+      'claude-sonnet': 8,
+      'claude-opus': 25,
+      'gpt-4o-mini': 3,
+      'gpt-4o': 15,
+      'gemini-flash': 1.5,
+      'gemini-pro': 10,
+      'groq-llama': 1,
+      'groq-mixtral': 0.5
     };
   }
 
   /**
-   * Get cost for an operation type from the service_credit_costs table
+   * Get model configuration from model ID
    */
-  async getOperationCost(operationType) {
-    const serviceKey = this.serviceKeyMap[operationType];
+  getModelConfig(modelId) {
+    return this.modelMapping[modelId] || this.modelMapping['claude-sonnet'];
+  }
 
-    if (!serviceKey) {
+  /**
+   * Get cost for an operation type from the service_credit_costs table
+   * @param {string} operationType - Operation type (e.g., 'general', 'plugin-generation')
+   * @param {string} serviceKey - Optional explicit service key (e.g., 'ai_chat_claude_sonnet')
+   * @param {string} modelId - Optional model ID for model-specific pricing
+   */
+  async getOperationCost(operationType, serviceKey = null, modelId = null) {
+    // If explicit serviceKey is provided, use it directly
+    let resolvedServiceKey = serviceKey;
+
+    // If modelId is provided and operation is 'general', use model-specific service key
+    if (!resolvedServiceKey && modelId && this.modelServiceKeys[modelId]) {
+      resolvedServiceKey = this.modelServiceKeys[modelId];
+    }
+
+    // Fall back to operation type service key
+    if (!resolvedServiceKey) {
+      resolvedServiceKey = this.serviceKeyMap[operationType];
+    }
+
+    if (!resolvedServiceKey) {
       console.warn(`⚠️ Unknown operation type: ${operationType}, using fallback cost`);
-      return this.fallbackCosts[operationType] || this.fallbackCosts.general;
+      return this.fallbackCosts[modelId] || this.fallbackCosts[operationType] || this.fallbackCosts.general;
     }
 
     try {
-      const cost = await ServiceCreditCost.getCostByKey(serviceKey);
+      const cost = await ServiceCreditCost.getCostByKey(resolvedServiceKey);
+      console.log(`💰 Cost lookup: ${resolvedServiceKey} = ${cost} credits`);
       return parseFloat(cost);
     } catch (error) {
-      console.warn(`⚠️ Could not fetch cost for ${serviceKey}, using fallback:`, error.message);
-      return this.fallbackCosts[operationType] || this.fallbackCosts.general;
+      console.warn(`⚠️ Could not fetch cost for ${resolvedServiceKey}, using fallback:`, error.message);
+      return this.fallbackCosts[modelId] || this.fallbackCosts[operationType] || this.fallbackCosts.general;
     }
   }
 
   /**
    * Check if user has sufficient credits
    */
-  async checkCredits(userId, operationType) {
-    const cost = await this.getOperationCost(operationType);
+  async checkCredits(userId, operationType, serviceKey = null, modelId = null) {
+    const cost = await this.getOperationCost(operationType, serviceKey, modelId);
 
     // Query master DB for user credits
     const { data: user, error } = await masterDbClient
@@ -93,7 +146,7 @@ class AIService {
    * Deduct credits from user account
    */
   async deductCredits(userId, operationType, metadata = {}) {
-    const cost = await this.getOperationCost(operationType);
+    const cost = await this.getOperationCost(operationType, metadata.serviceKey, metadata.modelId);
 
     // Get store_id - try to get user's active store if not provided
     let storeId = metadata.storeId;
@@ -228,13 +281,22 @@ class AIService {
       prompt,
       systemPrompt = '',
       model = this.defaultModel,
+      modelId = null, // User-selected model ID (e.g., 'claude-sonnet')
+      serviceKey = null, // Explicit service key for cost lookup
       maxTokens = 4096,
       temperature = 0.7,
       metadata = {}
     } = options;
 
-    // Validate user has credits
-    const creditCheck = await this.checkCredits(userId, operationType);
+    // Get model configuration if modelId provided
+    const modelConfig = modelId ? this.getModelConfig(modelId) : null;
+    const provider = modelConfig?.provider || 'anthropic';
+    const actualModel = modelConfig?.model || model;
+
+    console.log(`🤖 AI Generate: modelId=${modelId}, provider=${provider}, model=${actualModel}`);
+
+    // Validate user has credits (with model-specific pricing)
+    const creditCheck = await this.checkCredits(userId, operationType, serviceKey, modelId);
     if (!creditCheck.hasCredits) {
       throw new Error(
         `Insufficient credits. Required: ${creditCheck.required}, Available: ${creditCheck.available}`
@@ -250,10 +312,10 @@ class AIService {
         }
       ];
 
-      // Use unified AI provider service
+      // Use unified AI provider service with selected model
       const response = await aiProvider.chat(messages, {
-        provider: 'anthropic', // Can be made configurable later
-        model,
+        provider,
+        model: actualModel,
         maxTokens,
         temperature,
         systemPrompt
@@ -267,19 +329,23 @@ class AIService {
         model: response.model
       };
 
-      // Deduct credits
+      // Deduct credits (with model-specific pricing)
       await this.deductCredits(userId, operationType, {
         ...metadata,
-        ...usage
+        ...usage,
+        modelId,
+        serviceKey
       });
 
       // Log usage
       await this.logUsage(userId, operationType, {
         ...metadata,
-        ...usage
+        ...usage,
+        modelId,
+        provider
       });
 
-      const cost = await this.getOperationCost(operationType);
+      const cost = await this.getOperationCost(operationType, serviceKey, modelId);
 
       return {
         success: true,
@@ -719,6 +785,8 @@ Example generatedFiles:
     const result = await this.generate({
       userId,
       operationType: 'plugin-generation',
+      modelId: metadata.modelId, // Use user-selected model if provided
+      serviceKey: metadata.serviceKey,
       prompt,
       systemPrompt,
       maxTokens: 4096,
@@ -1066,6 +1134,8 @@ Return the modified plugin in the same JSON format as plugin generation.`;
     const result = await this.generate({
       userId,
       operationType: 'plugin-modification',
+      modelId: metadata.modelId, // Use user-selected model if provided
+      serviceKey: metadata.serviceKey,
       prompt,
       systemPrompt,
       maxTokens: 4096,
