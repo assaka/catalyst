@@ -86,7 +86,7 @@ Return as JSON with this structure:
 
     try {
       const message = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-sonnet-latest',
         max_tokens: 2048,
         messages: [{
           role: 'user',
@@ -176,7 +176,7 @@ Return as JSON.`;
 
     try {
       const message = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-sonnet-latest',
         max_tokens: 2048,
         messages: [{
           role: 'user',

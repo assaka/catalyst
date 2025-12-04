@@ -32,11 +32,11 @@ class AIProviderService {
 
     // Default models for each provider
     this.defaultModels = {
-      anthropic: 'claude-3-haiku-20240307',
+      anthropic: 'claude-3-5-haiku-latest',
       openai: 'gpt-4o-mini',
       deepseek: 'deepseek-chat',
-      gemini: 'gemini-1.5-flash',
-      groq: 'llama-3.1-70b-versatile'
+      gemini: 'gemini-2.0-flash',
+      groq: 'llama-3.3-70b-versatile'
     };
 
     // Provider-specific API keys

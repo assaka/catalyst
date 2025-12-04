@@ -14,18 +14,18 @@ const AIModel = require('../models/AIModel');
  */
 class AIService {
   constructor() {
-    this.defaultModel = 'claude-3-haiku-20240307';
+    this.defaultModel = 'claude-3-5-haiku-latest';
 
     // Model ID to actual API model mapping
     this.modelMapping = {
-      'claude-haiku': { provider: 'anthropic', model: 'claude-3-haiku-20240307' },
-      'claude-sonnet': { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
-      'claude-opus': { provider: 'anthropic', model: 'claude-3-opus-20240229' },
+      'claude-haiku': { provider: 'anthropic', model: 'claude-3-5-haiku-latest' },
+      'claude-sonnet': { provider: 'anthropic', model: 'claude-3-5-sonnet-latest' },
+      'claude-opus': { provider: 'anthropic', model: 'claude-3-opus-latest' },
       'gpt-4o-mini': { provider: 'openai', model: 'gpt-4o-mini' },
       'gpt-4o': { provider: 'openai', model: 'gpt-4o' },
-      'gemini-flash': { provider: 'gemini', model: 'gemini-1.5-flash' },
-      'gemini-pro': { provider: 'gemini', model: 'gemini-1.5-pro' },
-      'groq-llama': { provider: 'groq', model: 'llama-3.1-70b-versatile' },
+      'gemini-flash': { provider: 'gemini', model: 'gemini-2.0-flash' },
+      'gemini-pro': { provider: 'gemini', model: 'gemini-1.5-pro-latest' },
+      'groq-llama': { provider: 'groq', model: 'llama-3.3-70b-versatile' },
       'groq-mixtral': { provider: 'groq', model: 'mixtral-8x7b-32768' }
     };
 

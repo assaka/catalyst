@@ -209,7 +209,7 @@ router.get('/status', async (req, res) => {
 
     res.json({
       available: hasApiKey,
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-5-sonnet-latest',
       message: hasApiKey
         ? 'AI service is ready'
         : 'ANTHROPIC_API_KEY not configured',
