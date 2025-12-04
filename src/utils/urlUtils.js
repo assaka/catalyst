@@ -5,10 +5,17 @@
 
 /**
  * Check if current hostname is a custom domain (not platform domains)
- * Platform domains: vercel.app, onrender.com, localhost, 127.0.0.1
+ * Platform domains: dainostore.com, daino.ai, daino.store, vercel.app, onrender.com, localhost, 127.0.0.1
  */
 export function isCustomDomain() {
   const hostname = window.location.hostname;
+
+  // Platform domains should NOT be treated as custom domains
+  const platformDomains = ['dainostore.com', 'www.dainostore.com', 'daino.ai', 'www.daino.ai', 'daino.store', 'www.daino.store'];
+  if (platformDomains.includes(hostname)) {
+    return false;
+  }
+
   return !hostname.includes('vercel.app') &&
          !hostname.includes('onrender.com') &&
          !hostname.includes('localhost') &&

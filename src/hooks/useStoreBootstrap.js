@@ -128,19 +128,27 @@ export function determineStoreSlug(location) {
     return hostname;
   }
 
-  // Fallback to localStorage
+  // Check if we're on a platform domain BEFORE localStorage fallback
+  // Platform domain homepage should show Landing, not a saved store
+  const isPlatformDomain = hostname.includes('dainostore.com') ||
+                           hostname.includes('daino.ai') ||
+                           hostname.includes('daino.store');
+
+  // On platform domain root path, show Landing page (no store context)
+  const path = location?.pathname || '';
+  if (isPlatformDomain && (path === '/' || path === '')) {
+    return null; // Storefront.jsx will show Landing page
+  }
+
+  // Fallback to localStorage (for non-root paths or non-platform domains)
   const savedSlug = localStorage.getItem('selectedStoreSlug');
   if (savedSlug) {
     return savedSlug;
   }
 
-  // Check if we're on a platform domain - don't redirect, let Storefront show Landing
-  const isPlatformDomain = hostname.includes('dainostore.com') ||
-                           hostname.includes('daino.ai') ||
-                           hostname.includes('daino.store');
-
+  // Platform domain non-root path without savedSlug - still show Landing
   if (isPlatformDomain) {
-    return null; // Storefront.jsx will show Landing page
+    return null;
   }
 
   // No store found - redirect to Landing page
