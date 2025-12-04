@@ -50,6 +50,7 @@ class AIContextService {
 
   /**
    * Get relevant knowledge base documents from ai_context_documents
+   * Always includes 'core' category and 'rules' type documents (critical instructions)
    */
   async getRelevantDocuments({ mode, category, limit = 5 }) {
     try {
@@ -66,9 +67,9 @@ class AIContextService {
         query = query.or(`mode.eq.${mode},mode.eq.all`);
       }
 
-      // Filter by category
+      // Filter by category - ALWAYS include 'core' and 'rules' type docs
       if (category) {
-        query = query.or(`category.eq.${category},category.eq.core`);
+        query = query.or(`category.eq.${category},category.eq.core,type.eq.rules`);
       }
 
       const { data, error } = await query;

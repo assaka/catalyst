@@ -482,7 +482,7 @@ Return a JSON response with complete database INSERT statements for ALL required
 - Action: show_modal with discount coupon
 - Widget: Modal component for global slot
 $DOC$,
-    'plugins',
+    'core',
     '["rules", "generation", "defaults", "critical"]'::jsonb,
     100,
     'all',
