@@ -907,15 +907,17 @@ COMMON SLOT NAMES (use these exact IDs):
 INTENTS:
 - layout_modify: Moving/repositioning elements (e.g., "move sku above price")
 - styling: Changing appearance (e.g., "make title red", "change color")
-- analytics_query: DATABASE QUERIES about products, sales, inventory, customers. USE THIS for any question asking for DATA from the store like:
+- analytics_query: DATABASE QUERIES about products, sales, inventory, customers, categories, attributes, settings. USE THIS for any question asking for DATA or LISTING entities like:
   * "which products are out of stock" → query_type: "out_of_stock"
   * "show me out of stock products" → query_type: "out_of_stock"
-  * "what products have no stock" → query_type: "out_of_stock"
-  * "give me the SKUs of out of stock products" → query_type: "out_of_stock"
   * "best selling products" → query_type: "best_selling"
   * "total revenue" → query_type: "revenue"
   * "how many orders today" → query_type: "orders"
   * "low stock items" → query_type: "low_stock"
+  * "which categories are live" → query_type: "categories", filters: { status: "active" }
+  * "show categories" → query_type: "categories"
+  * "list attributes" → query_type: "attributes"
+  * "show payment methods" → query_type: "payment_methods"
 - job_trigger: Triggering background tasks (e.g., "import from akeneo", "run sync", "start export")
 - settings_update: Theme/appearance/catalog settings (e.g., "change breadcrumb color", "hide stock label", "enable inventory tracking")
 - admin_entity: Store entity CRUD (e.g., "rename tab", "create coupon", "disable payment method")
@@ -3969,14 +3971,10 @@ Confirm in 1 sentence. MUST mention the specific changes. Keep it casual. No "Gr
         // Generate natural language response
         const analyticsResponsePrompt = `User asked: "${message}"
 
-I queried the database and found:
+Data found:
 ${JSON.stringify(queryResult, null, 2)}
-${learningContext ? `\n${learningContext}` : ''}
 
-Generate a concise, helpful summary of these results. Use bullet points for lists.
-Don't include raw JSON - present the data naturally.
-If showing products/customers, include names and key metrics.
-Learn from the successful examples above to match the user's expected response style.`;
+Be SHORT and direct. Just list the results with bullet points. No fluff, no explanations.`;
 
         const analyticsResponse = await aiService.generate({
           userId,
@@ -3984,9 +3982,9 @@ Learn from the successful examples above to match the user's expected response s
           modelId,
           serviceKey,
           prompt: analyticsResponsePrompt,
-          systemPrompt: 'Present analytics data clearly and concisely. Use bullet points and formatting. Adapt your response style based on what has worked well in the past.',
-          maxTokens: 800,
-          temperature: 0.5,
+          systemPrompt: 'Be extremely concise. Just list the data with bullet points. No introductions, no conclusions, no explanations. Short answers only.',
+          maxTokens: 500,
+          temperature: 0.3,
           metadata: { type: 'analytics-response', storeId: resolvedStoreId, modelId }
         });
         creditsUsed += analyticsResponse.creditsDeducted;
