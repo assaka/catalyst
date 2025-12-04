@@ -380,6 +380,115 @@ $DOC$,
     true
 ) ON CONFLICT DO NOTHING;
 
+-- Document: Plugin Generation Rules (HIGH PRIORITY - MUST FOLLOW)
+INSERT INTO ai_context_documents (type, title, content, category, tags, priority, mode, is_active) VALUES (
+    'rules',
+    'Plugin Generation Rules - MUST FOLLOW',
+    $DOC$# CRITICAL: Plugin Generation Rules
+
+## RULE 1: NEVER ASK QUESTIONS - USE SENSIBLE DEFAULTS
+When a user asks to create a plugin, IMMEDIATELY generate it. Do NOT ask:
+- "What do you want to call this plugin?" → Generate a name from the description
+- "Which slot do you want?" → Use the most appropriate slot (cart_page for cart, checkout for checkout)
+- "What features do you want?" → Infer features from the description
+
+## RULE 2: GENERATE COMPLETE DATABASE ENTRIES
+Return a JSON response with complete database INSERT statements for ALL required tables:
+
+```json
+{
+  "type": "plugin_generation",
+  "plugin": {
+    "registry": {
+      "name": "Coupon Modal",
+      "slug": "coupon-modal",
+      "description": "Shows a coupon modal when cart is empty",
+      "category": "marketing",
+      "version": "1.0.0"
+    },
+    "widgets": [{
+      "name": "CouponModalWidget",
+      "slot": "cart_page",
+      "code": "function CouponModalWidget({ config }) { ... }"
+    }],
+    "events": [{
+      "name": "onCartViewed",
+      "event_type": "cart.view",
+      "code": "export default async function onCartViewed(data) { ... }"
+    }],
+    "data": [{
+      "key": "triggers",
+      "value": [{ "id": "trigger_1", "event_type": "cart.view", "conditions": {"cart_items_count": {"operator": "==", "value": 0}} }]
+    }, {
+      "key": "actions",
+      "value": [{ "id": "action_1", "trigger_id": "trigger_1", "action_type": "show_modal", "modal_config": {...} }]
+    }]
+  },
+  "explanation": "Created a coupon modal plugin that shows 20% off when cart is empty"
+}
+```
+
+## RULE 3: DEFAULT SLOT MAPPINGS
+| Feature Type | Default Slot |
+|-------------|--------------|
+| Cart features | cart_page |
+| Checkout features | checkout |
+| Product features | product_page |
+| Header features | header |
+| Site-wide modals | global |
+| Popups/Banners | global |
+
+## RULE 4: DEFAULT COUPON STRUCTURE
+```json
+{
+  "code": "SAVE20",
+  "discount_type": "percentage",
+  "discount_value": 20,
+  "auto_apply": false
+}
+```
+
+## RULE 5: DEFAULT MODAL STRUCTURE
+```json
+{
+  "title": "Special Offer!",
+  "message": "Description of the offer",
+  "style": { "position": "center", "theme": "light", "size": "medium" },
+  "buttons": [
+    { "text": "Claim Offer", "style": "primary", "action": "apply_coupon" },
+    { "text": "No Thanks", "style": "ghost", "action": "close" }
+  ]
+}
+```
+
+## EXAMPLE USER REQUESTS AND RESPONSES
+
+**User:** "create a coupon plugin"
+**AI Response:** Generate a complete coupon plugin with:
+- Widget to display coupon code on cart page
+- Event listener for cart.view
+- Default 10% discount coupon
+- Modal with "Apply Coupon" button
+
+**User:** "show modal in cart when no products with 20% coupon"
+**AI Response:** Generate:
+- Trigger: event_type=cart.view, conditions={cart_items_count: {operator: "==", value: 0}}
+- Action: show_modal with 20% coupon code
+- Widget: Modal component for cart_page slot
+
+**User:** "exit intent popup with discount"
+**AI Response:** Generate:
+- Trigger: event_type=exit.intent
+- Action: show_modal with discount coupon
+- Widget: Modal component for global slot
+$DOC$,
+    'plugins',
+    '["rules", "generation", "defaults", "critical"]'::jsonb,
+    100,
+    'all',
+    true
+) ON CONFLICT DO NOTHING;
+
 -- =====================================================
 -- 3. CODE PATTERNS
 -- =====================================================
