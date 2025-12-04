@@ -86,6 +86,7 @@ const WorkspaceAIPanel = () => {
   const scrollAreaRef = useRef(null);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Get current model object
   const currentModel = AI_MODELS.find(m => m.id === selectedModel) || AI_MODELS[0];
@@ -810,6 +811,7 @@ const WorkspaceAIPanel = () => {
 
                 {/* Upload Button */}
                 <button
+                  onClick={() => fileInputRef.current?.click()}
                   disabled={isProcessingAi}
                   className={cn(
                     "p-1 rounded transition-all",
@@ -821,6 +823,20 @@ const WorkspaceAIPanel = () => {
                 >
                   <Paperclip className="w-3.5 h-3.5" />
                 </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept="image/*,.pdf,.doc,.docx,.txt,.json"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // TODO: Handle file upload
+                      console.log('File selected:', file.name);
+                    }
+                    e.target.value = ''; // Reset to allow same file selection
+                  }}
+                />
               </div>
 
               {/* Right side: Hint */}
