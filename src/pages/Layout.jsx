@@ -347,8 +347,17 @@ function LayoutInner({ children, currentPageName }) {
   const editorPages = ['AIContextWindow']; // Pages that use the editor mode
   const pluginPages = ['Plugins']; // Pages that use the plugins mode
   const aiWorkspacePages = ['AIWorkspace']; // Pages that use the AI Workspace mode (full-screen editor)
-  const isPublicPage = publicPages.includes(currentPageName);
-  const isStorefrontPage = storefrontPages.includes(currentPageName);
+
+  // Check if we're on a platform domain showing Landing page (no store context needed)
+  const hostname = window.location.hostname;
+  const isPlatformDomain = hostname.includes('dainostore.com') ||
+                           hostname.includes('daino.ai') ||
+                           hostname.includes('daino.store');
+  const hasNoStoreContext = !localStorage.getItem('selectedStoreSlug') && !localStorage.getItem('selectedStoreId');
+  const isPlatformLanding = isPlatformDomain && hasNoStoreContext && location.pathname === '/';
+
+  const isPublicPage = publicPages.includes(currentPageName) || isPlatformLanding;
+  const isStorefrontPage = storefrontPages.includes(currentPageName) && !isPlatformLanding;
   const isCustomerDashboard = currentPageName === 'CustomerDashboard';
   const isEditorPage = editorPages.includes(currentPageName) || location.pathname.startsWith('/editor/');
   const isPluginPage = pluginPages.includes(currentPageName) || location.pathname.startsWith('/plugins');
