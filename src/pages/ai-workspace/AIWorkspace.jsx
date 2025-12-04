@@ -8,7 +8,6 @@ import WorkspaceAIPanel from '@/components/ai-workspace/WorkspaceAIPanel';
 import WorkspaceCanvas from '@/components/ai-workspace/WorkspaceCanvas';
 import WorkspaceStorefrontPreview from '@/components/ai-workspace/WorkspaceStorefrontPreview';
 import DeveloperPluginEditor from '@/components/plugins/DeveloperPluginEditor';
-import ChatInterface from '@/components/ai-workspace/ChatInterface';
 
 /**
  * AIWorkspace - Unified Editor + AI workspace
@@ -26,26 +25,9 @@ const AIWorkspaceContent = () => {
     pluginToEdit,
     showPluginEditor,
     closePluginEditor,
-    openPluginEditor,
-    showAiStudio,
-    closeAiStudio,
     chatMinimized,
     chatMaximized
   } = useAIWorkspace();
-
-  // Handle plugin cloned from ChatInterface (Create New Plugin)
-  const handlePluginCloned = (clonedPlugin) => {
-    // Convert to format expected by DeveloperPluginEditor
-    const pluginForEditor = {
-      id: clonedPlugin.id,
-      name: clonedPlugin.name,
-      ...clonedPlugin
-    };
-    // Open plugin editor with the cloned plugin
-    openPluginEditor(pluginForEditor);
-    // Close AI Studio mode since we're now in plugin editor mode
-    closeAiStudio();
-  };
 
   // Calculate sizes for plugin editor mode (simplified - no minimize for Files/Editor)
   const calculateChatSize = () => {
@@ -109,12 +91,6 @@ const AIWorkspaceContent = () => {
               />
             </ResizablePanel>
           </ResizablePanelGroup>
-        ) : showAiStudio ? (
-          // AI Studio Mode - Full ChatInterface for creating plugins
-          // When a plugin is created/selected, it will open in DeveloperPluginEditor via handlePluginCloned
-          <div className="h-full">
-            <ChatInterface onPluginCloned={handlePluginCloned} />
-          </div>
         ) : (
           // Normal Mode - AI Panel + Editor/Preview
           <ResizablePanelGroup direction="horizontal" className="h-full">
