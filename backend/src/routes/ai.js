@@ -5347,7 +5347,7 @@ router.post('/chat/history', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/ai/chat/input-history
- * Get input history for arrow up/down navigation
+ * Get input history for arrow up/down navigation (from ai_chat_sessions user messages)
  */
 router.get('/chat/input-history', authMiddleware, async (req, res) => {
   try {
@@ -5362,10 +5362,12 @@ router.get('/chat/input-history', authMiddleware, async (req, res) => {
     const ConnectionManager = require('../services/database/ConnectionManager');
     const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
+    // Get user messages from chat_sessions (single table approach)
     const { data: inputs, error } = await tenantDb
-      .from('ai_input_history')
-      .select('input, created_at')
+      .from('ai_chat_sessions')
+      .select('content, created_at')
       .eq('user_id', userId)
+      .eq('role', 'user')
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -5376,7 +5378,7 @@ router.get('/chat/input-history', authMiddleware, async (req, res) => {
 
     res.json({
       success: true,
-      inputs: (inputs || []).map(i => i.input)
+      inputs: (inputs || []).map(i => i.content)
     });
   } catch (error) {
     console.error('[AI Input History] Error:', error);
@@ -5386,38 +5388,13 @@ router.get('/chat/input-history', authMiddleware, async (req, res) => {
 
 /**
  * POST /api/ai/chat/input-history
- * Save input to history for arrow navigation
+ * DEPRECATED: Input history is now derived from ai_chat_sessions user messages
+ * Kept for backwards compatibility - does nothing
  */
 router.post('/chat/input-history', authMiddleware, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const storeId = req.headers['x-store-id'] || req.body.storeId;
-    const { input } = req.body;
-
-    if (!storeId || !input) {
-      return res.status(400).json({ success: false, message: 'storeId and input are required' });
-    }
-
-    const ConnectionManager = require('../services/database/ConnectionManager');
-    const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-    const { error } = await tenantDb
-      .from('ai_input_history')
-      .insert({
-        user_id: userId,
-        input,
-        created_at: new Date().toISOString()
-      });
-
-    if (error) {
-      console.error('[AI Input History] Error saving:', error);
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('[AI Input History] Error:', error);
-    res.json({ success: true });
-  }
+  // Input history is now stored via /chat/history endpoint
+  // This endpoint exists only for backwards compatibility
+  res.json({ success: true });
 });
 
 module.exports = router;

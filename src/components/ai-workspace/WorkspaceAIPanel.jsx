@@ -92,6 +92,9 @@ const WorkspaceAIPanel = () => {
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
   const [attachedImages, setAttachedImages] = useState([]); // [{file, preview, base64, type}]
+  const [inputHistory, setInputHistory] = useState([]); // Previous user inputs for arrow navigation
+  const [historyIndex, setHistoryIndex] = useState(-1); // Current position in history (-1 = not navigating)
+  const [sessionId] = useState(() => `session_${Date.now()}`); // Session ID for grouping messages
 
   // Get current model object
   const currentModel = AI_MODELS.find(m => m.id === selectedModel) || AI_MODELS[0];
@@ -108,11 +111,74 @@ const WorkspaceAIPanel = () => {
   // Get storeId from context
   const storeId = getSelectedStoreId();
 
-  // Load starter templates and plugin cost
+  // Load starter templates, plugin cost, chat history, and input history
   useEffect(() => {
     loadStarterTemplates();
     loadPluginGenerationCost();
-  }, []);
+    loadChatHistory();
+    loadInputHistory();
+  }, [storeId]);
+
+  // Load chat history from tenant DB
+  const loadChatHistory = async () => {
+    if (!storeId) return;
+    try {
+      const response = await apiClient.get('/ai/chat/history', {
+        params: { store_id: storeId, limit: 50 }
+      });
+      if (response.success && response.messages?.length > 0) {
+        response.messages.forEach(m => {
+          addChatMessage({
+            role: m.role,
+            content: m.content,
+            data: m.data,
+            credits: m.credits_used,
+            error: m.is_error
+          });
+        });
+      }
+    } catch (error) {
+      console.error('[WorkspaceAIPanel] Failed to load chat history:', error);
+    }
+  };
+
+  // Load input history for arrow navigation
+  const loadInputHistory = async () => {
+    if (!storeId) return;
+    try {
+      const response = await apiClient.get('/ai/chat/input-history', {
+        params: { store_id: storeId, limit: 30 }
+      });
+      if (response.success && response.inputs) {
+        setInputHistory(response.inputs);
+      }
+    } catch (error) {
+      console.error('[WorkspaceAIPanel] Failed to load input history:', error);
+    }
+  };
+
+  // Save message to chat history
+  const saveChatMessage = async (role, content, data = null, creditsUsed = 0, isError = false) => {
+    if (!storeId) return;
+    try {
+      await apiClient.post('/ai/chat/history', {
+        storeId,
+        sessionId,
+        role,
+        content,
+        intent: data?.type,
+        data,
+        creditsUsed,
+        isError
+      });
+      // Update local input history if it's a user message
+      if (role === 'user') {
+        setInputHistory(prev => [content, ...prev.slice(0, 29)]);
+      }
+    } catch (error) {
+      console.error('[WorkspaceAIPanel] Failed to save chat message:', error);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -341,6 +407,7 @@ const WorkspaceAIPanel = () => {
     setInputValue('');
     setAttachedImages([]); // Clear images after sending
     setCommandStatus(null);
+    setHistoryIndex(-1); // Reset history navigation
 
     // Add user message to chat (with image previews)
     addChatMessage({
@@ -348,6 +415,9 @@ const WorkspaceAIPanel = () => {
       content: userMessage || '(Image attached)',
       images: imagesToSend.map(img => img.preview)
     });
+
+    // Save user message to chat history
+    saveChatMessage('user', userMessage || '(Image attached)');
 
     // Send all requests to backend - AI determines intent
     setIsProcessingAi(true);
@@ -424,6 +494,9 @@ const WorkspaceAIPanel = () => {
         data: response.data
       });
 
+      // Save assistant message to chat history
+      saveChatMessage('assistant', response.message || 'Processing complete.', response.data, response.creditsDeducted);
+
       // Auto-refresh preview and editor after styling or layout changes
       const refreshTypes = ['styling_applied', 'styling_preview', 'layout_modified', 'multi_intent'];
       if (refreshTypes.includes(response.data?.type)) {
@@ -486,11 +559,28 @@ const WorkspaceAIPanel = () => {
     }
   };
 
-  // Handle Enter key to send
+  // Handle keyboard shortcuts (Enter to send, Arrow Up/Down for history)
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    } else if (e.key === 'ArrowUp' && inputHistory.length > 0 && !inputValue.includes('\n')) {
+      // Arrow up for input history navigation
+      e.preventDefault();
+      const newIndex = historyIndex < inputHistory.length - 1 ? historyIndex + 1 : historyIndex;
+      setHistoryIndex(newIndex);
+      setInputValue(inputHistory[newIndex] || '');
+    } else if (e.key === 'ArrowDown' && historyIndex >= 0 && !inputValue.includes('\n')) {
+      // Arrow down for input history navigation
+      e.preventDefault();
+      if (historyIndex > 0) {
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        setInputValue(inputHistory[newIndex] || '');
+      } else {
+        setHistoryIndex(-1);
+        setInputValue('');
+      }
     }
   };
 
