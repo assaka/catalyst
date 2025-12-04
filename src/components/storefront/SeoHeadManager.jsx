@@ -874,7 +874,16 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
         // Google Tag Manager Implementation
         const analyticsSettings = store?.settings?.analytics_settings;
-        
+
+        // DEBUG: Log GTM settings
+        console.log('🔍 GTM Debug:', {
+            analyticsSettings,
+            enable_google_tag_manager: analyticsSettings?.enable_google_tag_manager,
+            gtm_id: analyticsSettings?.gtm_id,
+            gtm_script_type: analyticsSettings?.gtm_script_type,
+            storeSettings: store?.settings
+        });
+
         // Always clean up existing GTM scripts first
         const cleanupGTM = () => {
             // Remove all GTM-related scripts and elements
@@ -890,48 +899,53 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             return id && typeof id === 'string' && id.match(/^GTM-[A-Z0-9]+$/);
         };
 
-        if (analyticsSettings?.enable_google_tag_manager && isValidGTMId(analyticsSettings.gtm_id)) {
-            if (analyticsSettings.gtm_script_type === 'custom' && analyticsSettings.custom_gtm_script) {
-                // Custom GTM Script (Server-Side Tagging) - WITH SANITIZATION
-                const script = createSafeScript({
-                    content: analyticsSettings.custom_gtm_script,
-                    attributes: { 'data-gtm': 'head-custom' }
-                });
+        // Handle custom GTM script (server-side tagging) - doesn't require GTM ID
+        if (analyticsSettings?.enable_google_tag_manager && analyticsSettings.gtm_script_type === 'custom' && analyticsSettings.custom_gtm_script) {
+            console.log('✅ GTM: Adding custom server-side script');
+            // Custom GTM Script (Server-Side Tagging) - direct injection
+            // Strip <script> tags if user included them
+            let customScriptContent = analyticsSettings.custom_gtm_script
+                .replace(/^[\s\S]*?<script[^>]*>/i, '')  // Remove opening script tag
+                .replace(/<\/script>[\s\S]*$/i, '')       // Remove closing script tag
+                .replace(/<!--.*?-->/g, '')               // Remove HTML comments
+                .trim();
 
-                if (script) {
-                    document.head.appendChild(script);
-                } else {
-                    console.error('❌ Custom GTM script failed security validation and was blocked');
-                }
+            console.log('✅ GTM: Custom script content (first 100 chars):', customScriptContent.substring(0, 100));
 
-                // Add noscript fallback to body for custom scripts
-                if (analyticsSettings.gtm_id) {
-                    const noscript = document.createElement('noscript');
-                    noscript.setAttribute('data-gtm', 'body-noscript-custom');
-                    noscript.innerHTML = `<iframe src="https://www.googletagmanager.com/ns.html?id=${analyticsSettings.gtm_id}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`;
-                    document.body.insertBefore(noscript, document.body.firstChild);
-                }
-            } else if ((!analyticsSettings.gtm_script_type || analyticsSettings.gtm_script_type === 'default') && analyticsSettings.gtm_id) {
-                // Standard GTM Implementation
-                // Note: Must use textContent instead of innerHTML for script to execute
-                const script = document.createElement('script');
-                script.setAttribute('data-gtm', 'head-default');
-                script.textContent = `
-                    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-                    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-                    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-                    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-                    })(window,document,'script','dataLayer','${analyticsSettings.gtm_id}');
-                `;
-                document.head.appendChild(script);
+            const script = document.createElement('script');
+            script.setAttribute('data-gtm', 'head-custom');
+            script.textContent = customScriptContent;
+            document.head.appendChild(script);
+            console.log('✅ GTM: Custom script appended to head');
 
-                // Add noscript fallback to body
+            // Add noscript fallback to body for custom scripts (only if GTM ID provided)
+            if (analyticsSettings.gtm_id && isValidGTMId(analyticsSettings.gtm_id)) {
                 const noscript = document.createElement('noscript');
-                noscript.setAttribute('data-gtm', 'body-noscript');
+                noscript.setAttribute('data-gtm', 'body-noscript-custom');
                 noscript.innerHTML = `<iframe src="https://www.googletagmanager.com/ns.html?id=${analyticsSettings.gtm_id}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`;
                 document.body.insertBefore(noscript, document.body.firstChild);
             }
-        } else if (analyticsSettings?.enable_google_tag_manager && !isValidGTMId(analyticsSettings.gtm_id)) {
+        } else if (analyticsSettings?.enable_google_tag_manager && isValidGTMId(analyticsSettings.gtm_id)) {
+            // Standard GTM Implementation - requires valid GTM ID
+            console.log('✅ GTM: Adding default script to head for ID:', analyticsSettings.gtm_id);
+            const script = document.createElement('script');
+            script.setAttribute('data-gtm', 'head-default');
+            script.textContent = `
+                (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+                j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+                'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+                })(window,document,'script','dataLayer','${analyticsSettings.gtm_id}');
+            `;
+            document.head.appendChild(script);
+            console.log('✅ GTM: Script appended, checking head:', document.querySelectorAll('script[data-gtm]').length, 'GTM scripts found');
+
+            // Add noscript fallback to body
+            const noscript = document.createElement('noscript');
+            noscript.setAttribute('data-gtm', 'body-noscript');
+            noscript.innerHTML = `<iframe src="https://www.googletagmanager.com/ns.html?id=${analyticsSettings.gtm_id}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`;
+            document.body.insertBefore(noscript, document.body.firstChild);
+        } else if (analyticsSettings?.enable_google_tag_manager && !analyticsSettings.custom_gtm_script && !isValidGTMId(analyticsSettings.gtm_id)) {
             console.warn('⚠️ Invalid or missing GTM ID. GTM will not be loaded. Expected format: GTM-XXXXXX, got:', analyticsSettings.gtm_id);
         }
 
