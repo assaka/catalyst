@@ -394,7 +394,7 @@ class AIContextService {
           const ConnectionManager = require('./database/ConnectionManager');
           const tenantDb = await ConnectionManager.getStoreConnection(storeId);
 
-          await tenantDb('ai_chat_sessions').insert({
+          await tenantDb.from('ai_chat_sessions').insert({
             user_id: userId,
             session_id: sessionId || `session_${Date.now()}`,
             role,
@@ -408,11 +408,11 @@ class AIContextService {
 
           // Also save user inputs to input history for autocomplete/suggestions
           if (role === 'user') {
-            await tenantDb('ai_input_history').insert({
+            await tenantDb.from('ai_input_history').upsert({
               user_id: userId,
               input: content,
               created_at: new Date().toISOString()
-            }).onConflict().ignore(); // Avoid duplicates
+            }, { onConflict: 'input', ignoreDuplicates: true });
           }
         } catch (tenantError) {
           console.error('Error saving chat message to tenant:', tenantError);

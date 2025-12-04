@@ -4036,8 +4036,7 @@ Be SHORT and direct. Just list the results with bullet points. No fluff, no expl
             type: 'analytics_result',
             query_type: queryType,
             description: queryDescription,
-            result: queryResult,
-            candidateId: trainingCapture.candidateId // For feedback
+            result: queryResult
           },
           creditsDeducted: creditsUsed
         });
