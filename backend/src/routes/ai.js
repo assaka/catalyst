@@ -1206,12 +1206,13 @@ INTENTS:
 - job_trigger: Triggering background tasks (e.g., "import from akeneo", "run sync", "start export")
 - settings_update: Theme/appearance/catalog settings (e.g., "change breadcrumb color", "hide stock label", "enable inventory tracking")
 - admin_entity: Store entity CRUD (e.g., "rename tab", "create coupon", "disable payment method")
-- category_management: Adding/removing products to/from categories. USE THIS for ANY request about adding products to categories or removing them. Examples:
+- category_management: Adding/removing products to/from categories, OR creating a category and adding products. USE THIS for ANY request about adding products to categories or removing them. Examples:
   * "add all products to snowboard category"
   * "add The Videographer Snowboard to snowboard category" → product_filter: "The Videographer Snowboard", category_name: "snowboard"
   * "add Blue T-Shirt to clothing" → product_filter: "Blue T-Shirt", category_name: "clothing"
   * "remove product X from category Y"
   * "assign products to category"
+  * "create category snowboard and add The Videographer to it" → operation: "create_and_add", category_name: "snowboard", product_filter: "The Videographer"
 - attribute_management: Create/update attributes and values (e.g., "create attribute Color with values Red, Blue, Green", "add XL to Size attribute")
 - product_label_management: Create/update product labels/badges (e.g., "create a Sale label", "add New Arrival label to products")
 - product_tab_management: Create/update product detail tabs (e.g., "create a Care Instructions tab", "rename Specs tab to Technical Details")
@@ -1252,14 +1253,14 @@ For job_trigger, extract:
 - priority: "normal", "high", "urgent"
 
 For category_management, extract:
-- operation: "add" or "remove"
+- operation: "add", "remove", or "create_and_add" (when creating a new category and adding products)
 - category_name: The target category name (e.g., "snowboard", "accessories")
 - product_filter: "all", "out_of_stock", or the EXACT product name/SKU from user's message
   * IMPORTANT: If user mentions a specific product name like "The Videographer Snowboard", use that EXACT name as product_filter
   * Examples:
-    - "add all products to snowboard" → product_filter: "all", category_name: "snowboard"
-    - "add The Videographer Snowboard to snowboard category" → product_filter: "The Videographer Snowboard", category_name: "snowboard"
-    - "add Blue Widget to accessories" → product_filter: "Blue Widget", category_name: "accessories"
+    - "add all products to snowboard" → operation: "add", product_filter: "all", category_name: "snowboard"
+    - "add The Videographer Snowboard to snowboard category" → operation: "add", product_filter: "The Videographer Snowboard", category_name: "snowboard"
+    - "create category snowboard and add The Videographer to it" → operation: "create_and_add", category_name: "snowboard", product_filter: "The Videographer"
 - attribute_set: (optional) Filter by attribute set name (e.g., "add products with attribute set Snowboards to category")
 
 For settings_update, extract:
@@ -4592,31 +4593,63 @@ Be SHORT and direct. Just list the results with bullet points. No fluff, no expl
         const tenantDb = await ConnectionManager.getStoreConnection(resolvedStoreId);
 
         // Find the category by name (case-insensitive search)
-        const categories = await tenantDb('categories')
+        let categories = await tenantDb('categories')
           .whereRaw('LOWER(name) LIKE ?', [`%${categoryName.toLowerCase()}%`])
           .select('id', 'name');
 
+        // Handle create_and_add operation - create category if it doesn't exist
+        if (categories.length === 0 && operation === 'create_and_add') {
+          // Create the new category
+          const slug = categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          const [newCategoryId] = await tenantDb('categories').insert({
+            name: categoryName,
+            slug: slug,
+            url_key: slug,
+            is_active: true,
+            include_in_menu: true,
+            position: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+          // Fetch the created category
+          const newCategory = await tenantDb('categories').where('id', newCategoryId).first();
+          categories = [{ id: newCategoryId, name: newCategory.name }];
+          console.log(`[AI Chat] Created new category: ${categoryName} (ID: ${newCategoryId})`);
+        }
+
         if (categories.length === 0) {
-          // Get all categories to suggest
-          const allCategories = await tenantDb('categories')
+          // Get similar categories to suggest as alternatives
+          const similarCategories = await tenantDb('categories')
             .select('id', 'name')
             .where('is_active', true)
             .orderBy('name')
-            .limit(6);
+            .limit(4);
+
+          // Build options: first option is to create new category, then existing ones
+          const options = [
+            {
+              label: `Create "${categoryName}"`,
+              value: categoryName,
+              action: `create category ${categoryName} and add ${productFilter} to it`,
+              isCreate: true
+            },
+            ...similarCategories.map(c => ({
+              label: c.name,
+              value: c.name,
+              action: `add ${productFilter} to ${c.name} category`
+            }))
+          ];
 
           return res.json({
             success: true,
-            message: `I couldn't find a category matching "${categoryName}".`,
+            message: `Category "${categoryName}" doesn't exist yet.`,
             data: {
               type: 'clarification_needed',
               clarification: {
                 type: 'category_select',
-                question: 'Did you mean one of these categories?',
-                options: allCategories.map(c => ({
-                  label: c.name,
-                  value: c.name,
-                  action: `${operation} ${productFilter} to ${c.name} category`
-                }))
+                question: 'Would you like to create it or use an existing category?',
+                options
               }
             },
             creditsDeducted: creditsUsed
@@ -4718,7 +4751,10 @@ Be SHORT and direct. Just list the results with bullet points. No fluff, no expl
         let alreadyAssignedCount = 0;
         let removedCount = 0;
 
-        if (operation === 'add') {
+        // Track if we created a new category (for messaging)
+        const categoryWasCreated = operation === 'create_and_add';
+
+        if (operation === 'add' || operation === 'create_and_add') {
           // Add products to category
           for (const product of products) {
             // Check if already assigned
@@ -4738,9 +4774,16 @@ Be SHORT and direct. Just list the results with bullet points. No fluff, no expl
             }
           }
 
-          const message = assignedCount > 0
-            ? `Done! I've added ${assignedCount} product(s) to the "${targetCategory.name}" category.${alreadyAssignedCount > 0 ? ` (${alreadyAssignedCount} were already in this category)` : ''}`
-            : `All ${alreadyAssignedCount} product(s) were already in the "${targetCategory.name}" category.`;
+          let message;
+          if (categoryWasCreated) {
+            message = assignedCount > 0
+              ? `Done! I've created the "${targetCategory.name}" category and added ${assignedCount} product(s) to it.`
+              : `Created the "${targetCategory.name}" category, but no new products were added.`;
+          } else {
+            message = assignedCount > 0
+              ? `Done! I've added ${assignedCount} product(s) to the "${targetCategory.name}" category.${alreadyAssignedCount > 0 ? ` (${alreadyAssignedCount} were already in this category)` : ''}`
+              : `All ${alreadyAssignedCount} product(s) were already in the "${targetCategory.name}" category.`;
+          }
 
           // Track successful operation for self-learning
           if (assignedCount > 0) {

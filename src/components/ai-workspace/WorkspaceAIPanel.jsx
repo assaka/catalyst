@@ -821,10 +821,20 @@ const WorkspaceAIPanel = () => {
                                 setInputValue(option.action);
                                 setTimeout(() => handleSend(), 100);
                               }}
-                              className="flex flex-col items-start px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-700 rounded-md transition-colors text-left"
+                              className={cn(
+                                "flex flex-col items-start px-3 py-1.5 rounded-md transition-colors text-left border",
+                                option.isCreate
+                                  ? "bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-900/50 border-green-300 dark:border-green-700"
+                                  : "bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 border-purple-200 dark:border-purple-700"
+                              )}
                             >
-                              <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
-                                {option.label}
+                              <span className={cn(
+                                "text-xs font-medium",
+                                option.isCreate
+                                  ? "text-green-700 dark:text-green-300"
+                                  : "text-purple-700 dark:text-purple-300"
+                              )}>
+                                {option.isCreate && '+ '}{option.label}
                               </span>
                               {option.sublabel && (
                                 <span className="text-[10px] text-purple-500 dark:text-purple-400">
