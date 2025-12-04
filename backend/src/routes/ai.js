@@ -637,6 +637,7 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           .from('categories')
           .insert({
             slug,
+            store_id: storeId,
             is_active: true,
             hide_in_menu: false,
             sort_order: 0,
@@ -716,6 +717,7 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           .from('categories')
           .insert({
             slug,
+            store_id: storeId,
             is_active: true,
             hide_in_menu: false,
             sort_order: 0,
@@ -1385,12 +1387,18 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
 
         const { error } = await db
           .from('blacklist_emails')
-          .insert({ email, reason });
+          .insert({ email, reason, store_id: storeId });
 
         if (error && error.code === '23505') {
           return { success: true, message: `Email "${email}" is already blacklisted.` };
         }
         if (error) throw error;
+
+        // Also update customer record if exists
+        await db
+          .from('customers')
+          .update({ is_blacklisted: true, blacklist_reason: reason, blacklisted_at: new Date().toISOString() })
+          .eq('email', email);
 
         return {
           success: true,
