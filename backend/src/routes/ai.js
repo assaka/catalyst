@@ -1028,18 +1028,20 @@ Return ONLY valid JSON.`;
     const intentResult = await aiService.generate({
       userId,
       operationType: 'general',
+      modelId, // Use user-selected model
+      serviceKey, // Use model-specific service key for pricing
       prompt: intentPrompt,
       systemPrompt: intentSystemPrompt,
       maxTokens: 512,
       temperature: 0.3,
-      metadata: { type: 'intent-detection', storeId: resolvedStoreId }
+      metadata: { type: 'intent-detection', storeId: resolvedStoreId, modelId }
     });
 
     // Track intent detection conversation
     globalAiConversations.push({
       step: 'intent-detection',
-      provider: 'anthropic',
-      model: intentResult.usage?.model || 'claude-3-haiku',
+      provider: intentResult.provider || 'anthropic',
+      model: intentResult.usage?.model || modelId || 'claude-3-haiku',
       prompt: intentPrompt,
       systemPrompt: intentSystemPrompt,
       response: intentResult.content,
@@ -1187,11 +1189,13 @@ Which slot matches? Reply with JUST the slot ID, nothing else. If no match, repl
           const matchResult = await aiService.generate({
             userId,
             operationType: 'general',
+            modelId,
+            serviceKey,
             prompt: matchPrompt,
             systemPrompt: 'Reply with only the matching slot ID. Nothing else.',
             maxTokens: 30,
             temperature: 0,
-            metadata: { type: 'slot-matching', storeId: resolvedStoreId }
+            metadata: { type: 'slot-matching', storeId: resolvedStoreId, modelId }
           });
           totalCredits += matchResult.creditsDeducted;
 
@@ -1741,11 +1745,13 @@ If you need to ask for clarification (missing language or unclear text), set nee
       const analysisResult = await aiService.generate({
         userId,
         operationType: 'general',
+        modelId,
+        serviceKey,
         prompt: analysisPrompt,
         systemPrompt: 'You are an AI translation assistant. Analyze user requests and extract structured information. Return ONLY valid JSON.',
         maxTokens: 512,
         temperature: 0.3,
-        metadata: { type: 'translation-analysis', storeId: resolvedStoreId }
+        metadata: { type: 'translation-analysis', storeId: resolvedStoreId, modelId }
       });
 
       let analysis;
@@ -1827,11 +1833,13 @@ Which keys should be updated? Return JSON:
         const decisionResult = await aiService.generate({
           userId,
           operationType: 'general',
+          modelId,
+          serviceKey,
           prompt: aiDecisionPrompt,
           systemPrompt: 'You are a translation key expert. Identify the most relevant keys. Return ONLY valid JSON.',
           maxTokens: 256,
           temperature: 0.2,
-          metadata: { type: 'key-selection', storeId: resolvedStoreId }
+          metadata: { type: 'key-selection', storeId: resolvedStoreId, modelId }
         });
 
         let decision;
@@ -1905,11 +1913,13 @@ Suggest helpful next steps. Be friendly and actionable.`;
       const suggestionResult = await aiService.generate({
         userId,
         operationType: 'general',
+        modelId,
+        serviceKey,
         prompt: noMatchPrompt,
         systemPrompt: 'You are a helpful translation assistant.',
         maxTokens: 256,
         temperature: 0.7,
-        metadata: { type: 'translation-suggestion', storeId: resolvedStoreId }
+        metadata: { type: 'translation-suggestion', storeId: resolvedStoreId, modelId }
       });
 
       res.json({
@@ -1971,11 +1981,13 @@ Keep it brief and helpful.`;
         const clarifyResult = await aiService.generate({
           userId,
           operationType: 'general',
+          modelId,
+          serviceKey,
           prompt: clarifyPrompt,
           systemPrompt: 'Ask for clarification naturally. Be helpful.',
           maxTokens: 60,
           temperature: 0.7,
-          metadata: { type: 'clarification', storeId: resolvedStoreId }
+          metadata: { type: 'clarification', storeId: resolvedStoreId, modelId }
         });
         creditsUsed += clarifyResult.creditsDeducted;
 
@@ -2341,11 +2353,13 @@ Return ONLY valid JSON.`;
       const analysisResult = await aiService.generate({
         userId,
         operationType: 'general',
+        modelId,
+        serviceKey,
         prompt: layoutAnalysisPrompt,
         systemPrompt: 'You are a layout configuration expert. Analyze slot configurations and determine how to reorder them. Return ONLY valid JSON.',
         maxTokens: 512,
         temperature: 0.2,
-        metadata: { type: 'layout-analysis', storeId: resolvedStoreId }
+        metadata: { type: 'layout-analysis', storeId: resolvedStoreId, modelId }
       });
       creditsUsed += analysisResult.creditsDeducted;
 
@@ -2643,11 +2657,13 @@ Confirm in 1 sentence. MUST mention the specific change. Keep it casual. No "Gre
       const responseResult = await aiService.generate({
         userId,
         operationType: 'general',
+        modelId,
+        serviceKey,
         prompt: responsePrompt,
         systemPrompt: 'Mention the SPECIFIC change made. One casual sentence.',
         maxTokens: 40,
         temperature: 0.8,
-        metadata: { type: 'response', storeId: resolvedStoreId }
+        metadata: { type: 'response', storeId: resolvedStoreId, modelId }
       });
       creditsUsed += responseResult.creditsDeducted;
 
@@ -2975,11 +2991,13 @@ Return JSON: { "slotId": "the_slot_id" }`;
           const matchResult = await aiService.generate({
             userId,
             operationType: 'general',
+            modelId,
+            serviceKey,
             prompt: matchPrompt,
             systemPrompt: 'Match element names to slot IDs. Return ONLY valid JSON.',
             maxTokens: 100,
             temperature: 0.2,
-            metadata: { type: 'slot-matching', storeId: resolvedStoreId }
+            metadata: { type: 'slot-matching', storeId: resolvedStoreId, modelId }
           });
           creditsUsed += matchResult.creditsDeducted;
 
@@ -3052,11 +3070,13 @@ Return ONLY valid JSON.`;
           const colorResult = await aiService.generate({
             userId,
             operationType: 'general',
+            modelId,
+            serviceKey,
             prompt: colorPrompt,
             systemPrompt: colorSystemPrompt,
             maxTokens: 100,
             temperature: 0.3,
-            metadata: { type: 'color-parsing', storeId: resolvedStoreId }
+            metadata: { type: 'color-parsing', storeId: resolvedStoreId, modelId }
           });
           creditsUsed += colorResult.creditsDeducted;
 
@@ -3134,11 +3154,13 @@ Return ONLY valid JSON.`;
           const sizeResult = await aiService.generate({
             userId,
             operationType: 'general',
+            modelId,
+            serviceKey,
             prompt: sizePrompt,
             systemPrompt: 'You are a CSS expert. Convert size descriptions to valid CSS values. Return ONLY valid JSON.',
             maxTokens: 100,
             temperature: 0.2,
-            metadata: { type: 'size-parsing', storeId: resolvedStoreId }
+            metadata: { type: 'size-parsing', storeId: resolvedStoreId, modelId }
           });
           creditsUsed += sizeResult.creditsDeducted;
 
@@ -3192,18 +3214,20 @@ Return ONLY valid JSON.`;
           const cssResult = await aiService.generate({
             userId,
             operationType: 'general',
+            modelId,
+            serviceKey,
             prompt: cssPrompt,
             systemPrompt: 'You are a CSS expert. Convert style descriptions to valid CSS. Return ONLY valid JSON.',
             maxTokens: 150,
             temperature: 0.2,
-            metadata: { type: 'css-parsing', storeId: resolvedStoreId }
+            metadata: { type: 'css-parsing', storeId: resolvedStoreId, modelId }
           });
           creditsUsed += cssResult.creditsDeducted;
 
           aiConversations.push({
             step: 'css-parsing',
-            provider: 'anthropic',
-            model: cssResult.usage?.model || 'claude-3-haiku',
+            provider: cssResult.provider || 'anthropic',
+            model: cssResult.usage?.model || modelId || 'claude-3-haiku',
             prompt: cssPrompt,
             response: cssResult.content,
             tokens: cssResult.usage
@@ -3311,11 +3335,13 @@ Confirm in 1 sentence. MUST mention the specific changes. Keep it casual. No "Gr
       const responseResult = await aiService.generate({
         userId,
         operationType: 'general',
+        modelId,
+        serviceKey,
         prompt: responsePrompt,
         systemPrompt: 'Mention the SPECIFIC changes made. One casual sentence.',
         maxTokens: 40,
         temperature: 0.8,
-        metadata: { type: 'response', storeId: resolvedStoreId }
+        metadata: { type: 'response', storeId: resolvedStoreId, modelId }
       });
       creditsUsed += responseResult.creditsDeducted;
 
@@ -3788,11 +3814,13 @@ If showing products/customers, include names and key metrics.`;
         const analyticsResponse = await aiService.generate({
           userId,
           operationType: 'general',
+          modelId,
+          serviceKey,
           prompt: analyticsResponsePrompt,
           systemPrompt: 'Present analytics data clearly and concisely. Use bullet points and formatting.',
           maxTokens: 800,
           temperature: 0.5,
-          metadata: { type: 'analytics-response', storeId: resolvedStoreId }
+          metadata: { type: 'analytics-response', storeId: resolvedStoreId, modelId }
         });
         creditsUsed += analyticsResponse.creditsDeducted;
 
@@ -4635,11 +4663,13 @@ Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}`;
       const chatResult = await aiService.generate({
         userId,
         operationType: 'general',
+        modelId,
+        serviceKey,
         prompt: message,
         systemPrompt: chatSystemPrompt,
         maxTokens: 1024,
         temperature: 0.7,
-        metadata: { type: 'chat', storeId: resolvedStoreId }
+        metadata: { type: 'chat', storeId: resolvedStoreId, modelId }
       });
 
       // Save chat response for learning
