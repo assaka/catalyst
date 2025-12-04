@@ -866,8 +866,8 @@ INSERT INTO ai_entity_definitions (
  'store_id', 'catalog',
  '["list", "get", "create", "update", "delete"]',
  '[{"name":"name","type":"string"},{"name":"slug","type":"string"},{"name":"parent_id","type":"uuid"},{"name":"is_active","type":"boolean"},{"name":"show_in_menu","type":"boolean"}]',
- '["category", "collection", "department", "group"]',
- '["show categories", "create category", "add subcategory", "hide category"]',
+ '["category", "collection", "department", "group", "root category", "main category", "top level category"]',
+ '["show categories", "create category", "add subcategory", "hide category", "create a root category called Test Category", "add a top level category named New Arrivals", "create a main category for seasonal items"]',
  85, true),
 
 ('payment_methods', 'Payment Methods', 'Payment method settings', 'payment_methods', 'id',
