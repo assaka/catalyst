@@ -519,15 +519,17 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
         const categoryId = categoryRecord.category_id || categoryRecord.categories?.id;
         const categoryName = categoryRecord.name;
 
-        // Check if already in category
-        const { data: existing } = await db
-          .from('product_categories')
-          .select('id')
-          .eq('product_id', productId)
-          .eq('category_id', categoryId)
-          .maybeSingle();
+        // Get current category_ids from product (uses JSONB array, not junction table)
+        const { data: productData } = await db
+          .from('products')
+          .select('category_ids')
+          .eq('id', productId)
+          .single();
 
-        if (existing) {
+        const currentCategoryIds = productData?.category_ids || [];
+
+        // Check if already in category
+        if (currentCategoryIds.includes(categoryId)) {
           return {
             success: true,
             message: `"${productName}" is already in the "${categoryName}" category.`,
@@ -535,15 +537,14 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           };
         }
 
-        // Add to category
-        const { error: insertError } = await db
-          .from('product_categories')
-          .insert({
-            product_id: productId,
-            category_id: categoryId
-          });
+        // Add to category by updating the category_ids JSONB array
+        const newCategoryIds = [...currentCategoryIds, categoryId];
+        const { error: updateError } = await db
+          .from('products')
+          .update({ category_ids: newCategoryIds })
+          .eq('id', productId);
 
-        if (insertError) throw insertError;
+        if (updateError) throw updateError;
 
         return {
           success: true,
@@ -600,16 +601,24 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           prodId = products?.[0]?.product_id;
         }
 
-        // Add product to category if found
+        // Add product to category if found (using category_ids JSONB array)
         if (prodId) {
-          const { error: linkError } = await db
-            .from('product_categories')
-            .insert({
-              product_id: prodId,
-              category_id: categoryId
-            });
+          // Get current category_ids
+          const { data: productData } = await db
+            .from('products')
+            .select('category_ids')
+            .eq('id', prodId)
+            .single();
 
-          if (linkError) console.error('Product-category link error:', linkError);
+          const currentCategoryIds = productData?.category_ids || [];
+          const newCategoryIds = [...currentCategoryIds, categoryId];
+
+          const { error: updateError } = await db
+            .from('products')
+            .update({ category_ids: newCategoryIds })
+            .eq('id', prodId);
+
+          if (updateError) console.error('Product category update error:', updateError);
 
           return {
             success: true,
@@ -694,19 +703,34 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           };
         }
 
-        const { data: deleted, error: deleteError } = await db
-          .from('product_categories')
-          .delete()
-          .eq('product_id', productRecord.product_id)
-          .eq('category_id', categoryRecord.category_id)
-          .select();
+        // Get current category_ids from product (uses JSONB array, not junction table)
+        const { data: productData } = await db
+          .from('products')
+          .select('category_ids')
+          .eq('id', productRecord.product_id)
+          .single();
+
+        const currentCategoryIds = productData?.category_ids || [];
+        const wasInCategory = currentCategoryIds.includes(categoryRecord.category_id);
+
+        // Remove from category by filtering out the category_id
+        const newCategoryIds = currentCategoryIds.filter(id => id !== categoryRecord.category_id);
+
+        if (wasInCategory) {
+          const { error: updateError } = await db
+            .from('products')
+            .update({ category_ids: newCategoryIds })
+            .eq('id', productRecord.product_id);
+
+          if (updateError) throw updateError;
+        }
 
         return {
           success: true,
-          message: deleted?.length
+          message: wasInCategory
             ? `Removed "${productRecord.name}" from "${categoryRecord.name}".`
             : `"${productRecord.name}" wasn't in "${categoryRecord.name}".`,
-          data: { productId: productRecord.product_id, categoryId: categoryRecord.category_id, removed: deleted?.length > 0 }
+          data: { productId: productRecord.product_id, categoryId: categoryRecord.category_id, removed: wasInCategory }
         };
       }
 
@@ -957,10 +981,9 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           return { success: false, message: `Product "${product}" not found.` };
         }
 
-        // Delete related data then product
+        // Delete related data then product (no product_categories - uses category_ids JSONB on products)
         await db.from('product_translations').delete().eq('product_id', productRecord.id);
-        await db.from('product_categories').delete().eq('product_id', productRecord.id);
-        await db.from('product_attributes').delete().eq('product_id', productRecord.id);
+        await db.from('product_attribute_values').delete().eq('product_id', productRecord.id);
         const { error } = await db.from('products').delete().eq('id', productRecord.id);
 
         if (error) throw error;
@@ -978,7 +1001,7 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       case 'list_attributes': {
         const { data: attrs } = await db
           .from('attributes')
-          .select('id, code, type, is_filterable')
+          .select('id, code, name, type, is_filterable')
           .order('code')
           .limit(50);
 
@@ -989,12 +1012,13 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
         const attrIds = attrs.map(a => a.id);
         const { data: translations } = await db
           .from('attribute_translations')
-          .select('attribute_id, name')
+          .select('attribute_id, label')
           .in('attribute_id', attrIds)
           .eq('language_code', 'en');
 
-        const transMap = new Map(translations?.map(t => [t.attribute_id, t.name]) || []);
-        const items = attrs.map(a => ({ ...a, name: transMap.get(a.id) || a.code }));
+        // Use translation label if available, otherwise fall back to attribute.name or code
+        const transMap = new Map(translations?.map(t => [t.attribute_id, t.label]) || []);
+        const items = attrs.map(a => ({ ...a, displayName: transMap.get(a.id) || a.name || a.code }));
 
         return {
           success: true,
@@ -1010,12 +1034,16 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
         const { code, name, type = 'text', values = [] } = toolCall;
 
         const attrCode = code.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        const attrName = name || code;
 
+        // Create attribute with required name and store_id fields
         const { data: newAttr, error: attrError } = await db
           .from('attributes')
           .insert({
+            name: attrName,
             code: attrCode,
             type,
+            store_id: storeId,
             is_filterable: type === 'select' || type === 'multiselect'
           })
           .select('id')
@@ -1023,19 +1051,24 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
 
         if (attrError) throw attrError;
 
-        // Add translation
+        // Add translation (uses 'label' not 'name')
         await db.from('attribute_translations').insert({
           attribute_id: newAttr.id,
           language_code: 'en',
-          name: name || code
+          label: attrName
         });
 
-        // Add values if provided
+        // Add values if provided (attribute_values needs 'code' not 'position')
         if (values.length > 0 && (type === 'select' || type === 'multiselect')) {
           for (let i = 0; i < values.length; i++) {
+            const valueCode = values[i].toLowerCase().replace(/[^a-z0-9]+/g, '_');
             const { data: newValue } = await db
               .from('attribute_values')
-              .insert({ attribute_id: newAttr.id, position: i })
+              .insert({
+                attribute_id: newAttr.id,
+                code: valueCode,
+                sort_order: i
+              })
               .select('id')
               .single();
 
@@ -1051,7 +1084,7 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
 
         return {
           success: true,
-          message: `Created attribute "${name || code}" (${attrCode})${values.length ? ` with values: ${values.join(', ')}` : ''}.`,
+          message: `Created attribute "${attrName}" (${attrCode})${values.length ? ` with values: ${values.join(', ')}` : ''}.`,
           data: { attributeId: newAttr.id, code: attrCode }
         };
       }
@@ -1221,12 +1254,17 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       // CREATE COUPON
       // ═══════════════════════════════════════════════════════════════
       case 'create_coupon': {
-        const { code, discount_type = 'percentage', discount_value, usage_limit = null } = toolCall;
+        const { code, name, discount_type = 'percentage', discount_value, usage_limit = null } = toolCall;
+
+        // name and store_id are required fields
+        const couponName = name || `${discount_value}${discount_type === 'percentage' ? '%' : '$'} off coupon`;
 
         const { data: newCoupon, error } = await db
           .from('coupons')
           .insert({
+            name: couponName,
             code: code.toUpperCase(),
+            store_id: storeId,
             discount_type,
             discount_value,
             is_active: true,
