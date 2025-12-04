@@ -1097,9 +1097,11 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
 
             // Check if backend flagged this user as needing onboarding
             const requiresOnboarding = actualResponse.data?.requiresOnboarding;
+            console.log('🔍 requiresOnboarding flag:', requiresOnboarding, 'Full data:', actualResponse.data);
+
             if (requiresOnboarding) {
-              console.log('🔍 User requires onboarding (no stores), redirecting...');
-              navigate('/admin/onboarding');
+              console.log('🔍 User requires onboarding (no stores), redirecting to /admin/onboarding...');
+              window.location.href = '/admin/onboarding';
               return;
             }
 
