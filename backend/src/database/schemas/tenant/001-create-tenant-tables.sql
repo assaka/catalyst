@@ -803,13 +803,6 @@ CREATE TABLE IF NOT EXISTS ai_chat_sessions (
     );
 
 
-CREATE TABLE IF NOT EXISTS ai_input_history (
-    id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    input TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
@@ -2932,8 +2925,6 @@ CREATE INDEX IF NOT EXISTS ab_tests_store_id ON ab_tests USING btree (store_id);
 
 CREATE INDEX idx_ai_chat_sessions_user ON ai_chat_sessions(user_id, created_at DESC);
 
-CREATE INDEX idx_ai_input_history_user ON ai_input_history(user_id, created_at DESC);
-
 CREATE UNIQUE INDEX akeneo_custom_mappings_store_id_mapping_type ON akeneo_custom_mappings USING btree (store_id, mapping_type);
 
 CREATE INDEX IF NOT EXISTS akeneo_schedules_is_active ON akeneo_schedules USING btree (is_active);
@@ -4264,12 +4255,3 @@ CREATE TABLE IF NOT EXISTS ai_chat_sessions (
 
 CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_user ON ai_chat_sessions(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_session ON ai_chat_sessions(session_id, created_at);
-
-CREATE TABLE IF NOT EXISTS ai_input_history (
-  id SERIAL PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  input TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_ai_input_history_user ON ai_input_history(user_id, created_at DESC);
