@@ -18,6 +18,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { storefrontApiClient, StorefrontStore } from '@/api/storefront-entities';
+import { isPlatformDomain, isCustomDomain } from '@/utils/domainConfig';
 
 /**
  * Helper hook to fetch store slug when we only have ID
@@ -114,29 +115,18 @@ export function determineStoreSlug(location) {
     return publicUrlMatch[1];
   }
 
-  // Check for custom domain
-  // Exclude main platform domain (dainostore.com) - it's not a custom store domain
-  const isCustomDomain = !hostname.includes('vercel.app') &&
-                        !hostname.includes('onrender.com') &&
-                        !hostname.includes('localhost') &&
-                        !hostname.includes('127.0.0.1') &&
-                        !hostname.includes('dainostore.com') &&
-                        !hostname.includes('daino.store') &&
-                        !hostname.includes('daino.ai');
-
-  if (isCustomDomain) {
+  // Check for custom domain (uses centralized domainConfig)
+  if (isCustomDomain(hostname)) {
     return hostname;
   }
 
   // Check if we're on a platform domain BEFORE localStorage fallback
   // Platform domain homepage should show Landing, not a saved store
-  const isPlatformDomain = hostname.includes('dainostore.com') ||
-                           hostname.includes('daino.ai') ||
-                           hostname.includes('daino.store');
+  const isPlatform = isPlatformDomain(hostname);
 
   // On platform domain root path, show Landing page (no store context)
   const path = location?.pathname || '';
-  if (isPlatformDomain && (path === '/' || path === '')) {
+  if (isPlatform && (path === '/' || path === '')) {
     return null; // Storefront.jsx will show Landing page
   }
 
@@ -147,7 +137,7 @@ export function determineStoreSlug(location) {
   }
 
   // Platform domain non-root path without savedSlug - still show Landing
-  if (isPlatformDomain) {
+  if (isPlatform) {
     return null;
   }
 

@@ -8,6 +8,7 @@ import Auth from '@/pages/Auth'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { queryClient } from '@/config/queryClient'
+import { isCustomDomain } from '@/utils/domainConfig'
 
 // Import pages - using the exports from pages/index.jsx
 import * as Pages from '@/pages'
@@ -466,14 +467,8 @@ function App() {
           <Route path="/ai-workspace" element={<PageWrapper Component={Pages.AIWorkspace} pageName="AIWorkspace" />} />
 
           {/* Custom Domain Routes (when accessed via custom domain like www.myshop.com) */}
-          {/* These routes match when NOT on platform domains (vercel.app, localhost, dainostore.com, etc.) */}
-          {!window.location.hostname.includes('vercel.app') &&
-           !window.location.hostname.includes('onrender.com') &&
-           !window.location.hostname.includes('localhost') &&
-           !window.location.hostname.includes('127.0.0.1') &&
-           !window.location.hostname.includes('dainostore.com') &&
-           !window.location.hostname.includes('daino.ai') &&
-           !window.location.hostname.includes('daino.store') && (
+          {/* These routes match only on actual custom store domains (not platform, dev, or hosting domains) */}
+          {isCustomDomain() && (
             <>
               <Route path="/category/*" element={<PageWrapper Component={Pages.Category} pageName="Category" />} />
               <Route path="/product/:productSlug" element={<PageWrapper Component={Pages.ProductDetail} pageName="ProductDetail" />} />

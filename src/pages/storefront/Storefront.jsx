@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import Homepage from "./Homepage";
 import Category from "./Category";
 import Landing from "./Landing";
+import { isPlatformDomain } from "@/utils/domainConfig";
 
 /**
  * Storefront - Router component that determines whether to show Homepage or Category
@@ -18,13 +19,10 @@ export default function Storefront() {
   const categorySlug = searchParams.get('category') || routeCategorySlug;
 
   // Check if we're on a platform domain (not a custom store domain)
-  const hostname = window.location.hostname;
-  const isPlatformDomain = hostname.includes('dainostore.com') ||
-                           hostname.includes('daino.ai') ||
-                           hostname.includes('daino.store');
+  const isPlatform = isPlatformDomain();
 
   // On platform domains, show the Landing page (unless there's a category)
-  if (isPlatformDomain && !categorySlug) {
+  if (isPlatform && !categorySlug) {
     return <Landing />;
   }
 

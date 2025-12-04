@@ -1,0 +1,88 @@
+/**
+ * Domain Configuration - Single Source of Truth
+ *
+ * This file centralizes all domain-related logic for the frontend.
+ * Import from here instead of duplicating domain checks across files.
+ */
+
+// Platform domains - these are our main application domains
+export const PLATFORM_DOMAINS = [
+  'dainostore.com',
+  'daino.ai',
+  'daino.store'
+];
+
+// Development/staging domains
+export const DEV_DOMAINS = [
+  'localhost',
+  '127.0.0.1'
+];
+
+// Hosting provider domains
+export const HOSTING_DOMAINS = [
+  'vercel.app',
+  'onrender.com'
+];
+
+/**
+ * Check if hostname is a platform domain (dainostore.com, daino.ai, daino.store)
+ * @param {string} hostname - Optional hostname, defaults to window.location.hostname
+ * @returns {boolean}
+ */
+export function isPlatformDomain(hostname = window.location.hostname) {
+  return PLATFORM_DOMAINS.some(domain => hostname.includes(domain));
+}
+
+/**
+ * Check if hostname is a development environment
+ * @param {string} hostname - Optional hostname, defaults to window.location.hostname
+ * @returns {boolean}
+ */
+export function isDevDomain(hostname = window.location.hostname) {
+  return DEV_DOMAINS.some(domain => hostname.includes(domain));
+}
+
+/**
+ * Check if hostname is a hosting provider domain (vercel.app, onrender.com)
+ * @param {string} hostname - Optional hostname, defaults to window.location.hostname
+ * @returns {boolean}
+ */
+export function isHostingDomain(hostname = window.location.hostname) {
+  return HOSTING_DOMAINS.some(domain => hostname.includes(domain));
+}
+
+/**
+ * Check if hostname is a custom store domain (not platform, dev, or hosting)
+ * Custom domains are actual store domains like www.myshop.com
+ * @param {string} hostname - Optional hostname, defaults to window.location.hostname
+ * @returns {boolean}
+ */
+export function isCustomDomain(hostname = window.location.hostname) {
+  return !isPlatformDomain(hostname) &&
+         !isDevDomain(hostname) &&
+         !isHostingDomain(hostname);
+}
+
+/**
+ * Check if we should use /public/:slug URL pattern
+ * This is true for platform domains, dev domains, and hosting domains
+ * @param {string} hostname - Optional hostname, defaults to window.location.hostname
+ * @returns {boolean}
+ */
+export function usePublicUrlPattern(hostname = window.location.hostname) {
+  return !isCustomDomain(hostname);
+}
+
+/**
+ * Get all platform domain variants (with and without www)
+ * Useful for CORS and allowlists
+ * @returns {string[]}
+ */
+export function getAllPlatformDomainVariants() {
+  const variants = [];
+  PLATFORM_DOMAINS.forEach(domain => {
+    variants.push(domain);
+    variants.push(`www.${domain}`);
+  });
+  return variants;
+}

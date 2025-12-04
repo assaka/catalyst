@@ -3,23 +3,15 @@
  * Supports /public and /admin URL prefixes, UTM tracking, and filter parameters
  */
 
+// Import centralized domain configuration
+import { isCustomDomain as isCustomDomainCheck } from './domainConfig';
+
 /**
  * Check if current hostname is a custom domain (not platform domains)
- * Platform domains: dainostore.com, daino.ai, daino.store, vercel.app, onrender.com, localhost, 127.0.0.1
+ * @see domainConfig.js for the single source of truth
  */
 export function isCustomDomain() {
-  const hostname = window.location.hostname;
-
-  // Platform domains should NOT be treated as custom domains
-  const platformDomains = ['dainostore.com', 'www.dainostore.com', 'daino.ai', 'www.daino.ai', 'daino.store', 'www.daino.store'];
-  if (platformDomains.includes(hostname)) {
-    return false;
-  }
-
-  return !hostname.includes('vercel.app') &&
-         !hostname.includes('onrender.com') &&
-         !hostname.includes('localhost') &&
-         !hostname.includes('127.0.0.1');
+  return isCustomDomainCheck();
 }
 
 // URL Architecture Configuration

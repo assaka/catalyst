@@ -8,6 +8,7 @@ import { User, Auth } from "@/api/entities";
 import apiClient from "@/api/client";
 import { Store } from "@/api/entities";
 import { hasBothRolesLoggedIn, handleLogout } from "@/utils/auth";
+import { isPlatformDomain } from "@/utils/domainConfig";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
 import useRoleProtection from '@/hooks/useRoleProtection';
@@ -349,12 +350,9 @@ function LayoutInner({ children, currentPageName }) {
   const aiWorkspacePages = ['AIWorkspace']; // Pages that use the AI Workspace mode (full-screen editor)
 
   // Check if we're on a platform domain showing Landing page (no store context needed)
-  const hostname = window.location.hostname;
-  const isPlatformDomain = hostname.includes('dainostore.com') ||
-                           hostname.includes('daino.ai') ||
-                           hostname.includes('daino.store');
+  const isPlatform = isPlatformDomain();
   const hasNoStoreContext = !localStorage.getItem('selectedStoreSlug') && !localStorage.getItem('selectedStoreId');
-  const isPlatformLanding = isPlatformDomain && hasNoStoreContext && location.pathname === '/';
+  const isPlatformLanding = isPlatform && hasNoStoreContext && location.pathname === '/';
 
   const isPublicPage = publicPages.includes(currentPageName) || isPlatformLanding;
   const isStorefrontPage = storefrontPages.includes(currentPageName) && !isPlatformLanding;

@@ -243,82 +243,9 @@ app.options('/api/*', async (req, res, next) => {
 //   process.env.CORS_ORIGIN
 // ].filter(Boolean);
 
-app.use(cors({
-  maxAge: 86400, // Cache OPTIONS preflight for 24 hours
-  origin: async function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    // Allow platform domains and development environments
-    let hostname;
-    try {
-      hostname = new URL(origin).hostname;
-    } catch (e) {
-      console.warn('⚠️ CORS: Invalid origin URL:', origin);
-      return callback(new Error('Invalid origin'));
-    }
-
-    const platformDomains = ['dainostore.com', 'www.dainostore.com', 'daino.ai', 'www.daino.ai', 'daino.store', 'www.daino.store'];
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-    const isVercelApp = hostname.endsWith('.vercel.app');
-    const isRenderApp = hostname.endsWith('.onrender.com');
-
-    if (platformDomains.includes(hostname) || isLocalhost || isVercelApp || isRenderApp) {
-      return callback(null, true);
-    }
-
-    // Check if origin is a verified custom domain (using master DB Supabase client)
-    try {
-      const { masterDbClient } = require('./database/masterConnection');
-
-      // Check custom_domains table first
-      const { data: lookupDomain, error: lookupError } = await masterDbClient
-        .from('custom_domains_lookup')
-        .select('store_id')
-        .eq('domain', hostname)
-        .eq('is_active', true)
-        .eq('is_verified', true)
-        .maybeSingle();
-
-      if (lookupDomain) {
-        return callback(null, true);
-      }
-    } catch (error) {
-      // Silently fail domain check - log for debugging
-      console.warn('⚠️ CORS custom domain check failed:', error.message);
-    }
-
-    callback(new Error('Not allowed by CORS: ' + origin));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'Accept',
-    'Origin',
-    'x-store-id',
-    'X-Store-Id',
-    'X-Language',
-    'x-session-id',
-    'X-Session-Id',
-    'params',
-    'cache-control',
-    'Cache-Control',
-    'pragma',
-    'Pragma',
-    'expires',
-    'Expires',
-    'headers',
-    'x-requested-with'
-  ],
-  exposedHeaders: ['Access-Control-Allow-Origin'],
-  optionsSuccessStatus: 200,
-  preflightContinue: false
-}));
+// CORS configuration - centralized in corsUtils.js
+const { getCorsOptions } = require('./utils/corsUtils');
+app.use(cors(getCorsOptions()));
 
 // Body parsing middleware
 // IMPORTANT: Webhook endpoint needs raw body for signature verification

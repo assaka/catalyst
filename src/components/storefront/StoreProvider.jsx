@@ -17,6 +17,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useLocation } from 'react-router-dom';
 import { TranslationProvider } from '@/contexts/TranslationContext';
 import { storefrontApiClient } from '@/api/storefront-entities';
+import { isPlatformDomain } from '@/utils/domainConfig';
 
 // New utilities and hooks
 import { useStoreBootstrap, useStoreSlugById, determineStoreSlug } from '@/hooks/useStoreBootstrap';
@@ -39,13 +40,10 @@ export const StoreProvider = ({ children }) => {
   const isOnboardingPage = location.pathname === '/admin/store-onboarding';
 
   // Check if we're on a platform domain (shows Landing page, no store context needed)
-  const hostname = window.location.hostname;
-  const isPlatformDomain = hostname.includes('dainostore.com') ||
-                           hostname.includes('daino.ai') ||
-                           hostname.includes('daino.store');
+  const isPlatform = isPlatformDomain();
   const hasNoStoreContext = !localStorage.getItem('selectedStoreSlug') && !localStorage.getItem('selectedStoreId');
 
-  if (isAuthPage || isOnboardingPage || (isPlatformDomain && hasNoStoreContext && location.pathname === '/')) {
+  if (isAuthPage || isOnboardingPage || (isPlatform && hasNoStoreContext && location.pathname === '/')) {
     // Return children without store context
     return <>{children}</>;
   }
