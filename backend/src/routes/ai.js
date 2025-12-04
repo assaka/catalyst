@@ -306,12 +306,28 @@ CURRENT STORE DATA:${storeData || '\nNo store data loaded.'}
 ${knowledgeBase ? `\nKNOWLEDGE:\n${knowledgeBase}` : ''}
 ${learnedExamples}
 
+SYNONYMS (understand these as the same thing):
+- products = articles = items = goods = inventory = stock
+- categories = collections = groups = departments
+- customers = clients = buyers = shoppers = users
+- orders = purchases = transactions = sales
+- coupons = discounts = promo codes = vouchers
+- out of stock = sold out = unavailable = empty stock = zero stock
+- in stock = available = have stock
+- low stock = running low = almost out = need restock
+- best selling = top sellers = most sold = popular
+- newest = latest = recent = just added = new arrivals
+- featured = promoted = highlighted = special
+
 RULES:
 1. ALWAYS return valid JSON with a "tool" field for actions
 2. For questions/chat, return: {"tool": "chat", "message": "your response"}
 3. If product/category not found, use ask_confirmation with create option
 4. NEVER explain SQL or how to do things - just DO them
 5. Be conversational but action-oriented
+6. Understand natural language - "articles in snowboard" = products in category snowboard
+7. "which products sold out" = out_of_stock filter
+8. "what's running low" = low_stock filter
 
 Examples:
 "create category hamid" → {"tool": "create_category", "name": "hamid"}
@@ -338,6 +354,24 @@ Examples:
 "ship order ORD-123" → {"tool": "update_order_status", "order_number": "ORD-123", "status": "shipped"}
 "create coupon SAVE10 for 10% off" → {"tool": "create_coupon", "code": "SAVE10", "discount_type": "percentage", "discount_value": 10}
 "yes" (after confirmation) → Execute pending action
+
+Natural language variations (same as above):
+"articles in snowboard" → {"tool": "list_products", "filters": {"category": "snowboard"}}
+"show me items in the sale collection" → {"tool": "list_products", "filters": {"category": "sale"}}
+"what's sold out" → {"tool": "list_products", "filters": {"out_of_stock": true}}
+"which products have sold out" → {"tool": "list_products", "filters": {"out_of_stock": true}}
+"what do we need to restock" → {"tool": "list_products", "filters": {"low_stock": true}}
+"inventory running low" → {"tool": "list_products", "filters": {"low_stock": true}}
+"what are our top sellers" → {"tool": "list_products", "filters": {"sort_by": "best_selling"}}
+"show me available inventory" → {"tool": "list_products", "filters": {"in_stock": true}}
+"new arrivals" → {"tool": "list_products", "filters": {"sort_by": "newest"}}
+"latest products added" → {"tool": "list_products", "filters": {"sort_by": "newest"}}
+"who are my best clients" → {"tool": "list_customers", "filters": {"sort_by": "spent"}}
+"show buyers who ordered" → {"tool": "list_customers", "filters": {"has_orders": true}}
+"find client by email test@example.com" → {"tool": "list_customers", "filters": {"email": "test@example.com"}}
+"unpaid orders" → {"tool": "list_orders", "filters": {"payment_status": "pending"}}
+"what purchases need shipping" → {"tool": "list_orders", "filters": {"status": "processing"}}
+"transactions from today" → {"tool": "list_orders", "filters": {"sort_by": "newest"}}
 
 ${images && images.length > 0 ? '\nUser attached image(s). Analyze for colors, patterns, and provide actionable insights.' : ''}
 
