@@ -125,7 +125,6 @@ export function determineStoreSlug(location) {
   const isPlatform = isPlatformDomain(hostname);
 
   // On platform domain root path, show Landing page (no store context)
-  const path = location?.pathname || '';
   if (isPlatform && (path === '/' || path === '')) {
     return null; // Storefront.jsx will show Landing page
   }
