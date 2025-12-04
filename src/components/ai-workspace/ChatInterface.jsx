@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Sparkles, User, Bot, Code, Eye, Package, Download, ThumbsUp, ThumbsDown, ChevronDown, Zap, Brain, Cpu } from 'lucide-react';
+import { Send, Loader2, Sparkles, User, Bot, Code, Eye, Package, Download, ThumbsUp, ThumbsDown, ChevronDown, Zap, Brain, Cpu, Image, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
 import { User as UserEntity } from '@/api/entities';
@@ -67,9 +67,11 @@ const ChatInterface = ({ onPluginCloned, context }) => {
   const [sessionId] = useState(() => `session_${Date.now()}`); // Session ID for grouping
   const [selectedModel, setSelectedModel] = useState(getSavedModel);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [attachedImages, setAttachedImages] = useState([]); // [{file, preview, base64}]
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
+  const imageInputRef = useRef(null);
 
   // Load starter templates, plugin cost, and chat history
   useEffect(() => {
@@ -266,35 +268,47 @@ const ChatInterface = ({ onPluginCloned, context }) => {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isProcessing) return;
+    if ((!input.trim() && attachedImages.length === 0) || isProcessing) return;
 
     const userMessage = input.trim();
+    const imagesToSend = [...attachedImages];
     setInput('');
+    setAttachedImages([]); // Clear images after sending
     setHistoryIndex(-1); // Reset history navigation
 
     // Save to input history for arrow navigation
-    saveInputHistory(userMessage);
+    if (userMessage) {
+      saveInputHistory(userMessage);
+    }
 
-    // Add user message to chat
+    // Add user message to chat (with image previews)
     setMessages(prev => [...prev, {
       role: 'user',
-      content: userMessage
+      content: userMessage || '(Image attached)',
+      images: imagesToSend.map(img => img.preview) // Store preview URLs for display
     }]);
 
     // Save user message to chat history
-    saveChatMessage('user', userMessage);
+    saveChatMessage('user', userMessage || '(Image attached)');
 
     // Send all requests to backend - AI determines intent
     setIsProcessing(true);
 
     try {
+      // Prepare images for API (base64 format)
+      const imagesForApi = imagesToSend.map(img => ({
+        base64: img.base64,
+        type: img.type
+      }));
+
       // Send to AI chat endpoint - AI determines what to do
       const response = await apiClient.post('/ai/chat', {
-        message: userMessage,
+        message: userMessage || 'Please analyze this image.',
         conversationHistory: messages,
         storeId: getSelectedStoreId(),
         modelId: selectedModel,
-        serviceKey: currentModel.serviceKey
+        serviceKey: currentModel.serviceKey,
+        images: imagesForApi.length > 0 ? imagesForApi : undefined
       });
 
       if (response.success) {
@@ -403,6 +417,57 @@ const ChatInterface = ({ onPluginCloned, context }) => {
         setInput('');
       }
     }
+  };
+
+  // Handle image file selection
+  const handleImageSelect = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    // Limit to 4 images at a time
+    const maxImages = 4;
+    const remainingSlots = maxImages - attachedImages.length;
+    const filesToProcess = files.slice(0, remainingSlots);
+
+    const newImages = await Promise.all(
+      filesToProcess.map(async (file) => {
+        // Create preview URL
+        const preview = URL.createObjectURL(file);
+
+        // Convert to base64
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            // Remove data:image/xxx;base64, prefix for API
+            const fullBase64 = reader.result;
+            resolve(fullBase64);
+          };
+          reader.readAsDataURL(file);
+        });
+
+        return {
+          file,
+          preview,
+          base64,
+          type: file.type
+        };
+      })
+    );
+
+    setAttachedImages(prev => [...prev, ...newImages]);
+    // Reset input so same file can be selected again
+    e.target.value = '';
+  };
+
+  // Remove an attached image
+  const removeImage = (index) => {
+    setAttachedImages(prev => {
+      const newImages = [...prev];
+      // Revoke object URL to prevent memory leak
+      URL.revokeObjectURL(newImages[index].preview);
+      newImages.splice(index, 1);
+      return newImages;
+    });
   };
 
   const handleGeneratePlugin = async (prompt) => {
@@ -605,6 +670,35 @@ const ChatInterface = ({ onPluginCloned, context }) => {
 
       {/* Input */}
       <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800">
+        {/* Image Previews */}
+        {attachedImages.length > 0 && (
+          <div className="flex gap-2 mb-3 flex-wrap">
+            {attachedImages.map((img, index) => (
+              <div key={index} className="relative group">
+                <img
+                  src={img.preview}
+                  alt={`Attached ${index + 1}`}
+                  className="w-16 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+                />
+                <button
+                  onClick={() => removeImage(index)}
+                  className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            {attachedImages.length < 4 && (
+              <button
+                onClick={() => imageInputRef.current?.click()}
+                className="w-16 h-16 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              >
+                <Image className="w-6 h-6 text-gray-400" />
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Model Selection */}
         <div className="mb-3 relative" ref={dropdownRef}>
           <button
@@ -672,13 +766,38 @@ const ChatInterface = ({ onPluginCloned, context }) => {
         </div>
 
         <div className="flex items-end gap-3">
+          {/* Hidden file input for images */}
+          <input
+            type="file"
+            ref={imageInputRef}
+            onChange={handleImageSelect}
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            multiple
+            className="hidden"
+          />
+
+          {/* Image upload button */}
+          <button
+            onClick={() => imageInputRef.current?.click()}
+            disabled={isProcessing || attachedImages.length >= 4}
+            className={cn(
+              "p-3 rounded-lg border transition-colors flex-shrink-0",
+              "border-gray-300 dark:border-gray-600",
+              "hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20",
+              "disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
+            title="Attach images (max 4)"
+          >
+            <Image className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+          </button>
+
           <div className="flex-1">
             <textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Describe what you want to build... (Press Enter to send)"
+              placeholder="Describe what you want to build or ask about an image..."
               className={cn(
                 "w-full p-3 text-sm border rounded-lg resize-none",
                 "focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
@@ -696,7 +815,7 @@ const ChatInterface = ({ onPluginCloned, context }) => {
           </div>
           <button
             onClick={handleSend}
-            disabled={!input.trim() || isProcessing}
+            disabled={(!input.trim() && attachedImages.length === 0) || isProcessing}
             className={cn(
               "p-3 rounded-lg",
               "bg-blue-600 hover:bg-blue-700",
@@ -836,6 +955,19 @@ const MessageBubble = ({ message, onInstallPlugin, onConfirmCreate, onGeneratePl
             ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400"
             : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
         )}>
+          {/* Display attached images */}
+          {message.images && message.images.length > 0 && (
+            <div className="flex gap-2 mb-2 flex-wrap">
+              {message.images.map((imgSrc, idx) => (
+                <img
+                  key={idx}
+                  src={imgSrc}
+                  alt={`Attached ${idx + 1}`}
+                  className="max-w-[150px] max-h-[150px] object-cover rounded-lg border border-blue-400"
+                />
+              ))}
+            </div>
+          )}
           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
 
           {/* Credits Used */}

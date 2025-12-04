@@ -303,7 +303,8 @@ class AIService {
       serviceKey = null, // Explicit service key for cost lookup
       maxTokens = 4096,
       temperature = 0.7,
-      metadata = {}
+      metadata = {},
+      images = null // Array of { base64, type } for vision support
     } = options;
 
     // Get model configuration if modelId provided
@@ -339,7 +340,8 @@ class AIService {
         model: actualModel,
         maxTokens,
         temperature,
-        systemPrompt
+        systemPrompt,
+        images // Pass images for vision support
       });
 
       // Extract response

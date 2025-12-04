@@ -959,7 +959,7 @@ router.post('/chat', authMiddleware, async (req, res) => {
   };
 
   try {
-    let { message, conversationHistory, storeId, modelId, serviceKey } = req.body;
+    let { message, conversationHistory, storeId, modelId, serviceKey, images } = req.body;
     const userId = req.user.id;
 
     // Resolve store_id from various sources (header takes priority)
@@ -981,6 +981,9 @@ router.post('/chat', authMiddleware, async (req, res) => {
     console.log('═══════════════════════════════════════════════════════════');
     console.log('📍 Model Selection:', { modelId, serviceKey });
     console.log('📝 Message:', message?.substring(0, 100) + (message?.length > 100 ? '...' : ''));
+    if (images && images.length > 0) {
+      console.log('📷 Images attached:', images.length);
+    }
 
     if (!message) {
       return res.status(400).json({
@@ -1205,6 +1208,7 @@ INTENTS:
 - cms_management: Create/update CMS pages and blocks (e.g., "create About Us page", "add shipping info block", "update FAQ page")
 - plugin: Creating new features
 - translation: Language translations
+- image_analysis: When user uploads an image and asks about it (e.g., "use these colors", "what colors are in this", "analyze this design", "copy this layout")
 - chat: ONLY for general questions about how to use the system, NOT for data queries
 
 IMPORTANT: If user asks for product data, inventory, sales, or any information from the database - use analytics_query, NOT chat!
@@ -5107,6 +5111,7 @@ Be SHORT and direct. Just list the results with bullet points. No fluff, no expl
 
     } else {
       // Just chat - provide context about our slot-based system
+      const hasImages = images && images.length > 0;
       const chatSystemPrompt = `You are the AI assistant for DainoStore, a visual e-commerce website builder.
 
 IMPORTANT: DainoStore uses a SLOT-BASED CONFIGURATION SYSTEM, not raw HTML/CSS.
@@ -5127,12 +5132,20 @@ What you can help with:
 - ADMIN: "create 20% discount coupon" → I create/update store entities
 - PLUGINS: "add a wishlist button" → I generate custom functionality
 - TRANSLATIONS: "translate to French" → I update language strings
+${hasImages ? `- IMAGE ANALYSIS: I can analyze uploaded images to extract colors, layouts, and design patterns
+
+When analyzing images:
+- Extract brand colors (primary, secondary, accent) with hex codes
+- Identify layout patterns and structure
+- Describe typography and visual style
+- Suggest how to apply similar styling to the store` : ''}
 
 When users ask about styling or layout, ALWAYS explain that you'll modify their slot configuration.
 NEVER suggest editing HTML files or CSS stylesheets directly - that's not how DainoStore works.
 
 If users ask data questions (best seller, revenue, customers), tell them you can query the database.
 If users ask about settings/appearance, tell them you can update theme settings directly.
+${hasImages ? '\nThe user has attached image(s). Analyze them and respond to their question about the image(s).' : ''}
 
 Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}`;
 
@@ -5145,7 +5158,8 @@ Previous conversation: ${JSON.stringify(conversationHistory?.slice(-3) || [])}`;
         systemPrompt: chatSystemPrompt,
         maxTokens: 1024,
         temperature: 0.7,
-        metadata: { type: 'chat', storeId: resolvedStoreId, modelId }
+        metadata: { type: 'chat', storeId: resolvedStoreId, modelId },
+        images // Pass images for vision support
       });
 
       // Save chat response for learning

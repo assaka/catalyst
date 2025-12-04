@@ -127,7 +127,7 @@ class AIProviderService {
    * Chat/Completion - Unified interface for all providers
    *
    * @param {Array} messages - Chat messages [{ role: 'user', content: '...' }]
-   * @param {Object} options - { provider, model, temperature, maxTokens, systemPrompt }
+   * @param {Object} options - { provider, model, temperature, maxTokens, systemPrompt, images }
    * @returns {Promise<Object>} { content, usage: { input_tokens, output_tokens }, provider, model }
    */
   async chat(messages, options = {}) {
@@ -136,24 +136,33 @@ class AIProviderService {
       model = this.defaultModels[provider],
       temperature = 0.7,
       maxTokens = 4096,
-      systemPrompt = null
+      systemPrompt = null,
+      images = null // Array of { base64, type } for vision support
     } = options;
 
     if (!provider) {
       throw new Error('No AI provider available. Please configure at least one API key.');
     }
 
-    console.log(`🤖 AI Provider: ${provider}, Model: ${model}`);
+    console.log(`🤖 AI Provider: ${provider}, Model: ${model}${images ? `, Images: ${images.length}` : ''}`);
 
     if (provider === 'anthropic') {
-      return await this._chatAnthropic(messages, { model, temperature, maxTokens, systemPrompt });
+      return await this._chatAnthropic(messages, { model, temperature, maxTokens, systemPrompt, images });
     } else if (provider === 'openai') {
-      return await this._chatOpenAI(messages, { model, temperature, maxTokens, systemPrompt });
+      return await this._chatOpenAI(messages, { model, temperature, maxTokens, systemPrompt, images });
     } else if (provider === 'groq') {
+      // Groq doesn't support vision yet, fall back to text-only
+      if (images && images.length > 0) {
+        console.warn('⚠️  Groq does not support vision. Images will be ignored.');
+      }
       return await this._chatGroq(messages, { model, temperature, maxTokens, systemPrompt });
     } else if (provider === 'gemini') {
-      return await this._chatGemini(messages, { model, temperature, maxTokens, systemPrompt });
+      return await this._chatGemini(messages, { model, temperature, maxTokens, systemPrompt, images });
     } else if (provider === 'deepseek') {
+      // DeepSeek doesn't support vision yet, fall back to text-only
+      if (images && images.length > 0) {
+        console.warn('⚠️  DeepSeek does not support vision. Images will be ignored.');
+      }
       return await this._chatDeepSeek(messages, { model, temperature, maxTokens, systemPrompt });
     } else {
       throw new Error(`Unknown provider: ${provider}`);
@@ -236,18 +245,64 @@ Return ONLY the translated text, no explanations or notes.`;
       throw new Error('Anthropic client not available. Check ANTHROPIC_API_KEY configuration.');
     }
 
-    const { model, temperature, maxTokens, systemPrompt } = options;
+    const { model, temperature, maxTokens, systemPrompt, images } = options;
 
     try {
       console.log(`   🌍 ANTHROPIC API CALL`);
       console.log(`   🤖 Model: ${model}`);
+
+      // Transform messages to include images if provided
+      let transformedMessages = messages;
+      if (images && images.length > 0) {
+        transformedMessages = messages.map((msg, idx) => {
+          // Only add images to the last user message
+          if (msg.role === 'user' && idx === messages.length - 1) {
+            const content = [];
+
+            // Add images first
+            for (const img of images) {
+              // Extract base64 data (remove data:image/xxx;base64, prefix if present)
+              let base64Data = img.base64;
+              let mediaType = img.type || 'image/jpeg';
+
+              if (base64Data.startsWith('data:')) {
+                const matches = base64Data.match(/^data:([^;]+);base64,(.+)$/);
+                if (matches) {
+                  mediaType = matches[1];
+                  base64Data = matches[2];
+                }
+              }
+
+              content.push({
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: mediaType,
+                  data: base64Data
+                }
+              });
+            }
+
+            // Add text after images
+            content.push({
+              type: 'text',
+              text: msg.content
+            });
+
+            return { role: msg.role, content };
+          }
+          return msg;
+        });
+
+        console.log(`   📷 Images attached: ${images.length}`);
+      }
 
       const response = await client.messages.create({
         model,
         max_tokens: maxTokens,
         temperature,
         system: systemPrompt || undefined,
-        messages
+        messages: transformedMessages
       });
 
       const content = response.content[0].text;
@@ -280,7 +335,7 @@ Return ONLY the translated text, no explanations or notes.`;
       throw new Error('OpenAI API key not configured');
     }
 
-    const { model, temperature, maxTokens, systemPrompt } = options;
+    const { model, temperature, maxTokens, systemPrompt, images } = options;
 
     try {
       console.log(`   🌍 OPENAI API CALL`);
@@ -288,10 +343,46 @@ Return ONLY the translated text, no explanations or notes.`;
 
       const fetch = (await import('node-fetch')).default;
 
+      // Transform messages to include images if provided
+      let transformedMessages = messages;
+      if (images && images.length > 0) {
+        transformedMessages = messages.map((msg, idx) => {
+          // Only add images to the last user message
+          if (msg.role === 'user' && idx === messages.length - 1) {
+            const content = [];
+
+            // Add images first
+            for (const img of images) {
+              // OpenAI expects the full data URL
+              let imageUrl = img.base64;
+              if (!imageUrl.startsWith('data:')) {
+                imageUrl = `data:${img.type || 'image/jpeg'};base64,${img.base64}`;
+              }
+
+              content.push({
+                type: 'image_url',
+                image_url: { url: imageUrl }
+              });
+            }
+
+            // Add text after images
+            content.push({
+              type: 'text',
+              text: msg.content
+            });
+
+            return { role: msg.role, content };
+          }
+          return msg;
+        });
+
+        console.log(`   📷 Images attached: ${images.length}`);
+      }
+
       // OpenAI format: system message goes in messages array
       const openaiMessages = systemPrompt
-        ? [{ role: 'system', content: systemPrompt }, ...messages]
-        : messages;
+        ? [{ role: 'system', content: systemPrompt }, ...transformedMessages]
+        : transformedMessages;
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -416,7 +507,7 @@ Return ONLY the translated text, no explanations or notes.`;
       throw new Error('Gemini API key not configured');
     }
 
-    const { model, temperature, maxTokens, systemPrompt } = options;
+    const { model, temperature, maxTokens, systemPrompt, images } = options;
 
     try {
       console.log(`   🌍 GEMINI API CALL`);
@@ -424,11 +515,43 @@ Return ONLY the translated text, no explanations or notes.`;
 
       const fetch = (await import('node-fetch')).default;
 
-      // Convert messages to Gemini format
-      const geminiContents = messages.map(msg => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-      }));
+      // Convert messages to Gemini format with image support
+      const geminiContents = messages.map((msg, idx) => {
+        const parts = [];
+
+        // Add images to the last user message
+        if (images && images.length > 0 && msg.role === 'user' && idx === messages.length - 1) {
+          for (const img of images) {
+            // Extract base64 data
+            let base64Data = img.base64;
+            let mimeType = img.type || 'image/jpeg';
+
+            if (base64Data.startsWith('data:')) {
+              const matches = base64Data.match(/^data:([^;]+);base64,(.+)$/);
+              if (matches) {
+                mimeType = matches[1];
+                base64Data = matches[2];
+              }
+            }
+
+            parts.push({
+              inline_data: {
+                mime_type: mimeType,
+                data: base64Data
+              }
+            });
+          }
+          console.log(`   📷 Images attached: ${images.length}`);
+        }
+
+        // Add text content
+        parts.push({ text: msg.content });
+
+        return {
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts
+        };
+      });
 
       // Gemini uses system instruction separately
       const requestBody = {
