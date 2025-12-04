@@ -134,8 +134,17 @@ export function determineStoreSlug(location) {
     return savedSlug;
   }
 
+  // Check if we're on a platform domain - don't redirect, let Storefront show Landing
+  const isPlatformDomain = hostname.includes('dainostore.com') ||
+                           hostname.includes('daino.ai') ||
+                           hostname.includes('daino.store');
+
+  if (isPlatformDomain) {
+    return null; // Storefront.jsx will show Landing page
+  }
+
   // No store found - redirect to Landing page
-  if (typeof window !== 'undefined' && !path.startsWith('/Landing')) {
+  if (typeof window !== 'undefined' && !path.startsWith('/Landing') && !path.startsWith('/landing')) {
     window.location.href = '/Landing';
   }
   return null;

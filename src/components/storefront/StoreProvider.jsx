@@ -38,7 +38,14 @@ export const StoreProvider = ({ children }) => {
   const isAuthPage = location.pathname === '/admin/auth' || location.pathname === '/auth';
   const isOnboardingPage = location.pathname === '/admin/store-onboarding';
 
-  if (isAuthPage || isOnboardingPage) {
+  // Check if we're on a platform domain (shows Landing page, no store context needed)
+  const hostname = window.location.hostname;
+  const isPlatformDomain = hostname.includes('dainostore.com') ||
+                           hostname.includes('daino.ai') ||
+                           hostname.includes('daino.store');
+  const hasNoStoreContext = !localStorage.getItem('selectedStoreSlug') && !localStorage.getItem('selectedStoreId');
+
+  if (isAuthPage || isOnboardingPage || (isPlatformDomain && hasNoStoreContext && location.pathname === '/')) {
     // Return children without store context
     return <>{children}</>;
   }
