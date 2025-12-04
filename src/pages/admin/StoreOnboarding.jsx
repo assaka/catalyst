@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { PageLoader } from '@/components/ui/page-loader';
 import {
   Store, Database, CreditCard, DollarSign, User as UserIcon,
   CheckCircle2, Circle, Loader2, ExternalLink, ArrowRight, ArrowLeft, Sparkles, AlertCircle
@@ -22,13 +23,15 @@ const STEPS = [
 
 export default function StoreOnboarding() {
   const navigate = useNavigate();
+
+  // All useState hooks must be at the top, before any conditional returns
+  const [authChecked, setAuthChecked] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [storeId, setStoreId] = useState(null);
   const [completedSteps, setCompletedSteps] = useState([]);
-
   const [storeData, setStoreData] = useState({ name: '', slug: '' });
   const [dbData, setDbData] = useState({ connectionString: '', serviceRoleKey: '' });
   const [oauthCompleted, setOauthCompleted] = useState(false);
@@ -36,6 +39,21 @@ export default function StoreOnboarding() {
   const [stripeData, setStripeData] = useState({ publishableKey: '', secretKey: '' });
   const [creditData, setCreditData] = useState({ amount: 100 });
   const [profileData, setProfileData] = useState({ phone: '', companyName: '' });
+
+  // Auth check - redirect to login if not authenticated
+  useEffect(() => {
+    const token = localStorage.getItem('store_owner_auth_token');
+    if (!token) {
+      navigate('/admin/auth', { replace: true });
+      return;
+    }
+    setAuthChecked(true);
+  }, [navigate]);
+
+  // Show loading while checking auth
+  if (!authChecked) {
+    return <PageLoader size="lg" text="Checking authentication..." />;
+  }
 
   const handleNameChange = (name) => {
     setStoreData({
