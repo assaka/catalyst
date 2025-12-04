@@ -21,7 +21,8 @@ import {
   Download,
   Maximize2,
   Minimize2,
-  ChevronDown
+  ChevronDown,
+  Paperclip
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import aiWorkspaceSlotProcessor from '@/services/aiWorkspaceSlotProcessor';
@@ -734,81 +735,100 @@ const WorkspaceAIPanel = () => {
 
       {/* Input Area */}
       <div className="p-4 border-t bg-white dark:bg-gray-800 shrink-0">
-        {/* Model Selection Dropdown */}
-        <div className="mb-2 relative" ref={dropdownRef}>
-          <button
-            onClick={() => setShowModelDropdown(!showModelDropdown)}
-            disabled={isProcessingAi}
-            className={cn(
-              "flex items-center gap-2 px-2 py-1 text-xs rounded-md border transition-all",
-              "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-600",
-              "hover:border-purple-400 dark:hover:border-purple-500",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
-            )}
-          >
-            <span>{currentModel.icon}</span>
-            <span className="font-medium text-gray-700 dark:text-gray-200">{PROVIDER_NAMES[currentModel.provider]}</span>
-            <span className="text-gray-400">•</span>
-            <span className="text-purple-600 dark:text-purple-400 font-medium">{currentModel.credits} cr</span>
-            <ChevronDown className={cn("w-3 h-3 text-gray-400 transition-transform", showModelDropdown && "rotate-180")} />
-          </button>
-
-          {showModelDropdown && (
-            <div className="absolute bottom-full left-0 mb-1 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
-              <div className="p-1.5 border-b border-gray-100 dark:border-gray-700">
-                <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 px-2">Select AI Provider</p>
-              </div>
-              <div className="py-1">
-                {AI_MODELS.map((model) => (
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <Textarea
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={`Describe changes for ${selectedPageType} page...`}
+              className="min-h-[60px] max-h-[120px] resize-none text-sm pb-8"
+              disabled={isProcessingAi}
+            />
+            {/* Bottom toolbar inside textarea */}
+            <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between px-1">
+              {/* Left side: Model selector & Upload */}
+              <div className="flex items-center gap-1">
+                {/* Model Selection Dropdown */}
+                <div className="relative" ref={dropdownRef}>
                   <button
-                    key={model.id}
-                    onClick={() => {
-                      setSelectedModel(model.id);
-                      localStorage.setItem('ai_default_model', model.id);
-                      setShowModelDropdown(false);
-                    }}
+                    onClick={() => setShowModelDropdown(!showModelDropdown)}
+                    disabled={isProcessingAi}
                     className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2 text-left transition-colors",
-                      selectedModel === model.id
-                        ? "bg-purple-50 dark:bg-purple-900/30 border-l-2 border-purple-500"
-                        : "hover:bg-gray-50 dark:hover:bg-gray-700/50 border-l-2 border-transparent"
+                      "flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded transition-all",
+                      "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200",
+                      "hover:bg-gray-100 dark:hover:bg-gray-700",
+                      "disabled:opacity-50 disabled:cursor-not-allowed"
                     )}
                   >
-                    <span className="text-lg">{model.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <span className={cn(
-                        "text-xs font-medium block",
-                        selectedModel === model.id ? "text-purple-600 dark:text-purple-400" : "text-gray-800 dark:text-gray-200"
-                      )}>
-                        {PROVIDER_NAMES[model.provider]}
-                      </span>
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400">{model.name}</span>
-                    </div>
-                    <span className={cn(
-                      "text-[10px] font-semibold px-1.5 py-0.5 rounded-full",
-                      selectedModel === model.id
-                        ? "bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                    )}>
-                      {model.credits} cr
-                    </span>
+                    <span>{currentModel.icon}</span>
+                    <span className="font-medium">{PROVIDER_NAMES[currentModel.provider]}</span>
+                    <ChevronDown className={cn("w-2.5 h-2.5 transition-transform", showModelDropdown && "rotate-180")} />
                   </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
 
-        <div className="flex gap-2">
-          <Textarea
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={`Describe changes for ${selectedPageType} page...`}
-            className="min-h-[60px] max-h-[120px] resize-none text-sm"
-            disabled={isProcessingAi}
-          />
+                  {showModelDropdown && (
+                    <div className="absolute bottom-full left-0 mb-1 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50 overflow-hidden">
+                      <div className="p-1.5 border-b border-gray-100 dark:border-gray-700">
+                        <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 px-2">Select AI Provider</p>
+                      </div>
+                      <div className="py-1">
+                        {AI_MODELS.map((model) => (
+                          <button
+                            key={model.id}
+                            onClick={() => {
+                              setSelectedModel(model.id);
+                              localStorage.setItem('ai_default_model', model.id);
+                              setShowModelDropdown(false);
+                            }}
+                            className={cn(
+                              "w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors",
+                              selectedModel === model.id
+                                ? "bg-purple-50 dark:bg-purple-900/30"
+                                : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                            )}
+                          >
+                            <span className="text-base">{model.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className={cn(
+                                "text-xs font-medium block",
+                                selectedModel === model.id ? "text-purple-600 dark:text-purple-400" : "text-gray-800 dark:text-gray-200"
+                              )}>
+                                {PROVIDER_NAMES[model.provider]}
+                              </span>
+                              <span className="text-[10px] text-gray-500 dark:text-gray-400">{model.name}</span>
+                            </div>
+                            <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                              {model.credits} cr
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload Button */}
+                <button
+                  disabled={isProcessingAi}
+                  className={cn(
+                    "p-1 rounded transition-all",
+                    "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300",
+                    "hover:bg-gray-100 dark:hover:bg-gray-700",
+                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                  )}
+                  title="Upload file"
+                >
+                  <Paperclip className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Right side: Hint */}
+              <span className="text-[9px] text-gray-400 dark:text-gray-500">
+                Enter to send
+              </span>
+            </div>
+          </div>
           <Button
             onClick={handleSend}
             disabled={!inputValue.trim() || isProcessingAi}
@@ -822,9 +842,6 @@ const WorkspaceAIPanel = () => {
             )}
           </Button>
         </div>
-        <p className="text-[10px] text-gray-400 mt-2 text-center">
-          Press Enter to send, Shift+Enter for new line
-        </p>
       </div>
 
       {/* Clone Template Modal */}
