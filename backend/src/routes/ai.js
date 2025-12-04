@@ -360,6 +360,7 @@ Return ONLY valid JSON.`;
 /**
  * Execute a tool action from AI response
  * This is the core executor that handles all database operations
+ * Uses Supabase client syntax (.from().select().eq())
  */
 async function executeToolAction(toolCall, storeId, userId, originalMessage) {
   const ConnectionManager = require('../services/database/ConnectionManager');
@@ -368,7 +369,7 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
     return { success: false, message: 'Store ID is required for this action.' };
   }
 
-  const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+  const db = await ConnectionManager.getStoreConnection(storeId);
   const tool = toolCall.tool;
 
   console.log(`🔧 Executing tool: ${tool}`, toolCall);
@@ -381,15 +382,38 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       case 'add_to_category': {
         const { product, category } = toolCall;
 
-        // Find product (search by name or SKU)
-        const productRecord = await tenantDb('products as p')
-          .leftJoin('product_translations as pt', function() {
-            this.on('p.id', 'pt.product_id').andOn('pt.language_code', tenantDb.raw('?', ['en']));
-          })
-          .whereRaw('LOWER(pt.name) LIKE ? OR LOWER(p.sku) LIKE ?',
-            [`%${product.toLowerCase()}%`, `%${product.toLowerCase()}%`])
-          .select('p.id', 'p.sku', 'pt.name')
-          .first();
+        // Find product by name (search in translations) or SKU
+        const { data: products } = await db
+          .from('product_translations')
+          .select('product_id, name, products!inner(id, sku)')
+          .ilike('name', `%${product}%`)
+          .limit(1);
+
+        let productRecord = products?.[0];
+
+        // If not found by name, try SKU
+        if (!productRecord) {
+          const { data: productsBySku } = await db
+            .from('products')
+            .select('id, sku')
+            .ilike('sku', `%${product}%`)
+            .limit(1);
+
+          if (productsBySku?.[0]) {
+            const { data: translation } = await db
+              .from('product_translations')
+              .select('name')
+              .eq('product_id', productsBySku[0].id)
+              .eq('language_code', 'en')
+              .single();
+
+            productRecord = {
+              product_id: productsBySku[0].id,
+              name: translation?.name || productsBySku[0].sku,
+              products: productsBySku[0]
+            };
+          }
+        }
 
         if (!productRecord) {
           return {
@@ -398,15 +422,41 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           };
         }
 
-        // Find category
-        const categoryRecord = await tenantDb('categories as c')
-          .leftJoin('category_translations as ct', function() {
-            this.on('c.id', 'ct.category_id').andOn('ct.language_code', tenantDb.raw('?', ['en']));
-          })
-          .whereRaw('LOWER(ct.name) LIKE ? OR LOWER(c.slug) LIKE ?',
-            [`%${category.toLowerCase()}%`, `%${category.toLowerCase()}%`])
-          .select('c.id', 'ct.name', 'c.slug')
-          .first();
+        const productId = productRecord.product_id || productRecord.products?.id;
+        const productName = productRecord.name;
+
+        // Find category by name or slug
+        const { data: categories } = await db
+          .from('category_translations')
+          .select('category_id, name, categories!inner(id, slug)')
+          .ilike('name', `%${category}%`)
+          .limit(1);
+
+        let categoryRecord = categories?.[0];
+
+        // If not found by name, try slug
+        if (!categoryRecord) {
+          const { data: categoriesBySlug } = await db
+            .from('categories')
+            .select('id, slug')
+            .ilike('slug', `%${category}%`)
+            .limit(1);
+
+          if (categoriesBySlug?.[0]) {
+            const { data: translation } = await db
+              .from('category_translations')
+              .select('name')
+              .eq('category_id', categoriesBySlug[0].id)
+              .eq('language_code', 'en')
+              .single();
+
+            categoryRecord = {
+              category_id: categoriesBySlug[0].id,
+              name: translation?.name || categoriesBySlug[0].slug,
+              categories: categoriesBySlug[0]
+            };
+          }
+        }
 
         if (!categoryRecord) {
           // Category doesn't exist - ask to create
@@ -416,38 +466,47 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
             message: `Category "${category}" doesn't exist. Would you like me to create it?`,
             pendingAction: {
               tool: 'create_and_add',
-              product: productRecord.name || product,
-              productId: productRecord.id,
+              product: productName,
+              productId: productId,
               category: category,
               originalMessage
             }
           };
         }
 
+        const categoryId = categoryRecord.category_id || categoryRecord.categories?.id;
+        const categoryName = categoryRecord.name;
+
         // Check if already in category
-        const existing = await tenantDb('product_categories')
-          .where({ product_id: productRecord.id, category_id: categoryRecord.id })
-          .first();
+        const { data: existing } = await db
+          .from('product_categories')
+          .select('id')
+          .eq('product_id', productId)
+          .eq('category_id', categoryId)
+          .maybeSingle();
 
         if (existing) {
           return {
             success: true,
-            message: `"${productRecord.name}" is already in the "${categoryRecord.name}" category.`,
-            data: { product: productRecord, category: categoryRecord, alreadyExists: true }
+            message: `"${productName}" is already in the "${categoryName}" category.`,
+            data: { productId, categoryId, alreadyExists: true }
           };
         }
 
         // Add to category
-        await tenantDb('product_categories').insert({
-          product_id: productRecord.id,
-          category_id: categoryRecord.id,
-          created_at: new Date().toISOString()
-        });
+        const { error: insertError } = await db
+          .from('product_categories')
+          .insert({
+            product_id: productId,
+            category_id: categoryId
+          });
+
+        if (insertError) throw insertError;
 
         return {
           success: true,
-          message: `Done! Added "${productRecord.name}" to the "${categoryRecord.name}" category.`,
-          data: { product: productRecord, category: categoryRecord }
+          message: `Done! Added "${productName}" to the "${categoryName}" category.`,
+          data: { productId, categoryId, productName, categoryName }
         };
       }
 
@@ -459,47 +518,56 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
 
         // Create the category
         const slug = category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-        const [newCategoryId] = await tenantDb('categories').insert({
-          slug,
-          url_key: slug,
-          is_active: true,
-          include_in_menu: true,
-          position: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }).returning('id');
 
-        const categoryId = newCategoryId?.id || newCategoryId;
+        const { data: newCategory, error: catError } = await db
+          .from('categories')
+          .insert({
+            slug,
+            url_key: slug,
+            is_active: true,
+            include_in_menu: true,
+            position: 0
+          })
+          .select('id')
+          .single();
+
+        if (catError) throw catError;
+
+        const categoryId = newCategory.id;
 
         // Add translation
-        await tenantDb('category_translations').insert({
-          category_id: categoryId,
-          language_code: 'en',
-          name: category,
-          created_at: new Date().toISOString()
-        });
+        const { error: transError } = await db
+          .from('category_translations')
+          .insert({
+            category_id: categoryId,
+            language_code: 'en',
+            name: category
+          });
+
+        if (transError) console.error('Translation insert error:', transError);
 
         // Find product if we don't have ID
         let prodId = productId;
-        if (!prodId) {
-          const productRecord = await tenantDb('products as p')
-            .leftJoin('product_translations as pt', function() {
-              this.on('p.id', 'pt.product_id').andOn('pt.language_code', tenantDb.raw('?', ['en']));
-            })
-            .whereRaw('LOWER(pt.name) LIKE ? OR LOWER(p.sku) LIKE ?',
-              [`%${product.toLowerCase()}%`, `%${product.toLowerCase()}%`])
-            .select('p.id')
-            .first();
-          prodId = productRecord?.id;
+        if (!prodId && product) {
+          const { data: products } = await db
+            .from('product_translations')
+            .select('product_id')
+            .ilike('name', `%${product}%`)
+            .limit(1);
+
+          prodId = products?.[0]?.product_id;
         }
 
         // Add product to category if found
         if (prodId) {
-          await tenantDb('product_categories').insert({
-            product_id: prodId,
-            category_id: categoryId,
-            created_at: new Date().toISOString()
-          });
+          const { error: linkError } = await db
+            .from('product_categories')
+            .insert({
+              product_id: prodId,
+              category_id: categoryId
+            });
+
+          if (linkError) console.error('Product-category link error:', linkError);
 
           return {
             success: true,
@@ -522,24 +590,29 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
         const { name } = toolCall;
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-        const [newCategoryId] = await tenantDb('categories').insert({
-          slug,
-          url_key: slug,
-          is_active: true,
-          include_in_menu: true,
-          position: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }).returning('id');
+        const { data: newCategory, error: catError } = await db
+          .from('categories')
+          .insert({
+            slug,
+            url_key: slug,
+            is_active: true,
+            include_in_menu: true,
+            position: 0
+          })
+          .select('id')
+          .single();
 
-        const categoryId = newCategoryId?.id || newCategoryId;
+        if (catError) throw catError;
 
-        await tenantDb('category_translations').insert({
-          category_id: categoryId,
-          language_code: 'en',
-          name: name,
-          created_at: new Date().toISOString()
-        });
+        const categoryId = newCategory.id;
+
+        await db
+          .from('category_translations')
+          .insert({
+            category_id: categoryId,
+            language_code: 'en',
+            name: name
+          });
 
         return {
           success: true,
@@ -554,23 +627,23 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       case 'remove_from_category': {
         const { product, category } = toolCall;
 
-        const productRecord = await tenantDb('products as p')
-          .leftJoin('product_translations as pt', function() {
-            this.on('p.id', 'pt.product_id').andOn('pt.language_code', tenantDb.raw('?', ['en']));
-          })
-          .whereRaw('LOWER(pt.name) LIKE ? OR LOWER(p.sku) LIKE ?',
-            [`%${product.toLowerCase()}%`, `%${product.toLowerCase()}%`])
-          .select('p.id', 'pt.name')
-          .first();
+        // Find product
+        const { data: products } = await db
+          .from('product_translations')
+          .select('product_id, name')
+          .ilike('name', `%${product}%`)
+          .limit(1);
 
-        const categoryRecord = await tenantDb('categories as c')
-          .leftJoin('category_translations as ct', function() {
-            this.on('c.id', 'ct.category_id').andOn('ct.language_code', tenantDb.raw('?', ['en']));
-          })
-          .whereRaw('LOWER(ct.name) LIKE ? OR LOWER(c.slug) LIKE ?',
-            [`%${category.toLowerCase()}%`, `%${category.toLowerCase()}%`])
-          .select('c.id', 'ct.name')
-          .first();
+        const productRecord = products?.[0];
+
+        // Find category
+        const { data: categories } = await db
+          .from('category_translations')
+          .select('category_id, name')
+          .ilike('name', `%${category}%`)
+          .limit(1);
+
+        const categoryRecord = categories?.[0];
 
         if (!productRecord || !categoryRecord) {
           return {
@@ -579,16 +652,19 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           };
         }
 
-        const deleted = await tenantDb('product_categories')
-          .where({ product_id: productRecord.id, category_id: categoryRecord.id })
-          .delete();
+        const { data: deleted, error: deleteError } = await db
+          .from('product_categories')
+          .delete()
+          .eq('product_id', productRecord.product_id)
+          .eq('category_id', categoryRecord.category_id)
+          .select();
 
         return {
           success: true,
-          message: deleted
+          message: deleted?.length
             ? `Removed "${productRecord.name}" from "${categoryRecord.name}".`
             : `"${productRecord.name}" wasn't in "${categoryRecord.name}".`,
-          data: { product: productRecord, category: categoryRecord, removed: deleted > 0 }
+          data: { productId: productRecord.product_id, categoryId: categoryRecord.category_id, removed: deleted?.length > 0 }
         };
       }
 
@@ -600,29 +676,58 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
         let data, message;
 
         switch (type) {
-          case 'out_of_stock':
-            data = await tenantDb('products as p')
-              .leftJoin('product_translations as pt', function() {
-                this.on('p.id', 'pt.product_id').andOn('pt.language_code', tenantDb.raw('?', ['en']));
-              })
-              .where('p.stock_quantity', '<=', 0)
-              .select('p.id', 'p.sku', 'p.stock_quantity', 'pt.name')
+          case 'out_of_stock': {
+            const { data: products } = await db
+              .from('products')
+              .select('id, sku, stock_quantity')
+              .lte('stock_quantity', 0)
               .limit(20);
+
+            // Get translations for these products
+            if (products?.length) {
+              const productIds = products.map(p => p.id);
+              const { data: translations } = await db
+                .from('product_translations')
+                .select('product_id, name')
+                .in('product_id', productIds)
+                .eq('language_code', 'en');
+
+              const transMap = new Map(translations?.map(t => [t.product_id, t.name]) || []);
+              data = products.map(p => ({ ...p, name: transMap.get(p.id) || p.sku }));
+            } else {
+              data = [];
+            }
+
             message = data.length
               ? `Found ${data.length} out of stock products:\n${data.map(p => `• ${p.name || p.sku}`).join('\n')}`
               : 'No products are currently out of stock.';
             break;
+          }
 
-          case 'categories':
-            data = await tenantDb('categories as c')
-              .leftJoin('category_translations as ct', function() {
-                this.on('c.id', 'ct.category_id').andOn('ct.language_code', tenantDb.raw('?', ['en']));
-              })
-              .select('c.id', 'c.slug', 'c.is_active', 'c.product_count', 'ct.name')
-              .orderBy('ct.name')
+          case 'categories': {
+            const { data: cats } = await db
+              .from('categories')
+              .select('id, slug, is_active, product_count')
+              .order('id')
               .limit(30);
+
+            if (cats?.length) {
+              const catIds = cats.map(c => c.id);
+              const { data: translations } = await db
+                .from('category_translations')
+                .select('category_id, name')
+                .in('category_id', catIds)
+                .eq('language_code', 'en');
+
+              const transMap = new Map(translations?.map(t => [t.category_id, t.name]) || []);
+              data = cats.map(c => ({ ...c, name: transMap.get(c.id) || c.slug }));
+            } else {
+              data = [];
+            }
+
             message = `Found ${data.length} categories:\n${data.map(c => `• ${c.name || c.slug} (${c.product_count || 0} products)`).join('\n')}`;
             break;
+          }
 
           default:
             message = `Query type "${type}" not yet implemented.`;
