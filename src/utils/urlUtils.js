@@ -404,7 +404,8 @@ export function getStoreBaseUrl(store = null) {
  * Extract store slug from public URL
  */
 export function getStoreSlugFromPublicUrl(pathname) {
-  const match = pathname.match(new RegExp(`^${URL_CONFIG.PUBLIC_PREFIX}/([^/]+)/`));
+  // Match store slug with or without trailing slash
+  const match = pathname.match(new RegExp(`^${URL_CONFIG.PUBLIC_PREFIX}/([^/]+)(?:/|$)`));
   return match ? match[1] : null;
 }
 
