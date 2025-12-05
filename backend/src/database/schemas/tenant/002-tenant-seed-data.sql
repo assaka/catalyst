@@ -111,53 +111,24 @@ ON CONFLICT DO NOTHING;
 
 -- attribute_sets: Create 'Default' attribute set for the store
 INSERT INTO attribute_sets (id, name, description, is_default, sort_order, store_id, attribute_ids, created_at, updated_at)
-SELECT
-  gen_random_uuid(),
-  'Default',
-  'Default attribute set',
-  true,
-  0,
-  id,
-  '[]'::jsonb,
-  NOW(),
-  NOW()
-FROM stores
-WHERE NOT EXISTS (
-  SELECT 1 FROM attribute_sets WHERE name = 'Default' AND store_id = stores.id
-)
-LIMIT 1;
+SELECT gen_random_uuid(), 'Default', 'Default attribute set', true, 0, id, '[]'::jsonb, NOW(), NOW()
+FROM stores LIMIT 1;
 
--- categories: Create 'root-catalog' category for the store with translations
+-- categories: Create 'root-catalog' category with translations
 DO $$
 DECLARE
   v_store_id UUID;
-  v_category_id UUID;
+  v_category_id UUID := gen_random_uuid();
 BEGIN
-  -- Get the store ID
   SELECT id INTO v_store_id FROM stores LIMIT 1;
 
-  IF v_store_id IS NULL THEN
-    RAISE NOTICE 'No store found, skipping category seed';
-    RETURN;
-  END IF;
+  INSERT INTO categories (id, store_id, slug, sort_order, is_active, hide_in_menu, parent_id, level, created_at, updated_at)
+  VALUES (v_category_id, v_store_id, 'root-catalog', 0, true, false, NULL, 0, NOW(), NOW());
 
-  -- Check if root-catalog already exists for this store
-  SELECT id INTO v_category_id FROM categories WHERE slug = 'root-catalog' AND store_id = v_store_id;
-
-  IF v_category_id IS NULL THEN
-    -- Create the category
-    v_category_id := gen_random_uuid();
-
-    INSERT INTO categories (id, store_id, slug, sort_order, is_active, hide_in_menu, parent_id, level, created_at, updated_at)
-    VALUES (v_category_id, v_store_id, 'root-catalog', 0, true, false, NULL, 0, NOW(), NOW());
-
-    -- Create translations
-    INSERT INTO category_translations (category_id, language_code, name, description, created_at, updated_at)
-    VALUES
-      (v_category_id, 'en', 'Root Catalog', 'Default root category for product catalog', NOW(), NOW()),
-      (v_category_id, 'nl', 'Hoofdcatalogus', 'Standaard hoofdcategorie voor productcatalogus', NOW(), NOW())
-    ON CONFLICT DO NOTHING;
-  END IF;
+  INSERT INTO category_translations (category_id, language_code, name, description, created_at, updated_at)
+  VALUES
+    (v_category_id, 'en', 'Root Catalog', 'Default root category for product catalog', NOW(), NOW()),
+    (v_category_id, 'nl', 'Hoofdcatalogus', 'Standaard hoofdcategorie voor productcatalogus', NOW(), NOW());
 END $$;
 
 -- cms_pages (3 rows)
