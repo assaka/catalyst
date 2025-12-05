@@ -357,6 +357,12 @@ RULES:
 6. Understand natural language - "articles in snowboard" = products in category snowboard
 7. "which products sold out" = out_of_stock filter
 8. "what's running low" = low_stock filter
+9. USE CONVERSATION CONTEXT: When user answers a clarifying question, combine their answer with previous context to execute immediately. Example:
+   - You ask: "Which element's color to change?"
+   - User says: "product title"
+   - You have all info from history (element=product_title, property=color, value=light green) → EXECUTE the tool, don't ask again!
+10. NEVER ask the same question twice. If user answered "product title", you already know what they want from previous messages.
+11. When user provides partial info, CHECK HISTORY for the rest before asking.
 
 Examples:
 "create category hamid" → {"tool": "create_category", "name": "hamid"}
@@ -383,6 +389,13 @@ Examples:
 "ship order ORD-123" → {"tool": "update_order_status", "order_number": "ORD-123", "status": "shipped"}
 "create coupon SAVE10 for 10% off" → {"tool": "create_coupon", "code": "SAVE10", "discount_type": "percentage", "discount_value": 10}
 "yes" (after confirmation) → Execute pending action
+
+MULTI-TURN CONVERSATION EXAMPLES:
+Turn 1: User: "change color to red" → You ask: "Which element?"
+Turn 2: User: "title" → You now have: element=title, property=color, value=red → {"tool": "update_styling", "element": "product_title", "property": "color", "value": "red"}
+
+Turn 1: User: "make it bigger" → You ask: "Which element should be bigger?"
+Turn 2: User: "the price" → You have: element=price, property=fontSize, value=bigger → {"tool": "update_styling", "element": "product_price", "property": "fontSize", "value": "32px"}
 
 Natural language variations (same as above):
 "articles in snowboard" → {"tool": "list_products", "filters": {"category": "snowboard"}}
