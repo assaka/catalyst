@@ -297,14 +297,20 @@ TOOL: delete_coupon - Delete a coupon
 Return: {"tool": "delete_coupon", "code": "COUPON_CODE"}
 
 ═══ LAYOUT & STYLING TOOLS ═══
-TOOL: update_styling - Change element colors, fonts, sizes on storefront pages
-Elements: product_title, price, sku, description, add_to_cart_button, quantity_selector, stock_label, breadcrumb
-Properties: color, backgroundColor, fontSize, fontWeight
-Pages: product, cart, checkout, category
+TOOL: update_styling - Change element appearance (same as editor sidebar)
+Elements: product_title, product_price, product_sku, product_short_description, add_to_cart_button, quantity_selector, stock_status, breadcrumbs, wishlist_button, related_products_title
+Properties (CSS): color, backgroundColor, fontSize, fontWeight, textAlign, padding, paddingTop, paddingBottom, paddingLeft, paddingRight, margin, borderColor, borderWidth, borderRadius
+Pages: product, cart, checkout, category, header, homepage
+Color values: red, blue, green, orange, yellow, purple, pink, gray, black, white, or hex like #FF0000
 Examples:
   {"tool": "update_styling", "element": "product_title", "property": "color", "value": "red"}
-  {"tool": "update_styling", "element": "price", "property": "color", "value": "#FF0000"}
+  {"tool": "update_styling", "element": "product_price", "property": "color", "value": "#FF0000"}
   {"tool": "update_styling", "element": "add_to_cart_button", "property": "backgroundColor", "value": "green"}
+  {"tool": "update_styling", "element": "product_title", "property": "fontSize", "value": "24px"}
+  {"tool": "update_styling", "element": "product_title", "property": "fontWeight", "value": "bold"}
+  {"tool": "update_styling", "element": "product_title", "property": "textAlign", "value": "center"}
+  {"tool": "update_styling", "element": "add_to_cart_button", "property": "padding", "value": "16px"}
+  {"tool": "update_styling", "element": "add_to_cart_button", "property": "borderRadius", "value": "8px"}
 
 TOOL: update_setting - Update store/catalog settings
 Settings: show_stock_label, hide_currency_product, hide_quantity_selector, theme.primary_color, theme.breadcrumb_item_text_color
@@ -399,13 +405,18 @@ Natural language variations (same as above):
 Layout & Styling examples:
 "set product title color to red" → {"tool": "update_styling", "element": "product_title", "property": "color", "value": "red"}
 "make the title red" → {"tool": "update_styling", "element": "product_title", "property": "color", "value": "red"}
-"change price color to blue" → {"tool": "update_styling", "element": "price", "property": "color", "value": "blue"}
+"change price color to blue" → {"tool": "update_styling", "element": "product_price", "property": "color", "value": "blue"}
 "make add to cart button green" → {"tool": "update_styling", "element": "add_to_cart_button", "property": "backgroundColor", "value": "green"}
+"make title bigger" → {"tool": "update_styling", "element": "product_title", "property": "fontSize", "value": "32px"}
+"make title bold" → {"tool": "update_styling", "element": "product_title", "property": "fontWeight", "value": "bold"}
+"center the title" → {"tool": "update_styling", "element": "product_title", "property": "textAlign", "value": "center"}
+"add padding to button" → {"tool": "update_styling", "element": "add_to_cart_button", "property": "padding", "value": "16px"}
+"round the button corners" → {"tool": "update_styling", "element": "add_to_cart_button", "property": "borderRadius", "value": "8px"}
 "hide stock label" → {"tool": "update_setting", "setting": "show_stock_label", "value": false}
 "show stock label" → {"tool": "update_setting", "setting": "show_stock_label", "value": true}
 "hide quantity selector" → {"tool": "update_setting", "setting": "hide_quantity_selector", "value": true}
-"move sku above price" → {"tool": "move_element", "element": "sku", "position": "above", "target": "price"}
-"put description below the title" → {"tool": "move_element", "element": "description", "position": "below", "target": "product_title"}
+"move sku above price" → {"tool": "move_element", "element": "product_sku", "position": "above", "target": "product_price"}
+"put description below the title" → {"tool": "move_element", "element": "product_short_description", "position": "below", "target": "product_title"}
 
 ${images && images.length > 0 ? '\nUser attached image(s). Analyze for colors, patterns, and provide actionable insights.' : ''}
 
@@ -1670,59 +1681,161 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           return { success: false, message: 'Please specify which element to style (e.g., product title, price, button).' };
         }
 
-        // Map friendly element names to slot IDs
+        // Map friendly element names to slot IDs (matching product-config.js slot IDs)
         const elementMap = {
           'product_title': 'product_title',
+          'product title': 'product_title',
           'title': 'product_title',
-          'price': 'price_container',
-          'sku': 'sku_display',
-          'description': 'product_description',
+          'price': 'product_price',
+          'product_price': 'product_price',
+          'price_container': 'price_container',
+          'sku': 'product_sku',
+          'product_sku': 'product_sku',
+          'description': 'product_short_description',
+          'short_description': 'product_short_description',
+          'product_short_description': 'product_short_description',
           'add_to_cart_button': 'add_to_cart_button',
           'add_to_cart': 'add_to_cart_button',
           'button': 'add_to_cart_button',
+          'cart button': 'add_to_cart_button',
           'quantity_selector': 'quantity_selector',
           'quantity': 'quantity_selector',
-          'stock_label': 'stock_label',
-          'stock': 'stock_label',
-          'breadcrumb': 'breadcrumb'
+          'stock_status': 'stock_status',
+          'stock': 'stock_status',
+          'stock label': 'stock_status',
+          'breadcrumbs': 'breadcrumbs',
+          'breadcrumb': 'breadcrumbs',
+          'related_products_title': 'related_products_title',
+          'related products': 'related_products_title',
+          'wishlist_button': 'wishlist_button',
+          'wishlist': 'wishlist_button'
         };
 
         const slotId = elementMap[element?.toLowerCase()] || element;
 
-        // Map property names
+        // Map property names to CSS camelCase (matching EditorSidebar)
         const propertyMap = {
           'color': 'color',
           'text color': 'color',
+          'text-color': 'color',
+          'textcolor': 'color',
           'background': 'backgroundColor',
           'background color': 'backgroundColor',
+          'background-color': 'backgroundColor',
           'backgroundcolor': 'backgroundColor',
+          'bgcolor': 'backgroundColor',
           'font size': 'fontSize',
+          'font-size': 'fontSize',
           'fontsize': 'fontSize',
           'size': 'fontSize',
           'font weight': 'fontWeight',
+          'font-weight': 'fontWeight',
           'fontweight': 'fontWeight',
-          'bold': 'fontWeight'
+          'weight': 'fontWeight',
+          'bold': 'fontWeight',
+          'text align': 'textAlign',
+          'text-align': 'textAlign',
+          'textalign': 'textAlign',
+          'align': 'textAlign',
+          'alignment': 'textAlign',
+          'padding': 'padding',
+          'padding top': 'paddingTop',
+          'padding-top': 'paddingTop',
+          'padding bottom': 'paddingBottom',
+          'padding-bottom': 'paddingBottom',
+          'padding left': 'paddingLeft',
+          'padding-left': 'paddingLeft',
+          'padding right': 'paddingRight',
+          'padding-right': 'paddingRight',
+          'margin': 'margin',
+          'border': 'border',
+          'border color': 'borderColor',
+          'border-color': 'borderColor',
+          'bordercolor': 'borderColor',
+          'border width': 'borderWidth',
+          'border-width': 'borderWidth',
+          'border radius': 'borderRadius',
+          'border-radius': 'borderRadius',
+          'borderradius': 'borderRadius',
+          'radius': 'borderRadius',
+          'rounded': 'borderRadius'
         };
 
-        const styleProp = propertyMap[property?.toLowerCase()] || property;
+        const styleProp = propertyMap[property?.toLowerCase()] || property || 'color';
 
-        // Map color names to Tailwind classes (same as old multi-intent handler)
-        const tailwindColorMap = {
-          'red': 'text-red-500', 'blue': 'text-blue-500', 'green': 'text-green-500',
-          'orange': 'text-orange-500', 'yellow': 'text-yellow-500', 'purple': 'text-purple-500',
-          'pink': 'text-pink-500', 'gray': 'text-gray-500', 'black': 'text-black', 'white': 'text-white'
+        // Map color names to hex values (matching EditorSidebar color picker)
+        const colorNameToHex = {
+          'red': '#ef4444', 'blue': '#3b82f6', 'green': '#22c55e',
+          'orange': '#f97316', 'yellow': '#eab308', 'purple': '#a855f7',
+          'pink': '#ec4899', 'gray': '#6b7280', 'grey': '#6b7280',
+          'black': '#000000', 'white': '#ffffff',
+          'indigo': '#6366f1', 'teal': '#14b8a6', 'cyan': '#06b6d4',
+          'lime': '#84cc16', 'amber': '#f59e0b', 'rose': '#f43f5e',
+          'emerald': '#10b981', 'sky': '#0ea5e9', 'violet': '#8b5cf6',
+          'fuchsia': '#d946ef', 'slate': '#64748b', 'zinc': '#71717a',
+          'neutral': '#737373', 'stone': '#78716c'
         };
 
-        const tailwindBgMap = {
-          'red': 'bg-red-500', 'blue': 'bg-blue-500', 'green': 'bg-green-500',
-          'orange': 'bg-orange-500', 'yellow': 'bg-yellow-500', 'purple': 'bg-purple-500',
-          'pink': 'bg-pink-500', 'gray': 'bg-gray-500', 'black': 'bg-black', 'white': 'bg-white'
+        // Map font weight names
+        const fontWeightMap = {
+          'thin': '100', 'extralight': '200', 'light': '300',
+          'normal': '400', 'medium': '500', 'semibold': '600',
+          'bold': '700', 'extrabold': '800', 'black': '900'
         };
 
-        const colorLower = value?.toLowerCase();
-        const isBackgroundProp = styleProp === 'backgroundColor';
-        const tailwindClass = isBackgroundProp ? tailwindBgMap[colorLower] : tailwindColorMap[colorLower];
-        const styleValue = tailwindClass ? null : value; // Use null if applying tailwind class
+        // Map alignment values
+        const alignmentMap = {
+          'left': 'left', 'center': 'center', 'right': 'right',
+          'justify': 'justify', 'start': 'left', 'end': 'right', 'middle': 'center'
+        };
+
+        // Determine the actual style value
+        let styleValue = value;
+        const valueLower = value?.toLowerCase();
+
+        // Handle color properties
+        if (styleProp === 'color' || styleProp === 'backgroundColor' || styleProp === 'borderColor') {
+          if (colorNameToHex[valueLower]) {
+            styleValue = colorNameToHex[valueLower];
+          } else if (value && !value.startsWith('#') && !value.startsWith('rgb')) {
+            // Try to interpret as hex without #
+            if (/^[0-9a-fA-F]{6}$/.test(value)) {
+              styleValue = '#' + value;
+            }
+          }
+        }
+
+        // Handle font weight
+        if (styleProp === 'fontWeight') {
+          if (fontWeightMap[valueLower]) {
+            styleValue = fontWeightMap[valueLower];
+          } else if (valueLower === 'bold') {
+            styleValue = '700';
+          } else if (valueLower === 'normal') {
+            styleValue = '400';
+          }
+        }
+
+        // Handle text alignment
+        if (styleProp === 'textAlign') {
+          styleValue = alignmentMap[valueLower] || value;
+        }
+
+        // Handle font size (add px if just a number)
+        if (styleProp === 'fontSize') {
+          if (/^\d+$/.test(value)) {
+            styleValue = value + 'px';
+          }
+        }
+
+        // Handle padding/margin (add px if just a number)
+        if (styleProp.includes('padding') || styleProp.includes('margin')) {
+          if (/^\d+$/.test(value)) {
+            styleValue = value + 'px';
+          }
+        }
+
+        console.log('🎨 Resolved style:', { slotId, styleProp, styleValue });
 
         // Look for draft first, then published
         let { data: draftConfig } = await db
@@ -1794,32 +1907,19 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
 
         // Ensure slots structure exists
         if (!configuration.slots) configuration.slots = {};
-        if (!configuration.slots[slotId]) configuration.slots[slotId] = { styles: {}, className: '' };
-        if (!configuration.slots[slotId].styles) configuration.slots[slotId].styles = {};
-
-        // Apply the style using same logic as old multi-intent handler
-        if (tailwindClass) {
-          // Use Tailwind class (more reliable for styling)
-          const existingClasses = (configuration.slots[slotId].className || '').split(' ');
-          const classPattern = isBackgroundProp
-            ? /^bg-(red|blue|green|orange|yellow|purple|pink|gray|black|white)(-\d+)?$/
-            : /^text-(red|blue|green|orange|yellow|purple|pink|gray|black|white)(-\d+)?$/;
-          const filteredClasses = existingClasses.filter(c => !c.match(classPattern));
-          configuration.slots[slotId].className = [...filteredClasses, tailwindClass].join(' ').trim();
-          // Remove conflicting inline style
-          if (configuration.slots[slotId].styles?.[styleProp]) {
-            delete configuration.slots[slotId].styles[styleProp];
-          }
-          console.log('🎨 Applied Tailwind class:', tailwindClass, 'to slot:', slotId);
-        } else {
-          // Use inline style for custom values
-          configuration.slots[slotId].styles[styleProp] = value;
-          console.log('🎨 Applied inline style:', styleProp, '=', value, 'to slot:', slotId);
+        if (!configuration.slots[slotId]) {
+          configuration.slots[slotId] = { styles: {}, className: '' };
+        }
+        if (!configuration.slots[slotId].styles) {
+          configuration.slots[slotId].styles = {};
         }
 
+        // Apply the inline style (matching how EditorSidebar saves styles)
+        configuration.slots[slotId].styles[styleProp] = styleValue;
+        console.log('🎨 Applied inline style:', styleProp, '=', styleValue, 'to slot:', slotId);
+
         // Update the draft
-        const appliedValue = tailwindClass || value;
-        console.log('🎨 Updating draft config:', configId, 'slot:', slotId, 'with:', styleProp, '=', appliedValue);
+        console.log('🎨 Updating draft config:', configId, 'slot:', slotId, 'with:', styleProp, '=', styleValue);
         const { error: updateError } = await db
           .from('slot_configurations')
           .update({
@@ -1836,17 +1936,17 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
 
         console.log('🎨 Styling updated successfully!');
         const friendlyElement = (element || slotId || 'element').replace(/_/g, ' ');
+        const friendlyProperty = styleProp.replace(/([A-Z])/g, ' $1').toLowerCase().trim();
         return {
           success: true,
-          message: `Changed ${friendlyElement} ${styleProp} to ${value}.`,
+          message: `Changed ${friendlyElement} ${friendlyProperty} to ${value}.`,
           data: {
             type: 'styling_applied',
             configId,
             pageType: page,
             slotId,
             property: styleProp,
-            value: appliedValue,
-            tailwindClass: tailwindClass || null,
+            value: styleValue,
             refreshPreview: true
           }
         };
