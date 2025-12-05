@@ -1419,11 +1419,12 @@ router.post('/:id/reprovision', authMiddleware, async (req, res) => {
 
     // Check if we have enough credentials for reprovisioning
     if (!oauthAccessToken && projectId) {
-      // We have projectId but no OAuth token - user needs to reconnect Supabase
+      // We have projectId but no OAuth token - token was lost when DB was cleared
+      // User needs to reconnect Supabase to get a new access token
       return res.status(400).json({
         success: false,
-        error: 'Supabase OAuth session expired',
-        message: 'Your Supabase authorization has expired. Please reconnect your Supabase account in Database Integrations, then try reprovisioning again.',
+        error: 'Supabase connection lost',
+        message: 'The Supabase connection credentials were lost when the database was cleared. Please reconnect your Supabase account in Database Integrations to restore the connection, then try reprovisioning again.',
         requiresReconnection: true,
         redirectTo: '/admin/database-integrations'
       });

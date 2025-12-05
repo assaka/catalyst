@@ -78,7 +78,7 @@ export default function StoreHealthGuard({ children, pageName }) {
         // Check if it requires reconnection
         if (result.requiresReconnection) {
           setRequiresReconnection(true);
-          setError(result.message || 'Supabase authorization has expired. Please reconnect your Supabase account.');
+          setError(result.message || 'Supabase connection was lost. Please reconnect your Supabase account.');
         } else {
           setError(result.error || result.message || 'Failed to reprovision database');
         }
