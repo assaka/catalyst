@@ -767,7 +767,15 @@ Return ONLY the translated text, no explanations or notes.`;
         hasSystem: !!requestParams.system
       }));
 
-      const stream = await client.messages.stream(requestParams);
+      let stream;
+      try {
+        stream = await client.messages.stream(requestParams);
+      } catch (streamError) {
+        // If streaming with thinking fails, try without thinking
+        console.warn('⚠️ Stream failed, retrying without extended thinking:', streamError.message);
+        delete requestParams.thinking;
+        stream = await client.messages.stream(requestParams);
+      }
 
       let currentBlockType = null;
       let currentToolName = null;
