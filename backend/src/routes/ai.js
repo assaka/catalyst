@@ -534,6 +534,14 @@ Return ONLY valid JSON.`;
       ? 'confirmation_needed'
       : (stylingTypes.includes(resultType) ? resultType : (toolCall ? 'tool_executed' : 'chat'));
 
+    console.log('📤 Response debug:', {
+      toolCall: toolCall?.tool,
+      resultType,
+      responseType,
+      executionSuccess: executionResult?.success,
+      executionData: executionResult?.data
+    });
+
     res.json({
       success: true,
       message: responseMessage,
@@ -7711,7 +7719,7 @@ router.post('/chat/history', authMiddleware, async (req, res) => {
         content,
         intent: intent || null,
         data: data || {},
-        credits_used: creditsUsed || 0,
+        credits_used: Math.round(creditsUsed || 0),
         is_error: isError || false,
         created_at: new Date().toISOString()
       });
