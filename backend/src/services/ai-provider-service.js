@@ -715,40 +715,26 @@ Return ONLY the translated text, no explanations or notes.`;
   async *streamWithThinking(messages, options = {}) {
     const {
       model = 'claude-3-5-sonnet-latest',
-      temperature = 1,
-      maxTokens = 8192,
+      temperature = 0.7,
+      maxTokens = 4096,
       systemPrompt = null,
-      tools = [],
-      thinkingBudget = 5000,
-      enableThinking = true
+      tools = []
     } = options;
 
     const client = this.getProvider('anthropic');
     if (!client) {
-      throw new Error('Anthropic client not available. Extended thinking requires Anthropic.');
+      throw new Error('Anthropic client not available.');
     }
 
-    console.log(`🧠 Starting stream with ${tools.length} tools, thinking: ${enableThinking}`);
+    console.log(`🧠 Starting stream with ${tools.length} tools`);
 
     try {
       const requestParams = {
         model,
         max_tokens: maxTokens,
+        temperature,
         messages
       };
-
-      // Extended thinking only works with specific models (claude-3-5-sonnet-20241022 and newer)
-      // Try to enable it, but fall back gracefully if not supported
-      if (enableThinking) {
-        try {
-          requestParams.thinking = {
-            type: 'enabled',
-            budget_tokens: thinkingBudget
-          };
-        } catch (e) {
-          console.warn('Extended thinking not supported, continuing without');
-        }
-      }
 
       // Add system prompt if provided
       if (systemPrompt) {
@@ -758,24 +744,16 @@ Return ONLY the translated text, no explanations or notes.`;
       // Add tools if provided
       if (tools && tools.length > 0) {
         requestParams.tools = tools;
+        requestParams.tool_choice = { type: 'auto' };
       }
 
       console.log('🔧 Request params:', JSON.stringify({
         model: requestParams.model,
-        hasThinking: !!requestParams.thinking,
         hasTools: !!requestParams.tools?.length,
         hasSystem: !!requestParams.system
       }));
 
-      let stream;
-      try {
-        stream = await client.messages.stream(requestParams);
-      } catch (streamError) {
-        // If streaming with thinking fails, try without thinking
-        console.warn('⚠️ Stream failed, retrying without extended thinking:', streamError.message);
-        delete requestParams.thinking;
-        stream = await client.messages.stream(requestParams);
-      }
+      const stream = await client.messages.stream(requestParams);
 
       let currentBlockType = null;
       let currentToolName = null;

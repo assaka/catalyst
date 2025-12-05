@@ -2244,8 +2244,8 @@ router.post('/generate/stream', authMiddleware, async (req, res) => {
 
 /**
  * POST /api/ai/stream-thinking
- * Stream AI response with extended thinking and tool usage display
- * Shows Claude's thinking process and tool calls in real-time
+ * Stream AI response with tool usage display
+ * Shows tool calls in real-time
  */
 router.post('/stream-thinking', authMiddleware, async (req, res) => {
   try {
@@ -2253,8 +2253,7 @@ router.post('/stream-thinking', authMiddleware, async (req, res) => {
       message,
       history = [],
       systemPrompt,
-      enableTools = true,
-      thinkingBudget = 8000
+      enableTools = true
     } = req.body;
 
     const userId = req.user.id;
@@ -2314,14 +2313,12 @@ Be concise but helpful.`;
     const toolResults = {};
     let pendingToolUse = null;
 
-    // Stream with extended thinking
+    // Stream with tools
     const stream = aiProvider.streamWithThinking(messages, {
       model: 'claude-3-5-sonnet-latest',
-      maxTokens: 8192,
+      maxTokens: 4096,
       systemPrompt: fullSystemPrompt,
-      tools,
-      thinkingBudget,
-      enableThinking: true
+      tools
     });
 
     let totalUsage = { input_tokens: 0, output_tokens: 0 };

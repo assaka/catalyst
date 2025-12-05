@@ -651,6 +651,9 @@ const WorkspaceAIPanel = () => {
       let currentThinking = '';
       let tools = [];
 
+      // Show initial processing state
+      setThinkingText('Connecting...');
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -669,13 +672,12 @@ const WorkspaceAIPanel = () => {
               // Handle different event types
               switch (event.type) {
                 case 'thinking_start':
-                  setThinkingText('Thinking...');
+                  setThinkingText('Processing...');
                   break;
 
                 case 'thinking':
+                  // Extended thinking text (if available)
                   currentThinking += event.text || '';
-                  // Show last 150 chars of thinking
-                  setThinkingText(currentThinking.slice(-150));
                   break;
 
                 case 'tool_start':
@@ -1166,16 +1168,13 @@ const WorkspaceAIPanel = () => {
                 <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="flex-1 space-y-2">
-                {/* Thinking indicator */}
+                {/* Processing indicator */}
                 {thinkingText && (
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
-                      <Brain className="h-3.5 w-3.5 animate-pulse" />
-                      <span className="text-xs font-medium">Thinking...</span>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span className="text-xs font-medium">Processing...</span>
                     </div>
-                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 italic opacity-75 line-clamp-2">
-                      {thinkingText}
-                    </p>
                   </div>
                 )}
 
