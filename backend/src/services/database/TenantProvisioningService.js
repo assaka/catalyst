@@ -810,6 +810,185 @@ VALUES (
       };
     }
   }
+
+  /**
+   * Check tenant database health status
+   * Returns detailed status about the tenant database state
+   *
+   * @param {string} storeId - Store UUID
+   * @returns {Promise<Object>} Health status object
+   */
+  async checkTenantHealth(storeId) {
+    const ConnectionManager = require('./ConnectionManager');
+    const { masterDbClient } = require('../../database/masterConnection');
+
+    const result = {
+      storeId,
+      status: 'unknown',
+      databaseConfigured: false,
+      databaseConnected: false,
+      tablesProvisioned: false,
+      storeRecordExists: false,
+      requiredTables: [],
+      missingTables: [],
+      message: '',
+      actions: []
+    };
+
+    try {
+      // 1. Check if store exists in master DB
+      const { data: masterStore, error: masterError } = await masterDbClient
+        .from('stores')
+        .select('id, name, is_active')
+        .eq('id', storeId)
+        .maybeSingle();
+
+      if (masterError || !masterStore) {
+        result.status = 'not_found';
+        result.message = 'Store not found in master database';
+        return result;
+      }
+
+      // 2. Check if database configuration exists
+      const { data: storeDb, error: dbError } = await masterDbClient
+        .from('store_databases')
+        .select('id, database_type, is_active, connection_status')
+        .eq('store_id', storeId)
+        .maybeSingle();
+
+      if (dbError || !storeDb) {
+        result.status = 'no_database';
+        result.message = 'No database configured for this store';
+        result.actions = ['connect_database'];
+        return result;
+      }
+
+      result.databaseConfigured = true;
+
+      if (!storeDb.is_active) {
+        result.status = 'database_inactive';
+        result.message = 'Database connection is inactive';
+        result.actions = ['reactivate_database', 'remove_store'];
+        return result;
+      }
+
+      // 3. Try to connect to tenant database
+      let tenantDb;
+      try {
+        tenantDb = await ConnectionManager.getStoreConnection(storeId, false);
+        result.databaseConnected = true;
+      } catch (connError) {
+        result.status = 'connection_failed';
+        result.message = `Failed to connect to tenant database: ${connError.message}`;
+        result.actions = ['update_credentials', 'remove_store'];
+        return result;
+      }
+
+      // 4. Check if required tables exist
+      const requiredTables = ['stores', 'products', 'categories', 'orders', 'customers', 'languages'];
+      result.requiredTables = requiredTables;
+
+      for (const tableName of requiredTables) {
+        try {
+          const { data, error } = await tenantDb
+            .from(tableName)
+            .select('*')
+            .limit(1);
+
+          // PGRST116 means table exists but is empty - that's OK
+          // Other errors (like 42P01 - relation does not exist) mean table is missing
+          if (error && error.code !== 'PGRST116' && !error.message?.includes('0 rows')) {
+            result.missingTables.push(tableName);
+          }
+        } catch (tableError) {
+          result.missingTables.push(tableName);
+        }
+      }
+
+      // 5. Determine final status
+      if (result.missingTables.length === requiredTables.length) {
+        // All tables missing - database is empty/cleared
+        result.status = 'empty';
+        result.tablesProvisioned = false;
+        result.message = 'Tenant database is empty - needs provisioning';
+        result.actions = ['provision_database', 'remove_store'];
+      } else if (result.missingTables.length > 0) {
+        // Some tables missing - partial state
+        result.status = 'partial';
+        result.tablesProvisioned = false;
+        result.message = `Tenant database is partially provisioned. Missing tables: ${result.missingTables.join(', ')}`;
+        result.actions = ['provision_database', 'remove_store'];
+      } else {
+        // All tables exist
+        result.tablesProvisioned = true;
+
+        // 6. Check if store record exists in tenant DB
+        try {
+          const { data: tenantStore, error: storeError } = await tenantDb
+            .from('stores')
+            .select('id')
+            .eq('id', storeId)
+            .maybeSingle();
+
+          result.storeRecordExists = !!tenantStore;
+        } catch (e) {
+          result.storeRecordExists = false;
+        }
+
+        if (result.storeRecordExists) {
+          result.status = 'healthy';
+          result.message = 'Tenant database is fully provisioned and healthy';
+          result.actions = [];
+        } else {
+          result.status = 'missing_store_record';
+          result.message = 'Tables exist but store record is missing in tenant database';
+          result.actions = ['create_store_record', 'provision_database'];
+        }
+      }
+
+      return result;
+    } catch (error) {
+      result.status = 'error';
+      result.message = `Health check failed: ${error.message}`;
+      result.actions = ['remove_store'];
+      return result;
+    }
+  }
+
+  /**
+   * Re-provision an existing tenant database
+   * Used when database was cleared but store still exists in master
+   *
+   * @param {string} storeId - Store UUID
+   * @param {Object} options - Provisioning options
+   * @returns {Promise<Object>} Provisioning result
+   */
+  async reprovisionTenantDatabase(storeId, options = {}) {
+    const ConnectionManager = require('./ConnectionManager');
+
+    try {
+      // Get tenant database connection
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId, false);
+
+      // Clear connection cache to ensure fresh state
+      ConnectionManager.clearCache(storeId);
+
+      // Run provisioning with force flag
+      const result = await this.provisionTenantDatabase(tenantDb, storeId, {
+        ...options,
+        force: true
+      });
+
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        storeId,
+        message: `Re-provisioning failed: ${error.message}`,
+        error: error.message
+      };
+    }
+  }
 }
 
 // Export singleton instance

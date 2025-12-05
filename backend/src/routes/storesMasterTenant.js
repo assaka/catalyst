@@ -1225,6 +1225,225 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 /**
+ * GET /api/stores/:id/health
+ * Check tenant database health status
+ * Returns detailed status about whether the tenant DB is provisioned, empty, or has issues
+ */
+router.get('/:id/health', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.params.id;
+
+    // Verify store exists in master DB and user has access
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('id, user_id, status, is_active')
+      .eq('id', storeId)
+      .maybeSingle();
+
+    if (storeError || !store) {
+      return res.status(404).json({
+        success: false,
+        error: 'Store not found'
+      });
+    }
+
+    // Check ownership or team membership
+    if (store.user_id !== req.user.id) {
+      const { data: teamMember } = await masterDbClient
+        .from('store_teams')
+        .select('id')
+        .eq('store_id', storeId)
+        .eq('user_id', req.user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (!teamMember) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied'
+        });
+      }
+    }
+
+    // Run health check
+    const healthResult = await TenantProvisioningService.checkTenantHealth(storeId);
+
+    res.json({
+      success: true,
+      data: healthResult
+    });
+  } catch (error) {
+    console.error('Store health check error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check store health',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/stores/:id/reprovision
+ * Re-provision an empty/cleared tenant database
+ * Used when the tenant DB was cleared but store still exists in master
+ */
+router.post('/:id/reprovision', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.params.id;
+    const { storeName, storeSlug } = req.body;
+
+    // Verify store exists in master DB
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('id, user_id, status, is_active, slug')
+      .eq('id', storeId)
+      .maybeSingle();
+
+    if (storeError || !store) {
+      return res.status(404).json({
+        success: false,
+        error: 'Store not found'
+      });
+    }
+
+    // Check ownership
+    if (store.user_id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only store owner can reprovision the database'
+      });
+    }
+
+    // Get user info for provisioning
+    const { data: masterUser } = await masterDbClient
+      .from('users')
+      .select('password, first_name, last_name')
+      .eq('id', req.user.id)
+      .maybeSingle();
+
+    // Run re-provisioning
+    const result = await TenantProvisioningService.reprovisionTenantDatabase(storeId, {
+      userId: req.user.id,
+      userEmail: req.user.email,
+      userPasswordHash: masterUser?.password || null,
+      userFirstName: masterUser?.first_name || req.user.first_name,
+      userLastName: masterUser?.last_name || req.user.last_name,
+      storeName: storeName || store.slug || 'My Store',
+      storeSlug: storeSlug || store.slug || `store-${Date.now()}`
+    });
+
+    if (result.success) {
+      // Update store status to active if it wasn't
+      if (store.status !== 'active' || !store.is_active) {
+        await masterDbClient
+          .from('stores')
+          .update({
+            status: 'active',
+            is_active: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', storeId);
+      }
+
+      // Clear connection cache
+      ConnectionManager.clearCache(storeId);
+    }
+
+    res.json({
+      success: result.success,
+      message: result.message,
+      data: result
+    });
+  } catch (error) {
+    console.error('Store reprovision error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reprovision store',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/stores/:id/permanent
+ * Permanently delete store from master DB
+ * Used when tenant DB is cleared and user wants to remove the store entirely
+ */
+router.delete('/:id/permanent', authMiddleware, async (req, res) => {
+  try {
+    const storeId = req.params.id;
+
+    // Verify store exists and get user_id
+    const { data: store, error: storeError } = await masterDbClient
+      .from('stores')
+      .select('id, user_id')
+      .eq('id', storeId)
+      .maybeSingle();
+
+    if (storeError || !store) {
+      return res.status(404).json({
+        success: false,
+        error: 'Store not found'
+      });
+    }
+
+    // Check ownership
+    if (store.user_id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only store owner can permanently delete the store'
+      });
+    }
+
+    // Delete related records first (store_databases, store_hostnames, etc.)
+    await masterDbClient
+      .from('store_databases')
+      .delete()
+      .eq('store_id', storeId);
+
+    await masterDbClient
+      .from('store_hostnames')
+      .delete()
+      .eq('store_id', storeId);
+
+    await masterDbClient
+      .from('custom_domains_lookup')
+      .delete()
+      .eq('store_id', storeId);
+
+    await masterDbClient
+      .from('store_teams')
+      .delete()
+      .eq('store_id', storeId);
+
+    // Finally delete the store
+    const { error: deleteError } = await masterDbClient
+      .from('stores')
+      .delete()
+      .eq('id', storeId);
+
+    if (deleteError) {
+      throw new Error(deleteError.message);
+    }
+
+    // Clear any cached connections
+    ConnectionManager.clearCache(storeId);
+
+    res.json({
+      success: true,
+      message: 'Store permanently deleted'
+    });
+  } catch (error) {
+    console.error('Permanent delete store error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to permanently delete store',
+      details: error.message
+    });
+  }
+});
+
+/**
  * GET /api/stores/:id
  * Get store details (from master + tenant)
  */
