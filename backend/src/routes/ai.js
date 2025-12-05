@@ -602,7 +602,17 @@ Return ONLY valid JSON.`;
     let toolCalls = [];
     try {
       // Try to parse JSON from response - could be single object or array
-      const jsonMatch = response.content.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
+      // Also handle markdown code blocks (```json ... ```)
+      let contentToParse = response.content;
+
+      // Remove markdown code blocks if present
+      const codeBlockMatch = contentToParse.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (codeBlockMatch) {
+        contentToParse = codeBlockMatch[1].trim();
+        console.log('🔧 Extracted JSON from code block');
+      }
+
+      const jsonMatch = contentToParse.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         // Handle both array and single object
@@ -610,7 +620,7 @@ Return ONLY valid JSON.`;
         console.log('🔧 Tool calls detected:', toolCalls.length, toolCalls.map(t => t.tool));
       }
     } catch (e) {
-      console.log('📝 No JSON tool call, treating as chat response');
+      console.log('📝 No JSON tool call, treating as chat response:', e.message);
     }
 
     // Filter to actual tools (not chat)
@@ -627,6 +637,8 @@ Return ONLY valid JSON.`;
         allResults.push({ tool: tc.tool, result });
       }
       executionResult = allResults[allResults.length - 1]?.result; // Use last result for response
+      // Clear the JSON from response message - show tool results instead
+      responseMessage = allResults.map(r => r.result?.message || `${r.tool} executed`).join(' ');
     }
 
     // Execute the tool if we have one (single tool path)
