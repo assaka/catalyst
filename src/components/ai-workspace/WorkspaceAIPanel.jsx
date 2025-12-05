@@ -37,12 +37,13 @@ import aiWorkspaceSlotProcessor from '@/services/aiWorkspaceSlotProcessor';
 import apiClient from '@/api/client';
 import { User as UserEntity } from '@/api/entities';
 
-// AI Models configuration - one default per provider
-const AI_MODELS = [
-  { id: 'claude-sonnet', name: 'Claude Sonnet', provider: 'anthropic', credits: 8, icon: '🎯', serviceKey: 'ai_chat_claude_sonnet' },
-  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', credits: 3, icon: '🚀', serviceKey: 'ai_chat_gpt4o_mini' },
-  { id: 'gemini-flash', name: 'Gemini Flash', provider: 'gemini', credits: 1.5, icon: '💨', serviceKey: 'ai_chat_gemini_flash' },
-  { id: 'groq-llama', name: 'Groq Llama', provider: 'groq', credits: 1, icon: '🦙', serviceKey: 'ai_chat_groq_llama' },
+// Fallback AI Models (used while loading from API)
+const FALLBACK_AI_MODELS = [
+  { id: 'claude-haiku', name: 'Claude Haiku', provider: 'anthropic', credits: 2, icon: '⚡', serviceKey: 'ai_chat_claude_haiku', isProviderDefault: true },
+  { id: 'claude-sonnet', name: 'Claude Sonnet', provider: 'anthropic', credits: 8, icon: '🎯', serviceKey: 'ai_chat_claude_sonnet', isProviderDefault: false },
+  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', credits: 3, icon: '🚀', serviceKey: 'ai_chat_gpt4o_mini', isProviderDefault: true },
+  { id: 'gemini-flash', name: 'Gemini Flash', provider: 'gemini', credits: 1.5, icon: '💨', serviceKey: 'ai_chat_gemini_flash', isProviderDefault: true },
+  { id: 'groq-llama', name: 'Groq Llama', provider: 'groq', credits: 1, icon: '🦙', serviceKey: 'ai_chat_groq_llama', isProviderDefault: true },
 ];
 
 const PROVIDER_NAMES = {
@@ -53,12 +54,14 @@ const PROVIDER_NAMES = {
 };
 
 // Get saved model preference
-const getSavedModel = () => {
+const getSavedModel = (models) => {
   try {
     const saved = localStorage.getItem('ai_default_model');
-    if (saved && AI_MODELS.find(m => m.id === saved)) return saved;
+    if (saved && models.find(m => m.id === saved)) return saved;
   } catch (e) {}
-  return 'claude-sonnet';
+  // Return the default model (isProviderDefault for anthropic)
+  const defaultModel = models.find(m => m.provider === 'anthropic' && m.isProviderDefault);
+  return defaultModel?.id || 'claude-haiku';
 };
 
 /**
