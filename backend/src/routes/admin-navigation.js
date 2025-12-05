@@ -12,13 +12,13 @@ const { authorize } = require('../middleware/auth');
  */
 router.get('/navigation', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    // Get store_id from header (frontend sends X-Store-Id)
-    const store_id = req.headers['x-store-id'] || req.query.store_id;
+    // Get store_id from authenticated user's JWT token
+    const store_id = req.user.store_id;
 
     if (!store_id) {
       return res.status(400).json({
         success: false,
-        message: 'store_id is required (X-Store-Id header or query param)'
+        message: 'No store associated with this user session'
       });
     }
 
@@ -78,12 +78,12 @@ router.put('/plugins/:pluginId/navigation', authMiddleware, authorize(['admin', 
   try {
     const { pluginId } = req.params;
     const { adminNavigation } = req.body;
-    const store_id = req.headers['x-store-id'] || req.query.store_id;
+    const store_id = req.user.store_id;
 
     if (!store_id) {
       return res.status(400).json({
         success: false,
-        message: 'store_id is required (X-Store-Id header or query param)'
+        message: 'No store associated with this user session'
       });
     }
 
@@ -186,12 +186,12 @@ router.put('/plugins/:pluginId/navigation', authMiddleware, authorize(['admin', 
 router.post('/navigation/reorder', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { items } = req.body;
-    const store_id = req.headers['x-store-id'] || req.query.store_id;
+    const store_id = req.user.store_id;
 
     if (!store_id) {
       return res.status(400).json({
         success: false,
-        message: 'store_id is required (X-Store-Id header or query param)'
+        message: 'No store associated with this user session'
       });
     }
 
