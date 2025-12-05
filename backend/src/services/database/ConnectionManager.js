@@ -5,6 +5,280 @@ const PostgreSQLAdapter = require('./adapters/PostgreSQLAdapter');
 const MySQLAdapter = require('./adapters/MySQLAdapter');
 
 /**
+ * KnexStyleQueryBuilder - Provides Knex-like query syntax that wraps Supabase adapter
+ * Allows using familiar Knex patterns: db('table').where(...).select(...)
+ */
+class KnexStyleQueryBuilder {
+  constructor(adapter, tableName) {
+    this.adapter = adapter;
+    this.tableName = tableName;
+    this._filters = [];
+    this._orFilters = [];
+    this._orderBy = [];
+    this._selectColumns = '*';
+    this._limitValue = null;
+    this._insertData = null;
+    this._updateData = null;
+    this._deleteFlag = false;
+  }
+
+  // SELECT columns
+  select(columns = '*') {
+    this._selectColumns = columns;
+    return this;
+  }
+
+  // WHERE clause - supports multiple formats
+  where(columnOrCallback, value) {
+    if (typeof columnOrCallback === 'function') {
+      // Callback style: .where(function() { this.whereNull('col').orWhere('col', val) })
+      // This creates a grouped OR condition
+      const subBuilder = new KnexSubQueryBuilder();
+      columnOrCallback.call(subBuilder);
+      const groupFilters = subBuilder.getFilters();
+      if (groupFilters.length > 0) {
+        // Store as a grouped OR condition
+        this._filters.push({ type: 'orGroup', filters: groupFilters });
+      }
+    } else if (typeof columnOrCallback === 'object') {
+      // Object style: .where({ col1: val1, col2: val2 })
+      for (const [col, val] of Object.entries(columnOrCallback)) {
+        this._filters.push({ type: 'eq', column: col, value: val });
+      }
+    } else {
+      // Simple style: .where('column', value)
+      this._filters.push({ type: 'eq', column: columnOrCallback, value });
+    }
+    return this;
+  }
+
+  whereNull(column) {
+    this._filters.push({ type: 'is', column, value: null });
+    return this;
+  }
+
+  whereNotNull(column) {
+    this._filters.push({ type: 'not', column, operator: 'is', value: null });
+    return this;
+  }
+
+  orWhere(column, operator, value) {
+    if (value === undefined) {
+      // Two-arg form: orWhere('column', value)
+      this._orFilters.push({ type: 'eq', column, value: operator });
+    } else {
+      // Three-arg form: orWhere('column', '<=', value)
+      this._orFilters.push({ type: 'operator', column, operator, value });
+    }
+    return this;
+  }
+
+  // ORDER BY
+  orderBy(column, direction = 'asc') {
+    this._orderBy.push({ column, ascending: direction.toLowerCase() !== 'desc' });
+    return this;
+  }
+
+  // LIMIT
+  limit(count) {
+    this._limitValue = count;
+    return this;
+  }
+
+  // INSERT
+  insert(data) {
+    this._insertData = data;
+    return this;
+  }
+
+  // UPDATE
+  update(data) {
+    this._updateData = data;
+    return this;
+  }
+
+  // DELETE
+  delete() {
+    this._deleteFlag = true;
+    return this;
+  }
+
+  // Execute the query and return results
+  async then(resolve, reject) {
+    try {
+      const result = await this._execute();
+      resolve(result);
+    } catch (error) {
+      reject(error);
+    }
+  }
+
+  async _execute() {
+    const client = this.adapter.getClient();
+    let query = client.from(this.tableName);
+
+    // Handle INSERT
+    if (this._insertData) {
+      const { data, error } = await query.insert(this._insertData).select();
+      if (error) throw new Error(error.message);
+      return data;
+    }
+
+    // Handle UPDATE
+    if (this._updateData) {
+      query = query.update(this._updateData);
+      // Apply filters for UPDATE
+      for (const filter of this._filters) {
+        query = this._applyFilter(query, filter);
+      }
+      const { data, error } = await query.select();
+      if (error) throw new Error(error.message);
+      return data;
+    }
+
+    // Handle DELETE
+    if (this._deleteFlag) {
+      // Apply filters for DELETE
+      for (const filter of this._filters) {
+        query = this._applyFilter(query, filter);
+      }
+      const { error } = await query.delete();
+      if (error) throw new Error(error.message);
+      return true;
+    }
+
+    // Handle SELECT
+    query = query.select(this._selectColumns);
+
+    // Apply filters
+    for (const filter of this._filters) {
+      query = this._applyFilter(query, filter);
+    }
+
+    // Apply OR filters (combined with OR logic)
+    if (this._orFilters.length > 0) {
+      const orConditions = this._orFilters.map(f => {
+        if (f.type === 'eq') return `${f.column}.eq.${f.value}`;
+        if (f.type === 'operator') {
+          const opMap = { '<=': 'lte', '>=': 'gte', '<': 'lt', '>': 'gt', '=': 'eq' };
+          return `${f.column}.${opMap[f.operator] || 'eq'}.${f.value}`;
+        }
+        return null;
+      }).filter(Boolean).join(',');
+      if (orConditions) {
+        query = query.or(orConditions);
+      }
+    }
+
+    // Apply ordering
+    for (const order of this._orderBy) {
+      query = query.order(order.column, { ascending: order.ascending });
+    }
+
+    // Apply limit
+    if (this._limitValue) {
+      query = query.limit(this._limitValue);
+    }
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
+  _applyFilter(query, filter) {
+    switch (filter.type) {
+      case 'eq':
+        return query.eq(filter.column, filter.value);
+      case 'is':
+        return query.is(filter.column, filter.value);
+      case 'not':
+        return query.not(filter.column, filter.operator, filter.value);
+      case 'operator': {
+        const opMap = { '<=': 'lte', '>=': 'gte', '<': 'lt', '>': 'gt', '=': 'eq' };
+        const method = opMap[filter.operator] || 'eq';
+        return query[method](filter.column, filter.value);
+      }
+      case 'orGroup': {
+        // Build OR condition string for Supabase
+        // Format: "col.is.null,col.lte.value"
+        const conditions = filter.filters.map(f => {
+          if (f.type === 'is' && f.value === null) {
+            return `${f.column}.is.null`;
+          } else if (f.type === 'eq') {
+            return `${f.column}.eq.${f.value}`;
+          } else if (f.type === 'operator') {
+            const opMap = { '<=': 'lte', '>=': 'gte', '<': 'lt', '>': 'gt', '=': 'eq' };
+            const op = opMap[f.operator] || 'eq';
+            // Format date values properly
+            const val = f.value instanceof Date ? f.value.toISOString() : f.value;
+            return `${f.column}.${op}.${val}`;
+          }
+          return null;
+        }).filter(Boolean).join(',');
+
+        if (conditions) {
+          return query.or(conditions);
+        }
+        return query;
+      }
+      default:
+        return query;
+    }
+  }
+
+  // First result only
+  async first() {
+    this._limitValue = 1;
+    const results = await this._execute();
+    return results[0] || null;
+  }
+}
+
+/**
+ * KnexSubQueryBuilder - Handles callback-style where clauses
+ * Used for: .where(function() { this.whereNull('col').orWhere('col', val) })
+ */
+class KnexSubQueryBuilder {
+  constructor() {
+    this._filters = [];
+  }
+
+  whereNull(column) {
+    this._filters.push({ type: 'is', column, value: null, logic: 'and' });
+    return this;
+  }
+
+  orWhere(column, operator, value) {
+    if (value === undefined) {
+      this._filters.push({ type: 'eq', column, value: operator, logic: 'or' });
+    } else {
+      this._filters.push({ type: 'operator', column, operator, value, logic: 'or' });
+    }
+    return this;
+  }
+
+  getFilters() {
+    // Convert to format that main builder understands
+    // For OR logic with NULL checks, we need special handling
+    if (this._filters.length === 0) return [];
+
+    // If we have a whereNull followed by orWhere, we need to combine them
+    // This matches the pattern: where(function() { this.whereNull('start_date').orWhere('start_date', '<=', now) })
+    // Which means: start_date IS NULL OR start_date <= now
+    const combined = [];
+    for (const filter of this._filters) {
+      if (filter.logic === 'or') {
+        // OR filters go to a special category
+        combined.push({ ...filter, _isOr: true });
+      } else {
+        combined.push(filter);
+      }
+    }
+    return combined;
+  }
+}
+
+/**
  * ConnectionManager - Manages database connections for stores
  *
  * UPDATED for Master-Tenant Architecture:
@@ -262,103 +536,59 @@ class ConnectionManager {
   }
 
   /**
-   * Get a Sequelize connection for a store with models
-   * This is a convenience wrapper around getStoreConnection that also loads Sequelize models
+   * Get a Knex-like connection for a store
+   * Uses Supabase REST API instead of Sequelize to avoid pooler authentication issues
    *
    * @param {string} storeId - Store UUID
-   * @returns {Promise<Object>} Object with sequelize instance and models
+   * @returns {Promise<Function>} Knex-like callable connection
    */
   static async getConnection(storeId) {
     // Check cache first
-    const cacheKey = `connection_${storeId}`;
+    const cacheKey = `knex_connection_${storeId}`;
     if (this.connections.has(cacheKey)) {
       return this.connections.get(cacheKey);
     }
 
-    // This returns a Supabase client or raw connection from getStoreConnection
-    // For tenant operations, we need to create a Sequelize instance with the models
-    const { Sequelize } = require('sequelize');
+    // Get the store connection (returns SupabaseAdapter or other adapter)
+    const adapter = await this.getStoreConnection(storeId);
 
-    // Get the store database configuration
-    const { masterDbClient } = require('../../database/masterConnection');
-    const { decryptDatabaseCredentials } = require('../../utils/encryption');
-
-    const { data: storeDb, error } = await masterDbClient
-      .from('store_databases')
-      .select('*')
-      .eq('store_id', storeId)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (error || !storeDb) {
-      throw new Error(`No database configured for store ${storeId}`);
-    }
-
-    // Decrypt credentials
-    const credentials = decryptDatabaseCredentials(storeDb.connection_string_encrypted);
-
-    // Create Sequelize instance for the tenant database
-    let sequelize;
-    if (storeDb.database_type === 'supabase' || storeDb.database_type === 'postgresql') {
-      // Build connection string
-      const connectionString = credentials.connectionString ||
-        `postgresql://${credentials.username}:${credentials.password}@${credentials.host}:${credentials.port || 5432}/${credentials.database}`;
-
-      sequelize = new Sequelize(connectionString, {
-        dialect: 'postgres',
-        logging: false,
-        pool: {
-          max: 10,
-          min: 0,
-          acquire: 30000,
-          idle: 10000
-        },
-        dialectOptions: {
-          ssl: credentials.ssl ? { rejectUnauthorized: false } : false
-        },
-        // Set search_path and bypass RLS if using service role
-        hooks: {
-          beforeConnect: async (config) => {
-            // This hook runs before each connection is established
-            // For Supabase connections, we need to ensure we're using the service role
-            // which bypasses RLS policies
-          }
-        }
-      });
-    } else {
-      throw new Error(`Unsupported database type for Sequelize: ${storeDb.database_type}`);
-    }
-
-    // Test the connection
-    await sequelize.authenticate();
-
-    // For Supabase, set the role to bypass RLS if using service role credentials
-    if (storeDb.database_type === 'supabase') {
-      try {
-        // Execute a query to set the role to postgres (service role)
-        // This bypasses RLS policies for Sequelize queries
-        await sequelize.query("SET ROLE postgres;");
-      } catch (error) {
-        console.warn(`Warning: Could not set postgres role for store ${storeId}:`, error.message);
-        // Continue anyway - connection might still work if RLS policies allow it
-      }
-    }
-
-    // Import all models and bind them to this Sequelize instance
-    // This creates a fresh set of models for the tenant database
-    const models = require('../../models');
-
-    // Return object with models attached
-    const connectionObj = {
-      sequelize,
-      models, // The models are already connected to the default Sequelize instance
-      type: storeDb.database_type
-    };
+    // Create a Knex-like callable wrapper
+    const knexLikeConnection = this._createKnexLikeWrapper(adapter);
 
     // Cache the connection
-    this.connections.set(cacheKey, connectionObj);
+    this.connections.set(cacheKey, knexLikeConnection);
 
-    return connectionObj;
+    return knexLikeConnection;
+  }
+
+  /**
+   * Create a Knex-like callable wrapper around a database adapter
+   * Allows using both syntaxes:
+   * - Knex-style: db('table').where(...).select(...)
+   * - Supabase-style: db.from('table').select(...).eq(...)
+   *
+   * @private
+   */
+  static _createKnexLikeWrapper(adapter) {
+    // Create a callable function that returns a query builder for a table
+    const wrapper = (tableName) => {
+      return new KnexStyleQueryBuilder(adapter, tableName);
+    };
+
+    // Support Supabase-style .from() method
+    wrapper.from = (tableName) => {
+      // Return the adapter's query builder for Supabase-style queries
+      return adapter.from(tableName);
+    };
+
+    // Attach the adapter for direct access if needed
+    wrapper.adapter = adapter;
+    wrapper.type = adapter.type;
+
+    // Also expose getClient for compatibility
+    wrapper.getClient = () => adapter.getClient();
+
+    return wrapper;
   }
 
   /**
