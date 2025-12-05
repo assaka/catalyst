@@ -4180,7 +4180,7 @@ ALTER TABLE akeneo_custom_mappings ADD CONSTRAINT akeneo_custom_mappings_store_i
 
 ALTER TABLE akeneo_custom_mappings ADD CONSTRAINT akeneo_custom_mappings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL;
 
-ALTER TABLE akeneo_import_statistics ADD CONSTRAINT akeneo_import_statistics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
+ALTER TABLE import_statistics ADD CONSTRAINT import_statistics_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
 ALTER TABLE akeneo_mappings ADD CONSTRAINT akeneo_mappings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
