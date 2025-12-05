@@ -2329,6 +2329,8 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
         // col = x position (1-12), row = y position (vertical order)
         const targetPos = configuration.slots[targetSlot].position || { col: 1, row: 0 };
         const sourcePos = configuration.slots[sourceSlot].position || { col: 1, row: 0 };
+        const targetParentId = configuration.slots[targetSlot].parentId;
+        const sourceParentId = configuration.slots[sourceSlot].parentId;
 
         // Calculate new position for source slot
         // 'before/above' = same column, lower row (appears first)
@@ -2343,6 +2345,12 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           newRow = (targetPos.row ?? 0) + 0.5;
         }
 
+        // CRITICAL: Move source to same container as target
+        // Slots are rendered per-container, so they must share the same parentId
+        if (targetParentId !== undefined) {
+          configuration.slots[sourceSlot].parentId = targetParentId;
+        }
+
         // Update source slot's position for grid sorting
         // sortSlotsByGridCoordinates sorts by row first, then col
         configuration.slots[sourceSlot].position = {
@@ -2355,7 +2363,7 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
         // Also set CSS order as backup for flex containers
         configuration.slots[sourceSlot].styles.order = String(Math.round(newRow * 10));
 
-        console.log('🔄 Move element:', sourceSlot, 'from', sourcePos, 'to { col:', newCol, ', row:', newRow, '}', `(${normalizedPosition}`, targetSlot, 'at', targetPos, ')');
+        console.log('🔄 Move element:', sourceSlot, 'from', sourcePos, '(parent:', sourceParentId, ') to { col:', newCol, ', row:', newRow, ', parentId:', targetParentId, '}', `(${normalizedPosition}`, targetSlot, 'at', targetPos, ')');
 
         await db
           .from('slot_configurations')
