@@ -103,14 +103,24 @@ async function getStoreBySlug(slug) {
 
   // Step 1: Check stores table first (includes slug, primary_custom_domain, AND custom_domains_count)
   // This handles 99% of cases with a single query
+  // Note: We check WITHOUT is_active filter first to detect inactive stores
   const { data, error: masterError } = await masterDbClient
     .from('stores')
-    .select('id, is_active, primary_custom_domain, custom_domains_count, published')
+    .select('id, is_active, primary_custom_domain, custom_domains_count, published, status')
     .or(`slug.eq.${slug},primary_custom_domain.eq.${slug.toLowerCase()}`)
-    .eq('is_active', true)
     .maybeSingle();
 
   if (data) {
+    // Check if store is active
+    if (!data.is_active) {
+      console.log(`⚠️ Store found but inactive: ${data.id} (status: ${data.status})`);
+      const inactiveError = new Error('Store is not active');
+      inactiveError.code = 'STORE_INACTIVE';
+      inactiveError.storeId = data.id;
+      inactiveError.status = data.status;
+      throw inactiveError;
+    }
+
     masterStore = data;
     const matchType = data.primary_custom_domain?.toLowerCase() === slug.toLowerCase() ? 'primary custom domain' : 'slug';
     console.log(`✅ Resolved ${matchType} "${slug}" to store_id: ${masterStore.id}`);
@@ -141,24 +151,50 @@ async function getStoreBySlug(slug) {
 
   // Step 3: If still not found, throw error
   if (!masterStore) {
-    throw new Error(`Store not found with slug or domain: ${slug}`);
+    const notFoundError = new Error(`Store not found with slug or domain: ${slug}`);
+    notFoundError.code = 'STORE_NOT_FOUND';
+    throw notFoundError;
   }
 
   // Step 2: Get tenant connection using store_id
-  const tenantDb = await ConnectionManager.getStoreConnection(masterStore.id);
+  let tenantDb;
+  try {
+    tenantDb = await ConnectionManager.getStoreConnection(masterStore.id);
+  } catch (connError) {
+    console.error(`❌ Failed to connect to tenant DB for store ${masterStore.id}:`, connError.message);
+    const dbError = new Error('Store database is not available');
+    dbError.code = 'DATABASE_UNAVAILABLE';
+    dbError.storeId = masterStore.id;
+    throw dbError;
+  }
 
   // Step 3: Fetch full store data from tenant DB (authoritative source)
   // Note: Each tenant typically has one active store. We query by is_active
   // rather than by ID since masterStore.id is the tenant identifier, not the store's UUID
-  const { data: store, error: tenantError } = await tenantDb
-    .from('stores')
-    .select('*')
-    .eq('is_active', true)
-    .limit(1)
-    .maybeSingle();
+  let store, tenantError;
+  try {
+    const result = await tenantDb
+      .from('stores')
+      .select('*')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+    store = result.data;
+    tenantError = result.error;
+  } catch (queryError) {
+    console.error(`❌ Tenant DB query failed for store ${masterStore.id}:`, queryError.message);
+    const dbError = new Error('Store database needs provisioning');
+    dbError.code = 'DATABASE_EMPTY';
+    dbError.storeId = masterStore.id;
+    throw dbError;
+  }
 
   if (tenantError || !store) {
-    throw new Error(`Store data not found in tenant DB for store_id: ${masterStore.id}`);
+    console.error(`❌ Store data not found in tenant DB:`, tenantError?.message || 'No store record');
+    const dbError = new Error('Store database needs provisioning');
+    dbError.code = 'DATABASE_EMPTY';
+    dbError.storeId = masterStore.id;
+    throw dbError;
   }
 
   // Override published field from master DB (master is authoritative for published status)
@@ -268,9 +304,31 @@ router.get('/', cacheMiddleware({
       tenantDb = result.tenantDb;
       redirectTo = result.redirectTo;
     } catch (err) {
-      console.log('❌ Store not found for slug:', slug, err.message);
+      console.log('❌ Store lookup failed for slug:', slug, 'Error:', err.message, 'Code:', err.code);
+
+      // Handle different error types
+      if (err.code === 'DATABASE_EMPTY' || err.code === 'DATABASE_UNAVAILABLE') {
+        return res.status(503).json({
+          success: false,
+          code: err.code,
+          message: 'This store is currently being set up. Please try again later.',
+          storeId: err.storeId
+        });
+      }
+
+      if (err.code === 'STORE_INACTIVE') {
+        return res.status(503).json({
+          success: false,
+          code: err.code,
+          message: 'This store is currently offline.',
+          storeId: err.storeId,
+          status: err.status
+        });
+      }
+
       return res.status(404).json({
         success: false,
+        code: 'STORE_NOT_FOUND',
         message: 'Store not found'
       });
     }
