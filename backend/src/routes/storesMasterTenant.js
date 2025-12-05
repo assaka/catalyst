@@ -8,6 +8,8 @@
  * PATCH /api/stores/:id - Update store settings
  * PUT /api/stores/:id - Update store settings (alias for PATCH)
  * DELETE /api/stores/:id - Delete store
+ *
+ * Note: OAuth tokens stored in master integration_configs, not tenant supabase_oauth_tokens
  */
 
 const express = require('express');

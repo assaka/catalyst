@@ -8,6 +8,8 @@
  * - User record creation
  *
  * Called when store owner connects their Supabase database
+ *
+ * Note: Connection info stored in master store_databases, not tenant supabase_oauth_tokens
  */
 
 const fs = require('fs').promises;
