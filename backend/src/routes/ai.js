@@ -2455,6 +2455,22 @@ Be concise but helpful.`;
               const { data } = await query;
               toolResult = data || [];
             }
+
+            // Handle styling tools by delegating to executeToolAction
+            if (toolName === 'update_styling' || toolName === 'update_setting' || toolName === 'move_element') {
+              console.log('🎨 Stream-thinking: Delegating styling tool to executeToolAction');
+              const toolCall = { tool: toolName, ...toolInput };
+              const result = await executeToolAction(toolCall, storeId, userId, '');
+              toolResult = result;
+
+              // Send styling_applied event for frontend refresh
+              if (result.success && result.data?.type === 'styling_applied') {
+                res.write(`data: ${JSON.stringify({
+                  type: 'styling_applied',
+                  ...result.data
+                })}\n\n`);
+              }
+            }
           } else {
             toolResult = { error: 'No store context available' };
           }

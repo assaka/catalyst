@@ -723,6 +723,24 @@ const WorkspaceAIPanel = () => {
                   // Stream complete
                   break;
 
+                case 'styling_applied':
+                  // Styling was applied via stream - trigger refresh
+                  console.log('🎨 Styling applied via stream, refreshing preview');
+                  setTimeout(() => {
+                    refreshPreview?.();
+                    triggerConfigurationRefresh?.();
+                    localStorage.setItem('slot_config_updated', JSON.stringify({
+                      storeId,
+                      pageType: event.pageType || selectedPageType,
+                      timestamp: Date.now()
+                    }));
+                    window.dispatchEvent(new StorageEvent('storage', {
+                      key: 'slot_config_updated',
+                      newValue: JSON.stringify({ storeId, pageType: event.pageType || selectedPageType, timestamp: Date.now() })
+                    }));
+                  }, 300);
+                  break;
+
                 case 'error':
                   throw new Error(event.error);
               }
