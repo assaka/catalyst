@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const aiService = require('../services/AIService');
 const aiProvider = require('../services/ai-provider-service');
+const aiModelsService = require('../services/AIModelsService');
 const aiEntityService = require('../services/aiEntityService');
 const aiContextService = require('../services/aiContextService');
 const aiLearningService = require('../services/aiLearningService');
@@ -2729,9 +2730,13 @@ Be concise but helpful.`;
     const toolResults = {};
     let pendingToolUse = null;
 
+    // Get model from database (claude-sonnet for tool-use tasks)
+    const modelConfig = await aiModelsService.getModelConfig('claude-sonnet');
+    const model = modelConfig?.model || 'claude-3-5-sonnet-20241022';
+
     // Stream with tools
     const stream = aiProvider.streamWithThinking(messages, {
-      model: 'claude-3-5-sonnet-20241022',
+      model,
       maxTokens: 4096,
       systemPrompt: fullSystemPrompt,
       tools

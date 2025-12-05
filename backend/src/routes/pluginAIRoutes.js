@@ -5,6 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const pluginAIService = require('../services/pluginAIService');
+const aiModelsService = require('../services/AIModelsService');
 
 /**
  * POST /api/plugins/ai/generate
@@ -207,9 +208,20 @@ router.get('/status', async (req, res) => {
     const keyLength = apiKey.length;
     const hasWhitespace = apiKey !== apiKey.trim();
 
+    // Get default model from database
+    let defaultModel = 'claude-3-5-sonnet-20241022';
+    try {
+      const modelConfig = await aiModelsService.getModelConfig('claude-sonnet');
+      if (modelConfig?.model) {
+        defaultModel = modelConfig.model;
+      }
+    } catch (err) {
+      console.warn('Failed to fetch model from database, using fallback:', err.message);
+    }
+
     res.json({
       available: hasApiKey,
-      model: 'claude-3-5-sonnet-20241022',
+      model: defaultModel,
       message: hasApiKey
         ? 'AI service is ready'
         : 'ANTHROPIC_API_KEY not configured',

@@ -2,10 +2,12 @@
 const express = require('express');
 const router = express.Router();
 const Anthropic = require('@anthropic-ai/sdk');
+const AIModel = require('../models/AIModel');
 
 /**
  * GET /api/diagnostic/anthropic
  * Test Anthropic API configuration and model availability
+ * Models are fetched from ai_models database table
  */
 router.get('/anthropic', async (req, res) => {
   const diagnostics = {
@@ -31,14 +33,24 @@ router.get('/anthropic', async (req, res) => {
     apiKey: process.env.ANTHROPIC_API_KEY
   });
 
-  // Test models in order of preference
-  const modelsToTest = [
-    'claude-3-5-sonnet-20241022',
-    'claude-3-5-haiku-latest',
-    'claude-3-opus-latest',
-    'claude-sonnet-4-20250514',
-    'claude-3-haiku-20240307'
-  ];
+  // Get Anthropic models from database
+  let modelsToTest = [];
+  try {
+    const dbModels = await AIModel.getByProvider('anthropic');
+    modelsToTest = dbModels.map(m => m.api_model);
+    diagnostics.modelsSource = 'database';
+    diagnostics.modelsCount = modelsToTest.length;
+  } catch (error) {
+    console.warn('Failed to fetch models from database, using fallback:', error.message);
+    // Fallback models if database unavailable
+    modelsToTest = [
+      'claude-3-5-sonnet-20241022',
+      'claude-3-5-haiku-20241022',
+      'claude-3-opus-20240229'
+    ];
+    diagnostics.modelsSource = 'fallback';
+    diagnostics.modelsError = error.message;
+  }
 
   let workingModel = null;
 

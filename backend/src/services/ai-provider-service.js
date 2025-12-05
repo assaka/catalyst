@@ -15,9 +15,20 @@
  * const aiProvider = require('./ai-provider-service');
  * const result = await aiProvider.chat(messages, { provider: 'anthropic' });
  * const translation = await aiProvider.translate(text, 'en', 'nl');
+ *
+ * NOTE: Default models are fetched from ai_models database table via AIModelsService
  */
 
 const Anthropic = require('@anthropic-ai/sdk');
+
+// Lazy load AIModelsService to avoid circular dependency
+let _aiModelsService = null;
+const getAIModelsService = () => {
+  if (!_aiModelsService) {
+    _aiModelsService = require('./AIModelsService');
+  }
+  return _aiModelsService;
+};
 
 class AIProviderService {
   constructor() {
@@ -30,14 +41,18 @@ class AIProviderService {
       groq: null
     };
 
-    // Default models for each provider
-    this.defaultModels = {
-      anthropic: 'claude-3-5-haiku-latest',
+    // Fallback default models (used if database unavailable)
+    this._fallbackDefaultModels = {
+      anthropic: 'claude-3-5-haiku-20241022',
       openai: 'gpt-4o-mini',
       deepseek: 'deepseek-chat',
       gemini: 'gemini-2.0-flash',
       groq: 'llama-3.3-70b-versatile'
     };
+
+    // Cached default models (loaded from database)
+    this._defaultModelsCache = null;
+    this._cacheLoaded = false;
 
     // Provider-specific API keys
     this.apiKeys = {
@@ -47,6 +62,42 @@ class AIProviderService {
       gemini: process.env.GEMINI_API_KEY,
       groq: process.env.GROQ_API_KEY
     };
+  }
+
+  /**
+   * Load default models from database
+   */
+  async _loadDefaultModels() {
+    if (this._cacheLoaded) return;
+
+    try {
+      const aiModelsService = getAIModelsService();
+      this._defaultModelsCache = await aiModelsService.getDefaultModels();
+      this._cacheLoaded = true;
+      console.log('✅ AIProviderService: Default models loaded from database');
+    } catch (error) {
+      console.warn('⚠️ AIProviderService: Failed to load default models from database, using fallbacks:', error.message);
+      this._defaultModelsCache = this._fallbackDefaultModels;
+      this._cacheLoaded = true;
+    }
+  }
+
+  /**
+   * Get default model for a provider (sync with cache)
+   */
+  getDefaultModel(provider) {
+    if (this._defaultModelsCache && this._defaultModelsCache[provider]) {
+      return this._defaultModelsCache[provider];
+    }
+    return this._fallbackDefaultModels[provider] || this._fallbackDefaultModels.anthropic;
+  }
+
+  /**
+   * Get default model for a provider (async, ensures cache is loaded)
+   */
+  async getDefaultModelAsync(provider) {
+    await this._loadDefaultModels();
+    return this.getDefaultModel(provider);
   }
 
   /**
@@ -131,39 +182,45 @@ class AIProviderService {
    * @returns {Promise<Object>} { content, usage: { input_tokens, output_tokens }, provider, model }
    */
   async chat(messages, options = {}) {
+    // Ensure default models are loaded from database
+    await this._loadDefaultModels();
+
     const {
       provider = this.getFirstAvailableProvider(),
-      model = this.defaultModels[provider],
+      model = null, // Will be resolved below
       temperature = 0.7,
       maxTokens = 4096,
       systemPrompt = null,
       images = null // Array of { base64, type } for vision support
     } = options;
 
+    // Get default model for provider if not specified
+    const resolvedModel = model || this.getDefaultModel(provider);
+
     if (!provider) {
       throw new Error('No AI provider available. Please configure at least one API key.');
     }
 
-    console.log(`🤖 AI Provider: ${provider}, Model: ${model}${images ? `, Images: ${images.length}` : ''}`);
+    console.log(`🤖 AI Provider: ${provider}, Model: ${resolvedModel}${images ? `, Images: ${images.length}` : ''}`);
 
     if (provider === 'anthropic') {
-      return await this._chatAnthropic(messages, { model, temperature, maxTokens, systemPrompt, images });
+      return await this._chatAnthropic(messages, { model: resolvedModel, temperature, maxTokens, systemPrompt, images });
     } else if (provider === 'openai') {
-      return await this._chatOpenAI(messages, { model, temperature, maxTokens, systemPrompt, images });
+      return await this._chatOpenAI(messages, { model: resolvedModel, temperature, maxTokens, systemPrompt, images });
     } else if (provider === 'groq') {
       // Groq doesn't support vision yet, fall back to text-only
       if (images && images.length > 0) {
         console.warn('⚠️  Groq does not support vision. Images will be ignored.');
       }
-      return await this._chatGroq(messages, { model, temperature, maxTokens, systemPrompt });
+      return await this._chatGroq(messages, { model: resolvedModel, temperature, maxTokens, systemPrompt });
     } else if (provider === 'gemini') {
-      return await this._chatGemini(messages, { model, temperature, maxTokens, systemPrompt, images });
+      return await this._chatGemini(messages, { model: resolvedModel, temperature, maxTokens, systemPrompt, images });
     } else if (provider === 'deepseek') {
       // DeepSeek doesn't support vision yet, fall back to text-only
       if (images && images.length > 0) {
         console.warn('⚠️  DeepSeek does not support vision. Images will be ignored.');
       }
-      return await this._chatDeepSeek(messages, { model, temperature, maxTokens, systemPrompt });
+      return await this._chatDeepSeek(messages, { model: resolvedModel, temperature, maxTokens, systemPrompt });
     } else {
       throw new Error(`Unknown provider: ${provider}`);
     }
@@ -179,6 +236,9 @@ class AIProviderService {
    * @returns {Promise<Object>} { translatedText, usage, provider, model }
    */
   async translate(text, fromLang, toLang, options = {}) {
+    // Ensure default models are loaded from database
+    await this._loadDefaultModels();
+
     const {
       provider = this.getFirstAvailableProvider(),
       context = {},
@@ -221,7 +281,7 @@ Return ONLY the translated text, no explanations or notes.`;
 
     const result = await this.chat(messages, {
       provider,
-      model: this.defaultModels[provider],
+      model: this.getDefaultModel(provider),
       temperature: 0.3, // Lower temperature for consistent translations
       maxTokens: dynamicMaxTokens,
       systemPrompt
@@ -685,9 +745,17 @@ Return ONLY the translated text, no explanations or notes.`;
       .map(provider => ({
         name: provider,
         displayName: this._getProviderDisplayName(provider),
-        defaultModel: this.defaultModels[provider],
+        defaultModel: this.getDefaultModel(provider),
         available: true
       }));
+  }
+
+  /**
+   * Get available providers async (ensures models are loaded from database)
+   */
+  async getAvailableProvidersAsync() {
+    await this._loadDefaultModels();
+    return this.getAvailableProviders();
   }
 
   /**
@@ -713,8 +781,13 @@ Return ONLY the translated text, no explanations or notes.`;
    * @yields {Object} Event objects with type: 'thinking_start', 'thinking', 'tool_start', 'tool_input', 'text', 'block_stop', 'done'
    */
   async *streamWithThinking(messages, options = {}) {
+    // Ensure default models are loaded from database
+    await this._loadDefaultModels();
+
+    const defaultAnthropicModel = this.getDefaultModel('anthropic');
+
     const {
-      model = 'claude-3-5-sonnet-20241022',
+      model = defaultAnthropicModel,
       temperature = 0.7,
       maxTokens = 4096,
       systemPrompt = null,

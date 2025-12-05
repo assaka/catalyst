@@ -1,5 +1,14 @@
 const Anthropic = require('@anthropic-ai/sdk');
 
+// Lazy load AIModelsService to avoid circular dependency
+let _aiModelsService = null;
+const getAIModelsService = () => {
+  if (!_aiModelsService) {
+    _aiModelsService = require('./AIModelsService');
+  }
+  return _aiModelsService;
+};
+
 /**
  * Marketplace AI Optimizer
  *
@@ -10,12 +19,33 @@ const Anthropic = require('@anthropic-ai/sdk');
  * - Auto-fixes common issues
  *
  * This is what makes us better than Channable!
+ *
+ * NOTE: AI models are fetched from ai_models database table via AIModelsService
  */
 class MarketplaceAIOptimizer {
   constructor() {
     this.anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY
     });
+    this._defaultModel = null;
+  }
+
+  /**
+   * Get the default Anthropic model from database
+   */
+  async _getDefaultModel() {
+    if (this._defaultModel) return this._defaultModel;
+
+    try {
+      const aiModelsService = getAIModelsService();
+      // Get claude-sonnet config for optimization tasks (good balance of quality and speed)
+      const config = await aiModelsService.getModelConfig('claude-sonnet');
+      this._defaultModel = config?.model || 'claude-3-5-sonnet-20241022';
+    } catch (error) {
+      console.warn('⚠️ MarketplaceAIOptimizer: Failed to load model from database, using fallback:', error.message);
+      this._defaultModel = 'claude-3-5-sonnet-20241022';
+    }
+    return this._defaultModel;
   }
 
   /**
@@ -85,8 +115,11 @@ Return as JSON with this structure:
 }`;
 
     try {
+      // Get model from database
+      const model = await this._getDefaultModel();
+
       const message = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model,
         max_tokens: 2048,
         messages: [{
           role: 'user',
@@ -175,8 +208,11 @@ Generate an optimized eBay listing with:
 Return as JSON.`;
 
     try {
+      // Get model from database
+      const model = await this._getDefaultModel();
+
       const message = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model,
         max_tokens: 2048,
         messages: [{
           role: 'user',
