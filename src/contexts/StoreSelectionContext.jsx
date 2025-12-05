@@ -72,6 +72,26 @@ export const StoreSelectionProvider = ({ children }) => {
     return () => window.removeEventListener('userLoggedOut', handleLogout);
   }, []);
 
+  // Quick health check - just query tenant DB stores table
+  const quickHealthCheck = async (storeId) => {
+    try {
+      const token = localStorage.getItem('store_owner_auth_token');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/stores/${storeId}/health`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) return false;
+
+      const result = await response.json();
+      return result.success && result.data?.status === 'healthy';
+    } catch (err) {
+      return false;
+    }
+  };
+
   const loadStores = async () => {
     try {
       setLoading(true);
@@ -87,7 +107,7 @@ export const StoreSelectionProvider = ({ children }) => {
 
       setAvailableStores(stores);
       storesLoadedRef.current = true;
-      
+
       // Auto-select first ACTIVE store or load from localStorage
       if (stores.length > 0) {
         const savedStoreId = localStorage.getItem('selectedStoreId');
@@ -96,8 +116,9 @@ export const StoreSelectionProvider = ({ children }) => {
         if (savedStore) {
           // Found the saved store - but check if it's actually active
           if (savedStore.is_active && savedStore.status !== 'pending_database') {
-            // Always update to fresh API data (includes database_healthy flag)
-            setSelectedStore(savedStore);
+            // Do quick health check for active stores
+            const isHealthy = await quickHealthCheck(savedStore.id);
+            setSelectedStore({ ...savedStore, database_healthy: isHealthy });
             localStorage.setItem('selectedStoreId', savedStore.id);
             localStorage.setItem('selectedStoreName', savedStore.name);
             localStorage.setItem('selectedStoreSlug', savedStore.slug || savedStore.code);
@@ -110,7 +131,8 @@ export const StoreSelectionProvider = ({ children }) => {
             const firstActiveStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
 
             if (firstActiveStore) {
-              setSelectedStore(firstActiveStore);
+              const isHealthy = await quickHealthCheck(firstActiveStore.id);
+              setSelectedStore({ ...firstActiveStore, database_healthy: isHealthy });
               localStorage.setItem('selectedStoreId', firstActiveStore.id);
               localStorage.setItem('selectedStoreName', firstActiveStore.name);
               localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);
@@ -132,7 +154,8 @@ export const StoreSelectionProvider = ({ children }) => {
           const firstActiveStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
 
           if (firstActiveStore) {
-            setSelectedStore(firstActiveStore);
+            const isHealthy = await quickHealthCheck(firstActiveStore.id);
+            setSelectedStore({ ...firstActiveStore, database_healthy: isHealthy });
             localStorage.setItem('selectedStoreId', firstActiveStore.id);
             localStorage.setItem('selectedStoreName', firstActiveStore.name);
             localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);

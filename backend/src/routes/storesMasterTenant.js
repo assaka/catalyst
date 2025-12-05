@@ -988,59 +988,8 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
       console.warn('⚠️ Could not fetch domain information:', domainErr.message);
     }
 
-    // Check which stores have database credentials configured (from master DB)
-    const storeIds = stores.map(s => s.id);
-    let dbConfigMap = {};
-    try {
-      const { data: dbConfigs } = await masterDbClient
-        .from('store_databases')
-        .select('store_id, host')
-        .in('store_id', storeIds);
-
-      if (dbConfigs) {
-        dbConfigs.forEach(config => {
-          // Has database if host is configured and not a placeholder
-          dbConfigMap[config.store_id] = config.host && !config.host.includes('pending');
-        });
-      }
-    } catch (err) {
-      console.warn('[Dropdown] Could not check store_databases:', err.message);
-    }
-
-    // For stores with DB config, do a quick health check (SELECT * FROM stores LIMIT 1)
-    const healthMap = {};
-    const storesWithConfig = stores.filter(s => dbConfigMap[s.id] && s.is_active && s.status === 'active');
-
-    if (storesWithConfig.length > 0) {
-      await Promise.all(storesWithConfig.map(async (store) => {
-        try {
-          const tenantDb = await ConnectionManager.getStoreConnection(store.id);
-          const { data, error } = await tenantDb
-            .from('stores')
-            .select('id')
-            .limit(1);
-
-          // If query succeeds (even with empty result), DB is healthy
-          healthMap[store.id] = !error;
-        } catch (err) {
-          // Connection failed = unhealthy
-          healthMap[store.id] = false;
-        }
-      }));
-    }
-
-    // Simple mapping with health check results
+    // Simple mapping - no tenant DB queries, just master DB data
     const enrichedStores = (stores || []).map((store) => {
-      const hasDbConfig = dbConfigMap[store.id] || false;
-
-      // Determine health: false if no config, use healthMap if we checked, null otherwise
-      let databaseHealthy = null;
-      if (!hasDbConfig) {
-        databaseHealthy = false;  // No config = unhealthy
-      } else if (store.id in healthMap) {
-        databaseHealthy = healthMap[store.id];  // Use actual health check result
-      }
-
       return {
         id: store.id,
         user_id: store.user_id,
@@ -1059,9 +1008,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
         active_domain_count: domainMap[store.id]?.active_domain_count || 0,
         // Membership info
         membership_type: store.membership_type || 'owner',
-        team_role: store.team_role || null,
-        // Database health - true/false from actual check, null if not checked
-        database_healthy: databaseHealthy
+        team_role: store.team_role || null
       };
     });
 
@@ -1167,52 +1114,49 @@ router.get('/', authMiddleware, async (req, res) => {
 
 /**
  * GET /api/stores/:id/health
- * Check tenant database health status
- * Returns detailed status about whether the tenant DB is provisioned, empty, or has issues
+ * Quick health check - just query tenant DB stores table
+ * Returns healthy/empty status
  */
 router.get('/:id/health', authMiddleware, async (req, res) => {
   try {
     const storeId = req.params.id;
 
-    // Verify store exists in master DB and user has access
-    const { data: store, error: storeError } = await masterDbClient
-      .from('stores')
-      .select('id, user_id, status, is_active')
-      .eq('id', storeId)
-      .maybeSingle();
-
-    if (storeError || !store) {
-      return res.status(404).json({
-        success: false,
-        error: 'Store not found'
-      });
-    }
-
-    // Check ownership or team membership
-    if (store.user_id !== req.user.id) {
-      const { data: teamMember } = await masterDbClient
-        .from('store_teams')
+    // Quick check: try to query tenant DB stores table
+    try {
+      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+      const { data, error } = await tenantDb
+        .from('stores')
         .select('id')
-        .eq('store_id', storeId)
-        .eq('user_id', req.user.id)
-        .eq('status', 'active')
-        .maybeSingle();
+        .limit(1);
 
-      if (!teamMember) {
-        return res.status(403).json({
-          success: false,
-          error: 'Access denied'
+      // If query succeeds (even with empty result), DB is healthy
+      if (!error) {
+        return res.json({
+          success: true,
+          data: { status: 'healthy' }
         });
       }
+
+      // Query failed - DB is empty/needs provisioning
+      return res.json({
+        success: true,
+        data: {
+          status: 'empty',
+          message: 'Store database needs provisioning',
+          actions: ['provision_database', 'remove_store']
+        }
+      });
+    } catch (connError) {
+      // Connection failed - DB not configured or unreachable
+      return res.json({
+        success: true,
+        data: {
+          status: 'empty',
+          message: 'Database connection failed',
+          actions: ['provision_database', 'remove_store']
+        }
+      });
     }
-
-    // Run health check
-    const healthResult = await TenantProvisioningService.checkTenantHealth(storeId);
-
-    res.json({
-      success: true,
-      data: healthResult
-    });
   } catch (error) {
     console.error('Store health check error:', error);
     res.status(500).json({
