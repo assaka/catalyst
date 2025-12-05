@@ -75,6 +75,36 @@ router.post('/smart-chat', authMiddleware, async (req, res) => {
     } catch (e) { console.error('Examples load failed:', e); }
 
     // ═══════════════════════════════════════════════════════════════════
+    // STEP 2.5: Load Recent Chat History from Database (for context)
+    // ═══════════════════════════════════════════════════════════════════
+    let dbHistory = [];
+    if (storeId) {
+      try {
+        const tenantDb = await ConnectionManager.getStoreConnection(storeId);
+        const { data: recentMessages } = await tenantDb
+          .from('ai_chat_sessions')
+          .select('role, content, created_at')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (recentMessages?.length) {
+          // Reverse to get chronological order (oldest first)
+          dbHistory = recentMessages.reverse().map(m => ({
+            role: m.role,
+            content: m.content
+          }));
+          console.log('📜 Loaded', dbHistory.length, 'messages from chat history');
+        }
+      } catch (e) {
+        console.error('Chat history load failed:', e.message);
+      }
+    }
+
+    // Merge DB history with frontend history (prefer DB for context)
+    const conversationHistory = dbHistory.length > 0 ? dbHistory : history;
+
+    // ═══════════════════════════════════════════════════════════════════
     // STEP 3: Get Real-time Store Data
     // ═══════════════════════════════════════════════════════════════════
     let storeData = '';
@@ -496,7 +526,7 @@ Return ONLY valid JSON.`;
       serviceKey: serviceKey || 'ai_chat_claude_sonnet',
       prompt: message || 'Please analyze this image.',
       systemPrompt,
-      conversationHistory: history.slice(-10).map(m => ({ role: m.role, content: m.content })),
+      conversationHistory: conversationHistory.slice(-10),
       maxTokens: 800,
       temperature: 0.3, // Lower temp for more reliable JSON
       metadata: { type: 'tool-chat', storeId },
