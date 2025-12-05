@@ -126,29 +126,41 @@ class AIContextService {
   }
 
   /**
-   * Get relevant code patterns from ai_code_patterns
+   * Get relevant patterns from promoted training candidates
+   * (Replaces ai_code_patterns table)
    */
-  async getRelevantPatterns({ query, limit = 5 }) {
+  async getRelevantPatterns({ query, entity, limit = 5 }) {
     try {
-      const { data, error } = await masterDbClient
-        .from('ai_code_patterns')
-        .select('id, name, pattern_type, description, code, language, framework, parameters, example_usage, tags')
-        .eq('is_active', true)
-        .order('usage_count', { ascending: false })
+      let queryBuilder = masterDbClient
+        .from('ai_training_candidates')
+        .select('id, user_prompt, ai_response, detected_entity, detected_operation, success_count, metadata')
+        .in('training_status', ['approved', 'promoted'])
+        .order('success_count', { ascending: false })
         .limit(limit);
 
+      if (entity) {
+        queryBuilder = queryBuilder.eq('detected_entity', entity);
+      }
+
+      const { data, error } = await queryBuilder;
+
       if (error) {
-        console.error('Error fetching code patterns:', error);
+        console.error('Error fetching training patterns:', error);
         return [];
       }
 
+      // Format as patterns for backward compatibility
       return (data || []).map(r => ({
-        ...r,
-        parameters: typeof r.parameters === 'string' ? JSON.parse(r.parameters) : (r.parameters || []),
-        tags: typeof r.tags === 'string' ? JSON.parse(r.tags) : (r.tags || [])
+        id: r.id,
+        name: `${r.detected_entity || 'general'} - ${r.detected_operation || 'query'}`,
+        pattern_type: 'successful_prompt',
+        description: r.user_prompt,
+        code: r.ai_response,
+        tags: r.metadata?.tags || [],
+        usage_count: r.success_count
       }));
     } catch (error) {
-      console.error('Error fetching code patterns:', error);
+      console.error('Error fetching training patterns:', error);
       return [];
     }
   }
@@ -203,19 +215,22 @@ class AIContextService {
 
   /**
    * Track context usage for analytics
+   * Now uses ai_training_candidates table (consolidated from ai_context_usage)
    */
   async trackContextUsage({ documentId, exampleId, patternId, userId, sessionId, query, wasHelpful, storeId = null }) {
     try {
-      // Insert into master DB
-      const { error } = await masterDbClient.from('ai_context_usage').insert({
-        document_id: documentId || null,
-        example_id: exampleId || null,
-        pattern_id: patternId || null,
+      // Insert into ai_training_candidates (consolidated table)
+      const { error } = await masterDbClient.from('ai_training_candidates').insert({
+        user_prompt: query || '',
         user_id: userId || null,
         session_id: sessionId || null,
-        query: query || null,
-        was_helpful: wasHelpful || null,
         store_id: storeId || null,
+        context_document_ids: documentId ? [documentId] : [],
+        context_example_ids: exampleId ? [exampleId] : [],
+        context_pattern_ids: patternId ? [patternId] : [],
+        was_helpful: wasHelpful || null,
+        training_status: 'candidate',
+        outcome_status: 'pending',
         created_at: new Date().toISOString()
       });
 
@@ -223,17 +238,11 @@ class AIContextService {
         console.error('Error tracking context usage:', error);
       }
 
-      // Increment usage counts
+      // Increment usage counts for examples
       if (exampleId) {
         await masterDbClient.rpc('increment_usage_count', {
           table_name: 'ai_plugin_examples',
           row_id: exampleId
-        }).catch(() => {});
-      }
-      if (patternId) {
-        await masterDbClient.rpc('increment_usage_count', {
-          table_name: 'ai_code_patterns',
-          row_id: patternId
         }).catch(() => {});
       }
     } catch (error) {

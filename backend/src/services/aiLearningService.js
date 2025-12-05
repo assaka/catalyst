@@ -52,13 +52,21 @@ class AILearningService {
    */
   async recordFeedback(feedback) {
     try {
-      // ai_context_usage is in MASTER DB (cross-user learning)
-      await masterDbClient.from('ai_context_usage').insert({
+      // Record feedback in ai_training_candidates (consolidated table in MASTER DB)
+      await masterDbClient.from('ai_training_candidates').insert({
         user_id: feedback.userId,
         store_id: feedback.storeId,
         session_id: feedback.conversationId,
-        query: feedback.userMessage,
+        user_prompt: feedback.userMessage,
+        ai_response: feedback.aiResponse?.substring(0, 2000),
+        detected_intent: feedback.intent,
+        detected_entity: feedback.entity,
+        detected_operation: feedback.operation,
         was_helpful: feedback.wasHelpful,
+        feedback_text: feedback.feedbackText,
+        feedback_at: new Date().toISOString(),
+        training_status: feedback.wasHelpful ? 'candidate' : 'rejected',
+        outcome_status: feedback.wasHelpful ? 'success' : 'failure',
         created_at: new Date().toISOString()
       });
 
@@ -108,16 +116,18 @@ class AILearningService {
 
   /**
    * Save a successful interaction pattern for future reference (MASTER DB)
+   * Now uses ai_training_candidates table (consolidated from ai_code_patterns)
    */
   async saveSuccessfulPattern(feedback) {
     try {
-      // Check if similar pattern already exists in MASTER DB
+      // Check if similar pattern already exists in ai_training_candidates
       const { data: existingPatterns, error: searchError } = await masterDbClient
-        .from('ai_code_patterns')
-        .select('id, usage_count')
-        .eq('pattern_type', 'successful_prompt')
-        .ilike('tags', `%${feedback.entity}%`)
-        .ilike('description', `%${feedback.userMessage.substring(0, 50)}%`)
+        .from('ai_training_candidates')
+        .select('id, success_count')
+        .eq('detected_entity', feedback.entity)
+        .eq('detected_operation', feedback.operation)
+        .in('training_status', ['approved', 'promoted'])
+        .ilike('user_prompt', `%${feedback.userMessage.substring(0, 30)}%`)
         .limit(1);
 
       if (searchError) {
@@ -125,45 +135,17 @@ class AILearningService {
       }
 
       if (existingPatterns && existingPatterns.length > 0) {
-        // Increment usage count for existing pattern
-        await masterDbClient.rpc('increment_usage_count', {
-          table_name: 'ai_code_patterns',
-          row_id: existingPatterns[0].id
-        }).catch(() => {
-          // Fallback: manual increment if RPC not available
-          masterDbClient
-            .from('ai_code_patterns')
-            .update({ usage_count: existingPatterns[0].usage_count + 1 })
-            .eq('id', existingPatterns[0].id);
-        });
-      } else {
-        // Create new successful pattern in MASTER DB
-        await masterDbClient.from('ai_code_patterns').insert({
-          name: `Successful: ${feedback.entity} ${feedback.operation}`,
-          pattern_type: 'successful_prompt',
-          description: feedback.userMessage,
-          code: JSON.stringify({
-            user_message: feedback.userMessage,
-            detected_intent: feedback.intent,
-            entity: feedback.entity,
-            operation: feedback.operation,
-            ai_response: feedback.aiResponse?.substring(0, 500),
-            store_id: feedback.storeId // Track which store this came from
-          }),
-          language: 'json',
-          framework: 'ai-learning',
-          parameters: JSON.stringify({
-            intent: feedback.intent,
-            entity: feedback.entity,
-            operation: feedback.operation
-          }),
-          tags: JSON.stringify([feedback.entity, feedback.operation, 'successful', 'user-validated']),
-          usage_count: 1,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
+        // Increment success count for existing pattern
+        await masterDbClient
+          .from('ai_training_candidates')
+          .update({
+            success_count: existingPatterns[0].success_count + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingPatterns[0].id);
       }
+      // Note: New patterns are already created by recordFeedback()
+      // This method just increments counts for similar existing patterns
     } catch (error) {
       console.error('[AILearningService] Error saving successful pattern:', error);
     }
@@ -286,11 +268,12 @@ class AILearningService {
     try {
       // All AI tables are in MASTER DB - filter by store_id where applicable
 
-      // Get feedback statistics for this store
+      // Get feedback statistics for this store (from consolidated ai_training_candidates)
       const { data: feedbackData } = await masterDbClient
-        .from('ai_context_usage')
+        .from('ai_training_candidates')
         .select('was_helpful')
-        .eq('store_id', storeId);
+        .eq('store_id', storeId)
+        .not('was_helpful', 'is', null);
 
       const feedbackStats = {
         total: feedbackData?.length || 0,
@@ -330,13 +313,12 @@ class AILearningService {
         .order('priority', { ascending: false })
         .limit(10);
 
-      // Get successful patterns (global, benefits all stores)
+      // Get successful patterns (from consolidated ai_training_candidates)
       const { data: successfulPatterns } = await masterDbClient
-        .from('ai_code_patterns')
-        .select('name, description, usage_count, tags')
-        .eq('pattern_type', 'successful_prompt')
-        .eq('is_active', true)
-        .order('usage_count', { ascending: false })
+        .from('ai_training_candidates')
+        .select('user_prompt, detected_entity, detected_operation, success_count')
+        .in('training_status', ['approved', 'promoted'])
+        .order('success_count', { ascending: false })
         .limit(10);
 
       // Get failed interactions count (global)
@@ -374,14 +356,13 @@ class AILearningService {
    */
   async getSuccessfulPromptsForEntity(entity) {
     try {
-      // Query MASTER DB for global successful patterns
+      // Query MASTER DB for successful patterns (from consolidated ai_training_candidates)
       const { data: patterns, error } = await masterDbClient
-        .from('ai_code_patterns')
-        .select('description, code, usage_count')
-        .eq('pattern_type', 'successful_prompt')
-        .eq('is_active', true)
-        .ilike('tags', `%${entity}%`)
-        .order('usage_count', { ascending: false })
+        .from('ai_training_candidates')
+        .select('user_prompt, ai_response, detected_entity, detected_operation, success_count')
+        .in('training_status', ['approved', 'promoted'])
+        .eq('detected_entity', entity)
+        .order('success_count', { ascending: false })
         .limit(5);
 
       if (error) {
@@ -390,9 +371,13 @@ class AILearningService {
       }
 
       return (patterns || []).map(p => ({
-        prompt: p.description,
-        details: typeof p.code === 'string' ? JSON.parse(p.code) : p.code,
-        successCount: p.usage_count
+        prompt: p.user_prompt,
+        details: {
+          entity: p.detected_entity,
+          operation: p.detected_operation,
+          ai_response: p.ai_response
+        },
+        successCount: p.success_count
       }));
     } catch (error) {
       console.error('[AILearningService] Error getting successful prompts:', error);
@@ -407,18 +392,17 @@ class AILearningService {
    */
   async getLearnedExamplesForPrompt(entity = null) {
     try {
-      // Build query for MASTER DB
+      // Build query for MASTER DB (from consolidated ai_training_candidates)
       let query = masterDbClient
-        .from('ai_code_patterns')
-        .select('description, code, tags')
-        .eq('pattern_type', 'successful_prompt')
-        .eq('is_active', true)
-        .gte('usage_count', 2) // Only include patterns used at least twice
-        .order('usage_count', { ascending: false })
+        .from('ai_training_candidates')
+        .select('user_prompt, detected_entity, detected_operation, success_count')
+        .in('training_status', ['approved', 'promoted'])
+        .gte('success_count', 2) // Only include patterns used at least twice
+        .order('success_count', { ascending: false })
         .limit(10);
 
       if (entity) {
-        query = query.ilike('tags', `%${entity}%`);
+        query = query.eq('detected_entity', entity);
       }
 
       const { data: patterns, error } = await query;
@@ -430,12 +414,7 @@ class AILearningService {
       // Format as examples for the AI prompt
       let examples = '\n\nLEARNED SUCCESSFUL EXAMPLES:\n';
       patterns.forEach(p => {
-        try {
-          const details = typeof p.code === 'string' ? JSON.parse(p.code) : p.code;
-          examples += `- "${p.description}" → entity: ${details.entity}, operation: ${details.operation}\n`;
-        } catch {
-          // Skip malformed entries
-        }
+        examples += `- "${p.user_prompt}" → entity: ${p.detected_entity}, operation: ${p.detected_operation}\n`;
       });
 
       return examples;
