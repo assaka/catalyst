@@ -3,7 +3,7 @@ const router = express.Router();
 const AkeneoSyncService = require('../services/akeneo-sync-service');
 const CloudflareImageService = require('../services/cloudflare-image-service');
 const supabaseProductImages = require('../services/supabase-product-images');
-const ConnectionManager = require('../services/database/ConnectionManager');
+const supabaseIntegration = require('../services/supabase-integration');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const multer = require('multer');
 

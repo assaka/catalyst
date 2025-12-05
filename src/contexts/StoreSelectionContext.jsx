@@ -204,7 +204,7 @@ export const StoreSelectionProvider = ({ children }) => {
   // Check health when selected store changes
   useEffect(() => {
     if (selectedStore?.id && selectedStore.is_active && selectedStore.status === 'active') {
-      // If dropdown already told us database is unhealthy, set that immediately
+      // If dropdown told us database is unhealthy (no config), set that immediately
       if (selectedStore.database_healthy === false) {
         console.log('🔴 Store database_healthy=false from dropdown, setting health to empty');
         setStoreHealth({
@@ -215,8 +215,10 @@ export const StoreSelectionProvider = ({ children }) => {
         });
         healthCheckedRef.current = selectedStore.id;
       } else {
-        // Otherwise do a full health check
-        checkStoreHealth(selectedStore.id);
+        // database_healthy is null (config exists) or true - assume healthy
+        // Skip on-demand health check for speed - errors will surface in API calls
+        setStoreHealth({ status: 'healthy' });
+        healthCheckedRef.current = selectedStore.id;
       }
     } else {
       setStoreHealth(null);

@@ -650,28 +650,38 @@ VALUES (
    */
   async seedDefaultSeoSettings(tenantDb, storeId, options, result) {
     try {
-      // First, get the store record to access custom_domain and slug
+      // Get store slug for sitemap URL
       const { data: store, error: storeError } = await tenantDb
         .from('stores')
-        .select('custom_domain, slug, settings')
+        .select('slug, settings')
         .eq('id', storeId)
         .single();
 
       if (storeError) {
         console.warn('Could not fetch store for SEO settings:', storeError.message);
-        // Use fallback values
+      }
+
+      // Check for custom domain in custom_domains table
+      let customDomain = null;
+      try {
+        const { data: domainData } = await tenantDb
+          .from('custom_domains')
+          .select('domain')
+          .eq('store_id', storeId)
+          .eq('is_primary', true)
+          .single();
+        customDomain = domainData?.domain;
+      } catch (e) {
+        // custom_domains table may not exist yet
       }
 
       // Determine base URL for sitemap
-      let baseUrl;
-      const customDomain = store?.custom_domain || store?.settings?.custom_domain;
       const slug = options.storeSlug || store?.slug || this.generateSlug(options.storeName);
+      let baseUrl;
 
       if (customDomain) {
-        // Use custom domain if available
         baseUrl = customDomain.startsWith('http') ? customDomain : `https://${customDomain}`;
       } else {
-        // Fallback to public URL pattern: https://www.dainostore.com/public/{slug}
         baseUrl = `https://www.dainostore.com/public/${slug}`;
       }
 
@@ -694,13 +704,11 @@ Disallow: /login
 
 Sitemap: ${baseUrl}/sitemap.xml`;
 
-      // Insert default SEO settings
+      // Insert default SEO settings using correct column structure
+      // Note: sitemap settings are embedded in xml_sitemap_settings JSON column
       const seoSettingsData = {
         store_id: storeId,
         robots_txt_content: robotsTxtContent,
-        sitemap_include_products: true,
-        sitemap_include_categories: true,
-        sitemap_include_pages: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -770,14 +778,12 @@ Sitemap: ${baseUrl}/sitemap.xml`;
       // Escape single quotes for SQL
       const escapedRobotsTxt = robotsTxtContent.replace(/'/g, "''");
 
+      // Use correct column structure - sitemap settings are in JSON columns with defaults
       const insertSQL = `
-INSERT INTO seo_settings (store_id, robots_txt_content, sitemap_include_products, sitemap_include_categories, sitemap_include_pages, created_at, updated_at)
+INSERT INTO seo_settings (store_id, robots_txt_content, created_at, updated_at)
 VALUES (
   '${storeId}',
   '${escapedRobotsTxt}',
-  true,
-  true,
-  true,
   NOW(),
   NOW()
 ) ON CONFLICT (store_id) DO NOTHING;

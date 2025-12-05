@@ -770,84 +770,11 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
 
     // 5. Hostname mapping (skipped - using custom_domains table instead)
     console.log('⏭️ Skipping hostname mapping (using custom_domains table)');
-    const hostname = null; // No longer used
 
-    // 6. Save OAuth tokens to tenant DB (if from OAuth flow)
-    if (useOAuth) {
-      try {
-        console.log('💾 Saving OAuth tokens to tenant database post-provisioning...');
+    // Note: OAuth tokens are now stored in integration_configs in master DB
+    // The supabase_oauth_tokens table in tenant DB is obsolete
 
-        // Get OAuth data from Redis first
-        let oauthData = null;
-
-        const { getRedisClient } = require('../config/redis');
-        const redisClient = getRedisClient();
-
-        if (redisClient) {
-          const redisKey = `oauth:pending:${storeId}`;
-          const tokenDataStr = await redisClient.get(redisKey);
-
-          if (tokenDataStr) {
-            oauthData = JSON.parse(tokenDataStr);
-            console.log('✅ Retrieved OAuth tokens from Redis for saving');
-          }
-        }
-
-        // Fallback to memory
-        if (!oauthData && global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {
-          oauthData = global.pendingOAuthTokens.get(storeId);
-          console.log('✅ Retrieved OAuth tokens from memory (fallback)');
-        }
-
-        if (oauthData) {
-          // Use tenant DB connection to save OAuth tokens (with encryption)
-          const { encrypt } = require('../utils/encryption');
-
-          const { data: savedToken, error: tokenError } = await tenantDb
-            .from('supabase_oauth_tokens')
-            .insert({
-              id: require('uuid').v4(),
-              store_id: storeId,
-              access_token: encrypt(oauthData.access_token),
-              refresh_token: encrypt(oauthData.refresh_token),
-              expires_at: oauthData.expires_at,
-              project_url: oauthData.project_url,
-              service_role_key: oauthData.service_role_key ? encrypt(oauthData.service_role_key) : null,
-              database_url: oauthData.database_url || null,
-              storage_url: oauthData.storage_url || null,
-              auth_url: oauthData.auth_url || null,
-              anon_key: null, // No longer used
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-
-          if (tokenError) {
-            console.warn('⚠️ Failed to save OAuth tokens to tenant DB:', tokenError.message);
-          } else {
-            console.log('✅ OAuth tokens saved to tenant database');
-
-            // Clean up from both Redis and memory
-            if (redisClient) {
-              await redisClient.del(`oauth:pending:${storeId}`);
-              console.log('🧹 Cleaned up Redis key');
-            }
-            if (global.pendingOAuthTokens) {
-              global.pendingOAuthTokens.delete(storeId);
-              console.log('🧹 Cleaned up memory cache');
-            }
-          }
-        } else {
-          console.log('⚠️ No OAuth data found in Redis or memory - skipping save');
-        }
-      } catch (oauthSaveError) {
-        console.warn('⚠️ Error saving OAuth tokens:', oauthSaveError.message);
-        // Non-blocking - continue with activation
-      }
-    }
-
-    // 7. Activate store and save slug (use Supabase client)
+    // 6. Activate store and save slug (use Supabase client)
     console.log('🎉 Activating store and saving slug...');
     const slug = storeSlug || `store-${Date.now()}`;
     const { error: activateError } = await masterDbClient

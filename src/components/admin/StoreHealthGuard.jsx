@@ -21,8 +21,6 @@ export default function StoreHealthGuard({ children, pageName }) {
   const {
     selectedStore,
     loading,
-    storeHealth,
-    healthLoading,
     deleteStorePermanently,
   } = useStoreSelection();
 
@@ -73,25 +71,8 @@ export default function StoreHealthGuard({ children, pageName }) {
     return children;
   }
 
-  // Wait for health check to complete (when database_healthy is null/unknown)
-  if (healthLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">Checking database...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Check if database is unhealthy:
-  // 1. database_healthy === false means no DB credentials configured
-  // 2. storeHealth.status === 'empty' means tenant DB is empty/needs provisioning
-  const isDatabaseUnhealthy =
-    selectedStore.database_healthy === false ||
-    storeHealth?.status === 'empty' ||
-    storeHealth?.status === 'error';
+  // Check if database is unhealthy (no config)
+  const isDatabaseUnhealthy = selectedStore.database_healthy === false;
 
   // If database is healthy, render children normally
   if (!isDatabaseUnhealthy) {
