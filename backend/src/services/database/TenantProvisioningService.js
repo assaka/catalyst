@@ -162,6 +162,10 @@ class TenantProvisioningService {
       console.log('Migration SQL loaded:', migrationSQL.length, 'characters');
       console.log('Seed SQL loaded:', seedSQL.length, 'characters');
 
+      // Replace {{STORE_ID}} template with actual storeId in seed SQL
+      let processedSeedSQL = seedSQL.replace(/\{\{STORE_ID\}\}/g, storeId);
+      console.log('✅ Replaced {{STORE_ID}} templates with actual storeId:', storeId);
+
       // Check if we have OAuth access_token (use Supabase Management API)
       if (options.oauthAccessToken && options.projectId) {
         console.log('Using Supabase Management API for migrations (OAuth mode)...');
@@ -275,12 +279,12 @@ END $$;`;
           }
 
           // Execute seed data separately (6,598 rows - large file)
-          console.log('📊 Seed SQL size:', (seedSQL.length / 1024).toFixed(2), 'KB');
+          console.log('📊 Seed SQL size:', (processedSeedSQL.length / 1024).toFixed(2), 'KB');
           console.log('📤 Running seed data via Management API...');
 
           const seedResponse = await axios.post(
             `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
-            { query: seedSQL },
+            { query: processedSeedSQL },
             {
               headers: {
                 'Authorization': `Bearer ${options.oauthAccessToken}`,
@@ -300,40 +304,6 @@ END $$;`;
 
           console.log('✅ Seed data complete - 6,598 rows inserted');
           result.dataSeeded.push('Seeded 6,598 rows via OAuth API');
-
-          // Update store_id for all tables to new store's ID
-          console.log('🔄 Updating store_id for multiple tables...');
-
-          const tablesToUpdate = [
-            'translations',
-            'cms_pages',
-            'cookie_consent_settings',
-            'email_templates',
-            'payment_methods',
-            'pdf_templates',
-            'shipping_methods',
-            'attribute_sets',
-            'categories'
-          ];
-
-          const updateQueries = tablesToUpdate.map(table =>
-            `UPDATE ${table} SET store_id = '${storeId}';`
-          ).join('\n');
-
-          await axios.post(
-            `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
-            { query: updateQueries },
-            {
-              headers: {
-                'Authorization': `Bearer ${options.oauthAccessToken}`,
-                'Content-Type': 'application/json'
-              },
-              timeout: 30000
-            }
-          );
-
-          console.log(`✅ store_id updated for ${tablesToUpdate.length} tables`);
-          result.dataSeeded.push(`Updated store_id for ${tablesToUpdate.length} tables`);
 
           return true;
 
@@ -390,33 +360,10 @@ END $$;`;
       await pgClient.query(migrationSQL);
       result.tablesCreated.push('Created 137 tables');
 
-      // Execute seed SQL (6,598 rows)
+      // Execute seed SQL (6,598 rows) with storeId already injected
       console.log('Running tenant seed data (6,598 rows)...');
-      await pgClient.query(seedSQL);
+      await pgClient.query(processedSeedSQL);
       result.dataSeeded.push('Seeded 6,598 rows from 15 tables');
-
-      // Update store_id for all tables to new store's ID
-      console.log('🔄 Updating store_id for multiple tables...');
-
-      const tablesToUpdate = [
-        'translations',
-        'cms_pages',
-        'cookie_consent_settings',
-        'email_templates',
-        'payment_methods',
-        'pdf_templates',
-        'shipping_methods',
-        'attribute_sets',
-        'categories'
-      ];
-
-      for (const table of tablesToUpdate) {
-        const updateSQL = `UPDATE ${table} SET store_id = '${storeId}';`;
-        await pgClient.query(updateSQL);
-      }
-
-      console.log(`✅ store_id updated for ${tablesToUpdate.length} tables`);
-      result.dataSeeded.push(`Updated store_id for ${tablesToUpdate.length} tables`);
 
       await pgClient.end();
       console.log('✅ Migration and seed complete!');
