@@ -3,7 +3,7 @@ const router = express.Router();
 const AkeneoSyncService = require('../services/akeneo-sync-service');
 const CloudflareImageService = require('../services/cloudflare-image-service');
 const supabaseProductImages = require('../services/supabase-product-images');
-const supabaseIntegration = require('../services/supabase-integration');
+const ConnectionManager = require('../services/database/ConnectionManager');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const multer = require('multer');
 
@@ -388,17 +388,10 @@ router.post('/supabase/upload-product/:productId',
         });
       }
 
-      // Get tenant connection
-      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-
-      // Check if Supabase is connected
-      const { data: token, error: tokenError } = await tenantDb
-        .from('supabase_oauth_tokens')
-        .select('*')
-        .eq('store_id', store_id)
-        .maybeSingle();
-
-      if (tokenError || !token) {
+      // Verify store has a valid tenant connection (stored in master store_databases)
+      try {
+        await ConnectionManager.getStoreConnection(store_id);
+      } catch (connError) {
         return res.status(400).json({
           success: false,
           message: 'Supabase not connected for this store'
@@ -448,16 +441,10 @@ router.post('/supabase/upload-product/:productId/single',
         });
       }
 
-      // Get tenant connection
-      const tenantDb = await ConnectionManager.getStoreConnection(store_id);
-
-      const { data: token, error: tokenError } = await tenantDb
-        .from('supabase_oauth_tokens')
-        .select('*')
-        .eq('store_id', store_id)
-        .maybeSingle();
-
-      if (tokenError || !token) {
+      // Verify store has a valid tenant connection (stored in master store_databases)
+      try {
+        await ConnectionManager.getStoreConnection(store_id);
+      } catch (connError) {
         return res.status(400).json({
           success: false,
           message: 'Supabase not connected for this store'

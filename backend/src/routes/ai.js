@@ -18,11 +18,12 @@ const AIModel = require('../models/AIModel');
 
 /**
  * GET /api/ai/models
- * Get available AI models from database
+ * Get available AI models from database (only provider defaults for dropdown)
+ * Filters: is_provider_default = true, is_active = true, is_visible = true
  */
 router.get('/models', async (req, res) => {
   try {
-    const models = await AIModel.getActiveModels();
+    const models = await AIModel.getProviderDefaults();
     res.json({
       success: true,
       models: models,

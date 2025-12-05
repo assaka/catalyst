@@ -37,13 +37,7 @@ import aiWorkspaceSlotProcessor from '@/services/aiWorkspaceSlotProcessor';
 import apiClient from '@/api/client';
 import { User as UserEntity } from '@/api/entities';
 
-// Fallback AI Models - only provider defaults (used while loading from API)
-const FALLBACK_AI_MODELS = [
-  { id: 'claude-haiku', name: 'Claude Haiku', provider: 'anthropic', credits: 2, icon: '⚡', serviceKey: 'ai_chat_claude_haiku', isProviderDefault: true },
-  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', credits: 3, icon: '🚀', serviceKey: 'ai_chat_gpt4o_mini', isProviderDefault: true },
-  { id: 'gemini-flash', name: 'Gemini Flash', provider: 'gemini', credits: 1.5, icon: '💨', serviceKey: 'ai_chat_gemini_flash', isProviderDefault: true },
-  { id: 'groq-llama', name: 'Groq Llama', provider: 'groq', credits: 1, icon: '🦙', serviceKey: 'ai_chat_groq_llama', isProviderDefault: true },
-];
+// No fallback - models loaded entirely from database via API
 
 const PROVIDER_NAMES = {
   anthropic: 'Claude',
@@ -54,6 +48,7 @@ const PROVIDER_NAMES = {
 
 // Get saved model preference
 const getSavedModel = (models) => {
+  if (!models || models.length === 0) return null;
   try {
     const saved = localStorage.getItem('ai_default_model');
     // Only use saved model if it exists in the available models list
@@ -63,7 +58,7 @@ const getSavedModel = (models) => {
   } catch (e) {}
   // Return the provider default model, or first model in list
   const defaultModel = models.find(m => m.isProviderDefault);
-  return defaultModel?.id || models[0]?.id || 'claude-haiku';
+  return defaultModel?.id || models[0]?.id;
 };
 
 /**
@@ -94,8 +89,9 @@ const WorkspaceAIPanel = () => {
   const { getSelectedStoreId } = useStoreSelection();
   const [inputValue, setInputValue] = useState('');
   const [commandStatus, setCommandStatus] = useState(null); // 'success', 'error', null
-  const [aiModels, setAiModels] = useState(FALLBACK_AI_MODELS);
-  const [selectedModel, setSelectedModel] = useState(() => getSavedModel(FALLBACK_AI_MODELS));
+  const [aiModels, setAiModels] = useState([]);
+  const [selectedModel, setSelectedModel] = useState(null);
+  const [modelsLoading, setModelsLoading] = useState(true);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
 
   // Fetch AI models from API on mount (only provider defaults for dropdown)
@@ -104,8 +100,7 @@ const WorkspaceAIPanel = () => {
       try {
         const response = await apiClient.get('/ai/models');
         if (response.data?.models && response.data.models.length > 0) {
-          // Only show provider default models in dropdown (one per provider)
-          const allModels = response.data.models.map(m => ({
+          const models = response.data.models.map(m => ({
             id: m.model_id,
             name: m.name,
             provider: m.provider,
@@ -114,17 +109,15 @@ const WorkspaceAIPanel = () => {
             serviceKey: m.service_key,
             isProviderDefault: m.is_provider_default
           }));
-          const providerDefaults = allModels.filter(m => m.isProviderDefault);
-          setAiModels(providerDefaults.length > 0 ? providerDefaults : allModels);
-          // Update selected model if current selection is not in the filtered list
-          const currentValid = providerDefaults.find(m => m.id === selectedModel);
-          if (!currentValid) {
-            const newDefault = getSavedModel(providerDefaults.length > 0 ? providerDefaults : allModels);
-            setSelectedModel(newDefault);
-          }
+          setAiModels(models);
+          // Set selected model from saved preference or first available
+          const defaultModel = getSavedModel(models);
+          setSelectedModel(defaultModel);
         }
       } catch (error) {
-        console.warn('Failed to fetch AI models, using fallback:', error.message);
+        console.error('Failed to fetch AI models:', error.message);
+      } finally {
+        setModelsLoading(false);
       }
     };
     fetchModels();
@@ -146,7 +139,7 @@ const WorkspaceAIPanel = () => {
   const [toolResults, setToolResults] = useState([]); // Array of tool execution results
 
   // Get current model object
-  const currentModel = aiModels.find(m => m.id === selectedModel) || aiModels[0];
+  const currentModel = aiModels.find(m => m.id === selectedModel) || aiModels[0] || null;
 
   // Plugin-related state
   const [starterTemplates, setStarterTemplates] = useState([]);

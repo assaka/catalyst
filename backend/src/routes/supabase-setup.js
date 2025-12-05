@@ -281,9 +281,9 @@ router.post('/disconnect', authMiddleware, async (req, res) => {
       });
     }
 
-    // Remove stored credentials
+    // Remove stored credentials from store_databases
     await masterDbClient
-      .from('supabase_oauth_tokens')
+      .from('store_databases')
       .delete()
       .eq('store_id', store_id);
 

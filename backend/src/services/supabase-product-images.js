@@ -12,18 +12,8 @@ class SupabaseProductImageService {
    */
   async uploadProductImages(storeId, productId, files, options = {}) {
     try {
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-      // Check if Supabase is connected
-      const { data: tokens, error: tokenError } = await tenantDb
-        .from('supabase_oauth_tokens')
-        .select('*')
-        .eq('store_id', storeId)
-        .limit(1);
-
-      if (tokenError || !tokens || tokens.length === 0) {
-        throw new Error('Supabase not connected for this store');
-      }
+      // Verify store has valid tenant connection (connection info in master store_databases)
+      await ConnectionManager.getStoreConnection(storeId);
 
       const folder = options.folder || `${this.defaultFolder}/${productId}`;
       
@@ -56,17 +46,8 @@ class SupabaseProductImageService {
    */
   async uploadProductImage(storeId, productId, file, options = {}) {
     try {
-      const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-      const { data: tokens, error: tokenError } = await tenantDb
-        .from('supabase_oauth_tokens')
-        .select('*')
-        .eq('store_id', storeId)
-        .limit(1);
-
-      if (tokenError || !tokens || tokens.length === 0) {
-        throw new Error('Supabase not connected for this store');
-      }
+      // Verify store has valid tenant connection (connection info in master store_databases)
+      await ConnectionManager.getStoreConnection(storeId);
 
       const folder = options.folder || `${this.defaultFolder}/${productId}`;
       const imageType = options.type || 'gallery'; // 'base', 'thumbnail', 'gallery'
@@ -268,17 +249,8 @@ class SupabaseProductImageService {
    */
   async migrateProductImagesToSupabase(storeId, productId) {
     try {
+      // Get tenant connection (connection info stored in master store_databases)
       const tenantDb = await ConnectionManager.getStoreConnection(storeId);
-
-      const { data: tokens, error: tokenError } = await tenantDb
-        .from('supabase_oauth_tokens')
-        .select('*')
-        .eq('store_id', storeId)
-        .limit(1);
-
-      if (tokenError || !tokens || tokens.length === 0) {
-        throw new Error('Supabase not connected for this store');
-      }
 
       const { data: products, error: fetchError } = await tenantDb
         .from('products')
