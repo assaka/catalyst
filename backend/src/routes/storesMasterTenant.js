@@ -1007,9 +1007,39 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
       console.warn('[Dropdown] Could not check store_databases:', err.message);
     }
 
-    // Simple mapping - no tenant DB queries, just master DB data
+    // For stores with DB config, do a quick health check (SELECT * FROM stores LIMIT 1)
+    const healthMap = {};
+    const storesWithConfig = stores.filter(s => dbConfigMap[s.id] && s.is_active && s.status === 'active');
+
+    if (storesWithConfig.length > 0) {
+      await Promise.all(storesWithConfig.map(async (store) => {
+        try {
+          const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+          const { data, error } = await tenantDb
+            .from('stores')
+            .select('id')
+            .limit(1);
+
+          // If query succeeds (even with empty result), DB is healthy
+          healthMap[store.id] = !error;
+        } catch (err) {
+          // Connection failed = unhealthy
+          healthMap[store.id] = false;
+        }
+      }));
+    }
+
+    // Simple mapping with health check results
     const enrichedStores = (stores || []).map((store) => {
       const hasDbConfig = dbConfigMap[store.id] || false;
+
+      // Determine health: false if no config, use healthMap if we checked, null otherwise
+      let databaseHealthy = null;
+      if (!hasDbConfig) {
+        databaseHealthy = false;  // No config = unhealthy
+      } else if (store.id in healthMap) {
+        databaseHealthy = healthMap[store.id];  // Use actual health check result
+      }
 
       return {
         id: store.id,
@@ -1030,8 +1060,8 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
         // Membership info
         membership_type: store.membership_type || 'owner',
         team_role: store.team_role || null,
-        // Database health - true if credentials exist, actual health checked on demand
-        database_healthy: hasDbConfig ? null : false  // null = unknown (check on demand), false = no config
+        // Database health - true/false from actual check, null if not checked
+        database_healthy: databaseHealthy
       };
     });
 

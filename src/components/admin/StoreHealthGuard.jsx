@@ -54,18 +54,6 @@ export default function StoreHealthGuard({ children, pageName }) {
     return children;
   }
 
-  // Wait for store selection to load
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">Loading store...</p>
-        </div>
-      </div>
-    );
-  }
-
   // No store selected - let the normal flow handle redirect
   if (!selectedStore) {
     return children;
