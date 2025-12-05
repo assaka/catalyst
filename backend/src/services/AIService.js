@@ -5,30 +5,18 @@ const aiContextService = require('./aiContextService'); // RAG system
 const aiProvider = require('./ai-provider-service'); // Unified AI provider
 const ServiceCreditCost = require('../models/ServiceCreditCost');
 const AIModel = require('../models/AIModel');
+const aiModelsService = require('./AIModelsService'); // Centralized model config
 
 /**
  * Centralized AI Service
  * Handles AI model interactions, credit management, and usage tracking
  * Integrates with RAG (Retrieval-Augmented Generation) for better context
  * Now uses unified AIProviderService for all provider management
+ *
+ * Model configurations are fetched from ai_models database table via AIModelsService
  */
 class AIService {
   constructor() {
-    this.defaultModel = 'claude-3-5-haiku-latest';
-
-    // Model ID to actual API model mapping
-    this.modelMapping = {
-      'claude-haiku': { provider: 'anthropic', model: 'claude-3-5-haiku-latest' },
-      'claude-sonnet': { provider: 'anthropic', model: 'claude-3-5-sonnet-latest' },
-      'claude-opus': { provider: 'anthropic', model: 'claude-3-opus-latest' },
-      'gpt-4o-mini': { provider: 'openai', model: 'gpt-4o-mini' },
-      'gpt-4o': { provider: 'openai', model: 'gpt-4o' },
-      'gemini-flash': { provider: 'gemini', model: 'gemini-2.0-flash' },
-      'gemini-pro': { provider: 'gemini', model: 'gemini-1.5-pro-latest' },
-      'groq-llama': { provider: 'groq', model: 'llama-3.3-70b-versatile' },
-      'groq-mixtral': { provider: 'groq', model: 'mixtral-8x7b-32768' }
-    };
-
     // Map operation types to service keys in service_credit_costs table
     this.serviceKeyMap = {
       'plugin-generation': 'custom_plugin_creation',
@@ -39,38 +27,36 @@ class AIService {
       'general': 'ai_chat'
     };
 
-    // Model-specific service keys (for chat with specific models)
-    this.modelServiceKeys = {
-      'claude-haiku': 'ai_chat_claude_haiku',
-      'claude-sonnet': 'ai_chat_claude_sonnet',
-      'claude-opus': 'ai_chat_claude_opus',
-      'gpt-4o-mini': 'ai_chat_gpt4o_mini',
-      'gpt-4o': 'ai_chat_gpt4o',
-      'gemini-flash': 'ai_chat_gemini_flash',
-      'gemini-pro': 'ai_chat_gemini_pro',
-      'groq-llama': 'ai_chat_groq_llama',
-      'groq-mixtral': 'ai_chat_groq_mixtral'
-    };
-
-    // Fallback costs if service not found in database (in credits)
-    this.fallbackCosts = {
+    // Fallback costs for operation types (not model-specific)
+    this.operationFallbackCosts = {
       'plugin-generation': 50,
       'plugin-modification': 30,
       'translation': 20,
       'layout-generation': 40,
       'code-patch': 25,
-      'general': 10,
-      // Model-specific fallbacks
-      'claude-haiku': 2,
-      'claude-sonnet': 8,
-      'claude-opus': 25,
-      'gpt-4o-mini': 3,
-      'gpt-4o': 15,
-      'gemini-flash': 1.5,
-      'gemini-pro': 10,
-      'groq-llama': 1,
-      'groq-mixtral': 0.5
+      'general': 10
     };
+
+    // Initialize models service on first use
+    this._initialized = false;
+  }
+
+  /**
+   * Ensure AIModelsService is initialized
+   */
+  async _ensureInitialized() {
+    if (!this._initialized) {
+      await aiModelsService.initialize();
+      this._initialized = true;
+    }
+  }
+
+  /**
+   * Get default model from database
+   */
+  async getDefaultModel() {
+    await this._ensureInitialized();
+    return await aiModelsService.getDefaultModel('anthropic');
   }
 
   /**

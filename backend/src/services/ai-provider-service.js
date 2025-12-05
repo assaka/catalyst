@@ -714,7 +714,7 @@ Return ONLY the translated text, no explanations or notes.`;
    */
   async *streamWithThinking(messages, options = {}) {
     const {
-      model = 'claude-3-5-sonnet-latest',
+      model = 'claude-3-5-sonnet-20241022',
       temperature = 0.7,
       maxTokens = 4096,
       systemPrompt = null,

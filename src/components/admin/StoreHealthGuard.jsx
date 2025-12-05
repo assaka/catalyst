@@ -31,8 +31,31 @@ export default function StoreHealthGuard({ children, pageName }) {
   const [error, setError] = useState(null);
   const [requiresReconnection, setRequiresReconnection] = useState(false);
 
-  // Skip health check for auth and onboarding pages
-  const skipPages = ['Auth', 'StoreOnboarding'];
+  // Skip health check ONLY for pages that don't require a healthy database
+  // Auth - login page (no store context yet)
+  // StoreOnboarding - initial store setup
+  // Public storefront pages - customers shouldn't be blocked by admin DB issues
+  const skipPages = [
+    'Auth',
+    'StoreOnboarding',
+    // Public/Storefront pages - don't block customers
+    'Storefront',
+    'Category',
+    'ProductDetail',
+    'Cart',
+    'Checkout',
+    'OrderSuccess',
+    'OrderCancel',
+    'CustomerAuth',
+    'CustomerDashboard',
+    'ResetPassword',
+    'EmailVerification',
+    'CmsPageViewer',
+    'SitemapPublic',
+    'RobotsPublic',
+    'Landing',
+    'NotFound'
+  ];
   if (skipPages.includes(pageName)) {
     return children;
   }

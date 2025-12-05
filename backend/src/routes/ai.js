@@ -2731,7 +2731,7 @@ Be concise but helpful.`;
 
     // Stream with tools
     const stream = aiProvider.streamWithThinking(messages, {
-      model: 'claude-3-5-sonnet-latest',
+      model: 'claude-3-5-sonnet-20241022',
       maxTokens: 4096,
       systemPrompt: fullSystemPrompt,
       tools
