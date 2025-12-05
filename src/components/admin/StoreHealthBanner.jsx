@@ -73,6 +73,21 @@ export default function StoreHealthBanner({ fullPage = false }) {
   // Check database_healthy flag directly from store (faster than waiting for health check)
   const isDatabaseUnhealthy = selectedStore?.database_healthy === false;
 
+  // DEBUG - remove after testing
+  console.log('🔍 StoreHealthBanner DEBUG:', {
+    selectedStore: selectedStore ? {
+      id: selectedStore.id,
+      name: selectedStore.name,
+      is_active: selectedStore.is_active,
+      status: selectedStore.status,
+      database_healthy: selectedStore.database_healthy
+    } : null,
+    isDatabaseUnhealthy,
+    fullPage,
+    storeHealth,
+    healthLoading
+  });
+
   // Don't show anything if store is healthy (both flag and health check)
   if (!isDatabaseUnhealthy && !healthLoading && storeHealth?.status === 'healthy') {
     return null;
