@@ -447,12 +447,11 @@ RULES:
 6. Understand natural language - "articles in snowboard" = products in category snowboard
 7. "which products sold out" = out_of_stock filter
 8. "what's running low" = low_stock filter
-9. USE CONVERSATION CONTEXT: When user answers a clarifying question, combine their answer with previous context to execute immediately. Example:
-   - You ask: "Which element's color to change?"
-   - User says: "product title"
-   - You have all info from history (element=product_title, property=color, value=light green) → EXECUTE the tool, don't ask again!
-10. NEVER ask the same question twice. If user answered "product title", you already know what they want from previous messages.
-11. When user provides partial info, CHECK HISTORY for the rest before asking.
+9. USE CONVERSATION CONTEXT: When user answers a clarifying question, combine their answer with previous context to execute immediately.
+10. NEVER ask the same question twice.
+11. COMPOUND COMMANDS: For multiple actions in one message, return an ARRAY of tool calls:
+   "move sku below title and make it green" → [{"tool": "move_element", "element": "product_sku", "position": "below", "target": "product_title"}, {"tool": "update_styling", "element": "product_sku", "property": "color", "value": "green"}]
+   "make title red and bold" → [{"tool": "update_styling", "element": "product_title", "property": "color", "value": "red"}, {"tool": "update_styling", "element": "product_title", "property": "fontWeight", "value": "bold"}]
 
 Examples:
 "create category hamid" → {"tool": "create_category", "name": "hamid"}
@@ -600,19 +599,38 @@ Return ONLY valid JSON.`;
     let executionResult = null;
     let responseMessage = response.content;
 
+    let toolCalls = [];
     try {
-      // Try to parse JSON from response
-      const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+      // Try to parse JSON from response - could be single object or array
+      const jsonMatch = response.content.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
       if (jsonMatch) {
-        toolCall = JSON.parse(jsonMatch[0]);
-        console.log('🔧 Tool call detected:', toolCall.tool);
+        const parsed = JSON.parse(jsonMatch[0]);
+        // Handle both array and single object
+        toolCalls = Array.isArray(parsed) ? parsed : [parsed];
+        console.log('🔧 Tool calls detected:', toolCalls.length, toolCalls.map(t => t.tool));
       }
     } catch (e) {
       console.log('📝 No JSON tool call, treating as chat response');
     }
 
-    // Execute the tool if we have one
-    if (toolCall && toolCall.tool && toolCall.tool !== 'chat') {
+    // Filter to actual tools (not chat)
+    const executableTools = toolCalls.filter(t => t && t.tool && t.tool !== 'chat');
+    toolCall = executableTools[0]; // Keep first for backwards compatibility
+
+    // Execute ALL tools if we have multiple
+    let allResults = [];
+    if (executableTools.length > 0) {
+      for (const tc of executableTools) {
+        tc.originalMessage = message;
+        console.log('🔧 Executing tool:', tc.tool);
+        const result = await executeToolAction(tc, storeId, userId, message);
+        allResults.push({ tool: tc.tool, result });
+      }
+      executionResult = allResults[allResults.length - 1]?.result; // Use last result for response
+    }
+
+    // Execute the tool if we have one (single tool path)
+    if (toolCall && toolCall.tool && toolCall.tool !== 'chat' && allResults.length === 0) {
       // Add original message for learning
       toolCall.originalMessage = message;
 
@@ -630,6 +648,27 @@ Return ONLY valid JSON.`;
     // ═══════════════════════════════════════════════════════════════════
     // STEP 9: Return response with any pending action for confirmation
     // ═══════════════════════════════════════════════════════════════════
+    // Handle multiple tool results
+    if (allResults.length > 1) {
+      // Combine messages from all tools
+      const combinedMessages = allResults.map(r => r.result?.message || `${r.tool} executed`).join(' ');
+      const hasStyling = allResults.some(r => ['styling_applied', 'layout_modified'].includes(r.result?.data?.type));
+
+      console.log('📤 Multiple tools executed:', allResults.length, allResults.map(r => r.tool));
+
+      return res.json({
+        success: true,
+        message: combinedMessages,
+        data: {
+          type: hasStyling ? 'styling_applied' : 'multi_tool',
+          tools: allResults.map(r => r.tool),
+          results: allResults.map(r => r.result?.data),
+          refreshPreview: hasStyling
+        },
+        creditsDeducted: response.creditsDeducted
+      });
+    }
+
     // Bubble up styling_applied/layout types for frontend refresh detection
     const resultType = executionResult?.data?.type;
     const stylingTypes = ['styling_applied', 'styling_preview', 'layout_modified'];
