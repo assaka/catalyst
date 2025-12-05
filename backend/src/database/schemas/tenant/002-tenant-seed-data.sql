@@ -27,9 +27,11 @@
 -- SEED DATA
 -- ============================================
 
--- admin_navigation_registry (83 rows)
+-- admin_navigation_registry (84 rows)
 INSERT INTO admin_navigation_registry (id, key, label, icon, route, parent_key, order_position, is_core, is_visible, plugin_id, category, required_permission, description, badge_config, created_at, updated_at, type)
 VALUES
+  -- Parent category for advanced items (must be inserted first for FK)
+  ('a1b2c3d4-e5f6-7890-abcd-000000000001', 'advanced', 'Advanced', 'Settings', NULL, NULL, 700, true, false, NULL, NULL, NULL, 'Advanced settings and tools', NULL, NOW(), NOW(), 'standard'),
   ('c7a5b648-8c9f-4d74-a347-b21d89cc25a6', 'test-dummy-page', 'Test Page', 'TestTube', '/admin/dummy-test', NULL, 999, false, true, NULL, NULL, NULL, 'Test page for navigation system debugging', NULL, '2025-10-21T15:09:17.618Z', '2025-10-21T15:09:17.618Z', 'standard'),
   ('0e599da5-acb3-42b9-95f3-40bec8114ecf', 'categories', 'Categories', 'Tag', '/admin/categories', 'catalog', 40, true, true, NULL, 'catalog', NULL, NULL, NULL, '2025-10-18T17:28:07.294Z', '2025-11-04T16:06:58.262Z', 'standard'),
   ('5bfea719-f62a-40e4-ba87-9259fb295e99', 'sales-settings', 'Settings', 'SettingsIcon', '/admin/sales-settings', 'sales', 120, true, true, NULL, 'main', NULL, NULL, NULL, '2025-11-04T14:32:28.871Z', '2025-11-04T16:06:58.459Z', 'standard'),
