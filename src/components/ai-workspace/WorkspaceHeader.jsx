@@ -2,6 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useAIWorkspace } from '@/contexts/AIWorkspaceContext';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +42,8 @@ import {
   Clock,
   AlertCircle,
   Check,
-  RotateCcw
+  RotateCcw,
+  Sparkles
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -79,6 +94,9 @@ const WorkspaceHeader = () => {
   const [draftConfig, setDraftConfig] = useState(null);
   const [publishPopoverOpen, setPublishPopoverOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [showCreatePluginDialog, setShowCreatePluginDialog] = useState(false);
+  const [newPluginData, setNewPluginData] = useState({ name: '', description: '', category: 'integration' });
+  const [creatingPlugin, setCreatingPlugin] = useState(false);
 
   const storeId = getSelectedStoreId();
 
@@ -209,6 +227,47 @@ const WorkspaceHeader = () => {
   // Handle selecting a plugin from Plugins dropdown
   const handleSelectPlugin = (plugin) => {
     openPluginEditor(plugin);
+  };
+
+  // Handle creating a new plugin with AI (same as Plugins page)
+  const handleCreateWithAI = async () => {
+    if (!newPluginData.name.trim()) {
+      toast.error('Please enter a plugin name');
+      return;
+    }
+
+    // Generate slug from name
+    const slug = newPluginData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+    // Close dialog
+    setShowCreatePluginDialog(false);
+
+    // Exit editor mode if active
+    if (editorMode) toggleEditorMode();
+
+    // Open plugin editor with the new plugin data
+    openPluginEditor({
+      name: newPluginData.name,
+      slug: slug,
+      description: newPluginData.description || `A custom ${newPluginData.category} plugin`,
+      category: newPluginData.category,
+      version: '1.0.0',
+      author: user?.name || 'Store Owner',
+      isNew: true,
+      manifest: {
+        name: newPluginData.name,
+        slug: slug,
+        version: '1.0.0',
+        description: newPluginData.description || `A custom ${newPluginData.category} plugin`,
+        author: user?.name || 'Store Owner',
+        category: newPluginData.category,
+        hooks: {},
+        configSchema: { properties: {} }
+      }
+    });
+
+    // Reset form
+    setNewPluginData({ name: '', description: '', category: 'integration' });
   };
 
   return (
@@ -406,10 +465,7 @@ const WorkspaceHeader = () => {
                 ))
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => {
-                // Create new plugin via AI
-                if (editorMode) toggleEditorMode();
-              }}>
+              <DropdownMenuItem onClick={() => setShowCreatePluginDialog(true)}>
                 <Plus className="h-4 w-4 mr-2 text-green-600" />
                 <span>Create New Plugin</span>
               </DropdownMenuItem>
@@ -448,6 +504,101 @@ const WorkspaceHeader = () => {
           </PopoverContent>
         </Popover>
       </div>
+
+      {/* Create Plugin with AI Dialog */}
+      <Dialog open={showCreatePluginDialog} onOpenChange={setShowCreatePluginDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-600" />
+              Create Plugin with AI
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Give your plugin a name and description. AI will help you build it in the next step.
+            </p>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Plugin Name *
+              </label>
+              <Input
+                placeholder="e.g., Store Announcement"
+                value={newPluginData.name}
+                onChange={(e) => setNewPluginData({ ...newPluginData, name: e.target.value })}
+                disabled={creatingPlugin}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Description
+              </label>
+              <textarea
+                className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-md p-2 text-sm min-h-[80px]"
+                placeholder="Describe what your plugin will do..."
+                value={newPluginData.description}
+                onChange={(e) => setNewPluginData({ ...newPluginData, description: e.target.value })}
+                disabled={creatingPlugin}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Category
+              </label>
+              <Select
+                value={newPluginData.category}
+                onValueChange={(value) => setNewPluginData({ ...newPluginData, category: value })}
+                disabled={creatingPlugin}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="display">Display</SelectItem>
+                  <SelectItem value="analytics">Analytics</SelectItem>
+                  <SelectItem value="payment">Payment</SelectItem>
+                  <SelectItem value="shipping">Shipping</SelectItem>
+                  <SelectItem value="marketing">Marketing</SelectItem>
+                  <SelectItem value="integration">Integration</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCreatePluginDialog(false);
+                  setNewPluginData({ name: '', description: '', category: 'integration' });
+                }}
+                disabled={creatingPlugin}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreateWithAI}
+                disabled={creatingPlugin || !newPluginData.name.trim()}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                {creatingPlugin ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Create & Open Editor
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 };
