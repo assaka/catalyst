@@ -2350,13 +2350,6 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           configuration.slots[targetSlot].position = { col: 1, row: 0 };
         }
 
-        // Get current position values (col, row form a 12-column grid coordinate system)
-        // col = x position (1-12), row = y position (vertical order)
-        const targetPos = configuration.slots[targetSlot].position || { col: 1, row: 0 };
-        const sourcePos = configuration.slots[sourceSlot].position || { col: 1, row: 0 };
-        const targetParentId = configuration.slots[targetSlot].parentId;
-        const sourceParentId = configuration.slots[sourceSlot].parentId;
-
         // Build hierarchy info from configuration
         // Also include well-known container hierarchies for common page types
         const knownHierarchies = {
@@ -2373,15 +2366,34 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
             // stock_status is in info_container
             stock_status: { parentId: 'info_container', position: { col: 1, row: 3 } },
             // product_sku is in info_container
-            product_sku: { parentId: 'info_container', position: { col: 1, row: 4 } }
+            product_sku: { parentId: 'info_container', position: { col: 1, row: 4 } },
+            // short description is in info_container
+            product_short_description: { parentId: 'info_container', position: { col: 1, row: 5 } }
           }
         };
 
         // Merge known hierarchies with configuration for full slot info
+        // IMPORTANT: Do this BEFORE reading parentId values
         const pageHierarchy = knownHierarchies[page] || {};
         const fullSlots = { ...pageHierarchy };
         Object.keys(configuration.slots).forEach(key => {
           fullSlots[key] = { ...pageHierarchy[key], ...configuration.slots[key] };
+        });
+
+        // Get position and parent info from merged fullSlots (includes knownHierarchies)
+        // This ensures we have correct parentId even for slots not yet customized
+        const targetPos = fullSlots[targetSlot]?.position || configuration.slots[targetSlot]?.position || { col: 1, row: 0 };
+        const sourcePos = fullSlots[sourceSlot]?.position || configuration.slots[sourceSlot]?.position || { col: 1, row: 0 };
+        const targetParentId = fullSlots[targetSlot]?.parentId || configuration.slots[targetSlot]?.parentId;
+        const sourceParentId = fullSlots[sourceSlot]?.parentId || configuration.slots[sourceSlot]?.parentId;
+
+        console.log('🔄 Move hierarchy check:', {
+          sourceSlot,
+          targetSlot,
+          sourceParentId,
+          targetParentId,
+          sourcePos,
+          targetPos
         });
 
         // Find the effective parent and position for the source element
