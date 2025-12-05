@@ -14,6 +14,30 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 // Mount training routes
 router.use('/training', aiTrainingRoutes);
 
+const AIModel = require('../models/AIModel');
+
+/**
+ * GET /api/ai/models
+ * Get available AI models from database
+ */
+router.get('/models', async (req, res) => {
+  try {
+    const models = await AIModel.getActiveModels();
+    res.json({
+      success: true,
+      models: models,
+      count: models.length
+    });
+  } catch (error) {
+    console.error('Failed to fetch AI models:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch AI models',
+      message: error.message
+    });
+  }
+});
+
 /**
  * POST /api/ai/smart-chat
  * Ultimate AI chat combining: RAG + Learned Examples + Real-time Data + Natural Reasoning

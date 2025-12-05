@@ -92,8 +92,39 @@ const WorkspaceAIPanel = () => {
   const { getSelectedStoreId } = useStoreSelection();
   const [inputValue, setInputValue] = useState('');
   const [commandStatus, setCommandStatus] = useState(null); // 'success', 'error', null
-  const [selectedModel, setSelectedModel] = useState(getSavedModel);
+  const [aiModels, setAiModels] = useState(FALLBACK_AI_MODELS);
+  const [selectedModel, setSelectedModel] = useState(() => getSavedModel(FALLBACK_AI_MODELS));
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+
+  // Fetch AI models from API on mount
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const response = await apiClient.get('/ai/models');
+        if (response.data?.models && response.data.models.length > 0) {
+          const models = response.data.models.map(m => ({
+            id: m.model_id,
+            name: m.name,
+            provider: m.provider,
+            credits: parseFloat(m.credits_per_use),
+            icon: m.icon || '🤖',
+            serviceKey: m.service_key,
+            isProviderDefault: m.is_provider_default
+          }));
+          setAiModels(models);
+          // Update selected model if current selection is not valid
+          const currentValid = models.find(m => m.id === selectedModel);
+          if (!currentValid) {
+            const newDefault = getSavedModel(models);
+            setSelectedModel(newDefault);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to fetch AI models, using fallback:', error.message);
+      }
+    };
+    fetchModels();
+  }, []);
   const scrollAreaRef = useRef(null);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -111,7 +142,7 @@ const WorkspaceAIPanel = () => {
   const [toolResults, setToolResults] = useState([]); // Array of tool execution results
 
   // Get current model object
-  const currentModel = AI_MODELS.find(m => m.id === selectedModel) || AI_MODELS[0];
+  const currentModel = aiModels.find(m => m.id === selectedModel) || aiModels[0];
 
   // Plugin-related state
   const [starterTemplates, setStarterTemplates] = useState([]);
@@ -1372,7 +1403,7 @@ const WorkspaceAIPanel = () => {
                       <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 px-2">Select AI Provider</p>
                     </div>
                     <div className="py-1">
-                      {AI_MODELS.map((model) => (
+                      {aiModels.map((model) => (
                         <button
                           key={model.id}
                           onClick={() => {
