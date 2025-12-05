@@ -436,9 +436,14 @@ Examples:
   {"tool": "update_setting", "setting": "hide_quantity_selector", "value": true}
 
 TOOL: move_element - Move/reposition elements on storefront pages
+Position is relative to TARGET: "above target" puts element BEFORE target, "below target" puts element AFTER target.
+For compound positions like "above X and below Y" (between two elements), use the LOWER element as target with "above":
+  "move title above sku and below price" → target=sku, position=above (places title between price and sku)
+  "move title below price and above sku" → target=sku, position=above (same result)
 Examples:
   {"tool": "move_element", "element": "sku", "position": "above", "target": "price"}
   {"tool": "move_element", "element": "stock_label", "position": "below", "target": "add_to_cart_button"}
+  {"tool": "move_element", "element": "title", "position": "above", "target": "sku"} // places title between price and sku
 
 ═══ OTHER TOOLS ═══
 TOOL: create_and_add - Create category and add product (after confirmation)
