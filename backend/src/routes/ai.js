@@ -2184,13 +2184,18 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       case 'move_element': {
         const { element, position, target, page = 'product' } = toolCall;
 
+        console.log('🔄 move_element called:', { element, position, target, page });
+
+        // Use same element map as update_styling (matching product-config.js)
         const elementMap = {
-          'product_title': 'product_title', 'title': 'product_title',
-          'price': 'price_container', 'sku': 'sku_display',
-          'description': 'product_description',
-          'add_to_cart_button': 'add_to_cart_button', 'add_to_cart': 'add_to_cart_button',
+          'product_title': 'product_title', 'product title': 'product_title', 'title': 'product_title',
+          'price': 'product_price', 'product_price': 'product_price', 'the price': 'product_price',
+          'sku': 'product_sku', 'product_sku': 'product_sku',
+          'description': 'product_short_description', 'product_short_description': 'product_short_description',
+          'add_to_cart_button': 'add_to_cart_button', 'add_to_cart': 'add_to_cart_button', 'button': 'add_to_cart_button',
           'quantity_selector': 'quantity_selector', 'quantity': 'quantity_selector',
-          'stock_label': 'stock_label', 'stock': 'stock_label'
+          'stock_status': 'stock_status', 'stock': 'stock_status', 'stock_label': 'stock_status',
+          'breadcrumbs': 'breadcrumbs', 'breadcrumb': 'breadcrumbs'
         };
 
         const sourceSlot = elementMap[element?.toLowerCase()] || element;
