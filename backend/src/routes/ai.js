@@ -721,6 +721,71 @@ Return ONLY valid JSON.`;
 });
 
 /**
+ * Smart element matching - resolves user-friendly names to slot IDs
+ * Uses fuzzy matching and reasoning instead of hardcoded maps
+ */
+function resolveSlotId(userInput, pageType = 'product') {
+  if (!userInput) return null;
+
+  // All valid slot IDs from product-config.js
+  const validSlots = {
+    product: [
+      'product_title', 'product_price', 'product_sku', 'product_short_description',
+      'add_to_cart_button', 'quantity_selector', 'stock_status', 'breadcrumbs',
+      'wishlist_button', 'product_image', 'product_gallery', 'product_tabs',
+      'related_products_title', 'related_products'
+    ],
+    category: ['category_title', 'category_description', 'product_grid', 'layered_navigation'],
+    cart: ['cart_items', 'cart_summary', 'checkout_button'],
+    header: ['logo', 'navigation', 'search', 'cart_icon', 'account']
+  };
+
+  const slots = validSlots[pageType] || validSlots.product;
+  const input = userInput.toLowerCase().trim()
+    .replace(/^(the|a|an)\s+/i, '') // Remove articles
+    .replace(/\s+/g, '_'); // Replace spaces with underscores
+
+  // 1. Exact match
+  if (slots.includes(input)) return input;
+
+  // 2. Check if input is already a valid slot ID with prefix
+  const withPrefix = input.startsWith('product_') ? input : `product_${input}`;
+  if (slots.includes(withPrefix)) return withPrefix;
+
+  // 3. Semantic mappings (common variations)
+  const semanticMap = {
+    'title': 'product_title', 'name': 'product_title', 'heading': 'product_title',
+    'price': 'product_price', 'cost': 'product_price', 'amount': 'product_price',
+    'sku': 'product_sku', 'code': 'product_sku', 'article_number': 'product_sku',
+    'description': 'product_short_description', 'desc': 'product_short_description', 'text': 'product_short_description',
+    'button': 'add_to_cart_button', 'cart_button': 'add_to_cart_button', 'buy_button': 'add_to_cart_button',
+    'add_to_cart': 'add_to_cart_button', 'cart': 'add_to_cart_button',
+    'quantity': 'quantity_selector', 'qty': 'quantity_selector',
+    'stock': 'stock_status', 'availability': 'stock_status', 'in_stock': 'stock_status',
+    'breadcrumb': 'breadcrumbs', 'crumbs': 'breadcrumbs', 'path': 'breadcrumbs',
+    'wishlist': 'wishlist_button', 'favorite': 'wishlist_button', 'heart': 'wishlist_button',
+    'image': 'product_image', 'photo': 'product_image', 'picture': 'product_image',
+    'gallery': 'product_gallery', 'images': 'product_gallery',
+    'related': 'related_products', 'similar': 'related_products', 'recommendations': 'related_products'
+  };
+
+  if (semanticMap[input]) return semanticMap[input];
+
+  // 4. Partial match - find slot that contains input or input contains slot
+  for (const slot of slots) {
+    const slotBase = slot.replace('product_', '').replace('_', '');
+    const inputBase = input.replace('product_', '').replace('_', '');
+    if (slotBase.includes(inputBase) || inputBase.includes(slotBase)) {
+      return slot;
+    }
+  }
+
+  // 5. Fallback - return input as-is (might be a valid custom slot)
+  console.log('⚠️ Could not resolve slot ID for:', userInput, '- using as-is');
+  return input;
+}
+
+/**
  * Execute a tool action from AI response
  * This is the core executor that handles all database operations
  * Uses Supabase client syntax (.from().select().eq())
@@ -1874,37 +1939,9 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           return { success: false, message: 'Please specify which element to style (e.g., product title, price, button).' };
         }
 
-        // Map friendly element names to slot IDs (matching product-config.js slot IDs)
-        const elementMap = {
-          'product_title': 'product_title',
-          'product title': 'product_title',
-          'title': 'product_title',
-          'price': 'product_price',
-          'product_price': 'product_price',
-          'price_container': 'price_container',
-          'sku': 'product_sku',
-          'product_sku': 'product_sku',
-          'description': 'product_short_description',
-          'short_description': 'product_short_description',
-          'product_short_description': 'product_short_description',
-          'add_to_cart_button': 'add_to_cart_button',
-          'add_to_cart': 'add_to_cart_button',
-          'button': 'add_to_cart_button',
-          'cart button': 'add_to_cart_button',
-          'quantity_selector': 'quantity_selector',
-          'quantity': 'quantity_selector',
-          'stock_status': 'stock_status',
-          'stock': 'stock_status',
-          'stock label': 'stock_status',
-          'breadcrumbs': 'breadcrumbs',
-          'breadcrumb': 'breadcrumbs',
-          'related_products_title': 'related_products_title',
-          'related products': 'related_products_title',
-          'wishlist_button': 'wishlist_button',
-          'wishlist': 'wishlist_button'
-        };
-
-        const slotId = elementMap[element?.toLowerCase()] || element;
+        // Use smart element matching
+        const slotId = resolveSlotId(element, page);
+        console.log('🎨 Resolved element:', element, '→', slotId);
 
         // Map property names to CSS camelCase (matching EditorSidebar)
         const propertyMap = {
@@ -2198,20 +2235,10 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
 
         console.log('🔄 move_element called:', { element, position, target, page });
 
-        // Use same element map as update_styling (matching product-config.js)
-        const elementMap = {
-          'product_title': 'product_title', 'product title': 'product_title', 'title': 'product_title',
-          'price': 'product_price', 'product_price': 'product_price', 'the price': 'product_price',
-          'sku': 'product_sku', 'product_sku': 'product_sku',
-          'description': 'product_short_description', 'product_short_description': 'product_short_description',
-          'add_to_cart_button': 'add_to_cart_button', 'add_to_cart': 'add_to_cart_button', 'button': 'add_to_cart_button',
-          'quantity_selector': 'quantity_selector', 'quantity': 'quantity_selector',
-          'stock_status': 'stock_status', 'stock': 'stock_status', 'stock_label': 'stock_status',
-          'breadcrumbs': 'breadcrumbs', 'breadcrumb': 'breadcrumbs'
-        };
-
-        const sourceSlot = elementMap[element?.toLowerCase()] || element;
-        const targetSlot = elementMap[target?.toLowerCase()] || target;
+        // Use smart element matching
+        const sourceSlot = resolveSlotId(element, page);
+        const targetSlot = resolveSlotId(target, page);
+        console.log('🔄 Resolved slots:', element, '→', sourceSlot, '| target:', target, '→', targetSlot);
         const normalizedPosition = ['above', 'before'].includes(position?.toLowerCase()) ? 'before' : 'after';
 
         // Look for draft first, then published
