@@ -96,8 +96,8 @@ export const StoreSelectionProvider = ({ children }) => {
         if (savedStore) {
           // Found the saved store - but check if it's actually active
           if (savedStore.is_active && savedStore.status !== 'pending_database') {
-            // Store is valid - only update if the ID changed to avoid unnecessary re-renders
-            setSelectedStore(prev => prev?.id === savedStore.id ? prev : savedStore);
+            // Always update to fresh API data (includes database_healthy flag)
+            setSelectedStore(savedStore);
             localStorage.setItem('selectedStoreId', savedStore.id);
             localStorage.setItem('selectedStoreName', savedStore.name);
             localStorage.setItem('selectedStoreSlug', savedStore.slug || savedStore.code);
@@ -110,7 +110,7 @@ export const StoreSelectionProvider = ({ children }) => {
             const firstActiveStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
 
             if (firstActiveStore) {
-              setSelectedStore(prev => prev?.id === firstActiveStore.id ? prev : firstActiveStore);
+              setSelectedStore(firstActiveStore);
               localStorage.setItem('selectedStoreId', firstActiveStore.id);
               localStorage.setItem('selectedStoreName', firstActiveStore.name);
               localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);
@@ -132,7 +132,7 @@ export const StoreSelectionProvider = ({ children }) => {
           const firstActiveStore = stores.find(s => s.is_active && s.status !== 'pending_database') || stores.find(s => s.is_active) || stores[0];
 
           if (firstActiveStore) {
-            setSelectedStore(prev => prev?.id === firstActiveStore.id ? prev : firstActiveStore);
+            setSelectedStore(firstActiveStore);
             localStorage.setItem('selectedStoreId', firstActiveStore.id);
             localStorage.setItem('selectedStoreName', firstActiveStore.name);
             localStorage.setItem('selectedStoreSlug', firstActiveStore.slug || firstActiveStore.code);
