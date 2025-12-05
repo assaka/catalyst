@@ -606,8 +606,13 @@ const WorkspaceAIPanel = () => {
     setIsProcessingAi(true);
 
     try {
-      // Get auth token
-      const token = localStorage.getItem('token');
+      // Get auth token (same logic as apiClient)
+      const token = localStorage.getItem('store_owner_auth_token') ||
+                    localStorage.getItem('customer_auth_token');
+
+      if (!token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
 
       // Build history from recent messages
       const history = chatMessages.slice(-10).map(m => ({
