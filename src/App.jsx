@@ -16,6 +16,7 @@ import * as Pages from '@/pages'
 // Import plugin components
 import DynamicPluginAdminPage from '@/components/plugins/DynamicPluginAdminPage'
 import { AdminLayoutWrapper } from '@/components/admin/AdminLayoutWrapper'
+import StoreHealthGuard from '@/components/admin/StoreHealthGuard'
 
 // Import new hook-based systems
 import { useEffect, useState } from 'react'
@@ -30,9 +31,11 @@ window.__pluginsReady = false;
 function PageWrapper({ Component, pageName }) {
   return (
     <AdminLayoutWrapper>
-      <Layout currentPageName={pageName}>
-        <Component />
-      </Layout>
+      <StoreHealthGuard pageName={pageName}>
+        <Layout currentPageName={pageName}>
+          <Component />
+        </Layout>
+      </StoreHealthGuard>
     </AdminLayoutWrapper>
   );
 }
