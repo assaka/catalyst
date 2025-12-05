@@ -47,6 +47,8 @@ class SupabaseAdapter extends DatabaseAdapter {
         .select('id')
         .limit(1);
 
+      console.log('Supabase testConnection result:', { data, error: error ? { code: error.code, message: error.message, details: error.details, hint: error.hint } : null });
+
       // No error = connection works
       if (!error) {
         return true;
@@ -54,19 +56,26 @@ class SupabaseAdapter extends DatabaseAdapter {
 
       // Check if error is just "table doesn't exist" (PostgreSQL error 42P01)
       // This means connection works but table is missing - that's OK for reprovisioning
+      // Also check for PGRST116 (PostgREST error when table not found) and other variants
+      const errorStr = JSON.stringify(error).toLowerCase();
       if (error.code === '42P01' ||
-          error.message?.includes('relation') ||
-          error.message?.includes('does not exist') ||
-          error.code === 'PGRST116') {
+          error.code === 'PGRST116' ||
+          error.code === '42501' ||
+          error.message?.toLowerCase().includes('relation') ||
+          error.message?.toLowerCase().includes('does not exist') ||
+          error.message?.toLowerCase().includes('not found') ||
+          error.details?.toLowerCase().includes('not found') ||
+          errorStr.includes('not found') ||
+          errorStr.includes('does not exist')) {
         console.log('Supabase connection OK (table missing, will be created during provisioning)');
         return true;
       }
 
       // Any other error = actual connection problem
-      console.error('Supabase connection test failed:', error);
+      console.error('Supabase connection test failed:', JSON.stringify(error, null, 2));
       return false;
     } catch (error) {
-      console.error('Supabase connection test exception:', error);
+      console.error('Supabase connection test exception:', error.message);
       return false;
     }
   }
