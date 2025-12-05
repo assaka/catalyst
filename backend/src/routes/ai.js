@@ -2325,33 +2325,37 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           configuration.slots[targetSlot].position = { col: 1, row: 0 };
         }
 
-        // Get current row values (used by sortSlotsByGridCoordinates)
-        const targetRow = configuration.slots[targetSlot].position?.row ?? 0;
-        const sourceRow = configuration.slots[sourceSlot].position?.row ?? 0;
+        // Get current position values (col, row form a 12-column grid coordinate system)
+        // col = x position (1-12), row = y position (vertical order)
+        const targetPos = configuration.slots[targetSlot].position || { col: 1, row: 0 };
+        const sourcePos = configuration.slots[sourceSlot].position || { col: 1, row: 0 };
 
-        // Calculate new row for source slot
-        // 'before' = lower row number (appears first), 'after' = higher row number
-        let newSourceRow;
+        // Calculate new position for source slot
+        // 'before/above' = same column, lower row (appears first)
+        // 'after/below' = same column, higher row (appears after)
+        let newCol = targetPos.col ?? 1;
+        let newRow;
         if (normalizedPosition === 'before') {
-          // Place source just before target (e.g., row 0.5 if target is row 1)
-          newSourceRow = targetRow - 0.5;
+          // Place source just before target in the same column
+          newRow = (targetPos.row ?? 0) - 0.5;
         } else {
-          // Place source just after target (e.g., row 1.5 if target is row 1)
-          newSourceRow = targetRow + 0.5;
+          // Place source just after target in the same column
+          newRow = (targetPos.row ?? 0) + 0.5;
         }
 
         // Update source slot's position for grid sorting
+        // sortSlotsByGridCoordinates sorts by row first, then col
         configuration.slots[sourceSlot].position = {
-          ...configuration.slots[sourceSlot].position,
-          row: newSourceRow,
+          col: newCol,
+          row: newRow,
           relativeTo: targetSlot,
           placement: normalizedPosition
         };
 
         // Also set CSS order as backup for flex containers
-        configuration.slots[sourceSlot].styles.order = String(Math.round(newSourceRow * 10));
+        configuration.slots[sourceSlot].styles.order = String(Math.round(newRow * 10));
 
-        console.log('🔄 Move element:', sourceSlot, 'from row', sourceRow, 'to row', newSourceRow, `(${normalizedPosition}`, targetSlot, 'at row', targetRow, ')');
+        console.log('🔄 Move element:', sourceSlot, 'from', sourcePos, 'to { col:', newCol, ', row:', newRow, '}', `(${normalizedPosition}`, targetSlot, 'at', targetPos, ')');
 
         await db
           .from('slot_configurations')
