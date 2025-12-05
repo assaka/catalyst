@@ -215,13 +215,41 @@ export default function ProductDetail() {
 
           const publishedConfig = response.data;
 
-          // Merge published config with default config to ensure new slots are available
-          // This ensures that when we add new slots to product-config.js, they appear even if
-          // there's an existing published configuration
-          const mergedSlots = {
-            ...productConfig.slots, // Start with default slots
-            ...publishedConfig.configuration.slots // Override with published customizations
-          };
+          // Deep merge published config with default config
+          // This preserves default slot properties (type, content, className, etc.)
+          // while only overriding specific properties from the database (position, styles, parentId)
+          const mergedSlots = {};
+
+          // Start with all default slots
+          Object.keys(productConfig.slots).forEach(slotId => {
+            mergedSlots[slotId] = { ...productConfig.slots[slotId] };
+          });
+
+          // Deep merge published customizations
+          if (publishedConfig.configuration?.slots) {
+            Object.keys(publishedConfig.configuration.slots).forEach(slotId => {
+              const publishedSlot = publishedConfig.configuration.slots[slotId];
+              if (mergedSlots[slotId]) {
+                // Deep merge: preserve defaults, override with published
+                mergedSlots[slotId] = {
+                  ...mergedSlots[slotId],
+                  ...publishedSlot,
+                  // Deep merge nested objects
+                  styles: {
+                    ...(mergedSlots[slotId].styles || {}),
+                    ...(publishedSlot.styles || {})
+                  },
+                  position: {
+                    ...(mergedSlots[slotId].position || {}),
+                    ...(publishedSlot.position || {})
+                  }
+                };
+              } else {
+                // New slot from published config (not in defaults)
+                mergedSlots[slotId] = publishedSlot;
+              }
+            });
+          }
 
           const mergedConfig = {
             ...publishedConfig.configuration,
