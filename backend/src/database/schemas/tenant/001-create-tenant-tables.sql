@@ -3179,6 +3179,9 @@ CREATE TABLE IF NOT EXISTS wishlists (
 -- SECTION 4: CREATE INDEXES
 -- ============================================
 
+-- Languages unique constraint (required for FK references)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_languages_code ON languages(code);
+
 CREATE INDEX IF NOT EXISTS idx_integration_attr_lookup ON integration_attribute_mappings(store_id, integration_source, external_attribute_code, is_active);
 
 CREATE INDEX IF NOT EXISTS idx_integration_attr_internal ON integration_attribute_mappings(internal_attribute_id);
