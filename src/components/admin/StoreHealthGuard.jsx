@@ -119,7 +119,8 @@ export default function StoreHealthGuard({ children, pageName }) {
           </div>
 
           <p className="text-gray-600 mb-6">
-            The database for this store is empty or not properly configured. You need to reprovision it to continue.
+            The database for this store is empty or not properly configured.
+            If reprovisioning fails with a connection error, you may need to reconfigure the database credentials.
           </p>
 
           {error && (
@@ -146,6 +147,18 @@ export default function StoreHealthGuard({ children, pageName }) {
                 </>
               )}
             </Button>
+
+            {error && error.includes('connection') && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => window.location.href = '/admin/database-integrations'}
+                disabled={isReprovisioning || isDeleting}
+              >
+                <Database className="w-4 h-4 mr-2" />
+                Configure Database
+              </Button>
+            )}
 
             <Button
               variant="outline"
