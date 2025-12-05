@@ -4496,5 +4496,27 @@ ALTER TABLE wishlists ADD CONSTRAINT wishlists_user_id_fkey FOREIGN KEY (user_id
 --
 -- ALTER TABLE storage.s3_multipart_uploads_parts ADD CONSTRAINT s3_multipart_uploads_parts_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES storage.s3_multipart_uploads(id) ON DELETE CASCADE;
 
+-- ============================================
+-- SECTION 7: PERMISSIONS
+-- Grant full access to postgres role and disable RLS
+-- ============================================
+
+-- Disable RLS on all tables (tenant isolation handled at application level)
+ALTER TABLE IF EXISTS stores DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS categories DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS products DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS orders DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS attribute_sets DISABLE ROW LEVEL SECURITY;
+
+-- Grant all privileges to postgres role on all tables in public schema
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO postgres;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO postgres;
+GRANT USAGE ON SCHEMA public TO postgres;
+
+-- Grant to service_role as well (used by Supabase backend)
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO service_role;
+GRANT USAGE ON SCHEMA public TO service_role;
 
 
