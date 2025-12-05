@@ -808,7 +808,6 @@ router.post('/:id/connect-database', authMiddleware, async (req, res) => {
           status: 'active',
           is_active: true
         },
-        hostname,
         provisioning: provisioningResult
       }
     });

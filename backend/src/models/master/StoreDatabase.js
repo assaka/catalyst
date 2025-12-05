@@ -271,10 +271,10 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
       }
     }
 
-    // Create record via Supabase client
+    // Upsert record via Supabase client (handles reconnection case)
     const { data, error } = await masterDbClient
       .from('store_databases')
-      .insert({
+      .upsert({
         id: uuidv4(),
         store_id: storeId,
         database_type: databaseType,
@@ -286,6 +286,9 @@ StoreDatabase.createWithCredentials = async function(storeId, databaseType, cred
         connection_status: 'pending',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'store_id',
+        ignoreDuplicates: false
       })
       .select()
       .single();
