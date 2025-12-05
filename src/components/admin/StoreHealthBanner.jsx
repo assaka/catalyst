@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-export default function StoreHealthBanner() {
+export default function StoreHealthBanner({ fullPage = false }) {
   const {
     storeHealth,
     healthLoading,
@@ -28,13 +28,33 @@ export default function StoreHealthBanner() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Don't show anything if still loading or store is healthy
-  if (healthLoading || !storeHealth || storeHealth.status === 'healthy') {
+  // Don't show anything if store is healthy
+  if (!healthLoading && storeHealth?.status === 'healthy') {
     return null;
   }
 
-  // Don't show for stores that aren't active
-  if (!selectedStore?.is_active || selectedStore?.status !== 'active') {
+  // Don't show for stores that aren't active (but still show if health is loading)
+  if (!healthLoading && (!selectedStore?.is_active || selectedStore?.status !== 'active')) {
+    return null;
+  }
+
+  // Show loading state while checking health
+  if (healthLoading) {
+    if (fullPage) {
+      return (
+        <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">Checking store database...</p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  }
+
+  // If no health data yet, don't show
+  if (!storeHealth) {
     return null;
   }
 
@@ -100,6 +120,110 @@ export default function StoreHealthBanner() {
         return storeHealth.message || 'There is an issue with the store database.';
     }
   };
+
+  // Full page mode - blocks all other content
+  if (fullPage && (storeHealth.status === 'empty' || storeHealth.status === 'partial' || storeHealth.status === 'connection_failed')) {
+    return (
+      <>
+        <div className="fixed inset-0 bg-gray-50 z-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Database Issue</h2>
+                <p className="text-sm text-gray-500">{selectedStore?.name || 'Your store'}</p>
+              </div>
+            </div>
+
+            <p className="text-gray-600 mb-6">
+              {getStatusMessage()}
+            </p>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {(storeHealth.actions?.includes('provision_database') || storeHealth.status === 'empty' || storeHealth.status === 'partial') && (
+                <Button
+                  className="w-full bg-amber-600 hover:bg-amber-700"
+                  onClick={handleReprovision}
+                  disabled={isReprovisioning || isDeleting}
+                >
+                  {isReprovisioning ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Provisioning Database...
+                    </>
+                  ) : (
+                    <>
+                      <Database className="w-4 h-4 mr-2" />
+                      Reprovision Database
+                    </>
+                  )}
+                </Button>
+              )}
+
+              <Button
+                variant="outline"
+                className="w-full border-red-300 text-red-600 hover:bg-red-50"
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={isReprovisioning || isDeleting}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Store from Platform
+              </Button>
+
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={() => window.location.href = '/admin/stores'}
+                disabled={isReprovisioning || isDeleting}
+              >
+                Switch to Another Store
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Store Permanently?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently remove "{selectedStore?.name}" from the platform.
+                This action cannot be undone.
+                <br /><br />
+                <strong>Note:</strong> This only removes the store from the platform.
+                The Supabase database will remain unchanged.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Permanently'
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    );
+  }
 
   return (
     <>
