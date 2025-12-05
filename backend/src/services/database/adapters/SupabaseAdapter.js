@@ -36,18 +36,37 @@ class SupabaseAdapter extends DatabaseAdapter {
 
   /**
    * Test database connection
+   * Uses a method that works even if tables don't exist
    */
   async testConnection() {
     try {
-      // Simple query to test connection
-      const { error } = await this.client
+      // Try to query any table - if it fails with "relation does not exist",
+      // that's fine - the connection works, just no tables yet
+      const { data, error } = await this.client
         .from('stores')
         .select('id')
         .limit(1);
 
-      return !error;
-    } catch (error) {
+      // No error = connection works
+      if (!error) {
+        return true;
+      }
+
+      // Check if error is just "table doesn't exist" (PostgreSQL error 42P01)
+      // This means connection works but table is missing - that's OK for reprovisioning
+      if (error.code === '42P01' ||
+          error.message?.includes('relation') ||
+          error.message?.includes('does not exist') ||
+          error.code === 'PGRST116') {
+        console.log('Supabase connection OK (table missing, will be created during provisioning)');
+        return true;
+      }
+
+      // Any other error = actual connection problem
       console.error('Supabase connection test failed:', error);
+      return false;
+    } catch (error) {
+      console.error('Supabase connection test exception:', error);
       return false;
     }
   }
