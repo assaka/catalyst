@@ -1067,6 +1067,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
         let adminNavigation = null;
 
         // Only query tenant if store is active
+        let tenantHealthy = true;
         if (store.is_active && store.status === 'active') {
           try {
             const tenantDb = await ConnectionManager.getStoreConnection(store.id);
@@ -1078,23 +1079,33 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
               .eq('id', store.id)
               .maybeSingle();
 
-            if (tenantStore) {
+            if (tenantError) {
+              console.warn(`[Dropdown] Tenant query error for store ${store.id}:`, tenantError.message);
+              tenantHealthy = false;
+            } else if (tenantStore) {
               storeName = tenantStore.name || storeName;
               storeSettings = tenantStore.settings;
+            } else {
+              // No store record in tenant DB - database might be empty
+              console.warn(`[Dropdown] No store record in tenant DB for ${store.id}`);
+              tenantHealthy = false;
             }
 
-            // Fetch admin navigation registry
-            const { data: navRegistry, error: navError } = await tenantDb
-              .from('admin_navigation_registry')
-              .select('*')
-              .eq('store_id', store.id)
-              .order('sort_order', { ascending: true });
+            // Only fetch navigation if tenant is healthy
+            if (tenantHealthy) {
+              const { data: navRegistry, error: navError } = await tenantDb
+                .from('admin_navigation_registry')
+                .select('*')
+                .eq('store_id', store.id)
+                .order('sort_order', { ascending: true });
 
-            if (!navError && navRegistry) {
-              adminNavigation = navRegistry;
+              if (!navError && navRegistry) {
+                adminNavigation = navRegistry;
+              }
             }
           } catch (err) {
             console.warn(`[Dropdown] Could not fetch tenant data for store ${store.id}:`, err.message);
+            tenantHealthy = false;
             // Use slug as fallback
           }
         }
@@ -1119,7 +1130,9 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
           active_domain_count: domainMap[store.id]?.active_domain_count || 0,
           // Membership info
           membership_type: store.membership_type || 'owner',  // 'owner' or 'team_member'
-          team_role: store.team_role || null  // 'admin', 'editor', 'viewer' for team members
+          team_role: store.team_role || null,  // 'admin', 'editor', 'viewer' for team members
+          // Database health flag - false if tenant DB queries failed
+          database_healthy: tenantHealthy
         };
       })
     );

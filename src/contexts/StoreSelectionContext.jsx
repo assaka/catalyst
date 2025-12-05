@@ -204,12 +204,25 @@ export const StoreSelectionProvider = ({ children }) => {
   // Check health when selected store changes
   useEffect(() => {
     if (selectedStore?.id && selectedStore.is_active && selectedStore.status === 'active') {
-      checkStoreHealth(selectedStore.id);
+      // If dropdown already told us database is unhealthy, set that immediately
+      if (selectedStore.database_healthy === false) {
+        console.log('🔴 Store database_healthy=false from dropdown, setting health to empty');
+        setStoreHealth({
+          status: 'empty',
+          message: 'Store database needs provisioning',
+          actions: ['provision_database', 'remove_store'],
+          storeId: selectedStore.id
+        });
+        healthCheckedRef.current = selectedStore.id;
+      } else {
+        // Otherwise do a full health check
+        checkStoreHealth(selectedStore.id);
+      }
     } else {
       setStoreHealth(null);
       healthCheckedRef.current = null;
     }
-  }, [selectedStore?.id]);
+  }, [selectedStore?.id, selectedStore?.database_healthy]);
 
   // Reprovision store database
   const reprovisionStore = async (storeName, storeSlug) => {
