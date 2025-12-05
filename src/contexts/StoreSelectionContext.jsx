@@ -35,7 +35,7 @@ export const StoreSelectionProvider = ({ children }) => {
   const isAdminPage = () => {
     const path = location.pathname;
     const isAuth = path === '/admin/auth' || path === '/auth';
-    const isOnboarding = path === '/admin/onboarding';
+    const isOnboarding = path === '/admin/onboarding' || path.startsWith('/admin/onboarding');
 
     if (isAuth || isOnboarding) {
       return false; // Don't load stores on auth/onboarding
@@ -76,11 +76,7 @@ export const StoreSelectionProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      // Add timeout to prevent hanging on slow/unresponsive API
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Store loading timeout')), 15000)
-      );
-      const stores = await Promise.race([Store.findAll(), timeoutPromise]);
+      const stores = await Store.findAll();
 
       // Always keep existing selection if we have one and no stores were loaded
       if (stores.length === 0 && selectedStore) {
@@ -148,27 +144,9 @@ export const StoreSelectionProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('❌ StoreSelection: Error loading stores:', error);
-      // On error/timeout, try to use stored selection but mark as potentially unhealthy
-      const savedStoreId = localStorage.getItem('selectedStoreId');
-      const savedStoreName = localStorage.getItem('selectedStoreName');
-      const savedStoreSlug = localStorage.getItem('selectedStoreSlug');
-
-      if (savedStoreId) {
-        // Create minimal store object with unhealthy flag
-        const fallbackStore = {
-          id: savedStoreId,
-          name: savedStoreName || 'Unknown Store',
-          slug: savedStoreSlug || 'unknown',
-          is_active: true,
-          status: 'active',
-          database_healthy: false // Mark as unhealthy since we couldn't verify
-        };
-        setSelectedStore(fallbackStore);
-        setAvailableStores([fallbackStore]);
-      } else if (selectedStore) {
-        // Keep existing store but mark as potentially unhealthy
-        setSelectedStore({ ...selectedStore, database_healthy: false });
-        setAvailableStores([{ ...selectedStore, database_healthy: false }]);
+      // Keep existing selection if we have one
+      if (selectedStore) {
+        setAvailableStores([selectedStore]);
       } else {
         setAvailableStores([]);
       }
