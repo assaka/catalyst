@@ -2357,23 +2357,78 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
         const targetParentId = configuration.slots[targetSlot].parentId;
         const sourceParentId = configuration.slots[sourceSlot].parentId;
 
+        // Build hierarchy info from configuration
+        // Also include well-known container hierarchies for common page types
+        const knownHierarchies = {
+          product: {
+            // price_container is inside info_container at row 3
+            price_container: { parentId: 'info_container', position: { col: 1, row: 3 } },
+            // product_title is inside info_container at row 1
+            product_title: { parentId: 'info_container', position: { col: 1, row: 1 } },
+            // info_container is inside content_area
+            info_container: { parentId: 'content_area', position: { col: 7, row: 1 } },
+            // product_price and original_price are inside price_container
+            product_price: { parentId: 'price_container', position: { col: 1, row: 1 } },
+            original_price: { parentId: 'price_container', position: { col: 2, row: 1 } },
+            // stock_status is in info_container
+            stock_status: { parentId: 'info_container', position: { col: 1, row: 3 } },
+            // product_sku is in info_container
+            product_sku: { parentId: 'info_container', position: { col: 1, row: 4 } }
+          }
+        };
+
+        // Merge known hierarchies with configuration for full slot info
+        const pageHierarchy = knownHierarchies[page] || {};
+        const fullSlots = { ...pageHierarchy };
+        Object.keys(configuration.slots).forEach(key => {
+          fullSlots[key] = { ...pageHierarchy[key], ...configuration.slots[key] };
+        });
+
+        // Find the effective parent and position for the source element
+        // If target is in a nested container (like price_container which is inside info_container),
+        // and source is already in the parent container (info_container),
+        // we should position source relative to the nested container, not inside it.
+        let effectiveParentId = sourceParentId;
+        let effectiveTargetRow;
+        let newCol = targetPos.col ?? 1;
+
+        // Check if target's parent container exists and has its own parent
+        const targetParentSlot = fullSlots[targetParentId];
+        const targetParentParentId = targetParentSlot?.parentId;
+
+        if (targetParentId && targetParentSlot &&
+            sourceParentId === targetParentParentId) {
+          // Source and target's container share the same parent
+          // Position source relative to target's container, not inside it
+          const containerPos = targetParentSlot.position || { col: 1, row: 0 };
+          effectiveTargetRow = containerPos.row ?? 0;
+          // Keep source in its current parent (the shared grandparent)
+          effectiveParentId = sourceParentId;
+          newCol = containerPos.col ?? 1;
+          console.log('🔄 Target is nested in container:', targetParentId, 'at row', effectiveTargetRow, '- positioning relative to container');
+        } else if (sourceParentId === targetParentId) {
+          // Both are in the same container - simple case
+          effectiveTargetRow = targetPos.row ?? 0;
+          effectiveParentId = targetParentId;
+        } else {
+          // Different containers - move source to target's container
+          effectiveTargetRow = targetPos.row ?? 0;
+          effectiveParentId = targetParentId;
+        }
+
         // Calculate new position for source slot
         // 'before/above' = same column, lower row (appears first)
         // 'after/below' = same column, higher row (appears after)
-        let newCol = targetPos.col ?? 1;
         let newRow;
         if (normalizedPosition === 'before') {
-          // Place source just before target in the same column
-          newRow = (targetPos.row ?? 0) - 0.5;
+          newRow = effectiveTargetRow - 0.5;
         } else {
-          // Place source just after target in the same column
-          newRow = (targetPos.row ?? 0) + 0.5;
+          newRow = effectiveTargetRow + 0.5;
         }
 
-        // CRITICAL: Move source to same container as target
-        // Slots are rendered per-container, so they must share the same parentId
-        if (targetParentId !== undefined) {
-          configuration.slots[sourceSlot].parentId = targetParentId;
+        // Update parentId only if we're actually moving to a different container
+        if (effectiveParentId !== undefined && effectiveParentId !== sourceParentId) {
+          configuration.slots[sourceSlot].parentId = effectiveParentId;
         }
 
         // Update source slot's position for grid sorting
@@ -2383,7 +2438,7 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           row: newRow
         };
 
-        console.log('🔄 Move element:', sourceSlot, 'from', sourcePos, '(parent:', sourceParentId, ') to { col:', newCol, ', row:', newRow, ', parentId:', targetParentId, '}', `(${normalizedPosition}`, targetSlot, 'at', targetPos, ')');
+        console.log('🔄 Move element:', sourceSlot, 'from', sourcePos, '(parent:', sourceParentId, ') to { col:', newCol, ', row:', newRow, ', parentId:', effectiveParentId, '}', `(${normalizedPosition}`, targetSlot, 'at', targetPos, ')');
 
         await db
           .from('slot_configurations')

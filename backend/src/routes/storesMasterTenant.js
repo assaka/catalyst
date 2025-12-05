@@ -1069,16 +1069,30 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
 
         // Only query tenant if store is active
         let tenantHealthy = true;
+        let tenantDb = null;
         if (store.is_active && store.status === 'active') {
           try {
-            const tenantDb = await ConnectionManager.getStoreConnection(store.id);
+            // Add timeout to prevent hanging on empty/broken databases
+            const tenantCheckPromise = (async () => {
+              const db = await ConnectionManager.getStoreConnection(store.id);
 
-            // Fetch full store data from tenant DB
-            const { data: tenantStore, error: tenantError } = await tenantDb
-              .from('stores')
-              .select('name, settings')
-              .eq('id', store.id)
-              .maybeSingle();
+              // Fetch full store data from tenant DB
+              const { data: tenantStore, error: tenantError } = await db
+                .from('stores')
+                .select('name, settings')
+                .eq('id', store.id)
+                .maybeSingle();
+
+              return { tenantStore, tenantError, db };
+            })();
+
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Tenant query timeout')), 5000)
+            );
+
+            const result = await Promise.race([tenantCheckPromise, timeoutPromise]);
+            const { tenantStore, tenantError, db } = result;
+            tenantDb = db;
 
             if (tenantError) {
               console.warn(`[Dropdown] Tenant query error for store ${store.id}:`, tenantError.message);
@@ -1093,7 +1107,7 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
             }
 
             // Only fetch navigation if tenant is healthy
-            if (tenantHealthy) {
+            if (tenantHealthy && tenantDb) {
               const { data: navRegistry, error: navError } = await tenantDb
                 .from('admin_navigation_registry')
                 .select('*')
