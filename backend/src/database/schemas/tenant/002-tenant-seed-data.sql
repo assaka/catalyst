@@ -109,46 +109,56 @@ VALUES
   ('b3f52d82-6591-4a20-9ed2-d2172c6fec54', 'background_jobs', 'Background Jobs', 'Activity', '/admin/background-jobs', 'store', 910, true, true, NULL, 'advanced', NULL, 'Monitor all background job processing and queue status', NULL, '2025-11-13T06:13:20.486Z', '2025-11-13T06:13:20.486Z', NULL)
 ON CONFLICT DO NOTHING;
 
--- attribute_sets (1 row)
+-- attribute_sets: Create 'Default' attribute set for the store
 INSERT INTO attribute_sets (id, name, description, is_default, sort_order, store_id, attribute_ids, created_at, updated_at)
 SELECT
-  '7e7f4624-b053-4cbe-8725-2ba850fe1000',
+  gen_random_uuid(),
   'Default',
-  '',
+  'Default attribute set',
   true,
   0,
   id,
   '[]'::jsonb,
   NOW(),
   NOW()
-FROM stores LIMIT 1
-ON CONFLICT DO NOTHING;
+FROM stores
+WHERE NOT EXISTS (
+  SELECT 1 FROM attribute_sets WHERE name = 'Default' AND store_id = stores.id
+)
+LIMIT 1;
 
--- categories (1 row)
--- Default root category for new stores
-INSERT INTO categories (id, store_id, slug, sort_order, is_active, hide_in_menu, parent_id, level, created_at, updated_at)
-SELECT
-  '5eecab88-324b-4a9a-b0ec-fe5553f5a66a',
-  id,
-  'root-catalog',
-  0,
-  true,
-  false,
-  NULL,
-  0,
-  NOW(),
-  NOW()
-FROM stores LIMIT 1
-ON CONFLICT DO NOTHING;
+-- categories: Create 'root-catalog' category for the store with translations
+DO $$
+DECLARE
+  v_store_id UUID;
+  v_category_id UUID;
+BEGIN
+  -- Get the store ID
+  SELECT id INTO v_store_id FROM stores LIMIT 1;
 
+  IF v_store_id IS NULL THEN
+    RAISE NOTICE 'No store found, skipping category seed';
+    RETURN;
+  END IF;
 
--- category_translations (2 rows)
--- Translations for default root category
-INSERT INTO category_translations (category_id, language_code, name, description, created_at, updated_at)
-VALUES
-  ('5eecab88-324b-4a9a-b0ec-fe5553f5a66a', 'en', 'Root Catalog', 'Default root category for product catalog', NOW(), NOW()),
-  ('5eecab88-324b-4a9a-b0ec-fe5553f5a66a', 'nl', 'Hoofdcatalogus', 'Standaard hoofdcategorie voor productcatalogus', NOW(), NOW())
-ON CONFLICT DO NOTHING;
+  -- Check if root-catalog already exists for this store
+  SELECT id INTO v_category_id FROM categories WHERE slug = 'root-catalog' AND store_id = v_store_id;
+
+  IF v_category_id IS NULL THEN
+    -- Create the category
+    v_category_id := gen_random_uuid();
+
+    INSERT INTO categories (id, store_id, slug, sort_order, is_active, hide_in_menu, parent_id, level, created_at, updated_at)
+    VALUES (v_category_id, v_store_id, 'root-catalog', 0, true, false, NULL, 0, NOW(), NOW());
+
+    -- Create translations
+    INSERT INTO category_translations (category_id, language_code, name, description, created_at, updated_at)
+    VALUES
+      (v_category_id, 'en', 'Root Catalog', 'Default root category for product catalog', NOW(), NOW()),
+      (v_category_id, 'nl', 'Hoofdcatalogus', 'Standaard hoofdcategorie voor productcatalogus', NOW(), NOW())
+    ON CONFLICT DO NOTHING;
+  END IF;
+END $$;
 
 -- cms_pages (3 rows)
 INSERT INTO cms_pages (id, slug, is_active, meta_title, meta_description, meta_keywords, meta_robots_tag, store_id, related_product_ids, published_at, sort_order, created_at, updated_at, is_system, seo)
@@ -2032,8 +2042,6 @@ VALUES
   ('75840ef0-b730-46f5-923b-0c05b3ca2900', 'common.sort_price_high', 'en', 'Price: High to Low', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('26875044-dba2-46c8-ad20-8fb451f4b432', 'common.sort_price_low', 'en', 'Price: Low to High', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('f0913507-dcda-472e-af87-65f507186272', 'messages.passwords_no_match', 'en', 'Passwords do not match.', 'validation', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
-  ('702823ad-23b8-4303-b2f8-909ae558f6ce', 'editor.empty_cart_button.1761490638565', 'en', 'Continue shopping', 'editor', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'custom', '00000000-0000-0000-0000-000000000000'),
-  ('1fa5a794-a7ec-4dc8-81c2-516fb435f41e', 'editor.empty_cart_button.1761490641549', 'en', 'Empty cart', 'editor', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'custom', '00000000-0000-0000-0000-000000000000'),
   ('6a3aa475-53f9-406d-b62e-e2d4957b0203', 'common.already_registered_login', 'en', 'Already Registered? Login!', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('18ac8fac-e44a-4242-9c85-89650a6e4b80', 'common.apply', 'en', 'Apply', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
   ('014d727a-0d71-42b0-abfc-363fe65a3b9c', 'common.apply_coupon', 'en', 'Apply Coupon', 'common', '2025-11-07T18:34:17.198Z', '2025-11-07T18:34:17.198Z', 'system', '00000000-0000-0000-0000-000000000000'),
