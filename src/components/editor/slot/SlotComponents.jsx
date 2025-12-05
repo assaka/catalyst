@@ -873,10 +873,6 @@ export function GridColumn({
                   } p-2 ${isOverResizeHandle ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`
           : 'overflow-visible'
       } relative responsive-slot ${colSpanClass} ${processedParentClassName}`}
-      style={{
-        // Apply order from slot styles for CSS grid/flex ordering
-        order: slot?.styles?.order ? parseInt(slot.styles.order) : undefined
-      }}
       ref={(el) => {
       }}
       data-col-span={colSpan}

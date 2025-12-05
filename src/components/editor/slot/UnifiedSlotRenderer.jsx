@@ -1396,9 +1396,7 @@ export function UnifiedSlotRenderer({
         className={`${colSpanClass} ${processedParentClassName}`}
         style={{
           ...(gridColumn ? { gridColumn } : {}),
-          ...slot.containerStyles,
-          // Apply order from slot styles for CSS grid/flex ordering (used by move_element)
-          order: slot.styles?.order ? parseInt(slot.styles.order) : undefined
+          ...slot.containerStyles
         }}
       >
         {slotContent}

@@ -37,10 +37,9 @@ import aiWorkspaceSlotProcessor from '@/services/aiWorkspaceSlotProcessor';
 import apiClient from '@/api/client';
 import { User as UserEntity } from '@/api/entities';
 
-// Fallback AI Models (used while loading from API)
+// Fallback AI Models - only provider defaults (used while loading from API)
 const FALLBACK_AI_MODELS = [
   { id: 'claude-haiku', name: 'Claude Haiku', provider: 'anthropic', credits: 2, icon: '⚡', serviceKey: 'ai_chat_claude_haiku', isProviderDefault: true },
-  { id: 'claude-sonnet', name: 'Claude Sonnet', provider: 'anthropic', credits: 8, icon: '🎯', serviceKey: 'ai_chat_claude_sonnet', isProviderDefault: false },
   { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', credits: 3, icon: '🚀', serviceKey: 'ai_chat_gpt4o_mini', isProviderDefault: true },
   { id: 'gemini-flash', name: 'Gemini Flash', provider: 'gemini', credits: 1.5, icon: '💨', serviceKey: 'ai_chat_gemini_flash', isProviderDefault: true },
   { id: 'groq-llama', name: 'Groq Llama', provider: 'groq', credits: 1, icon: '🦙', serviceKey: 'ai_chat_groq_llama', isProviderDefault: true },
@@ -57,11 +56,14 @@ const PROVIDER_NAMES = {
 const getSavedModel = (models) => {
   try {
     const saved = localStorage.getItem('ai_default_model');
+    // Only use saved model if it exists in the available models list
     if (saved && models.find(m => m.id === saved)) return saved;
+    // Clear invalid saved model
+    if (saved) localStorage.removeItem('ai_default_model');
   } catch (e) {}
-  // Return the default model (isProviderDefault for anthropic)
-  const defaultModel = models.find(m => m.provider === 'anthropic' && m.isProviderDefault);
-  return defaultModel?.id || 'claude-haiku';
+  // Return the provider default model, or first model in list
+  const defaultModel = models.find(m => m.isProviderDefault);
+  return defaultModel?.id || models[0]?.id || 'claude-haiku';
 };
 
 /**
@@ -96,13 +98,14 @@ const WorkspaceAIPanel = () => {
   const [selectedModel, setSelectedModel] = useState(() => getSavedModel(FALLBACK_AI_MODELS));
   const [showModelDropdown, setShowModelDropdown] = useState(false);
 
-  // Fetch AI models from API on mount
+  // Fetch AI models from API on mount (only provider defaults for dropdown)
   useEffect(() => {
     const fetchModels = async () => {
       try {
         const response = await apiClient.get('/ai/models');
         if (response.data?.models && response.data.models.length > 0) {
-          const models = response.data.models.map(m => ({
+          // Only show provider default models in dropdown (one per provider)
+          const allModels = response.data.models.map(m => ({
             id: m.model_id,
             name: m.name,
             provider: m.provider,
@@ -111,11 +114,12 @@ const WorkspaceAIPanel = () => {
             serviceKey: m.service_key,
             isProviderDefault: m.is_provider_default
           }));
-          setAiModels(models);
-          // Update selected model if current selection is not valid
-          const currentValid = models.find(m => m.id === selectedModel);
+          const providerDefaults = allModels.filter(m => m.isProviderDefault);
+          setAiModels(providerDefaults.length > 0 ? providerDefaults : allModels);
+          // Update selected model if current selection is not in the filtered list
+          const currentValid = providerDefaults.find(m => m.id === selectedModel);
           if (!currentValid) {
-            const newDefault = getSavedModel(models);
+            const newDefault = getSavedModel(providerDefaults.length > 0 ? providerDefaults : allModels);
             setSelectedModel(newDefault);
           }
         }

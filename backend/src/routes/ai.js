@@ -2380,13 +2380,8 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
         // sortSlotsByGridCoordinates sorts by row first, then col
         configuration.slots[sourceSlot].position = {
           col: newCol,
-          row: newRow,
-          relativeTo: targetSlot,
-          placement: normalizedPosition
+          row: newRow
         };
-
-        // Also set CSS order as backup for flex containers
-        configuration.slots[sourceSlot].styles.order = String(Math.round(newRow * 10));
 
         console.log('🔄 Move element:', sourceSlot, 'from', sourcePos, '(parent:', sourceParentId, ') to { col:', newCol, ', row:', newRow, ', parentId:', targetParentId, '}', `(${normalizedPosition}`, targetSlot, 'at', targetPos, ')');
 
