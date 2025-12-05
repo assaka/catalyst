@@ -1664,6 +1664,12 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
       case 'update_styling': {
         const { element, property, value, page = 'product' } = toolCall;
 
+        console.log('🎨 update_styling called:', { element, property, value, page });
+
+        if (!element) {
+          return { success: false, message: 'Please specify which element to style (e.g., product title, price, button).' };
+        }
+
         // Map friendly element names to slot IDs
         const elementMap = {
           'product_title': 'product_title',
@@ -1700,14 +1706,23 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
 
         const styleProp = propertyMap[property?.toLowerCase()] || property;
 
-        // Map color names to hex
-        const colorMap = {
-          'red': '#FF0000', 'blue': '#0000FF', 'green': '#00FF00',
-          'orange': '#FFA500', 'yellow': '#FFFF00', 'purple': '#800080',
-          'pink': '#FFC0CB', 'gray': '#808080', 'black': '#000000', 'white': '#FFFFFF'
+        // Map color names to Tailwind classes (same as old multi-intent handler)
+        const tailwindColorMap = {
+          'red': 'text-red-500', 'blue': 'text-blue-500', 'green': 'text-green-500',
+          'orange': 'text-orange-500', 'yellow': 'text-yellow-500', 'purple': 'text-purple-500',
+          'pink': 'text-pink-500', 'gray': 'text-gray-500', 'black': 'text-black', 'white': 'text-white'
         };
 
-        const styleValue = colorMap[value?.toLowerCase()] || value;
+        const tailwindBgMap = {
+          'red': 'bg-red-500', 'blue': 'bg-blue-500', 'green': 'bg-green-500',
+          'orange': 'bg-orange-500', 'yellow': 'bg-yellow-500', 'purple': 'bg-purple-500',
+          'pink': 'bg-pink-500', 'gray': 'bg-gray-500', 'black': 'bg-black', 'white': 'bg-white'
+        };
+
+        const colorLower = value?.toLowerCase();
+        const isBackgroundProp = styleProp === 'backgroundColor';
+        const tailwindClass = isBackgroundProp ? tailwindBgMap[colorLower] : tailwindColorMap[colorLower];
+        const styleValue = tailwindClass ? null : value; // Use null if applying tailwind class
 
         // Look for draft first, then published
         let { data: draftConfig } = await db
@@ -1779,14 +1794,33 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
 
         // Ensure slots structure exists
         if (!configuration.slots) configuration.slots = {};
-        if (!configuration.slots[slotId]) configuration.slots[slotId] = { styles: {} };
+        if (!configuration.slots[slotId]) configuration.slots[slotId] = { styles: {}, className: '' };
         if (!configuration.slots[slotId].styles) configuration.slots[slotId].styles = {};
 
-        // Apply the style
-        configuration.slots[slotId].styles[styleProp] = styleValue;
+        // Apply the style using same logic as old multi-intent handler
+        if (tailwindClass) {
+          // Use Tailwind class (more reliable for styling)
+          const existingClasses = (configuration.slots[slotId].className || '').split(' ');
+          const classPattern = isBackgroundProp
+            ? /^bg-(red|blue|green|orange|yellow|purple|pink|gray|black|white)(-\d+)?$/
+            : /^text-(red|blue|green|orange|yellow|purple|pink|gray|black|white)(-\d+)?$/;
+          const filteredClasses = existingClasses.filter(c => !c.match(classPattern));
+          configuration.slots[slotId].className = [...filteredClasses, tailwindClass].join(' ').trim();
+          // Remove conflicting inline style
+          if (configuration.slots[slotId].styles?.[styleProp]) {
+            delete configuration.slots[slotId].styles[styleProp];
+          }
+          console.log('🎨 Applied Tailwind class:', tailwindClass, 'to slot:', slotId);
+        } else {
+          // Use inline style for custom values
+          configuration.slots[slotId].styles[styleProp] = value;
+          console.log('🎨 Applied inline style:', styleProp, '=', value, 'to slot:', slotId);
+        }
 
         // Update the draft
-        await db
+        const appliedValue = tailwindClass || value;
+        console.log('🎨 Updating draft config:', configId, 'slot:', slotId, 'with:', styleProp, '=', appliedValue);
+        const { error: updateError } = await db
           .from('slot_configurations')
           .update({
             configuration,
@@ -1795,7 +1829,13 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
           })
           .eq('id', configId);
 
-        const friendlyElement = element.replace(/_/g, ' ');
+        if (updateError) {
+          console.error('🎨 Failed to update styling:', updateError);
+          return { success: false, message: `Failed to update styling: ${updateError.message}` };
+        }
+
+        console.log('🎨 Styling updated successfully!');
+        const friendlyElement = (element || slotId || 'element').replace(/_/g, ' ');
         return {
           success: true,
           message: `Changed ${friendlyElement} ${styleProp} to ${value}.`,
@@ -1805,7 +1845,8 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
             pageType: page,
             slotId,
             property: styleProp,
-            value: styleValue,
+            value: appliedValue,
+            tailwindClass: tailwindClass || null,
             refreshPreview: true
           }
         };
