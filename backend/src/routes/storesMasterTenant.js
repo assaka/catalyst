@@ -1059,98 +1059,52 @@ router.get('/dropdown', authMiddleware, async (req, res) => {
       console.warn('⚠️ Could not fetch domain information:', domainErr.message);
     }
 
-    // Fetch store names from tenant DB for each store
-    const enrichedStores = await Promise.all(
-      (stores || []).map(async (store) => {
-        let storeName = store.slug || 'Unnamed Store';
+    // Check which stores have database credentials configured (from master DB)
+    const storeIds = stores.map(s => s.id);
+    let dbConfigMap = {};
+    try {
+      const { data: dbConfigs } = await masterDbClient
+        .from('store_databases')
+        .select('store_id, host')
+        .in('store_id', storeIds);
 
-        let storeSettings = null;
-        let adminNavigation = null;
+      if (dbConfigs) {
+        dbConfigs.forEach(config => {
+          // Has database if host is configured and not a placeholder
+          dbConfigMap[config.store_id] = config.host && !config.host.includes('pending');
+        });
+      }
+    } catch (err) {
+      console.warn('[Dropdown] Could not check store_databases:', err.message);
+    }
 
-        // Only query tenant if store is active
-        let tenantHealthy = true;
-        let tenantDb = null;
-        if (store.is_active && store.status === 'active') {
-          try {
-            // Add timeout to prevent hanging on empty/broken databases
-            const tenantCheckPromise = (async () => {
-              const db = await ConnectionManager.getStoreConnection(store.id);
+    // Simple mapping - no tenant DB queries, just master DB data
+    const enrichedStores = (stores || []).map((store) => {
+      const hasDbConfig = dbConfigMap[store.id] || false;
 
-              // Fetch full store data from tenant DB
-              const { data: tenantStore, error: tenantError } = await db
-                .from('stores')
-                .select('name, settings')
-                .eq('id', store.id)
-                .maybeSingle();
-
-              return { tenantStore, tenantError, db };
-            })();
-
-            const timeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Tenant query timeout')), 5000)
-            );
-
-            const result = await Promise.race([tenantCheckPromise, timeoutPromise]);
-            const { tenantStore, tenantError, db } = result;
-            tenantDb = db;
-
-            if (tenantError) {
-              console.warn(`[Dropdown] Tenant query error for store ${store.id}:`, tenantError.message);
-              tenantHealthy = false;
-            } else if (tenantStore) {
-              storeName = tenantStore.name || storeName;
-              storeSettings = tenantStore.settings;
-            } else {
-              // No store record in tenant DB - database might be empty
-              console.warn(`[Dropdown] No store record in tenant DB for ${store.id}`);
-              tenantHealthy = false;
-            }
-
-            // Only fetch navigation if tenant is healthy
-            if (tenantHealthy && tenantDb) {
-              const { data: navRegistry, error: navError } = await tenantDb
-                .from('admin_navigation_registry')
-                .select('*')
-                .eq('store_id', store.id)
-                .order('sort_order', { ascending: true });
-
-              if (!navError && navRegistry) {
-                adminNavigation = navRegistry;
-              }
-            }
-          } catch (err) {
-            console.warn(`[Dropdown] Could not fetch tenant data for store ${store.id}:`, err.message);
-            tenantHealthy = false;
-            // Use slug as fallback
-          }
-        }
-
-        return {
-          id: store.id,
-          user_id: store.user_id,  // For ownership checking
-          name: storeName,
-          slug: store.slug,
-          status: store.status,
-          is_active: store.is_active,
-          published: publishedMap[store.id]?.published || false,  // Publishing status from master DB (default false if column missing)
-          published_at: publishedMap[store.id]?.published_at || null,
-          created_at: store.created_at,
-          updated_at: store.updated_at,
-          settings: storeSettings,
-          admin_navigation: adminNavigation,
-          // Domain info (from custom_domains_lookup)
-          custom_domain: domainMap[store.id]?.custom_domain || null,
-          domain_status: domainMap[store.id]?.domain_status || null,
-          has_domains_without_primary: domainMap[store.id]?.has_domains_without_primary || false,
-          active_domain_count: domainMap[store.id]?.active_domain_count || 0,
-          // Membership info
-          membership_type: store.membership_type || 'owner',  // 'owner' or 'team_member'
-          team_role: store.team_role || null,  // 'admin', 'editor', 'viewer' for team members
-          // Database health flag - false if tenant DB queries failed
-          database_healthy: tenantHealthy
-        };
-      })
-    );
+      return {
+        id: store.id,
+        user_id: store.user_id,
+        name: store.name || store.slug || 'Unnamed Store',
+        slug: store.slug,
+        status: store.status,
+        is_active: store.is_active,
+        published: publishedMap[store.id]?.published || false,
+        published_at: publishedMap[store.id]?.published_at || null,
+        created_at: store.created_at,
+        updated_at: store.updated_at,
+        // Domain info
+        custom_domain: domainMap[store.id]?.custom_domain || null,
+        domain_status: domainMap[store.id]?.domain_status || null,
+        has_domains_without_primary: domainMap[store.id]?.has_domains_without_primary || false,
+        active_domain_count: domainMap[store.id]?.active_domain_count || 0,
+        // Membership info
+        membership_type: store.membership_type || 'owner',
+        team_role: store.team_role || null,
+        // Database health - true if credentials exist, actual health checked on demand
+        database_healthy: hasDbConfig ? null : false  // null = unknown (check on demand), false = no config
+      };
+    });
 
     console.log(`[Dropdown] Returning ${enrichedStores.length} stores for user ${userId} (owned: ${(ownedStores || []).length}, team: ${teamStores.length})`);
 
