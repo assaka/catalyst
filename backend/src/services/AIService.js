@@ -61,26 +61,18 @@ class AIService {
 
   /**
    * Get model configuration from model ID
-   * First tries database, falls back to hardcoded mapping
+   * Fetches from ai_models database table via AIModelsService
    */
   async getModelConfigFromDb(modelId) {
-    try {
-      const config = await AIModel.getModelConfig(modelId);
-      if (config) {
-        return config;
-      }
-    } catch (error) {
-      console.warn(`Failed to fetch model config from DB for ${modelId}:`, error.message);
-    }
-    // Fallback to hardcoded mapping
-    return this.modelMapping[modelId] || this.modelMapping['claude-sonnet'];
+    await this._ensureInitialized();
+    return await aiModelsService.getModelConfig(modelId);
   }
 
   /**
-   * Get model configuration from model ID (sync fallback)
+   * Get model configuration from model ID (sync version using cache)
    */
   getModelConfig(modelId) {
-    return this.modelMapping[modelId] || this.modelMapping['claude-sonnet'];
+    return aiModelsService.getModelConfigSync(modelId);
   }
 
   /**
@@ -90,12 +82,14 @@ class AIService {
    * @param {string} modelId - Optional model ID for model-specific pricing
    */
   async getOperationCost(operationType, serviceKey = null, modelId = null) {
+    await this._ensureInitialized();
+
     // If explicit serviceKey is provided, use it directly
     let resolvedServiceKey = serviceKey;
 
-    // If modelId is provided and operation is 'general', use model-specific service key
-    if (!resolvedServiceKey && modelId && this.modelServiceKeys[modelId]) {
-      resolvedServiceKey = this.modelServiceKeys[modelId];
+    // If modelId is provided, get service key from database
+    if (!resolvedServiceKey && modelId) {
+      resolvedServiceKey = await aiModelsService.getServiceKey(modelId);
     }
 
     // Fall back to operation type service key
@@ -105,7 +99,8 @@ class AIService {
 
     if (!resolvedServiceKey) {
       console.warn(`⚠️ Unknown operation type: ${operationType}, using fallback cost`);
-      return this.fallbackCosts[modelId] || this.fallbackCosts[operationType] || this.fallbackCosts.general;
+      const modelCost = modelId ? await aiModelsService.getFallbackCost(modelId) : null;
+      return modelCost || this.operationFallbackCosts[operationType] || this.operationFallbackCosts.general;
     }
 
     try {
@@ -114,7 +109,8 @@ class AIService {
       return parseFloat(cost);
     } catch (error) {
       console.warn(`⚠️ Could not fetch cost for ${resolvedServiceKey}, using fallback:`, error.message);
-      return this.fallbackCosts[modelId] || this.fallbackCosts[operationType] || this.fallbackCosts.general;
+      const modelCost = modelId ? await aiModelsService.getFallbackCost(modelId) : null;
+      return modelCost || this.operationFallbackCosts[operationType] || this.operationFallbackCosts.general;
     }
   }
 
@@ -279,12 +275,17 @@ class AIService {
    * Generate AI response with credit deduction
    */
   async generate(options) {
+    await this._ensureInitialized();
+
+    // Get default model from database
+    const defaultModel = await this.getDefaultModel();
+
     const {
       userId,
       operationType,
       prompt,
       systemPrompt = '',
-      model = this.defaultModel,
+      model = defaultModel,
       modelId = null, // User-selected model ID (e.g., 'claude-sonnet')
       serviceKey = null, // Explicit service key for cost lookup
       maxTokens = 4096,
@@ -293,8 +294,8 @@ class AIService {
       images = null // Array of { base64, type } for vision support
     } = options;
 
-    // Get model configuration if modelId provided
-    const modelConfig = modelId ? this.getModelConfig(modelId) : null;
+    // Get model configuration if modelId provided (from database)
+    const modelConfig = modelId ? await aiModelsService.getModelConfig(modelId) : null;
     const provider = modelConfig?.provider || 'anthropic';
     const actualModel = modelConfig?.model || model;
 
@@ -381,19 +382,30 @@ class AIService {
    * Stream AI response with credit deduction
    */
   async *generateStream(options) {
+    await this._ensureInitialized();
+
+    // Get default model from database
+    const defaultModel = await this.getDefaultModel();
+
     const {
       userId,
       operationType,
       prompt,
       systemPrompt = '',
-      model = this.defaultModel,
+      model = defaultModel,
+      modelId = null,
       maxTokens = 4096,
       temperature = 0.7,
       metadata = {}
     } = options;
 
+    // Get model configuration if modelId provided (from database)
+    const modelConfig = modelId ? await aiModelsService.getModelConfig(modelId) : null;
+    const provider = modelConfig?.provider || 'anthropic';
+    const actualModel = modelConfig?.model || model;
+
     // Validate user has credits
-    const creditCheck = await this.checkCredits(userId, operationType);
+    const creditCheck = await this.checkCredits(userId, operationType, null, modelId);
     if (!creditCheck.hasCredits) {
       throw new Error(
         `Insufficient credits. Required: ${creditCheck.required}, Available: ${creditCheck.available}`
@@ -401,9 +413,6 @@ class AIService {
     }
 
     try {
-      // Initialize client
-      this.initClient();
-
       // Prepare messages
       const messages = [
         {
@@ -412,35 +421,31 @@ class AIService {
         }
       ];
 
-      // Stream Claude API
-      const stream = await this.client.messages.stream({
-        model: model,
-        max_tokens: maxTokens,
-        temperature: temperature,
-        system: systemPrompt || undefined,
-        messages: messages
+      // Use unified AI provider service for streaming
+      const stream = await aiProvider.streamWithThinking(messages, {
+        model: actualModel,
+        maxTokens,
+        temperature,
+        systemPrompt
       });
 
       let fullContent = '';
       let usage = {
         tokensInput: 0,
         tokensOutput: 0,
-        model: model
+        model: actualModel
       };
 
       // Yield chunks as they arrive
-      for await (const chunk of stream) {
-        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-          const text = chunk.delta.text;
-          fullContent += text;
-          yield text;
+      for await (const event of stream) {
+        if (event.type === 'text') {
+          fullContent += event.text;
+          yield event.text;
         }
 
-        if (chunk.type === 'message_stop') {
-          // Get final usage stats
-          const message = await stream.finalMessage();
-          usage.tokensInput = message.usage.input_tokens;
-          usage.tokensOutput = message.usage.output_tokens;
+        if (event.type === 'done' && event.usage) {
+          usage.tokensInput = event.usage.input_tokens;
+          usage.tokensOutput = event.usage.output_tokens;
         }
       }
 

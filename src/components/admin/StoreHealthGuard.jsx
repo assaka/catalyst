@@ -34,10 +34,13 @@ export default function StoreHealthGuard({ children, pageName }) {
   // Skip health check ONLY for pages that don't require a healthy database
   // Auth - login page (no store context yet)
   // StoreOnboarding - initial store setup
+  // database-integrations - MUST be accessible to reconnect Supabase when DB is unhealthy
   // Public storefront pages - customers shouldn't be blocked by admin DB issues
   const skipPages = [
     'Auth',
     'StoreOnboarding',
+    'database-integrations', // Allow access to fix database issues
+    'STORES', // Allow switching stores when DB is unhealthy
     // Public/Storefront pages - don't block customers
     'Storefront',
     'Category',
