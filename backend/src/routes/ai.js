@@ -402,21 +402,52 @@ Natural language variations (same as above):
 "what purchases need shipping" → {"tool": "list_orders", "filters": {"status": "processing"}}
 "transactions from today" → {"tool": "list_orders", "filters": {"sort_by": "newest"}}
 
-Layout & Styling examples:
-"set product title color to red" → {"tool": "update_styling", "element": "product_title", "property": "color", "value": "red"}
-"make the title red" → {"tool": "update_styling", "element": "product_title", "property": "color", "value": "red"}
-"change price color to blue" → {"tool": "update_styling", "element": "product_price", "property": "color", "value": "blue"}
-"make add to cart button green" → {"tool": "update_styling", "element": "add_to_cart_button", "property": "backgroundColor", "value": "green"}
-"make title bigger" → {"tool": "update_styling", "element": "product_title", "property": "fontSize", "value": "32px"}
-"make title bold" → {"tool": "update_styling", "element": "product_title", "property": "fontWeight", "value": "bold"}
+Layout & Styling - INTERPRET NATURAL LANGUAGE:
+When users describe colors/styles naturally, translate to appropriate values:
+
+COLOR INTERPRETATIONS:
+- "warm color", "sunshine", "sunny" → yellow or orange (#eab308 or #f97316)
+- "cool color", "calm", "ocean", "sky" → blue or teal (#3b82f6 or #14b8a6)
+- "earthy", "natural", "wood" → brown or amber (#92400e or #f59e0b)
+- "fresh", "nature", "forest" → green or emerald (#22c55e or #10b981)
+- "elegant", "luxury", "royal" → purple or indigo (#a855f7 or #6366f1)
+- "passionate", "urgent", "sale" → red or rose (#ef4444 or #f43f5e)
+- "soft", "gentle", "muted" → gray or slate (#6b7280 or #64748b)
+- "clean", "minimal", "modern" → white or very light gray (#ffffff or #f8fafc)
+- "bold", "strong", "dark" → black or dark gray (#000000 or #1f2937)
+
+SIZE INTERPRETATIONS:
+- "bigger", "larger" → increase by ~25% (e.g., 24px → 30px)
+- "smaller", "less prominent" → decrease by ~25%
+- "much bigger", "huge" → increase by ~50%
+- "slightly bigger", "a bit larger" → increase by ~10%
+- "tiny", "very small" → 12px
+- "normal", "regular" → 16px
+- "large", "prominent" → 24px
+- "extra large", "headline" → 32px
+
+STYLE FEEL INTERPRETATIONS:
+- "stand out", "eye-catching", "prominent" → bold weight, larger size
+- "subtle", "understated" → lighter weight, muted color
+- "professional", "corporate" → dark blue or gray, clean
+- "playful", "fun" → bright colors, rounded corners
+- "serious", "formal" → dark colors, sharp corners
+
+Examples:
+"make the title a warm sunshine color" → {"tool": "update_styling", "element": "product_title", "property": "color", "value": "#eab308"}
+"give the button a calm ocean feel" → {"tool": "update_styling", "element": "add_to_cart_button", "property": "backgroundColor", "value": "#0ea5e9"}
+"make the price stand out more" → {"tool": "update_styling", "element": "product_price", "property": "color", "value": "#ef4444"}
+"make the title more prominent" → {"tool": "update_styling", "element": "product_title", "property": "fontSize", "value": "32px"}
+"give the button rounded corners for a friendly feel" → {"tool": "update_styling", "element": "add_to_cart_button", "property": "borderRadius", "value": "12px"}
+"make the description more subtle" → {"tool": "update_styling", "element": "product_short_description", "property": "color", "value": "#6b7280"}
+"use an earthy brown for the title" → {"tool": "update_styling", "element": "product_title", "property": "color", "value": "#92400e"}
+
+Basic examples:
+"set product title color to red" → {"tool": "update_styling", "element": "product_title", "property": "color", "value": "#ef4444"}
+"make add to cart button green" → {"tool": "update_styling", "element": "add_to_cart_button", "property": "backgroundColor", "value": "#22c55e"}
 "center the title" → {"tool": "update_styling", "element": "product_title", "property": "textAlign", "value": "center"}
-"add padding to button" → {"tool": "update_styling", "element": "add_to_cart_button", "property": "padding", "value": "16px"}
-"round the button corners" → {"tool": "update_styling", "element": "add_to_cart_button", "property": "borderRadius", "value": "8px"}
 "hide stock label" → {"tool": "update_setting", "setting": "show_stock_label", "value": false}
-"show stock label" → {"tool": "update_setting", "setting": "show_stock_label", "value": true}
-"hide quantity selector" → {"tool": "update_setting", "setting": "hide_quantity_selector", "value": true}
 "move sku above price" → {"tool": "move_element", "element": "product_sku", "position": "above", "target": "product_price"}
-"put description below the title" → {"tool": "move_element", "element": "product_short_description", "position": "below", "target": "product_title"}
 
 ${images && images.length > 0 ? '\nUser attached image(s). Analyze for colors, patterns, and provide actionable insights.' : ''}
 
