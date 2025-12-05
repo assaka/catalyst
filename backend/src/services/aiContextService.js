@@ -12,11 +12,8 @@
  * Tables in Master DB:
  * - ai_context_documents - Global knowledge base
  * - ai_plugin_examples - Working code examples
- * - ai_code_patterns - Reusable snippets & successful prompts
  * - ai_entity_definitions - Admin entity schemas
- * - ai_chat_history - All conversations for learning
- * - ai_learning_insights - Aggregated learnings
- * - ai_user_preferences - User preferences (filtered by user_id)
+ * - ai_training_candidates - Training data for self-learning (prompts, feedback, outcomes)
  *
  * See: backend/src/services/RAG_SYSTEM.md for full documentation
  */
@@ -376,29 +373,12 @@ class AIContextService {
 
   /**
    * Save chat message for learning
+   * Chat history stored in tenant DB (ai_chat_sessions)
+   * Training data stored in master DB (ai_training_candidates)
    */
-  async saveChatMessage({ userId, storeId, sessionId, role, content, intent, entity, operation, wasSuccessful, metadata, creditsUsed = 0 }) {
+  async saveChatMessage({ userId, storeId, sessionId, role, content, intent, entity, operation, wasSuccessful, metadata, creditsUsed = 0, aiResponse = null }) {
     try {
-      // Save to master database for global learning
-      const { error } = await masterDbClient.from('ai_chat_history').insert({
-        user_id: userId || null,
-        store_id: storeId || null,
-        session_id: sessionId || null,
-        role,
-        content,
-        intent: intent || null,
-        entity: entity || null,
-        operation: operation || null,
-        was_successful: wasSuccessful,
-        metadata: metadata || {},
-        created_at: new Date().toISOString()
-      });
-
-      if (error) {
-        console.error('Error saving chat message to master:', error);
-      }
-
-      // Also save to tenant database for user's chat history
+      // Save to tenant database for user's chat history
       if (storeId && userId) {
         try {
           const ConnectionManager = require('./database/ConnectionManager');
@@ -428,6 +408,28 @@ class AIContextService {
           console.error('Error saving chat message to tenant:', tenantError);
         }
       }
+
+      // For user messages with admin_entity intent, create training candidate for learning
+      if (role === 'user' && intent === 'admin_entity' && entity) {
+        const { error } = await masterDbClient.from('ai_training_candidates').insert({
+          user_id: userId || null,
+          store_id: storeId || null,
+          session_id: sessionId || null,
+          user_prompt: content,
+          ai_response: aiResponse,
+          detected_intent: intent,
+          detected_entity: entity,
+          detected_operation: operation,
+          outcome_status: wasSuccessful ? 'success' : 'pending',
+          training_status: 'candidate',
+          metadata: metadata || {},
+          created_at: new Date().toISOString()
+        });
+
+        if (error) {
+          console.error('Error saving training candidate:', error);
+        }
+      }
     } catch (error) {
       console.error('Error saving chat message:', error);
     }
@@ -439,13 +441,12 @@ class AIContextService {
   async getSuccessfulPrompts(entity, limit = 5) {
     try {
       const { data, error } = await masterDbClient
-        .from('ai_chat_history')
-        .select('content, intent, entity, operation, metadata')
-        .eq('role', 'user')
-        .eq('entity', entity)
-        .eq('was_successful', true)
-        .not('user_feedback', 'eq', 'not_helpful')
-        .order('created_at', { ascending: false })
+        .from('ai_training_candidates')
+        .select('user_prompt, ai_response, detected_intent, detected_entity, detected_operation, success_count, metadata')
+        .eq('detected_entity', entity)
+        .eq('outcome_status', 'success')
+        .in('training_status', ['candidate', 'approved', 'promoted'])
+        .order('success_count', { ascending: false })
         .limit(limit);
 
       if (error) {
@@ -542,23 +543,31 @@ class AIContextService {
   }
 
   /**
-   * Update chat feedback
+   * Update training candidate feedback
+   * Now uses ai_training_candidates instead of ai_chat_history
    */
-  async updateChatFeedback(chatId, feedback, feedbackText = null) {
+  async updateChatFeedback(candidateId, feedback, feedbackText = null) {
     try {
+      const isHelpful = feedback === 'helpful';
       const { error } = await masterDbClient
-        .from('ai_chat_history')
+        .from('ai_training_candidates')
         .update({
-          user_feedback: feedback,
-          feedback_text: feedbackText
+          was_helpful: isHelpful,
+          feedback_text: feedbackText,
+          feedback_at: new Date().toISOString(),
+          outcome_status: isHelpful ? 'success' : 'failure',
+          // Increment success/failure count
+          success_count: isHelpful ? masterDbClient.raw('success_count + 1') : undefined,
+          failure_count: !isHelpful ? masterDbClient.raw('failure_count + 1') : undefined,
+          updated_at: new Date().toISOString()
         })
-        .eq('id', chatId);
+        .eq('id', candidateId);
 
       if (error) {
-        console.error('Error updating chat feedback:', error);
+        console.error('Error updating training candidate feedback:', error);
       }
     } catch (error) {
-      console.error('Error updating chat feedback:', error);
+      console.error('Error updating training candidate feedback:', error);
     }
   }
 

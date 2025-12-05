@@ -106,9 +106,9 @@ DROP TABLE IF EXISTS ai_code_patterns CASCADE;
 -- Drop ai_user_preferences from master (should only be in tenant DB)
 DROP TABLE IF EXISTS ai_user_preferences CASCADE;
 
--- Drop ai_chat_history if ai_chat_sessions in tenant is preferred
--- Uncomment if you want to consolidate chat history to tenant only:
--- DROP TABLE IF EXISTS ai_chat_history CASCADE;
+-- Drop ai_chat_history - chat history belongs in tenant DB (ai_chat_sessions)
+-- Learning/training data goes to ai_training_candidates instead
+DROP TABLE IF EXISTS ai_chat_history CASCADE;
 
 -- ============================================
 -- STEP 4: Clean up orphaned functions
