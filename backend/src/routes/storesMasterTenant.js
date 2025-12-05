@@ -22,6 +22,7 @@ const { encryptDatabaseCredentials } = require('../utils/encryption');
 const MasterStore = require('../models/master/MasterStore');
 const StoreDatabase = require('../models/master/StoreDatabase');
 const StoreHostname = require('../models/master/StoreHostname');
+const SupabaseIntegration = require('../services/supabase-integration');
 
 /**
  * Check if a database URL is already being used by another store
@@ -1334,6 +1335,110 @@ router.post('/:id/reprovision', authMiddleware, async (req, res) => {
       .eq('id', req.user.id)
       .maybeSingle();
 
+    // Get OAuth credentials for Management API provisioning
+    let oauthAccessToken = null;
+    let projectId = null;
+
+    // First, get project URL from store_databases (master DB) - this always works
+    try {
+      const storeDb = await StoreDatabase.findByStoreId(storeId);
+      if (storeDb && storeDb.host) {
+        // Host format: xxx.supabase.co - extract project ID
+        const hostMatch = storeDb.host.match(/([^.]+)\.supabase\.co/);
+        if (hostMatch) {
+          projectId = hostMatch[1];
+          console.log('Found projectId from store_databases:', projectId);
+        }
+      }
+    } catch (dbError) {
+      console.log('Could not get project ID from store_databases:', dbError.message);
+    }
+
+    // Try to get OAuth token from integration_configs (tenant DB)
+    // This may fail if tenant DB is empty, but we'll still have projectId
+    try {
+      const token = await SupabaseIntegration.getSupabaseToken(storeId);
+
+      if (token && token.access_token) {
+        // Check if token is expired
+        if (SupabaseIntegration.isTokenExpired(token)) {
+          // Try to refresh
+          try {
+            const refreshResult = await SupabaseIntegration.refreshAccessToken(storeId);
+            oauthAccessToken = refreshResult.access_token;
+          } catch (refreshError) {
+            console.log('Token refresh failed:', refreshError.message);
+          }
+        } else {
+          oauthAccessToken = token.access_token;
+        }
+
+        // Also extract project ID from project URL if we don't have it yet
+        if (!projectId && token.project_url && !token.project_url.includes('pending-configuration')) {
+          const projectMatch = token.project_url.match(/https:\/\/([^.]+)\.supabase\.co/);
+          if (projectMatch) {
+            projectId = projectMatch[1];
+          }
+        }
+      }
+    } catch (oauthError) {
+      console.log('Could not get OAuth token from tenant DB (expected if tables dropped):', oauthError.message);
+    }
+
+    // If we still don't have OAuth token but have projectId, check Redis/memory for pending OAuth
+    if (!oauthAccessToken && projectId) {
+      try {
+        const { getRedisClient } = require('../config/redis');
+        const redisClient = getRedisClient();
+
+        if (redisClient) {
+          const redisKey = `oauth:pending:${storeId}`;
+          const tokenDataStr = await redisClient.get(redisKey);
+          if (tokenDataStr) {
+            const tokenData = JSON.parse(tokenDataStr);
+            oauthAccessToken = tokenData.access_token;
+            console.log('Found OAuth token in Redis');
+          }
+        }
+
+        // Check memory fallback
+        if (!oauthAccessToken && global.pendingOAuthTokens && global.pendingOAuthTokens.has(storeId)) {
+          const tokenData = global.pendingOAuthTokens.get(storeId);
+          oauthAccessToken = tokenData.access_token;
+          console.log('Found OAuth token in memory');
+        }
+      } catch (redisError) {
+        console.log('Redis/memory check failed:', redisError.message);
+      }
+    }
+
+    console.log('Reprovision OAuth credentials:', {
+      hasAccessToken: !!oauthAccessToken,
+      projectId: projectId || 'not found'
+    });
+
+    // Check if we have enough credentials for reprovisioning
+    if (!oauthAccessToken && projectId) {
+      // We have projectId but no OAuth token - user needs to reconnect Supabase
+      return res.status(400).json({
+        success: false,
+        error: 'Supabase OAuth session expired',
+        message: 'Your Supabase authorization has expired. Please reconnect your Supabase account in Database Integrations, then try reprovisioning again.',
+        requiresReconnection: true,
+        redirectTo: '/admin/database-integrations'
+      });
+    }
+
+    if (!projectId) {
+      // No database configuration found
+      return res.status(400).json({
+        success: false,
+        error: 'No database configured',
+        message: 'No Supabase database is configured for this store. Please set up your database connection first.',
+        redirectTo: '/admin/database-integrations'
+      });
+    }
+
     // Run re-provisioning
     const result = await TenantProvisioningService.reprovisionTenantDatabase(storeId, {
       userId: req.user.id,
@@ -1342,7 +1447,9 @@ router.post('/:id/reprovision', authMiddleware, async (req, res) => {
       userFirstName: masterUser?.first_name || req.user.first_name,
       userLastName: masterUser?.last_name || req.user.last_name,
       storeName: storeName || store.slug || 'My Store',
-      storeSlug: storeSlug || store.slug || `store-${Date.now()}`
+      storeSlug: storeSlug || store.slug || `store-${Date.now()}`,
+      oauthAccessToken,
+      projectId
     });
 
     if (result.success) {

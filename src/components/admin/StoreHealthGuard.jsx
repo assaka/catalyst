@@ -29,6 +29,7 @@ export default function StoreHealthGuard({ children, pageName }) {
   const [isReprovisioning, setIsReprovisioning] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState(null);
+  const [requiresReconnection, setRequiresReconnection] = useState(false);
 
   // Skip health check for auth and onboarding pages
   const skipPages = ['Auth', 'StoreOnboarding'];
@@ -65,6 +66,7 @@ export default function StoreHealthGuard({ children, pageName }) {
   const handleReprovision = async () => {
     setIsReprovisioning(true);
     setError(null);
+    setRequiresReconnection(false);
 
     try {
       const result = await reprovisionStore(
@@ -73,7 +75,13 @@ export default function StoreHealthGuard({ children, pageName }) {
       );
 
       if (!result.success) {
-        setError(result.error || 'Failed to reprovision database');
+        // Check if it requires reconnection
+        if (result.requiresReconnection) {
+          setRequiresReconnection(true);
+          setError(result.message || 'Supabase authorization has expired. Please reconnect your Supabase account.');
+        } else {
+          setError(result.error || result.message || 'Failed to reprovision database');
+        }
       } else {
         window.location.reload();
       }
@@ -130,25 +138,38 @@ export default function StoreHealthGuard({ children, pageName }) {
           )}
 
           <div className="space-y-3">
-            <Button
-              className="w-full bg-amber-600 hover:bg-amber-700"
-              onClick={handleReprovision}
-              disabled={isReprovisioning || isDeleting}
-            >
-              {isReprovisioning ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Provisioning Database...
-                </>
-              ) : (
-                <>
-                  <Database className="w-4 h-4 mr-2" />
-                  Reprovision Database
-                </>
-              )}
-            </Button>
+            {/* Show Configure Database button prominently when reconnection is required */}
+            {requiresReconnection ? (
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                onClick={() => window.location.href = '/admin/database-integrations'}
+                disabled={isReprovisioning || isDeleting}
+              >
+                <Database className="w-4 h-4 mr-2" />
+                Reconnect Supabase
+              </Button>
+            ) : (
+              <Button
+                className="w-full bg-amber-600 hover:bg-amber-700"
+                onClick={handleReprovision}
+                disabled={isReprovisioning || isDeleting}
+              >
+                {isReprovisioning ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Provisioning Database...
+                  </>
+                ) : (
+                  <>
+                    <Database className="w-4 h-4 mr-2" />
+                    Reprovision Database
+                  </>
+                )}
+              </Button>
+            )}
 
-            {error && error.includes('connection') && (
+            {/* Show configure button for connection errors (but not when reconnection is already shown) */}
+            {!requiresReconnection && error && (error.includes('connection') || error.includes('credential')) && (
               <Button
                 variant="outline"
                 className="w-full"
