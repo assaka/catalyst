@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,9 +23,11 @@ const STEPS = [
 
 export default function StoreOnboarding() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // All useState hooks must be at the top, before any conditional returns
   const [authChecked, setAuthChecked] = useState(false);
+  const [isReprovision, setIsReprovision] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -49,6 +51,28 @@ export default function StoreOnboarding() {
     }
     setAuthChecked(true);
   }, [navigate]);
+
+  // Handle reprovision mode - start at step 2 with existing store
+  useEffect(() => {
+    const step = searchParams.get('step');
+    const reprovision = searchParams.get('reprovision');
+
+    if (step === '2' && reprovision === 'true') {
+      const existingStoreId = localStorage.getItem('selectedStoreId');
+      const existingStoreName = localStorage.getItem('selectedStoreName');
+
+      if (existingStoreId) {
+        setIsReprovision(true);
+        setStoreId(existingStoreId);
+        setStoreData({
+          name: existingStoreName || 'My Store',
+          slug: existingStoreName?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'my-store'
+        });
+        setCompletedSteps([1]); // Mark step 1 as completed
+        setCurrentStep(2);
+      }
+    }
+  }, [searchParams]);
 
   // Show loading while checking auth
   if (!authChecked) {
@@ -246,8 +270,15 @@ export default function StoreOnboarding() {
 
       if (provisionResponse.success) {
         setCompletedSteps([...completedSteps, 2]);
-        setSuccess('Database connected and provisioned successfully!');
-        setTimeout(() => setCurrentStep(3), 1500);
+
+        // If reprovision mode, redirect to dashboard instead of step 3
+        if (isReprovision) {
+          setSuccess('Database reprovisioned successfully! Redirecting...');
+          setTimeout(() => window.location.href = '/admin/dashboard', 1500);
+        } else {
+          setSuccess('Database connected and provisioned successfully!');
+          setTimeout(() => setCurrentStep(3), 1500);
+        }
       } else {
         setError(provisionResponse.error || 'Failed to provision database');
       }
@@ -365,8 +396,14 @@ export default function StoreOnboarding() {
           <div className="flex justify-center mb-4">
             <StepIcon className="w-16 h-16 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl font-bold">{currentStepData.title}</CardTitle>
-          <CardDescription className="text-base">{currentStepData.description}</CardDescription>
+          <CardTitle className="text-2xl font-bold">
+            {isReprovision && currentStep === 2 ? 'Reprovision Database' : currentStepData.title}
+          </CardTitle>
+          <CardDescription className="text-base">
+            {isReprovision && currentStep === 2
+              ? `Reconnect Supabase for "${storeData.name}"`
+              : currentStepData.description}
+          </CardDescription>
           {!currentStepData.required && (
             <span className="inline-block px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full mt-2">
               Optional - Can be skipped
