@@ -12,6 +12,20 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+
+// Page types and their corresponding config exports
+const PAGE_CONFIGS = [
+  { pageType: 'product', configExport: 'productConfig' },
+  { pageType: 'category', configExport: 'categoryConfig' },
+  { pageType: 'cart', configExport: 'cartConfig' },
+  { pageType: 'homepage', configExport: 'homepageConfig' },
+  { pageType: 'header', configExport: 'headerConfig' },
+  { pageType: 'account', configExport: 'accountConfig' },
+  { pageType: 'login', configExport: 'loginConfig' },
+  { pageType: 'checkout', configExport: 'checkoutConfig' },
+  { pageType: 'success', configExport: 'successConfig' }
+];
 
 class TenantProvisioningService {
   /**
@@ -93,7 +107,16 @@ class TenantProvisioningService {
         result.errors.push({ step: 'create_user', error: 'No database client available' });
       }
 
-      // 6. Seed default SEO settings with robots.txt
+      // 6. Seed slot configurations from config files
+      if (tenantDb) {
+        console.log('Seeding slot configurations via Supabase client...');
+        await this.seedSlotConfigurations(tenantDb, storeId, options, result);
+      } else if (options.oauthAccessToken && options.projectId) {
+        console.log('Seeding slot configurations via Management API SQL...');
+        await this.seedSlotConfigurationsViaAPI(options.oauthAccessToken, options.projectId, storeId, options, result);
+      }
+
+      // 7. Seed default SEO settings with robots.txt
       if (tenantDb) {
         console.log('Seeding default SEO settings via Supabase client...');
         await this.seedDefaultSeoSettings(tenantDb, storeId, options, result);
@@ -778,6 +801,216 @@ VALUES (
       console.error('SEO settings seeding via API error:', error.response?.data || error.message);
       result.errors.push({
         step: 'seed_seo_settings',
+        error: error.message
+      });
+      // Don't throw - non-blocking
+      return false;
+    }
+  }
+
+  /**
+   * Load page configuration from frontend config files
+   * @private
+   */
+  async loadPageConfig(pageType, configExport) {
+    try {
+      const configsDir = path.resolve(__dirname, '../../../../src/components/editor/slot/configs');
+      const configPath = path.join(configsDir, `${pageType}-config.js`);
+
+      const configModule = await import(configPath);
+      const config = configModule[configExport];
+
+      if (!config) {
+        console.warn(`Config export '${configExport}' not found in ${configPath}`);
+        return null;
+      }
+
+      return config;
+    } catch (error) {
+      console.error(`Failed to load ${pageType}-config.js:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Build root slots from slot configuration
+   * @private
+   */
+  buildRootSlots(slots) {
+    if (!slots) return [];
+    return Object.entries(slots)
+      .filter(([_, slot]) => !slot.parentId || slot.parentId === null)
+      .map(([slotId]) => slotId);
+  }
+
+  /**
+   * Seed slot configurations from config files
+   * @private
+   */
+  async seedSlotConfigurations(tenantDb, storeId, options, result) {
+    try {
+      console.log('📦 Loading slot configurations from config files...');
+
+      const configsToInsert = [];
+
+      for (const { pageType, configExport } of PAGE_CONFIGS) {
+        try {
+          const pageConfig = await this.loadPageConfig(pageType, configExport);
+
+          if (!pageConfig) {
+            console.warn(`⚠️ Could not load ${pageType} config, skipping...`);
+            continue;
+          }
+
+          // Build full configuration object
+          const fullConfiguration = {
+            page_name: pageConfig.page_name || pageType.charAt(0).toUpperCase() + pageType.slice(1),
+            slot_type: pageConfig.slot_type || `${pageType}_layout`,
+            slots: pageConfig.slots || {},
+            rootSlots: this.buildRootSlots(pageConfig.slots),
+            slotDefinitions: pageConfig.slotDefinitions || {},
+            metadata: {
+              created: new Date().toISOString(),
+              lastModified: new Date().toISOString(),
+              source: `${pageType}-config.js`,
+              pageType: pageType
+            }
+          };
+
+          configsToInsert.push({
+            id: uuidv4(),
+            user_id: options.userId,
+            store_id: storeId,
+            configuration: fullConfiguration,
+            page_type: pageType,
+            is_active: true,
+            status: 'published',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+          console.log(`✅ Loaded ${pageType} configuration`);
+        } catch (configError) {
+          console.warn(`⚠️ Failed to load ${pageType} config:`, configError.message);
+        }
+      }
+
+      if (configsToInsert.length === 0) {
+        console.warn('⚠️ No slot configurations to insert');
+        return false;
+      }
+
+      // Insert all configurations
+      const { data, error } = await tenantDb
+        .from('slot_configurations')
+        .insert(configsToInsert)
+        .select();
+
+      if (error) {
+        throw new Error(`Failed to insert slot configurations: ${error.message}`);
+      }
+
+      console.log(`✅ Seeded ${configsToInsert.length} slot configurations`);
+      result.dataSeeded.push(`${configsToInsert.length} slot configurations`);
+
+      return true;
+    } catch (error) {
+      console.error('Slot configuration seeding error:', error);
+      result.errors.push({
+        step: 'seed_slot_configurations',
+        error: error.message
+      });
+      // Don't throw - slot configurations are optional
+      return false;
+    }
+  }
+
+  /**
+   * Seed slot configurations via Management API SQL
+   * @private
+   */
+  async seedSlotConfigurationsViaAPI(oauthAccessToken, projectId, storeId, options, result) {
+    try {
+      const axios = require('axios');
+      console.log('📦 Loading slot configurations from config files for API insertion...');
+
+      const insertStatements = [];
+
+      for (const { pageType, configExport } of PAGE_CONFIGS) {
+        try {
+          const pageConfig = await this.loadPageConfig(pageType, configExport);
+
+          if (!pageConfig) {
+            console.warn(`⚠️ Could not load ${pageType} config, skipping...`);
+            continue;
+          }
+
+          // Build full configuration object
+          const fullConfiguration = {
+            page_name: pageConfig.page_name || pageType.charAt(0).toUpperCase() + pageType.slice(1),
+            slot_type: pageConfig.slot_type || `${pageType}_layout`,
+            slots: pageConfig.slots || {},
+            rootSlots: this.buildRootSlots(pageConfig.slots),
+            slotDefinitions: pageConfig.slotDefinitions || {},
+            metadata: {
+              created: new Date().toISOString(),
+              lastModified: new Date().toISOString(),
+              source: `${pageType}-config.js`,
+              pageType: pageType
+            }
+          };
+
+          // Escape single quotes and prepare JSON for SQL
+          const configJson = JSON.stringify(fullConfiguration).replace(/'/g, "''");
+          const id = uuidv4();
+
+          insertStatements.push(`
+INSERT INTO slot_configurations (id, user_id, store_id, configuration, page_type, is_active, status, created_at, updated_at)
+VALUES (
+  '${id}',
+  '${options.userId}',
+  '${storeId}',
+  '${configJson}'::jsonb,
+  '${pageType}',
+  true,
+  'published',
+  NOW(),
+  NOW()
+) ON CONFLICT DO NOTHING;`);
+
+          console.log(`✅ Prepared ${pageType} configuration for insertion`);
+        } catch (configError) {
+          console.warn(`⚠️ Failed to load ${pageType} config:`, configError.message);
+        }
+      }
+
+      if (insertStatements.length === 0) {
+        console.warn('⚠️ No slot configurations to insert');
+        return false;
+      }
+
+      // Execute all inserts as a single batch
+      const batchSQL = insertStatements.join('\n');
+
+      await axios.post(
+        `https://api.supabase.com/v1/projects/${projectId}/database/query`,
+        { query: batchSQL },
+        {
+          headers: {
+            'Authorization': `Bearer ${oauthAccessToken}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 60000
+        }
+      );
+
+      console.log(`✅ Seeded ${insertStatements.length} slot configurations via API`);
+      result.dataSeeded.push(`${insertStatements.length} slot configurations (via API)`);
+      return true;
+    } catch (error) {
+      console.error('Slot configuration seeding via API error:', error.response?.data || error.message);
+      result.errors.push({
+        step: 'seed_slot_configurations',
         error: error.message
       });
       // Don't throw - non-blocking
