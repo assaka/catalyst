@@ -3182,6 +3182,9 @@ CREATE TABLE IF NOT EXISTS wishlists (
 -- Languages unique constraint (required for FK references)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_languages_code ON languages(code);
 
+-- Admin navigation registry key constraint (required for self-referencing FK)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_admin_nav_key ON admin_navigation_registry(key);
+
 CREATE INDEX IF NOT EXISTS idx_integration_attr_lookup ON integration_attribute_mappings(store_id, integration_source, external_attribute_code, is_active);
 
 CREATE INDEX IF NOT EXISTS idx_integration_attr_internal ON integration_attribute_mappings(internal_attribute_id);
@@ -4270,10 +4273,6 @@ ALTER TABLE credit_transactions ADD CONSTRAINT credit_transactions_user_id_fkey 
 ALTER TABLE credit_usage ADD CONSTRAINT credit_usage_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
 ALTER TABLE credit_usage ADD CONSTRAINT credit_usage_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-
-ALTER TABLE credits ADD CONSTRAINT credits_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
-ALTER TABLE credits ADD CONSTRAINT credits_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
 
 ALTER TABLE cron_job_executions ADD CONSTRAINT cron_job_executions_cron_job_id_fkey FOREIGN KEY (cron_job_id) REFERENCES cron_jobs(id) ON DELETE CASCADE;
 

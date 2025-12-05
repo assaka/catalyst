@@ -108,13 +108,35 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- attribute_sets (1 row)
-INSERT INTO attribute_sets ("id", "name", "description", "is_default", "sort_order", "store_id", "attribute_ids", "created_at", "updated_at") VALUES ('7e7f4624-b053-4cbe-8725-2ba850fe1000', 'Default', '', 'true', '0', '947fa171-625f-4374-9c30-574d8c6e5abf', '[]', '2025-11-21 09:07:46.006', '2025-11-21 09:07:46.006');
+INSERT INTO attribute_sets (id, name, description, is_default, sort_order, store_id, attribute_ids, created_at, updated_at)
+SELECT
+  '7e7f4624-b053-4cbe-8725-2ba850fe1000',
+  'Default',
+  '',
+  true,
+  0,
+  id,
+  '[]'::jsonb,
+  NOW(),
+  NOW()
+FROM stores LIMIT 1
+ON CONFLICT DO NOTHING;
 
 -- categories (1 row)
 -- Default root category for new stores
 INSERT INTO categories (id, store_id, slug, sort_order, is_active, hide_in_menu, parent_id, level, created_at, updated_at)
-VALUES
-  ('5eecab88-324b-4a9a-b0ec-fe5553f5a66a', '22e0c463-afbc-424e-86e3-dcd9e6df4904', 'root-catalog', 0, true, false, NULL, 0, NOW(), NOW())
+SELECT
+  '5eecab88-324b-4a9a-b0ec-fe5553f5a66a',
+  id,
+  'root-catalog',
+  0,
+  true,
+  false,
+  NULL,
+  0,
+  NOW(),
+  NOW()
+FROM stores LIMIT 1
 ON CONFLICT DO NOTHING;
 
 
@@ -775,69 +797,284 @@ Best regards,
 
 
 -- email_template_translations (80 rows)
-INSERT INTO email_template_translations ("id", "email_template_id", "language_code", "subject", "template_content", "html_content", "created_at", "updated_at") VALUES ('ba6dbb5e-4bde-45ca-8386-d4940e8faaf5', '67be93d0-512b-4f58-b55e-4d627dfc1035', 'en', 'Invoice #{{invoice_number}} from {{store_name}}', null, '{{email_header}}
+INSERT INTO "public"."email_template_translations" ("id", "email_template_id", "language_code", "subject", "template_content", "html_content", "created_at", "updated_at") VALUES ('b1c2d3e4-f5a6-4789-bcde-555555555555', 'a1b2c3d4-e5f6-4789-abcd-555555555555', 'en', 'Your password has been reset - {{store_name}}', 'Hi {{customer_first_name}},
+
+Your password for your {{store_name}} account has been successfully reset.
+
+You can now log in with your new password:
+{{login_url}}
+
+If you did not make this change, please contact our support team immediately.
+
+Best regards,
+{{store_name}} Team
+{{store_url}}', '{{email_header}}
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #059669; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Password Reset Successful</h1>
+  </div>
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>Your password for your <strong>{{store_name}}</strong> account has been successfully reset.</p>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="{{login_url}}" style="background-color: #059669; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+        Log In Now
+      </a>
+    </p>
+    <div style="background-color: #fef2f2; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #dc2626;">
+      <p style="margin: 0; color: #991b1b; font-size: 14px;"><strong>Security Notice:</strong> If you did not make this change, please contact our support team immediately.</p>
+    </div>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team<br>
+      <a href="{{store_url}}" style="color: #059669;">{{store_url}}</a>
+    </p>
+  </div>
+</div>
+{{email_footer}}', '2025-11-28 10:00:00+00', '2025-11-28 10:00:00+00'), ('20229878-978d-4d65-84c7-5f4fa1b8357c', '155851a2-e285-4ae8-a4eb-04b6aa024fad', 'en', 'Your order #{{order_number}} has been shipped!', null, '{{email_header}}
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <div style="background-color: #f8f9fa; padding: 30px;">
-    <h2 style="color: #667eea; margin: 0 0 20px 0; text-align: center;">Invoice #{{invoice_number}}</h2>
+    <h2 style="color: #667eea; margin: 0 0 20px 0; text-align: center;">Your Order is On Its Way!</h2>
     <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>Thank you for your order! Please find your invoice details below.</p>
+    <p>Great news! Your order has been shipped and is on its way to you.</p>
     <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <h3 style="margin-top: 0; color: #667eea;">Invoice Details</h3>
+      <h3 style="margin-top: 0; color: #667eea;">Shipping Details</h3>
       <table style="width: 100%; border-collapse: collapse;">
         <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Invoice Number</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">{{invoice_number}}</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Order Number</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_number}}</td>
         </tr>
         <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Invoice Date</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{invoice_date}}</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tracking Number</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">{{tracking_number}}</td>
         </tr>
         <tr>
-          <td style="padding: 8px 0;">Order Number</td>
-          <td style="padding: 8px 0; text-align: right;">{{order_number}}</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping Method</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{shipping_method}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0;">Estimated Delivery</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #10b981;">{{estimated_delivery_date}}</td>
         </tr>
       </table>
     </div>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{tracking_url}}" style="background-color: #667eea; color: white; padding: 12px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+        Track Your Package
+      </a>
+    </div>
     <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <h3 style="margin-top: 0; color: #667eea;">Order Items</h3>
+      <h3 style="margin-top: 0; color: #667eea;">Shipped Items</h3>
       {{items_html}}
     </div>
-    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <h3 style="margin-top: 0; color: #667eea;">Invoice Summary</h3>
-      <table style="width: 100%; border-collapse: collapse;">
-        <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Subtotal</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_subtotal}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_shipping}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tax</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_tax}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; color: #667eea;">Total</td>
-          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; text-align: right; color: #667eea;">{{order_total}}</td>
-        </tr>
-      </table>
-    </div>
-    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0;">
-      <p style="margin: 0; color: #333;">
-        <strong style="color: #667eea;">Billing Address</strong><br>
-        {{billing_address}}
-      </p>
-    </div>
-    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin-bottom: 20px;">
+    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
       <p style="margin: 0; color: #333;">
         <strong style="color: #10b981;">Shipping Address</strong><br>
         {{shipping_address}}
       </p>
     </div>
+    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 20px;">
+      <p style="margin: 0; color: #333;">
+        <strong style="color: #f59e0b;">Delivery Instructions</strong><br>
+        {{delivery_instructions}}
+      </p>
+    </div>
   </div>
 </div>
-{{email_footer}}', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00'), ('fdac4587-abf7-49d1-9e9d-ff8750bb6aa6', 'd6696302-9e73-4b27-a4bf-b2832803b3e3', 'en', 'Order Confirmation #{{order_number}}', 'Hi {{customer_first_name}},
+{{email_footer}}', '2025-11-05 17:45:19.314+00', '2025-12-05 16:03:55.82265+00'), ('b1c2d3e4-f5a6-4789-bcde-333333333333', 'a1b2c3d4-e5f6-4789-abcd-333333333333', 'en', 'Your order #{{order_number}} has been refunded - {{store_name}}', 'Hi {{customer_first_name}},
+
+We are writing to inform you that your order #{{order_number}} has been refunded.
+
+Unfortunately, due to an inventory discrepancy, we were unable to fulfill your order. We sincerely apologize for any inconvenience this may have caused.
+
+Refund Details:
+- Order Number: #{{order_number}}
+- Refund Amount: {{currency}} {{refund_amount}}
+
+The refund has been processed and should appear in your account within 5-10 business days, depending on your payment provider.
+
+We truly value you as a customer and hope you will give us another opportunity to serve you. Please feel free to browse our store for alternative products.
+
+If you have any questions or concerns, please don''t hesitate to contact us.
+
+Best regards,
+{{store_name}} Team', '{{email_header}}
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Order Refunded</h1>
+  </div>
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>We are writing to inform you that your order <strong>#{{order_number}}</strong> has been refunded.</p>
+    <p>Unfortunately, due to an inventory discrepancy, we were unable to fulfill your order. We sincerely apologize for any inconvenience this may have caused.</p>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb;">
+      <h3 style="margin: 0 0 15px 0; color: #333;">Refund Details</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr><td style="padding: 8px 0; color: #666;">Order Number:</td><td style="padding: 8px 0; text-align: right;"><strong>#{{order_number}}</strong></td></tr>
+        <tr><td style="padding: 8px 0; color: #666;">Refund Amount:</td><td style="padding: 8px 0; text-align: right; font-size: 18px; color: #059669;"><strong>{{currency}} {{refund_amount}}</strong></td></tr>
+      </table>
+    </div>
+    <p style="color: #666;">The refund has been processed and should appear in your account within <strong>5-10 business days</strong>, depending on your payment provider.</p>
+    <p>We truly value you as a customer and hope you will give us another opportunity to serve you.</p>
+    <p style="text-align: center; margin-top: 30px;">
+      <a href="{{store_url}}" style="background-color: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+        Continue Shopping
+      </a>
+    </p>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team<br>
+      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
+    </p>
+  </div>
+</div>
+{{email_footer}}', '2025-11-26 10:00:00+00', '2025-12-05 16:03:44.220462+00'), ('a1b52211-ddca-40d1-ac14-4b3d84ba256d', 'c69316ab-7e8c-4590-850b-0f720c505d02', 'en', 'Welcome to {{store_name}}!', 'Hi {{customer_first_name}},
+
+Welcome to {{store_name}}! We are thrilled to have you with us.
+
+Your account has been successfully created and verified. You can now:
+- Browse our products
+- Track your orders
+- Save addresses for faster checkout
+- View your order history
+
+Login to your account: {{login_url}}
+
+Best regards,
+The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Welcome to {{store_name}}!</h1>
+  </div>
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>We are thrilled to have you with us! Your account has been successfully created and verified.</p>
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">What you can do now:</h3>
+      <ul style="padding-left: 20px;">
+        <li>Browse our products</li>
+        <li>Track your orders</li>
+        <li>Save addresses for faster checkout</li>
+        <li>View your order history</li>
+      </ul>
+    </div>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{login_url}}" style="background-color: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+        Login to Your Account
+      </a>
+    </div>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team
+    </p>
+  </div>
+</div>', '2025-11-26 10:00:00+00', '2025-11-26 10:00:00+00'), ('f8a52211-ddca-40d1-ac14-4b3d84ba256c', 'caa52211-ddca-40d1-ac14-4b3d84ba256b', 'en', 'Verify your email - {{store_name}}', 'Hi {{customer_first_name}},
+
+Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:
+
+Your verification code: {{verification_code}}
+
+This code will expire in 15 minutes.
+
+If you didn''t create an account at {{store_name}}, please ignore this email.
+
+Best regards,
+{{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Verify Your Email</h1>
+  </div>
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:</p>
+    <div style="background-color: white; padding: 30px; border-radius: 8px; margin: 20px 0; text-align: center;">
+      <p style="color: #666; margin: 0 0 10px 0; font-size: 14px;">Your verification code:</p>
+      <h1 style="font-size: 42px; letter-spacing: 8px; color: #667eea; font-family: monospace; margin: 0;">
+        {{verification_code}}
+      </h1>
+    </div>
+    <p style="text-align: center; color: #666;">This code will expire in <strong>15 minutes</strong>.</p>
+    <p style="color: #999; font-size: 14px; text-align: center;">If you didn''t create an account at {{store_name}}, please ignore this email.</p>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team
+    </p>
+  </div>
+</div>', '2025-11-26 10:00:00+00', '2025-11-26 10:00:00+00'), ('b1c2d3e4-f5a6-4789-bcde-111111111111', 'a1b2c3d4-e5f6-4789-abcd-111111111111', 'en', 'Update on your order #{{order_number}} - {{store_name}}', 'Hi {{customer_first_name}},
+
+Thank you for your order #{{order_number}} at {{store_name}}.
+
+We wanted to let you know that we are currently reviewing your order. We may have detected a potential availability issue with one or more items in your order, and our team is working to resolve this as quickly as possible.
+
+Items being reviewed:
+{{items_list}}
+
+We sincerely apologize for any inconvenience this may cause. We will contact you shortly with an update on your order status.
+
+If you have any questions in the meantime, please don''t hesitate to reach out to us.
+
+Best regards,
+{{store_name}} Team', '{{email_header}}
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #f59e0b; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Order Update</h1>
+  </div>
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>Thank you for your order <strong>#{{order_number}}</strong> at {{store_name}}.</p>
+    <p>We wanted to let you know that we are currently reviewing your order. We may have detected a potential availability issue with one or more items, and our team is working to resolve this as quickly as possible.</p>
+    <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0 0 10px 0; font-weight: bold; color: #92400e;">Items being reviewed:</p>
+      <pre style="margin: 0; white-space: pre-wrap; color: #92400e; font-family: inherit;">{{items_list}}</pre>
+    </div>
+    <p>We sincerely apologize for any inconvenience this may cause. We will contact you shortly with an update on your order status.</p>
+    <p style="color: #666;">If you have any questions in the meantime, please don''t hesitate to reach out to us.</p>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team<br>
+      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
+    </p>
+  </div>
+</div>
+{{email_footer}}', '2025-11-26 10:00:00+00', '2025-11-26 10:00:00+00'), ('b1c2d3e4-f5a6-4789-bcde-444444444444', 'a1b2c3d4-e5f6-4789-abcd-444444444444', 'en', 'Reset your password - {{store_name}}', 'Hi {{customer_first_name}},
+
+We received a request to reset your password for your {{store_name}} account.
+
+Click the link below to set a new password:
+{{reset_url}}
+
+This link will expire in {{expiry_hours}} hour(s).
+
+If you didn''t request a password reset, please ignore this email. Your password will remain unchanged.
+
+Best regards,
+{{store_name}} Team
+{{store_url}}', '{{email_header}}
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #4F46E5; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">Reset Your Password</h1>
+  </div>
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
+    <p>We received a request to reset your password for your <strong>{{store_name}}</strong> account.</p>
+    <p>Click the button below to set a new password:</p>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="{{reset_url}}" style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+        Reset Password
+      </a>
+    </p>
+    <p style="color: #666; font-size: 14px;">Or copy and paste this link in your browser:</p>
+    <p style="word-break: break-all; background-color: #e5e7eb; padding: 12px; border-radius: 4px; font-size: 12px;">{{reset_url}}</p>
+    <p style="color: #666;">This link will expire in <strong>{{expiry_hours}} hour(s)</strong>.</p>
+    <div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+      <p style="margin: 0; color: #92400e; font-size: 14px;">If you didn''t request a password reset, please ignore this email. Your password will remain unchanged.</p>
+    </div>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>{{store_name}} Team<br>
+      <a href="{{store_url}}" style="color: #4F46E5;">{{store_url}}</a>
+    </p>
+  </div>
+</div>
+{{email_footer}}', '2025-11-28 10:00:00+00', '2025-11-28 10:00:00+00'), ('fdac4587-abf7-49d1-9e9d-ff8750bb6aa6', 'd6696302-9e73-4b27-a4bf-b2832803b3e3', 'en', 'Order Confirmation #{{order_number}}', 'Hi {{customer_first_name}},
 
 Thank you for your order!
 
@@ -905,111 +1142,76 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
       <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
     </p>
   </div>
-</div>', '2025-10-31 21:21:14.762+00', '2025-11-06 06:11:10.628+00'), ('20229878-978d-4d65-84c7-5f4fa1b8357c', '365b5e11-7181-45e1-9426-3de098a6182d', 'en', 'Your order #{{order_number}} has been shipped!', null, '{{email_header}}
+</div>', '2025-10-31 21:21:14.762+00', '2025-11-06 06:11:10.628+00'), ('ba6dbb5e-4bde-45ca-8386-d4940e8faaf5', 'd3176294-44e3-4893-993d-9b5c60202aaa', 'en', 'Invoice #{{invoice_number}} from {{store_name}}', null, '{{email_header}}
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <div style="background-color: #f8f9fa; padding: 30px;">
-    <h2 style="color: #667eea; margin: 0 0 20px 0; text-align: center;">Your Order is On Its Way!</h2>
+    <h2 style="color: #667eea; margin: 0 0 20px 0; text-align: center;">Invoice #{{invoice_number}}</h2>
     <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>Great news! Your order has been shipped and is on its way to you.</p>
+    <p>Thank you for your order! Please find your invoice details below.</p>
     <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <h3 style="margin-top: 0; color: #667eea;">Shipping Details</h3>
+      <h3 style="margin-top: 0; color: #667eea;">Invoice Details</h3>
       <table style="width: 100%; border-collapse: collapse;">
         <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Order Number</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_number}}</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Invoice Number</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">{{invoice_number}}</td>
         </tr>
         <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tracking Number</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: bold;">{{tracking_number}}</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Invoice Date</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{invoice_date}}</td>
         </tr>
         <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping Method</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{shipping_method}}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0;">Estimated Delivery</td>
-          <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #10b981;">{{estimated_delivery_date}}</td>
+          <td style="padding: 8px 0;">Order Number</td>
+          <td style="padding: 8px 0; text-align: right;">{{order_number}}</td>
         </tr>
       </table>
     </div>
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="{{tracking_url}}" style="background-color: #667eea; color: white; padding: 12px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-        Track Your Package
-      </a>
-    </div>
     <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <h3 style="margin-top: 0; color: #667eea;">Shipped Items</h3>
+      <h3 style="margin-top: 0; color: #667eea;">Order Items</h3>
       {{items_html}}
     </div>
-    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin: 20px 0;">
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #667eea;">Invoice Summary</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Subtotal</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_subtotal}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Shipping</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_shipping}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Tax</td>
+          <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">{{order_tax}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; color: #667eea;">Total</td>
+          <td style="padding: 12px 0 0 0; font-size: 18px; font-weight: bold; text-align: right; color: #667eea;">{{order_total}}</td>
+        </tr>
+      </table>
+    </div>
+    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0;">
+      <p style="margin: 0; color: #333;">
+        <strong style="color: #667eea;">Billing Address</strong><br>
+        {{billing_address}}
+      </p>
+    </div>
+    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin-bottom: 20px;">
       <p style="margin: 0; color: #333;">
         <strong style="color: #10b981;">Shipping Address</strong><br>
         {{shipping_address}}
       </p>
     </div>
-    <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 20px;">
-      <p style="margin: 0; color: #333;">
-        <strong style="color: #f59e0b;">Delivery Instructions</strong><br>
-        {{delivery_instructions}}
-      </p>
-    </div>
   </div>
 </div>
-{{email_footer}}', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00'), ('3a2418cb-7199-416f-be59-70b9ab0abe92', 'a90d6ed4-054e-42f2-b844-7f9c68b89215', 'en', 'Verify your email - {{store_name}}', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #333;">Verify Your Email</h2>
-              <p>Hi {{customer_first_name}},</p>
-              <p>Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:</p>
-              <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px;">
-                <h1 style="font-size: 36px; letter-spacing: 8px; color: #4F46E5; font-family: monospace; margin: 0;">
-                  {{verification_code}}
-                </h1>
-              </div>
-              <p>This code will expire in <strong>15 minutes</strong>.</p>
-              <p style="color: #666; font-size: 14px;">If you didn''t create an account at {{store_name}}, please ignore this email.</p>
-              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-              <p style="color: #999; font-size: 12px;">
-                Best regards,<br>
-                {{store_name}} Team<br>
-                <a href="{{store_url}}">{{store_url}}</a>
-              </p>
-            </div>', '2025-11-03 23:14:30.679+00', '2025-11-06 06:11:10.628+00'), ('00a2b31c-0f9e-4f6f-a0e1-211077b54eae', 'cb434957-62bc-4909-b277-aba53cc97102', 'en', 'Email Header Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+{{email_footer}}', '2025-11-05 17:45:19.314+00', '2025-12-05 15:13:06.768427+00'), ('00a2b31c-0f9e-4f6f-a0e1-211077b54eae', '07958749-5770-4838-87e1-b860ee355fb7', 'en', 'Email Header Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
                 <div style="background-color: white; width: 120px; height: 120px; margin: 0 auto 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 10px;">
                   <img src="{{store_logo_url}}" alt="{{store_name}}" style="max-width: 100px; max-height: 100px; object-fit: contain;">
                 </div>
                 <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">{{store_name}}</h1>
               </div>
-            </div>', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00'), ('ec79261c-2efa-4272-bccd-bafd70867964', 'ab215fd4-b763-4c02-963e-e44152553fd4', 'en', 'Welcome to {{store_name}}!', 'Hi {{customer_first_name}},
-
-Welcome to {{store_name}}! We''re thrilled to have you with us.
-
-Your account has been successfully created. You can now browse our products and track your orders.
-
-Login to your account: {{login_url}}
-
-Best regards,
-The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #333;">Welcome to {{store_name}}!</h2>
-              <p>Hi {{customer_first_name}},</p>
-              <p>Thank you for creating an account with us! We''re excited to have you on board.</p>
-              <p>You can now:</p>
-              <ul>
-                <li>Track your orders</li>
-                <li>Save addresses for faster checkout</li>
-                <li>View your order history</li>
-              </ul>
-              <p style="margin-top: 30px;">
-                <a href="{{login_url}}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                  Go to My Account
-                </a>
-              </p>
-              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-              <p style="color: #999; font-size: 12px;">
-                Best regards,<br>
-                {{store_name}} Team<br>
-                <a href="{{store_url}}">{{store_url}}</a>
-              </p>
-            </div>', '2025-10-31 21:21:14.762+00', '2025-11-06 06:11:10.628+00'), ('de637ddd-bcf9-4323-90fb-14b695d5cc81', '1483f2d4-afb4-49bb-aac8-3ee5e8411b03', 'en', 'Email Footer Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            </div>', '2025-11-05 17:45:19.314+00', '2025-12-05 15:24:04.223845+00'), ('de637ddd-bcf9-4323-90fb-14b695d5cc81', 'f67ae526-c1ab-45ab-bbd5-5b7b353644d9', 'en', 'Email Footer Template', null, '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <div style="background-color: #f9fafb; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
                 <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0;">
                   Questions? Contact us at <a href="mailto:{{contact_email}}" style="color: #4f46e5; text-decoration: none;">{{contact_email}}</a>
@@ -1027,141 +1229,7 @@ The {{store_name}} Team', '<div style="font-family: Arial, sans-serif; max-width
                   © {{current_year}} {{store_name}}. All rights reserved.
                 </p>
               </div>
-            </div>', '2025-11-05 17:45:19.314+00', '2025-11-06 06:11:10.628+00');
-
--- email_verification translation
-INSERT INTO email_template_translations ("id", "email_template_id", "language_code", "subject", "template_content", "html_content", "created_at", "updated_at")
-VALUES ('f8a52211-ddca-40d1-ac14-4b3d84ba256c', 'caa52211-ddca-40d1-ac14-4b3d84ba256b', 'en', 'Verify your email - {{store_name}}',
-'Hi {{customer_first_name}},
-
-Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:
-
-Your verification code: {{verification_code}}
-
-This code will expire in 15 minutes.
-
-If you didn''t create an account at {{store_name}}, please ignore this email.
-
-Best regards,
-{{store_name}} Team',
-'<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Verify Your Email</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>Thank you for registering at {{store_name}}! Please use the following verification code to complete your registration:</p>
-    <div style="background-color: white; padding: 30px; border-radius: 8px; margin: 20px 0; text-align: center;">
-      <p style="color: #666; margin: 0 0 10px 0; font-size: 14px;">Your verification code:</p>
-      <h1 style="font-size: 42px; letter-spacing: 8px; color: #667eea; font-family: monospace; margin: 0;">
-        {{verification_code}}
-      </h1>
-    </div>
-    <p style="text-align: center; color: #666;">This code will expire in <strong>15 minutes</strong>.</p>
-    <p style="color: #999; font-size: 14px; text-align: center;">If you didn''t create an account at {{store_name}}, please ignore this email.</p>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team
-    </p>
-  </div>
-</div>', '2025-11-26 10:00:00.000+00', '2025-11-26 10:00:00.000+00')
-ON CONFLICT DO NOTHING;
-
--- signup_email translation (welcome email after verification)
-INSERT INTO email_template_translations ("id", "email_template_id", "language_code", "subject", "template_content", "html_content", "created_at", "updated_at")
-SELECT
-  'a1b52211-ddca-40d1-ac14-4b3d84ba256d',
-  id,
-  'en',
-  'Welcome to {{store_name}}!',
-  'Hi {{customer_first_name}},
-
-Welcome to {{store_name}}! We are thrilled to have you with us.
-
-Your account has been successfully created and verified. You can now:
-- Browse our products
-- Track your orders
-- Save addresses for faster checkout
-- View your order history
-
-Login to your account: {{login_url}}
-
-Best regards,
-The {{store_name}} Team',
-  '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Welcome to {{store_name}}!</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>We are thrilled to have you with us! Your account has been successfully created and verified.</p>
-    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-      <h3 style="margin-top: 0; color: #667eea;">What you can do now:</h3>
-      <ul style="padding-left: 20px;">
-        <li>Browse our products</li>
-        <li>Track your orders</li>
-        <li>Save addresses for faster checkout</li>
-        <li>View your order history</li>
-      </ul>
-    </div>
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="{{login_url}}" style="background-color: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-        Login to Your Account
-      </a>
-    </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team
-    </p>
-  </div>
-</div>',
-  '2025-11-26 10:00:00.000+00',
-  '2025-11-26 10:00:00.000+00'
-FROM email_templates
-WHERE identifier = 'signup_email'
-LIMIT 1
-ON CONFLICT DO NOTHING;
-
--- Stock issue email template translations (3 rows)
-INSERT INTO email_template_translations ("id", "email_template_id", "language_code", "subject", "template_content", "html_content", "created_at", "updated_at") VALUES
-('b1c2d3e4-f5a6-4789-bcde-111111111111', 'a1b2c3d4-e5f6-4789-abcd-111111111111', 'en', 'Update on your order #{{order_number}} - {{store_name}}', 'Hi {{customer_first_name}},
-
-Thank you for your order #{{order_number}} at {{store_name}}.
-
-We wanted to let you know that we are currently reviewing your order. We may have detected a potential availability issue with one or more items in your order, and our team is working to resolve this as quickly as possible.
-
-Items being reviewed:
-{{items_list}}
-
-We sincerely apologize for any inconvenience this may cause. We will contact you shortly with an update on your order status.
-
-If you have any questions in the meantime, please don''t hesitate to reach out to us.
-
-Best regards,
-{{store_name}} Team', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #f59e0b; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Order Update</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>Thank you for your order <strong>#{{order_number}}</strong> at {{store_name}}.</p>
-    <p>We wanted to let you know that we are currently reviewing your order. We may have detected a potential availability issue with one or more items, and our team is working to resolve this as quickly as possible.</p>
-    <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-      <p style="margin: 0 0 10px 0; font-weight: bold; color: #92400e;">Items being reviewed:</p>
-      <pre style="margin: 0; white-space: pre-wrap; color: #92400e; font-family: inherit;">{{items_list}}</pre>
-    </div>
-    <p>We sincerely apologize for any inconvenience this may cause. We will contact you shortly with an update on your order status.</p>
-    <p style="color: #666;">If you have any questions in the meantime, please don''t hesitate to reach out to us.</p>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
-    </p>
-  </div>
-</div>
-{{email_footer}}', '2025-11-26 10:00:00.000+00', '2025-11-26 10:00:00.000+00'),
-('b1c2d3e4-f5a6-4789-bcde-222222222222', 'a1b2c3d4-e5f6-4789-abcd-222222222222', 'en', 'ACTION REQUIRED: Stock issue on order #{{order_number}}', 'Stock Issue Alert - Order #{{order_number}}
+            </div>', '2025-11-05 17:45:19.314+00', '2025-12-05 15:59:13.967406+00'), ('b1c2d3e4-f5a6-4789-bcde-222222222222', 'a1b2c3d4-e5f6-4789-abcd-222222222222', 'en', 'ACTION REQUIRED: Stock issue on order #{{order_number}}', 'Stock Issue Alert - Order #{{order_number}}
 
 A stock issue has been detected for the following order:
 
@@ -1217,137 +1285,8 @@ Best regards,
     </p>
   </div>
 </div>
-{{email_footer}}', '2025-11-26 10:00:00.000+00', '2025-11-26 10:00:00.000+00'),
-('b1c2d3e4-f5a6-4789-bcde-333333333333', 'a1b2c3d4-e5f6-4789-abcd-333333333333', 'en', 'Your order #{{order_number}} has been refunded - {{store_name}}', 'Hi {{customer_first_name}},
-
-We are writing to inform you that your order #{{order_number}} has been refunded.
-
-Unfortunately, due to an inventory discrepancy, we were unable to fulfill your order. We sincerely apologize for any inconvenience this may have caused.
-
-Refund Details:
-- Order Number: #{{order_number}}
-- Refund Amount: {{currency}} {{refund_amount}}
-
-The refund has been processed and should appear in your account within 5-10 business days, depending on your payment provider.
-
-We truly value you as a customer and hope you will give us another opportunity to serve you. Please feel free to browse our store for alternative products.
-
-If you have any questions or concerns, please don''t hesitate to contact us.
-
-Best regards,
-{{store_name}} Team', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #667eea; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Order Refunded</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>We are writing to inform you that your order <strong>#{{order_number}}</strong> has been refunded.</p>
-    <p>Unfortunately, due to an inventory discrepancy, we were unable to fulfill your order. We sincerely apologize for any inconvenience this may have caused.</p>
-    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb;">
-      <h3 style="margin: 0 0 15px 0; color: #333;">Refund Details</h3>
-      <table style="width: 100%; border-collapse: collapse;">
-        <tr><td style="padding: 8px 0; color: #666;">Order Number:</td><td style="padding: 8px 0; text-align: right;"><strong>#{{order_number}}</strong></td></tr>
-        <tr><td style="padding: 8px 0; color: #666;">Refund Amount:</td><td style="padding: 8px 0; text-align: right; font-size: 18px; color: #059669;"><strong>{{currency}} {{refund_amount}}</strong></td></tr>
-      </table>
-    </div>
-    <p style="color: #666;">The refund has been processed and should appear in your account within <strong>5-10 business days</strong>, depending on your payment provider.</p>
-    <p>We truly value you as a customer and hope you will give us another opportunity to serve you.</p>
-    <p style="text-align: center; margin-top: 30px;">
-      <a href="{{store_url}}" style="background-color: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-        Continue Shopping
-      </a>
-    </p>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #667eea;">{{store_url}}</a>
-    </p>
-  </div>
-</div>
-{{email_footer}}', '2025-11-26 10:00:00.000+00', '2025-11-26 10:00:00.000+00')
+{{email_footer}}', '2025-11-26 10:00:00+00', '2025-11-26 10:00:00+00')
 ON CONFLICT DO NOTHING;
-
--- Password reset email template translations (2 rows)
-INSERT INTO email_template_translations ("id", "email_template_id", "language_code", "subject", "template_content", "html_content", "created_at", "updated_at") VALUES
-('b1c2d3e4-f5a6-4789-bcde-444444444444', 'a1b2c3d4-e5f6-4789-abcd-444444444444', 'en', 'Reset your password - {{store_name}}', 'Hi {{customer_first_name}},
-
-We received a request to reset your password for your {{store_name}} account.
-
-Click the link below to set a new password:
-{{reset_url}}
-
-This link will expire in {{expiry_hours}} hour(s).
-
-If you didn''t request a password reset, please ignore this email. Your password will remain unchanged.
-
-Best regards,
-{{store_name}} Team
-{{store_url}}', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #4F46E5; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Reset Your Password</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>We received a request to reset your password for your <strong>{{store_name}}</strong> account.</p>
-    <p>Click the button below to set a new password:</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="{{reset_url}}" style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-        Reset Password
-      </a>
-    </p>
-    <p style="color: #666; font-size: 14px;">Or copy and paste this link in your browser:</p>
-    <p style="word-break: break-all; background-color: #e5e7eb; padding: 12px; border-radius: 4px; font-size: 12px;">{{reset_url}}</p>
-    <p style="color: #666;">This link will expire in <strong>{{expiry_hours}} hour(s)</strong>.</p>
-    <div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-      <p style="margin: 0; color: #92400e; font-size: 14px;">If you didn''t request a password reset, please ignore this email. Your password will remain unchanged.</p>
-    </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #4F46E5;">{{store_url}}</a>
-    </p>
-  </div>
-</div>
-{{email_footer}}', '2025-11-28 10:00:00.000+00', '2025-11-28 10:00:00.000+00'),
-('b1c2d3e4-f5a6-4789-bcde-555555555555', 'a1b2c3d4-e5f6-4789-abcd-555555555555', 'en', 'Your password has been reset - {{store_name}}', 'Hi {{customer_first_name}},
-
-Your password for your {{store_name}} account has been successfully reset.
-
-You can now log in with your new password:
-{{login_url}}
-
-If you did not make this change, please contact our support team immediately.
-
-Best regards,
-{{store_name}} Team
-{{store_url}}', '{{email_header}}
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background-color: #059669; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="color: white; margin: 0;">Password Reset Successful</h1>
-  </div>
-  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p>Hi <strong>{{customer_first_name}}</strong>,</p>
-    <p>Your password for your <strong>{{store_name}}</strong> account has been successfully reset.</p>
-    <p style="text-align: center; margin: 30px 0;">
-      <a href="{{login_url}}" style="background-color: #059669; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-        Log In Now
-      </a>
-    </p>
-    <div style="background-color: #fef2f2; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #dc2626;">
-      <p style="margin: 0; color: #991b1b; font-size: 14px;"><strong>Security Notice:</strong> If you did not make this change, please contact our support team immediately.</p>
-    </div>
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-    <p style="color: #999; font-size: 12px; text-align: center;">
-      Best regards,<br>{{store_name}} Team<br>
-      <a href="{{store_url}}" style="color: #059669;">{{store_url}}</a>
-    </p>
-  </div>
-</div>
-{{email_footer}}', '2025-11-28 10:00:00.000+00', '2025-11-28 10:00:00.000+00')
-ON CONFLICT DO NOTHING;
-
 
 -- languages (15 rows)
 INSERT INTO languages (id, code, name, native_name, flag, is_rtl, is_active, is_default, translations, created_at, updated_at)
