@@ -109,27 +109,22 @@ VALUES
   ('b3f52d82-6591-4a20-9ed2-d2172c6fec54', 'background_jobs', 'Background Jobs', 'Activity', '/admin/background-jobs', 'store', 910, true, true, NULL, 'advanced', NULL, 'Monitor all background job processing and queue status', NULL, '2025-11-13T06:13:20.486Z', '2025-11-13T06:13:20.486Z', NULL)
 ON CONFLICT DO NOTHING;
 
--- attribute_sets: Create 'Default' attribute set for the store
+-- attribute_sets: Create 'Default' attribute set (store_id updated by provisioning service)
 INSERT INTO attribute_sets (id, name, description, is_default, sort_order, store_id, attribute_ids, created_at, updated_at)
-SELECT gen_random_uuid(), 'Default', 'Default attribute set', true, 0, id, '[]'::jsonb, NOW(), NOW()
-FROM stores LIMIT 1;
+VALUES (gen_random_uuid(), 'Default', 'Default attribute set', true, 0, '00000000-0000-0000-0000-000000000000', '[]'::jsonb, NOW(), NOW());
 
--- categories: Create 'root-catalog' category with translations
-DO $$
-DECLARE
-  v_store_id UUID;
-  v_category_id UUID := gen_random_uuid();
-BEGIN
-  SELECT id INTO v_store_id FROM stores LIMIT 1;
+-- categories: Create 'root-catalog' category (store_id updated by provisioning service)
+INSERT INTO categories (id, store_id, slug, sort_order, is_active, hide_in_menu, parent_id, level, created_at, updated_at)
+VALUES (gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'root-catalog', 0, true, false, NULL, 0, NOW(), NOW());
 
-  INSERT INTO categories (id, store_id, slug, sort_order, is_active, hide_in_menu, parent_id, level, created_at, updated_at)
-  VALUES (v_category_id, v_store_id, 'root-catalog', 0, true, false, NULL, 0, NOW(), NOW());
+-- category_translations: Add translations for root-catalog
+INSERT INTO category_translations (category_id, language_code, name, description, created_at, updated_at)
+SELECT id, 'en', 'Root Catalog', 'Default root category for product catalog', NOW(), NOW()
+FROM categories WHERE slug = 'root-catalog';
 
-  INSERT INTO category_translations (category_id, language_code, name, description, created_at, updated_at)
-  VALUES
-    (v_category_id, 'en', 'Root Catalog', 'Default root category for product catalog', NOW(), NOW()),
-    (v_category_id, 'nl', 'Hoofdcatalogus', 'Standaard hoofdcategorie voor productcatalogus', NOW(), NOW());
-END $$;
+INSERT INTO category_translations (category_id, language_code, name, description, created_at, updated_at)
+SELECT id, 'nl', 'Hoofdcatalogus', 'Standaard hoofdcategorie voor productcatalogus', NOW(), NOW()
+FROM categories WHERE slug = 'root-catalog';
 
 -- cms_pages (3 rows)
 INSERT INTO cms_pages (id, slug, is_active, meta_title, meta_description, meta_keywords, meta_robots_tag, store_id, related_product_ids, published_at, sort_order, created_at, updated_at, is_system, seo)

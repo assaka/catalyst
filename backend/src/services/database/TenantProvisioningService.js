@@ -312,7 +312,8 @@ END $$;`;
             'payment_methods',
             'pdf_templates',
             'shipping_methods',
-            'attribute_sets'
+            'attribute_sets',
+            'categories'
           ];
 
           const updateQueries = tablesToUpdate.map(table =>
@@ -405,7 +406,8 @@ END $$;`;
         'payment_methods',
         'pdf_templates',
         'shipping_methods',
-        'attribute_sets'
+        'attribute_sets',
+        'categories'
       ];
 
       for (const table of tablesToUpdate) {
