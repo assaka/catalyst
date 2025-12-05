@@ -7,72 +7,109 @@
 -- SECTION 1: CREATE TYPE ENUMS
 -- ============================================
 
-CREATE TYPE IF NOT EXISTS enum_ab_tests_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_ab_tests_status AS ENUM (
     'draft',
     'running',
     'paused',
     'completed',
     'archived'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_addresses_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_addresses_type AS ENUM (
     'billing',
     'shipping',
     'both'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_akeneo_custom_mappings_mapping_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_akeneo_custom_mappings_mapping_type AS ENUM (
     'attributes',
     'images',
     'files'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_akeneo_schedules_import_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_akeneo_schedules_import_type AS ENUM (
     'attributes',
     'families',
     'categories',
     'products',
     'all'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_akeneo_schedules_schedule_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_akeneo_schedules_schedule_type AS ENUM (
     'once',
     'hourly',
     'daily',
     'weekly',
     'monthly'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_akeneo_schedules_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_akeneo_schedules_status AS ENUM (
     'scheduled',
     'running',
     'completed',
     'failed',
     'paused'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_ast_diffs_change_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_ast_diffs_change_type AS ENUM (
     'addition',
     'modification',
     'deletion',
     'refactor',
     'style'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_ast_diffs_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_ast_diffs_status AS ENUM (
     'draft',
     'applied',
     'rejected',
     'reverted'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_attributes_filter_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_attributes_filter_type AS ENUM (
     'multiselect',
     'slider',
     'select'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_attributes_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_attributes_type AS ENUM (
     'text',
     'number',
     'select',
@@ -82,60 +119,96 @@ CREATE TYPE IF NOT EXISTS enum_attributes_type AS ENUM (
     'file',
     'image'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_consent_logs_consent_method AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_consent_logs_consent_method AS ENUM (
     'accept_all',
     'reject_all',
     'custom'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_cookie_consent_settings_banner_position AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_cookie_consent_settings_banner_position AS ENUM (
     'top',
     'bottom',
     'center'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_cookie_consent_settings_theme AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_cookie_consent_settings_theme AS ENUM (
     'light',
     'dark',
     'custom'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_coupons_discount_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_coupons_discount_type AS ENUM (
     'fixed',
     'percentage',
     'buy_x_get_y',
     'free_shipping'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_credit_transactions_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_credit_transactions_status AS ENUM (
     'pending',
     'completed',
     'failed',
     'refunded'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_credit_transactions_transaction_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_credit_transactions_transaction_type AS ENUM (
     'purchase',
     'bonus',
     'refund'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_credit_usage_usage_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_credit_usage_usage_type AS ENUM (
     'akeneo_schedule',
     'akeneo_manual',
     'other'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_custom_analytics_events_event_category AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_custom_analytics_events_event_category AS ENUM (
     'ecommerce',
     'engagement',
     'conversion',
     'navigation',
     'custom'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_custom_analytics_events_trigger_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_custom_analytics_events_trigger_type AS ENUM (
     'page_load',
     'click',
     'form_submit',
@@ -144,29 +217,45 @@ CREATE TYPE IF NOT EXISTS enum_custom_analytics_events_trigger_type AS ENUM (
     'custom',
     'automatic'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_custom_domains_ssl_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_custom_domains_ssl_status AS ENUM (
     'pending',
     'active',
     'failed',
     'expired',
     'renewing'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_custom_domains_verification_method AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_custom_domains_verification_method AS ENUM (
     'txt',
     'cname',
     'http'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_custom_domains_verification_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_custom_domains_verification_status AS ENUM (
     'pending',
     'verifying',
     'verified',
     'failed'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_customer_activities_activity_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_customer_activities_activity_type AS ENUM (
     'page_view',
     'product_view',
     'add_to_cart',
@@ -175,45 +264,73 @@ CREATE TYPE IF NOT EXISTS enum_customer_activities_activity_type AS ENUM (
     'order_completed',
     'search'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_customer_activities_device_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_customer_activities_device_type AS ENUM (
     'desktop',
     'tablet',
     'mobile'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_customer_addresses_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_customer_addresses_type AS ENUM (
     'billing',
     'shipping',
     'both'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_customization_rollbacks_rollback_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_customization_rollbacks_rollback_type AS ENUM (
     'full_rollback',
     'selective_rollback',
     'cherry_pick'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_customization_snapshots_change_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_customization_snapshots_change_type AS ENUM (
     'initial',
     'ai_modification',
     'manual_edit',
     'rollback',
     'merge'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_customization_snapshots_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_customization_snapshots_status AS ENUM (
     'open',
     'finalized'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_heatmap_interactions_device_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_heatmap_interactions_device_type AS ENUM (
     'desktop',
     'tablet',
     'mobile'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_heatmap_interactions_interaction_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_heatmap_interactions_interaction_type AS ENUM (
     'click',
     'hover',
     'scroll',
@@ -222,41 +339,65 @@ CREATE TYPE IF NOT EXISTS enum_heatmap_interactions_interaction_type AS ENUM (
     'focus',
     'key_press'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_heatmap_sessions_device_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_heatmap_sessions_device_type AS ENUM (
     'desktop',
     'tablet',
     'mobile'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_hybrid_customizations_deployment_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_hybrid_customizations_deployment_status AS ENUM (
     'draft',
     'deployed',
     'failed',
     'pending',
     'rolled_back'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_hybrid_customizations_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_hybrid_customizations_status AS ENUM (
     'active',
     'archived',
     'rolled_back'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_integration_configs_connection_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_integration_configs_connection_status AS ENUM (
     'untested',
     'success',
     'failed'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_integration_configs_sync_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_integration_configs_sync_status AS ENUM (
     'idle',
     'syncing',
     'success',
     'error'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_job_history_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_job_history_status AS ENUM (
     'started',
     'progress_update',
     'completed',
@@ -264,54 +405,82 @@ CREATE TYPE IF NOT EXISTS enum_job_history_status AS ENUM (
     'retried',
     'cancelled'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_jobs_priority AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_jobs_priority AS ENUM (
     'low',
     'normal',
     'high',
     'urgent'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_jobs_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_jobs_status AS ENUM (
     'pending',
     'running',
     'completed',
     'failed',
     'cancelled'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_marketplace_credentials_marketplace AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_marketplace_credentials_marketplace AS ENUM (
     'amazon',
     'ebay',
     'google_shopping',
     'facebook',
     'instagram'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_marketplace_credentials_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_marketplace_credentials_status AS ENUM (
     'active',
     'inactive',
     'error',
     'testing'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_orders_fulfillment_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_orders_fulfillment_status AS ENUM (
     'pending',
     'processing',
     'shipped',
     'delivered',
     'cancelled'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_orders_payment_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_orders_payment_status AS ENUM (
     'pending',
     'paid',
     'partially_paid',
     'refunded',
     'failed'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_orders_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_orders_status AS ENUM (
     'pending',
     'processing',
     'shipped',
@@ -319,24 +488,40 @@ CREATE TYPE IF NOT EXISTS enum_orders_status AS ENUM (
     'cancelled',
     'refunded'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_payment_methods_availability AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_payment_methods_availability AS ENUM (
     'all',
     'specific_countries'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_payment_methods_fee_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_payment_methods_fee_type AS ENUM (
     'fixed',
     'percentage',
     'none'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_payment_methods_payment_flow AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_payment_methods_payment_flow AS ENUM (
     'online',
     'offline'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_payment_methods_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_payment_methods_type AS ENUM (
     'credit_card',
     'debit_card',
     'paypal',
@@ -345,8 +530,12 @@ CREATE TYPE IF NOT EXISTS enum_payment_methods_type AS ENUM (
     'cash_on_delivery',
     'other'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_product_labels_position AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_product_labels_position AS ENUM (
     'top-left',
     'top-right',
     'top-center',
@@ -357,21 +546,33 @@ CREATE TYPE IF NOT EXISTS enum_product_labels_position AS ENUM (
     'center',
     'bottom-center'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_product_tabs_tab_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_product_tabs_tab_type AS ENUM (
     'text',
     'description',
     'attributes',
     'attribute_sets'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_products_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_products_status AS ENUM (
     'draft',
     'active',
     'inactive'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_products_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_products_type AS ENUM (
     'simple',
     'configurable',
     'bundle',
@@ -379,49 +580,77 @@ CREATE TYPE IF NOT EXISTS enum_products_type AS ENUM (
     'virtual',
     'downloadable'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_products_visibility AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_products_visibility AS ENUM (
     'visible',
     'hidden'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_redirects_entity_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_redirects_entity_type AS ENUM (
     'category',
     'product',
     'cms_page'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_redirects_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_redirects_type AS ENUM (
     '301',
     '302',
     '307',
     '308'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_sales_invoices_email_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_sales_invoices_email_status AS ENUM (
     'sent',
     'failed',
     'bounced',
     'delivered'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_sales_orders_fulfillment_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_sales_orders_fulfillment_status AS ENUM (
     'pending',
     'processing',
     'shipped',
     'delivered',
     'cancelled'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_sales_orders_payment_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_sales_orders_payment_status AS ENUM (
     'pending',
     'paid',
     'partially_paid',
     'refunded',
     'failed'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_sales_orders_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_sales_orders_status AS ENUM (
     'pending',
     'processing',
     'shipped',
@@ -429,15 +658,23 @@ CREATE TYPE IF NOT EXISTS enum_sales_orders_status AS ENUM (
     'cancelled',
     'refunded'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_sales_shipments_email_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_sales_shipments_email_status AS ENUM (
     'sent',
     'failed',
     'bounced',
     'delivered'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_seo_templates_page_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_seo_templates_page_type AS ENUM (
     'home',
     'product',
     'category',
@@ -446,8 +683,12 @@ CREATE TYPE IF NOT EXISTS enum_seo_templates_page_type AS ENUM (
     'cart',
     'checkout'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_seo_templates_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_seo_templates_type AS ENUM (
     'product',
     'category',
     'cms',
@@ -456,104 +697,163 @@ CREATE TYPE IF NOT EXISTS enum_seo_templates_type AS ENUM (
     'brand',
     'blog_post'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_shipping_methods_availability AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_shipping_methods_availability AS ENUM (
     'all',
     'specific_countries'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_shipping_methods_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_shipping_methods_type AS ENUM (
     'flat_rate',
     'free_shipping',
     'weight_based',
     'price_based'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_slot_configurations_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_slot_configurations_status AS ENUM (
     'draft',
     'acceptance',
     'published',
     'reverted'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_snapshot_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_snapshot_status AS ENUM (
     'open',
     'finalized'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_store_data_migrations_migration_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_store_data_migrations_migration_status AS ENUM (
     'pending',
     'in_progress',
     'completed',
     'failed',
     'paused'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_store_routes_route_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_store_routes_route_type AS ENUM (
     'core',
     'custom',
     'cms_page',
     'product_detail',
     'category'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_store_routes_target_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_store_routes_target_type AS ENUM (
     'component',
     'cms_page',
     'external_url',
     'redirect'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_store_supabase_connections_connection_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_store_supabase_connections_connection_status AS ENUM (
     'active',
     'inactive',
     'error'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- NOTE: store_teams is now in MASTER database (not tenant)
 
-CREATE TYPE IF NOT EXISTS enum_store_templates_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_store_templates_type AS ENUM (
     'category',
     'product',
     'checkout',
     'homepage',
     'custom'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_stores_deployment_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_stores_deployment_status AS ENUM (
     'draft',
     'deployed',
     'published',
     'failed'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_deployment_status AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_deployment_status AS ENUM (
     'draft',
     'deploying'
     'deployed',
     'published',
     'failed'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_template_assets_asset_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_template_assets_asset_type AS ENUM (
     'javascript',
     'css',
     'image',
     'font',
     'other'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_users_account_type AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_users_account_type AS ENUM (
     'agency',
     'individual',
     'customer'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE IF NOT EXISTS enum_users_role AS ENUM (
+DO $$ BEGIN
+    CREATE TYPE enum_users_role AS ENUM (
     'admin',
     'store_owner',
     'customer'
 );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TYPE IF NOT EXISTS service_category AS ENUM (
     'store_operations',
