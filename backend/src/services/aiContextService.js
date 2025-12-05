@@ -409,25 +409,33 @@ class AIContextService {
         }
       }
 
-      // For user messages with admin_entity intent, create training candidate for learning
+      // For user messages with admin_entity intent, use aiTrainingService for proper learning flow
+      // Note: Most AI routes call aiTrainingService.captureTrainingCandidate directly
+      // This is a fallback for routes that only call saveChatMessage
       if (role === 'user' && intent === 'admin_entity' && entity) {
-        const { error } = await masterDbClient.from('ai_training_candidates').insert({
-          user_id: userId || null,
-          store_id: storeId || null,
-          session_id: sessionId || null,
-          user_prompt: content,
-          ai_response: aiResponse,
-          detected_intent: intent,
-          detected_entity: entity,
-          detected_operation: operation,
-          outcome_status: wasSuccessful ? 'success' : 'pending',
-          training_status: 'candidate',
-          metadata: metadata || {},
-          created_at: new Date().toISOString()
-        });
+        try {
+          const aiTrainingService = require('./aiTrainingService');
+          const captureResult = await aiTrainingService.captureTrainingCandidate({
+            storeId,
+            userId,
+            sessionId,
+            userPrompt: content,
+            aiResponse,
+            detectedIntent: intent,
+            detectedEntity: entity,
+            detectedOperation: operation,
+            metadata: metadata || {}
+          });
 
-        if (error) {
-          console.error('Error saving training candidate:', error);
+          // If action already completed successfully, update outcome
+          if (captureResult.captured && wasSuccessful) {
+            await aiTrainingService.updateOutcome(captureResult.candidateId, 'success', {
+              source: 'saveChatMessage',
+              automatic: true
+            });
+          }
+        } catch (trainingError) {
+          console.error('Error capturing training candidate:', trainingError);
         }
       }
     } catch (error) {
