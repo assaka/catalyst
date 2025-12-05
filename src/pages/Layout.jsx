@@ -93,6 +93,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageLoader } from "@/components/ui/page-loader";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext";
 import { AIWorkspaceProvider } from "@/contexts/AIWorkspaceGlobalContext";
+import StoreHealthBanner from "@/components/admin/StoreHealthBanner";
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -817,6 +818,8 @@ function LayoutInner({ children, currentPageName }) {
             )
           }
         />
+
+        <StoreHealthBanner />
 
         <div className="flex-1 min-h-0 overflow-hidden">
           {children}

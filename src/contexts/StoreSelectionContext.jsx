@@ -26,7 +26,10 @@ export const StoreSelectionProvider = ({ children }) => {
     return null;
   });
   const [loading, setLoading] = useState(true);
+  const [storeHealth, setStoreHealth] = useState(null);
+  const [healthLoading, setHealthLoading] = useState(false);
   const storesLoadedRef = useRef(false);
+  const healthCheckedRef = useRef(null); // Track which store ID was health-checked
 
   // Check if we're on an admin page (exclude auth and onboarding)
   const isAdminPage = () => {
@@ -152,6 +155,129 @@ export const StoreSelectionProvider = ({ children }) => {
     }
   };
 
+  // Check store health when selected store changes
+  const checkStoreHealth = async (storeId) => {
+    if (!storeId) {
+      setStoreHealth(null);
+      return null;
+    }
+
+    // Skip if already checked this store
+    if (healthCheckedRef.current === storeId && storeHealth) {
+      return storeHealth;
+    }
+
+    try {
+      setHealthLoading(true);
+      const token = localStorage.getItem('store_owner_auth_token');
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/stores/${storeId}/health`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to check store health');
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        setStoreHealth(result.data);
+        healthCheckedRef.current = storeId;
+        return result.data;
+      } else {
+        setStoreHealth({ status: 'error', message: result.error });
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ StoreSelection: Error checking store health:', error);
+      setStoreHealth({ status: 'error', message: error.message });
+      return null;
+    } finally {
+      setHealthLoading(false);
+    }
+  };
+
+  // Check health when selected store changes
+  useEffect(() => {
+    if (selectedStore?.id && selectedStore.is_active && selectedStore.status === 'active') {
+      checkStoreHealth(selectedStore.id);
+    } else {
+      setStoreHealth(null);
+      healthCheckedRef.current = null;
+    }
+  }, [selectedStore?.id]);
+
+  // Reprovision store database
+  const reprovisionStore = async (storeName, storeSlug) => {
+    if (!selectedStore?.id) return { success: false, error: 'No store selected' };
+
+    try {
+      const token = localStorage.getItem('store_owner_auth_token');
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/stores/${selectedStore.id}/reprovision`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ storeName, storeSlug })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Re-check health after reprovisioning
+        healthCheckedRef.current = null;
+        await checkStoreHealth(selectedStore.id);
+      }
+
+      return result;
+    } catch (error) {
+      console.error('❌ StoreSelection: Error reprovisioning store:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Permanently delete store
+  const deleteStorePermanently = async () => {
+    if (!selectedStore?.id) return { success: false, error: 'No store selected' };
+
+    try {
+      const token = localStorage.getItem('store_owner_auth_token');
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/stores/${selectedStore.id}/permanent`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Clear selection and reload stores
+        localStorage.removeItem('selectedStoreId');
+        localStorage.removeItem('selectedStoreName');
+        localStorage.removeItem('selectedStoreSlug');
+        setSelectedStore(null);
+        setStoreHealth(null);
+        healthCheckedRef.current = null;
+        storesLoadedRef.current = false;
+        await loadStores();
+      }
+
+      return result;
+    } catch (error) {
+      console.error('❌ StoreSelection: Error deleting store:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
   const selectStore = (store) => {
     setSelectedStore(store);
     localStorage.setItem('selectedStoreId', store.id);
@@ -164,14 +290,29 @@ export const StoreSelectionProvider = ({ children }) => {
     }));
   };
 
+  // Reset health check when store changes
+  const handleSelectStore = (store) => {
+    healthCheckedRef.current = null;
+    setStoreHealth(null);
+    selectStore(store);
+  };
+
   const value = {
     availableStores,
     selectedStore,
     loading,
-    selectStore,
+    selectStore: handleSelectStore,
     refreshStores: loadStores,
     getSelectedStoreId: () => selectedStore?.id || null,
-    hasMultipleStores: () => availableStores.length > 1
+    hasMultipleStores: () => availableStores.length > 1,
+    // Health check
+    storeHealth,
+    healthLoading,
+    checkStoreHealth,
+    reprovisionStore,
+    deleteStorePermanently,
+    isStoreHealthy: storeHealth?.status === 'healthy',
+    needsProvisioning: storeHealth?.status === 'empty' || storeHealth?.status === 'partial'
   };
 
   return (
