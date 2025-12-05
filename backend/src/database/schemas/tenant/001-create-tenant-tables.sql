@@ -855,16 +855,6 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
-CREATE TYPE IF NOT EXISTS service_category AS ENUM (
-    'store_operations',
-    'plugin_management',
-    'ai_services',
-    'data_migration',
-    'storage',
-    'akeneo_integration',
-    'other'
-);
-
 -- ============================================
 -- SECTION 2: FUNCTIONS
 -- ============================================
@@ -999,8 +989,6 @@ CREATE TABLE IF NOT EXISTS stores (
   published_at TIMESTAMP WITH TIME ZONE
 );
 
--- store_media_storages table REMOVED - use integration_configs with integration_type like '%storage' (e.g., 'supabase-storage', 'aws-s3', 'cloudflare-r2')
-
 CREATE TABLE IF NOT EXISTS _migrations (
   name VARCHAR(255) PRIMARY KEY,
   run_at TIMESTAMP DEFAULT NOW(),
@@ -1090,7 +1078,7 @@ CREATE TABLE IF NOT EXISTS admin_navigation_registry (
 );
 
 CREATE TABLE IF NOT EXISTS ai_chat_sessions (
-                                                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     session_id VARCHAR(255),
     role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
@@ -1102,7 +1090,6 @@ CREATE TABLE IF NOT EXISTS ai_chat_sessions (
     visible BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
-
 
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3238,9 +3225,11 @@ CREATE INDEX IF NOT EXISTS ab_tests_status ON ab_tests USING btree (status);
 
 CREATE INDEX IF NOT EXISTS ab_tests_store_id ON ab_tests USING btree (store_id);
 
-CREATE INDEX idx_ai_chat_sessions_user ON ai_chat_sessions(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_user ON ai_chat_sessions(user_id, created_at DESC);
 
-CREATE UNIQUE INDEX akeneo_custom_mappings_store_id_mapping_type ON akeneo_custom_mappings USING btree (store_id, mapping_type);
+CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_session ON ai_chat_sessions(session_id, created_at);
+
+CREATE UNIQUE INDEX IF NOT EXISTS akeneo_custom_mappings_store_id_mapping_type ON akeneo_custom_mappings USING btree (store_id, mapping_type);
 
 CREATE INDEX IF NOT EXISTS akeneo_schedules_is_active ON akeneo_schedules USING btree (is_active);
 
@@ -3250,13 +3239,11 @@ CREATE INDEX IF NOT EXISTS akeneo_schedules_store_id ON akeneo_schedules USING b
 
 CREATE INDEX IF NOT EXISTS attribute_values_attribute_id ON attribute_values USING btree (attribute_id);
 
-CREATE UNIQUE INDEX attribute_values_attribute_id_code ON attribute_values USING btree (attribute_id, code);
+CREATE UNIQUE INDEX IF NOT EXISTS attribute_values_attribute_id_code ON attribute_values USING btree (attribute_id, code);
 
--- brevo_configurations indexes REMOVED - table no longer exists
+CREATE UNIQUE INDEX IF NOT EXISTS canonical_urls_store_id_page_url ON canonical_urls USING btree (store_id, page_url);
 
-CREATE UNIQUE INDEX canonical_urls_store_id_page_url ON canonical_urls USING btree (store_id, page_url);
-
-CREATE UNIQUE INDEX cms_blocks_identifier_store_id ON cms_blocks USING btree (identifier, store_id);
+CREATE UNIQUE INDEX IF NOT EXISTS cms_blocks_identifier_store_id ON cms_blocks USING btree (identifier, store_id);
 
 CREATE INDEX IF NOT EXISTS credit_transactions_status ON credit_transactions USING btree (status);
 
@@ -3282,18 +3269,6 @@ CREATE INDEX IF NOT EXISTS custom_analytics_events_store_id ON custom_analytics_
 
 CREATE INDEX IF NOT EXISTS custom_analytics_events_trigger_type ON custom_analytics_events USING btree (trigger_type);
 
-CREATE UNIQUE INDEX custom_domains_domain ON custom_domains USING btree (domain);
-
-CREATE INDEX IF NOT EXISTS custom_domains_is_active ON custom_domains USING btree (is_active);
-
-CREATE INDEX IF NOT EXISTS custom_domains_is_primary ON custom_domains USING btree (is_primary);
-
-CREATE INDEX IF NOT EXISTS custom_domains_ssl_status ON custom_domains USING btree (ssl_status);
-
-CREATE INDEX IF NOT EXISTS custom_domains_store_id ON custom_domains USING btree (store_id);
-
-CREATE INDEX IF NOT EXISTS custom_domains_verification_status ON custom_domains USING btree (verification_status);
-
 CREATE INDEX IF NOT EXISTS customer_activities_city ON customer_activities USING btree (city);
 
 CREATE INDEX IF NOT EXISTS customer_activities_country ON customer_activities USING btree (country);
@@ -3310,7 +3285,7 @@ CREATE INDEX IF NOT EXISTS customer_activities_store_id ON customer_activities U
 
 CREATE INDEX IF NOT EXISTS customer_activities_utm_source ON customer_activities USING btree (utm_source);
 
-CREATE UNIQUE INDEX customers_store_id_email ON customers USING btree (store_id, email);
+CREATE UNIQUE INDEX IF NOT EXISTS customers_store_id_email ON customers USING btree (store_id, email);
 
 CREATE INDEX IF NOT EXISTS email_send_logs_brevo_message_id ON email_send_logs USING btree (brevo_message_id);
 
@@ -3326,11 +3301,11 @@ CREATE INDEX IF NOT EXISTS email_send_logs_store_id ON email_send_logs USING btr
 
 CREATE INDEX IF NOT EXISTS email_template_translations_email_template_id ON email_template_translations USING btree (email_template_id);
 
-CREATE UNIQUE INDEX email_template_translations_email_template_id_language_code ON email_template_translations USING btree (email_template_id, language_code);
+CREATE UNIQUE INDEX IF NOT EXISTS email_template_translations_email_template_id_language_code ON email_template_translations USING btree (email_template_id, language_code);
 
 CREATE INDEX IF NOT EXISTS email_template_translations_language_code ON email_template_translations USING btree (language_code);
 
-CREATE UNIQUE INDEX email_templates_identifier_store_id ON email_templates USING btree (identifier, store_id);
+CREATE UNIQUE INDEX IF NOT EXISTS email_templates_identifier_store_id ON email_templates USING btree (identifier, store_id);
 
 CREATE INDEX IF NOT EXISTS email_templates_is_active ON email_templates USING btree (is_active);
 
@@ -3364,7 +3339,7 @@ CREATE INDEX IF NOT EXISTS idx_akeneo_mappings_lookup ON akeneo_mappings USING b
 
 CREATE INDEX IF NOT EXISTS idx_akeneo_mappings_sort_order ON akeneo_mappings USING btree (sort_order);
 
-CREATE UNIQUE INDEX idx_akeneo_mappings_unique ON akeneo_mappings USING btree (store_id, akeneo_code, akeneo_type, entity_type);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_akeneo_mappings_unique ON akeneo_mappings USING btree (store_id, akeneo_code, akeneo_type, entity_type);
 
 CREATE INDEX IF NOT EXISTS idx_akeneo_schedules_credit_cost ON akeneo_schedules USING btree (credit_cost);
 
@@ -3391,8 +3366,6 @@ CREATE INDEX IF NOT EXISTS idx_blacklist_emails_store_email ON blacklist_emails 
 CREATE INDEX IF NOT EXISTS idx_blacklist_ips_store_ip ON blacklist_ips USING btree (store_id, ip_address);
 
 CREATE INDEX IF NOT EXISTS idx_blacklist_settings_store ON blacklist_settings USING btree (store_id);
-
--- idx_brevo_configurations indexes REMOVED - table no longer exists
 
 CREATE INDEX IF NOT EXISTS idx_categories_active_menu ON categories USING btree (store_id, is_active, hide_in_menu, sort_order) WHERE ((is_active = true) AND (hide_in_menu = false));
 
@@ -3790,7 +3763,7 @@ CREATE INDEX IF NOT EXISTS idx_redirects_from_url ON redirects USING btree (from
 
 CREATE INDEX IF NOT EXISTS idx_redirects_is_active ON redirects USING btree (is_active);
 
-CREATE UNIQUE INDEX idx_redirects_store_from_unique ON redirects USING btree (store_id, from_url);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_redirects_store_from_unique ON redirects USING btree (store_id, from_url);
 
 CREATE INDEX IF NOT EXISTS idx_redirects_store_id ON redirects USING btree (store_id);
 
@@ -3798,15 +3771,11 @@ CREATE INDEX IF NOT EXISTS idx_shipping_methods_is_active ON shipping_methods US
 
 CREATE INDEX IF NOT EXISTS idx_shipping_methods_store_id ON shipping_methods USING btree (store_id);
 
--- idx_shopify_oauth_tokens indexes REMOVED - table no longer exists
-
 CREATE INDEX IF NOT EXISTS idx_slot_configurations_is_active ON slot_configurations USING btree (is_active);
 
 CREATE INDEX IF NOT EXISTS idx_slot_configurations_store_id ON slot_configurations USING btree (store_id);
 
 CREATE INDEX IF NOT EXISTS idx_store_status_page_version ON slot_configurations USING btree (store_id, status, page_type, version_number);
-
--- NOTE: store_teams indexes moved to MASTER database
 
 CREATE INDEX IF NOT EXISTS idx_store_uptime_charged_date ON store_uptime USING btree (charged_date);
 
@@ -3828,8 +3797,6 @@ CREATE INDEX IF NOT EXISTS idx_stores_published_at ON stores USING btree (publis
 
 CREATE INDEX IF NOT EXISTS idx_stores_slug ON stores USING btree (slug);
 
--- REMOVED: Indexes for deprecated supabase_oauth_tokens and supabase_project_keys tables
-
 CREATE INDEX IF NOT EXISTS idx_taxes_is_active ON taxes USING btree (is_active);
 
 CREATE INDEX IF NOT EXISTS idx_taxes_store_id ON taxes USING btree (store_id);
@@ -3848,7 +3815,7 @@ CREATE INDEX IF NOT EXISTS idx_users_is_active ON users USING btree (is_active);
 
 CREATE INDEX IF NOT EXISTS idx_users_role ON users USING btree (role);
 
-CREATE UNIQUE INDEX integration_configs_store_id_integration_type_key ON integration_configs USING btree (store_id, integration_type, config_key);
+CREATE UNIQUE INDEX IF NOT EXISTS integration_configs_store_id_integration_type_key ON integration_configs USING btree (store_id, integration_type, config_key);
 CREATE UNIQUE INDEX IF NOT EXISTS unique_primary_integration_per_store_type ON integration_configs (store_id, integration_type) WHERE is_primary = true;
 CREATE INDEX IF NOT EXISTS idx_integration_configs_store_id ON integration_configs (store_id);
 CREATE INDEX IF NOT EXISTS idx_integration_configs_type ON integration_configs (integration_type);
@@ -3888,15 +3855,15 @@ CREATE INDEX IF NOT EXISTS media_assets_folder ON media_assets USING btree (fold
 
 CREATE INDEX IF NOT EXISTS media_assets_store_id ON media_assets USING btree (store_id);
 
-CREATE UNIQUE INDEX media_assets_store_id_file_path ON media_assets USING btree (store_id, file_path);
+CREATE UNIQUE INDEX IF NOT EXISTS media_assets_store_id_file_path ON media_assets USING btree (store_id, file_path);
 
 CREATE INDEX IF NOT EXISTS pdf_template_translations_language_code ON pdf_template_translations USING btree (language_code);
 
 CREATE INDEX IF NOT EXISTS pdf_template_translations_pdf_template_id ON pdf_template_translations USING btree (pdf_template_id);
 
-CREATE UNIQUE INDEX pdf_template_translations_pdf_template_id_language_code ON pdf_template_translations USING btree (pdf_template_id, language_code);
+CREATE UNIQUE INDEX IF NOT EXISTS pdf_template_translations_pdf_template_id_language_code ON pdf_template_translations USING btree (pdf_template_id, language_code);
 
-CREATE UNIQUE INDEX pdf_templates_identifier_store_id ON pdf_templates USING btree (identifier, store_id);
+CREATE UNIQUE INDEX IF NOT EXISTS pdf_templates_identifier_store_id ON pdf_templates USING btree (identifier, store_id);
 
 CREATE INDEX IF NOT EXISTS pdf_templates_store_id ON pdf_templates USING btree (store_id);
 
@@ -3916,7 +3883,7 @@ CREATE INDEX IF NOT EXISTS plugins_is_enabled ON plugins USING btree (is_enabled
 
 CREATE INDEX IF NOT EXISTS plugins_is_installed ON plugins USING btree (is_installed);
 
-CREATE UNIQUE INDEX plugins_slug ON plugins USING btree (slug);
+CREATE UNIQUE INDEX IF NOT EXISTS plugins_slug ON plugins USING btree (slug);
 
 CREATE INDEX IF NOT EXISTS plugins_source_type ON plugins USING btree (source_type);
 
@@ -3928,31 +3895,25 @@ CREATE INDEX IF NOT EXISTS product_attribute_values_product_id ON product_attrib
 
 CREATE INDEX IF NOT EXISTS product_attribute_values_value_id ON product_attribute_values USING btree (value_id);
 
-CREATE UNIQUE INDEX product_labels_store_id_slug ON product_labels USING btree (store_id, slug);
+CREATE UNIQUE INDEX IF NOT EXISTS product_labels_store_id_slug ON product_labels USING btree (store_id, slug);
 
-CREATE UNIQUE INDEX product_tabs_store_id_slug ON product_tabs USING btree (store_id, slug);
+CREATE UNIQUE INDEX IF NOT EXISTS product_tabs_store_id_slug ON product_tabs USING btree (store_id, slug);
 
 CREATE INDEX IF NOT EXISTS product_variants_parent_product_id ON product_variants USING btree (parent_product_id);
 
-CREATE UNIQUE INDEX product_variants_parent_product_id_variant_product_id ON product_variants USING btree (parent_product_id, variant_product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS product_variants_parent_product_id_variant_product_id ON product_variants USING btree (parent_product_id, variant_product_id);
 
 CREATE INDEX IF NOT EXISTS product_variants_variant_product_id ON product_variants USING btree (variant_product_id);
 
 CREATE INDEX IF NOT EXISTS redirects_entity_type_entity_id ON redirects USING btree (entity_type, entity_id);
 
-CREATE UNIQUE INDEX redirects_store_id_from_url ON redirects USING btree (store_id, from_url);
+CREATE UNIQUE INDEX IF NOT EXISTS redirects_store_id_from_url ON redirects USING btree (store_id, from_url);
 
-CREATE UNIQUE INDEX seo_templates_store_id_name ON seo_templates USING btree (store_id, name);
-
--- shopify_oauth_tokens unique indexes REMOVED - table no longer exists
+CREATE UNIQUE INDEX IF NOT EXISTS seo_templates_store_id_name ON seo_templates USING btree (store_id, name);
 
 CREATE INDEX IF NOT EXISTS slot_configurations_is_active ON slot_configurations USING btree (is_active);
 
 CREATE INDEX IF NOT EXISTS slot_configurations_store_id ON slot_configurations USING btree (store_id);
-
--- REMOVED: store_teams indexes (moved to MASTER database)
-
--- REMOVED: Unique index for deprecated supabase_project_keys table
 
 CREATE INDEX IF NOT EXISTS translations_category_index ON translations USING btree (category);
 
@@ -3960,210 +3921,237 @@ CREATE INDEX IF NOT EXISTS translations_language_code_index ON translations USIN
 
 CREATE INDEX IF NOT EXISTS translations_store_id_index ON translations USING btree (store_id);
 
-CREATE UNIQUE INDEX translations_store_key_language_unique ON translations USING btree (store_id, key, language_code);
+CREATE UNIQUE INDEX IF NOT EXISTS translations_store_key_language_unique ON translations USING btree (store_id, key, language_code);
 
-CREATE UNIQUE INDEX unique_customer_email ON customers USING btree (email);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_customer_email ON customers USING btree (email);
 
-CREATE UNIQUE INDEX unique_email_role ON users USING btree (email, role);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_email_role ON users USING btree (email, role);
 
-CREATE UNIQUE INDEX unique_plugin_store_config ON plugin_configurations USING btree (plugin_id, store_id);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_plugin_store_config ON plugin_configurations USING btree (plugin_id, store_id);
 
-CREATE UNIQUE INDEX unique_session_store_cart ON carts USING btree (session_id, store_id);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_session_store_cart ON carts USING btree (session_id, store_id);
 
-CREATE UNIQUE INDEX unique_store_session ON heatmap_sessions USING btree (store_id, session_id);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_store_session ON heatmap_sessions USING btree (store_id, session_id);
 
--- REMOVED: unique_store_user index (store_teams moved to MASTER database)
-
-CREATE UNIQUE INDEX unique_test_session ON ab_test_assignments USING btree (test_id, session_id);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_test_session ON ab_test_assignments USING btree (test_id, session_id);
 
 CREATE INDEX IF NOT EXISTS usage_metrics_metric_date ON usage_metrics USING btree (metric_date);
 
 CREATE INDEX IF NOT EXISTS usage_metrics_store_id ON usage_metrics USING btree (store_id);
 
-CREATE UNIQUE INDEX usage_metrics_store_id_metric_date_metric_hour ON usage_metrics USING btree (store_id, metric_date, metric_hour);
+CREATE UNIQUE INDEX IF NOT EXISTS usage_metrics_store_id_metric_date_metric_hour ON usage_metrics USING btree (store_id, metric_date, metric_hour);
 
-CREATE UNIQUE INDEX wishlists_session_id_product_id ON wishlists USING btree (session_id, product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS wishlists_session_id_product_id ON wishlists USING btree (session_id, product_id);
 
 -- ============================================
 -- SECTION 5: CREATE TRIGGERS
 -- ============================================
 
+DROP TRIGGER IF EXISTS trigger_integration_attribute_mappings_updated_at ON integration_attribute_mappings;
 CREATE TRIGGER trigger_integration_attribute_mappings_updated_at
   BEFORE UPDATE ON integration_attribute_mappings
   FOR EACH ROW
   EXECUTE FUNCTION update_integration_attribute_mappings_updated_at();
 
+DROP TRIGGER IF EXISTS trigger_product_files_updated_at ON product_files;
 CREATE TRIGGER trigger_product_files_updated_at
   BEFORE UPDATE ON product_files
   FOR EACH ROW
   EXECUTE FUNCTION update_product_files_updated_at();
 
+DROP TRIGGER IF EXISTS plugin_admin_pages_updated_at ON plugin_admin_pages;
 CREATE TRIGGER plugin_admin_pages_updated_at
   BEFORE UPDATE ON plugin_admin_pages
   FOR EACH ROW
   EXECUTE FUNCTION update_plugin_admin_pages_timestamp();
 
+DROP TRIGGER IF EXISTS plugin_admin_scripts_updated_at ON plugin_admin_scripts;
 CREATE TRIGGER plugin_admin_scripts_updated_at
   BEFORE UPDATE ON plugin_admin_scripts
   FOR EACH ROW
   EXECUTE FUNCTION update_plugin_admin_scripts_timestamp();
 
+DROP TRIGGER IF EXISTS trigger_auto_increment_snapshot_distance ON plugin_version_history;
 CREATE TRIGGER trigger_auto_increment_snapshot_distance
   BEFORE INSERT ON plugin_version_history
   FOR EACH ROW
   EXECUTE FUNCTION auto_increment_snapshot_distance();
 
+DROP TRIGGER IF EXISTS trigger_ensure_single_current_version ON plugin_version_history;
 CREATE TRIGGER trigger_ensure_single_current_version
   BEFORE INSERT OR UPDATE ON plugin_version_history
   FOR EACH ROW
   EXECUTE FUNCTION ensure_single_current_version();
 
+DROP TRIGGER IF EXISTS trigger_update_cms_blocks_updated_at ON cms_blocks;
 CREATE TRIGGER trigger_update_cms_blocks_updated_at
   BEFORE UPDATE ON cms_blocks
   FOR EACH ROW
   EXECUTE FUNCTION update_cms_blocks_updated_at();
 
+DROP TRIGGER IF EXISTS update_ab_test_variants_updated_at ON ab_test_variants;
 CREATE TRIGGER update_ab_test_variants_updated_at
   BEFORE UPDATE ON ab_test_variants
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_attribute_sets_updated_at ON attribute_sets;
 CREATE TRIGGER update_attribute_sets_updated_at
   BEFORE UPDATE ON attribute_sets
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_attributes_updated_at ON attributes;
 CREATE TRIGGER update_attributes_updated_at
   BEFORE UPDATE ON attributes
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- update_brevo_configurations_updated_at trigger REMOVED - table no longer exists
-
+DROP TRIGGER IF EXISTS update_cms_pages_updated_at ON cms_pages;
 CREATE TRIGGER update_cms_pages_updated_at
   BEFORE UPDATE ON cms_pages
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_coupons_updated_at ON coupons;
 CREATE TRIGGER update_coupons_updated_at
   BEFORE UPDATE ON coupons
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_credit_transactions_updated_at ON credit_transactions;
 CREATE TRIGGER update_credit_transactions_updated_at
   BEFORE UPDATE ON credit_transactions
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_cron_jobs_updated_at ON cron_jobs;
 CREATE TRIGGER update_cron_jobs_updated_at
   BEFORE UPDATE ON cron_jobs
   FOR EACH ROW
   EXECUTE FUNCTION update_cron_jobs_updated_at();
 
+DROP TRIGGER IF EXISTS update_custom_option_rules_updated_at ON custom_option_rules;
 CREATE TRIGGER update_custom_option_rules_updated_at
   BEFORE UPDATE ON custom_option_rules
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_customers_updated_at ON customers;
 CREATE TRIGGER update_customers_updated_at
   BEFORE UPDATE ON customers
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_delivery_settings_updated_at ON delivery_settings;
 CREATE TRIGGER update_delivery_settings_updated_at
   BEFORE UPDATE ON delivery_settings
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_email_send_logs_updated_at ON email_send_logs;
 CREATE TRIGGER update_email_send_logs_updated_at
   BEFORE UPDATE ON email_send_logs
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_email_template_translations_updated_at ON email_template_translations;
 CREATE TRIGGER update_email_template_translations_updated_at
   BEFORE UPDATE ON email_template_translations
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_email_templates_updated_at ON email_templates;
 CREATE TRIGGER update_email_templates_updated_at
   BEFORE UPDATE ON email_templates
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_heatmap_aggregations_timestamp ON heatmap_aggregations;
 CREATE TRIGGER update_heatmap_aggregations_timestamp
   BEFORE UPDATE ON heatmap_aggregations
   FOR EACH ROW
   EXECUTE FUNCTION update_heatmap_timestamp();
 
+DROP TRIGGER IF EXISTS update_heatmap_interactions_timestamp ON heatmap_interactions;
 CREATE TRIGGER update_heatmap_interactions_timestamp
   BEFORE UPDATE ON heatmap_interactions
   FOR EACH ROW
   EXECUTE FUNCTION update_heatmap_timestamp();
 
+DROP TRIGGER IF EXISTS update_heatmap_sessions_timestamp ON heatmap_sessions;
 CREATE TRIGGER update_heatmap_sessions_timestamp
   BEFORE UPDATE ON heatmap_sessions
   FOR EACH ROW
   EXECUTE FUNCTION update_heatmap_timestamp();
 
+DROP TRIGGER IF EXISTS update_jobs_updated_at ON jobs;
 CREATE TRIGGER update_jobs_updated_at
   BEFORE UPDATE ON jobs
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_pdf_template_translations_updated_at ON pdf_template_translations;
 CREATE TRIGGER update_pdf_template_translations_updated_at
   BEFORE UPDATE ON pdf_template_translations
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_plugin_data_updated_at ON plugin_data;
 CREATE TRIGGER update_plugin_data_updated_at
   BEFORE UPDATE ON plugin_data
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_plugin_events_updated_at ON plugin_events;
 CREATE TRIGGER update_plugin_events_updated_at
   BEFORE UPDATE ON plugin_events
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_plugin_hooks_updated_at ON plugin_hooks;
 CREATE TRIGGER update_plugin_hooks_updated_at
   BEFORE UPDATE ON plugin_hooks
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_plugin_scripts_updated_at ON plugin_scripts;
 CREATE TRIGGER update_plugin_scripts_updated_at
   BEFORE UPDATE ON plugin_scripts
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_products_updated_at ON products;
 CREATE TRIGGER update_products_updated_at
   BEFORE UPDATE ON products
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_redirects_updated_at ON redirects;
 CREATE TRIGGER update_redirects_updated_at
   BEFORE UPDATE ON redirects
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_shipping_methods_updated_at ON shipping_methods;
 CREATE TRIGGER update_shipping_methods_updated_at
   BEFORE UPDATE ON shipping_methods
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- update_shopify_oauth_tokens_updated_at trigger REMOVED - table no longer exists
-
+DROP TRIGGER IF EXISTS update_stores_updated_at ON stores;
 CREATE TRIGGER update_stores_updated_at
   BEFORE UPDATE ON stores
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- REMOVED: Trigger for deprecated supabase_oauth_tokens table
-
+DROP TRIGGER IF EXISTS update_taxes_updated_at ON taxes;
 CREATE TRIGGER update_taxes_updated_at
   BEFORE UPDATE ON taxes
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at
   BEFORE UPDATE ON users
   FOR EACH ROW
@@ -4173,36 +4161,6 @@ CREATE TRIGGER update_users_updated_at
 -- SECTION 6: FOREIGN KEY CONSTRAINTS
 -- All foreign keys added after tables are created
 -- ============================================
-
--- ALTER TABLE auth.mfa_amr_claims ADD CONSTRAINT mfa_amr_claims_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.mfa_challenges ADD CONSTRAINT mfa_challenges_auth_factor_id_fkey FOREIGN KEY (factor_id) REFERENCES auth.mfa_factors(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.mfa_factors ADD CONSTRAINT mfa_factors_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.oauth_authorizations ADD CONSTRAINT oauth_authorizations_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.oauth_authorizations ADD CONSTRAINT oauth_authorizations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.oauth_consents ADD CONSTRAINT oauth_consents_client_id_fkey FOREIGN KEY (client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.oauth_consents ADD CONSTRAINT oauth_consents_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.one_time_tokens ADD CONSTRAINT one_time_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.refresh_tokens ADD CONSTRAINT refresh_tokens_session_id_fkey FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.saml_providers ADD CONSTRAINT saml_providers_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.saml_relay_states ADD CONSTRAINT saml_relay_states_flow_state_id_fkey FOREIGN KEY (flow_state_id) REFERENCES auth.flow_state(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.saml_relay_states ADD CONSTRAINT saml_relay_states_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.sessions ADD CONSTRAINT sessions_oauth_client_id_fkey FOREIGN KEY (oauth_client_id) REFERENCES auth.oauth_clients(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.sessions ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
---
--- ALTER TABLE auth.sso_domains ADD CONSTRAINT sso_domains_sso_provider_id_fkey FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE;
 
 ALTER TABLE ab_test_assignments ADD CONSTRAINT ab_test_assignments_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
 
@@ -4249,8 +4207,6 @@ ALTER TABLE blacklist_emails ADD CONSTRAINT blacklist_emails_store_id_fkey FOREI
 ALTER TABLE blacklist_ips ADD CONSTRAINT blacklist_ips_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
 ALTER TABLE blacklist_settings ADD CONSTRAINT blacklist_settings_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
--- brevo_configurations foreign key REMOVED - table no longer exists
 
 ALTER TABLE canonical_urls ADD CONSTRAINT canonical_urls_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
@@ -4496,8 +4452,6 @@ ALTER TABLE shipping_method_translations ADD CONSTRAINT shipping_method_translat
 
 ALTER TABLE shipping_methods ADD CONSTRAINT shipping_methods_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
--- shopify_oauth_tokens foreign key REMOVED - table no longer exists
-
 ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_acceptance_published_by_fkey FOREIGN KEY (acceptance_published_by) REFERENCES users(id);
 
 ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_current_edit_id_fkey FOREIGN KEY (current_edit_id) REFERENCES slot_configurations(id);
@@ -4510,21 +4464,13 @@ ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_store_id_fkey
 
 ALTER TABLE slot_configurations ADD CONSTRAINT slot_configurations_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
--- REMOVED: store_teams foreign keys (table moved to MASTER database)
-
 ALTER TABLE store_uptime ADD CONSTRAINT store_uptime_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
 ALTER TABLE store_uptime ADD CONSTRAINT store_uptime_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 ALTER TABLE stores ADD CONSTRAINT stores_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
--- store_media_storages foreign key REMOVED - table no longer exists
-
 ALTER TABLE subscriptions ADD CONSTRAINT subscriptions_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON UPDATE CASCADE;
-
--- supabase_oauth_tokens foreign key REMOVED - use integration_configs instead
-
--- supabase_project_keys foreign key REMOVED - use integration_configs instead
 
 ALTER TABLE taxes ADD CONSTRAINT taxes_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
 
@@ -4548,33 +4494,5 @@ ALTER TABLE wishlists ADD CONSTRAINT wishlists_user_id_fkey FOREIGN KEY (user_id
 --
 -- ALTER TABLE storage.s3_multipart_uploads_parts ADD CONSTRAINT s3_multipart_uploads_parts_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES storage.s3_multipart_uploads(id) ON DELETE CASCADE;
 
--- ============================================
--- SECTION: AI CHAT HISTORY TABLES
--- For chat persistence and arrow-up navigation
--- ============================================
 
-CREATE TABLE IF NOT EXISTS ai_chat_sessions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  session_id VARCHAR(255),
-  role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
-  content TEXT NOT NULL,
-  intent VARCHAR(50),
-  data JSONB DEFAULT '{}',
-  credits_used INTEGER DEFAULT 0,
-  is_error BOOLEAN DEFAULT false,
-  visible BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
 
--- Add visible column if it doesn't exist (for existing tables)
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                 WHERE table_name = 'ai_chat_sessions' AND column_name = 'visible') THEN
-    ALTER TABLE ai_chat_sessions ADD COLUMN visible BOOLEAN DEFAULT true;
-  END IF;
-END $$;
-
-CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_user ON ai_chat_sessions(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_session ON ai_chat_sessions(session_id, created_at);
