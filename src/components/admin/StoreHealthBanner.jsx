@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function StoreHealthBanner({ fullPage = false }) {
+  console.log('🚀 StoreHealthBanner MOUNTED, fullPage:', fullPage);
+
   const {
     storeHealth,
     healthLoading,
