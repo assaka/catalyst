@@ -815,17 +815,31 @@ CREATE TABLE IF NOT EXISTS ai_usage_logs (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS ai_user_preferences (
-  id INTEGER PRIMARY KEY,
-  user_id INTEGER,
-  session_id VARCHAR(255),
-  store_id INTEGER,
-  preferred_mode VARCHAR(50),
-  coding_style JSONB DEFAULT '{}'::jsonb,
-  favorite_patterns JSONB DEFAULT '[]'::jsonb,
-  recent_plugins JSONB DEFAULT '[]'::jsonb,
-  categories_interest JSONB DEFAULT '[]'::jsonb,
-  context_preferences JSONB DEFAULT '{}'::jsonb,
+CREATE TABLE IF NOT EXISTS ai_store_intelligence (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL UNIQUE,
+
+  -- Store classification
+  detected_branch VARCHAR(100),
+  branch_confidence NUMERIC(3,2),
+  branch_tags JSONB DEFAULT '[]'::jsonb,
+
+  -- Conversion insights
+  conversion_insights JSONB DEFAULT '{}'::jsonb,
+
+  -- Geographic insights
+  geographic_insights JSONB DEFAULT '{}'::jsonb,
+
+  -- Marketing insights
+  marketing_insights JSONB DEFAULT '{}'::jsonb,
+
+  -- Product insights
+  product_insights JSONB DEFAULT '{}'::jsonb,
+
+  -- Customer insights
+  customer_insights JSONB DEFAULT '{}'::jsonb,
+
+  last_analyzed_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -3026,11 +3040,9 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_created_at ON ai_usage_logs USING b
 
 CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_user_id ON ai_usage_logs USING btree (user_id);
 
-CREATE INDEX IF NOT EXISTS idx_ai_user_prefs_session ON ai_user_preferences USING btree (session_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_store_intelligence_store ON ai_store_intelligence USING btree (store_id);
 
-CREATE INDEX IF NOT EXISTS idx_ai_user_prefs_store ON ai_user_preferences USING btree (store_id);
-
-CREATE INDEX IF NOT EXISTS idx_ai_user_prefs_user ON ai_user_preferences USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_store_intelligence_branch ON ai_store_intelligence USING btree (detected_branch);
 
 CREATE INDEX IF NOT EXISTS idx_akeneo_custom_mappings_store_id ON akeneo_custom_mappings USING btree (store_id);
 

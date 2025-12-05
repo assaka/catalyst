@@ -248,9 +248,9 @@ class AIContextService {
   }
 
   /**
-   * Get user preferences (from TENANT DB - user prefs are tenant-specific)
+   * Get store intelligence (from TENANT DB - store-specific insights)
    */
-  async getUserPreferences({ userId, sessionId, storeId }) {
+  async getStoreIntelligence(storeId) {
     try {
       if (!storeId) {
         return null;
@@ -259,80 +259,115 @@ class AIContextService {
       const ConnectionManager = require('./database/ConnectionManager');
       const db = await ConnectionManager.getStoreConnection(storeId);
 
-      let query = db
-        .from('ai_user_preferences')
-        .select('*')
-        .orderBy('updated_at', 'desc')
-        .limit(1);
+      const data = await db
+        .from('ai_store_intelligence')
+        .where('store_id', storeId)
+        .first();
 
-      if (userId) {
-        query = query.where('user_id', userId);
-      } else if (sessionId) {
-        query = query.where('session_id', sessionId);
-      } else {
-        return null;
-      }
-
-      const data = await query.first();
-
-      if (!data) {
-        return null;
-      }
-
-      return {
-        ...data,
-        coding_style: typeof data.coding_style === 'string' ? JSON.parse(data.coding_style) : data.coding_style,
-        favorite_patterns: typeof data.favorite_patterns === 'string' ? JSON.parse(data.favorite_patterns) : data.favorite_patterns,
-        recent_plugins: typeof data.recent_plugins === 'string' ? JSON.parse(data.recent_plugins) : data.recent_plugins,
-        categories_interest: typeof data.categories_interest === 'string' ? JSON.parse(data.categories_interest) : data.categories_interest,
-        context_preferences: typeof data.context_preferences === 'string' ? JSON.parse(data.context_preferences) : data.context_preferences
-      };
+      return data || null;
     } catch (error) {
-      console.error('Error fetching user preferences:', error);
+      console.error('Error fetching store intelligence:', error);
       return null;
     }
   }
 
   /**
-   * Save/update user preferences (in TENANT DB - user prefs are tenant-specific)
+   * Save/update store intelligence (in TENANT DB)
    */
-  async saveUserPreferences(preferences) {
+  async saveStoreIntelligence(storeId, intelligence) {
     try {
-      const { userId, sessionId, storeId, ...prefs } = preferences;
-
       if (!storeId) {
-        console.error('storeId is required for saving user preferences');
+        console.error('storeId is required for saving store intelligence');
         return;
       }
 
       const ConnectionManager = require('./database/ConnectionManager');
       const db = await ConnectionManager.getStoreConnection(storeId);
 
-      const existing = await this.getUserPreferences({ userId, sessionId, storeId });
+      const existing = await this.getStoreIntelligence(storeId);
 
       const data = {
-        user_id: userId || null,
-        session_id: sessionId || null,
-        preferred_mode: prefs.preferredMode || null,
-        coding_style: JSON.stringify(prefs.codingStyle || {}),
-        favorite_patterns: JSON.stringify(prefs.favoritePatterns || []),
-        recent_plugins: JSON.stringify(prefs.recentPlugins || []),
-        categories_interest: JSON.stringify(prefs.categoriesInterest || []),
-        context_preferences: JSON.stringify(prefs.contextPreferences || {}),
+        detected_branch: intelligence.detectedBranch || null,
+        branch_confidence: intelligence.branchConfidence || null,
+        branch_tags: JSON.stringify(intelligence.branchTags || []),
+        conversion_insights: JSON.stringify(intelligence.conversionInsights || {}),
+        geographic_insights: JSON.stringify(intelligence.geographicInsights || {}),
+        marketing_insights: JSON.stringify(intelligence.marketingInsights || {}),
+        product_insights: JSON.stringify(intelligence.productInsights || {}),
+        customer_insights: JSON.stringify(intelligence.customerInsights || {}),
+        last_analyzed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
       if (existing) {
         await db
-          .from('ai_user_preferences')
-          .where('id', existing.id)
+          .from('ai_store_intelligence')
+          .where('store_id', storeId)
           .update(data);
       } else {
+        data.store_id = storeId;
         data.created_at = new Date().toISOString();
-        await db.from('ai_user_preferences').insert(data);
+        await db.from('ai_store_intelligence').insert(data);
       }
     } catch (error) {
-      console.error('Error saving user preferences:', error);
+      console.error('Error saving store intelligence:', error);
+    }
+  }
+
+  /**
+   * Get branch profile from master DB (generic knowledge for store type)
+   */
+  async getBranchProfile(branch) {
+    try {
+      const { data, error } = await masterDbClient
+        .from('ai_context_documents')
+        .select('*')
+        .eq('type', 'branch_profile')
+        .eq('category', branch)
+        .eq('is_active', true)
+        .order('priority', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error fetching branch profile:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching branch profile:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get smart context combining branch knowledge + store intelligence
+   */
+  async getSmartContext(storeId, query) {
+    try {
+      // Get store-specific intelligence
+      const storeIntel = await this.getStoreIntelligence(storeId);
+
+      // Get branch knowledge from master if we know the store type
+      let branchDocs = [];
+      if (storeIntel?.detected_branch) {
+        branchDocs = await this.getBranchProfile(storeIntel.detected_branch);
+      }
+
+      return {
+        branchKnowledge: branchDocs,
+        storeIntelligence: storeIntel,
+        hasBranchProfile: branchDocs.length > 0,
+        hasStoreData: !!storeIntel
+      };
+    } catch (error) {
+      console.error('Error getting smart context:', error);
+      return {
+        branchKnowledge: [],
+        storeIntelligence: null,
+        hasBranchProfile: false,
+        hasStoreData: false
+      };
     }
   }
 
