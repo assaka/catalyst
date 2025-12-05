@@ -75,8 +75,8 @@ CREATE TRIGGER trigger_update_ai_models_updated_at
 INSERT INTO ai_models (model_id, name, provider, api_model, icon, description, credits_per_use, service_key, is_provider_default, is_active, is_visible, max_tokens, supports_streaming, supports_vision, supports_tools, display_order) VALUES
 
 -- Anthropic (Claude) Models
-('claude-haiku', 'Claude Haiku', 'anthropic', 'claude-3-haiku-20240307', '⚡', 'Fast & affordable', 2.0000, 'ai_chat_claude_haiku', false, true, true, 4096, true, true, true, 10),
-('claude-sonnet', 'Claude Sonnet', 'anthropic', 'claude-3-5-sonnet-20241022', '🎯', 'Balanced performance', 8.0000, 'ai_chat_claude_sonnet', true, true, true, 8192, true, true, true, 11),
+('claude-haiku', 'Claude Haiku', 'anthropic', 'claude-3-5-haiku-20241022', '⚡', 'Fast & affordable', 2.0000, 'ai_chat_claude_haiku', true, true, true, 4096, true, true, true, 10),
+('claude-sonnet', 'Claude Sonnet', 'anthropic', 'claude-3-5-sonnet-20241022', '🎯', 'Balanced performance', 8.0000, 'ai_chat_claude_sonnet', false, true, true, 8192, true, true, true, 11),
 ('claude-opus', 'Claude Opus', 'anthropic', 'claude-3-opus-20240229', '👑', 'Most capable', 25.0000, 'ai_chat_claude_opus', false, true, true, 4096, true, true, true, 12),
 
 -- OpenAI Models
