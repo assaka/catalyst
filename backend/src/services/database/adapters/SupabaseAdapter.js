@@ -54,17 +54,18 @@ class SupabaseAdapter extends DatabaseAdapter {
         return true;
       }
 
-      // Check if error is just "table doesn't exist" (PostgreSQL error 42P01)
-      // This means connection works but table is missing - that's OK for reprovisioning
-      // Also check for PGRST116 (PostgREST error when table not found) and other variants
+      // Check if error is just "table doesn't exist" - connection works, just no tables yet
+      // PGRST205 = "Could not find the table in the schema cache" (PostgREST)
+      // PGRST116 = "No rows returned" (PostgREST)
+      // 42P01 = "relation does not exist" (PostgreSQL)
+      const tableNotFoundCodes = ['PGRST205', 'PGRST116', '42P01', '42501'];
       const errorStr = JSON.stringify(error).toLowerCase();
-      if (error.code === '42P01' ||
-          error.code === 'PGRST116' ||
-          error.code === '42501' ||
+
+      if (tableNotFoundCodes.includes(error.code) ||
           error.message?.toLowerCase().includes('relation') ||
           error.message?.toLowerCase().includes('does not exist') ||
           error.message?.toLowerCase().includes('not found') ||
-          error.details?.toLowerCase().includes('not found') ||
+          error.message?.toLowerCase().includes('schema cache') ||
           errorStr.includes('not found') ||
           errorStr.includes('does not exist')) {
         console.log('Supabase connection OK (table missing, will be created during provisioning)');
