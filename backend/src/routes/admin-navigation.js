@@ -12,17 +12,19 @@ const { authorize } = require('../middleware/auth');
  */
 router.get('/navigation', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    // Get store_id from authenticated user's JWT token
-    const store_id = req.user.store_id;
+    // Get store_id from header, query param, or JWT token (optional for main navigation)
+    const store_id = req.headers['x-store-id'] || req.query.store_id || req.user.store_id;
 
+    // If no store_id, return core navigation without store-specific items
     if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'No store associated with this user session'
+      const navigation = await AdminNavigationService.getCoreNavigation();
+      return res.json({
+        success: true,
+        navigation
       });
     }
 
-    // Get tenant DB connection
+    // Get tenant DB connection for store-specific navigation
     const tenantDb = await ConnectionManager.getStoreConnection(store_id);
 
     // Pass tenantDb to service
@@ -78,12 +80,12 @@ router.put('/plugins/:pluginId/navigation', authMiddleware, authorize(['admin', 
   try {
     const { pluginId } = req.params;
     const { adminNavigation } = req.body;
-    const store_id = req.user.store_id;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
     if (!store_id) {
       return res.status(400).json({
         success: false,
-        message: 'No store associated with this user session'
+        message: 'store_id is required (X-Store-Id header or query param)'
       });
     }
 
@@ -186,12 +188,12 @@ router.put('/plugins/:pluginId/navigation', authMiddleware, authorize(['admin', 
 router.post('/navigation/reorder', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { items } = req.body;
-    const store_id = req.user.store_id;
+    const store_id = req.headers['x-store-id'] || req.query.store_id;
 
     if (!store_id) {
       return res.status(400).json({
         success: false,
-        message: 'No store associated with this user session'
+        message: 'store_id is required (X-Store-Id header or query param)'
       });
     }
 

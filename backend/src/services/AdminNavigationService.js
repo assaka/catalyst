@@ -3,6 +3,20 @@
 class AdminNavigationService {
 
   /**
+   * Get core navigation items (no store required)
+   * Used for main sidebar when no specific store is selected
+   */
+  async getCoreNavigation() {
+    const coreItems = [
+      { key: 'dashboard', label: 'Dashboard', icon: 'Home', route: '/admin', order_position: 1, category: 'main', is_core: true, is_visible: true, children: [] },
+      { key: 'stores', label: 'Stores', icon: 'Store', route: '/admin/stores', order_position: 2, category: 'main', is_core: true, is_visible: true, children: [] },
+      { key: 'settings', label: 'Settings', icon: 'Settings', route: '/admin/settings', order_position: 99, category: 'settings', is_core: true, is_visible: true, children: [] }
+    ];
+
+    return coreItems;
+  }
+
+  /**
    * Get complete navigation for a tenant
    * Merges: Navigation registry + Installed plugins
    * @param {string} storeId - Store ID
