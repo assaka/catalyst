@@ -215,6 +215,66 @@ router.post('/smart-chat', authMiddleware, async (req, res) => {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // STEP 3.5: Auto-complete styling from conversation context
+    // ═══════════════════════════════════════════════════════════════════
+    // If user just says an element name after a styling question, execute directly
+    const elementMap = {
+      'product title': 'product_title', 'title': 'product_title', 'the title': 'product_title',
+      'price': 'product_price', 'the price': 'product_price', 'product price': 'product_price',
+      'button': 'add_to_cart_button', 'add to cart': 'add_to_cart_button', 'cart button': 'add_to_cart_button',
+      'description': 'product_short_description', 'the description': 'product_short_description',
+      'sku': 'product_sku', 'stock': 'stock_status', 'breadcrumb': 'breadcrumbs'
+    };
+
+    const msgLower = message.toLowerCase().trim();
+    const matchedElement = elementMap[msgLower];
+
+    if (matchedElement && conversationHistory.length > 0) {
+      // Look back for pending styling info in recent messages
+      const recentContent = conversationHistory.slice(-4).map(m => m.content).join(' ').toLowerCase();
+
+      // Extract styling intent from history
+      const colorMatch = recentContent.match(/(?:change|set|make).*?(?:color|colour).*?(?:to\s+)?(\w+)/i);
+      const sizeMatch = recentContent.match(/(?:make|set).*?(?:bigger|larger|smaller|size).*?(\d+)?/i);
+      const boldMatch = recentContent.match(/(?:make|set).*?bold/i);
+
+      if (colorMatch || sizeMatch || boldMatch) {
+        console.log('🎯 Auto-completing styling from context:', { element: matchedElement, colorMatch, sizeMatch, boldMatch });
+
+        let toolCall = { tool: 'update_styling', element: matchedElement };
+
+        if (colorMatch) {
+          toolCall.property = 'color';
+          toolCall.value = colorMatch[1]; // The color value
+        } else if (sizeMatch) {
+          toolCall.property = 'fontSize';
+          toolCall.value = sizeMatch[1] ? `${sizeMatch[1]}px` : '28px';
+        } else if (boldMatch) {
+          toolCall.property = 'fontWeight';
+          toolCall.value = 'bold';
+        }
+
+        // Execute directly
+        const result = await executeToolAction(toolCall, storeId, userId, message);
+
+        return res.json({
+          success: true,
+          message: result.message || `Updated ${matchedElement} styling.`,
+          data: {
+            type: result.data?.type || 'tool_executed',
+            tool: 'update_styling',
+            result: result.data,
+            pageType: result.data?.pageType,
+            slotId: result.data?.slotId,
+            configId: result.data?.configId,
+            refreshPreview: result.data?.refreshPreview
+          },
+          creditsDeducted: 0
+        });
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // STEP 4: Check for confirmation responses ("yes", "ok", "do it", etc.)
     // ═══════════════════════════════════════════════════════════════════
     const confirmationPatterns = /^(yes|yeah|yep|ok|okay|sure|do it|go ahead|proceed|create it|confirm|please|y)\.?$/i;
