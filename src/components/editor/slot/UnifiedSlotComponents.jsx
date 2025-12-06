@@ -46,8 +46,10 @@ const QuantitySelector = createSlotComponent({
   render: ({ slot, productContext, className, styles, context, variableContext }) => {
     // CRITICAL: Check hide_quantity_selector setting FIRST (before any other logic)
     // Check both productContext and variableContext for settings
-    const settings = productContext?.settings || variableContext?.settings;
-    if (settings?.hide_quantity_selector === true) {
+    // Default to false (show quantity selector) when setting is undefined or not set
+    const settings = productContext?.settings || variableContext?.settings || {};
+    const hideQuantitySelector = settings.hide_quantity_selector ?? false;
+    if (hideQuantitySelector === true) {
       return null;
     }
 
