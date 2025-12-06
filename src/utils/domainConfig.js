@@ -92,10 +92,10 @@ export function getAllPlatformDomainVariants() {
 // ============================================================================
 
 /**
- * Paths that should NEVER load store context from localStorage
- * Add new paths here when they should render without store data
+ * Paths that should skip the full layout (no sidebar/header)
+ * These are pages like auth and landing that render standalone
  */
-export const NO_STORE_CONTEXT_PATHS = [
+export const NO_LAYOUT_PATHS = [
   '/admin/auth',
   '/auth',
   '/admin/onboarding',
@@ -105,7 +105,7 @@ export const NO_STORE_CONTEXT_PATHS = [
 
 /**
  * Path prefixes that should skip StoreProvider (use StoreSelectionContext instead)
- * Admin pages use their own store context from localStorage
+ * Admin pages use their own store context but still need the layout
  */
 export const SKIP_STORE_PROVIDER_PREFIXES = [
   '/admin',
@@ -115,32 +115,43 @@ export const SKIP_STORE_PROVIDER_PREFIXES = [
 ];
 
 /**
- * Check if the current page should skip loading store context
- * This is the SINGLE SOURCE OF TRUTH for this decision.
- *
- * Use this in:
- * - StoreProvider (to skip store initialization)
- * - Layout (to skip StoreProvider wrapper)
- * - Any component that needs to know if store context is available
+ * Check if the current page should skip the full layout
+ * Used by Layout.jsx to render pages without sidebar/header
  *
  * @param {string} pathname - Current path (e.g., location.pathname)
  * @param {string} hostname - Optional hostname, defaults to window.location.hostname
- * @returns {boolean} - true if store context should be skipped
+ * @returns {boolean} - true if layout should be skipped
  */
 export function shouldSkipStoreContext(pathname, hostname = window.location.hostname) {
-  // Check explicit paths that never need store context
-  if (NO_STORE_CONTEXT_PATHS.includes(pathname)) {
+  // Check explicit paths that skip layout
+  if (NO_LAYOUT_PATHS.includes(pathname)) {
+    return true;
+  }
+
+  // Platform domain homepage shows Landing page (no layout)
+  const isPlatform = isPlatformDomain(hostname);
+  if (isPlatform && pathname === '/') {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Check if the current page should skip StoreProvider
+ * Admin/editor pages use StoreSelectionContext instead
+ *
+ * @param {string} pathname - Current path (e.g., location.pathname)
+ * @returns {boolean} - true if StoreProvider should be skipped
+ */
+export function shouldSkipStoreProvider(pathname) {
+  // Pages that skip layout also skip StoreProvider
+  if (NO_LAYOUT_PATHS.includes(pathname)) {
     return true;
   }
 
   // Admin/editor pages use StoreSelectionContext, not StoreProvider
   if (SKIP_STORE_PROVIDER_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
-    return true;
-  }
-
-  // Platform domain homepage shows Landing page (no store context)
-  const isPlatform = isPlatformDomain(hostname);
-  if (isPlatform && pathname === '/') {
     return true;
   }
 

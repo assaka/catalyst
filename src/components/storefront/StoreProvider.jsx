@@ -17,7 +17,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useLocation } from 'react-router-dom';
 import { TranslationProvider } from '@/contexts/TranslationContext';
 import { storefrontApiClient } from '@/api/storefront-entities';
-import { shouldSkipStoreContext } from '@/utils/domainConfig';
+import { shouldSkipStoreProvider } from '@/utils/domainConfig';
 
 // New utilities and hooks
 import { useStoreBootstrap, useStoreSlugById, determineStoreSlug } from '@/hooks/useStoreBootstrap';
@@ -35,9 +35,9 @@ export { cachedApiCall, clearCache, clearCacheKeys } from '@/utils/cacheUtils';
 export const StoreProvider = ({ children }) => {
   const location = useLocation();
 
-  // Use centralized config to decide if we should skip store context
-  // This is the SINGLE SOURCE OF TRUTH - see domainConfig.js
-  if (shouldSkipStoreContext(location.pathname)) {
+  // Use centralized config to decide if we should skip StoreProvider
+  // Admin/editor pages use StoreSelectionContext instead - see domainConfig.js
+  if (shouldSkipStoreProvider(location.pathname)) {
     return <>{children}</>;
   }
 
