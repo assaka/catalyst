@@ -1120,20 +1120,19 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
   try {
     const storeId = req.params.id;
 
-    // Helper to mark database as unhealthy in master DB
-    const markDatabaseUnhealthy = async () => {
+    // Helper to remove database config when unhealthy
+    const removeDatabaseConfig = async () => {
       try {
         await masterDbClient
           .from('store_databases')
-          .update({
-            is_active: false,
-            status: 'pending_database',
-            updated_at: new Date().toISOString()
-          })
+          .delete()
           .eq('store_id', storeId);
-        console.log(`[Health] Marked store_databases as unhealthy for store ${storeId}`);
+        console.log(`[Health] Deleted store_databases row for store ${storeId}`);
+
+        // Clear connection cache so next attempt will fail properly
+        ConnectionManager.clearCache(storeId);
       } catch (err) {
-        console.warn(`[Health] Failed to update store_databases for ${storeId}:`, err.message);
+        console.warn(`[Health] Failed to delete store_databases for ${storeId}:`, err.message);
       }
     };
 
@@ -1161,8 +1160,8 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
       );
 
       if (isTableMissing) {
-        console.log(`[Health] Store ${storeId}: Table missing, marking unhealthy`);
-        await markDatabaseUnhealthy();
+        console.log(`[Health] Store ${storeId}: Table missing, removing db config`);
+        await removeDatabaseConfig();
         return res.json({
           success: true,
           data: {
@@ -1181,9 +1180,9 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
         });
       }
 
-      // Any other error - mark as unhealthy
-      console.log(`[Health] Store ${storeId}: Query failed, marking unhealthy`);
-      await markDatabaseUnhealthy();
+      // Any other error - remove db config
+      console.log(`[Health] Store ${storeId}: Query failed, removing db config`);
+      await removeDatabaseConfig();
       return res.json({
         success: true,
         data: {
@@ -1195,7 +1194,7 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
     } catch (connError) {
       // Connection failed - DB not configured or unreachable
       console.log(`[Health] Store ${storeId}: Connection failed:`, connError.message);
-      await markDatabaseUnhealthy();
+      await removeDatabaseConfig();
       return res.json({
         success: true,
         data: {
