@@ -2258,22 +2258,6 @@ CREATE TABLE IF NOT EXISTS pdf_templates (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- CREATE TABLE IF NOT EXISTS platform_admins (
---   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
---   user_id UUID NOT NULL,
---   role VARCHAR(50) DEFAULT 'support'::character varying NOT NULL,
---   permissions JSONB DEFAULT '{}'::jsonb,
---   is_active BOOLEAN DEFAULT true,
---   last_login_at TIMESTAMP WITH TIME ZONE,
---   login_count INTEGER DEFAULT 0,
---   mfa_enabled BOOLEAN DEFAULT false,
---   mfa_secret VARCHAR(255),
---   notes TEXT,
---   metadata JSONB DEFAULT '{}'::jsonb,
---   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
---   updated_at TIMESTAMP WITH TIME ZONE NOT NULL
--- );
-
 CREATE TABLE IF NOT EXISTS plugin_admin_pages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plugin_id VARCHAR(255) NOT NULL,
@@ -4379,8 +4363,6 @@ ALTER TABLE payment_methods ADD CONSTRAINT payment_methods_store_id_fkey FOREIGN
 ALTER TABLE pdf_template_translations ADD CONSTRAINT pdf_template_translations_pdf_template_id_fkey FOREIGN KEY (pdf_template_id) REFERENCES pdf_templates(id) ON DELETE CASCADE;
 
 ALTER TABLE pdf_templates ADD CONSTRAINT pdf_templates_store_id_fkey FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE;
-
-ALTER TABLE platform_admins ADD CONSTRAINT platform_admins_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE;
 
 ALTER TABLE plugin_configurations ADD CONSTRAINT plugin_configurations_last_configured_by_fkey FOREIGN KEY (last_configured_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
 

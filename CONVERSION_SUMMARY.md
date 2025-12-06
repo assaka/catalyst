@@ -77,7 +77,7 @@ if (error) throw error;
 - User, MasterUser
 - Store (minimal - for platform operations), MasterStore
 - Subscription, Credit, CreditTransaction, CreditUsage, ServiceCreditCost
-- PlatformAdmin, CustomDomain
+- CustomDomain
 - Job, JobHistory, CronJob, CronJobExecution
 - StoreDatabase, StoreHostname, CreditBalance
 

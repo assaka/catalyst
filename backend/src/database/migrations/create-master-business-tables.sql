@@ -107,39 +107,6 @@ CREATE INDEX idx_usage_metrics_date ON usage_metrics(metric_date DESC);
 CREATE INDEX idx_usage_metrics_store_date ON usage_metrics(store_id, metric_date DESC);
 
 -- ==========================================
--- PLATFORM ADMINS TABLE
--- ==========================================
-CREATE TABLE IF NOT EXISTS platform_admins (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-
-  -- Role and permissions
-  role VARCHAR(50) NOT NULL DEFAULT 'support', -- 'super_admin', 'admin', 'support', 'billing', 'developer'
-  permissions JSONB DEFAULT '{}', -- Fine-grained permissions object
-
-  -- Status
-  is_active BOOLEAN DEFAULT true,
-  last_login_at TIMESTAMP,
-  login_count INTEGER DEFAULT 0,
-
-  -- MFA
-  mfa_enabled BOOLEAN DEFAULT false,
-  mfa_secret VARCHAR(255),
-
-  -- Metadata
-  notes TEXT,
-  metadata JSONB DEFAULT '{}',
-
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-
-  UNIQUE(user_id)
-);
-
-CREATE INDEX idx_platform_admins_role ON platform_admins(role);
-CREATE INDEX idx_platform_admins_is_active ON platform_admins(is_active);
-
--- ==========================================
 -- UPDATE STORES TABLE
 -- ==========================================
 -- Add new columns to existing stores table
@@ -277,11 +244,6 @@ CREATE TRIGGER update_usage_metrics_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_platform_admins_updated_at
-  BEFORE UPDATE ON platform_admins
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
 -- ==========================================
 -- ROW LEVEL SECURITY (RLS)
 -- ==========================================
@@ -290,7 +252,6 @@ CREATE TRIGGER update_platform_admins_updated_at
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE billing_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usage_metrics ENABLE ROW LEVEL SECURITY;
-ALTER TABLE platform_admins ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for subscriptions
 CREATE POLICY "Store owners can view their subscriptions"
@@ -298,15 +259,6 @@ CREATE POLICY "Store owners can view their subscriptions"
   USING (
     store_id IN (
       SELECT id FROM stores WHERE owner_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "Platform admins can view all subscriptions"
-  ON subscriptions FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM platform_admins
-      WHERE user_id = auth.uid() AND is_active = true
     )
   );
 
@@ -319,49 +271,12 @@ CREATE POLICY "Store owners can view their billing"
     )
   );
 
-CREATE POLICY "Platform admins can manage all billing"
-  ON billing_transactions FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM platform_admins
-      WHERE user_id = auth.uid() AND is_active = true
-    )
-  );
-
 -- RLS Policies for usage_metrics
 CREATE POLICY "Store owners can view their usage metrics"
   ON usage_metrics FOR SELECT
   USING (
     store_id IN (
       SELECT id FROM stores WHERE owner_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "Platform admins can view all usage metrics"
-  ON usage_metrics FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM platform_admins
-      WHERE user_id = auth.uid() AND is_active = true
-    )
-  );
-
--- RLS Policies for platform_admins
-CREATE POLICY "Platform admins can view other admins"
-  ON platform_admins FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM platform_admins
-      WHERE user_id = auth.uid() AND is_active = true
-    )
-  );
-
-CREATE POLICY "Super admins can manage platform admins"
-  ON platform_admins FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM platform_admins
-      WHERE user_id = auth.uid() AND role = 'super_admin' AND is_active = true
     )
   );
 
@@ -385,7 +300,6 @@ ON CONFLICT (id) DO NOTHING;
 COMMENT ON TABLE subscriptions IS 'Store subscription plans and billing cycles';
 COMMENT ON TABLE billing_transactions IS 'Payment transactions and invoices';
 COMMENT ON TABLE usage_metrics IS 'Resource usage tracking per store';
-COMMENT ON TABLE platform_admins IS 'Platform administrators with elevated permissions';
 
 COMMENT ON FUNCTION exec_sql IS 'Execute arbitrary SQL - used by DatabaseProvisioningService';
 COMMENT ON FUNCTION get_monthly_usage IS 'Get aggregated usage metrics for a store for a specific month';
@@ -405,7 +319,6 @@ WHERE schemaname = 'public'
   AND tablename IN (
     'subscriptions',
     'billing_transactions',
-    'usage_metrics',
-    'platform_admins'
+    'usage_metrics'
   )
 ORDER BY tablename;

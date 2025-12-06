@@ -278,7 +278,6 @@ ORDER BY tablename;
 - orders
 - order_items
 - payment_methods
-- platform_admins ✓
 - plugins
 - plugin_configurations
 - products
@@ -371,7 +370,6 @@ createPlatformAdmin();
 - ✅ billing_transactions (payments)
 - ✅ usage_metrics (tracking)
 - ✅ api_usage_logs (monitoring)
-- ✅ platform_admins (admins)
 - ✅ integration_configs (connections to client DBs)
 - ✅ store_teams (team management)
 - ✅ plugins (platform plugins)
