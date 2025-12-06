@@ -817,15 +817,17 @@ VALUES (
   }
 
   /**
-   * Load page configuration from frontend config files
+   * Load page configuration from backend config files
    * @private
    */
   async loadPageConfig(pageType, configExport) {
     try {
-      const configsDir = path.resolve(__dirname, '../../../../src/components/editor/slot/configs');
+      // Use backend configs directory (CommonJS format)
+      const configsDir = path.resolve(__dirname, '../../configs/slot');
       const configPath = path.join(configsDir, `${pageType}-config.js`);
 
-      const configModule = await import(configPath);
+      // Use require for CommonJS modules
+      const configModule = require(configPath);
       const config = configModule[configExport];
 
       if (!config) {
