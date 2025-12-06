@@ -289,7 +289,7 @@ export const productConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 3 },
+      position: { col: 1, row: 4 },
       colSpan: {
         default: 12
       },
@@ -305,7 +305,7 @@ export const productConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 4 },
+      position: { col: 1, row: 5 },
       colSpan: {
         default: 12
       },
@@ -327,7 +327,7 @@ export const productConfig = {
       parentClassName: '',
       styles: {},
       parentId: 'info_container',
-      position: { col: 1, row: 5 },
+      position: { col: 1, row: 6 },
       colSpan: {
         default: 12
       },

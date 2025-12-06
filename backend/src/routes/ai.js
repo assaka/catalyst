@@ -2360,21 +2360,23 @@ async function executeToolAction(toolCall, storeId, userId, originalMessage) {
         // Also include well-known container hierarchies for common page types
         const knownHierarchies = {
           product: {
-            // price_container is inside info_container at row 3
-            price_container: { parentId: 'info_container', position: { col: 1, row: 3 } },
             // product_title is inside info_container at row 1
             product_title: { parentId: 'info_container', position: { col: 1, row: 1 } },
-            // info_container is inside content_area
-            info_container: { parentId: 'content_area', position: { col: 7, row: 1 } },
+            // cms_block_product_above_price at row 2
+            cms_block_product_above_price: { parentId: 'info_container', position: { col: 1, row: 2 } },
+            // price_container is inside info_container at row 3
+            price_container: { parentId: 'info_container', position: { col: 1, row: 3 } },
             // product_price and original_price are inside price_container
             product_price: { parentId: 'price_container', position: { col: 1, row: 1 } },
             original_price: { parentId: 'price_container', position: { col: 2, row: 1 } },
-            // stock_status is in info_container
-            stock_status: { parentId: 'info_container', position: { col: 1, row: 3 } },
-            // product_sku is in info_container
-            product_sku: { parentId: 'info_container', position: { col: 1, row: 4 } },
-            // short description is in info_container
-            product_short_description: { parentId: 'info_container', position: { col: 1, row: 5 } }
+            // stock_status is in info_container at row 4
+            stock_status: { parentId: 'info_container', position: { col: 1, row: 4 } },
+            // product_sku is in info_container at row 5
+            product_sku: { parentId: 'info_container', position: { col: 1, row: 5 } },
+            // short description is in info_container at row 6
+            product_short_description: { parentId: 'info_container', position: { col: 1, row: 6 } },
+            // info_container is inside content_area
+            info_container: { parentId: 'content_area', position: { col: 7, row: 1 } }
           }
         };
 
