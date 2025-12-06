@@ -927,6 +927,7 @@ VALUES (
             }
           };
 
+          // Create published version (version 1.0)
           configsToInsert.push({
             id: uuidv4(),
             user_id: options.userId,
@@ -935,11 +936,28 @@ VALUES (
             page_type: pageType,
             is_active: true,
             status: 'published',
+            version: '1.0',
+            version_number: 1,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });
 
-          console.log(`✅ Loaded ${pageType} configuration`);
+          // Create draft version (version 2.0)
+          configsToInsert.push({
+            id: uuidv4(),
+            user_id: options.userId,
+            store_id: storeId,
+            configuration: fullConfiguration,
+            page_type: pageType,
+            is_active: true,
+            status: 'draft',
+            version: '2.0',
+            version_number: 2,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+          console.log(`✅ Loaded ${pageType} configuration (published + draft)`);
         } catch (configError) {
           console.warn(`⚠️ Failed to load ${pageType} config:`, configError.message);
         }
@@ -1012,23 +1030,44 @@ VALUES (
 
           // Escape single quotes and prepare JSON for SQL
           const configJson = JSON.stringify(fullConfiguration).replace(/'/g, "''");
-          const id = uuidv4();
+          const publishedId = uuidv4();
+          const draftId = uuidv4();
 
+          // Published version (version 1.0)
           insertStatements.push(`
-INSERT INTO slot_configurations (id, user_id, store_id, configuration, page_type, is_active, status, created_at, updated_at)
+INSERT INTO slot_configurations (id, user_id, store_id, configuration, page_type, is_active, status, version, version_number, created_at, updated_at)
 VALUES (
-  '${id}',
+  '${publishedId}',
   '${options.userId}',
   '${storeId}',
   '${configJson}'::jsonb,
   '${pageType}',
   true,
   'published',
+  '1.0',
+  1,
   NOW(),
   NOW()
 ) ON CONFLICT DO NOTHING;`);
 
-          console.log(`✅ Prepared ${pageType} configuration for insertion`);
+          // Draft version (version 2.0)
+          insertStatements.push(`
+INSERT INTO slot_configurations (id, user_id, store_id, configuration, page_type, is_active, status, version, version_number, created_at, updated_at)
+VALUES (
+  '${draftId}',
+  '${options.userId}',
+  '${storeId}',
+  '${configJson}'::jsonb,
+  '${pageType}',
+  true,
+  'draft',
+  '2.0',
+  2,
+  NOW(),
+  NOW()
+) ON CONFLICT DO NOTHING;`);
+
+          console.log(`✅ Prepared ${pageType} configuration for insertion (published + draft)`);
         } catch (configError) {
           console.warn(`⚠️ Failed to load ${pageType} config:`, configError.message);
         }
