@@ -32,9 +32,56 @@ import { HeaderSlotRenderer } from './HeaderSlotRenderer';
 import { useHeaderConfig } from '@/hooks/useHeaderConfig';
 import LanguageSelector from '@/components/shared/LanguageSelector';
 import { useTranslation } from '@/contexts/TranslationContext';
-import { PreviewModeProvider } from '@/contexts/PreviewModeContext';
+import { PreviewModeProvider, usePreviewMode } from '@/contexts/PreviewModeContext';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Separate component for the paused overlay that can use the preview mode context
+function PausedStoreOverlay({ store, isStoreOwnerViewingOwnStore }) {
+    const { isPreviewDraftMode } = usePreviewMode();
+
+    // Also check URL params as fallback (for initial load before context initializes)
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const isInPreviewModeFromUrl = urlParams?.get('workspace') === 'true' || urlParams?.get('preview') === 'draft';
+
+    const isInPreviewMode = isPreviewDraftMode || isInPreviewModeFromUrl;
+    const isStorePaused = store?.published === false && !isStoreOwnerViewingOwnStore && !isInPreviewMode;
+
+    if (!isStorePaused) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+            <div className="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4 text-center">
+                <div className="mb-4">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 mb-4">
+                        <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    {store?.name || 'DAINO'} Shop is Currently Paused
+                </h2>
+                <p className="text-gray-600 mb-4">
+                    This store is temporarily unavailable. Please check back later.
+                </p>
+                <p className="text-sm text-gray-500 mb-4">
+                    If you're the store owner, please publish your store from the admin dashboard.
+                </p>
+                <div className="pt-4 border-t border-gray-200">
+                    <a
+                        href="/Landing"
+                        className="text-sm text-gray-400 hover:text-gray-600 transition-colors inline-flex items-center"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        Powered by <span className="font-semibold ml-1">DAINO</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000, defaultValueOnError = []) => {
   for (let i = 0; i < maxRetries; i++) {
@@ -360,18 +407,9 @@ export default function StorefrontLayout({ children }) {
       }
     `;
 
-    // Check if store is paused (published === false)
-    // But don't show paused modal if:
-    // 1. Store owner is logged in viewing their own store
-    // 2. In AI workspace preview mode (workspace=true or preview=draft)
+    // Check if store owner is viewing their own store
     const storeOwnerData = getUserDataForRole('store_owner') || getUserDataForRole('admin');
     const isStoreOwnerViewingOwnStore = storeOwnerData && storeOwnerData.store_id === store?.id;
-
-    // Check if in preview/workspace mode via URL params
-    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-    const isInPreviewMode = urlParams?.get('workspace') === 'true' || urlParams?.get('preview') === 'draft';
-
-    const isStorePaused = store?.published === false && !isStoreOwnerViewingOwnStore && !isInPreviewMode;
 
     return (
         <PreviewModeProvider>
@@ -381,39 +419,8 @@ export default function StorefrontLayout({ children }) {
                 <RoleSwitcher />
                 <DataLayerManager />
 
-                {/* Paused Store Overlay */}
-                {isStorePaused && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-                        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4 text-center">
-                            <div className="mb-4">
-                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 mb-4">
-                                    <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                                {store?.name || 'DAINO'} Shop is Currently Paused
-                            </h2>
-                            <p className="text-gray-600 mb-4">
-                                This store is temporarily unavailable. Please check back later.
-                            </p>
-                            <p className="text-sm text-gray-500 mb-4">
-                                If you're the store owner, please publish your store from the admin dashboard.
-                            </p>
-                            <div className="pt-4 border-t border-gray-200">
-                                <a
-                                    href="/Landing"
-                                    className="text-sm text-gray-400 hover:text-gray-600 transition-colors inline-flex items-center"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    Powered by <span className="font-semibold ml-1">DAINO</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* Paused Store Overlay - uses PreviewModeContext to persist preview mode across navigation */}
+                <PausedStoreOverlay store={store} isStoreOwnerViewingOwnStore={isStoreOwnerViewingOwnStore} />
                 
                 {/* Heatmap Tracker - Lazy loaded to not block LCP */}
                 <Suspense fallback={null}>
@@ -807,7 +814,7 @@ export default function StorefrontLayout({ children }) {
                 </div>
             </footer>
             
-            {settings?.cookie_consent?.enabled && !isStorePaused && (
+            {settings?.cookie_consent?.enabled && (
                 <CookieConsentBanner />
             )}
             </div>
