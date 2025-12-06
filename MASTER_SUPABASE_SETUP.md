@@ -14,7 +14,6 @@
 │  ├── billing_transactions (payments)                        │
 │  ├── usage_metrics (resource tracking)                      │
 │  ├── api_usage_logs (API monitoring)                        │
-│  ├── platform_admins (admin users)                          │
 │  ├── integration_configs (DB/storage connections)           │
 │  ├── store_teams (team members)                             │
 │  └── ... (all platform management tables)                   │
@@ -116,7 +115,6 @@ subscriptions
 billing_transactions
 usage_metrics
 api_usage_logs
-platform_admins
 ```
 
 ## Step 3: Run Master Database Migration
@@ -135,7 +133,7 @@ platform_admins
 
 3. **Verify Tables Created**
    - Go to "Table Editor"
-   - You should see: subscriptions, billing_transactions, usage_metrics, api_usage_logs, platform_admins
+   - You should see: subscriptions, billing_transactions, usage_metrics, api_usage_logs
 
 ### Option B: Using psql Command Line
 
@@ -328,35 +326,6 @@ SELECT
   1000 as max_api_calls_per_month,
   NOW() as started_at
 FROM stores;
-```
-
-## Step 10: Create Platform Admin User
-
-```javascript
-// Create your first platform admin
-const { User, PlatformAdmin } = require('./src/models');
-
-async function createPlatformAdmin() {
-  // Find or create user
-  const user = await User.findOne({ where: { email: 'admin@daino.com' } });
-
-  if (!user) {
-    console.error('User not found. Create user first.');
-    return;
-  }
-
-  // Create platform admin
-  const admin = await PlatformAdmin.create({
-    user_id: user.id,
-    role: 'super_admin',
-    permissions: { all: true },
-    is_active: true
-  });
-
-  console.log('✅ Platform admin created:', admin.id);
-}
-
-createPlatformAdmin();
 ```
 
 ## What Tables Go Where?

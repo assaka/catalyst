@@ -244,20 +244,6 @@ CREATE TABLE api_usage_logs (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- platform_admins table (NEW)
-CREATE TABLE platform_admins (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-
-  role VARCHAR(50), -- 'super_admin', 'support', 'billing', 'developer'
-  permissions JSONB DEFAULT '{}',
-
-  is_active BOOLEAN DEFAULT true,
-  last_login_at TIMESTAMP,
-
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
 ```
 
 ### Client DB Schema

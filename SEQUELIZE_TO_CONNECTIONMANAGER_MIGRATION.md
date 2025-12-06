@@ -30,7 +30,7 @@ These models live in the master database and use `ConnectionManager.getMasterCon
 - `StoreDatabase`, `StoreHostname`
 - `CreditBalance`, `CreditTransaction`
 - Plus: `User`, `Store` (minimal), `Subscription`, `Credit`, `CreditUsage`, `ServiceCreditCost`
-- Plus: `PlatformAdmin`, `CustomDomain`, `Job`, `JobHistory`, `CronJob`, `CronJobExecution`
+- Plus: `CustomDomain`, `Job`, `JobHistory`, `CronJob`, `CronJobExecution`
 
 ### Tenant Database Models
 **Location:** `backend/src/models/` (all except master/)
