@@ -79,8 +79,10 @@ class TenantProvisioningService {
         };
       }
 
-      // 4. Create store record in tenant DB
-      if (tenantDb) {
+      // 4. Create store record in tenant DB (skip if already created during migrations)
+      if (options._storeCreatedInMigrations) {
+        console.log('⏭️ Store record already created during migrations - skipping');
+      } else if (tenantDb) {
         // Use Supabase client
         console.log('Creating store record via Supabase client...');
         await this.createStoreRecord(tenantDb, storeId, options, result);
@@ -301,6 +303,44 @@ END $$;`;
               console.warn('⚠️ Some foreign keys failed to apply:', fkError.response?.data?.message || fkError.message);
               // Don't fail the entire provisioning if FKs fail - tables still work
             }
+          }
+
+          // IMPORTANT: Create store record BEFORE seed data (seed data has FK to stores table)
+          console.log('📤 Pass 2.5: Creating store record before seed data...');
+          const storeInsertSQL = `
+INSERT INTO stores (id, user_id, name, slug, currency, timezone, is_active, settings, created_at, updated_at)
+VALUES (
+  '${storeId}',
+  '${options.userId}',
+  '${(options.storeName || 'My Store').replace(/'/g, "''")}',
+  '${this.generateSlug(options.storeName)}',
+  '${options.currency || 'USD'}',
+  '${options.timezone || 'UTC'}',
+  true,
+  '${JSON.stringify(options.settings || {})}'::jsonb,
+  NOW(),
+  NOW()
+) ON CONFLICT (id) DO NOTHING;
+          `;
+
+          try {
+            await axios.post(
+              `https://api.supabase.com/v1/projects/${options.projectId}/database/query`,
+              { query: storeInsertSQL },
+              {
+                headers: {
+                  'Authorization': `Bearer ${options.oauthAccessToken}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+            console.log('✅ Store record created before seed data');
+            result.dataSeeded.push('Store record (created before seed)');
+            // Mark that store was already created so we don't create it again later
+            options._storeCreatedInMigrations = true;
+          } catch (storeError) {
+            console.error('❌ Failed to create store record before seed:', storeError.response?.data || storeError.message);
+            // Continue anyway - seed data might still work for some tables
           }
 
           // Execute seed data separately (6,598 rows - large file)
