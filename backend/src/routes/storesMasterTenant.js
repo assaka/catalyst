@@ -1127,7 +1127,7 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
           .from('store_databases')
           .update({
             is_active: false,
-            connection_status: 'pending_database',
+            status: 'pending_database',
             updated_at: new Date().toISOString()
           })
           .eq('store_id', storeId);
