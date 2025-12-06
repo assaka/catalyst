@@ -1121,9 +1121,22 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
     const storeId = req.params.id;
     console.log(`[Health] Checking health for store ${storeId}`);
 
-    // Helper to remove database config when unhealthy
-    const removeDatabaseConfig = async () => {
+    // Helper to mark store as unhealthy and remove db config
+    const markStoreUnhealthy = async () => {
       try {
+        // Update stores.status to pending_database
+        const { error: storeError } = await masterDbClient
+          .from('stores')
+          .update({ status: 'pending_database', updated_at: new Date().toISOString() })
+          .eq('id', storeId);
+
+        if (storeError) {
+          console.warn(`[Health] Failed to update stores.status for ${storeId}:`, storeError);
+        } else {
+          console.log(`[Health] Set stores.status=pending_database for store ${storeId}`);
+        }
+
+        // Delete store_databases row
         const { data, error } = await masterDbClient
           .from('store_databases')
           .delete()
@@ -1131,15 +1144,15 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
           .select();
 
         if (error) {
-          console.warn(`[Health] Delete error for ${storeId}:`, error);
+          console.warn(`[Health] Delete store_databases error for ${storeId}:`, error);
         } else {
           console.log(`[Health] Deleted store_databases row for store ${storeId}:`, data);
         }
 
-        // Clear connection cache so next attempt will fail properly
+        // Clear connection cache
         ConnectionManager.clearCache(storeId);
       } catch (err) {
-        console.warn(`[Health] Failed to delete store_databases for ${storeId}:`, err.message);
+        console.warn(`[Health] Failed to mark store unhealthy for ${storeId}:`, err.message);
       }
     };
 
@@ -1167,8 +1180,8 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
       );
 
       if (isTableMissing) {
-        console.log(`[Health] Store ${storeId}: Table missing, removing db config`);
-        await removeDatabaseConfig();
+        console.log(`[Health] Store ${storeId}: Table missing, marking unhealthy`);
+        await markStoreUnhealthy();
         return res.json({
           success: true,
           data: {
@@ -1187,9 +1200,9 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
         });
       }
 
-      // Any other error - remove db config
-      console.log(`[Health] Store ${storeId}: Query failed, removing db config`);
-      await removeDatabaseConfig();
+      // Any other error - mark unhealthy
+      console.log(`[Health] Store ${storeId}: Query failed, marking unhealthy`);
+      await markStoreUnhealthy();
       return res.json({
         success: true,
         data: {
@@ -1201,7 +1214,7 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
     } catch (connError) {
       // Connection failed - DB not configured or unreachable
       console.log(`[Health] Store ${storeId}: Connection failed:`, connError.message);
-      await removeDatabaseConfig();
+      await markStoreUnhealthy();
       return res.json({
         success: true,
         data: {
