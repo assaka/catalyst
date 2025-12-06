@@ -99,8 +99,9 @@ const WorkspaceAIPanel = () => {
     const fetchModels = async () => {
       try {
         const response = await apiClient.get('/ai/models');
-        if (response.data?.models && response.data.models.length > 0) {
-          const models = response.data.models.map(m => ({
+        // Response structure: { success: true, models: [...] }
+        if (response.models && response.models.length > 0) {
+          const models = response.models.map(m => ({
             id: m.model_id,
             name: m.name,
             provider: m.provider,
@@ -113,6 +114,8 @@ const WorkspaceAIPanel = () => {
           // Set selected model from saved preference or first available
           const defaultModel = getSavedModel(models);
           setSelectedModel(defaultModel);
+        } else {
+          console.warn('No AI models returned from API:', response);
         }
       } catch (error) {
         console.error('Failed to fetch AI models:', error.message);
