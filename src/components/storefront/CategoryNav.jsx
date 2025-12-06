@@ -896,7 +896,7 @@ export default function CategoryNav({ categories, styles = {}, metadata = {}, st
             
             {/* Desktop view - Always hover-based, expandAllMenuItems controls second-level expansion */}
             <nav className="hidden md:block">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-center space-x-2">
                     <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
                         {t('common.home', 'Home')}
                     </Link>
