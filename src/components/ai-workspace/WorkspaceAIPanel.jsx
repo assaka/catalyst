@@ -390,7 +390,7 @@ const WorkspaceAIPanel = () => {
         conversationHistory: chatMessages.slice(-10),
         storeId: storeId,
         modelId: selectedModel,
-        serviceKey: currentModel.serviceKey,
+        serviceKey: currentModel?.serviceKey,
         confirmedPlugin: true  // This tells backend to actually generate, not ask again
       });
 
@@ -496,7 +496,7 @@ const WorkspaceAIPanel = () => {
         ],
         storeId: storeId,
         modelId: selectedModel,
-        serviceKey: currentModel.serviceKey,
+        serviceKey: currentModel?.serviceKey,
         slotContext, // Pass current layout info
         images: imagesForApi // Pass images for vision support
       });
@@ -1381,7 +1381,7 @@ const WorkspaceAIPanel = () => {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowModelDropdown(!showModelDropdown)}
-                  disabled={isProcessingAi}
+                  disabled={isProcessingAi || !currentModel}
                   className={cn(
                     "flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded transition-all",
                     "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200",
@@ -1389,8 +1389,8 @@ const WorkspaceAIPanel = () => {
                     "disabled:opacity-50 disabled:cursor-not-allowed"
                   )}
                 >
-                  <span>{currentModel.icon}</span>
-                  <span className="font-medium">{PROVIDER_NAMES[currentModel.provider]}</span>
+                  <span>{currentModel?.icon || '🤖'}</span>
+                  <span className="font-medium">{currentModel ? PROVIDER_NAMES[currentModel.provider] : 'Loading...'}</span>
                   <ChevronDown className={cn("w-2.5 h-2.5 transition-transform", showModelDropdown && "rotate-180")} />
                 </button>
 
