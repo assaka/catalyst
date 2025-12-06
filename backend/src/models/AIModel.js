@@ -7,6 +7,61 @@ const { masterDbClient } = require('../database/masterConnection');
  */
 class AIModel {
   /**
+   * Fetch credit costs from service_credit_costs table for given service keys
+   * Returns a map of service_key -> cost_per_unit
+   */
+  static async getCreditCostsForServiceKeys(serviceKeys) {
+    if (!serviceKeys || serviceKeys.length === 0) {
+      return {};
+    }
+
+    const { data, error } = await masterDbClient
+      .from('service_credit_costs')
+      .select('service_key, cost_per_unit')
+      .in('service_key', serviceKeys)
+      .eq('is_active', true);
+
+    if (error) {
+      console.error('Failed to fetch credit costs:', error);
+      return {};
+    }
+
+    // Create a map of service_key -> cost_per_unit
+    const costMap = {};
+    (data || []).forEach(item => {
+      costMap[item.service_key] = parseFloat(item.cost_per_unit);
+    });
+
+    return costMap;
+  }
+
+  /**
+   * Enrich models with credit costs from service_credit_costs table
+   */
+  static async enrichWithCreditCosts(models) {
+    if (!models || models.length === 0) {
+      return models;
+    }
+
+    // Get all service keys from models
+    const serviceKeys = models
+      .map(m => m.service_key)
+      .filter(key => key); // Filter out null/undefined
+
+    // Fetch credit costs
+    const costMap = await this.getCreditCostsForServiceKeys(serviceKeys);
+
+    // Enrich each model with the credit cost from service_credit_costs
+    return models.map(model => ({
+      ...model,
+      // Use credit cost from service_credit_costs if available, otherwise fall back to credits_per_use
+      credits_per_use: model.service_key && costMap[model.service_key] !== undefined
+        ? costMap[model.service_key]
+        : model.credits_per_use
+    }));
+  }
+
+  /**
    * Get all active and visible models
    */
   static async getActiveModels() {
@@ -22,7 +77,8 @@ class AIModel {
       throw error;
     }
 
-    return data || [];
+    // Enrich with credit costs from service_credit_costs
+    return this.enrichWithCreditCosts(data || []);
   }
 
   /**
@@ -42,7 +98,8 @@ class AIModel {
       throw error;
     }
 
-    return data || [];
+    // Enrich with credit costs from service_credit_costs
+    return this.enrichWithCreditCosts(data || []);
   }
 
   /**
@@ -61,7 +118,8 @@ class AIModel {
       throw error;
     }
 
-    return data || [];
+    // Enrich with credit costs from service_credit_costs
+    return this.enrichWithCreditCosts(data || []);
   }
 
   /**
@@ -79,7 +137,11 @@ class AIModel {
       throw error;
     }
 
-    return data;
+    if (!data) return null;
+
+    // Enrich with credit cost from service_credit_costs
+    const enriched = await this.enrichWithCreditCosts([data]);
+    return enriched[0];
   }
 
   /**
@@ -117,7 +179,8 @@ class AIModel {
       throw error;
     }
 
-    return data || [];
+    // Enrich with credit costs from service_credit_costs
+    return this.enrichWithCreditCosts(data || []);
   }
 
   /**
