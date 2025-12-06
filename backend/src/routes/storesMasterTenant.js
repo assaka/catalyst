@@ -1125,9 +1125,13 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
       try {
         await masterDbClient
           .from('store_databases')
-          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .update({
+            is_active: false,
+            connection_status: 'pending_database',
+            updated_at: new Date().toISOString()
+          })
           .eq('store_id', storeId);
-        console.log(`[Health] Marked store_databases.is_active=false for store ${storeId}`);
+        console.log(`[Health] Marked store_databases as unhealthy for store ${storeId}`);
       } catch (err) {
         console.warn(`[Health] Failed to update store_databases for ${storeId}:`, err.message);
       }
