@@ -104,6 +104,17 @@ export const NO_STORE_CONTEXT_PATHS = [
 ];
 
 /**
+ * Path prefixes that should skip StoreProvider (use StoreSelectionContext instead)
+ * Admin pages use their own store context from localStorage
+ */
+export const SKIP_STORE_PROVIDER_PREFIXES = [
+  '/admin',
+  '/editor',
+  '/plugins',
+  '/ai-workspace'
+];
+
+/**
  * Check if the current page should skip loading store context
  * This is the SINGLE SOURCE OF TRUTH for this decision.
  *
@@ -119,6 +130,11 @@ export const NO_STORE_CONTEXT_PATHS = [
 export function shouldSkipStoreContext(pathname, hostname = window.location.hostname) {
   // Check explicit paths that never need store context
   if (NO_STORE_CONTEXT_PATHS.includes(pathname)) {
+    return true;
+  }
+
+  // Admin/editor pages use StoreSelectionContext, not StoreProvider
+  if (SKIP_STORE_PROVIDER_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
     return true;
   }
 
