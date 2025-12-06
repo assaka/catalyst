@@ -14,13 +14,10 @@ export const _setStoreContext = (context) => {
 
 /**
  * Internal function to get store context
- * @returns {Object} - The store context
+ * @returns {Object|null} - The store context or null if not initialized
  */
 const _getStoreContext = () => {
-    if (!_storeContext) {
-        console.error('❌ Price utils: Store context not initialized! Make sure PriceUtilsProvider wraps your app.');
-        return null;
-    }
+    // Just return null - callers handle the null case gracefully
     return _storeContext;
 };
 
@@ -47,18 +44,22 @@ export const safeNumber = (value) => {
  */
 export const formatPrice = (value, decimals = 2) => {
     const context = _getStoreContext();
+    const num = safeNumber(value);
 
     if (!context) {
-        throw new Error('❌ formatPrice: Store context not available! Make sure PriceUtilsProvider wraps your app.');
+        // Return a fallback format instead of throwing - the page shouldn't break
+        console.warn('formatPrice: Store context not available, using fallback format');
+        return `$${num.toFixed(decimals)}`;
     }
 
     const symbol = context.settings?.currency_symbol;
 
     if (!symbol) {
-        throw new Error('❌ formatPrice: currency_symbol not found in store context!');
+        // Return a fallback format instead of throwing
+        console.warn('formatPrice: currency_symbol not found in store context, using fallback');
+        return `$${num.toFixed(decimals)}`;
     }
 
-    const num = safeNumber(value);
     return `${symbol}${num.toFixed(decimals)}`;
 };
 
@@ -112,7 +113,9 @@ export const calculateDisplayPrice = (basePrice, taxRules = null, country = null
 
     const context = _getStoreContext();
     if (!context) {
-        throw new Error('❌ calculateDisplayPrice: Store context not available!');
+        // Return the base price if context isn't available - don't break the page
+        console.warn('calculateDisplayPrice: Store context not available, returning base price');
+        return price;
     }
 
     // Get from context
