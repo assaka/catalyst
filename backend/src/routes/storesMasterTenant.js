@@ -1114,11 +1114,24 @@ router.get('/', authMiddleware, async (req, res) => {
 /**
  * GET /api/stores/:id/health
  * Quick health check - just query tenant DB stores table
- * Returns healthy/empty status
+ * Returns healthy/empty status and updates store_databases.is_active accordingly
  */
 router.get('/:id/health', authMiddleware, async (req, res) => {
   try {
     const storeId = req.params.id;
+
+    // Helper to mark database as unhealthy in master DB
+    const markDatabaseUnhealthy = async () => {
+      try {
+        await masterDbClient
+          .from('store_databases')
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq('store_id', storeId);
+        console.log(`[Health] Marked store_databases.is_active=false for store ${storeId}`);
+      } catch (err) {
+        console.warn(`[Health] Failed to update store_databases for ${storeId}:`, err.message);
+      }
+    };
 
     // Quick check: try to query tenant DB stores table
     try {
@@ -1137,6 +1150,7 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
       }
 
       // Query failed - DB is empty/needs provisioning
+      await markDatabaseUnhealthy();
       return res.json({
         success: true,
         data: {
@@ -1147,6 +1161,7 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
       });
     } catch (connError) {
       // Connection failed - DB not configured or unreachable
+      await markDatabaseUnhealthy();
       return res.json({
         success: true,
         data: {
