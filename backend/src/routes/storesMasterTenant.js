@@ -1145,15 +1145,44 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
         .select('id')
         .limit(1);
 
-      // If query succeeds (even with empty result), DB is healthy
-      if (!error) {
+      console.log(`[Health] Store ${storeId} query result:`, {
+        hasData: !!data,
+        dataLength: data?.length,
+        error: error ? { code: error.code, message: error.message } : null
+      });
+
+      // Check for table not found errors (table dropped)
+      const tableNotFoundCodes = ['PGRST204', 'PGRST116', '42P01', '42501'];
+      const isTableMissing = error && (
+        tableNotFoundCodes.includes(error.code) ||
+        error.message?.toLowerCase().includes('does not exist') ||
+        error.message?.toLowerCase().includes('not found') ||
+        error.message?.toLowerCase().includes('schema cache')
+      );
+
+      if (isTableMissing) {
+        console.log(`[Health] Store ${storeId}: Table missing, marking unhealthy`);
+        await markDatabaseUnhealthy();
+        return res.json({
+          success: true,
+          data: {
+            status: 'empty',
+            message: 'Store database tables missing',
+            actions: ['provision_database', 'remove_store']
+          }
+        });
+      }
+
+      // If query succeeds with no error and data is an array, DB is healthy
+      if (!error && Array.isArray(data)) {
         return res.json({
           success: true,
           data: { status: 'healthy' }
         });
       }
 
-      // Query failed - DB is empty/needs provisioning
+      // Any other error - mark as unhealthy
+      console.log(`[Health] Store ${storeId}: Query failed, marking unhealthy`);
       await markDatabaseUnhealthy();
       return res.json({
         success: true,
@@ -1165,6 +1194,7 @@ router.get('/:id/health', authMiddleware, async (req, res) => {
       });
     } catch (connError) {
       // Connection failed - DB not configured or unreachable
+      console.log(`[Health] Store ${storeId}: Connection failed:`, connError.message);
       await markDatabaseUnhealthy();
       return res.json({
         success: true,
