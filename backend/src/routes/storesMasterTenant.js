@@ -1119,15 +1119,22 @@ router.get('/', authMiddleware, async (req, res) => {
 router.get('/:id/health', authMiddleware, async (req, res) => {
   try {
     const storeId = req.params.id;
+    console.log(`[Health] Checking health for store ${storeId}`);
 
     // Helper to remove database config when unhealthy
     const removeDatabaseConfig = async () => {
       try {
-        await masterDbClient
+        const { data, error } = await masterDbClient
           .from('store_databases')
           .delete()
-          .eq('store_id', storeId);
-        console.log(`[Health] Deleted store_databases row for store ${storeId}`);
+          .eq('store_id', storeId)
+          .select();
+
+        if (error) {
+          console.warn(`[Health] Delete error for ${storeId}:`, error);
+        } else {
+          console.log(`[Health] Deleted store_databases row for store ${storeId}:`, data);
+        }
 
         // Clear connection cache so next attempt will fail properly
         ConnectionManager.clearCache(storeId);
